@@ -156,6 +156,59 @@ class DagCommandTaskTest {
         assertEquals(setOf(":core", ":feature", ":app"), readAffectedModules(projectDir))
     }
 
+    @Test
+    fun listsAffectedIosTasksWithoutLaunchingANestedBuild() {
+        val projectDir = setupProject(
+            modulePaths = listOf(":core", ":feature", ":app", ":unrelated"),
+            moduleDependencies = mapOf(
+                ":feature" to listOf(":core"),
+                ":app" to listOf(":feature")
+            )
+        )
+        commitFeatureChange(projectDir, "core/src.txt", "core changed")
+
+        val result = listIosTasks(projectDir)
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":iOSOnlyAffectedTest")?.outcome)
+        assertEquals(setOf(":core", ":feature", ":app"), readSelectedIosModules(projectDir))
+        assertFalse(result.output.contains("test ran"))
+    }
+
+    @Test
+    fun listsAllIosTasksForRootBuildChangesAndStillExcludesIgnoredModules() {
+        val projectDir = setupProject(modulePaths = listOf(":core", ":feature", ":data:protobuf"))
+        commitFeatureChange(projectDir, "gradle.properties", "org.gradle.parallel=true\n")
+
+        listIosTasks(projectDir)
+
+        assertEquals(setOf(":core", ":feature"), readSelectedIosModules(projectDir))
+    }
+
+    @Test
+    fun clearsStaleSelectedTasksWhenNoTestsAreAffected() {
+        val projectDir = setupProject(modulePaths = listOf(":core"))
+        val selectedFile = projectDir.resolve("build/affected-tests/iOSOnlyAffectedTest.txt")
+        selectedFile.parent.createDirectories()
+        selectedFile.writeText(":core:iosSimulatorArm64Test\n")
+
+        listIosTasks(projectDir)
+
+        assertEquals("", selectedFile.readText())
+    }
+
+    @Test
+    fun listsAllIosTasksWhenAffectedModuleDataIsUnavailable() {
+        val projectDir = setupProject(
+            modulePaths = listOf(":core", ":feature"),
+            defaultBranch = "origin/missing-branch"
+        )
+
+        val result = listIosTasks(projectDir)
+
+        assertEquals(setOf(":core", ":feature"), readSelectedIosModules(projectDir))
+        assertTrue(result.output.contains("Running all tests because affected-modules data is unavailable."))
+    }
+
     private fun setupProject(
         modulePaths: List<String>,
         moduleDependencies: Map<String, List<String>> = emptyMap(),
@@ -216,7 +269,9 @@ class DagCommandTaskTest {
                 }
                 """.trimIndent() + "\n"
             }
-            moduleDir.resolve("build.gradle").writeText(buildFile)
+            moduleDir.resolve("build.gradle").writeText(
+                buildFile + "\ntasks.register('iosSimulatorArm64Test') { doLast { println('test ran') } }\n"
+            )
         }
     }
 
@@ -227,6 +282,7 @@ class DagCommandTaskTest {
         runCommand(projectDir, "git", "add", ".")
         runCommand(projectDir, "git", "commit", "-m", "initial")
         runCommand(projectDir, "git", "branch", "-M", "develop")
+        runCommand(projectDir, "git", "update-ref", "refs/remotes/origin/develop", "develop")
         runCommand(projectDir, "git", "checkout", "-b", "feature")
     }
 
@@ -243,6 +299,20 @@ class DagCommandTaskTest {
         .withPluginClasspath()
         .withArguments("dag-command", "--stacktrace")
         .build()
+
+    private fun listIosTasks(projectDir: Path) = GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments("iOSOnlyAffectedTest", "--list-only", "--stacktrace")
+        .build()
+
+    private fun readSelectedIosModules(projectDir: Path): Set<String> =
+        projectDir.resolve("build/affected-tests/iOSOnlyAffectedTest.txt")
+            .readText()
+            .lineSequence()
+            .filter { it.isNotBlank() }
+            .map { it.removeSuffix(":iosSimulatorArm64Test") }
+            .toSet()
 
     private fun affectedModulesFile(projectDir: Path): Path =
         projectDir.resolve("build/dag-command/affected-modules.json")

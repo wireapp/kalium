@@ -29,6 +29,8 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.withTestUserDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
@@ -107,4 +109,7 @@ internal class FakeNotificationApi(
 internal suspend fun UserDatabaseBuilder.eventIds() = eventDAO.observeEvents(0).first().map { it.eventId }
 
 internal suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) =
-    withTestUserDatabase(UserIDEntity("event-ingestion", "example.com")) { block(it.builder) }
+    withTestUserDatabase(UserIDEntity("event-ingestion", "example.com")) {
+        // Worker I/O must use real timeout budgets instead of advancing virtual time while waiting for its reply.
+        withContext(Dispatchers.Default) { block(it.builder) }
+    }

@@ -28,7 +28,10 @@ jobs:
       issues: read # required to find related pull requests in private repositories
       checks: write # required to publish unit test check runs
       pull-requests: write # required to publish pull request comments
-    runs-on: macos-latest
+    runs-on: macos-26
+    env:
+      # Leave room for the native linker on the free 7 GB runner.
+      GRADLE_OPTS: -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
 
     steps:
       - name: Checkout
@@ -40,10 +43,28 @@ jobs:
         run: git fetch --no-tags --depth=1 origin develop:refs/remotes/origin/develop
 
       - name: Setup Java and Gradle
+        id: setup-gradle
         uses: ./.github/actions/setup-java-gradle
+        with:
+          use-external-cache: "true"
+
+      - name: Restore iOS Gradle build cache
+        if: steps.setup-gradle.outputs.cache-enabled == 'true'
+        id: gradle-cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          # Separate native test outputs from faster macOS jobs. Each develop commit saves
+          # new outputs, while fallback restores retain reusable work after build edits.
+          key: gradle-ios-macos26-${{ runner.arch }}-jdk21-v1-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle.properties') }}-${{ github.sha }}
+          restore-keys: |
+            gradle-ios-macos26-${{ runner.arch }}-jdk21-v1-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle.properties') }}-
+            gradle-ios-macos26-${{ runner.arch }}-jdk21-v1-
 
       - name: Restore Kotlin/Native tooling cache (.konan)
-        if: ${{ github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+        if: steps.setup-gradle.outputs.cache-enabled == 'true'
         id: konan-cache
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
@@ -52,18 +73,88 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-konan-
 
-      - name: iOS Tests
+      - name: Record runner memory in the background
+        run: |
+          mkdir -p build/ci
+          # The runner stops this process when the job ends.
+          nohup bash -c 'while true; do date -u; sysctl vm.swapusage; vm_stat; sleep 60; done' \
+            > build/ci/ios-runner-memory.log 2>&1 &
+
+      - name: Build iOS test binaries
+        id: build-tests
         # Develop runs the complete suite to populate task outputs for future PRs.
         # PR and merge-queue runs keep using affected-module detection.
-        run: ./gradlew ${{ github.event_name == 'push' && 'iosSimulatorArm64Test' || 'iOSOnlyAffectedTest' }}
+        # Link before booting the simulator: together they exceed the runner's memory and swap for hours.
+        run: |
+          gradle_args=(--console=plain -Dorg.gradle.logging.level=lifecycle --profile)
+          if [[ "$RUN_ALL_TESTS" == "true" ]]; then
+            echo iosSimulatorArm64Test > build/ci/ios-test-tasks.txt
+          else
+            # Finish selection before building, so one Gradle daemon can be reused.
+            ./gradlew "${gradle_args[@]}" iOSOnlyAffectedTest --list-only
+            cp build/affected-tests/iOSOnlyAffectedTest.txt build/ci/ios-test-tasks.txt
+          fi
+
+          link_tasks=()
+          while IFS= read -r task; do
+            [[ -z "$task" ]] || link_tasks+=("${task%iosSimulatorArm64Test}linkDebugTestIosSimulatorArm64")
+          done < build/ci/ios-test-tasks.txt
+          if (( ${#link_tasks[@]} > 0 )); then
+            ./gradlew "${gradle_args[@]}" "${link_tasks[@]}"
+            echo "has-tests=true" >> "$GITHUB_OUTPUT"
+          fi
+          # Release the daemon heap for the simulator. The test run only executes the linked binaries.
+          ./gradlew --stop
         env:
-          # This system property is inherited by the nested Gradle process.
-          GRADLE_OPTS: -Dorg.gradle.caching=true
+          RUN_ALL_TESTS: ${{ github.event_name == 'push' }}
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate aggregated iOS test report
+      - name: Boot iOS simulator
+        if: steps.build-tests.outputs.has-tests == 'true'
+        run: python3 scripts/boot-ios-simulator.py
+
+      - name: Install X.509 fixture dependencies
+        if: steps.build-tests.outputs.has-tests == 'true'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ios-tests-venv"
+          "$RUNNER_TEMP/ios-tests-venv/bin/pip" install --quiet -r nse/scripts/requirements-ios-tests.txt
+
+      - name: iOS Tests
+        id: ios-tests
+        if: steps.build-tests.outputs.has-tests == 'true'
+        run: |
+          test_tasks=()
+          while IFS= read -r task; do
+            [[ -z "$task" ]] || test_tasks+=("$task")
+          done < build/ci/ios-test-tasks.txt
+          # Receiving's X.509 tests call a local test CA that the booted simulator must trust.
+          "$RUNNER_TEMP/ios-tests-venv/bin/python" nse/scripts/with-x509-fixture.py "$KALIUM_IOS_SIMULATOR_UDID" \
+            ./gradlew --console=plain -Dorg.gradle.logging.level=lifecycle --profile "${test_tasks[@]}"
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Record runner memory and disk use
         if: always()
+        run: |
+          sysctl hw.memsize vm.swapusage
+          vm_stat
+          df -h
+          ps -axo pid,ppid,%cpu,rss,comm | sort -k4 -nr | head -20 || true
+
+      - name: Archive build timings
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ios-build-timings
+          path: |
+            build/reports/profile/**
+            build/affected-tests/**
+            build/ci/ios-runner-memory.log
+
+      - name: Generate aggregated iOS test report
+        if: ${{ always() && steps.ios-tests.outcome != 'skipped' }}
         run: ./gradlew aggregateIosSimulatorArm64TestReport
 
       - name: Archive Test Reports
@@ -100,8 +191,18 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
+      - name: Save iOS Gradle build cache
+        # Only develop saves: each entry is about 2 GB, and PR entries evicted the shared caches.
+        if: ${{ always() && github.event_name == 'push' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-cache.outcome == 'success' && steps.gradle-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
+
       - name: Save Kotlin/Native tooling cache (.konan)
-        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.konan-cache.outputs.cache-hit != 'true' }}
+        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.konan-cache.outcome == 'success' && steps.konan-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.konan
@@ -130,4 +231,5 @@ jobs:
           DD_ENV: ci
           DATADOG_SITE: datadoghq.eu
         run: |
-          find . -name "*.xml" -type f | sed 's/ /\\ /g' | tr '\n' ' ' | xargs -L 1 datadog-ci junit upload --service kalium-ios .
+          # xargs splits the report paths into batches that fit the argument limit.
+          find . -name "*.xml" -type f -print0 | xargs -0 -r datadog-ci junit upload --service kalium-ios
