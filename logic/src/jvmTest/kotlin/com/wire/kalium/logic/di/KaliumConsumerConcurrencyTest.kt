@@ -26,6 +26,8 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.UserSessionScopeProviderCommon
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
@@ -38,10 +40,14 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
+import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
+import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import dev.mokkery.MockMode
@@ -62,10 +68,12 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.job
@@ -75,6 +83,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -97,20 +106,22 @@ class KaliumConsumerConcurrencyTest {
         assertTerminalLogout(nonCancellable = false)
     }
 
+    @Suppress("TooGenericExceptionCaught") // Preserve the test failure if fixture teardown also fails.
     private suspend fun TestScope.assertTerminalLogout(nonCancellable: Boolean) {
         val fixture = TerminalLogoutFixture.create()
         val owner = SupervisorJob()
         val creator = CoroutineScope(owner + StandardTestDispatcher(testScheduler))
-        val consumer = fixture.session.createConsumer()
-        val observed = CompletableDeferred<Unit>()
-        consumer.assemble(create = { owner }, onDiscard = {}, jobOnDiscard = { it })
-        // This resolves the real SDK MessageDataSource and collects its real SQL-backed flow through
-        // the consumer guard. Registry/provider removal must still cancel this resource operation.
-        val reading = creator.launch {
-            consumer.observeMessageById(TestConversation.ID, "absent").collect { observed.complete(Unit) }
-        }
-        val logout = fixture.logout(globalScope = this)
+        var failure: Throwable? = null
         try {
+            val consumer = fixture.session.createConsumer()
+            val observed = CompletableDeferred<Unit>()
+            consumer.assemble(create = { owner }, onDiscard = {}, jobOnDiscard = { it })
+            // This resolves the real SDK MessageDataSource and collects its real SQL-backed flow through
+            // the consumer guard. Registry/provider removal must still cancel this resource operation.
+            val reading = creator.launch {
+                consumer.observeMessageById(TestConversation.ID, "absent").collect { observed.complete(Unit) }
+            }
+            val logout = fixture.logout(globalScope = this)
             observed.await()
             val terminal = creator.async {
                 if (nonCancellable) {
@@ -125,9 +136,11 @@ class KaliumConsumerConcurrencyTest {
             assertTrue(owner.isActive)
             assertFalse(terminal.isCancelled)
             assertFailsWith<CancellationException> { consumer.getMessageById(TestConversation.ID, "absent") }
+        } catch (testFailure: Throwable) {
+            failure = testFailure
+            throw testFailure
         } finally {
-            owner.cancel()
-            fixture.close()
+            fixture.close(callerJob = owner, priorFailure = failure)
         }
     }
 
@@ -291,13 +304,48 @@ private class TerminalLogoutFixture private constructor(
     private val userId: UserId,
 ) {
     private val provider = logic.userSessionScopeProvider.value
-    val session = provider.getOrCreate(userId)
-    private val storage = assertNotNull(logic.userStorageProvider.get(userId))
-    private val apis = assertNotNull(network.get(userId.toApi()))
+    private val globalJob = logic.getGlobalScope().coroutineContext.job
+    // This JVM database is already eager. Read the protected getter without changing SDK visibility.
+    private val globalDatabase = CoreLogic::class.java.getDeclaredMethod("getGlobalDatabaseBuilder").let {
+        it.isAccessible = true
+        it.invoke(logic) as GlobalDatabaseBuilder
+    }
+    private val scopes = mutableSetOf<UserSessionScope>()
+    private val databases = mutableSetOf<UserDatabaseBuilder>()
+    private val acquiredApis = mutableSetOf<UserAuthenticatedNetworkApis>()
+    private val logoutJobs = mutableSetOf<Job>()
+    lateinit var session: UserSessionScope
+        private set
+    private lateinit var storage: UserStorage
+    private lateinit var apis: UserAuthenticatedNetworkApis
     private var cleared = false
     private var callbackCompleted = false
 
+    private fun initialize() {
+        session = provider.getOrCreate(userId).also(::retain)
+        storage = assertNotNull(logic.userStorageProvider.get(userId))
+        apis = assertNotNull(network.get(userId.toApi()))
+    }
+
+    private fun retain(scope: UserSessionScope) {
+        scopes.add(scope)
+        databases.add(scope.userStorage.database)
+        network.get(userId.toApi())?.let(acquiredApis::add)
+    }
+
+    private fun retainCurrentOwner() {
+        // A failed synchronous startup closes public admission but retains its actual private owner.
+        val getter = UserSessionScopeProviderCommon::class.java.getDeclaredMethod("getRaw", UserId::class.java)
+        getter.isAccessible = true
+        (getter.invoke(provider, userId) as UserSessionScope?)?.let(::retain)
+        logic.userStorageProvider.get(userId)?.database?.let(databases::add)
+        network.get(userId.toApi())?.let(acquiredApis::add)
+    }
+
     suspend fun logout(globalScope: CoroutineScope): LogoutUseCase {
+        // Keep the original dispatcher and test parent, while retaining only this logout's children.
+        val logoutJob = Job(globalScope.coroutineContext.job).also(logoutJobs::add)
+        val logoutScope = CoroutineScope(globalScope.coroutineContext + logoutJob)
         val repository = mock<LogoutRepository>(mode = MockMode.autoUnit)
         everySuspend { repository.logout() } returns Either.Right(Unit)
         val deregister = mock<DeregisterTokenUseCase>()
@@ -323,7 +371,7 @@ private class TerminalLogoutFixture private constructor(
             clearUserDataUseCase = clearUserData,
             userSessionScopeProvider = provider,
             pushTokenRepository = mock(mode = MockMode.autoUnit),
-            globalCoroutineScope = globalScope,
+            globalCoroutineScope = logoutScope,
             userSessionWorkScheduler = mock(mode = MockMode.autoUnit),
             getEstablishedCallsUseCase = establishedCalls,
             endCallUseCase = mock(mode = MockMode.autoUnit),
@@ -359,19 +407,60 @@ private class TerminalLogoutFixture private constructor(
             logic.getGlobalScope().sessionRepository,
         )
         assertIs<Either.Right<Unit>>(stored)
-        val reopened = provider.open(userId)
+        val reopened = provider.open(userId).also(::retain)
         assertNotSame(session, reopened)
         assertNotSame(storage, logic.userStorageProvider.get(userId))
         assertNotSame(apis, network.get(userId.toApi()))
         reopened.createConsumer().closeAndJoin()
     }
 
-    suspend fun close() {
+    @Suppress("TooGenericExceptionCaught") // Keep assertion/cancellation failures primary; retain cleanup evidence.
+    suspend fun close(callerJob: Job? = null, priorFailure: Throwable? = null) {
         try {
-            provider.delete(userId)
-        } finally {
-            logic.getGlobalScope().coroutineContext.job.cancel()
-            root.deleteRecursively()
+            // runTest's virtual timeout can expire before real Default/IO workers unwind.
+            withContext(NonCancellable + Dispatchers.Default) {
+                withTimeout(30_000) {
+                    val terminalJobs = logoutJobs.toList() + listOfNotNull(callerJob)
+                    terminalJobs.forEach { it.cancel() }
+                    terminalJobs.forEach { it.join() }
+                    // No caller or detached test logout can now reopen another generation.
+                    globalJob.cancelAndJoin()
+                    retainCurrentOwner()
+                    val retainedScopes = scopes.toList()
+                    retainedScopes.forEach { it.invalidateConsumers() }
+                    // Revisit shutdown on retired owners in the existing Cells/calling/session order.
+                    // Then require real completion beyond the production best-effort timeout.
+                    retainedScopes.forEach { it.stopAccountWork() }
+                    retainedScopes.forEach { it.coroutineContext.job.cancel() }
+                    retainedScopes.forEach { it.coroutineContext.job.join() }
+                    // An interrupted constructor with no returned owner cannot prove a safe close.
+                    assertTrue(retainedScopes.isNotEmpty(), "No retained session owner for fixture storage")
+                    assertTrue(
+                        databases.all { database -> retainedScopes.any { it.userStorage.database === database } },
+                        "Acquired database has no retained session owner",
+                    )
+                    provider.delete(userId)
+                    retainedScopes.forEach {
+                        assertTrue(it.coroutineContext.job.isCompleted, "Account still owns fixture storage: ${it.userId}")
+                        assertTrue(it.coroutineContext.job.children.none(), "Account retains child jobs: ${it.userId}")
+                        if (it.isCellsInitialized) {
+                            assertTrue(it.cells.coroutineContext.job.isCompleted, "Cells still owns fixture storage: ${it.userId}")
+                        }
+                    }
+                    (terminalJobs + globalJob).forEach {
+                        assertTrue(it.isCompleted, "Fixture owner still has work")
+                        assertTrue(it.children.none(), "Fixture owner retains child jobs")
+                    }
+                    // These are retained instances, never newly resolved network/native/Cells resources.
+                    acquiredApis.forEach { it.container.close() }
+                    databases.forEach { it.close() }
+                    globalDatabase.close()
+                    assertTrue(root.deleteRecursively(), "Unable to remove drained fixture storage: $root")
+                }
+            }
+        } catch (cleanupFailure: Throwable) {
+            if (priorFailure == null) throw cleanupFailure
+            if (priorFailure !== cleanupFailure) priorFailure.addSuppressed(cleanupFailure)
         }
     }
 
@@ -379,6 +468,7 @@ private class TerminalLogoutFixture private constructor(
         private const val SERVER_CONFIG_ID = "terminal-logout-server"
         private const val URL = "https://example.invalid"
 
+        @Suppress("TooGenericExceptionCaught") // Startup failure also needs retained-owner teardown.
         suspend fun create(): TerminalLogoutFixture {
             val root = Files.createTempDirectory("consumer-terminal-logout").toFile()
             val userId = UserId("terminal-creator", "example.com")
@@ -407,7 +497,14 @@ private class TerminalLogoutFixture private constructor(
                 userAgent = "kalium-terminal-logout-test",
                 userAuthenticatedNetworkProvider = network,
             )
-            return TerminalLogoutFixture(root, logic, network, userId)
+            val fixture = TerminalLogoutFixture(root, logic, network, userId)
+            try {
+                fixture.initialize()
+                return fixture
+            } catch (failure: Throwable) {
+                fixture.close(priorFailure = failure)
+                throw failure
+            }
         }
     }
 }

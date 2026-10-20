@@ -1132,6 +1132,7 @@ internal interface UserSessionApi {
 
     @get:UserSessionBinding("freshCallsOperation")
     val userSessionFreshCallsOperation: LegacyCallsApi
+
     @get:UserSessionBinding("pushTokenUpdater")
     val userSessionPushTokenUpdater: PushTokenUpdater
 }

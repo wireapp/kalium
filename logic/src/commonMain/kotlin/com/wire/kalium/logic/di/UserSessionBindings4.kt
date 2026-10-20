@@ -393,7 +393,7 @@ internal interface UserSessionBindings4 {
         apiMigrationsApiMigrationV3: Provider<ApiMigrationV3>,
     ): List<Pair<Int, ApiMigrationV3>> =
         listOf(
-            Pair(3, apiMigrationsApiMigrationV3())
+            Pair(API_MIGRATION_V3_VERSION, apiMigrationsApiMigrationV3())
         )
 
     @Provides
@@ -743,8 +743,12 @@ internal interface UserSessionBindings4 {
         @UserSessionBinding("newUpdateConversationClientsForCurrentCall")
         newUpdateConversationClientsForCurrentCall: Provider<UpdateConversationClientsForCurrentCallUseCaseImpl>,
     ): UserSessionValue<Lazy<UpdateConversationClientsForCurrentCallUseCase>> =
-        UserSessionValue(lazy {
-            newUpdateConversationClientsForCurrentCall()
-        })
+        UserSessionValue(
+            lazy {
+                newUpdateConversationClientsForCurrentCall()
+            }
+        )
 
 }
+
+private const val API_MIGRATION_V3_VERSION = 3

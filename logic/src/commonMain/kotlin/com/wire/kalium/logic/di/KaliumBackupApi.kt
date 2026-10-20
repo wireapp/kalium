@@ -33,6 +33,7 @@ public interface KaliumBackupApi {
     public val backupCreate: CreateBackupUseCase
     public val backupVerify: VerifyBackupUseCase
     public val backupRestore: RestoreBackupUseCase
+
     @DelicateKaliumApi("Creates an unencrypted obfuscated database copy; this is not a backup.")
     public val backupCreateUnEncryptedCopy: CreateObfuscatedCopyUseCase
     public val backupBackupAndUploadCryptoState: BackupAndUploadCryptoStateUseCase

@@ -35,15 +35,12 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.GlobalKaliumScope
-import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
-import com.wire.kalium.logic.cache.ProteusSelfConversationIdProvider
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.app.AppRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -53,13 +50,11 @@ import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.MLSTransportProvider
@@ -72,26 +67,16 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
-import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.EpochChangesObserverImpl
-import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
-import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
-import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -112,12 +97,9 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
-import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PollMessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.SystemMessageInserter
@@ -136,7 +118,6 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.session.token.AccessTokenRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
@@ -164,10 +145,8 @@ import com.wire.kalium.logic.feature.app.LegacyAppDependencies
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
-import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
-import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.backup.BackupScope
@@ -185,18 +164,15 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
-import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.channels.ChannelsScope
 import com.wire.kalium.logic.feature.channels.LegacyChannelsDependencies
 import com.wire.kalium.logic.feature.client.ClientScope
-import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.LegacyClientDependencies
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.LegacyConnectionDependencies
-import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUseCase
@@ -209,29 +185,22 @@ import com.wire.kalium.logic.feature.conversation.MigrateConversationToMLSUseCas
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCase
-import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
-import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
-import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoinsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.debug.LegacyDebugDependencies
-import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.feature.legalhold.ApproveLegalHoldRequestUseCase
-import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
 import com.wire.kalium.logic.feature.legalhold.MarkLegalHoldChangeAsNotifiedForSelfUseCase
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCase
@@ -241,19 +210,14 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCa
 import com.wire.kalium.logic.feature.meeting.LegacyMeetingDependencies
 import com.wire.kalium.logic.feature.meeting.MeetingScope
 import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCase
-import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.LegacyMessageDependencies
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
-import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
-import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
-import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
-import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.search.LegacySearchDependencies
 import com.wire.kalium.logic.feature.search.SearchScope
@@ -266,10 +230,8 @@ import com.wire.kalium.logic.feature.service.LegacyServiceDependencies
 import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
-import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
 import com.wire.kalium.logic.feature.team.LegacyTeamDependencies
-import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
@@ -286,9 +248,6 @@ import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCas
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveIsMeetingsEnabledUseCase
-import com.wire.kalium.logic.feature.user.SyncContactsUseCase
-import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
-import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.feature.user.UserScope
@@ -317,64 +276,22 @@ import com.wire.kalium.logic.sync.SyncSuspension
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.sync.incremental.EventGatherer
 import com.wire.kalium.logic.sync.incremental.EventProcessor
-import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.local.LocalEventRepositoryImpl
 import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
-import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
-import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
-import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
-import com.wire.kalium.logic.sync.receiver.MeetingEventReceiver
-import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
-import com.wire.kalium.logic.sync.receiver.UserEventReceiver
-import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
-import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
-import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.DeleteConversationReminderEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.AppMLSReceiveRecovery
-import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
-import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.recoveryOrThrow
-import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
-import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
-import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
-import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
-import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
-import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
-import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
-import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
-import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
-import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
-import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.sync.receiving.CallPresentationRecord
 import com.wire.kalium.logic.sync.receiving.CallSignalJournal
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecovery
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecoveryStore
-import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
-import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
-import com.wire.kalium.logic.sync.slow.SlowSyncManager
-import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandler
-import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
@@ -391,7 +308,6 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
-import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageTimelineDAO
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
@@ -841,16 +757,8 @@ public class UserSessionScope internal constructor(
     private val currentCryptoStateChangeHookNotifier = CryptoStateChangeHookNotifier { changedUserId ->
         cryptoStateChangeHookNotifier?.onCryptoStateChanged(changedUserId)
     }
-    private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider
-        get() = kaliumUserGraph.userSessionIsClientAsyncNotificationsCapableProvider
 
     internal val clientIdProvider = CurrentClientIdProvider { clientId() }
-    private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
-        kaliumUserGraph.userSessionMlsSelfConversationIdProvider
-    }
-    private val proteusSelfConversationIdProvider: ProteusSelfConversationIdProvider by lazy {
-        kaliumUserGraph.userSessionProteusSelfConversationIdProvider
-    }
     private val selfConversationIdProvider: SelfConversationIdProvider by
     lazy { kaliumUserGraph.userSessionSelfConversationIdProvider }
 
@@ -879,14 +787,8 @@ public class UserSessionScope internal constructor(
 
     private val epochChangesObserver: EpochChangesObserver = EpochChangesObserverImpl()
 
-    private val accessTokenRepository: AccessTokenRepository
-        get() = kaliumUserGraph.userSessionAccessTokenRepository
-
     private val accessTokenRefresherFactory: AccessTokenRefresherFactory
         get() = kaliumUserGraph.userSessionAccessTokenRefresherFactory
-
-    private val accessTokenRefresher: AccessTokenRefresher
-        get() = kaliumUserGraph.userSessionAccessTokenRefresher
 
     private val sessionManager: SessionManager = SessionManagerImpl(
         sessionRepository = globalScope.sessionRepository,
@@ -921,6 +823,7 @@ public class UserSessionScope internal constructor(
             )
         }.container
 
+    @Suppress("UnusedPrivateProperty") // Retain this original eager initialization; graph bindings now serve its reads.
     private val featureSupport: FeatureSupport = kaliumUserGraph.userSessionFeatureSupport
     private val userScopedNomadHookFactory = kaliumUserGraph.userSessionUserScopedNomadHookFactory
 
@@ -964,7 +867,9 @@ public class UserSessionScope internal constructor(
 
     private val localEventRepository: LocalEventRepository = LocalEventRepositoryImpl()
 
-    private val mlsTransportProvider: MLSTransportProvider by lazy { kaliumUserGraph.userSessionMlsTransportProvider }
+    private val mlsTransportProvider: MLSTransportProvider by lazy {
+        kaliumUserGraph.userSessionMlsTransportProvider
+    }
 
     private val mlsClientProviderDelegate = lazy {
         MLSClientProviderImpl(
@@ -1037,23 +942,18 @@ public class UserSessionScope internal constructor(
 
     private val notificationTokenRepository get() = kaliumUserGraph.userSessionNotificationTokenRepository
 
+    @Suppress("UnusedPrivateProperty") // Retain this original eager initialization; graph bindings now serve its reads.
     private val subconversationRepository =
         kaliumUserGraph.userSessionSubconversationRepository
 
     private val conversationRepository: ConversationRepository
         get() = kaliumUserGraph.userSessionConversationRepository
 
-    private val conversationMetaDataRepository: ConversationMetaDataRepository
-        get() = kaliumUserGraph.userSessionConversationMetaDataRepository
-
     private val conversationFolderRepository: ConversationFolderRepository
         get() = kaliumUserGraph.userSessionConversationFolderRepository
 
     private val conversationGroupRepository: ConversationGroupRepository
         get() = kaliumUserGraph.userSessionConversationGroupRepository
-
-    private val newConversationMembersRepository: NewConversationMembersRepository
-        get() = kaliumUserGraph.userSessionNewConversationMembersRepository
 
     private val messageRepository: MessageRepository
         get() = kaliumUserGraph.userSessionMessageRepository
@@ -1066,8 +966,6 @@ public class UserSessionScope internal constructor(
 
     private fun newMessageRepository(pagingCoordinator: NomadMessagePagingCoordinator?): MessageRepository =
         kaliumUserGraph.userSessionMessageRepositoryFactory.create(pagingCoordinator)
-    private val nomadMessagePagingCoordinator: NomadMessagePagingCoordinator?
-        get() = kaliumUserGraph.userSessionNomadMessagePagingCoordinator
 
     private val messageMetadataRepository: MessageMetadataRepository
         get() = kaliumUserGraph.userSessionMessageMetadataRepository
@@ -1078,14 +976,23 @@ public class UserSessionScope internal constructor(
     private val pollMessageRepository: PollMessageRepository
         get() = kaliumUserGraph.userSessionPollMessageRepository
 
-    private val messageDraftRepository: MessageDraftRepository by lazy { kaliumUserGraph.userSessionMessageDraftRepository }
+    private val messageDraftRepository: MessageDraftRepository by lazy {
+        kaliumUserGraph.userSessionMessageDraftRepository
+    }
 
-    internal val slowSyncRepository: SlowSyncRepository by lazy { kaliumUserGraph.userSessionSlowSyncRepository }
-    internal val incrementalSyncRepository: IncrementalSyncRepository by lazy { kaliumUserGraph.userSessionIncrementalSyncRepository }
+    internal val slowSyncRepository: SlowSyncRepository by lazy {
+        kaliumUserGraph.userSessionSlowSyncRepository
+    }
+    internal val incrementalSyncRepository: IncrementalSyncRepository by lazy {
+        kaliumUserGraph.userSessionIncrementalSyncRepository
+    }
 
+    @Suppress("UnusedPrivateProperty") // Retain this original eager initialization; graph bindings now serve its reads.
     private val legalHoldSystemMessagesHandler = kaliumUserGraph.userSessionLegalHoldSystemMessagesHandler
 
-    private val legalHoldHandler by lazy { kaliumUserGraph.userSessionLegalHoldHandler }
+    private val legalHoldHandler by lazy {
+        kaliumUserGraph.userSessionLegalHoldHandler
+    }
 
     private val userRepository: UserRepository
         get() = kaliumUserGraph.userSessionUserRepository
@@ -1108,24 +1015,13 @@ public class UserSessionScope internal constructor(
     private val persistConversationsUseCase: PersistConversationsUseCase
         get() = kaliumUserGraph.userSessionPersistConversationsUseCase
 
-    private val persistConversationUseCase: PersistConversationUseCase
-        get() = kaliumUserGraph.userSessionPersistConversationUseCase
-
-    private val fetchMLSOneToOneConversationUseCase: FetchMLSOneToOneConversationUseCase
-        get() = kaliumUserGraph.userSessionFetchMLSOneToOneConversationUseCase
-
     public val fetchConversationUseCase: FetchConversationUseCase
         get() = kaliumUserGraph.userSessionFetchConversationUseCase
-
-    private val fetchConversationIfUnknownUseCase: FetchConversationIfUnknownUseCase
-        get() = kaliumUserGraph.userSessionFetchConversationIfUnknownUseCase
-
-    private val fetchConversationsUseCase: FetchConversationsUseCase
-        get() = kaliumUserGraph.userSessionFetchConversationsUseCase
 
     private val connectionRepository: ConnectionRepository
         get() = kaliumUserGraph.userSessionConnectionRepository
 
+    @Suppress("UnusedPrivateProperty") // Retain this original eager initialization; graph bindings now serve its reads.
     private val userSearchApiWrapper: UserSearchApiWrapper = kaliumUserGraph.userSessionUserSearchApiWrapper
 
     private val searchUserRepository: SearchUserRepository
@@ -1172,19 +1068,12 @@ public class UserSessionScope internal constructor(
     internal val persistMessage: PersistMessageUseCase
         get() = kaliumUserGraph.userSessionPersistMessage
 
-    private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
-        get() = kaliumUserGraph.userSessionAddSystemMessageToAllConversationsUseCase
-
-    private val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
-        get() = kaliumUserGraph.userSessionRestartSlowSyncProcessForRecoveryUseCase
-
-    private val callRepository: CallRepository by lazy { kaliumUserGraph.userSessionCallRepository }
+    private val callRepository: CallRepository by lazy {
+        kaliumUserGraph.userSessionCallRepository
+    }
 
     private val clientRemoteRepository: ClientRemoteRepository
         get() = kaliumUserGraph.userSessionClientRemoteRepository
-
-    private val clientRegistrationStorage: ClientRegistrationStorage
-        get() = kaliumUserGraph.userSessionClientRegistrationStorage
 
     internal val clientRepository: ClientRepository
         get() = kaliumUserGraph.userSessionClientRepository
@@ -1204,10 +1093,9 @@ public class UserSessionScope internal constructor(
     internal val cryptoTransactionProvider: CryptoTransactionProvider
         get() = kaliumUserGraph.userSessionCryptoTransactionProvider
 
-    private val eventProcessor: EventProcessor by lazy { kaliumUserGraph.userSessionEventProcessor }
-
-    private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider
-        get() = kaliumUserGraph.userSessionSlowSyncCriteriaProvider
+    private val eventProcessor: EventProcessor by lazy {
+        kaliumUserGraph.userSessionEventProcessor
+    }
 
     @Deprecated("Use syncStateObserver instead", ReplaceWith("syncStateObserver"))
     public val syncManager: SyncManager
@@ -1215,7 +1103,9 @@ public class UserSessionScope internal constructor(
 
     internal val syncStateObserver: Lazy<SyncStateObserver> = kaliumUserGraph.userSessionSyncStateObserver.value
 
-    private val syncExecutorImpl: SyncExecutorImpl by lazy { kaliumUserGraph.userSessionSyncExecutorImpl }
+    private val syncExecutorImpl: SyncExecutorImpl by lazy {
+        kaliumUserGraph.userSessionSyncExecutorImpl
+    }
 
     public val syncExecutor: SyncExecutor get() = kaliumUserGraph.userSessionSyncExecutor
 
@@ -1223,49 +1113,18 @@ public class UserSessionScope internal constructor(
         eventRepository.setUnprocessedEventsBatchLimit(limit)
     }
 
-    private val syncConversations: SyncConversationsUseCase
-        get() = kaliumUserGraph.userSessionSyncConversations
-
-    private val updateConversationProtocolUseCase: UpdateConversationProtocolUseCase
-        get() = kaliumUserGraph.userSessionUpdateConversationProtocolUseCase
-
-    private val syncConnections: SyncConnectionsUseCase
-        get() = kaliumUserGraph.userSessionSyncConnections
-
-    private val syncSelfUser: SyncSelfUserUseCase get() = kaliumUserGraph.userSessionSyncSelfUser
-    private val syncUserProperties: SyncUserPropertiesUseCase get() = kaliumUserGraph.userSessionSyncUserProperties
-    private val syncContacts: SyncContactsUseCase get() = kaliumUserGraph.userSessionSyncContacts
-
-    private val syncSelfTeamUseCase: SyncSelfTeamUseCase
-        get() = kaliumUserGraph.userSessionSyncSelfTeamUseCase
-
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
         get() = kaliumUserGraph.userSessionJoinExistingMLSConversationUseCase
 
     private val registerMLSClientUseCase: RegisterMLSClientUseCase
         get() = kaliumUserGraph.userSessionRegisterMLSClientUseCase
 
-    private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
-        get() = kaliumUserGraph.userSessionRecoverMLSConversationsUseCase
-
-    private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = kaliumUserGraph.userSessionJoinExistingMLSConversations
-
     public val recoverMLSConversationsForUser: RecoverMLSConversationsForUserUseCase
         get() = kaliumUserGraph.userSessionRecoverMLSConversationsForUser
 
-    private val joinSubconversationUseCase: JoinSubconversationUseCase
-        get() = kaliumUserGraph.userSessionJoinSubconversationUseCase
-
-    private val leaveSubconversationUseCase: LeaveSubconversationUseCase
-        get() = kaliumUserGraph.userSessionLeaveSubconversationUseCase
-
-    private val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver
-        get() = kaliumUserGraph.userSessionMlsOneOnOneConversationResolver
-
-    private val oneOnOneMigrator: OneOnOneMigrator
-        get() = kaliumUserGraph.userSessionOneOnOneMigrator
-    private val pendingActionsRepository: PendingActionsRepository by lazy { kaliumUserGraph.userSessionPendingActionsRepository }
+    private val pendingActionsRepository: PendingActionsRepository by lazy {
+        kaliumUserGraph.userSessionPendingActionsRepository
+    }
     private val oneOnOneResolver: OneOnOneResolver
         get() = kaliumUserGraph.userSessionOneOnOneResolver
 
@@ -1281,14 +1140,9 @@ public class UserSessionScope internal constructor(
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
         get() = kaliumUserGraph.userSessionUpdateSupportedProtocolsAndResolveOneOnOnes
 
-    private val slowSyncWorker: SlowSyncWorker by lazy { kaliumUserGraph.userSessionSlowSyncWorker }
-
-    private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler
-        get() = kaliumUserGraph.userSessionSlowSyncRecoveryHandler
-
+    @Suppress("UnusedPrivateProperty") // Retain this original eager initialization; graph bindings now serve its reads.
     private val syncMigrationStepsProvider: () -> SyncMigrationStepsProvider = kaliumUserGraph.userSessionSyncMigrationStepsProvider.value
 
-    private val slowSyncManager: SlowSyncManager by lazy { kaliumUserGraph.userSessionSlowSyncManager }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
         kaliumUserGraph.userSessionMlsConversationsRecoveryManager
     }
@@ -1335,33 +1189,23 @@ public class UserSessionScope internal constructor(
         }
     }
 
-    private val incrementalSyncWorker: IncrementalSyncWorker by lazy { kaliumUserGraph.userSessionIncrementalSyncWorker }
-
     internal fun createIncrementalSyncWorker(eventGatherer: EventGatherer = this.eventGatherer): IncrementalSyncWorker =
         kaliumUserGraph.userSessionIncrementalWorkerFactory.create(eventGatherer)
-    private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
-        get() = kaliumUserGraph.userSessionIncrementalSyncRecoveryHandler
 
-    private val incrementalSyncManager by lazy { kaliumUserGraph.userSessionIncrementalSyncManager }
-
-    private val localEventManager by lazy { kaliumUserGraph.userSessionLocalEventManager }
+    private val localEventManager by lazy {
+        kaliumUserGraph.userSessionLocalEventManager
+    }
 
     private val upgradeCurrentSessionUseCase
         get() = kaliumUserGraph.userSessionUpgradeCurrentSessionUseCase
 
-    private val sessionRefreshSuggestedEventHandler: SessionRefreshSuggestedEventHandler
-        get() = kaliumUserGraph.userSessionSessionRefreshSuggestedEventHandler
-
-    @Suppress("MagicNumber")
+    @Suppress("UnusedPrivateProperty") // Retain this original eager initialization; graph bindings now serve its reads.
     private val apiMigrations = kaliumUserGraph.userSessionApiMigrations
 
     private val apiMigrationManager
         get() = kaliumUserGraph.userSessionApiMigrationManager
 
     internal val eventRepository: EventRepository = kaliumUserGraph.userSessionEventRepository
-
-    private val mlsMigrator: MLSMigrator
-        get() = kaliumUserGraph.userSessionMlsMigrator
 
     internal val keyPackageManager: KeyPackageManager = kaliumUserGraph.userSessionKeyPackageManager
 
@@ -1371,9 +1215,6 @@ public class UserSessionScope internal constructor(
     internal val mlsClientManager: MLSClientManager
         get() = kaliumUserGraph.userSessionMlsClientManager
 
-    private val mlsMigrationWorker
-        get() = kaliumUserGraph.userSessionMlsMigrationWorker
-
     internal val mlsMigrationManager: MLSMigrationManager
         get() = kaliumUserGraph.userSessionMlsMigrationManager
 
@@ -1381,10 +1222,6 @@ public class UserSessionScope internal constructor(
         get() = kaliumUserGraph.userSessionMlsPublicKeysRepository
 
     private val videoStateChecker: VideoStateChecker get() = kaliumUserGraph.userSessionVideoStateChecker
-
-    private val pendingSubconversationProposals: PendingSubconversationProposals by lazy {
-        kaliumUserGraph.userSessionPendingSubconversationProposals
-    }
 
     private val pendingProposalScheduler: PendingProposalScheduler =
         kaliumUserGraph.userSessionPendingProposalScheduler
@@ -1411,8 +1248,6 @@ public class UserSessionScope internal constructor(
         ).also { it.attachSignalJournal(CallSignalJournal(userStorage.database)) }
     }
 
-    private val endCallOnMLSReset: EndCallOnMLSResetUseCase by lazy { kaliumUserGraph.userSessionEndCallOnMLSReset }
-
     internal val callBackgroundManager: CallBackgroundManager = kaliumUserGraph.userSessionCallBackgroundManager
 
     private val flowManagerService by lazy {
@@ -1429,113 +1264,36 @@ public class UserSessionScope internal constructor(
     private val epochInfoUpdater: EpochInfoUpdater
         get() = kaliumUserGraph.userSessionEpochInfoUpdater
 
-    private val getCallConversationType: GetCallConversationTypeProvider by lazy { kaliumUserGraph.userSessionGetCallConversationType }
-
-    private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>
-        get() = kaliumUserGraph.userSessionUpdateConversationClientsForCurrentCall.value
+    private val getCallConversationType: GetCallConversationTypeProvider by lazy {
+        kaliumUserGraph.userSessionGetCallConversationType
+    }
 
     private val reactionRepository = kaliumUserGraph.userSessionReactionRepository
     private val receiptRepository = kaliumUserGraph.userSessionReceiptRepository
-    private val persistReaction: PersistReactionUseCase
-        get() = kaliumUserGraph.userSessionPersistReaction
-
-    private val mlsUnpacker: MLSMessageUnpacker
-        get() = kaliumUserGraph.userSessionMlsUnpacker
-
-    private val proteusUnpacker: ProteusMessageUnpacker
-        get() = kaliumUserGraph.userSessionProteusUnpacker
-
-    private val messageEncoder get() = kaliumUserGraph.userSessionMessageEncoder
 
     private val systemMessageInserter get() = kaliumUserGraph.userSessionSystemMessageInserter
 
-    private val receiptMessageHandler
-        get() = kaliumUserGraph.userSessionReceiptMessageHandler
-
-    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
-        get() = kaliumUserGraph.userSessionIsMessageSentInSelfConversation
-
-    private val assetMessageHandler: AssetMessageHandler
-        get() = kaliumUserGraph.userSessionAssetMessageHandler
-
-    private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler
-        get() = kaliumUserGraph.userSessionButtonActionConfirmationHandler
-
-    private val dataTransferEventHandler: DataTransferEventHandler
-        get() = kaliumUserGraph.userSessionDataTransferEventHandler
-
-    private val inCallReactionsRepository: InCallReactionsRepository by lazy { kaliumUserGraph.userSessionInCallReactionsRepository }
+    private val inCallReactionsRepository: InCallReactionsRepository by lazy {
+        kaliumUserGraph.userSessionInCallReactionsRepository
+    }
 
     private val callModerationActionsRepository: CallModerationActionsRepository by lazy {
         kaliumUserGraph.userSessionCallModerationActionsRepository
     }
 
-    private val buttonActionHandler: ButtonActionHandler by lazy { kaliumUserGraph.userSessionButtonActionHandler }
-
-    private val callingMessageHandler: CallingMessageHandler by lazy { kaliumUserGraph.userSessionCallingMessageHandler }
-
-    private val applicationMessageHandler: ApplicationMessageHandler
-        get() = kaliumUserGraph.userSessionApplicationMessageHandler
-
-    private val linkPreviewsResolver: LinkPreviewImagesResolver by lazy { kaliumUserGraph.userSessionLinkPreviewsResolver }
-
     private val staleEpochVerifier: StaleEpochVerifier
         get() = kaliumUserGraph.userSessionStaleEpochVerifier
-
-    private val newMessageHandler: NewMessageEventHandler
-        get() = kaliumUserGraph.userSessionNewMessageHandler
 
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
         get() = kaliumUserGraph.userSessionNewGroupConversationSystemMessagesCreator
 
-    private val newConversationHandler: NewConversationEventHandler
-        get() = kaliumUserGraph.userSessionNewConversationHandler
-    private val deletedConversationHandler: DeletedConversationEventHandler
-        get() = kaliumUserGraph.userSessionDeletedConversationHandler
-
-    private val deleteConversationReminderEventHandler: DeleteConversationReminderEventHandler
-        get() = kaliumUserGraph.userSessionDeleteConversationReminderEventHandler
-
     private val memberJoinHandler: MemberJoinEventHandler
         get() = kaliumUserGraph.userSessionMemberJoinHandler
-    private val memberLeaveHandler: MemberLeaveEventHandler
-        get() = kaliumUserGraph.userSessionMemberLeaveHandler
-    private val memberChangeHandler: MemberChangeEventHandler
-        get() = kaliumUserGraph.userSessionMemberChangeHandler
-    private val mlsWelcomeHandler: MLSWelcomeEventHandler
-        get() = kaliumUserGraph.userSessionMlsWelcomeHandler
 
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = kaliumUserGraph.userSessionRenamedConversationHandler
 
-    private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler
-        get() = kaliumUserGraph.userSessionReceiptModeUpdateEventHandler
-
-    private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler
-        get() = kaliumUserGraph.userSessionConversationMessageTimerEventHandler
-
-    private val conversationCodeUpdateHandler: CodeUpdatedHandler
-        get() = kaliumUserGraph.userSessionConversationCodeUpdateHandler
-
-    private val conversationCodeDeletedHandler: CodeDeletedHandler
-        get() = kaliumUserGraph.userSessionConversationCodeDeletedHandler
-
-    private val typingIndicatorHandler: TypingIndicatorHandler
-        get() = kaliumUserGraph.userSessionTypingIndicatorHandler
-
-    private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
-        get() = kaliumUserGraph.userSessionProtocolUpdateEventHandler
-
-    private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler
-        get() = kaliumUserGraph.userSessionChannelAddPermissionUpdateEventHandler
-
-    private val conversationAccessUpdateEventHandler: AccessUpdateEventHandler
-        get() = kaliumUserGraph.userSessionConversationAccessUpdateEventHandler
-
-    private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
-        get() = kaliumUserGraph.userSessionMlsResetConversationEventHandler
-
-    private val conversationEventReceiver: ConversationEventReceiver by lazy { kaliumUserGraph.userSessionConversationEventReceiver }
+    @Suppress("UnusedPrivateProperty") // Retain this original eager initialization; graph bindings now serve its reads.
     private val legalHoldRequestHandler = kaliumUserGraph.userSessionLegalHoldRequestHandler
 
     public val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
@@ -1570,110 +1328,21 @@ public class UserSessionScope internal constructor(
     public val approveLegalHoldRequest: ApproveLegalHoldRequestUseCase
         get() = kaliumUserGraph.userSessionApproveLegalHoldRequest
 
-    private val fetchUsersClientsFromRemote: FetchUsersClientsFromRemoteUseCase
-        get() = kaliumUserGraph.userSessionFetchUsersClientsFromRemote
-
     internal val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = kaliumUserGraph.userSessionMembersHavingLegalHoldClient
-
-    private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase
-        get() = kaliumUserGraph.userSessionFetchLegalHoldForSelfUserFromRemoteUseCase
-
-    private val userEventReceiver: UserEventReceiver
-        get() = kaliumUserGraph.userSessionUserEventReceiver
-
-    private val userPropertiesEventReceiver: UserPropertiesEventReceiver
-        get() = kaliumUserGraph.userSessionUserPropertiesEventReceiver
-
-    private val federationEventReceiver: FederationEventReceiver
-        get() = kaliumUserGraph.userSessionFederationEventReceiver
-
-    private val teamEventReceiver: TeamEventReceiver
-        get() = kaliumUserGraph.userSessionTeamEventReceiver
-
-    private val guestRoomConfigHandler
-        get() = kaliumUserGraph.userSessionGuestRoomConfigHandler
-
-    private val fileSharingConfigHandler
-        get() = kaliumUserGraph.userSessionFileSharingConfigHandler
-
-    private val mlsConfigHandler
-        get() = kaliumUserGraph.userSessionMlsConfigHandler
-
-    private val mlsMigrationConfigHandler
-        get() = kaliumUserGraph.userSessionMlsMigrationConfigHandler
-
-    private val classifiedDomainsConfigHandler
-        get() = kaliumUserGraph.userSessionClassifiedDomainsConfigHandler
-
-    private val conferenceCallingConfigHandler
-        get() = kaliumUserGraph.userSessionConferenceCallingConfigHandler
-
-    private val consumableNotificationsConfigHandler
-        get() = kaliumUserGraph.userSessionConsumableNotificationsConfigHandler
-
-    private val appsFeatureHandler
-        get() = kaliumUserGraph.userSessionAppsFeatureHandler
-
-    private val secondFactorPasswordChallengeConfigHandler
-        get() = kaliumUserGraph.userSessionSecondFactorPasswordChallengeConfigHandler
-
-    private val selfDeletingMessagesConfigHandler
-        get() = kaliumUserGraph.userSessionSelfDeletingMessagesConfigHandler
-
-    private val e2eiConfigHandler
-        get() = kaliumUserGraph.userSessionE2eiConfigHandler
-
-    private val appLockConfigHandler
-        get() = kaliumUserGraph.userSessionAppLockConfigHandler
-
-    private val allowedGlobalOperationsHandler
-        get() = kaliumUserGraph.userSessionAllowedGlobalOperationsHandler
-
-    private val cellsConfigHandler
-        get() = kaliumUserGraph.userSessionCellsConfigHandler
-
-    private val enableUserProfileQRCodeConfigHandler
-        get() = kaliumUserGraph.userSessionEnableUserProfileQRCodeConfigHandler
-
-    private val assetAuditLogConfigHandler
-        get() = kaliumUserGraph.userSessionAssetAuditLogConfigHandler
-
-    private val preventAdminlessGroupsConfigHandler
-        get() = kaliumUserGraph.userSessionPreventAdminlessGroupsConfigHandler
-
-    private val meetingsConfigHandler
-        get() = kaliumUserGraph.userSessionMeetingsConfigHandler
-
-    private val featureConfigEventReceiver: FeatureConfigEventReceiver
-        get() = kaliumUserGraph.userSessionFeatureConfigEventReceiver
-
-    private val meetingCreateEventHandler: MeetingCreateEventHandler
-        get() = kaliumUserGraph.userSessionMeetingCreateEventHandler
-
-    private val meetingDeleteEventHandler: MeetingDeleteEventHandler
-        get() = kaliumUserGraph.userSessionMeetingDeleteEventHandler
-
-    private val meetingUpdateEventHandler: MeetingUpdateEventHandler
-        get() = kaliumUserGraph.userSessionMeetingUpdateEventHandler
-
-    private val meetingMemberAddEventHandler: MeetingMemberAddEventHandler
-        get() = kaliumUserGraph.userSessionMeetingMemberAddEventHandler
-
-    private val meetingEventReceiver: MeetingEventReceiver
-        get() = kaliumUserGraph.userSessionMeetingEventReceiver
 
     private val preKeyRepository: PreKeyRepository
         get() = kaliumUserGraph.userSessionPreKeyRepository
     private val certificateRevocationListRepository: CertificateRevocationListRepository
         get() = kaliumUserGraph.userSessionCertificateRevocationListRepository
 
-    private val proteusPreKeyRefiller: ProteusPreKeyRefiller
-        get() = kaliumUserGraph.userSessionProteusPreKeyRefiller
+    internal val userConfigSyncWorker: UserConfigSyncWorker by lazy {
+        kaliumUserGraph.userSessionUserConfigSyncWorker
+    }
 
-    internal val userConfigSyncWorker: UserConfigSyncWorker by lazy { kaliumUserGraph.userSessionUserConfigSyncWorker }
-
-    public val sendPendingMessages: SendPendingMessagesUseCase by lazy { kaliumUserGraph.userSessionSendPendingMessages }
+    public val sendPendingMessages: SendPendingMessagesUseCase by lazy {
+        kaliumUserGraph.userSessionSendPendingMessages
+    }
 
     internal val meetingOccurrencesSyncWorker: MeetingOccurrencesSyncWorker = kaliumUserGraph.userSessionMeetingOccurrencesSyncWorker
 
@@ -1693,15 +1362,12 @@ public class UserSessionScope internal constructor(
     public val observeSyncState: ObserveSyncStateUseCase
         get() = kaliumUserGraph.userSessionObserveSyncState
 
-    private val avsSyncStateReporter: AvsSyncStateReporter by lazy { kaliumUserGraph.userSessionAvsSyncStateReporter }
+    private val avsSyncStateReporter: AvsSyncStateReporter by lazy {
+        kaliumUserGraph.userSessionAvsSyncStateReporter
+    }
 
     private val protoContentMapper: ProtoContentMapper
         get() = kaliumUserGraph.userSessionProtoContentMapper
-
-    private val oneOnOneProtocolSelector: OneOnOneProtocolSelector
-        get() = kaliumUserGraph.userSessionOneOnOneProtocolSelector
-
-    private val acmeCertificatesSyncUseCase: ACMECertificatesSyncUseCase by lazy { kaliumUserGraph.userSessionAcmeCertificatesSyncUseCase }
 
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
         get() = kaliumUserGraph.userSessionRefreshUsersWithoutMetadata
@@ -1794,7 +1460,9 @@ public class UserSessionScope internal constructor(
                 get() = KaliumDispatcherImpl
         }
 
-    public val conversations: ConversationScope by lazy { ConversationScope(kaliumUserGraph) }
+    public val conversations: ConversationScope by lazy {
+        ConversationScope(kaliumUserGraph)
+    }
 
     public val channels: ChannelsScope by lazy {
         ChannelsScope(kaliumUserGraph)
@@ -2165,7 +1833,9 @@ public class UserSessionScope internal constructor(
                 get() = this@UserSessionScope.userStorage.database.messageTimelineDAO
         }
 
-    public val messages: MessageScope by lazy { MessageScope(kaliumUserGraph) }
+    public val messages: MessageScope by lazy {
+        MessageScope(kaliumUserGraph)
+    }
 
     public val users: UserScope by lazy {
         UserScope(kaliumUserGraph)
@@ -2174,10 +1844,6 @@ public class UserSessionScope internal constructor(
     public val search: SearchScope by lazy {
         SearchScope(kaliumUserGraph)
     }
-
-    private val clearUserData: ClearUserDataUseCase get() = kaliumUserGraph.userSessionClearUserData
-
-    private val validateAssetMimeType: ValidateAssetFileTypeUseCase get() = kaliumUserGraph.userSessionValidateAssetMimeType
 
     public val logout: LogoutUseCase
         get() = kaliumUserGraph.userSessionLogout
@@ -2204,10 +1870,14 @@ public class UserSessionScope internal constructor(
         get() = kaliumUserGraph.userSessionObserveFileSharingStatus
 
     public val observeShouldNotifyForRevokedCertificate: ObserveShouldNotifyForRevokedCertificateUseCase
-            by lazy { kaliumUserGraph.userSessionObserveShouldNotifyForRevokedCertificate }
+            by lazy {
+        kaliumUserGraph.userSessionObserveShouldNotifyForRevokedCertificate
+    }
 
     public val markNotifyForRevokedCertificateAsNotified: MarkNotifyForRevokedCertificateAsNotifiedUseCase
-            by lazy { kaliumUserGraph.userSessionMarkNotifyForRevokedCertificateAsNotified }
+            by lazy {
+        kaliumUserGraph.userSessionMarkNotifyForRevokedCertificateAsNotified
+    }
 
     public val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = kaliumUserGraph.userSessionMarkGuestLinkFeatureFlagAsNotChanged
@@ -2360,7 +2030,9 @@ public class UserSessionScope internal constructor(
     public val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = kaliumUserGraph.userSessionFetchConversationMLSVerificationStatus
 
-    public val kaliumFileSystem: KaliumFileSystem by lazy { kaliumUserGraph.userSessionKaliumFileSystem }
+    public val kaliumFileSystem: KaliumFileSystem by lazy {
+        kaliumUserGraph.userSessionKaliumFileSystem
+    }
 
     public val checkCrlRevocationList: CheckCrlRevocationListUseCase
         get() = kaliumUserGraph.userSessionCheckCrlRevocationList
@@ -2376,19 +2048,12 @@ public class UserSessionScope internal constructor(
 
     private fun createPushTokenUpdater() = kaliumUserGraph.userSessionPushTokenUpdater
 
-    private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase by lazy {
-        kaliumUserGraph.userSessionFetchMLSVerificationStatusUseCase
-    }
-
     private val observeE2EIConversationsVerificationStatuses: ObserveE2EIConversationsVerificationStatusesUseCase by lazy {
         kaliumUserGraph.userSessionObserveE2EIConversationsVerificationStatuses
     }
 
     private val typingIndicatorSyncManager: TypingIndicatorSyncManager =
         kaliumUserGraph.userSessionTypingIndicatorSyncManager
-
-    private val analyticsRepository: AnalyticsRepository
-        get() = kaliumUserGraph.userSessionAnalyticsRepository
 
     public val getTeamUrlUseCase: GetTeamUrlUseCase
         get() = kaliumUserGraph.userSessionGetTeamUrlUseCase

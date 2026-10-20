@@ -254,9 +254,11 @@ internal interface UserSessionBindings3 {
         @UserSessionBinding("syncStateObserverSyncStateObserverImpl")
         syncStateObserverSyncStateObserverImpl: Provider<SyncStateObserverImpl>,
     ): UserSessionValue<Lazy<SyncStateObserver>> =
-        UserSessionValue(lazy {
-            syncStateObserverSyncStateObserverImpl()
-        })
+        UserSessionValue(
+            lazy {
+                syncStateObserverSyncStateObserverImpl()
+            }
+        )
 
     @Provides
     @UserSessionBinding("syncExecutorImpl")
