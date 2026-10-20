@@ -85,5 +85,5 @@ internal fun UserSessionScope(
         enableDurableMLSReceiveRecovery = true,
         resourceAccess = platformUserStorageProperties.accountResourceAccess,
         coreCryptoCentralFactory = coreCryptoCentralFactory,
-    ).also { it.startRuntime() }
+    )
 }

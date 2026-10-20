@@ -59,14 +59,20 @@ public interface KaliumConsumer : AutoCloseable {
      * releases the unpublished value before construction is considered drained. If [create] throws,
      * it is responsible for any partially constructed value; the caller must close this consumer.
      *
-     * [ownedJob] may expose the constructed value's own job, never a user/global or caller job. It is
-     * cancelled on consumer closure and included in [closeAndJoin], including its children's unwind.
-     * [onDiscard] must release only creator-owned resources and is also called if [ownedJob] throws.
+     * The published creator owns this consumer, not the other way round. Its UI/global/terminal work
+     * is not consumer-owned: logout may await consumer drain from that creator's coroutine scope.
+     * Resource work through the guarded use cases is admitted and drained independently.
+     *
+     * [jobOnDiscard] looks up only the constructed value's own job, never a user/global or caller job.
+     * The lookup runs before publication, but the job is retained, cancelled and joined ONLY if the
+     * value is rejected. This includes non-cancellable children even if [onDiscard] throws. An accepted
+     * value's job is never retained or cancelled by this consumer. [onDiscard] must release only the
+     * unpublished value's resources and is also called if [jobOnDiscard] throws.
      */
     public fun <T> assemble(
         create: () -> T,
         onDiscard: (T) -> Unit,
-        ownedJob: (T) -> Job? = { null },
+        jobOnDiscard: (T) -> Job? = { null },
     ): T
 
     public override fun close()
@@ -140,8 +146,8 @@ private class OwnedKaliumConsumer(
     override val getMessageById: GetMessageByIdUseCase
         get() = work.resolve { graph.getMessageById }
 
-    override fun <T> assemble(create: () -> T, onDiscard: (T) -> Unit, ownedJob: (T) -> Job?): T =
-        work.assemble(create, onDiscard, ownedJob)
+    override fun <T> assemble(create: () -> T, onDiscard: (T) -> Unit, jobOnDiscard: (T) -> Job?): T =
+        work.assemble(create, onDiscard, jobOnDiscard)
 
     override fun close() = work.close()
 
@@ -164,7 +170,7 @@ internal class ConsumerWork(
     private val lock = Lock()
     private var open = true
     private val operations = mutableSetOf<CompletableJob>()
-    private val ownedJobs = mutableSetOf<Job>()
+    private val discardedJobs = mutableSetOf<Job>()
     private val drained = CompletableDeferred<Unit>()
 
     fun <T> resolve(block: () -> T): T {
@@ -179,15 +185,23 @@ internal class ConsumerWork(
     }
 
     @Suppress("TooGenericExceptionCaught", "NestedBlockDepth") // Preserve the original failure even if discard also fails.
-    fun <T> assemble(create: () -> T, onDiscard: (T) -> Unit, ownedJob: (T) -> Job?): T {
+    fun <T> assemble(create: () -> T, onDiscard: (T) -> Unit, jobOnDiscard: (T) -> Job?): T {
         val operation = admit()
         try {
             val value = create()
+            var unpublishedJob: Job? = null
             try {
-                ownedJob(value)?.let(::own)
+                unpublishedJob = jobOnDiscard(value)
                 checkOpen()
                 return value
             } catch (failure: Throwable) {
+                // Keep assembly admitted until discard and job registration finish. Once published,
+                // the creator keeps its own job; retaining it here would make terminal logout self-wait.
+                try {
+                    unpublishedJob?.let(::drainDiscardedJob)
+                } catch (cleanupFailure: Throwable) {
+                    if (cleanupFailure !== failure) failure.addSuppressed(cleanupFailure)
+                }
                 try {
                     onDiscard(value)
                 } catch (cleanupFailure: Throwable) {
@@ -219,7 +233,7 @@ internal class ConsumerWork(
     fun close() {
         val outgoing = lock.withLock {
             open = false
-            operations.toList() + ownedJobs.toList()
+            operations.toList() + discardedJobs.toList()
         }
         outgoing.forEach { it.cancel(CancellationException("Kalium consumer closed")) }
         completeIfDrained()
@@ -247,20 +261,17 @@ internal class ConsumerWork(
         completeIfDrained()
     }
 
-    private fun own(job: Job) {
-        val cancel = lock.withLock {
-            ownedJobs.add(job)
-            !open
-        }
+    private fun drainDiscardedJob(job: Job) {
+        lock.withLock { discardedJobs.add(job) }
         job.invokeOnCompletion {
-            lock.withLock { ownedJobs.remove(job) }
+            lock.withLock { discardedJobs.remove(job) }
             completeIfDrained()
         }
-        if (cancel) job.cancel(CancellationException("Kalium consumer closed during construction"))
+        job.cancel(CancellationException("Kalium consumer rejected construction"))
     }
 
     private fun completeIfDrained() {
-        val complete = lock.withLock { !open && operations.isEmpty() && ownedJobs.isEmpty() }
+        val complete = lock.withLock { !open && operations.isEmpty() && discardedJobs.isEmpty() }
         if (complete && drained.complete(Unit)) onDrained(this)
     }
 }

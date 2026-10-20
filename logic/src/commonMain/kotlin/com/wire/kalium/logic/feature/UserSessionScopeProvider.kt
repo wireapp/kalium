@@ -30,6 +30,7 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.job
 
 internal interface UserSessionScopeProvider {
     suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean = false)
@@ -62,14 +63,20 @@ internal abstract class UserSessionScopeProviderCommon(
 
     override suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit> = Either.Right(Unit)
 
-    private val sessions = UserSessionRegistry<UserSessionScope> { it.invalidateConsumers() }
+    private val sessions = UserSessionRegistry<UserSessionScope>(
+        invalidate = { it.invalidateConsumers() },
+        cancelFailedStartup = { it.coroutineContext.job.cancel() },
+    )
 
     override suspend fun open(userId: UserId): UserSessionScope = getOrCreate(userId)
 
     override suspend fun <T> open(userId: UserId, action: UserSessionScope.() -> T): T = open(userId).action()
 
     override fun getOrCreate(userId: UserId): UserSessionScope =
-        sessions.account(userId).getOrCreate { create(userId) }
+        sessions.account(userId).getOrCreate(create = { create(userId) }, start = ::startRuntime)
+
+    /** Called only after the registry retains the private owner, before public session admission. */
+    internal open fun startRuntime(scope: UserSessionScope) = scope.startRuntime()
 
     override fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T = getOrCreate(userId).action()
 
@@ -83,7 +90,7 @@ internal abstract class UserSessionScopeProviderCommon(
         val userId = session.accountTokens.userId
         val account = sessions.account(userId)
         return account.withLifecycle {
-            stopAccountWork(account.close())
+            stopAccountWork(account.close(), account.hasFailedStartup())
             removeResources(userId)
             sessionRepository.storeSession(session).also {
                 if (it is Either.Right) account.release()
@@ -94,7 +101,7 @@ internal abstract class UserSessionScopeProviderCommon(
     override suspend fun deleteSession(userId: UserId, sessionRepository: SessionRepository): Either<StorageFailure, Unit> {
         val account = sessions.account(userId)
         return account.withLifecycle {
-            stopAccountWork(account.close())
+            stopAccountWork(account.close(), account.hasFailedStartup())
             sessionRepository.deleteSession(userId).also {
                 if (it is Either.Right) {
                     removeResources(userId)
@@ -116,7 +123,7 @@ internal abstract class UserSessionScopeProviderCommon(
             if (!account.isCurrent(originatingScope)) return@withLifecycle false
             val scope = account.close()
             prepare()
-            stopAccountWork(scope)
+            stopAccountWork(scope, account.hasFailedStartup())
             clearLocalData()
             removeResources(userId)
             account.release()
@@ -124,10 +131,13 @@ internal abstract class UserSessionScopeProviderCommon(
         }
     }
 
-    private suspend fun stopAccountWork(scope: UserSessionScope?) {
+    private suspend fun stopAccountWork(scope: UserSessionScope?, failedStartup: Boolean) {
         try {
             scope?.stopAccountWork()
         } catch (timeout: TimeoutCancellationException) {
+            // A partially started runtime must complete every shutdown step before resource removal.
+            // Retain its owner on timeout, including initialized Cells/calling work still to drain.
+            if (failedStartup) throw timeout
             // Don't let a stuck account worker block logout.
             kaliumLogger.w(
                 "Account work did not stop within ${LogoutUseCaseImpl.SCOPE_DRAIN_TIMEOUT_MS}ms; continuing consumer drain",
@@ -143,7 +153,7 @@ internal abstract class UserSessionScopeProviderCommon(
     override suspend fun delete(userId: UserId) {
         val account = sessions.account(userId)
         account.withLifecycle {
-            stopAccountWork(account.close())
+            stopAccountWork(account.close(), account.hasFailedStartup())
             removeResources(userId)
             account.release()
         }

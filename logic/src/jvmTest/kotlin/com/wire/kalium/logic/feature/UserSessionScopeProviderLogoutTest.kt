@@ -33,17 +33,23 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Files
@@ -52,6 +58,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -64,6 +71,159 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class UserSessionScopeProviderLogoutTest {
+
+    @Test
+    fun startupWorkerLogoutRecognizesPrivateOwnerAndPreventsOutgoingPublication() = runTest {
+        val userId = UserId("startup-logout", "example.com")
+        withAccounts(userId) { logic, network ->
+            val starting = CompletableDeferred<UserSessionScope>()
+            val requested = CompletableDeferred<Deferred<Boolean>>()
+            val finishStartup = CountDownLatch(1)
+            var firstStartup = true
+            var prepared = false
+            var cleared = false
+            var removed = false
+            lateinit var provider: UserSessionScopeProviderCommon
+            provider = commonProvider(logic, startScope = { scope ->
+                scope.startRuntime()
+                if (firstStartup) {
+                    firstStartup = false
+                    starting.complete(scope)
+                    scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                        // Production logout also leaves the session worker for the global owner:
+                        // cleanup cancels/joins the originating session, including this worker.
+                        requested.complete(logic.getGlobalScope().async(start = CoroutineStart.UNDISPATCHED) {
+                            provider.logout(userId, scope, prepare = { prepared = true }, clearLocalData = { cleared = true })
+                        })
+                    }
+                    check(finishStartup.await(30, TimeUnit.SECONDS))
+                }
+            }, removeNetwork = {
+                removed = true
+                network.remove(it.toApi())
+            })
+            val thread = Executors.newSingleThreadExecutor()
+            try {
+                val creation = thread.submit(Callable { runCatching { provider.getOrCreate(userId) } })
+                val outgoing = starting.await()
+                val logout = requested.await()
+                assertNull(provider.get(userId))
+                assertFalse(logout.isCompleted)
+                assertFalse(prepared)
+                assertFalse(removed)
+                assertFailsWith<IllegalStateException> { provider.getOrCreate(userId) }
+                finishStartup.countDown()
+                assertIs<IllegalStateException>(creation.get(30, TimeUnit.SECONDS).exceptionOrNull())
+                assertTrue(logout.await())
+                assertTrue(prepared)
+                assertTrue(cleared)
+                assertTrue(removed)
+                assertTrue(outgoing.coroutineContext.job.isCompleted)
+                assertNull(provider.get(userId))
+                val reopened = provider.getOrCreate(userId)
+                assertNotSame(outgoing, reopened)
+                assertFalse(provider.logout(userId, outgoing, prepare = { error("Stale startup preparation") }, clearLocalData = {
+                    error("Stale startup local data removal")
+                }))
+                assertSame(reopened, provider.get(userId))
+                assertTrue(reopened.coroutineContext.job.isActive)
+            } finally {
+                finishStartup.countDown()
+                thread.shutdownNow()
+                provider.delete(userId)
+            }
+        }
+    }
+
+    @Test
+    fun failedSynchronousStartupRetainsWorkerAndProvidersUntilExplicitCleanupDrains() = runTest {
+        checkFailedStartupCleanup(IllegalStateException("Synchronous startup failed after launching workers"))
+    }
+
+    @Test
+    fun cancelledSynchronousStartupRetainsWorkerAndProvidersUntilExplicitCleanupDrains() = runTest {
+        checkFailedStartupCleanup(CancellationException("Synchronous startup was cancelled after launching workers"))
+    }
+
+    private suspend fun TestScope.checkFailedStartupCleanup(failure: Throwable) {
+        val userId = UserId("failed-startup", "example.com")
+        withAccounts(userId) { logic, network ->
+            val starting = CompletableDeferred<UserSessionScope>()
+            val startedWorker = CompletableDeferred<Job>()
+            val unwinding = CompletableDeferred<Unit>()
+            val finishUnwind = CompletableDeferred<Unit>()
+            var starts = 0
+            var removed = false
+            val provider = commonProvider(logic, startScope = { scope ->
+                scope.startRuntime()
+                starts++
+                if (starts == 1) {
+                    starting.complete(scope)
+                    startedWorker.complete(scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                        try {
+                            awaitCancellation()
+                        } finally {
+                            withContext(NonCancellable) {
+                                unwinding.complete(Unit)
+                                finishUnwind.await()
+                            }
+                        }
+                    })
+                    throw failure
+                }
+            }, removeNetwork = {
+                if (startedWorker.isCompleted) assertTrue(startedWorker.await().isCompleted)
+                removed = true
+                network.remove(it.toApi())
+            })
+            try {
+                assertSame(failure, runCatching { provider.getOrCreate(userId) }.exceptionOrNull())
+                val outgoing = starting.await()
+                val worker = startedWorker.await()
+                unwinding.await()
+                val storage = assertNotNull(logic.userStorageProvider.get(userId))
+                val apis = assertNotNull(network.get(userId.toApi()))
+                assertFalse(outgoing.coroutineContext.job.isActive)
+                assertFalse(outgoing.coroutineContext.job.isCompleted)
+                assertNull(provider.get(userId))
+                assertFailsWith<IllegalStateException> { outgoing.createConsumer() }
+                assertFailsWith<IllegalStateException> { provider.getOrCreate(userId) }
+                val timedOutDeletion = async { runCatching { provider.delete(userId) } }
+                advanceTimeBy(3_001)
+                runCurrent()
+                assertIs<TimeoutCancellationException>(timedOutDeletion.await().exceptionOrNull())
+                assertFalse(removed)
+                assertSame(storage, logic.userStorageProvider.get(userId))
+                assertSame(apis, network.get(userId.toApi()))
+                // A cancelled cleanup keeps the same private owner and cannot admit another startup.
+                val deletion = async(start = CoroutineStart.UNDISPATCHED) { provider.delete(userId) }
+                deletion.cancelAndJoin()
+                assertNull(provider.get(userId))
+                assertFailsWith<IllegalStateException> { provider.getOrCreate(userId) }
+                assertEquals(1, starts)
+                assertSame(storage, logic.userStorageProvider.get(userId))
+                assertFalse(worker.isCompleted)
+                finishUnwind.complete(Unit)
+                // Other real Default-dispatcher startup jobs also need wall-clock time to unwind;
+                // virtual time is used only for the deliberately blocked timeout assertion above.
+                withContext(Dispatchers.Default) {
+                    worker.join()
+                    provider.delete(userId)
+                }
+                assertTrue(removed)
+                assertTrue(outgoing.coroutineContext.job.isCompleted)
+                assertNull(logic.userStorageProvider.get(userId))
+                assertNull(network.get(userId.toApi()))
+                val reopened = provider.getOrCreate(userId)
+                assertNotSame(outgoing, reopened)
+                assertEquals(2, starts)
+                assertSame(reopened, provider.get(userId))
+            } finally {
+                finishUnwind.complete(Unit)
+                withContext(NonCancellable + Dispatchers.Default) { provider.delete(userId) }
+            }
+        }
+    }
 
     @Test
     fun consumerAssemblyStillDrainsBeforeProviderRemovalAfterTheLegacyTimeout() = runTest {
@@ -145,21 +305,37 @@ class UserSessionScopeProviderLogoutTest {
     @Test
     fun concurrentFirstResolutionReturnsOneScope() = runTest {
         val userId = UserId("concurrent-first", "example.com")
-        withAccounts(userId) { logic, _ ->
-            val provider = logic.userSessionScopeProvider.value
+        withAccounts(userId) { logic, network ->
+            val starting = CompletableDeferred<UserSessionScope>()
+            val finishStartup = CountDownLatch(1)
+            val starts = AtomicInteger()
+            val provider = commonProvider(logic, startScope = { scope ->
+                scope.startRuntime()
+                starts.incrementAndGet()
+                starting.complete(scope)
+                check(finishStartup.await(30, TimeUnit.SECONDS))
+            }, removeNetwork = { network.remove(it.toApi()) })
             val threads = Executors.newFixedThreadPool(8)
             try {
                 val start = CyclicBarrier(8)
-                val scopes = (1..8).map {
+                val requests = (1..8).map {
                     threads.submit(Callable {
                         start.await(10, TimeUnit.SECONDS)
                         provider.getOrCreate(userId)
                     })
-                }.map { it.get(30, TimeUnit.SECONDS) }
-                scopes.forEach { assertSame(scopes.first(), it) }
-                assertSame(scopes.first(), provider.get(userId))
+                }
+                val outgoing = starting.await()
+                assertNull(provider.get(userId))
+                assertTrue(outgoing.coroutineContext.job.children.any())
+                assertTrue(requests.none { it.isDone })
+                finishStartup.countDown()
+                requests.forEach { assertSame(outgoing, it.get(30, TimeUnit.SECONDS)) }
+                assertEquals(1, starts.get())
+                assertSame(outgoing, provider.get(userId))
             } finally {
+                finishStartup.countDown()
                 threads.shutdownNow()
+                provider.delete(userId)
             }
         }
     }
@@ -172,14 +348,20 @@ class UserSessionScopeProviderLogoutTest {
             val constructed = CompletableDeferred<UserSessionScope>()
             val finishCreation = CountDownLatch(1)
             val removed = CompletableDeferred<Unit>()
+            val starts = AtomicInteger()
             val delegate = logic.userSessionScopeProvider.value as UserSessionScopeProviderCommon
             val provider = commonProvider(logic, createScope = { id ->
                 delegate.create(id).also { scope ->
+                    // Explicit runtime startup is counted below. LongWork's existing constructor
+                    // monitor remains a separate owner/capture until its migration slice.
                     if (id == userId) {
                         constructed.complete(scope)
                         check(finishCreation.await(30, TimeUnit.SECONDS))
                     }
                 }
+            }, startScope = { scope ->
+                if (scope.userId == userId) starts.incrementAndGet()
+                scope.startRuntime()
             }, removeNetwork = {
                 network.remove(it.toApi())
                 if (it == userId) removed.complete(Unit)
@@ -202,6 +384,7 @@ class UserSessionScopeProviderLogoutTest {
                 deletion.await()
                 assertTrue(removed.isCompleted)
                 assertFalse(outgoing.coroutineContext.job.isActive)
+                assertEquals(0, starts.get())
                 assertFailsWith<IllegalStateException> { outgoing.createConsumer() }
                 assertNull(provider.get(userId))
                 assertNull(logic.userStorageProvider.get(userId))
@@ -475,6 +658,7 @@ class UserSessionScopeProviderLogoutTest {
     private fun commonProvider(
         logic: CoreLogic,
         createScope: (UserId) -> UserSessionScope = { (logic.userSessionScopeProvider.value as UserSessionScopeProviderCommon).create(it) },
+        startScope: (UserSessionScope) -> Unit = { it.startRuntime() },
         removeNetwork: suspend (UserId) -> Unit,
     ): UserSessionScopeProviderCommon = object : UserSessionScopeProviderCommon(
         logic.globalCallManager,
@@ -483,6 +667,7 @@ class UserSessionScopeProviderLogoutTest {
         "kalium-registry-test",
     ) {
         override fun create(userId: UserId): UserSessionScope = createScope(userId)
+        override fun startRuntime(scope: UserSessionScope) = startScope(scope)
     }
 
     private suspend fun storeAccount(root: File, userId: UserId) {

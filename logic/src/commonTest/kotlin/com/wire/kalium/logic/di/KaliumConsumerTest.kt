@@ -79,7 +79,7 @@ class KaliumConsumerTest {
     }
 
     @Test
-    fun invalidationDuringAssemblyDiscardsTheValueAndDrainsItsOwnedJobWithoutCancellingTheParent() = runTest {
+    fun invalidationDuringAssemblyDiscardsTheValueAndDrainsItsJobWithoutCancellingTheParent() = runTest {
         val dependencies = ConsumerTestDependencies(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
         val registry = KaliumConsumerRegistry(dependencies.userGraph())
         val consumer = registry.createConsumer()
@@ -99,14 +99,16 @@ class KaliumConsumerTest {
             }
         }
         val value = Any()
+        val discardFailure = IllegalStateException("discard failed after cancellation")
 
-        assertFailsWith<CancellationException> {
+        val failure = assertFailsWith<CancellationException> {
             consumer.assemble(
                 create = { registry.invalidate(); value },
-                onDiscard = { assertSame(value, it); discards++ },
-                ownedJob = { owner },
+                onDiscard = { assertSame(value, it); discards++; throw discardFailure },
+                jobOnDiscard = { owner },
             )
         }
+        assertEquals(listOf(discardFailure), failure.suppressedExceptions)
         val drain = async { registry.invalidateAndJoin() }
         runCurrent()
         assertEquals(1, discards)
@@ -124,34 +126,78 @@ class KaliumConsumerTest {
     }
 
     @Test
-    fun acceptedAssemblyRetainsItsOwnedJobForLaterInvalidationAndDrain() = runTest {
+    fun acceptedAssemblyLeavesCreatorAndParentJobsOutsideConsumerDisposal() = runTest {
+        val dependencies = ConsumerTestDependencies(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val registry = KaliumConsumerRegistry(dependencies.userGraph())
+        val consumer = registry.createConsumer()
+        val parent = Job()
+        val owner = SupervisorJob(parent)
+        val creatorWork = launch(owner, start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { awaitCancellation() }
+        try {
+            consumer.assemble(create = { owner }, onDiscard = { error("Active assembly was discarded") }, jobOnDiscard = { it })
+            consumer.closeAndJoin()
+            registry.invalidateAndJoin()
+            assertTrue(owner.isActive)
+            assertTrue(creatorWork.isActive)
+            assertTrue(parent.isActive)
+            assertEquals(0, dependencies.resources.closes)
+        } finally {
+            parent.cancel()
+            creatorWork.join()
+        }
+    }
+
+    @Test
+    fun nonCancellableTerminalCreatorDrainsConsumerReadsAndContinuesWithoutWaitingForItself() = runTest {
         val dependencies = ConsumerTestDependencies(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
         val registry = KaliumConsumerRegistry(dependencies.userGraph())
         val consumer = registry.createConsumer()
         val owner = SupervisorJob()
+        val readEntered = CompletableDeferred<Unit>()
+        val cleanupEntered = CompletableDeferred<Unit>()
         val finishCleanup = CompletableDeferred<Unit>()
         var unwound = false
-        launch(owner, start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+        var continued = false
+        dependencies.read = {
+            readEntered.complete(Unit)
             try {
                 awaitCancellation()
             } finally {
                 withContext(NonCancellable) {
+                    cleanupEntered.complete(Unit)
                     finishCleanup.await()
                     unwound = true
                 }
             }
         }
-        consumer.assemble(create = { owner }, onDiscard = { error("Active assembly was discarded") }, ownedJob = { it })
-
-        val drain = async { registry.invalidateAndJoin() }
-        runCurrent()
-        assertTrue(owner.isCancelled)
-        assertFalse(drain.isCompleted)
-        assertFalse(unwound)
-        finishCleanup.complete(Unit)
-        drain.await()
-        assertTrue(unwound)
-        assertEquals(0, dependencies.resources.closes)
+        consumer.assemble(create = { owner }, onDiscard = {}, jobOnDiscard = { it })
+        val reading = launch(owner) { consumer.getMessageById(TestConversation.ID, "message") }
+        readEntered.await()
+        val terminal = launch(owner) {
+            withContext(NonCancellable) {
+                registry.invalidateAndJoin()
+                continued = true
+            }
+        }
+        try {
+            cleanupEntered.await()
+            assertFalse(terminal.isCompleted)
+            assertTrue(owner.isActive)
+            assertFalse(unwound)
+            finishCleanup.complete(Unit)
+            runCurrent()
+            assertTrue(terminal.isCompleted)
+            assertFalse(terminal.isCancelled)
+            assertTrue(continued)
+            assertTrue(unwound)
+            assertTrue(reading.isCancelled)
+            assertTrue(owner.isActive)
+            assertFailsWith<CancellationException> { consumer.getMessageById(TestConversation.ID, "message") }
+            assertEquals(0, dependencies.resources.closes)
+        } finally {
+            finishCleanup.complete(Unit)
+            owner.cancel()
+        }
     }
 
     @Test
@@ -174,7 +220,7 @@ class KaliumConsumerTest {
             ownerLookup.assemble(
                 create = { value },
                 onDiscard = { assertSame(value, it); discards++ },
-                ownedJob = { throw ownerFailure },
+                jobOnDiscard = { throw ownerFailure },
             )
         })
         assertEquals(1, discards)

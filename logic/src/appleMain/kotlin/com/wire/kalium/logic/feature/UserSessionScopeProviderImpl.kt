@@ -216,7 +216,7 @@ internal actual open class UserSessionScopeProviderImpl(
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
         return withOwnedAccount(account, userId) {
             check(!account.unavailable) { "Account resources are unavailable until process exit" }
-            getRaw(userId)?.let {
+            super.get(userId)?.let {
                 if (!it.coroutineContext.job.isActive) {
                     account.unavailable = true
                     error("Account workers stopped before resources were released")
@@ -229,7 +229,8 @@ internal actual open class UserSessionScopeProviderImpl(
                 revokeReadiness(account, userId)
                 super.getOrCreate(userId).also { account.canRefreshReadiness = prepared != null }
             } catch (failure: Throwable) {
-                // A constructor can fail after opening native resources that never reached a provider.
+                // Failed construction/startup retains the private owner and cancels its workers in
+                // the registry. Native cleanup is still uncertain: keep this lease until process exit.
                 account.unavailable = true
                 throw failure
             }
@@ -251,6 +252,7 @@ internal actual open class UserSessionScopeProviderImpl(
         prepare: suspend () -> Unit,
         clearLocalData: suspend () -> Unit,
     ): Boolean {
+        // Private ownership is registered before workers start, even while public get() is not ready.
         val account = accounts[userId]?.takeIf { getRaw(userId) === originatingScope } ?: return false
         return withOwnedAccount(account, userId) {
             // A queued logout for an old scope must not mutate a released or reopened account.
@@ -283,7 +285,8 @@ internal actual open class UserSessionScopeProviderImpl(
                     // Access does not gate the WebSocket: stop sync and close it while sync can still finish
                     // its writes. Pause holds its transition, so reopening cannot resume sync before release.
                     quiesce = {
-                        if (access === account.access) syncSuspension = getRaw(userId)?.suspendSync()
+                        // A retained failed startup must not resolve sync merely for background cleanup.
+                        if (access === account.access) syncSuspension = get(userId)?.suspendSync()
                     },
                 ) {
                     // Drain before taking the lifecycle mutex: admitted operations may still need it

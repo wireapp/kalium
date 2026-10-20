@@ -16,6 +16,9 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+// Composition bindings supply persistence ports; use-case implementations retain their layer checks.
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
+
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.feature.asset.ObservePaginatedAssetImageMessages

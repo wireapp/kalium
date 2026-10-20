@@ -45,10 +45,6 @@ mutationTesting {
 
 kotlin {
     explicitApi()
-    jvm {
-        // Kotlin 2.4 defaults to group:name. Keep the existing JVM member mangling in this SDK.
-        compilerOptions.moduleName.set(project.name)
-    }
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
     abiValidation {
         filters {

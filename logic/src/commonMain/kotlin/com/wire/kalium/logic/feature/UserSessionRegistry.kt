@@ -27,32 +27,45 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /** Retains per-qualified-account gates across generations, without changing provider cache ownership. */
-internal class UserSessionRegistry<T : Any>(private val invalidate: (T) -> Unit) {
+internal class UserSessionRegistry<T : Any>(
+    private val invalidate: (T) -> Unit,
+    private val cancelFailedStartup: (T) -> Unit,
+) {
     private val accounts = ConcurrentMutableMap<UserId, Account<T>>()
 
-    fun account(userId: UserId): Account<T> = accounts.computeIfAbsent(userId) { Account(invalidate) }
+    fun account(userId: UserId): Account<T> = accounts.computeIfAbsent(userId) { Account(invalidate, cancelFailedStartup) }
 
-    internal class Account<T : Any>(private val invalidate: (T) -> Unit) {
+    internal class Account<T : Any>(
+        private val invalidate: (T) -> Unit,
+        private val cancelFailedStartup: (T) -> Unit,
+    ) {
         private val state = Lock()
         private val construction = Lock()
         private val lifecycle = Mutex()
         private var closing = false
         private var generation: Generation<T>? = null
 
-        fun get(): T? = state.withLock { if (closing) null else generation?.value }
+        fun get(): T? = state.withLock { generation?.takeIf { !closing && it.ready }?.value }
 
         /** Cleanup must retain access to the outgoing scope, even after public admission is closed. */
         fun getRaw(): T? = state.withLock { generation?.value }
 
         fun isCurrent(origin: Any): Boolean = state.withLock { generation?.value === origin }
 
-        fun getOrCreate(create: () -> T): T {
+        fun hasFailedStartup(): Boolean = state.withLock { generation?.failedStartup == true }
+
+        @Suppress("TooGenericExceptionCaught") // Failed startup retains ownership until explicit cleanup succeeds.
+        fun getOrCreate(create: () -> T, start: (T) -> Unit): T {
             state.withLock { check(!closing) { "The user session generation is closing" } }
-            // Only synchronous construction holds this lock. Cleanup can invalidate it without blocking.
+            // Construction/startup serialize here; cleanup can still invalidate without blocking.
             return construction.withLock {
                 val cached = state.withLock {
                     check(!closing) { "The user session generation is closing" }
-                    generation?.value
+                    generation?.let {
+                        // A reentrant request from synchronous startup must not create another owner.
+                        check(it.ready) { "The user session generation is still starting" }
+                        it.value
+                    }
                 }
                 if (cached != null) {
                     cached
@@ -64,14 +77,31 @@ internal class UserSessionRegistry<T : Any>(private val invalidate: (T) -> Unit)
                     try {
                         val value = create()
                         val outgoing = state.withLock {
+                            // Workers may request logout/preparation as soon as start launches them.
+                            // Keep their actual owner private until all synchronous startup succeeds.
                             pending.value = value
                             closing
                         }
-                        if (outgoing) invalidate(value)
-                        check(!outgoing) { "The user session generation was invalidated during creation" }
+                        if (!outgoing) start(value)
+                        val published = state.withLock {
+                            if (!closing) pending.ready = true
+                            !closing
+                        }
+                        check(published) { "The user session generation was invalidated during creation" }
                         value
+                    } catch (failure: Throwable) {
+                        val owner = state.withLock {
+                            closing = true
+                            pending.failedStartup = true
+                            pending.value
+                        }
+                        owner?.let {
+                            invalidate(it)
+                            cancelFailedStartup(it)
+                        }
+                        throw failure
                     } finally {
-                        // Also release cleanup when the constructor failed after opening provider resources.
+                        // Cleanup waits for both construction and synchronous startup to unwind.
                         pending.constructed.complete(Unit)
                     }
                 }
@@ -108,6 +138,8 @@ internal class UserSessionRegistry<T : Any>(private val invalidate: (T) -> Unit)
 
         private class Generation<T> {
             var value: T? = null
+            var ready = false
+            var failedStartup = false
             val constructed = CompletableDeferred<Unit>()
         }
     }

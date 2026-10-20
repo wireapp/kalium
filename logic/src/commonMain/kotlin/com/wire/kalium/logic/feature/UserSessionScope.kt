@@ -21,6 +21,7 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.di.KaliumConsumer
+import com.wire.kalium.logic.di.UserSessionRuntime
 import com.wire.kalium.logic.di.KaliumConsumerRegistry
 import com.wire.kalium.logic.di.UserGraphDependencies
 import com.wire.kalium.persistence.dao.message.MessageTimelineDAO

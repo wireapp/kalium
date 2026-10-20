@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionRuntime
 import com.wire.kalium.logic.feature.call.CallBackgroundManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.JoinPendingMLSConversationsManager
