@@ -23,6 +23,7 @@ package com.wire.kalium.logic.feature.call
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
+import com.wire.kalium.calling.LifecycleCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler
 import com.wire.kalium.calling.callbacks.MetricsHandler
@@ -87,19 +88,40 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.util.Collections
+import java.io.File
 import kotlin.io.encoding.Base64
 
-@Suppress("LongParameterList", "TooManyFunctions")
+// Keep media admission adjacent to the existing signaling owner; a broader manager split is separate work.
+private object JvmCallStartupTrace {
+    private val file = if (java.lang.Boolean.getBoolean("wire.desktop.avsLiveTest")) {
+        System.getProperty("wire.desktop.dataDir")?.let { File(it, "kalium-call-startup.txt") }
+    } else {
+        null
+    }
+
+    @Synchronized
+    fun record(stage: String) {
+        file?.let { destination -> runCatching { destination.appendText("${System.currentTimeMillis()} $stage\n") } }
+    }
+}
+
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class CallManagerImpl internal constructor(
     private val calling: Calling,
     private val callRepository: CallRepository,
@@ -127,6 +149,7 @@ internal class CallManagerImpl internal constructor(
     private val tagWithUserId = "$TAG(${selfUserId.toLogString()})"
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
+    private val handleLifecycle = (calling as? LifecycleCalling)?.let { CallHandleLifecycle(it) }
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
 
     private val callingMessageSender = CallingMessageSender(
@@ -182,9 +205,17 @@ internal class CallManagerImpl internal constructor(
             runBlocking { callRepository.updateIsCbrEnabled(isEnabled) }
         }.keepingStrongReference()
 
-    @Suppress("LongMethod")
-    private fun startHandleAsync(): Deferred<Handle> {
-        return scope.async(start = CoroutineStart.LAZY) {
+    private suspend fun CoroutineScope.startServices() {
+        if (handleLifecycle != null) {
+            withTimeout(SERVICE_START_TIMEOUT_MILLIS) {
+                coroutineScope {
+                    awaitAll(
+                        async { mediaManagerService.startMediaManager() },
+                        async { flowManagerService.startFlowManager() }
+                    )
+                }
+            }
+        } else {
             val mediaManagerStartJob = launch {
                 callingLogger.i("$tagWithUserId: Starting MediaManager")
                 mediaManagerService.startMediaManager()
@@ -194,63 +225,82 @@ internal class CallManagerImpl internal constructor(
                 flowManagerService.startFlowManager()
             }
             joinAll(flowManagerStartJob, mediaManagerStartJob)
+        }
+    }
+
+    @Suppress("LongMethod")
+    private fun startHandleAsync(): Deferred<Handle> {
+        return scope.async(start = CoroutineStart.LAZY) {
+            startServices()
             callingLogger.i("$tagWithUserId: Creating Handle")
             val selfUserId = federatedIdMapper.parseToFederatedId(selfUserId)
             val selfClientId = clientId.await().value
 
             val waitInitializationJob = Job()
 
-            val handle = calling.wcall_create(
-                userId = selfUserId,
-                clientId = selfClientId,
-                readyHandler = ReadyHandler { version: Int, arg: Pointer? ->
-                    callingLogger.i("$tagWithUserId: readyHandler; version=$version; arg=$arg")
-                    onCallingReady()
-                    waitInitializationJob.complete()
-                    Unit
-                }.keepingStrongReference(),
-                // TODO(refactor): inject all of these CallbackHandlers in class constructor
-                sendHandler = OnSendOTR(
-                    qualifiedIdMapper = qualifiedIdMapper,
-                    selfUserId = selfUserId,
-                    selfClientId = selfClientId,
-                    callMapper = callMapper,
-                    callingMessageSender = callingMessageSender,
-                    jsonDecoder = jsonDecoder
-                ).keepingStrongReference(),
-                sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope, networkStateObserver)
-                    .keepingStrongReference(),
-                incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope, kaliumConfigs)
-                    .keepingStrongReference(),
-                missedCallHandler = OnMissedCall,
-                answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper)
-                    .keepingStrongReference(),
-                establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
-                    .keepingStrongReference(),
-                closeCallHandler = OnCloseCall(
-                    callRepository = callRepository,
-                    networkStateObserver = networkStateObserver,
-                    scope = scope,
-                    qualifiedIdMapper = qualifiedIdMapper,
-                    createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
-                ).keepingStrongReference(),
-                metricsHandler = metricsHandler,
-                callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope, kaliumConfigs.callConfigTransformer)
-                    .keepingStrongReference(),
-                constantBitRateStateChangeHandler = constantBitRateStateChangeHandler,
-                videoReceiveStateHandler = OnParticipantsVideoStateChanged().keepingStrongReference(),
-                arg = null
-            )
+            val androidReady = ReadyHandler { version: Int, arg: Pointer? ->
+                callingLogger.i("$tagWithUserId: readyHandler; version=$version; arg=$arg")
+                onCallingReady()
+                waitInitializationJob.complete()
+                Unit
+            }.keepingStrongReference()
+            val createHandle: (ReadyHandler) -> Handle = { lifecycleReady ->
+                calling.wcall_create(
+                    userId = selfUserId,
+                    clientId = selfClientId,
+                    readyHandler = if (handleLifecycle != null) lifecycleReady.keepingStrongReference() else androidReady,
+                    // TODO(refactor): inject all of these CallbackHandlers in class constructor
+                    sendHandler = OnSendOTR(
+                        qualifiedIdMapper = qualifiedIdMapper,
+                        selfUserId = selfUserId,
+                        selfClientId = selfClientId,
+                        callMapper = callMapper,
+                        callingMessageSender = callingMessageSender,
+                        jsonDecoder = jsonDecoder
+                    ).keepingStrongReference(),
+                    sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope, networkStateObserver)
+                        .keepingStrongReference(),
+                    incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope, kaliumConfigs)
+                        .keepingStrongReference(),
+                    missedCallHandler = OnMissedCall,
+                    answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper)
+                        .keepingStrongReference(),
+                    establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
+                        .keepingStrongReference(),
+                    closeCallHandler = OnCloseCall(
+                        callRepository = callRepository,
+                        networkStateObserver = networkStateObserver,
+                        scope = scope,
+                        qualifiedIdMapper = qualifiedIdMapper,
+                        createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
+                    ).keepingStrongReference(),
+                    metricsHandler = metricsHandler,
+                    callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope, kaliumConfigs.callConfigTransformer)
+                        .keepingStrongReference(),
+                    constantBitRateStateChangeHandler = constantBitRateStateChangeHandler,
+                    videoReceiveStateHandler = OnParticipantsVideoStateChanged().keepingStrongReference(),
+                    arg = null
+                )
+            }
+            val handle = handleLifecycle?.create(createHandle) ?: createHandle(ReadyHandler { _, _ -> Unit })
             callingLogger.d("$tagWithUserId: wcall_create() called")
-            // TODO(edge-case): Add a timeout. Perhaps make some functions (like onCallingMessageReceived) return Eithers.
-            waitInitializationJob.join()
+            if (handleLifecycle != null) {
+                (calling as LifecycleCalling).bindAccount(handle, this@CallManagerImpl.selfUserId.toString())
+                onCallingReady()
+            } else {
+                waitInitializationJob.join()
+            }
             handle
         }
     }
 
     private suspend fun <T> withCalling(action: suspend Calling.(handle: Handle) -> T): T {
         val handle = deferredHandle.await()
-        return calling.action(handle)
+        return if (handleLifecycle != null) {
+            handleLifecycle.withHandle(handle) { calling.action(handle) }
+        } else {
+            calling.action(handle)
+        }
     }
 
     override suspend fun onCallingMessageReceived(
@@ -284,6 +334,8 @@ internal class CallManagerImpl internal constructor(
         callingLogger.i("$tagWithUserId: wcall_recv_msg() called")
     }
 
+    // Keep native startup and its rollback together; every exception must roll back call and MLS state.
+    @Suppress("LongMethod", "TooGenericExceptionCaught")
     override suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
@@ -295,60 +347,79 @@ internal class CallManagerImpl internal constructor(
             "$tagWithUserId: starting call for conversationId: " +
                     "${conversationId.toLogString()}.."
         )
-        val isCameraOn = callType == CallType.VIDEO
-
-        val type = callMapper.toConversationType(conversationTypeCalling)
-
-        callRepository.createCall(
-            conversationId = conversationId,
-            type = type,
-            status = CallStatus.STARTED,
-            isMuted = false,
-            isCameraOn = isCameraOn,
-            isCbrEnabled = isAudioCbr,
-            callerId = selfUserId
-        )
-
-        withCalling {
-            val avsCallType = callMapper.toCallTypeCalling(callType)
-
-            if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
-                callRepository.joinMlsConference(
-                    conversationId = conversationId,
-                    onJoined = {
-                        wcall_start(
-                            inst = deferredHandle.await(),
-                            conversationId = federatedIdMapper.parseToFederatedId(conversationId),
-                            callType = avsCallType.avsValue,
-                            convType = conversationTypeCalling.avsValue,
-                            audioCbr = isAudioCbr.toInt(),
-                            meeting = isMeeting.toInt()
-                        )
-                        callingLogger.d(
-                            "$tagWithUserId: wcall_start() called -> Call for conversationId: " +
-                                    "${conversationId.toLogString()} started"
-                        )
-                    },
-                    onEpochChange = { conversationId, epochInfo ->
-                        updateEpochInfo(conversationId, epochInfo)
-                    }
-                )
-            } else {
-                // TODO: Handle response. Possible failure?
-                wcall_start(
-                    inst = deferredHandle.await(),
-                    conversationId = federatedIdMapper.parseToFederatedId(conversationId),
-                    callType = avsCallType.avsValue,
-                    convType = conversationTypeCalling.avsValue,
-                    audioCbr = isAudioCbr.toInt(),
-                    meeting = isMeeting.toInt()
-                )
-                callingLogger.d(
-                    "$tagWithUserId: wcall_start() called -> Call for conversationId: " +
-                            "${conversationId.toLogString()} started"
-                )
+        var rowCreated = false
+        var joinedMls = false
+        try {
+            JvmCallStartupTrace.record("handle await")
+            deferredHandle.await()
+            JvmCallStartupTrace.record("row create")
+            callRepository.createCall(
+                conversationId = conversationId,
+                type = callMapper.toConversationType(conversationTypeCalling),
+                status = CallStatus.STARTED,
+                isMuted = false,
+                isCameraOn = callType == CallType.VIDEO,
+                isCbrEnabled = isAudioCbr,
+                callerId = selfUserId
+            )
+            rowCreated = true
+            withCalling {
+                JvmCallStartupTrace.record("media prepare")
+                prepareNativeMedia(conversationId, callType == CallType.VIDEO)
+                JvmCallStartupTrace.record("media ready")
+                val avsCallType = callMapper.toCallTypeCalling(callType)
+                val startAvs: suspend () -> Unit = {
+                    JvmCallStartupTrace.record("avs start begin")
+                    val result = wcall_start(
+                        inst = deferredHandle.await(),
+                        conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                        callType = avsCallType.avsValue,
+                        convType = conversationTypeCalling.avsValue,
+                        audioCbr = isAudioCbr.toInt(),
+                        meeting = isMeeting.toInt()
+                    )
+                    JvmCallStartupTrace.record("avs start result=$result")
+                    if (result != 0) throw CallStartException("AVS rejected startup: $result")
+                    callingLogger.d("$tagWithUserId: wcall_start() called -> ${conversationId.toLogString()}")
+                }
+                if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
+                    JvmCallStartupTrace.record("mls join begin")
+                    val joined = callRepository.joinMlsConference(
+                        conversationId = conversationId,
+                        onJoined = {
+                            joinedMls = true
+                            startAvs()
+                        },
+                        onEpochChange = { conversation, epochInfo -> updateEpochInfo(conversation, epochInfo) }
+                    )
+                    JvmCallStartupTrace.record(joined.fold({ "mls join failed=${it::class.simpleName}" }, { "mls join succeeded" }))
+                    joined.fold({ throw CallStartException("MLS conference join failed: $it") }, {})
+                } else {
+                    startAvs()
+                }
             }
+        } catch (failure: Exception) {
+            JvmCallStartupTrace.record("startup failure=${failure::class.simpleName}")
+            withContext(NonCancellable) {
+                if (rowCreated) runCatching {
+                    callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
+                }.onFailure(failure::addSuppressed)
+                if (joinedMls) runCatching {
+                    callRepository.leaveMlsConference(conversationId)
+                }.onFailure(failure::addSuppressed)
+            }
+            if (failure is CancellationException) throw failure
+            throw failure as? CallStartException ?: CallStartException("Call startup failed", failure)
         }
+    }
+
+    private suspend fun prepareNativeMedia(conversationId: ConversationId, video: Boolean) {
+        (calling as? LifecycleCalling)?.prepareCallMedia(
+            deferredHandle.await(),
+            federatedIdMapper.parseToFederatedId(conversationId),
+            conversationId.toString(),
+            video
+        )
     }
 
     override suspend fun answerCall(
@@ -361,6 +432,7 @@ internal class CallManagerImpl internal constructor(
                 "$tagWithUserId: answering call for conversationId: " +
                         "${conversationId.toLogString()}.."
             )
+            prepareNativeMedia(conversationId, isVideoCall)
             val callType = if (isVideoCall) CallTypeCalling.VIDEO else CallTypeCalling.AUDIO
 
             if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
@@ -399,10 +471,12 @@ internal class CallManagerImpl internal constructor(
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$tagWithUserId: endCall -> Calling wcall_end() for conversationId: " + conversationId.toLogString())
-        wcall_end(
-            inst = deferredHandle.await(),
-            conversationId = federatedIdMapper.parseToFederatedId(conversationId)
-        )
+        val nativeConversationId = federatedIdMapper.parseToFederatedId(conversationId)
+        if (calling is LifecycleCalling) {
+            calling.endCallAndAwait(it, nativeConversationId)
+        } else {
+            wcall_end(inst = it, conversationId = nativeConversationId)
+        }
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
@@ -479,11 +553,15 @@ internal class CallManagerImpl internal constructor(
             callingLogger.d("$tagWithUserId: changing video state to ${videoState.name}..")
             scope.launch {
                 val videoStateCalling = callMapper.toVideoStateCalling(videoState)
-                wcall_set_video_send_state(
-                    deferredHandle.await(),
-                    federatedIdMapper.parseToFederatedId(conversationId),
-                    videoStateCalling.avsValue
-                )
+                val nativeConversationId = federatedIdMapper.parseToFederatedId(conversationId)
+                if (handleLifecycle != null) {
+                    withCalling { handle ->
+                        (calling as LifecycleCalling).setCallCamera(handle, nativeConversationId, videoStateCalling.avsValue == 1)
+                        wcall_set_video_send_state(handle, nativeConversationId, videoStateCalling.avsValue)
+                    }
+                } else {
+                    wcall_set_video_send_state(deferredHandle.await(), nativeConversationId, videoStateCalling.avsValue)
+                }
                 callingLogger.d("$tagWithUserId: wcall_set_video_send_state called..")
             }
         }
@@ -705,9 +783,26 @@ internal class CallManagerImpl internal constructor(
     }
 
     override suspend fun cancelJobs() {
-        deferredHandle.cancel()
-        scope.cancel()
-        job.cancel()
+        if (handleLifecycle != null) {
+            // Stop account work before native shutdown. Callback references outlive an uncertain native drain.
+            withContext(NonCancellable) {
+                scope.cancel()
+                job.cancel()
+                handleLifecycle.stopAdmission()
+                deferredHandle.cancel()
+                try {
+                    withTimeout(SERVICE_STOP_TIMEOUT_MILLIS) { job.join() }
+                } finally {
+                    // Even a stuck account job must fence native callbacks and request destruction.
+                    handleLifecycle.release()
+                }
+                strongReferences.clear()
+            }
+        } else {
+            deferredHandle.cancel()
+            scope.cancel()
+            job.cancel()
+        }
     }
 
     // For testing purposes, to ensure that the CallManager is fully initialized before proceeding with tests that depend on it.
@@ -716,6 +811,8 @@ internal class CallManagerImpl internal constructor(
     }
 
     internal companion object {
+        private const val SERVICE_START_TIMEOUT_MILLIS = 15_000L
+        private const val SERVICE_STOP_TIMEOUT_MILLIS = 10_000L
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
         internal const val TAG = "CallManager"
         internal const val DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS = 5

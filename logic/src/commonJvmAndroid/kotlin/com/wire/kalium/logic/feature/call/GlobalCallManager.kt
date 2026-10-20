@@ -21,7 +21,8 @@
 package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
-import com.wire.kalium.calling.Calling
+import com.wire.kalium.calling.LifecycleCalling
+import com.wire.kalium.calling.callingForCurrentPlatform
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -60,13 +61,12 @@ internal actual class GlobalCallManager actual constructor(
         ConcurrentHashMap()
     }
 
-    private val calling by lazy {
-        Calling.INSTANCE.apply {
+    private val callingDelegate = lazy {
+        callingForCurrentPlatform().apply {
             if (CurrentPlatform().type == PlatformType.ANDROID)
                 wcall_init(env = ENVIRONMENT_DEFAULT)
             else {
-                wcall_setup()
-                wcall_run()
+                (this as LifecycleCalling).initialize()
             }
             wcall_set_log_handler(
                 logHandler = LogHandlerImpl,
@@ -75,6 +75,8 @@ internal actual class GlobalCallManager actual constructor(
             callingLogger.i("GlobalCallManager -> wcall_init")
         }
     }
+
+    private val calling by callingDelegate
 
     /**
      * Get a [CallManager] for a session, shouldn't be instantiated more than one CallManager for a single session.
@@ -129,8 +131,10 @@ internal actual class GlobalCallManager actual constructor(
     }
 
     internal actual suspend fun removeInMemoryCallingManagerForUser(userId: UserId) {
-        callManagerHolder[userId]?.cancelJobs()
-        callManagerHolder.remove(userId)
+        callManagerHolder[userId]?.let { manager ->
+            manager.cancelJobs()
+            callManagerHolder.remove(userId, manager)
+        }
     }
 
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
@@ -144,6 +148,7 @@ internal actual class GlobalCallManager actual constructor(
     internal actual fun getMediaManager(): MediaManagerService = mediaManager
 
     actual override fun networkChanged() {
+        if (CurrentPlatform().type != PlatformType.ANDROID && !callingDelegate.isInitialized()) return
         calling.wcall_network_changed()
         callingLogger.i("GlobalCallManager -> wcall_network_changed")
     }

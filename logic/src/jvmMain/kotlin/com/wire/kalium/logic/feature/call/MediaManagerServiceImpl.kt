@@ -18,31 +18,34 @@
 
 package com.wire.kalium.logic.feature.call
 
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
 
 @Suppress("UnusedPrivateProperty")
 internal actual open class MediaManagerServiceImpl(
     platformContext: PlatformContext,
     scope: CoroutineScope,
+    private val mediaRegistry: JvmCallMediaRegistry = JvmCallMediaProvider.registry,
 ) : MediaManagerService {
     actual override suspend fun turnLoudSpeakerOn() {
-        kaliumLogger.w("turnLoudSpeakerOn for JVM but not supported yet.")
+        mediaRegistry.requireMedia().setSpeaker(enabled = true)
     }
 
     actual override suspend fun turnLoudSpeakerOff() {
-        kaliumLogger.w("turnLoudSpeakerOff for JVM but not supported yet.")
+        mediaRegistry.requireMedia().setSpeaker(enabled = false)
     }
 
-    actual override fun observeSpeaker(): Flow<Boolean> {
-        kaliumLogger.w("observeSpeaker for JVM but not supported yet.")
-        return MutableStateFlow(false)
-    }
+    actual override fun observeSpeaker(): Flow<Boolean> = mediaRegistry.requireMedia().route
+        .filterIsInstance<JvmAudioRouteState.Confirmed>()
+        .map { it.speaker }
+        .distinctUntilChanged()
 
     actual override suspend fun startMediaManager() {
-        kaliumLogger.w("Media Manager is not supported on JVM.")
+        val media = mediaRegistry.requireMedia()
+        media.startMediaManager()
     }
 }

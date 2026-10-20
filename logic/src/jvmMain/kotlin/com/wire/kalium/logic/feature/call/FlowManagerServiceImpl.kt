@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformRotation
 import com.wire.kalium.logic.util.PlatformView
@@ -28,25 +27,28 @@ import kotlinx.coroutines.CoroutineScope
 @Suppress("UnusedPrivateProperty")
 internal actual open class FlowManagerServiceImpl(
     appContext: PlatformContext,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    private val mediaRegistry: JvmCallMediaRegistry = JvmCallMediaProvider.registry,
 ) : FlowManagerService {
     actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
-        kaliumLogger.w("setVideoPreview for JVM but not supported yet.")
+        require(view.view >= 0) { "JVM video surface must be a positive registry token or zero to detach." }
+        mediaRegistry.requireMedia().setVideoPreview(conversationId, view.view)
     }
 
     actual override suspend fun flipToFrontCamera(conversationId: ConversationId) {
-        TODO("Not yet implemented")
+        mediaRegistry.requireMedia().flipCamera(conversationId, front = true)
     }
 
     actual override suspend fun flipToBackCamera(conversationId: ConversationId) {
-        TODO("Not yet implemented")
+        mediaRegistry.requireMedia().flipCamera(conversationId, front = false)
     }
 
     actual override suspend fun setUIRotation(rotation: PlatformRotation) {
-        kaliumLogger.w("setUIRotation for JVM but not supported yet.")
+        mediaRegistry.requireMedia().setUIRotation(rotation)
     }
 
     actual override suspend fun startFlowManager() {
-        kaliumLogger.w("FlowManager not fully supported on JVM.")
+        val media = mediaRegistry.requireMedia()
+        media.startFlowManager()
     }
 }
