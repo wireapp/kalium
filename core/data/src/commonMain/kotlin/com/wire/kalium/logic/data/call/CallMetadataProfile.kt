@@ -50,7 +50,8 @@ data class CallMetadata(
     val protocol: Conversation.ProtocolInfo,
     val activeSpeakers: Map<UserId, List<String>> = mapOf(),
     val users: List<OtherUserMinimized> = listOf(),
-    val screenShareMetadata: CallScreenSharingMetadata = CallScreenSharingMetadata()
+    val screenShareMetadata: CallScreenSharingMetadata = CallScreenSharingMetadata(),
+    val handState: CallHandState? = null
 ) {
     fun getFullParticipants(): List<Participant> = participants.map { participant ->
         val user = users.firstOrNull { it.id == participant.userId }

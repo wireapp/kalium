@@ -108,6 +108,17 @@ internal interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
     fun getCallMetadata(conversationId: ConversationId): CallMetadata?
+
+    /** Returns whether this atomic snapshot confirms the requested hand state for the participation. */
+    fun updateHand(
+        conversationId: ConversationId,
+        identity: CallHandIdentity,
+        isRaised: Boolean,
+        date: Instant,
+        messageId: String,
+        generation: String? = null
+    ): Boolean
+
     fun callsFlow(): Flow<List<Call>>
     fun incomingCallsFlow(): Flow<List<Call>>
     fun outgoingCallsFlow(): Flow<List<Call>>
@@ -213,6 +224,29 @@ internal class CallDataSource(
     }
 
     override fun getCallMetadata(conversationId: ConversationId): CallMetadata? = _callMetadataProfile[conversationId]
+
+    override fun updateHand(
+        conversationId: ConversationId,
+        identity: CallHandIdentity,
+        isRaised: Boolean,
+        date: Instant,
+        messageId: String,
+        generation: String?
+    ): Boolean {
+        val updated = _callMetadataProfile.update(conversationId) { metadata ->
+            val hands = metadata.handState
+            val matchesGeneration = generation == null || generation == hands?.generation
+            if (hands == null || metadata.callStatus != CallStatus.ESTABLISHED || !matchesGeneration) {
+                metadata
+            } else {
+                metadata.copy(handState = hands.receive(identity, isRaised, date, messageId))
+            }
+        }
+        val hands = updated?.handState ?: return false
+        val matchesGeneration = generation == null || generation == hands.generation
+        val isParticipant = updated.callStatus == CallStatus.ESTABLISHED && hands.contains(identity)
+        return matchesGeneration && isParticipant && (identity in hands.raised) == isRaised
+    }
 
     override fun callsFlow(): Flow<List<Call>> = callMetadataProfileFlow()
 
@@ -380,6 +414,7 @@ internal class CallDataSource(
         _callMetadataProfile.update(conversationId) { metadata ->
             metadata.copy(
                 callStatus = status,
+                handState = metadata.handStateFor(status),
                 establishedTime = when (status) {
                     CallStatus.ESTABLISHED -> DateTimeUtil.currentInstant()
                     else -> metadata.establishedTime
@@ -480,6 +515,10 @@ internal class CallDataSource(
 
                 callMetadata.copy(
                     participants = participants,
+                    handState = callMetadata.handState?.withParticipants(
+                        participants.map { CallHandIdentity(it.userId, it.clientId) }.toSet(),
+                        Clock.System.now()
+                    ),
                     maxParticipants = max(callMetadata.maxParticipants, participants.size),
                     users = updatedUsers,
                     screenShareMetadata = updateScreenSharingMetadata(
@@ -843,7 +882,9 @@ private fun CallMetadata.toCall(conversationId: ConversationId): Call = Call(
     callerTeamName = callerTeamName,
     establishedTime = establishedTime,
     participants = getFullParticipants(),
-    maxParticipants = maxParticipants
+    maxParticipants = maxParticipants,
+    raisedHands = handState?.raised.orEmpty(),
+    handRaiseGeneration = handState?.generation
 )
 
 private fun shouldUpdateCallMetadataFromCreateCall(
@@ -855,3 +896,16 @@ private fun shouldUpdateCallMetadataFromCreateCall(
     currentCallStatus !in listOf(CallStatus.ANSWERED, CallStatus.ESTABLISHED) ||
             currentSessionLastCallStatus !in activeCallStatus ||
             status == CallStatus.STARTED
+
+private fun CallMetadata.handStateFor(status: CallStatus): CallHandState? = when {
+    status in setOf(
+        CallStatus.CLOSED, CallStatus.CLOSED_INTERNALLY, CallStatus.STILL_ONGOING,
+        CallStatus.MISSED, CallStatus.REJECTED
+    ) -> null
+    status == CallStatus.ESTABLISHED && conversationType is Conversation.Type.Group ->
+        handState ?: CallHandState.start(
+            Uuid.random().toString(), Clock.System.now(),
+            participants.map { CallHandIdentity(it.userId, it.clientId) }.toSet()
+        )
+    else -> handState
+}

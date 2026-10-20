@@ -61,6 +61,7 @@ import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
 import com.wire.kalium.protobuf.messages.HistoryClientAvailable
 import com.wire.kalium.protobuf.messages.HistoryClientRequest
 import com.wire.kalium.protobuf.messages.HistoryClientResponse
+import com.wire.kalium.protobuf.messages.InCallHandRaise
 import com.wire.kalium.protobuf.messages.InCallEmoji
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
@@ -176,6 +177,9 @@ class ProtoContentMapperImpl(
             is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
 
             is MessageContent.DataTransfer -> packDataTransfer(readableContent)
+            is MessageContent.InCallHandRaise -> GenericMessage.Content.InCallHandRaise(
+                InCallHandRaise(isHandUp = readableContent.isRaised)
+            )
             is MessageContent.InCallEmoji -> packInCallEmoji(readableContent)
             is MessageContent.Multipart -> packMultipart(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.History -> packHistoryMessage(readableContent)
@@ -407,6 +411,7 @@ class ProtoContentMapperImpl(
             is MessageContent.CompositeEdited,
             is MessageContent.MultipartEdited,
             is MessageContent.DataTransfer,
+            is MessageContent.InCallHandRaise,
             is MessageContent.InCallEmoji,
             is MessageContent.History,
             is MessageContent.Multipart -> throw IllegalArgumentException(
@@ -550,7 +555,7 @@ class ProtoContentMapperImpl(
                 }
             }
 
-            is GenericMessage.Content.InCallHandRaise -> MessageContent.Ignored
+            is GenericMessage.Content.InCallHandRaise -> MessageContent.InCallHandRaise(protoContent.value.isHandUp)
             is GenericMessage.Content.Multipart -> unpackMultipart(protoContent.value)
         }
         return readableContent
