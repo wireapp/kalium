@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -167,7 +168,8 @@ class MLSClientTest : BaseMLSClientTest() {
         })
 
         assertEquals(PLAIN_TEXT, bundle.message.decodeToString())
-
+        assertFalse(bundle.targeted)
+        assertFalse(bundle.transient)
     }
 
     @Test
@@ -203,6 +205,8 @@ class MLSClientTest : BaseMLSClientTest() {
 
         assertEquals(PLAIN_TEXT, bundle.message.decodeToString())
         assertEquals(BOB1.qualifiedClientId, bundle.senderClientId)
+        assertEquals(true, bundle.targeted)
+        assertEquals(false, bundle.transient)
     }
 
     @Test
@@ -216,6 +220,8 @@ class MLSClientTest : BaseMLSClientTest() {
 
         assertEquals(PLAIN_TEXT, bundle.message.decodeToString())
         assertEquals(BOB1.qualifiedClientId, bundle.senderClientId)
+        assertEquals(false, bundle.targeted)
+        assertEquals(true, bundle.transient)
     }
 
     @Test
@@ -231,6 +237,8 @@ class MLSClientTest : BaseMLSClientTest() {
 
         assertEquals(PLAIN_TEXT, bundle.message.decodeToString())
         assertEquals(BOB1.qualifiedClientId, bundle.senderClientId)
+        assertEquals(true, bundle.targeted)
+        assertEquals(true, bundle.transient)
     }
 
     /** Bob creates a conversation and adds Alice. */

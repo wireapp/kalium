@@ -151,19 +151,23 @@ fun DecryptedMessage.toBundle(): DecryptedMessageBundle = when (this) {
     is DecryptedMessage.Transient -> DecryptedMessageBundle.Text(
         message = plaintext,
         senderClientId = senderClientId.toCryptography(),
-        identity = identity.toCryptography()
+        identity = identity.toCryptography(),
+        transient = true
     )
 
     is DecryptedMessage.TransientTargeted -> DecryptedMessageBundle.Text(
         message = plaintext,
         senderClientId = senderClientId.toCryptography(),
-        identity = identity.toCryptography()
+        identity = identity.toCryptography(),
+        targeted = true,
+        transient = true
     )
 
     is DecryptedMessage.PersistedTargeted -> DecryptedMessageBundle.Text(
         message = plaintext,
         senderClientId = senderClientId.toCryptography(),
-        identity = identity.toCryptography()
+        identity = identity.toCryptography(),
+        targeted = true
     )
 
     is DecryptedMessage.Commit -> DecryptedMessageBundle.Commit(
@@ -187,19 +191,23 @@ fun BufferedDecryptedMessage.toBundle(): DecryptedMessageBundle = when (this) {
     is BufferedDecryptedMessage.Transient -> DecryptedMessageBundle.Text(
         message = plaintext,
         senderClientId = senderClientId.toCryptography(),
-        identity = identity.toCryptography()
+        identity = identity.toCryptography(),
+        transient = true
     )
 
     is BufferedDecryptedMessage.TransientTargeted -> DecryptedMessageBundle.Text(
         message = plaintext,
         senderClientId = senderClientId.toCryptography(),
-        identity = identity.toCryptography()
+        identity = identity.toCryptography(),
+        targeted = true,
+        transient = true
     )
 
     is BufferedDecryptedMessage.PersistedTargeted -> DecryptedMessageBundle.Text(
         message = plaintext,
         senderClientId = senderClientId.toCryptography(),
-        identity = identity.toCryptography()
+        identity = identity.toCryptography(),
+        targeted = true
     )
 
     is BufferedDecryptedMessage.Commit -> DecryptedMessageBundle.Commit(

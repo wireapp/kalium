@@ -30,7 +30,9 @@ fun CryptoDecryptedMessageBundle.toModel(groupID: GroupID): DecryptedMessageBund
                 senderID = sender.userId,
                 senderClientID = sender.clientId
             ),
-            identity = identity
+            identity = identity,
+            targeted = targeted,
+            transient = transient
         )
     }
 
