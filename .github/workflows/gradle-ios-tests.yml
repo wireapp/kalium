@@ -114,6 +114,12 @@ jobs:
         if: steps.build-tests.outputs.has-tests == 'true'
         run: python3 scripts/boot-ios-simulator.py
 
+      - name: Install X.509 fixture dependencies
+        if: steps.build-tests.outputs.has-tests == 'true'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ios-tests-venv"
+          "$RUNNER_TEMP/ios-tests-venv/bin/pip" install --quiet -r nse/scripts/requirements-ios-tests.txt
+
       - name: iOS Tests
         id: ios-tests
         if: steps.build-tests.outputs.has-tests == 'true'
@@ -122,7 +128,9 @@ jobs:
           while IFS= read -r task; do
             [[ -z "$task" ]] || test_tasks+=("$task")
           done < build/ci/ios-test-tasks.txt
-          ./gradlew --console=plain -Dorg.gradle.logging.level=lifecycle --profile "${test_tasks[@]}"
+          # Receiving's X.509 tests call a local test CA that the booted simulator must trust.
+          "$RUNNER_TEMP/ios-tests-venv/bin/python" nse/scripts/with-x509-fixture.py "$KALIUM_IOS_SIMULATOR_UDID" \
+            ./gradlew --console=plain -Dorg.gradle.logging.level=lifecycle --profile "${test_tasks[@]}"
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

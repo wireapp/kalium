@@ -123,11 +123,13 @@ Run one module's tests with its target test task:
 
 Tests in `:core:cryptography`, `:domain:messaging:receiving` and `:logic` use the
 simulator Keychain, which a standalone simulator process cannot reach, so they need a
-booted simulator (`standalone = false`). CI runs all simulator tests with
+booted simulator (`standalone = false`). Run all simulator tests with
 `nse/scripts/run-ios-tests.py`. It creates a disposable iPhone simulator, trusts a local
 X.509 fixture certificate, starts the fixture server and runs
 `./gradlew iosSimulatorArm64Test --device <simulator>`, forwarding any extra arguments to
-Gradle:
+Gradle. CI links the selected test binaries before booting a simulator, then runs the test
+tasks through `nse/scripts/with-x509-fixture.py`, which sets up the same fixture on that
+simulator:
 
 ```bash
 python3 -m venv .venv
@@ -135,10 +137,10 @@ python3 -m venv .venv
 .venv/bin/python nse/scripts/run-ios-tests.py --continue
 ```
 
-CI then runs `macosArm64Test` for the modules with macOS-only code: `:core:logger`,
-`:logic` and `:share`, plus `AppleAccountRuntimeOwnerTest` in `:domain:messaging:receiving`.
-The rest of the receiving suite runs on the simulator only, because its X.509 tests need the
-fixture certificate that `run-ios-tests.py` trusts on the simulator.
+The modules with macOS-only code also have `macosArm64Test`: `:core:logger`, `:logic` and
+`:share`, plus `AppleAccountRuntimeOwnerTest` in `:domain:messaging:receiving`. CI does not run
+these yet. The rest of the receiving suite runs on the simulator only, because its X.509 tests
+need the fixture certificate that the scripts above trust on the simulator.
 
 `./gradlew iOSOnlyAffectedTest` runs `iosSimulatorArm64Test` for the affected modules when
 affected-module data is available, and for all modules otherwise.
