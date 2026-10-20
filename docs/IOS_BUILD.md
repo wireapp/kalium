@@ -147,10 +147,11 @@ affected-module data is available, and for all modules otherwise.
 
 ### CI test groups
 
-The iOS workflow runs three macOS jobs in parallel, with each module's tests assigned once:
+The iOS workflow runs four macOS jobs in parallel, with each module's tests assigned once:
 
 - `logic`: `:logic`, whose native test binary is the largest.
 - `data`: `:data:persistence`, `:data:network` and `:core:cryptography`.
+- `receiving`: `:domain:messaging:receiving`, whose integration tests are the longest-running suite.
 - `extensions`: `:nse`, `:share` and all remaining modules. New modules enter this group automatically.
 
 Each job selects affected tests, links its binaries with one Gradle worker and a 4 GB heap,
@@ -165,6 +166,7 @@ To inspect a group's selection without building or running tests:
 ```bash
 ./gradlew iOSOnlyAffectedTest --list-only --ios-shard=logic
 ./gradlew iOSOnlyAffectedTest --list-only --ios-shard=data --all-modules
+./gradlew iOSOnlyAffectedTest --list-only --ios-shard=receiving --all-modules
 ```
 
 Develop pushes and manual workflow runs select every eligible module. PRs and merge-queue

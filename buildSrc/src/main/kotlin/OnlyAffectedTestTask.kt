@@ -48,7 +48,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
     var allModules: Boolean = false
 
     @Input
-    @set:Option(option = "ios-shard", description = "Select one iOS CI group: logic, data, or extensions.")
+    @set:Option(option = "ios-shard", description = "Select one iOS CI group: logic, data, receiving, or extensions.")
     var iosShard: String = ""
 
     init {
@@ -59,7 +59,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
     @TaskAction
     fun runOnlyAffectedConnectedTest() {
-        require(iosShard in setOf("", "logic", "data", "extensions")) { "Unknown iOS shard: $iosShard" }
+        require(iosShard in setOf("", "logic", "data", "receiving", "extensions")) { "Unknown iOS shard: $iosShard" }
         require(iosShard.isEmpty() || configuration == TestTaskConfiguration.IOS_TEST_TASK) {
             "--ios-shard is only supported by iOSOnlyAffectedTest"
         }
@@ -109,8 +109,9 @@ open class OnlyAffectedTestTask : DefaultTask() {
         "" -> true
         "logic" -> modulePath == ":logic"
         "data" -> modulePath in IOS_DATA_MODULES
+        "receiving" -> modulePath == IOS_RECEIVING_MODULE
         // New modules belong here automatically, so adding a module cannot silently remove test coverage.
-        "extensions" -> modulePath != ":logic" && modulePath !in IOS_DATA_MODULES
+        "extensions" -> modulePath != ":logic" && modulePath !in IOS_DATA_MODULES && modulePath != IOS_RECEIVING_MODULE
         else -> error("Unknown iOS shard: $iosShard")
     }
 
@@ -200,6 +201,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
     }
 
     private companion object {
+        const val IOS_RECEIVING_MODULE = ":domain:messaging:receiving"
         val IOS_DATA_MODULES = setOf(":data:persistence", ":data:network", ":core:cryptography")
         val IGNORED_MODULES = listOf(":data:protobuf", ":tools:protobuf-codegen")
         const val AFFECTED_MODULES_FILE = "dag-command/affected-modules.json"

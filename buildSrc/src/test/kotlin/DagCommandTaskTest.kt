@@ -216,10 +216,18 @@ class DagCommandTaskTest {
             ":nse", ":share", ":domain:messaging:receiving", ":future:module", ":data:protobuf"
         )
         val projectDir = setupProject(modulePaths = modules)
-        val selected = listOf("logic", "data", "extensions").flatMap { shard ->
+        val expectedGroups = mapOf(
+            "logic" to setOf(":logic"),
+            "data" to setOf(":data:persistence", ":data:network", ":core:cryptography"),
+            "receiving" to setOf(":domain:messaging:receiving"),
+            "extensions" to setOf(":nse", ":share", ":future:module")
+        )
+        val selected = expectedGroups.flatMap { (shard, expectedModules) ->
             val result = listIosTasks(projectDir, "--all-modules", "--ios-shard=$shard")
             assertFalse(result.output.contains("test ran"))
-            readSelectedIosModules(projectDir).toList()
+            val selectedModules = readSelectedIosModules(projectDir)
+            assertEquals(expectedModules, selectedModules, "Unexpected modules in $shard")
+            selectedModules.toList()
         }
 
         assertEquals(modules.toSet() - ":data:protobuf", selected.toSet())
@@ -229,8 +237,12 @@ class DagCommandTaskTest {
     @Test
     fun iosShardsPreserveAffectedDependentsAndClearEmptySelections() {
         val projectDir = setupProject(
-            modulePaths = listOf(":data:persistence", ":logic", ":nse", ":share", ":unrelated"),
-            moduleDependencies = mapOf(":logic" to listOf(":data:persistence"), ":nse" to listOf(":data:persistence")),
+            modulePaths = listOf(":data:persistence", ":logic", ":domain:messaging:receiving", ":nse", ":share", ":unrelated"),
+            moduleDependencies = mapOf(
+                ":logic" to listOf(":data:persistence"),
+                ":domain:messaging:receiving" to listOf(":data:persistence"),
+                ":nse" to listOf(":domain:messaging:receiving")
+            ),
             defaultBranch = "origin/develop"
         )
         commitFeatureChange(projectDir, "data/persistence/src.txt", "database changed")
@@ -239,14 +251,18 @@ class DagCommandTaskTest {
         assertEquals(setOf(":logic"), readSelectedIosModules(projectDir))
         listIosTasks(projectDir, "--ios-shard=data")
         assertEquals(setOf(":data:persistence"), readSelectedIosModules(projectDir))
+        listIosTasks(projectDir, "--ios-shard=receiving")
+        assertEquals(setOf(":domain:messaging:receiving"), readSelectedIosModules(projectDir))
         listIosTasks(projectDir, "--ios-shard=extensions")
         assertEquals(setOf(":nse"), readSelectedIosModules(projectDir))
 
         // A later extension-only change must not reuse this file's earlier selected tasks.
         runCommand(projectDir, "git", "update-ref", "refs/remotes/origin/develop", "HEAD")
         commitFeatureChange(projectDir, "share/src.txt", "share changed")
-        listIosTasks(projectDir, "--ios-shard=logic")
-        assertEquals(emptySet(), readSelectedIosModules(projectDir))
+        listOf("logic", "data", "receiving").forEach { shard ->
+            listIosTasks(projectDir, "--ios-shard=$shard")
+            assertEquals(emptySet(), readSelectedIosModules(projectDir))
+        }
     }
 
     @Test

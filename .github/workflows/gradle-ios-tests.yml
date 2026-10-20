@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [logic, data, extensions]
+        shard: [logic, data, receiving, extensions]
     permissions:
       contents: read # required to read repository metadata in private repositories
       issues: read # required to find related pull requests in private repositories
@@ -79,7 +79,7 @@ jobs:
             ~/.gradle/caches
             !~/.gradle/caches/build-cache-*
             ~/.gradle/wrapper
-          # Share downloads and Gradle tooling, without duplicating them in all three shard caches.
+          # Share downloads and Gradle tooling, without duplicating them in every shard cache.
           key: gradle-ios-deps-macos26-${{ runner.arch }}-jdk21-v1-${{ hashFiles('**/*.gradle*', 'gradle/*.versions.toml', 'gradle.properties') }}
           restore-keys: |
             gradle-ios-deps-macos26-${{ runner.arch }}-jdk21-v1-
