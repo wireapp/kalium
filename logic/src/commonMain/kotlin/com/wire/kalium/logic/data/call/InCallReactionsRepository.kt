@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,6 +31,7 @@ internal interface InCallReactionsRepository {
     fun observeInCallReactions(conversationId: ConversationId): Flow<InCallReactionMessage>
 }
 
+@Inject
 internal class InCallReactionsDataSource : InCallReactionsRepository {
 
     private val inCallReactionsFlow: MutableSharedFlow<InCallReactionMessage> =

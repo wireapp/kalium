@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.utils.cryptoServices
 import com.wire.kalium.logic.util.SecureRandom
 import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.withContext
 
 @DebugKaliumApi("Debug-only API for inspecting which security provider served each of kalium's crypto call sites.")
@@ -37,8 +38,8 @@ public interface GetCryptoServiceReportUseCase {
 }
 
 @OptIn(DebugKaliumApi::class)
-internal class GetCryptoServiceReportUseCaseImpl(
-    private val dispatcher: KaliumDispatcher,
+internal class GetCryptoServiceReportUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("dispatcher") private val dispatcher: KaliumDispatcher,
 ) : GetCryptoServiceReportUseCase {
 
     override suspend fun invoke(): List<CryptoServiceUsage> = withContext(dispatcher.io) {

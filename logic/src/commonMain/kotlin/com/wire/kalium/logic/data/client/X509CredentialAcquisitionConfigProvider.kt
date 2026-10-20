@@ -33,11 +33,13 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Provides the immutable input for Core Crypto's X.509 credential acquisition. */
 internal interface X509CredentialAcquisitionConfigProvider {
@@ -50,9 +52,13 @@ internal interface X509CredentialAcquisitionConfigProvider {
     suspend fun getDebugCertificateExpirationOverride(): Long?
 }
 
+@Inject
 internal class X509CredentialAcquisitionConfigProviderImpl(
+    @UserSessionBinding("clientIdProvider")
     private val currentClientIdProvider: CurrentClientIdProvider,
+    @UserSessionBinding("mlsClientProvider")
     private val mlsClientProvider: MLSClientProvider,
+    @UserSessionBinding("userRepository")
     private val userRepository: UserRepository,
 ) : X509CredentialAcquisitionConfigProvider {
 

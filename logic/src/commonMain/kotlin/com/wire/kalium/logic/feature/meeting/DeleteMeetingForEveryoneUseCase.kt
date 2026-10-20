@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case for deleting a meeting for every participant by its ID.
@@ -41,11 +42,11 @@ public interface DeleteMeetingForEveryoneUseCase {
     }
 }
 
-internal class DeleteMeetingForEveryoneUseCaseImpl(
-    private val meetingRepository: MeetingRepository,
-    private val conversationRepository: ConversationRepository,
-    private val deleteConversation: DeleteConversationUseCase,
-    private val transactionProvider: CryptoTransactionProvider,
+internal class DeleteMeetingForEveryoneUseCaseImpl @Inject constructor(
+    @LegacyMeetingBinding("meetingRepository") private val meetingRepository: MeetingRepository,
+    @LegacyMeetingBinding("conversationRepository") private val conversationRepository: ConversationRepository,
+    @LegacyMeetingBinding("deleteConversation") private val deleteConversation: DeleteConversationUseCase,
+    @LegacyMeetingBinding("transactionProvider") private val transactionProvider: CryptoTransactionProvider,
 ) : DeleteMeetingForEveryoneUseCase {
     override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingForEveryoneUseCase.Result =
         meetingRepository.getMeeting(meetingId).flatMap { meeting ->

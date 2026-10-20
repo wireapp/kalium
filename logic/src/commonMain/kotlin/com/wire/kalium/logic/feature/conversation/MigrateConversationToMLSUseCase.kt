@@ -25,7 +25,9 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
+import dev.zacsweers.metro.Inject
 
 /**
  * This use case will migrate a given conversation to use the MLS protocol
@@ -43,9 +45,13 @@ public interface MigrateConversationToMLSUseCase {
     }
 }
 
+@Inject
 internal class MigrateConversationToMLSUseCaseImpl(
+    @UserSessionBinding("mlsMigrator")
     val mlsMigrator: MLSMigrator,
+    @UserSessionBinding("conversationRepository")
     val conversationRepository: ConversationRepository,
+    @UserSessionBinding("cryptoTransactionProvider")
     val coreCryptoTransactionProvider: CryptoTransactionProvider
 ) : MigrateConversationToMLSUseCase {
     override suspend fun invoke(conversationId: ConversationId): MigrateConversationToMLSUseCase.Result {

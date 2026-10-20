@@ -19,6 +19,7 @@ package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.feature.client.LegacyClientDependencies
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -26,6 +27,7 @@ import com.wire.kalium.userstorage.di.UserStorage
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
+import dev.zacsweers.metro.createGraphFactory
 import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -46,6 +48,22 @@ import kotlinx.coroutines.test.runTest
  * composition and concurrent resolution; actual UserSessionScope adapters remain integration work.
  */
 class UserSessionGraphConcurrencyTest {
+    @Test
+    fun concurrentInjectedCacheResolutionCapturesItsRepositoryOnce() {
+        val selectors: List<(SelfConversationCacheGraph) -> Any> = listOf({ it.mls }, { it.proteus })
+        selectors.forEach { select ->
+            val gate = FirstUserBindingGate()
+            val inputs = object : SelfConversationRepositoryInputs {
+                override val repository: ConversationRepository
+                    get() = gate.create { mock() }
+            }
+            val graph = createGraphFactory<SelfConversationCacheGraph.Factory>().create(inputs, mock())
+            val providers = raceFirstUserResolution(gate) { select(graph) }
+            providers.forEach { assertSame(providers.first(), it) }
+            assertEquals(1, gate.calls.get())
+        }
+    }
+
     @Test
     fun concurrentFreshClientUseCasesCallTheirUserCaptureFactoryExactlyOnce() = runTest {
         val gate = FirstUserBindingGate()

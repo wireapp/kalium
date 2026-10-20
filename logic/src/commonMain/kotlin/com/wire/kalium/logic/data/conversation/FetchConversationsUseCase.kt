@@ -25,7 +25,9 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.util.ConversationPersistenceApi
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case responsible for fetching all available conversations from the backend,
@@ -38,9 +40,12 @@ internal interface FetchConversationsUseCase {
     suspend operator fun invoke(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit>
 }
 
+@Inject
 @OptIn(ConversationPersistenceApi::class)
 internal class FetchConversationsUseCaseImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("persistConversationsUseCase")
     private val persistConversations: PersistConversationsUseCase
 ) : FetchConversationsUseCase {
 

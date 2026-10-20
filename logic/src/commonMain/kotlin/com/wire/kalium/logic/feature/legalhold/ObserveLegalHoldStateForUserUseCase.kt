@@ -17,10 +17,12 @@
  */
 package com.wire.kalium.logic.feature.legalhold
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -31,7 +33,9 @@ public interface ObserveLegalHoldStateForUserUseCase {
     public operator fun invoke(userId: UserId): Flow<LegalHoldState>
 }
 
+@Inject
 internal class ObserveLegalHoldStateForUserUseCaseImpl internal constructor(
+    @UserSessionBinding("clientRepository")
     private val clientRepository: ClientRepository
 ) : ObserveLegalHoldStateForUserUseCase {
     override fun invoke(userId: UserId): Flow<LegalHoldState> =

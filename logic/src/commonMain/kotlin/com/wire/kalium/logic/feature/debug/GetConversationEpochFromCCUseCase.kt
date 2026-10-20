@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.DebugKaliumApi
+import dev.zacsweers.metro.Inject
 
 /**
  * Returns the current conv epoch from core-crypto
@@ -35,9 +36,9 @@ public interface GetConversationEpochFromCCUseCase {
     public suspend operator fun invoke(conversationId: ConversationId): GetConversationEpochFromCCResult
 }
 
-internal class GetConversationEpochFromCCUseCaseImpl(
-    private val conversationRepository: ConversationRepository,
-    private val transactionProvider: CryptoTransactionProvider,
+internal class GetConversationEpochFromCCUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("conversationRepository") private val conversationRepository: ConversationRepository,
+    @LegacyDebugBinding("transactionProvider") private val transactionProvider: CryptoTransactionProvider,
 ) : GetConversationEpochFromCCUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): GetConversationEpochFromCCResult =

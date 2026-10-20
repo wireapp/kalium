@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.meeting
 import com.wire.kalium.logic.data.meeting.MeetingOccurrence
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.util.KaliumDispatcher
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 
@@ -30,9 +31,9 @@ public interface ObserveMeetingOccurrenceUseCase {
     public suspend fun invoke(occurrenceId: String): Flow<MeetingOccurrence?>
 }
 
-internal class ObserveMeetingOccurrenceUseCaseImpl(
-    private val dispatcher: KaliumDispatcher,
-    private val meetingRepository: MeetingRepository,
+internal class ObserveMeetingOccurrenceUseCaseImpl @Inject constructor(
+    @LegacyMeetingBinding("dispatcher") private val dispatcher: KaliumDispatcher,
+    @LegacyMeetingBinding("meetingRepository") private val meetingRepository: MeetingRepository,
 ) : ObserveMeetingOccurrenceUseCase {
     override suspend fun invoke(occurrenceId: String): Flow<MeetingOccurrence?> =
         meetingRepository.observeMeetingOccurrence(occurrenceId).flowOn(dispatcher.io)

@@ -26,9 +26,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.message.EditMessageBuilder
+import com.wire.kalium.logic.feature.message.LegacyMessageBinding
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
+import dev.zacsweers.metro.Inject
 
 /**
  * Attempts to send all pending messages created by this user.
@@ -42,11 +45,17 @@ public interface SendPendingMessagesUseCase {
     }
 }
 
+@Inject
 internal class SendPendingMessagesUseCaseImpl(
+    @UserSessionBinding("messageRepository")
     private val messageRepository: MessageRepository,
+    @LegacyMessageBinding("messageSender")
     private val messageSender: MessageSender,
+    @UserSessionBinding("userId")
     private val userId: UserId,
+    @LegacyMessageBinding("sendPendingAssetMessage")
     private val sendPendingAssetMessage: SendPendingAssetMessageUseCase,
+    @LegacyMessageBinding("messageSendFailureHandler")
     private val messageSendFailureHandler: MessageSendFailureHandler,
 ) : SendPendingMessagesUseCase {
 

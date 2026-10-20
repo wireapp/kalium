@@ -19,9 +19,11 @@ package com.wire.kalium.logic.sync.periodic
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.DefaultWorker
 import com.wire.kalium.logic.sync.Result
+import dev.zacsweers.metro.Inject
 
 /**
  *  Worker that is responsible for syncing meeting occurrences for recurring meetings.
@@ -36,8 +38,11 @@ internal interface MeetingOccurrencesSyncWorker : DefaultWorker {
     }
 }
 
+@Inject
 internal class MeetingOccurrencesSyncWorkerImpl(
+    @UserSessionBinding("meetingRepository")
     private val meetingRepository: MeetingRepository,
+    @UserSessionBinding("featureSupport")
     private val featureSupport: FeatureSupport,
 ) : MeetingOccurrencesSyncWorker {
     override suspend fun doWork(): Result = when (featureSupport.isMeetingsSupported) {

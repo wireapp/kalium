@@ -30,6 +30,7 @@ import com.wire.kalium.logic.feature.conversation.LeaveConversationUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.util.KaliumDispatcher
+import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.Qualifier
 import dev.zacsweers.metro.SingleIn
@@ -193,66 +194,29 @@ internal interface LegacyMeetingBindings : LegacyMeetingApi {
     fun provideMeetingTransactionProvider(dependencies: LegacyMeetingDependencies): CryptoTransactionProvider =
         dependencies.transactionProvider
 
-    @Provides
+    @Binds
     @LegacyMeetingBinding("maintainMeetingOccurrences")
-    fun provideMeetingMaintainMeetingOccurrences(
-        @LegacyMeetingBinding("dispatcher") dispatcher: KaliumDispatcher,
-        @LegacyMeetingBinding("meetingRepository") meetingRepository: MeetingRepository,
-    ): MaintainMeetingOccurrencesUseCase = MaintainMeetingOccurrencesUseCaseImpl(dispatcher, meetingRepository)
+    fun MaintainMeetingOccurrencesUseCaseImpl.bindMaintainMeetingOccurrences(): MaintainMeetingOccurrencesUseCase
 
-    @Provides
+    @Binds
     @LegacyMeetingBinding("getPaginatedMeetingOccurrenceDetails")
-    fun provideMeetingGetPaginatedMeetingOccurrenceDetails(
-        @LegacyMeetingBinding("dispatcher") dispatcher: KaliumDispatcher,
-        @LegacyMeetingBinding("meetingRepository") meetingRepository: MeetingRepository,
-    ): GetPaginatedMeetingOccurrencesUseCase = GetPaginatedMeetingOccurrencesUseCaseImpl(
-        dispatcher = dispatcher,
-        meetingRepository = meetingRepository,
-    )
+    fun GetPaginatedMeetingOccurrencesUseCaseImpl.bindGetPaginatedMeetingOccurrenceDetails(): GetPaginatedMeetingOccurrencesUseCase
 
-    @Provides
+    @Binds
     @LegacyMeetingBinding("observeMeetingOccurrence")
-    fun provideMeetingObserveMeetingOccurrence(
-        @LegacyMeetingBinding("dispatcher") dispatcher: KaliumDispatcher,
-        @LegacyMeetingBinding("meetingRepository") meetingRepository: MeetingRepository,
-    ): ObserveMeetingOccurrenceUseCase = ObserveMeetingOccurrenceUseCaseImpl(
-        dispatcher = dispatcher,
-        meetingRepository = meetingRepository,
-    )
+    fun ObserveMeetingOccurrenceUseCaseImpl.bindObserveMeetingOccurrence(): ObserveMeetingOccurrenceUseCase
 
-    @Provides
+    @Binds
     @LegacyMeetingBinding("deleteMeetingForEveryone")
-    fun provideMeetingDeleteMeetingForEveryone(
-        @LegacyMeetingBinding("meetingRepository") meetingRepository: MeetingRepository,
-        @LegacyMeetingBinding("conversationRepository") conversationRepository: ConversationRepository,
-        @LegacyMeetingBinding("deleteConversation") deleteConversation: DeleteConversationUseCase,
-        @LegacyMeetingBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
-    ): DeleteMeetingForEveryoneUseCase = DeleteMeetingForEveryoneUseCaseImpl(
-        meetingRepository = meetingRepository,
-        conversationRepository = conversationRepository,
-        deleteConversation = deleteConversation,
-        transactionProvider = transactionProvider,
-    )
+    fun DeleteMeetingForEveryoneUseCaseImpl.bindDeleteMeetingForEveryone(): DeleteMeetingForEveryoneUseCase
 
-    @Provides
+    @Binds
     @LegacyMeetingBinding("deleteMeetingForMe")
-    fun provideMeetingDeleteMeetingForMe(
-        @LegacyMeetingBinding("meetingRepository") meetingRepository: MeetingRepository,
-        @LegacyMeetingBinding("leaveConversation") leaveConversation: LeaveConversationUseCase,
-    ): DeleteMeetingForMeUseCase = DeleteMeetingForMeUseCaseImpl(
-        meetingRepository = meetingRepository,
-        leaveConversation = leaveConversation,
-    )
+    fun DeleteMeetingForMeUseCaseImpl.bindDeleteMeetingForMe(): DeleteMeetingForMeUseCase
 
-    @Provides
+    @Binds
     @LegacyMeetingBinding("getNextUnfinishedMeetingOccurrence")
-    fun provideMeetingGetNextUnfinishedMeetingOccurrence(
-        @LegacyMeetingBinding("dispatcher") dispatcher: KaliumDispatcher,
-        @LegacyMeetingBinding("meetingRepository") meetingRepository: MeetingRepository,
-    ): GetNextUnfinishedMeetingOccurrenceUseCase = GetNextUnfinishedMeetingOccurrenceUseCaseImpl(
-        dispatcher = dispatcher,
-        meetingRepository = meetingRepository,
-    )
+    fun GetNextUnfinishedMeetingOccurrenceUseCaseImpl.bindGetNextUnfinishedMeetingOccurrence(): GetNextUnfinishedMeetingOccurrenceUseCase
 
     @Provides
     @LegacyMeetingBinding("ensureMeetingIsMLSEstablished")
@@ -266,37 +230,15 @@ internal interface LegacyMeetingBindings : LegacyMeetingApi {
         joinExistingMLSConversation = joinExistingMLSConversation,
     )
 
-    @Provides
+    @Binds
     @LegacyMeetingBinding("createNewMeeting")
-    fun provideMeetingCreateNewMeeting(
-        @LegacyMeetingBinding("meetingRepository") meetingRepository: MeetingRepository,
-        @LegacyMeetingBinding("refreshUsersWithoutMetadata") refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
-        @LegacyMeetingBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
-    ): CreateNewMeetingUseCase = CreateNewMeetingUseCaseImpl(
-        meetingRepository = meetingRepository,
-        refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
-        transactionProvider = transactionProvider,
-    )
+    fun CreateNewMeetingUseCaseImpl.bindCreateNewMeeting(): CreateNewMeetingUseCase
 
-    @Provides
+    @Binds
     @LegacyMeetingBinding("updateMeeting")
-    fun provideMeetingUpdateMeeting(
-        @LegacyMeetingBinding("meetingRepository") meetingRepository: MeetingRepository,
-        @LegacyMeetingBinding("userRepository") userRepository: UserRepository,
-        @LegacyMeetingBinding("refreshUsersWithoutMetadata") refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
-        @LegacyMeetingBinding("resetMLSConversation") resetMLSConversation: ResetMLSConversationUseCase,
-        @LegacyMeetingBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
-    ): UpdateMeetingUseCase = UpdateMeetingUseCaseImpl(
-        meetingRepository = meetingRepository,
-        userRepository = userRepository,
-        refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
-        resetMLSConversation = resetMLSConversation,
-        transactionProvider = transactionProvider,
-    )
+    fun UpdateMeetingUseCaseImpl.bindUpdateMeeting(): UpdateMeetingUseCase
 
-    @Provides
+    @Binds
     @LegacyMeetingBinding("meetingReminders")
-    fun provideMeetingMeetingReminders(
-        @LegacyMeetingBinding("meetingRepository") meetingRepository: MeetingRepository,
-    ): MeetingRemindersUseCase = MeetingRemindersUseCaseImpl(meetingRepository)
+    fun MeetingRemindersUseCaseImpl.bindMeetingReminders(): MeetingRemindersUseCase
 }

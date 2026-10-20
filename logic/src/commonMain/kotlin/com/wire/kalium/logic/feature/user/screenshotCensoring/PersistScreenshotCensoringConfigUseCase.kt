@@ -18,11 +18,13 @@
 
 package com.wire.kalium.logic.feature.user.screenshotCensoring
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * UseCase that allow us to persist the configuration of screenshot censoring to enabled or not
@@ -31,7 +33,9 @@ public interface PersistScreenshotCensoringConfigUseCase {
     public suspend operator fun invoke(enabled: Boolean): PersistScreenshotCensoringConfigResult
 }
 
+@Inject
 internal class PersistScreenshotCensoringConfigUseCaseImpl(
+    @UserSessionBinding("userPropertyRepository")
     private val userPropertyRepository: UserPropertyRepository,
 ) : PersistScreenshotCensoringConfigUseCase {
 

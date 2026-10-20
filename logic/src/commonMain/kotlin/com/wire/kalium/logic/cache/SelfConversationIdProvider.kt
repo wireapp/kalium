@@ -27,7 +27,9 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.util.DelicateKaliumApi
+import dev.zacsweers.metro.Inject
 
 internal fun interface SelfConversationIdProvider {
     suspend operator fun invoke(): Either<StorageFailure, List<ConversationId>>
@@ -41,9 +43,12 @@ internal fun interface MLSSelfConversationIdProvider {
     suspend operator fun invoke(): Either<StorageFailure, ConversationId>
 }
 
-internal class SelfConversationIdProviderImpl(
+internal class SelfConversationIdProviderImpl @Inject constructor(
+    @UserSessionBinding("clientRepository")
     private val clientRepository: ClientRepository,
+    @UserSessionBinding("mlsSelfConversationIdProvider")
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider,
+    @UserSessionBinding("proteusSelfConversationIdProvider")
     private val proteusSelfConversationIdProvider: ProteusSelfConversationIdProvider
 ) : SelfConversationIdProvider {
 
@@ -63,14 +68,16 @@ internal class SelfConversationIdProviderImpl(
 }
 
 @OptIn(DelicateKaliumApi::class)
-internal class MLSSelfConversationIdProviderImpl(
+internal class MLSSelfConversationIdProviderImpl @Inject constructor(
+    @UserSessionBinding("conversationRepository")
     val conversationRepository: ConversationRepository
 ) : MLSSelfConversationIdProvider, CachingProviderImpl<StorageFailure, ConversationId>({
     conversationRepository.getMLSSelfConversationId()
 })
 
 @OptIn(DelicateKaliumApi::class)
-internal class ProteusSelfConversationIdProviderImpl(
+internal class ProteusSelfConversationIdProviderImpl @Inject constructor(
+    @UserSessionBinding("conversationRepository")
     val conversationRepository: ConversationRepository
 ) : ProteusSelfConversationIdProvider, CachingProviderImpl<StorageFailure, ConversationId>({
     conversationRepository.getProteusSelfConversationId()

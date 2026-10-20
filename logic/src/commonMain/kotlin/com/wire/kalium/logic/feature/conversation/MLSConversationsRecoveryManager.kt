@@ -18,31 +18,41 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import com.wire.kalium.logic.featureFlags.FeatureSupport
+import dev.zacsweers.metro.Inject
 
 internal interface MLSConversationsRecoveryManager {
     suspend fun invoke()
 }
 
+@Inject
 @Suppress("LongParameterList")
 internal class MLSConversationsRecoveryManagerImpl(
+    @UserSessionBinding("featureSupport")
     private val featureSupport: FeatureSupport,
+    @UserSessionBinding("incrementalSyncRepository")
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    @UserSessionBinding("clientRepository")
     private val clientRepository: ClientRepository,
+    @UserSessionBinding("recoverMLSConversationsUseCase")
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase,
+    @UserSessionBinding("slowSyncRepository")
     private val slowSyncRepository: SlowSyncRepository,
+    @UserSessionBinding("cryptoTransactionProvider")
     private val transactionProvider: CryptoTransactionProvider,
+    @UserSessionBinding("userScopedLogger")
     kaliumLogger: KaliumLogger
 ) : MLSConversationsRecoveryManager {
 

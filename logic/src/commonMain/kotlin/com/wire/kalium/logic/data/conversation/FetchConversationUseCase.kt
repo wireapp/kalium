@@ -23,7 +23,9 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.util.ConversationPersistenceApi
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case responsible for fetching a single conversation from the backend
@@ -45,10 +47,14 @@ public interface FetchConversationUseCase {
 
 }
 
+@Inject
 @OptIn(ConversationPersistenceApi::class)
 internal class FetchConversationUseCaseImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("persistConversationsUseCase")
     private val persistConversations: PersistConversationsUseCase,
+    @UserSessionBinding("cryptoTransactionProvider")
     private val transactionProvider: CryptoTransactionProvider,
 ) : FetchConversationUseCase {
 

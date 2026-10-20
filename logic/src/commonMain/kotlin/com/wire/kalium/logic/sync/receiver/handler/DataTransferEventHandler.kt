@@ -17,12 +17,14 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 internal interface DataTransferEventHandler {
     suspend fun handle(
@@ -31,9 +33,13 @@ internal interface DataTransferEventHandler {
     )
 }
 
+@Inject
 internal class DataTransferEventHandlerImpl(
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("userScopedLogger")
     logger: KaliumLogger = kaliumLogger,
 ) : DataTransferEventHandler {
 

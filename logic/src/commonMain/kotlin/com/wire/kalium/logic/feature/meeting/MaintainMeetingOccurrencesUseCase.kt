@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.util.KaliumDispatcher
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.withContext
 
 /**
@@ -38,9 +39,9 @@ public interface MaintainMeetingOccurrencesUseCase {
     }
 }
 
-internal class MaintainMeetingOccurrencesUseCaseImpl(
-    private val dispatcher: KaliumDispatcher,
-    private val meetingRepository: MeetingRepository,
+internal class MaintainMeetingOccurrencesUseCaseImpl @Inject constructor(
+    @LegacyMeetingBinding("dispatcher") private val dispatcher: KaliumDispatcher,
+    @LegacyMeetingBinding("meetingRepository") private val meetingRepository: MeetingRepository,
 ) : MaintainMeetingOccurrencesUseCase {
     override suspend fun invoke(): MaintainMeetingOccurrencesUseCase.Result = withContext(dispatcher.io) {
         meetingRepository.syncMeetingOccurrences().fold(

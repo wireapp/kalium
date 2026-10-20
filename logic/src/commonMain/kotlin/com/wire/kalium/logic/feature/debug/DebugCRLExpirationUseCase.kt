@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.util.DebugKaliumApi
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -39,14 +40,16 @@ public interface SetDebugCRLExpirationAfterOneMinuteUseCase {
     public suspend operator fun invoke(enabled: Boolean)
 }
 
-internal class ObserveDebugCRLExpirationAfterOneMinuteUseCaseImpl(
+internal class ObserveDebugCRLExpirationAfterOneMinuteUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("certificateRevocationListRepository")
     private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : ObserveDebugCRLExpirationAfterOneMinuteUseCase {
     override fun invoke(): Flow<Boolean> =
         certificateRevocationListRepository.observeShouldForceCRLExpirationAfterOneMinute()
 }
 
-internal class SetDebugCRLExpirationAfterOneMinuteUseCaseImpl(
+internal class SetDebugCRLExpirationAfterOneMinuteUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("certificateRevocationListRepository")
     private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : SetDebugCRLExpirationAfterOneMinuteUseCase {
     override suspend fun invoke(enabled: Boolean) {

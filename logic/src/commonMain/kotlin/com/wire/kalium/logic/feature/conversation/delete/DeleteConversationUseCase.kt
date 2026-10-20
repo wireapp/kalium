@@ -29,8 +29,10 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case responsible for deleting a conversation, handling both Proteus and MLS protocols.
@@ -43,10 +45,15 @@ internal interface DeleteConversationUseCase {
     suspend operator fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class DeleteConversationUseCaseImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("mlsConversationRepository")
     private val mlsConversationRepository: MLSConversationRepository,
+    @UserSessionBinding("currentPersistenceEventHookNotifier")
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
 ) : DeleteConversationUseCase {
     override suspend fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {

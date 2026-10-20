@@ -22,14 +22,19 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import dev.zacsweers.metro.Inject
 
 internal interface MLSResetConversationEventHandler {
     suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset)
 }
 
+@Inject
 internal class MLSResetConversationEventHandlerImpl(
+    @UserSessionBinding("mlsConversationRepository")
     private val mlsConversationRepository: MLSConversationRepository,
+    @UserSessionBinding("endCallOnMLSReset")
     private val endCallOnMLSReset: EndCallOnMLSResetUseCase,
 ) : MLSResetConversationEventHandler {
     override suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset) {

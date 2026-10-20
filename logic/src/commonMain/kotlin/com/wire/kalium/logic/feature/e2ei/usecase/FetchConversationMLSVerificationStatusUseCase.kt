@@ -17,10 +17,12 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Trigger the checking and updating MLS Conversations Verification status.
@@ -29,8 +31,11 @@ public interface FetchConversationMLSVerificationStatusUseCase {
     public suspend operator fun invoke(conversationId: ConversationId)
 }
 
+@Inject
 internal class FetchConversationMLSVerificationStatusUseCaseImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("fetchMLSVerificationStatusUseCase")
     private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase
 ) : FetchConversationMLSVerificationStatusUseCase {
 

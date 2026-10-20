@@ -19,12 +19,13 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
@@ -45,32 +46,52 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import dev.zacsweers.metro.Inject
 
 internal interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
     suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> = Either.Right(Unit)
 }
 
+@Inject
 // Suppressed as it's an old issue
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
 @Suppress("LongParameterList", "TooManyFunctions", "ComplexMethod")
 internal class ConversationEventReceiverImpl(
+    @UserSessionBinding("newMessageHandler")
     private val newMessageHandler: NewMessageEventHandler,
+    @UserSessionBinding("newConversationHandler")
     private val newConversationHandler: NewConversationEventHandler,
+    @UserSessionBinding("deletedConversationHandler")
     private val deletedConversationHandler: DeletedConversationEventHandler,
+    @UserSessionBinding("deleteConversationReminderEventHandler")
     private val deleteConversationReminderEventHandler: DeleteConversationReminderEventHandler,
+    @UserSessionBinding("memberJoinHandler")
     private val memberJoinHandler: MemberJoinEventHandler,
+    @UserSessionBinding("memberLeaveHandler")
     private val memberLeaveHandler: MemberLeaveEventHandler,
+    @UserSessionBinding("memberChangeHandler")
     private val memberChangeHandler: MemberChangeEventHandler,
+    @UserSessionBinding("mlsWelcomeHandler")
     private val mlsWelcomeHandler: MLSWelcomeEventHandler,
+    @UserSessionBinding("renamedConversationHandler")
     private val renamedConversationHandler: RenamedConversationEventHandler,
+    @UserSessionBinding("receiptModeUpdateEventHandler")
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler,
+    @UserSessionBinding("conversationMessageTimerEventHandler")
     private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler,
+    @UserSessionBinding("conversationCodeUpdateHandler")
     private val codeUpdatedHandler: CodeUpdatedHandler,
+    @UserSessionBinding("conversationCodeDeletedHandler")
     private val codeDeletedHandler: CodeDeletedHandler,
+    @UserSessionBinding("typingIndicatorHandler")
     private val typingIndicatorHandler: TypingIndicatorHandler,
+    @UserSessionBinding("protocolUpdateEventHandler")
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler,
+    @UserSessionBinding("channelAddPermissionUpdateEventHandler")
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler,
+    @UserSessionBinding("conversationAccessUpdateEventHandler")
     private val accessUpdateEventHandler: AccessUpdateEventHandler,
+    @UserSessionBinding("mlsResetConversationEventHandler")
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler,
 ) : ConversationEventReceiver {
     override suspend fun onEvent(

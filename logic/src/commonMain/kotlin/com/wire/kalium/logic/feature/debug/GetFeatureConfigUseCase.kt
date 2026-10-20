@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.util.DebugKaliumApi
+import dev.zacsweers.metro.Inject
 
 @DebugKaliumApi("Debug-only API for fetching feature configuration.")
 public interface GetFeatureConfigUseCase {
@@ -32,8 +33,8 @@ public interface GetFeatureConfigUseCase {
     public suspend operator fun invoke(): GetFeatureConfigResult
 }
 
-internal class GetFeatureConfigUseCaseImpl(
-    private val featureConfigRepository: FeatureConfigRepository
+internal class GetFeatureConfigUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("featureConfigRepository") private val featureConfigRepository: FeatureConfigRepository
 ) : GetFeatureConfigUseCase {
 
     override suspend fun invoke(): GetFeatureConfigResult {

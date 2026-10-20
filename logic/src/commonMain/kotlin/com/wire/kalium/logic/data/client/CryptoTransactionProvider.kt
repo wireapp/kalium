@@ -28,7 +28,9 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.util.InternalCryptoAccess
+import dev.zacsweers.metro.Inject
 
 /**
  * Provides transactional access to cryptographic operations using either
@@ -68,8 +70,11 @@ internal interface CryptoTransactionProvider {
     ): Either<CoreFailure, R>
 }
 
+@Inject
 internal class CryptoTransactionProviderImpl(
+    @UserSessionBinding("mlsClientProvider")
     override val mlsClientProvider: MLSClientProvider,
+    @UserSessionBinding("proteusClientProvider")
     override val proteusClientProvider: ProteusClientProvider
 ) : CryptoTransactionProvider {
 

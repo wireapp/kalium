@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Checks if the current user's team has enabled E2EI and MLS.
@@ -31,8 +33,11 @@ public interface IsE2EIEnabledUseCase {
     public suspend operator fun invoke(): Boolean
 }
 
+@Inject
 internal class IsE2EIEnabledUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("isMLSEnabled")
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase
 ) : IsE2EIEnabledUseCase {
 

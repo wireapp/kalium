@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Get the Default Protocol [SupportedProtocol]
@@ -31,7 +33,9 @@ public interface GetDefaultProtocolUseCase {
     public suspend operator fun invoke(): SupportedProtocol
 }
 
+@Inject
 internal class GetDefaultProtocolUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : GetDefaultProtocolUseCase {
 

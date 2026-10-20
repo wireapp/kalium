@@ -18,24 +18,32 @@
 package com.wire.kalium.logic.feature.mlsmigration
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
-import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
+import dev.zacsweers.metro.Inject
 
 internal interface MLSMigrationWorker {
     suspend fun runMigration(): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class MLSMigrationWorkerImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("featureConfigRepository")
     private val featureConfigRepository: FeatureConfigRepository,
+    @UserSessionBinding("mlsConfigHandler")
     private val mlsConfigHandler: MLSConfigHandler,
+    @UserSessionBinding("mlsMigrationConfigHandler")
     private val mlsMigrationConfigHandler: MLSMigrationConfigHandler,
+    @UserSessionBinding("mlsMigrator")
     private val mlsMigrator: MLSMigrator,
 ) : MLSMigrationWorker {
 

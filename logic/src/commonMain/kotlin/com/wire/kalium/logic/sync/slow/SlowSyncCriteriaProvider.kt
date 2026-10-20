@@ -22,8 +22,10 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.sync.slow.SyncCriteriaResolution.MissingRequirement
 import com.wire.kalium.logic.sync.slow.SyncCriteriaResolution.Ready
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -60,8 +62,11 @@ internal interface SlowSyncCriteriaProvider {
     suspend fun syncCriteriaFlow(): Flow<SyncCriteriaResolution>
 }
 
+@Inject
 internal class SlowSlowSyncCriteriaProviderImpl(
+    @UserSessionBinding("clientRepository")
     private val clientRepository: ClientRepository,
+    @UserSessionBinding("logoutRepository")
     private val logoutRepository: LogoutRepository
 ) : SlowSyncCriteriaProvider {
 

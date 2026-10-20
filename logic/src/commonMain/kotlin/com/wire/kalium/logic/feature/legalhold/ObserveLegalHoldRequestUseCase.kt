@@ -25,6 +25,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -43,8 +45,11 @@ public interface ObserveLegalHoldRequestUseCase {
 
 }
 
+@Inject
 internal class ObserveLegalHoldRequestUseCaseImpl internal constructor(
+    @UserSessionBinding("userConfigRepository")
     val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("cryptoTransactionProvider")
     val transactionProvider: CryptoTransactionProvider,
 ) : ObserveLegalHoldRequestUseCase {
     override fun invoke(): Flow<ObserveLegalHoldRequestUseCase.Result> =

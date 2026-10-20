@@ -29,7 +29,9 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.sync.KaliumSyncException
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -66,9 +68,13 @@ internal interface EventGatherer {
 
 }
 
+@Inject
 internal class EventGathererImpl(
+    @UserSessionBinding("isClientAsyncNotificationsCapableProvider")
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
+    @UserSessionBinding("eventRepository")
     private val eventRepository: EventRepository,
+    @UserSessionBinding("userScopedLogger")
     logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 

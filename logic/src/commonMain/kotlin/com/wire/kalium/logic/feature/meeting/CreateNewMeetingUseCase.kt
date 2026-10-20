@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.meeting.UpsertMeeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource.EstablishMLSFailure
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case for creating a new meeting.
@@ -42,10 +43,10 @@ public interface CreateNewMeetingUseCase {
     }
 }
 
-internal class CreateNewMeetingUseCaseImpl(
-    private val meetingRepository: MeetingRepository,
-    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
-    private val transactionProvider: CryptoTransactionProvider,
+internal class CreateNewMeetingUseCaseImpl @Inject constructor(
+    @LegacyMeetingBinding("meetingRepository") private val meetingRepository: MeetingRepository,
+    @LegacyMeetingBinding("refreshUsersWithoutMetadata") private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
+    @LegacyMeetingBinding("transactionProvider") private val transactionProvider: CryptoTransactionProvider,
 ) : CreateNewMeetingUseCase {
 
     override suspend operator fun invoke(createMeeting: UpsertMeeting) = transactionProvider

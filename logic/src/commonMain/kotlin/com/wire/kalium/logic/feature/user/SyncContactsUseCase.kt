@@ -19,8 +19,10 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Syncs the current user's contacts.
@@ -32,7 +34,9 @@ internal interface SyncContactsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class SyncContactsUseCaseImpl internal constructor(
+    @UserSessionBinding("userRepository")
     private val userDataSource: UserRepository
 ) : SyncContactsUseCase {
 

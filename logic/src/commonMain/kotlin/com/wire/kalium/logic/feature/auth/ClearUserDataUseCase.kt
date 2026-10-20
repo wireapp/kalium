@@ -18,7 +18,9 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.userstorage.di.UserStorage
+import dev.zacsweers.metro.Inject
 
 /**
  * Clears the user data from the local storage, except for the client id
@@ -27,7 +29,9 @@ internal interface ClearUserDataUseCase {
     suspend operator fun invoke()
 }
 
+@Inject
 internal class ClearUserDataUseCaseImpl internal constructor(
+    @UserSessionBinding("userStorage")
     private val userStorage: UserStorage
 ) : ClearUserDataUseCase {
 

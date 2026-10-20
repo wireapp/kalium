@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case that reports whether the backend-driven "prevent adminless groups" policy
@@ -38,7 +40,9 @@ public interface IsPreventAdminlessGroupsEnabledUseCase {
     public suspend operator fun invoke(): Boolean
 }
 
+@Inject
 internal class IsPreventAdminlessGroupsEnabledUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : IsPreventAdminlessGroupsEnabledUseCase {
 

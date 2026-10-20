@@ -18,7 +18,9 @@
 package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase.Result.LegalHoldRequestAvailable
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
@@ -29,9 +31,13 @@ public interface ObserveLegalHoldStateForSelfUserUseCase {
     public suspend operator fun invoke(): Flow<LegalHoldStateForSelfUser>
 }
 
+@Inject
 internal class ObserveLegalHoldStateForSelfUserUseCaseImpl internal constructor(
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("observeLegalHoldStateForUser")
     private val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase,
+    @UserSessionBinding("observeLegalHoldRequest")
     private val observeLegalHoldRequestUseCase: ObserveLegalHoldRequestUseCase,
 ) : ObserveLegalHoldStateForSelfUserUseCase {
     override suspend fun invoke(): Flow<LegalHoldStateForSelfUser> =

@@ -25,6 +25,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 internal interface MessageCompositeEditHandler {
     suspend fun handle(
@@ -33,7 +35,9 @@ internal interface MessageCompositeEditHandler {
     ): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class MessageCompositeEditHandlerImpl internal constructor(
+    @UserSessionBinding("messageRepository")
     private val messageRepository: MessageRepository
 ) : MessageCompositeEditHandler {
 

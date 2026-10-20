@@ -18,15 +18,16 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.logger.kaliumLogger
-
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
+import kotlin.uuid.Uuid
 
 /**
  * persist a local system message to all conversations
@@ -35,8 +36,11 @@ internal interface AddSystemMessageToAllConversationsUseCase {
     suspend operator fun invoke()
 }
 
+@Inject
 internal class AddSystemMessageToAllConversationsUseCaseImpl internal constructor(
+    @UserSessionBinding("messageRepository")
     private val messageRepository: MessageRepository,
+    @UserSessionBinding("userId")
     private val selfUserId: UserId
 ) : AddSystemMessageToAllConversationsUseCase {
     override suspend operator fun invoke() {

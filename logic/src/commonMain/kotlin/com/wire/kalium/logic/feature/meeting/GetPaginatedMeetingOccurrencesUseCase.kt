@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.util.DateTimeUtil.asStartOfDay
 import com.wire.kalium.util.DateTimeUtil.currentInstant
 import com.wire.kalium.util.KaliumDispatcher
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlin.time.Instant
@@ -46,9 +47,9 @@ public interface GetPaginatedMeetingOccurrencesUseCase {
     ): Flow<PagingData<MeetingOccurrence>>
 }
 
-internal class GetPaginatedMeetingOccurrencesUseCaseImpl(
-    private val dispatcher: KaliumDispatcher,
-    private val meetingRepository: MeetingRepository,
+internal class GetPaginatedMeetingOccurrencesUseCaseImpl @Inject constructor(
+    @LegacyMeetingBinding("dispatcher") private val dispatcher: KaliumDispatcher,
+    @LegacyMeetingBinding("meetingRepository") private val meetingRepository: MeetingRepository,
 ) : GetPaginatedMeetingOccurrencesUseCase {
     override suspend operator fun invoke(
         pagingConfig: PagingConfig,

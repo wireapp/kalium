@@ -27,16 +27,22 @@ import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.notification.toLocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.firstOrNull
 
 internal interface MeetingMemberAddEventHandler {
     suspend fun handle(event: Event.Meeting.MemberAdd): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class MeetingMemberAddEventHandlerImpl(
+    @UserSessionBinding("meetingRepository")
     private val meetingRepository: MeetingRepository,
+    @UserSessionBinding("userRepository")
     private val userRepository: UserRepository,
+    @UserSessionBinding("notificationEventsManager")
     private val notificationEventsManager: NotificationEventsManager,
 ) : MeetingMemberAddEventHandler {
     override suspend fun handle(event: Event.Meeting.MemberAdd): Either<CoreFailure, Unit> {

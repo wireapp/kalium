@@ -24,7 +24,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
+import dev.zacsweers.metro.Inject
 
 /** Synchronizes the current user's meetings from the backend when meetings are enabled. */
 public interface SyncMeetingsUseCase {
@@ -39,9 +41,13 @@ public interface SyncMeetingsUseCase {
 /**
  * This use case will sync against the backend the meetings of the current user.
  */
+@Inject
 internal class SyncMeetingsUseCaseImpl(
+    @UserSessionBinding("meetingRepository")
     private val meetingRepository: MeetingRepository,
+    @UserSessionBinding("isMeetingsEnabled")
     private val isMeetingsEnabledUseCase: IsMeetingsEnabledUseCase,
+    @UserSessionBinding("cryptoTransactionProvider")
     private val transactionProvider: CryptoTransactionProvider
 ) : SyncMeetingsUseCase {
 

@@ -30,7 +30,9 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import dev.zacsweers.metro.Inject
 
 /**
  * Updates the supported protocols of the current user.
@@ -56,12 +58,19 @@ internal fun UpdateSelfUserSupportedProtocolsResult.toEither(): Either<CoreFailu
         Either.Right(this is UpdateSelfUserSupportedProtocolsResult.Updated)
     }
 
+@Inject
 internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
+    @UserSessionBinding("clientRepository")
     private val clientsRepository: ClientRepository,
+    @UserSessionBinding("userRepository")
     private val userRepository: UserRepository,
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("featureSupport")
     private val featureSupport: FeatureSupport,
+    @UserSessionBinding("clientIdProvider")
     private val currentClientIdProvider: CurrentClientIdProvider,
+    @UserSessionBinding("userScopedLogger")
     private val logger: KaliumLogger
 ) : UpdateSelfUserSupportedProtocolsUseCase {
 

@@ -44,8 +44,10 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import kotlin.uuid.Uuid
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
+import kotlin.uuid.Uuid
 
 internal typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
 
@@ -63,14 +65,22 @@ internal data class VerificationStatusData(
     val newStatus: VerificationStatus
 )
 
+@Inject
 @Suppress("LongParameterList")
 internal class FetchMLSVerificationStatusUseCaseImpl(
+    @UserSessionBinding("mlsClientProvider")
     private val mlsClientProvider: MLSClientProvider,
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("persistMessage")
     private val persistMessage: PersistMessageUseCase,
+    @UserSessionBinding("mlsConversationRepository")
     private val mlsConversationRepository: MLSConversationRepository,
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("userRepository")
     private val userRepository: UserRepository,
+    @UserSessionBinding("userScopedLogger")
     kaliumLogger: KaliumLogger
 ) : FetchMLSVerificationStatusUseCase {
 

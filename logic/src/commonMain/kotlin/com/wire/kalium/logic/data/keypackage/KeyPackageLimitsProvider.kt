@@ -18,7 +18,9 @@
 
 package com.wire.kalium.logic.data.keypackage
 
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import dev.zacsweers.metro.Inject
 
 internal interface KeyPackageLimitsProvider {
 
@@ -28,7 +30,9 @@ internal interface KeyPackageLimitsProvider {
 
 }
 
+@Inject
 internal class KeyPackageLimitsProviderImpl(
+    @UserSessionBinding("kaliumConfigs")
     private val kaliumConfigs: KaliumConfigs
 ) : KeyPackageLimitsProvider {
 

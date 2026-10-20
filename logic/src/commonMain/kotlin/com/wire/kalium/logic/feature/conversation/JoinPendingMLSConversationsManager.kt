@@ -24,6 +24,8 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -40,10 +42,15 @@ internal interface JoinPendingMLSConversationsManager {
     suspend operator fun invoke()
 }
 
+@Inject
 internal class JoinPendingMLSConversationsManagerImpl(
+    @UserSessionBinding("incrementalSyncRepository")
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("joinExistingMLSConversations")
     private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase,
+    @UserSessionBinding("userScopedLogger")
     kaliumLogger: KaliumLogger,
 ) : JoinPendingMLSConversationsManager {
 

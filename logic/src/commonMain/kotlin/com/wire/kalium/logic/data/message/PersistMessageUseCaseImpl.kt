@@ -25,20 +25,26 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
+import dev.zacsweers.metro.Inject
 
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
  */
-
+@Inject
 internal class PersistMessageUseCaseImpl(
+    @UserSessionBinding("messageRepository")
     private val messageRepository: MessageRepository,
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("notificationEventsManager")
     private val notificationEventsManager: NotificationEventsManager,
+    @UserSessionBinding("currentPersistenceEventHookNotifier")
     private val persistMessageHookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {

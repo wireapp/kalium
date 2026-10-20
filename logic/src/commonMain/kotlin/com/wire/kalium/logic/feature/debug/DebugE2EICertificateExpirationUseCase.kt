@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
 import com.wire.kalium.util.DebugKaliumApi
+import dev.zacsweers.metro.Inject
 import kotlin.time.Duration.Companion.days
 
 /**
@@ -42,7 +43,8 @@ public interface SetDebugE2EICertificateExpirationUseCase {
     public suspend operator fun invoke(seconds: Long)
 }
 
-internal class GetDebugE2EICertificateExpirationUseCaseImpl(
+internal class GetDebugE2EICertificateExpirationUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("x509CredentialAcquisitionConfigProvider")
     private val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider
 ) : GetDebugE2EICertificateExpirationUseCase {
     override suspend fun invoke(): Long =
@@ -51,7 +53,8 @@ internal class GetDebugE2EICertificateExpirationUseCaseImpl(
             ?: DEFAULT_E2EI_CERTIFICATE_EXPIRATION_SECONDS
 }
 
-internal class SetDebugE2EICertificateExpirationUseCaseImpl(
+internal class SetDebugE2EICertificateExpirationUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("x509CredentialAcquisitionConfigProvider")
     private val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider
 ) : SetDebugE2EICertificateExpirationUseCase {
     override suspend fun invoke(seconds: Long) {

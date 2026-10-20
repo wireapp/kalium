@@ -35,25 +35,35 @@ import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.notification.toLocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.firstOrNull
 
 internal interface DeletedConversationEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation)
 }
 
+@Inject
 @Suppress("LongParameterList")
 internal class DeletedConversationEventHandlerImpl(
+    @UserSessionBinding("userRepository")
     private val userRepository: UserRepository,
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("meetingRepository")
     private val meetingRepository: MeetingRepository,
+    @UserSessionBinding("notificationEventsManager")
     private val notificationEventsManager: NotificationEventsManager,
+    @UserSessionBinding("deleteConversationUseCase")
     private val deleteConversation: DeleteConversationUseCase,
+    @UserSessionBinding("currentPersistenceEventHookNotifier")
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
 ) : DeletedConversationEventHandler {
 

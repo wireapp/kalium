@@ -18,13 +18,15 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 internal interface ButtonActionConfirmationHandler {
     suspend fun handle(
@@ -34,8 +36,11 @@ internal interface ButtonActionConfirmationHandler {
     ): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class ButtonActionConfirmationHandlerImpl internal constructor(
+    @UserSessionBinding("compositeMessageRepository")
     private val compositeMessageRepository: CompositeMessageRepository,
+    @UserSessionBinding("messageMetadataRepository")
     private val messageMetadataRepository: MessageMetadataRepository
 ) : ButtonActionConfirmationHandler {
 

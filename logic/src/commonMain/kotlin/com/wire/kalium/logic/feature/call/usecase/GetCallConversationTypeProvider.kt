@@ -28,6 +28,8 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * This class is responsible for providing the conversation type for a call.
@@ -42,8 +44,11 @@ internal interface GetCallConversationTypeProvider {
     }
 }
 
+@Inject
 internal class GetCallConversationTypeProviderImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("conversationMetaDataRepository")
     private val conversationMetaDataRepository: ConversationMetaDataRepository,
 ) : GetCallConversationTypeProvider {
     override suspend fun invoke(conversationId: ConversationId): GetCallConversationTypeProvider.Result {

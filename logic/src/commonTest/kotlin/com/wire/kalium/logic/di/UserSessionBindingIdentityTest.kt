@@ -46,6 +46,7 @@ import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
 import dev.zacsweers.metro.DependencyGraph
+import dev.zacsweers.metro.Includes
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.createGraphFactory
 import kotlin.test.Test
@@ -106,17 +107,17 @@ internal interface UserSessionIdentityGraph : UserSessionConstructionBindings {
     @DependencyGraph.Factory
     interface Factory {
         fun create(
-            @Provides resources: UserSessionResourceInputs,
-            @Provides state: UserSessionStateInputs,
-            @Provides ownership: UserSessionOwnershipInputs,
-            @Provides globals: UserSessionGlobalInputs,
+            @Includes resources: UserSessionResourceInputs,
+            @Includes state: UserSessionStateInputs,
+            @Includes ownership: UserSessionOwnershipInputs,
+            @Includes globals: UserSessionGlobalInputs,
         ): UserSessionIdentityGraph
     }
 }
 
 /** Request only this production slice; the borrowed calling repository is irrelevant to lazy acquisition. */
 @DependencyGraph(UserLifetime::class)
-internal interface UserSessionUnusedCallingGraph : UserSessionBindings4, UserSessionResourceBindings {
+internal interface UserSessionUnusedCallingGraph : UserSessionDeferredBindings {
     @get:UserSessionBinding("callManager")
     val callingDelegate: UserSessionValue<Lazy<CallManager>>
 
@@ -129,7 +130,7 @@ internal interface UserSessionUnusedCallingGraph : UserSessionBindings4, UserSes
 
     @DependencyGraph.Factory
     interface Factory {
-        fun create(@Provides ownership: UserSessionOwnershipInputs): UserSessionUnusedCallingGraph
+        fun create(@Includes ownership: UserSessionOwnershipInputs): UserSessionUnusedCallingGraph
     }
 }
 
@@ -239,7 +240,7 @@ class UserSessionBindingIdentityTest {
             error("Unused Cells owner was acquired")
         }
         val ownership = object : UserSessionOwnershipInputs by mock<UserSessionOwnershipInputs>() {
-            override val callManager: Lazy<CallManager> get() = calling
+            override val callManager: UserSessionValue<Lazy<CallManager>> get() = UserSessionValue(calling)
         }
         val graph = createGraphFactory<UserSessionUnusedCallingGraph.Factory>().create(ownership)
         assertSame(graph.endCallOnReset, graph.endCallOnReset)
@@ -265,7 +266,7 @@ class UserSessionBindingIdentityTest {
         }
         assertSame(manager, calling.value)
         val ownership = object : UserSessionOwnershipInputs by mock<UserSessionOwnershipInputs>() {
-            override val callManager: Lazy<CallManager> get() = calling
+            override val callManager: UserSessionValue<Lazy<CallManager>> get() = UserSessionValue(calling)
         }
         val graph = createGraphFactory<UserSessionUnusedCallingGraph.Factory>().create(ownership)
         assertSame(calling, graph.callingDelegate.value)

@@ -18,15 +18,17 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.isRight
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.util.DelicateKaliumApi
+import dev.zacsweers.metro.Inject
 
 /**
  * Answers the question if the self user allowed to register an MLS client
@@ -41,10 +43,14 @@ internal interface IsAllowedToRegisterMLSClientUseCase {
     suspend operator fun invoke(): Boolean
 }
 
+@Inject
 @OptIn(DelicateKaliumApi::class)
 internal class IsAllowedToRegisterMLSClientUseCaseImpl(
+    @UserSessionBinding("featureSupport")
     private val featureSupport: FeatureSupport,
+    @UserSessionBinding("mlsPublicKeysRepository")
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
+    @UserSessionBinding("featureConfigRepository")
     private val featureConfigRepository: FeatureConfigRepository
 ) : IsAllowedToRegisterMLSClientUseCase {
 

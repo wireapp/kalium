@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.id.ConversationId
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +36,7 @@ internal interface CallModerationActionsRepository {
     fun observeActions(conversationId: ConversationId): Flow<CallModerationAction>
 }
 
+@Inject
 internal class CallModerationActionsDataSource : CallModerationActionsRepository {
     private val _actionChannels = MutableStateFlow<Map<ActionKey, Channel<CallModerationAction>>>(emptyMap())
 

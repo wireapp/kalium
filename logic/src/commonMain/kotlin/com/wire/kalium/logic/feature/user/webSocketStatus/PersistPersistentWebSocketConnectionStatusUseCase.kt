@@ -23,6 +23,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * This use case is responsible for persisting the persistent web socket connection status of the current user.
@@ -34,8 +36,11 @@ public interface PersistPersistentWebSocketConnectionStatusUseCase {
     public suspend operator fun invoke(enabled: Boolean)
 }
 
+@Inject
 internal class PersistPersistentWebSocketConnectionStatusUseCaseImpl(
+    @UserSessionBinding("userId")
     private val userId: UserId,
+    @UserSessionBinding("globalSessionRepository")
     private val sessionRepository: SessionRepository
 ) : PersistPersistentWebSocketConnectionStatusUseCase {
     override suspend operator fun invoke(enabled: Boolean) =

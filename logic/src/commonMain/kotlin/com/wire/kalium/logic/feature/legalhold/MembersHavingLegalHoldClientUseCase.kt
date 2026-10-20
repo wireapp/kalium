@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Returns list of ids of conversation members having a legal hold client.
@@ -32,7 +34,9 @@ internal interface MembersHavingLegalHoldClientUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, List<UserId>>
 }
 
+@Inject
 internal class MembersHavingLegalHoldClientUseCaseImpl(
+    @UserSessionBinding("clientRepository")
     private val clientRepository: ClientRepository,
 ) : MembersHavingLegalHoldClientUseCase {
     override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, List<UserId>> =

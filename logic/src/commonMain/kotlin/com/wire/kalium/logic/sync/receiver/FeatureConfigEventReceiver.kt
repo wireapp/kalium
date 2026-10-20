@@ -26,6 +26,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
@@ -43,26 +44,43 @@ import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import dev.zacsweers.metro.Inject
 
 @Deprecated("These events are not received/sent to clients anymore", ReplaceWith("SyncFeatureConfigsUseCase"))
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
+@Inject
 @Suppress("LongParameterList")
 internal class FeatureConfigEventReceiverImpl internal constructor(
+    @UserSessionBinding("guestRoomConfigHandler")
     private val guestRoomConfigHandler: GuestRoomConfigHandler,
+    @UserSessionBinding("fileSharingConfigHandler")
     private val fileSharingConfigHandler: FileSharingConfigHandler,
+    @UserSessionBinding("mlsConfigHandler")
     private val mlsConfigHandler: MLSConfigHandler,
+    @UserSessionBinding("mlsMigrationConfigHandler")
     private val mlsMigrationConfigHandler: MLSMigrationConfigHandler,
+    @UserSessionBinding("classifiedDomainsConfigHandler")
     private val classifiedDomainsConfigHandler: ClassifiedDomainsConfigHandler,
+    @UserSessionBinding("conferenceCallingConfigHandler")
     private val conferenceCallingConfigHandler: ConferenceCallingConfigHandler,
+    @UserSessionBinding("selfDeletingMessagesConfigHandler")
     private val selfDeletingMessagesConfigHandler: SelfDeletingMessagesConfigHandler,
+    @UserSessionBinding("e2eiConfigHandler")
     private val e2EIConfigHandler: E2EIConfigHandler,
+    @UserSessionBinding("appLockConfigHandler")
     private val appLockConfigHandler: AppLockConfigHandler,
+    @UserSessionBinding("allowedGlobalOperationsHandler")
     private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
+    @UserSessionBinding("cellsConfigHandler")
     private val cellsConfigHandler: CellsConfigHandler,
+    @UserSessionBinding("enableUserProfileQRCodeConfigHandler")
     private val enableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler,
+    @UserSessionBinding("assetAuditLogConfigHandler")
     private val assetAuditLogConfigHandler: AssetAuditLogConfigHandler,
+    @UserSessionBinding("preventAdminlessGroupsConfigHandler")
     private val preventAdminlessGroupsConfigHandler: PreventAdminlessGroupsConfigHandler,
+    @UserSessionBinding("meetingsConfigHandler")
     private val meetingsConfigHandler: MeetingsConfigHandler,
 ) : FeatureConfigEventReceiver {
 

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.util.DebugKaliumApi
+import dev.zacsweers.metro.Inject
 
 /**
  * Disables processing of incoming events but still mark them as processed.
@@ -31,8 +32,8 @@ public interface DisableEventProcessingUseCase {
     public suspend operator fun invoke(disabled: Boolean)
 }
 
-internal class DisableEventProcessingUseCaseImpl(
-    private val eventProcessor: EventProcessor
+internal class DisableEventProcessingUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("eventProcessor") private val eventProcessor: EventProcessor
 ) : DisableEventProcessingUseCase {
 
     override suspend fun invoke(disabled: Boolean) {

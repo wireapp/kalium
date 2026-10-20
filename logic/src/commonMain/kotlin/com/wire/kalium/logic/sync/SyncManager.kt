@@ -29,6 +29,8 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -88,11 +90,16 @@ public interface SyncStateObserver {
 @Deprecated("Use SyncStateObserverImpl instead", ReplaceWith("SyncStateObserverImpl"))
 internal typealias SyncManagerImpl = SyncStateObserverImpl
 
+@Inject
 @Suppress("LongParameterList")
 internal class SyncStateObserverImpl(
+    @UserSessionBinding("slowSyncRepository")
     private val slowSyncRepository: SlowSyncRepository,
+    @UserSessionBinding("incrementalSyncRepository")
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    @UserSessionBinding("sessionCoroutineScope")
     syncScope: CoroutineScope,
+    @UserSessionBinding("userScopedLogger")
     logger: KaliumLogger = kaliumLogger,
 ) : SyncStateObserver {
 

@@ -22,11 +22,15 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Consumable Notifications Config Handler aka. Async Notifications.
  */
+@Inject
 internal class ConsumableNotificationsConfigHandler(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) {
     internal suspend fun handle(consumableNotificationsConfigModel: ConfigsStatusModel): Either<CoreFailure, Unit> {

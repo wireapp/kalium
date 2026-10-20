@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case that reports whether the meetings feature is enabled for the current user and current API version supports it.
@@ -29,8 +31,11 @@ public interface IsMeetingsEnabledUseCase {
     public suspend operator fun invoke(): Boolean
 }
 
+@Inject
 internal class IsMeetingsEnabledUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("featureSupport")
     private val featureSupport: FeatureSupport,
 ) : IsMeetingsEnabledUseCase {
     override suspend operator fun invoke(): Boolean = userConfigRepository.isMeetingsEnabled() && featureSupport.isMeetingsSupported

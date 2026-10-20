@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.logic.feature.user.e2ei
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -31,7 +33,9 @@ public interface ObserveShouldNotifyForRevokedCertificateUseCase {
     public suspend operator fun invoke(): Flow<Boolean>
 }
 
+@Inject
 internal class ObserveShouldNotifyForRevokedCertificateUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : ObserveShouldNotifyForRevokedCertificateUseCase {
     @OptIn(ExperimentalCoroutinesApi::class)

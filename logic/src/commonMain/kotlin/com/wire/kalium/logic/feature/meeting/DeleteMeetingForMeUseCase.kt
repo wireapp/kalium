@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.feature.conversation.LeaveConversationUseCase
 import com.wire.kalium.logic.feature.conversation.RemoveMemberFromConversationUseCase
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 
@@ -38,9 +39,9 @@ public interface DeleteMeetingForMeUseCase {
     }
 }
 
-internal class DeleteMeetingForMeUseCaseImpl(
-    private val meetingRepository: MeetingRepository,
-    private val leaveConversation: LeaveConversationUseCase,
+internal class DeleteMeetingForMeUseCaseImpl @Inject constructor(
+    @LegacyMeetingBinding("meetingRepository") private val meetingRepository: MeetingRepository,
+    @LegacyMeetingBinding("leaveConversation") private val leaveConversation: LeaveConversationUseCase,
 ) : DeleteMeetingForMeUseCase {
     override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingForMeUseCase.Result = withContext(NonCancellable) {
         meetingRepository.getMeeting(meetingId).fold(

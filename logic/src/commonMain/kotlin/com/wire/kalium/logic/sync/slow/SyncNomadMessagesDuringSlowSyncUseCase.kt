@@ -22,11 +22,13 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.nomaddevice.NomadAuthenticatedNetworkAccess
 import com.wire.kalium.nomaddevice.SyncNomadAllMessagesUseCase
 import com.wire.kalium.nomaddevice.SyncNomadConversationMetadataUseCase
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
+import dev.zacsweers.metro.Inject
 
 internal interface SyncNomadMessagesDuringSlowSyncUseCase {
     fun isEnabled(): Boolean
@@ -39,11 +41,17 @@ internal data object NoOpSyncNomadMessagesDuringSlowSyncUseCase : SyncNomadMessa
     override suspend fun invoke(): Either<CoreFailure, Unit> = Either.Right(Unit)
 }
 
+@Inject
 internal class SyncNomadMessagesDuringSlowSyncUseCaseImpl(
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("nomadServiceUrl")
     private val nomadServiceUrl: String?,
+    @UserSessionBinding("userStorageProvider")
     private val userStorageProvider: UserStorageProvider,
+    @UserSessionBinding("userAuthenticatedNetworkProvider")
     private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
+    @UserSessionBinding("userScopedLogger")
     private val logger: KaliumLogger,
 ) : SyncNomadMessagesDuringSlowSyncUseCase {
 

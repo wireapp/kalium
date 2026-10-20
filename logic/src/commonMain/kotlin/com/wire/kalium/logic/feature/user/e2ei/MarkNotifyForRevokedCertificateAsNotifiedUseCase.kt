@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.user.e2ei
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case that marks that the user should not be notified about revoked E2Ei certificate.
@@ -26,7 +28,9 @@ public interface MarkNotifyForRevokedCertificateAsNotifiedUseCase {
     public suspend operator fun invoke()
 }
 
+@Inject
 internal class MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : MarkNotifyForRevokedCertificateAsNotifiedUseCase {
     override suspend operator fun invoke() {

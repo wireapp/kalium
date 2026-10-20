@@ -30,15 +30,10 @@ internal interface UserSessionBindings : UserSessionApi, UserSessionConstruction
 
 /** Contains no entrypoints; narrow generated test roots can exercise the production providers. */
 internal interface UserSessionConstructionBindings :
-    UserSessionResourceBindings,
     UserSessionPushUpdaterBindings,
-    UserSessionBindings1,
-    UserSessionBindings2,
-    UserSessionBindings3,
-    UserSessionBindings4,
-    UserSessionBindings5,
-    UserSessionBindings6,
-    UserSessionBindings7,
-    UserSessionBindings8,
-    UserSessionBindings9,
-    UserSessionBindings10
+    UserSessionConstructorBindings,
+    UserSessionResourceBindings,
+    UserSessionSyncBindings,
+    UserSessionEventBindings,
+    UserSessionDeferredBindings,
+    UserSessionFactoryBindings

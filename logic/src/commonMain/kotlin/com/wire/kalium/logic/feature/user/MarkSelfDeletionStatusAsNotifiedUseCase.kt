@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Mark the Self Deleting Messages team setting change as notified on the app.
@@ -27,7 +29,9 @@ public interface MarkSelfDeletionStatusAsNotifiedUseCase {
     public suspend operator fun invoke()
 }
 
+@Inject
 internal class MarkSelfDeletionStatusAsNotifiedUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : MarkSelfDeletionStatusAsNotifiedUseCase {
     override suspend operator fun invoke() {

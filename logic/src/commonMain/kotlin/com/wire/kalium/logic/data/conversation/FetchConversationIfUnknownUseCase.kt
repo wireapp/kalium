@@ -22,6 +22,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case responsible for ensuring that a conversation is available locally.
@@ -37,8 +39,11 @@ internal interface FetchConversationIfUnknownUseCase {
     ): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class FetchConversationIfUnknownUseCaseImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("fetchConversationUseCase")
     private val fetchConversation: FetchConversationUseCase
 ) : FetchConversationIfUnknownUseCase {
 

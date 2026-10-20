@@ -18,12 +18,16 @@
 package com.wire.kalium.logic.feature.featureConfig.handler
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
+@Inject
 internal class SecondFactorPasswordChallengeConfigHandler(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) {
     internal suspend fun handle(secondFactorPasswordChallengeConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {

@@ -19,10 +19,12 @@
 package com.wire.kalium.logic.feature.user.guestroomlink
 
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -33,7 +35,9 @@ public interface ObserveGuestRoomLinkFeatureFlagUseCase {
     public suspend operator fun invoke(): Flow<GuestRoomLinkStatus>
 }
 
+@Inject
 internal class ObserveGuestRoomLinkFeatureFlagUseCaseImpl internal constructor(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : ObserveGuestRoomLinkFeatureFlagUseCase {
     override suspend fun invoke(): Flow<GuestRoomLinkStatus> =

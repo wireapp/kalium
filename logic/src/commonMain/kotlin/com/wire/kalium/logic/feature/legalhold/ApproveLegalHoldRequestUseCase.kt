@@ -25,9 +25,11 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isAccessDenied
 import com.wire.kalium.network.exceptions.isBadRequest
+import dev.zacsweers.metro.Inject
 import io.ktor.http.HttpStatusCode
 
 /**
@@ -53,8 +55,11 @@ public interface ApproveLegalHoldRequestUseCase {
     }
 }
 
+@Inject
 internal class ApproveLegalHoldRequestUseCaseImpl internal constructor(
+    @UserSessionBinding("teamRepository")
     private val teamRepository: TeamRepository,
+    @UserSessionBinding("selfTeamId")
     private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : ApproveLegalHoldRequestUseCase {
     override suspend fun invoke(password: String?): ApproveLegalHoldRequestUseCase.Result {

@@ -22,6 +22,8 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -41,9 +43,13 @@ public interface ObserveLegalHoldChangeNotifiedForSelfUseCase {
     }
 }
 
+@Inject
 internal class ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl internal constructor(
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("userConfigRepository")
     val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("observeLegalHoldStateForUser")
     val observeLegalHoldForUserUseCase: ObserveLegalHoldStateForUserUseCase
 ) : ObserveLegalHoldChangeNotifiedForSelfUseCase {
     @OptIn(ExperimentalCoroutinesApi::class)

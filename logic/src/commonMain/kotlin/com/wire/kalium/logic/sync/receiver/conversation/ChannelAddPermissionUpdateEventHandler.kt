@@ -25,7 +25,9 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import dev.zacsweers.metro.Inject
 
 /**
  * Handles the [Event.Conversation.ConversationChannelAddPermission] event.
@@ -34,7 +36,9 @@ internal interface ChannelAddPermissionUpdateEventHandler {
     suspend fun handle(event: Event.Conversation.ConversationChannelAddPermission): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class ChannelAddPermissionUpdateEventHandlerImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository
 ) : ChannelAddPermissionUpdateEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }

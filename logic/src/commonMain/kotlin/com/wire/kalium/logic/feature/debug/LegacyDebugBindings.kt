@@ -89,6 +89,7 @@ import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
+import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.Provider
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.Qualifier
@@ -625,35 +626,17 @@ internal interface LegacyDebugBindings : LegacyDebugApi {
         selfUserId = userId,
     )
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("disableEventProcessing")
-    fun provideDebugDisableEventProcessing(
-        @LegacyDebugBinding("eventProcessor") eventProcessor: EventProcessor,
-    ): DisableEventProcessingUseCase = DisableEventProcessingUseCaseImpl(
-        eventProcessor = eventProcessor
-    )
+    fun DisableEventProcessingUseCaseImpl.bindDisableEventProcessing(): DisableEventProcessingUseCase
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("getConversationEpochFromCC")
-    fun provideDebugGetConversationEpochFromCC(
-        @LegacyDebugBinding("conversationRepository") conversationRepository: ConversationRepository,
-        @LegacyDebugBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
-    ): GetConversationEpochFromCCUseCase = GetConversationEpochFromCCUseCaseImpl(
-        conversationRepository = conversationRepository,
-        transactionProvider = transactionProvider
-    )
+    fun GetConversationEpochFromCCUseCaseImpl.bindGetConversationEpochFromCC(): GetConversationEpochFromCCUseCase
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("synchronizeExternalData")
-    fun provideDebugSynchronizeExternalData(
-        @LegacyDebugBinding("eventRepository") eventRepository: EventRepository,
-        @LegacyDebugBinding("eventProcessor") eventProcessor: EventProcessor,
-        @LegacyDebugBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
-    ): SynchronizeExternalDataUseCase = SynchronizeExternalDataUseCaseImpl(
-        eventRepository = eventRepository,
-        eventProcessor = eventProcessor,
-        transactionProvider = transactionProvider
-    )
+    fun SynchronizeExternalDataUseCaseImpl.bindSynchronizeExternalData(): SynchronizeExternalDataUseCase
 
     @Provides
     @LegacyDebugBinding("messageSendFailureHandler")
@@ -862,44 +845,30 @@ internal interface LegacyDebugBindings : LegacyDebugApi {
         userStorage.database.mentionsFeeder,
     )
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("getFeatureConfig")
-    fun provideDebugGetFeatureConfig(
-        @LegacyDebugBinding("featureConfigRepository") featureConfigRepository: FeatureConfigRepository,
-    ): GetFeatureConfigUseCase = GetFeatureConfigUseCaseImpl(featureConfigRepository)
+    fun GetFeatureConfigUseCaseImpl.bindGetFeatureConfig(): GetFeatureConfigUseCase
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("getCryptoServiceReport")
-    fun provideDebugGetCryptoServiceReport(
-        @LegacyDebugBinding("dispatcher") dispatcher: KaliumDispatcher,
-    ): GetCryptoServiceReportUseCase = GetCryptoServiceReportUseCaseImpl(dispatcher)
+    fun GetCryptoServiceReportUseCaseImpl.bindGetCryptoServiceReport(): GetCryptoServiceReportUseCase
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("getDebugE2EICertificateExpiration")
-    fun provideDebugGetDebugE2EICertificateExpiration(
-        @LegacyDebugBinding("x509CredentialAcquisitionConfigProvider")
-        x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider,
-    ): GetDebugE2EICertificateExpirationUseCase = GetDebugE2EICertificateExpirationUseCaseImpl(x509CredentialAcquisitionConfigProvider)
+    fun GetDebugE2EICertificateExpirationUseCaseImpl.bindGetDebugE2EICertificateExpiration(): GetDebugE2EICertificateExpirationUseCase
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("setDebugE2EICertificateExpiration")
-    fun provideDebugSetDebugE2EICertificateExpiration(
-        @LegacyDebugBinding("x509CredentialAcquisitionConfigProvider")
-        x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider,
-    ): SetDebugE2EICertificateExpirationUseCase = SetDebugE2EICertificateExpirationUseCaseImpl(x509CredentialAcquisitionConfigProvider)
+    fun SetDebugE2EICertificateExpirationUseCaseImpl.bindSetDebugE2EICertificateExpiration(): SetDebugE2EICertificateExpirationUseCase
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("observeDebugCRLExpirationAfterOneMinute")
-    fun provideDebugObserveDebugCRLExpirationAfterOneMinute(
-        @LegacyDebugBinding("certificateRevocationListRepository") certificateRevocationListRepository: CertificateRevocationListRepository,
-    ): ObserveDebugCRLExpirationAfterOneMinuteUseCase =
-        ObserveDebugCRLExpirationAfterOneMinuteUseCaseImpl(certificateRevocationListRepository)
+    fun ObserveDebugCRLExpirationAfterOneMinuteUseCaseImpl.bindObserveDebugCRLExpirationAfterOneMinute():
+        ObserveDebugCRLExpirationAfterOneMinuteUseCase
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("setDebugCRLExpirationAfterOneMinute")
-    fun provideDebugSetDebugCRLExpirationAfterOneMinute(
-        @LegacyDebugBinding("certificateRevocationListRepository") certificateRevocationListRepository: CertificateRevocationListRepository,
-    ): SetDebugCRLExpirationAfterOneMinuteUseCase = SetDebugCRLExpirationAfterOneMinuteUseCaseImpl(certificateRevocationListRepository)
+    fun SetDebugCRLExpirationAfterOneMinuteUseCaseImpl.bindSetDebugCRLExpirationAfterOneMinute(): SetDebugCRLExpirationAfterOneMinuteUseCase
 
     @Provides
     @SingleIn(UserLifetime::class)
@@ -916,15 +885,9 @@ internal interface LegacyDebugBindings : LegacyDebugApi {
         transactionProvider = transactionProvider
     )
 
-    @Provides
+    @Binds
     @LegacyDebugBinding("getConversationCryptoStats")
-    fun provideDebugGetConversationCryptoStats(
-        @LegacyDebugBinding("conversationRepository") conversationRepository: ConversationRepository,
-        @LegacyDebugBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
-    ): GetConversationCryptoStatsUseCase = GetConversationCryptoStatsUseCaseImpl(
-        conversationRepository = conversationRepository,
-        transactionProvider = transactionProvider
-    )
+    fun GetConversationCryptoStatsUseCaseImpl.bindGetConversationCryptoStats(): GetConversationCryptoStatsUseCase
 
     @Provides
     @LegacyDebugBinding("refillKeyPackages")

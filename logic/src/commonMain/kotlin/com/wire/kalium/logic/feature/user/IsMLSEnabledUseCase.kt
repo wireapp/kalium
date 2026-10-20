@@ -20,7 +20,9 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import dev.zacsweers.metro.Inject
 
 /**
  * Checks if the current user has enabled MLS support.
@@ -32,8 +34,11 @@ public interface IsMLSEnabledUseCase {
     public suspend operator fun invoke(): Boolean
 }
 
+@Inject
 internal class IsMLSEnabledUseCaseImpl(
+    @UserSessionBinding("featureSupport")
     private val featureSupport: FeatureSupport,
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : IsMLSEnabledUseCase {
 

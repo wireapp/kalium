@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.meeting.MeetingOccurrence
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.util.DateTimeUtil.currentInstant
 import com.wire.kalium.util.KaliumDispatcher
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
 
@@ -36,9 +37,9 @@ public interface GetNextUnfinishedMeetingOccurrenceUseCase {
     public suspend operator fun invoke(meetingId: MeetingId, from: Instant = currentInstant()): MeetingOccurrence?
 }
 
-internal class GetNextUnfinishedMeetingOccurrenceUseCaseImpl(
-    private val dispatcher: KaliumDispatcher,
-    private val meetingRepository: MeetingRepository,
+internal class GetNextUnfinishedMeetingOccurrenceUseCaseImpl @Inject constructor(
+    @LegacyMeetingBinding("dispatcher") private val dispatcher: KaliumDispatcher,
+    @LegacyMeetingBinding("meetingRepository") private val meetingRepository: MeetingRepository,
 ) : GetNextUnfinishedMeetingOccurrenceUseCase {
     override suspend operator fun invoke(meetingId: MeetingId, from: Instant): MeetingOccurrence? = withContext(dispatcher.io) {
         meetingRepository.getNextUnfinishedMeetingOccurrence(meetingId, from).getOrNull()

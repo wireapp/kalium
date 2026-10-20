@@ -25,16 +25,23 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
+import dev.zacsweers.metro.Inject
 
 internal interface AssetMessageHandler {
     suspend fun handle(message: Message.Regular)
 }
 
+@Inject
 internal class AssetMessageHandlerImpl(
+    @UserSessionBinding("messageRepository")
     private val messageRepository: MessageRepository,
+    @UserSessionBinding("persistMessage")
     private val persistMessage: PersistMessageUseCase,
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("validateAssetMimeType")
     private val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase
 ) : AssetMessageHandler {
     override suspend fun handle(message: Message.Regular) {

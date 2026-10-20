@@ -18,11 +18,13 @@
 package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.user.LegalHoldStatus
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.LegalHoldStatus
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case that allows to fetch and persist the legal hold state for the self user.
@@ -31,8 +33,11 @@ internal interface FetchLegalHoldForSelfUserFromRemoteUseCase {
     suspend operator fun invoke(): Either<CoreFailure, LegalHoldStatus>
 }
 
+@Inject
 internal class FetchLegalHoldForSelfUserFromRemoteUseCaseImpl internal constructor(
+    @UserSessionBinding("teamRepository")
     private val teamRepository: TeamRepository,
+    @UserSessionBinding("selfTeamId")
     private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : FetchLegalHoldForSelfUserFromRemoteUseCase {
 

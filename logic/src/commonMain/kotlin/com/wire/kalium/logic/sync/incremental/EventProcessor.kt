@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
@@ -38,6 +39,7 @@ import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -90,16 +92,26 @@ internal interface EventProcessor {
     suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit>
 }
 
+@Inject
 @Suppress("LongParameterList")
 internal class EventProcessorImpl(
+    @UserSessionBinding("conversationEventReceiver")
     private val conversationEventReceiver: ConversationEventReceiver,
+    @UserSessionBinding("userEventReceiver")
     private val userEventReceiver: UserEventReceiver,
+    @UserSessionBinding("teamEventReceiver")
     private val teamEventReceiver: TeamEventReceiver,
+    @UserSessionBinding("featureConfigEventReceiver")
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
+    @UserSessionBinding("userPropertiesEventReceiver")
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
+    @UserSessionBinding("federationEventReceiver")
     private val federationEventReceiver: FederationEventReceiver,
+    @UserSessionBinding("meetingEventReceiver")
     private val meetingEventReceiver: MeetingEventReceiver,
+    @UserSessionBinding("sessionCoroutineScope")
     private val processingScope: CoroutineScope,
+    @UserSessionBinding("userScopedLogger")
     logger: KaliumLogger = kaliumLogger,
 ) : EventProcessor {
 

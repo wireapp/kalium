@@ -37,21 +37,30 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
+import dev.zacsweers.metro.Inject
 
 internal interface NewConversationEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation)
 }
 
+@Inject
 internal class NewConversationEventHandlerImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("userRepository")
     private val userRepository: UserRepository,
+    @UserSessionBinding("selfTeamId")
     private val selfTeamIdProvider: SelfTeamIdProvider,
+    @UserSessionBinding("newGroupConversationSystemMessagesCreator")
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    @UserSessionBinding("oneOnOneResolver")
     private val oneOnOneResolver: OneOnOneResolver,
+    @UserSessionBinding("persistConversationUseCase")
     private val persistConversation: PersistConversationUseCase,
 ) : NewConversationEventHandler {
 

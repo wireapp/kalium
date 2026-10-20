@@ -18,20 +18,22 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Attempts to find an existing MLS-capable one-on-one conversation,
@@ -54,10 +56,15 @@ internal interface MLSOneOnOneConversationResolver {
     ): Either<CoreFailure, ConversationId>
 }
 
+@Inject
 internal class MLSOneOnOneConversationResolverImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("joinExistingMLSConversationUseCase")
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
+    @UserSessionBinding("fetchMLSOneToOneConversationUseCase")
     private val fetchMLSOneToOneConversation: FetchMLSOneToOneConversationUseCase,
+    @UserSessionBinding("mlsConversationRepository")
     private val mlsConversationRepository: MLSConversationRepository,
 ) : MLSOneOnOneConversationResolver {
 

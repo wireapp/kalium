@@ -69,57 +69,135 @@ internal class UserSessionValue<T>(val value: T)
 
 /** Borrows existing owner state; implementations must use getters, never eager snapshots. */
 internal interface UserSessionResourceInputs {
+    @get:UserSessionBinding("userStorage")
     val userStorage: UserStorage
+
+    @get:UserSessionBinding("authenticatedNetworkContainer")
     val authenticatedNetworkContainer: AuthenticatedNetworkContainer
+
+    @get:UserSessionBinding("sessionManager")
     val sessionManager: SessionManager
+
+    @get:UserSessionBinding("globalPreferences")
     val globalPreferences: GlobalPrefProvider
+
+    @get:UserSessionBinding("userStorageProvider")
     val userStorageProvider: UserStorageProvider
+
+    @get:UserSessionBinding("userAuthenticatedNetworkProvider")
     val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider
+
+    @get:UserSessionBinding("platformUserStorageProperties")
     val platformUserStorageProperties: PlatformUserStorageProperties
+
+    @get:UserSessionBinding("resourceAccess")
     val resourceAccess: com.wire.kalium.util.AccountResourceAccess?
+
+    @get:UserSessionBinding("proteusClientProvider")
     val proteusClientProvider: ProteusClientProvider
+
+    @get:UserSessionBinding("mlsClientProvider")
     val mlsClientProvider: MLSClientProvider
+
+    @get:UserSessionBinding("networkStateObserver")
     val networkStateObserver: NetworkStateObserver
+
+    @get:UserSessionBinding("dataStoragePaths")
     val dataStoragePaths: DataStoragePaths
 }
 
 /** Borrows existing owner state; implementations must use getters, never eager snapshots. */
 internal interface UserSessionStateInputs {
+    @get:UserSessionBinding("userId")
     val userId: UserId
+
+    @get:UserSessionBinding("kaliumConfigs")
     val kaliumConfigs: KaliumConfigs
+
+    @get:UserSessionBinding("clientConfig")
     val clientConfig: ClientConfig
+
+    @get:UserSessionBinding("userScopedLogger")
     val userScopedLogger: KaliumLogger
+
+    @get:UserSessionBinding("clientIdProvider")
     val clientIdProvider: CurrentClientIdProvider
+
+    @get:UserSessionBinding("selfTeamId")
     val selfTeamId: SelfTeamIdProvider
+
+    @get:UserSessionBinding("proposalTimersFlow")
     val proposalTimersFlow: MutableSharedFlow<ProposalTimer>
+
+    @get:UserSessionBinding("mlsMutex")
     val mlsMutex: Mutex
+
+    @get:UserSessionBinding("epochChangesObserver")
     val epochChangesObserver: EpochChangesObserver
+
+    @get:UserSessionBinding("notificationEventsManager")
     val notificationEventsManager: NotificationEventsManager
+
+    @get:UserSessionBinding("localEventRepository")
     val localEventRepository: LocalEventRepository
+
+    @get:UserSessionBinding("currentPersistenceEventHookNotifier")
     val currentPersistenceEventHookNotifier: PersistenceEventHookNotifier
+
+    @get:UserSessionBinding("currentCryptoStateChangeHookNotifier")
     val currentCryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier
+
+    @get:UserSessionBinding("nomadServiceUrl")
     val nomadServiceUrl: String?
-    val invalidateTeamId: () -> Unit
+
+    @get:UserSessionBinding("invalidateTeamId")
+    val invalidateTeamId: UserSessionValue<() -> Unit>
+
+    @get:UserSessionBinding("enableDurableMLSReceiveRecovery")
     val enableDurableMLSReceiveRecovery: Boolean
 }
 
 /** Borrows existing owner state; implementations must use getters, never eager snapshots. */
 internal interface UserSessionOwnershipInputs {
+    @get:UserSessionBinding("mediaManagerService")
     val mediaManagerService: MediaManagerService
+
+    @get:UserSessionBinding("flowManagerService")
     val flowManagerService: FlowManagerService
+
+    @get:UserSessionBinding("sessionCoroutineScope")
     val sessionCoroutineScope: CoroutineScope
+
+    @get:UserSessionBinding("globalCoroutineScope")
     val globalCoroutineScope: CoroutineScope
-    val callManager: Lazy<CallManager>
+
+    @get:UserSessionBinding("callManager")
+    val callManager: UserSessionValue<Lazy<CallManager>>
+
+    @get:UserSessionBinding("userSessionScopeProvider")
     val userSessionScopeProvider: UserSessionScopeProvider
+
+    @get:UserSessionBinding("userSessionWorkScheduler")
     val userSessionWorkScheduler: UserSessionWorkScheduler
+
+    @get:UserSessionBinding("syncShutdownCoordinator")
     val syncShutdownCoordinator: SyncShutdownCoordinator
+
+    @get:UserSessionBinding("logoutCallback")
     val logoutCallback: LogoutCallback
-    val receiveRecovery: suspend () -> AppMLSReceiveRecovery?
+
+    @get:UserSessionBinding("receiveRecovery")
+    val receiveRecovery: UserSessionValue<suspend () -> AppMLSReceiveRecovery?>
 }
 
 /** Borrows existing owner state; implementations must use getters, never eager snapshots. */
 internal interface UserSessionGlobalInputs {
+    @get:UserSessionBinding("globalSessionRepository")
     val globalSessionRepository: SessionRepository
+
+    @get:UserSessionBinding("unboundNetworkContainer")
     val unboundNetworkContainer: UnboundNetworkContainer
+
+    @get:UserSessionBinding("serverConfigRepository")
     val serverConfigRepository: ServerConfigRepository
 }

@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Restart slowSync process for recovery.
@@ -27,7 +29,9 @@ public interface RestartSlowSyncProcessForRecoveryUseCase {
     public suspend operator fun invoke()
 }
 
+@Inject
 internal class RestartSlowSyncProcessForRecoveryUseCaseImpl internal constructor(
+    @UserSessionBinding("slowSyncRepository")
     private val slowSyncRepository: SlowSyncRepository
 ) : RestartSlowSyncProcessForRecoveryUseCase {
     override suspend operator fun invoke() {

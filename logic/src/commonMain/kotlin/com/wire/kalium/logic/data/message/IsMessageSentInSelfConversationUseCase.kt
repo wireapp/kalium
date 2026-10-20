@@ -18,14 +18,18 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 internal interface IsMessageSentInSelfConversationUseCase {
     suspend operator fun invoke(message: Message): Boolean
 }
 
+@Inject
 internal class IsMessageSentInSelfConversationUseCaseImpl internal constructor(
+    @UserSessionBinding("selfConversationIdProvider")
     private val selfConversationIdProvider: SelfConversationIdProvider
 ) : IsMessageSentInSelfConversationUseCase {
 

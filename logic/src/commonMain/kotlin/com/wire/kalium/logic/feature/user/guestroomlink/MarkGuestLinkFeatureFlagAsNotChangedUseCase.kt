@@ -18,8 +18,10 @@
 
 package com.wire.kalium.logic.feature.user.guestroomlink
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Mark Guest Link Feature Flag state as not changed
@@ -28,7 +30,9 @@ public interface MarkGuestLinkFeatureFlagAsNotChangedUseCase {
     public suspend operator fun invoke()
 }
 
+@Inject
 internal class MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl internal constructor(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : MarkGuestLinkFeatureFlagAsNotChangedUseCase {
     override suspend operator fun invoke() {

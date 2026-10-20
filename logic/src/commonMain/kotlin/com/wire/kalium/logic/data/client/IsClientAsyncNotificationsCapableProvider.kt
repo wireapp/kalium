@@ -17,7 +17,9 @@
  */
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,8 +32,11 @@ import kotlinx.coroutines.launch
  *
  * At some point Legacy notifications will be deprecated and removed from the codebase.
  */
+@Inject
 internal class IsClientAsyncNotificationsCapableProviderImpl(
+    @UserSessionBinding("clientRegistrationStorage")
     private val clientRegistrationStorage: ClientRegistrationStorage,
+    @UserSessionBinding("sessionCoroutineScope")
     coroutineScope: CoroutineScope
 ) : IsClientAsyncNotificationsCapableProvider {
 

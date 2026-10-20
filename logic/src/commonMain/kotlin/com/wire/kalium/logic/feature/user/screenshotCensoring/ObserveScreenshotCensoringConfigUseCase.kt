@@ -18,10 +18,12 @@
 
 package com.wire.kalium.logic.feature.user.screenshotCensoring
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.common.functional.mapToRightOr
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
@@ -32,7 +34,9 @@ public interface ObserveScreenshotCensoringConfigUseCase {
     public operator fun invoke(): Flow<ObserveScreenshotCensoringConfigResult>
 }
 
+@Inject
 internal class ObserveScreenshotCensoringConfigUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
 ) : ObserveScreenshotCensoringConfigUseCase {
 

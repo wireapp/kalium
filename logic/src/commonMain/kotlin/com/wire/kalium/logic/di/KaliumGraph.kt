@@ -51,6 +51,7 @@ import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorkerIm
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import dev.zacsweers.metro.GraphExtension
+import dev.zacsweers.metro.Includes
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 
@@ -109,10 +110,10 @@ internal interface KaliumUserGraph :
             @Provides legacySearchDependencies: LegacySearchDependencies,
             @Provides legacyUserDependencies: LegacyUserDependencies,
             @Provides legacyClientDependencies: LegacyClientDependencies,
-            @Provides userSessionResourceInputs: UserSessionResourceInputs,
-            @Provides userSessionStateInputs: UserSessionStateInputs,
-            @Provides userSessionOwnershipInputs: UserSessionOwnershipInputs,
-            @Provides userSessionGlobalInputs: UserSessionGlobalInputs,
+            @Includes userSessionResourceInputs: UserSessionResourceInputs,
+            @Includes userSessionStateInputs: UserSessionStateInputs,
+            @Includes userSessionOwnershipInputs: UserSessionOwnershipInputs,
+            @Includes userSessionGlobalInputs: UserSessionGlobalInputs,
         ): KaliumUserGraph
     }
 }

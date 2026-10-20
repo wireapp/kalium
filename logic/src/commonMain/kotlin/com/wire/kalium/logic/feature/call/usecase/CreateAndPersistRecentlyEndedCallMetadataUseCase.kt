@@ -27,7 +27,9 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.type.isOwner
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.util.DateTimeUtil
+import dev.zacsweers.metro.Inject
 
 /**
  * Given a call and raw call end reason create metadata containing all information regarding
@@ -37,9 +39,13 @@ internal interface CreateAndPersistRecentlyEndedCallMetadataUseCase {
     suspend operator fun invoke(conversationId: ConversationId, callEndedReason: Int)
 }
 
+@Inject
 internal class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
+    @UserSessionBinding("callRepository")
     private val callRepository: CallRepository,
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("selfTeamId")
     private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : CreateAndPersistRecentlyEndedCallMetadataUseCase {
     override suspend fun invoke(conversationId: ConversationId, callEndedReason: Int) {

@@ -36,15 +36,17 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.processMLSWelcome
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.processMLSWelcome
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.di.UserSessionBinding
+import com.wire.kalium.logic.feature.client.LegacyClientBinding
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
@@ -52,18 +54,25 @@ import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationNotFound
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.first
 
 internal interface MLSWelcomeEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
 }
 
+@Inject
 @Suppress("LongParameterList", "LongMethod")
 internal class MLSWelcomeEventHandlerImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("oneOnOneResolver")
     private val oneOnOneResolver: OneOnOneResolver,
+    @LegacyClientBinding("refillKeyPackages")
     private val refillKeyPackages: RefillKeyPackagesUseCase,
+    @UserSessionBinding("joinExistingMLSConversationUseCase")
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    @UserSessionBinding("fetchConversationIfUnknownUseCase")
     private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(

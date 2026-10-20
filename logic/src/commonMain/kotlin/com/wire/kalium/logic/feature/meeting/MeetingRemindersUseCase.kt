@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.meeting
 
 import com.wire.kalium.logic.data.meeting.MeetingReminder
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Instant
 
@@ -17,8 +18,8 @@ public interface MeetingRemindersUseCase {
     public suspend fun within(startInclusive: Instant, endExclusive: Instant): List<MeetingReminder>
 }
 
-internal class MeetingRemindersUseCaseImpl(
-    private val repository: MeetingRepository,
+internal class MeetingRemindersUseCaseImpl @Inject constructor(
+    @LegacyMeetingBinding("meetingRepository") private val repository: MeetingRepository,
 ) : MeetingRemindersUseCase {
 
     override fun changes(): Flow<Unit> = repository.observeMeetingReminderChanges()

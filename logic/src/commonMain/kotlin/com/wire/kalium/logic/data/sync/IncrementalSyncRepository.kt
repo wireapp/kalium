@@ -18,10 +18,12 @@
 
 package com.wire.kalium.logic.data.sync
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository.Companion.BUFFER_SIZE
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -51,7 +53,9 @@ internal interface IncrementalSyncRepository {
     }
 }
 
+@Inject
 internal class InMemoryIncrementalSyncRepository(
+    @UserSessionBinding("userScopedLogger")
     logger: KaliumLogger = kaliumLogger,
 ) : IncrementalSyncRepository {
 

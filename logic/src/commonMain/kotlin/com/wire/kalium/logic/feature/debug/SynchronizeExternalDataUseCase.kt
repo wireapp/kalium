@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.util.DebugKaliumApi
+import dev.zacsweers.metro.Inject
 
 @DebugKaliumApi("Debug-only API for consuming externally supplied event data.")
 public fun interface SynchronizeExternalDataUseCase {
@@ -50,10 +51,10 @@ public sealed class SynchronizeExternalDataResult {
     public data class Failure(val coreFailure: CoreFailure) : SynchronizeExternalDataResult()
 }
 
-internal class SynchronizeExternalDataUseCaseImpl(
-    val eventRepository: EventRepository,
-    val eventProcessor: EventProcessor,
-    private val transactionProvider: CryptoTransactionProvider
+internal class SynchronizeExternalDataUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("eventRepository") val eventRepository: EventRepository,
+    @LegacyDebugBinding("eventProcessor") val eventProcessor: EventProcessor,
+    @LegacyDebugBinding("transactionProvider") private val transactionProvider: CryptoTransactionProvider
 ) : SynchronizeExternalDataUseCase {
 
     override suspend operator fun invoke(

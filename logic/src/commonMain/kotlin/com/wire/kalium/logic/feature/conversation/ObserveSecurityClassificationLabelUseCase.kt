@@ -25,6 +25,8 @@ import com.wire.kalium.common.functional.onlyRight
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
@@ -41,9 +43,13 @@ public interface ObserveSecurityClassificationLabelUseCase {
     public suspend operator fun invoke(conversationId: ConversationId): Flow<SecurityClassificationType>
 }
 
+@Inject
 internal class ObserveSecurityClassificationLabelUseCaseImpl(
+    @LegacyConversationBinding("observeConversationMembers")
     private val observeConversationMembers: ObserveConversationMembersUseCase,
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : ObserveSecurityClassificationLabelUseCase {
 

@@ -20,15 +20,17 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.prepareMultipartEdit
-import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.prepareMultipartEdit
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import dev.zacsweers.metro.Inject
 
 internal interface MessageMultipartEditHandler {
     suspend fun handle(
@@ -37,8 +39,11 @@ internal interface MessageMultipartEditHandler {
     ): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class MessageMultipartEditHandlerImpl internal constructor(
+    @UserSessionBinding("messageRepository")
     private val messageRepository: MessageRepository,
+    @UserSessionBinding("notificationEventsManager")
     private val notificationEventsManager: NotificationEventsManager,
 ) : MessageMultipartEditHandler {
 

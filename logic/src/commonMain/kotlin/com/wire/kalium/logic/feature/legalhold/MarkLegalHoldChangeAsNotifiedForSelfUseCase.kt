@@ -18,9 +18,11 @@
 package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case that marks the recent legal hold change as already notified to the user.
@@ -34,7 +36,9 @@ public interface MarkLegalHoldChangeAsNotifiedForSelfUseCase {
     }
 }
 
+@Inject
 internal class MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl internal constructor(
+    @UserSessionBinding("userConfigRepository")
     val userConfigRepository: UserConfigRepository,
 ) : MarkLegalHoldChangeAsNotifiedForSelfUseCase {
     override suspend fun invoke(): MarkLegalHoldChangeAsNotifiedForSelfUseCase.Result =

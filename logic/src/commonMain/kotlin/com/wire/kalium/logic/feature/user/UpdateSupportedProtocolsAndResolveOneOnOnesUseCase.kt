@@ -21,7 +21,9 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import dev.zacsweers.metro.Inject
 
 /**
  * Update self supported protocols, and if the supported protocols
@@ -37,8 +39,11 @@ internal interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
     suspend operator fun invoke(transactionContext: CryptoTransactionContext, synchroniseUsers: Boolean): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl(
+    @UserSessionBinding("updateSupportedProtocols")
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase,
+    @UserSessionBinding("oneOnOneResolver")
     private val oneOnOneResolver: OneOnOneResolver
 ) : UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
 

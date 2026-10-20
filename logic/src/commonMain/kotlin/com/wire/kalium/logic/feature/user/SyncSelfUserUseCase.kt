@@ -19,8 +19,10 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * This use case will sync the current user with the backend.
@@ -29,7 +31,9 @@ internal interface SyncSelfUserUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class SyncSelfUserUseCaseImpl internal constructor(
+    @UserSessionBinding("userRepository")
     private val userRepository: UserRepository
 ) : SyncSelfUserUseCase {
     /**

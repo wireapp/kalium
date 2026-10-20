@@ -25,7 +25,9 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case responsible for persisting a single conversation, if it doesn't already exist
@@ -48,8 +50,11 @@ internal interface PersistConversationUseCase {
     ): Either<CoreFailure, Boolean>
 }
 
+@Inject
 internal class PersistConversationUseCaseImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("persistConversationsUseCase")
     private val persistConversations: PersistConversationsUseCase,
 ) : PersistConversationUseCase {
 

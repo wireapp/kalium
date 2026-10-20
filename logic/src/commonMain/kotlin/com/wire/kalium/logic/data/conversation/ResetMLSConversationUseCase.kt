@@ -40,12 +40,14 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse as NetworkConversationResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.ConversationPersistenceApi
+import dev.zacsweers.metro.Inject
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.native.HiddenFromObjC
 
@@ -72,15 +74,24 @@ public interface ResetMLSConversationUseCase {
     ): ResetMLSConversationResult
 }
 
+@Inject
 @Suppress("ReturnCount", "LongParameterList")
 internal class ResetMLSConversationUseCaseImpl(
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("userConfigRepository")
     private val userConfig: UserConfigRepository,
+    @UserSessionBinding("cryptoTransactionProvider")
     private val transactionProvider: CryptoTransactionProvider,
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("mlsConversationRepository")
     private val mlsConversationRepository: MLSConversationRepository,
+    @UserSessionBinding("fetchConversationUseCase")
     private val fetchConversationUseCase: FetchConversationUseCase,
+    @UserSessionBinding("endCallOnMLSReset")
     private val endCallOnMLSReset: EndCallOnMLSResetUseCase,
+    @UserSessionBinding("kaliumConfigs")
     private val kaliumConfigs: KaliumConfigs,
 ) : ResetMLSConversationUseCase {
 

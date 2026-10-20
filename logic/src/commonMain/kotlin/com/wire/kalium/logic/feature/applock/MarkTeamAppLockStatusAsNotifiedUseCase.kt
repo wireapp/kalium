@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.applock
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Mark the team app lock status as notified
@@ -28,7 +30,9 @@ public interface MarkTeamAppLockStatusAsNotifiedUseCase {
     public suspend operator fun invoke()
 }
 
+@Inject
 internal class MarkTeamAppLockStatusAsNotifiedUseCaseImpl internal constructor(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : MarkTeamAppLockStatusAsNotifiedUseCase {
     override suspend operator fun invoke() {

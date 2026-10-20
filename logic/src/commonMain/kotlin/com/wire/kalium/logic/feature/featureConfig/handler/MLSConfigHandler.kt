@@ -18,16 +18,22 @@
 package com.wire.kalium.logic.feature.featureConfig.handler
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.featureConfig.MLSModel
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.featureConfig.MLSModel
+import com.wire.kalium.logic.di.UserSessionBinding
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
+import dev.zacsweers.metro.Inject
 
+@Inject
 internal class MLSConfigHandler(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("updateSupportedProtocolsAndResolveOneOnOnes")
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
+    @UserSessionBinding("cryptoTransactionProvider")
     private val transactionProvider: CryptoTransactionProvider
 ) {
     internal suspend fun handle(

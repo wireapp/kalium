@@ -17,7 +17,9 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler.legalhold
 
-import kotlin.uuid.Uuid
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrFail
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -26,12 +28,12 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrFail
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.common.functional.map
+import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlin.uuid.Uuid
 
 internal interface LegalHoldSystemMessagesHandler {
     suspend fun prepareUserTransition(
@@ -55,10 +57,15 @@ internal interface LegalHoldSystemMessagesHandler {
     suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant, noticeId: String? = null)
 }
 
+@Inject
 internal class LegalHoldSystemMessagesHandlerImpl(
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("persistMessage")
     private val persistMessage: PersistMessageUseCase,
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("messageRepository")
     private val messageRepository: MessageRepository,
 ) : LegalHoldSystemMessagesHandler {
 

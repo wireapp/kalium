@@ -25,7 +25,9 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
+import com.wire.kalium.logic.feature.channels.LegacyChannelsBinding
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppsFeatureHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
@@ -46,6 +48,7 @@ import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
+import dev.zacsweers.metro.Inject
 
 /** Fetch and apply the team's feature settings. */
 internal interface SyncFeatureConfigsUseCase {
@@ -56,27 +59,48 @@ internal interface SyncFeatureConfigsUseCase {
     suspend fun beforeClientRegistration(): Either<CoreFailure, Unit>
 }
 
+@Inject
 @Suppress("LongParameterList")
 internal class SyncFeatureConfigsUseCaseImpl(
+    @UserSessionBinding("featureConfigRepository")
     private val featureConfigRepository: FeatureConfigRepository,
+    @UserSessionBinding("guestRoomConfigHandler")
     private val guestRoomConfigHandler: GuestRoomConfigHandler,
+    @UserSessionBinding("fileSharingConfigHandler")
     private val fileSharingConfigHandler: FileSharingConfigHandler,
+    @UserSessionBinding("mlsConfigHandler")
     private val mlsConfigHandler: MLSConfigHandler,
+    @UserSessionBinding("mlsMigrationConfigHandler")
     private val mlsMigrationConfigHandler: MLSMigrationConfigHandler,
+    @UserSessionBinding("classifiedDomainsConfigHandler")
     private val classifiedDomainsConfigHandler: ClassifiedDomainsConfigHandler,
+    @UserSessionBinding("conferenceCallingConfigHandler")
     private val conferenceCallingConfigHandler: ConferenceCallingConfigHandler,
+    @UserSessionBinding("secondFactorPasswordChallengeConfigHandler")
     private val passwordChallengeConfigHandler: SecondFactorPasswordChallengeConfigHandler,
+    @UserSessionBinding("selfDeletingMessagesConfigHandler")
     private val selfDeletingMessagesConfigHandler: SelfDeletingMessagesConfigHandler,
+    @UserSessionBinding("e2eiConfigHandler")
     private val e2EIConfigHandler: E2EIConfigHandler,
+    @UserSessionBinding("appLockConfigHandler")
     private val appLockConfigHandler: AppLockConfigHandler,
+    @LegacyChannelsBinding("channelsFeatureConfigHandler")
     private val channelsConfigHandler: ChannelsFeatureConfigurationHandler,
+    @UserSessionBinding("consumableNotificationsConfigHandler")
     private val consumableNotificationsConfigHandler: ConsumableNotificationsConfigHandler,
+    @UserSessionBinding("allowedGlobalOperationsHandler")
     private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
+    @UserSessionBinding("cellsConfigHandler")
     private val cellsConfigHandler: CellsConfigHandler,
+    @UserSessionBinding("appsFeatureHandler")
     private val appsFeatureHandler: AppsFeatureHandler,
+    @UserSessionBinding("enableUserProfileQRCodeConfigHandler")
     private val enableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler,
+    @UserSessionBinding("assetAuditLogConfigHandler")
     private val assetAuditLogConfigHandler: AssetAuditLogConfigHandler,
+    @UserSessionBinding("preventAdminlessGroupsConfigHandler")
     private val preventAdminlessGroupsConfigHandler: PreventAdminlessGroupsConfigHandler,
+    @UserSessionBinding("meetingsConfigHandler")
     private val meetingsConfigHandler: MeetingsConfigHandler,
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> = sync(duringClientRegistration = false)

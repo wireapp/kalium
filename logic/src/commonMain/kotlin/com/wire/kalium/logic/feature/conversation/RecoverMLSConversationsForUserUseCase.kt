@@ -22,6 +22,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Recovers the self user's MLS conversations after synchronization is live.
@@ -36,9 +38,13 @@ public sealed interface RecoverMLSConversationsForUserResult {
     public data class Failure(public val cause: CoreFailure) : RecoverMLSConversationsForUserResult
 }
 
+@Inject
 internal class RecoverMLSConversationsForUserUseCaseImpl(
+    @UserSessionBinding("recoverMLSConversationsUseCase")
     private val recoverEstablishedMLSConversations: RecoverMLSConversationsUseCase,
+    @UserSessionBinding("joinExistingMLSConversations")
     private val joinPendingMLSConversations: JoinExistingMLSConversationsUseCase,
+    @UserSessionBinding("cryptoTransactionProvider")
     private val transactionProvider: CryptoTransactionProvider,
 ) : RecoverMLSConversationsForUserUseCase {
 

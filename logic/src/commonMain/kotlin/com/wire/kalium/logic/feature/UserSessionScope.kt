@@ -135,6 +135,7 @@ import com.wire.kalium.logic.di.UserSessionOwnershipInputs
 import com.wire.kalium.logic.di.UserSessionResourceInputs
 import com.wire.kalium.logic.di.UserSessionRuntime
 import com.wire.kalium.logic.di.UserSessionStateInputs
+import com.wire.kalium.logic.di.UserSessionValue
 import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
 import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
@@ -422,8 +423,8 @@ public class UserSessionScope internal constructor(
                 get() = this@UserSessionScope.currentCryptoStateChangeHookNotifier
             override val nomadServiceUrl: String?
                 get() = this@UserSessionScope.nomadServiceUrl
-            override val invalidateTeamId: () -> Unit
-                get() = this@UserSessionScope.invalidateTeamId
+            override val invalidateTeamId: UserSessionValue<() -> Unit>
+                get() = UserSessionValue(this@UserSessionScope.invalidateTeamId)
             override val enableDurableMLSReceiveRecovery: Boolean
                 get() = this@UserSessionScope.enableDurableMLSReceiveRecovery
         }
@@ -434,8 +435,8 @@ public class UserSessionScope internal constructor(
                 get() = this@UserSessionScope
             override val globalCoroutineScope: CoroutineScope
                 get() = this@UserSessionScope.globalScope
-            override val callManager: Lazy<CallManager>
-                get() = this@UserSessionScope.callManager
+            override val callManager: UserSessionValue<Lazy<CallManager>>
+                get() = UserSessionValue(this@UserSessionScope.callManager)
             override val userSessionScopeProvider: UserSessionScopeProvider
                 get() = this@UserSessionScope.userSessionScopeProvider
             override val userSessionWorkScheduler: UserSessionWorkScheduler
@@ -444,8 +445,8 @@ public class UserSessionScope internal constructor(
                 get() = this@UserSessionScope.syncShutdownCoordinator
             override val logoutCallback: LogoutCallback
                 get() = this@UserSessionScope.logoutCallback
-            override val receiveRecovery: suspend () -> AppMLSReceiveRecovery?
-                get() = { this@UserSessionScope.receiveRecovery() }
+            override val receiveRecovery: UserSessionValue<suspend () -> AppMLSReceiveRecovery?>
+                get() = UserSessionValue { this@UserSessionScope.receiveRecovery() }
             override val flowManagerService: FlowManagerService
                 get() = this@UserSessionScope.flowManagerService
             override val mediaManagerService: MediaManagerService

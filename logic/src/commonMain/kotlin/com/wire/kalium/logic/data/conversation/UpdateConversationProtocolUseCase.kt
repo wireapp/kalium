@@ -29,8 +29,10 @@ import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapa
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.ConversationPersistenceApi
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case responsible for updating the protocol of a conversation, either locally or remotely.
@@ -56,9 +58,12 @@ internal interface UpdateConversationProtocolUseCase {
     ): Either<CoreFailure, Boolean>
 }
 
+@Inject
 @OptIn(ConversationPersistenceApi::class)
 internal class UpdateConversationProtocolUseCaseImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("persistConversationsUseCase")
     private val persistConversations: PersistConversationsUseCase
 ) : UpdateConversationProtocolUseCase {
 

@@ -20,13 +20,6 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -35,8 +28,17 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
+import com.wire.kalium.logic.featureFlags.FeatureSupport
+import dev.zacsweers.metro.Inject
 
 internal sealed class RecoverMLSConversationsResult {
     internal data object Success : RecoverMLSConversationsResult()
@@ -51,13 +53,20 @@ internal interface RecoverMLSConversationsUseCase {
     suspend operator fun invoke(transactionContext: CryptoTransactionContext): RecoverMLSConversationsResult
 }
 
+@Inject
 @Suppress("LongParameterList")
 internal class RecoverMLSConversationsUseCaseImpl(
+    @UserSessionBinding("featureSupport")
     private val featureSupport: FeatureSupport,
+    @UserSessionBinding("clientRepository")
     private val clientRepository: ClientRepository,
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("mlsConversationRepository")
     private val mlsConversationRepository: MLSConversationRepository,
+    @UserSessionBinding("joinExistingMLSConversationUseCase")
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
 ) : RecoverMLSConversationsUseCase {
     override suspend operator fun invoke(transactionContext: CryptoTransactionContext): RecoverMLSConversationsResult =

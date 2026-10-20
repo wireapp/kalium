@@ -19,6 +19,8 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -30,8 +32,11 @@ public interface UpdateConversationClientsForCurrentCallUseCase {
     public suspend operator fun invoke(conversationId: ConversationId)
 }
 
+@Inject
 internal class UpdateConversationClientsForCurrentCallUseCaseImpl(
+    @UserSessionBinding("callRepository")
     private val callRepository: CallRepository,
+    @UserSessionBinding("conversationClientsInCallUpdater")
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater
 ) : UpdateConversationClientsForCurrentCallUseCase {
     override suspend fun invoke(conversationId: ConversationId) {

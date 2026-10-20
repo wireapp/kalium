@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.applock
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -34,8 +36,11 @@ public interface AppLockTeamFeatureConfigObserver {
     public operator fun invoke(): Flow<AppLockTeamConfig?>
 }
 
+@Inject
 internal class AppLockTeamFeatureConfigObserverImpl internal constructor(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("nomadServiceUrl")
     private val nomadServiceUrl: String?,
 ) : AppLockTeamFeatureConfigObserver {
     override fun invoke(): Flow<AppLockTeamConfig?> =

@@ -19,14 +19,18 @@
 
 package com.wire.kalium.logic.feature.session
 
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.session.SessionManager
+import dev.zacsweers.metro.Inject
 
 internal interface GetProxyCredentialsUseCase {
     operator fun invoke(): ProxyCredentialsDTO?
 }
 
+@Inject
 internal class GetProxyCredentialsUseCaseImpl internal constructor(
+    @UserSessionBinding("sessionManager")
     private val sessionManager: SessionManager
 ) : GetProxyCredentialsUseCase {
     override fun invoke(): ProxyCredentialsDTO? = sessionManager.proxyCredentials()

@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -31,8 +33,11 @@ public interface ObserveIsMeetingsEnabledUseCase {
     public suspend operator fun invoke(): Flow<Boolean>
 }
 
+@Inject
 internal class ObserveIsMeetingsEnabledUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("featureSupport")
     private val featureSupport: FeatureSupport,
 ) : ObserveIsMeetingsEnabledUseCase {
     override suspend operator fun invoke(): Flow<Boolean> = userConfigRepository.observeIsMeetingsEnabled().map { featureFlagEnabled ->

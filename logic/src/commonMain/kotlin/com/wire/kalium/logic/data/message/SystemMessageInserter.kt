@@ -19,15 +19,17 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.appsAccessChangedMessage
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.appsAccessChangedMessage
 import com.wire.kalium.logic.data.conversation.mlsEpochWarningMessage
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.persistence.dao.message.LocalId
-import kotlin.uuid.Uuid
+import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlin.uuid.Uuid
 
 internal interface SystemMessageInserter {
     suspend fun insertProtocolChangedSystemMessage(
@@ -57,8 +59,11 @@ internal interface SystemMessageInserter {
     )
 }
 
+@Inject
 internal class SystemMessageInserterImpl(
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("persistMessage")
     private val persistMessage: PersistMessageUseCase
 ) : SystemMessageInserter {
     override suspend fun insertProtocolChangedSystemMessage(

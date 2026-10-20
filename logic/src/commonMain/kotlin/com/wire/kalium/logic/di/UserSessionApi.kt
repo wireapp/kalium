@@ -19,12 +19,9 @@
 
 package com.wire.kalium.logic.di
 
-import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
-import com.wire.kalium.logic.cache.ProteusSelfConversationIdProvider
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
-import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.app.AppRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
@@ -32,37 +29,25 @@ import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.client.MLSTransportProvider
 import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
 import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
-import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
-import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
-import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
-import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -76,12 +61,9 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
-import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PollMessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.SystemMessageInserterImpl
@@ -97,7 +79,6 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.service.ServiceRepository
-import com.wire.kalium.logic.data.session.token.AccessTokenRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -110,8 +91,6 @@ import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifie
 import com.wire.kalium.logic.feature.analytics.SetNewUserTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
-import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.call.CallBackgroundManager
 import com.wire.kalium.logic.feature.call.LegacyCallsApi
@@ -119,12 +98,9 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
-import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
-import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
-import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.JoinPendingMLSConversationsManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
@@ -133,37 +109,18 @@ import com.wire.kalium.logic.feature.conversation.MigrateConversationToMLSUseCas
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCase
-import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
-import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
-import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoinsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
-import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
-import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.AppsFeatureHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.legalhold.ApproveLegalHoldRequestUseCase
-import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
 import com.wire.kalium.logic.feature.legalhold.MarkLegalHoldChangeAsNotifiedForSelfUseCase
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCase
@@ -171,17 +128,11 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCase
-import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
-import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
-import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
-import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
-import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
-import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
@@ -189,9 +140,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.PersistNewSelfDeletion
 import com.wire.kalium.logic.feature.server.GetTeamUrlUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
-import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
-import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
@@ -204,9 +153,6 @@ import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCas
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveIsMeetingsEnabledUseCase
-import com.wire.kalium.logic.feature.user.SyncContactsUseCase
-import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
-import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.feature.user.e2ei.MarkNotifyForRevokedCertificateAsNotifiedUseCase
@@ -230,70 +176,17 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.incremental.EventGatherer
 import com.wire.kalium.logic.sync.incremental.EventProcessor
-import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
-import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
-import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.local.LocalEventManagerImpl
 import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
-import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
-import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
-import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
-import com.wire.kalium.logic.sync.receiver.MeetingEventReceiver
-import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
-import com.wire.kalium.logic.sync.receiver.UserEventReceiver
-import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
-import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
-import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.DeleteConversationReminderEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
-import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
-import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
-import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
-import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
-import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
-import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
-import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
-import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
-import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
-import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
-import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
-import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
-import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
-import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.sync.receiving.CallSignalJournal
-import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
-import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
-import com.wire.kalium.logic.sync.slow.SlowSyncManager
-import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandler
-import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
-import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.InternalKaliumApi
 
@@ -308,26 +201,11 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("federatedIdMapper")
     val userSessionFederatedIdMapper: FederatedIdMapper
 
-    @get:UserSessionBinding("isClientAsyncNotificationsCapableProvider")
-    val userSessionIsClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider
-
-    @get:UserSessionBinding("mlsSelfConversationIdProvider")
-    val userSessionMlsSelfConversationIdProvider: MLSSelfConversationIdProvider
-
-    @get:UserSessionBinding("proteusSelfConversationIdProvider")
-    val userSessionProteusSelfConversationIdProvider: ProteusSelfConversationIdProvider
-
     @get:UserSessionBinding("selfConversationIdProvider")
     val userSessionSelfConversationIdProvider: SelfConversationIdProvider
 
-    @get:UserSessionBinding("accessTokenRepository")
-    val userSessionAccessTokenRepository: AccessTokenRepository
-
     @get:UserSessionBinding("accessTokenRefresherFactory")
     val userSessionAccessTokenRefresherFactory: AccessTokenRefresherFactory
-
-    @get:UserSessionBinding("accessTokenRefresher")
-    val userSessionAccessTokenRefresher: AccessTokenRefresher
 
     @get:UserSessionBinding("featureSupport")
     val userSessionFeatureSupport: FeatureSupport
@@ -371,26 +249,17 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("conversationRepository")
     val userSessionConversationRepository: ConversationRepository
 
-    @get:UserSessionBinding("conversationMetaDataRepository")
-    val userSessionConversationMetaDataRepository: ConversationMetaDataRepository
-
     @get:UserSessionBinding("conversationFolderRepository")
     val userSessionConversationFolderRepository: ConversationFolderRepository
 
     @get:UserSessionBinding("conversationGroupRepository")
     val userSessionConversationGroupRepository: ConversationGroupRepository
 
-    @get:UserSessionBinding("newConversationMembersRepository")
-    val userSessionNewConversationMembersRepository: NewConversationMembersRepository
-
     @get:UserSessionBinding("messageRepository")
     val userSessionMessageRepository: MessageRepository
 
     @get:UserSessionBinding("messageApiPagingCoordinator")
     val userSessionMessageApiPagingCoordinator: NomadMessagePagingCoordinator?
-
-    @get:UserSessionBinding("nomadMessagePagingCoordinator")
-    val userSessionNomadMessagePagingCoordinator: NomadMessagePagingCoordinator?
 
     @get:UserSessionBinding("messageMetadataRepository")
     val userSessionMessageMetadataRepository: MessageMetadataRepository
@@ -437,20 +306,8 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("persistConversationsUseCase")
     val userSessionPersistConversationsUseCase: PersistConversationsUseCase
 
-    @get:UserSessionBinding("persistConversationUseCase")
-    val userSessionPersistConversationUseCase: PersistConversationUseCase
-
-    @get:UserSessionBinding("fetchMLSOneToOneConversationUseCase")
-    val userSessionFetchMLSOneToOneConversationUseCase: FetchMLSOneToOneConversationUseCase
-
     @get:UserSessionBinding("fetchConversationUseCase")
     val userSessionFetchConversationUseCase: FetchConversationUseCase
-
-    @get:UserSessionBinding("fetchConversationIfUnknownUseCase")
-    val userSessionFetchConversationIfUnknownUseCase: FetchConversationIfUnknownUseCase
-
-    @get:UserSessionBinding("fetchConversationsUseCase")
-    val userSessionFetchConversationsUseCase: FetchConversationsUseCase
 
     @get:UserSessionBinding("connectionRepository")
     val userSessionConnectionRepository: ConnectionRepository
@@ -467,20 +324,11 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("persistMessage")
     val userSessionPersistMessage: PersistMessageUseCase
 
-    @get:UserSessionBinding("addSystemMessageToAllConversationsUseCase")
-    val userSessionAddSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
-
-    @get:UserSessionBinding("restartSlowSyncProcessForRecoveryUseCase")
-    val userSessionRestartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
-
     @get:UserSessionBinding("callRepository")
     val userSessionCallRepository: CallRepository
 
     @get:UserSessionBinding("clientRemoteRepository")
     val userSessionClientRemoteRepository: ClientRemoteRepository
-
-    @get:UserSessionBinding("clientRegistrationStorage")
-    val userSessionClientRegistrationStorage: ClientRegistrationStorage
 
     @get:UserSessionBinding("clientRepository")
     val userSessionClientRepository: ClientRepository
@@ -503,9 +351,6 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("eventProcessor")
     val userSessionEventProcessor: EventProcessor
 
-    @get:UserSessionBinding("slowSyncCriteriaProvider")
-    val userSessionSlowSyncCriteriaProvider: SlowSyncCriteriaProvider
-
     @get:UserSessionBinding("syncManager")
     val userSessionSyncManager: SyncManager
 
@@ -518,53 +363,14 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("syncExecutor")
     val userSessionSyncExecutor: SyncExecutor
 
-    @get:UserSessionBinding("syncConversations")
-    val userSessionSyncConversations: SyncConversationsUseCase
-
-    @get:UserSessionBinding("updateConversationProtocolUseCase")
-    val userSessionUpdateConversationProtocolUseCase: UpdateConversationProtocolUseCase
-
-    @get:UserSessionBinding("syncConnections")
-    val userSessionSyncConnections: SyncConnectionsUseCase
-
-    @get:UserSessionBinding("syncSelfUser")
-    val userSessionSyncSelfUser: SyncSelfUserUseCase
-
-    @get:UserSessionBinding("syncUserProperties")
-    val userSessionSyncUserProperties: SyncUserPropertiesUseCase
-
-    @get:UserSessionBinding("syncContacts")
-    val userSessionSyncContacts: SyncContactsUseCase
-
-    @get:UserSessionBinding("syncSelfTeamUseCase")
-    val userSessionSyncSelfTeamUseCase: SyncSelfTeamUseCase
-
     @get:UserSessionBinding("joinExistingMLSConversationUseCase")
     val userSessionJoinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
 
     @get:UserSessionBinding("registerMLSClientUseCase")
     val userSessionRegisterMLSClientUseCase: RegisterMLSClientUseCase
 
-    @get:UserSessionBinding("recoverMLSConversationsUseCase")
-    val userSessionRecoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
-
-    @get:UserSessionBinding("joinExistingMLSConversations")
-    val userSessionJoinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-
     @get:UserSessionBinding("recoverMLSConversationsForUser")
     val userSessionRecoverMLSConversationsForUser: RecoverMLSConversationsForUserUseCase
-
-    @get:UserSessionBinding("joinSubconversationUseCase")
-    val userSessionJoinSubconversationUseCase: JoinSubconversationUseCase
-
-    @get:UserSessionBinding("leaveSubconversationUseCase")
-    val userSessionLeaveSubconversationUseCase: LeaveSubconversationUseCase
-
-    @get:UserSessionBinding("mlsOneOnOneConversationResolver")
-    val userSessionMlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver
-
-    @get:UserSessionBinding("oneOnOneMigrator")
-    val userSessionOneOnOneMigrator: OneOnOneMigrator
 
     @get:UserSessionBinding("pendingActionsRepository")
     val userSessionPendingActionsRepository: PendingActionsRepository
@@ -584,17 +390,8 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("updateSupportedProtocolsAndResolveOneOnOnes")
     val userSessionUpdateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 
-    @get:UserSessionBinding("slowSyncWorker")
-    val userSessionSlowSyncWorker: SlowSyncWorker
-
-    @get:UserSessionBinding("slowSyncRecoveryHandler")
-    val userSessionSlowSyncRecoveryHandler: SlowSyncRecoveryHandler
-
     @get:UserSessionBinding("syncMigrationStepsProvider")
     val userSessionSyncMigrationStepsProvider: UserSessionValue<() -> SyncMigrationStepsProvider>
-
-    @get:UserSessionBinding("slowSyncManager")
-    val userSessionSlowSyncManager: SlowSyncManager
 
     @get:UserSessionBinding("mlsConversationsRecoveryManager")
     val userSessionMlsConversationsRecoveryManager: MLSConversationsRecoveryManager
@@ -608,23 +405,11 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("conversationsRecoveryManager")
     val userSessionConversationsRecoveryManager: ConversationsRecoveryManager
 
-    @get:UserSessionBinding("incrementalSyncWorker")
-    val userSessionIncrementalSyncWorker: IncrementalSyncWorker
-
-    @get:UserSessionBinding("incrementalSyncRecoveryHandler")
-    val userSessionIncrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
-
-    @get:UserSessionBinding("incrementalSyncManager")
-    val userSessionIncrementalSyncManager: IncrementalSyncManager
-
     @get:UserSessionBinding("localEventManager")
     val userSessionLocalEventManager: LocalEventManagerImpl
 
     @get:UserSessionBinding("upgradeCurrentSessionUseCase")
     val userSessionUpgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCaseImpl
-
-    @get:UserSessionBinding("sessionRefreshSuggestedEventHandler")
-    val userSessionSessionRefreshSuggestedEventHandler: SessionRefreshSuggestedEventHandler
 
     @get:UserSessionBinding("apiMigrations")
     val userSessionApiMigrations: List<Pair<Int, ApiMigrationV3>>
@@ -635,9 +420,6 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("eventRepository")
     val userSessionEventRepository: EventRepository
 
-    @get:UserSessionBinding("mlsMigrator")
-    val userSessionMlsMigrator: MLSMigrator
-
     @get:UserSessionBinding("keyPackageManager")
     val userSessionKeyPackageManager: KeyPackageManager
 
@@ -646,9 +428,6 @@ internal interface UserSessionApi {
 
     @get:UserSessionBinding("mlsClientManager")
     val userSessionMlsClientManager: MLSClientManager
-
-    @get:UserSessionBinding("mlsMigrationWorker")
-    val userSessionMlsMigrationWorker: MLSMigrationWorkerImpl
 
     @get:UserSessionBinding("mlsMigrationManager")
     val userSessionMlsMigrationManager: MLSMigrationManager
@@ -659,14 +438,8 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("videoStateChecker")
     val userSessionVideoStateChecker: VideoStateChecker
 
-    @get:UserSessionBinding("pendingSubconversationProposals")
-    val userSessionPendingSubconversationProposals: PendingSubconversationProposals
-
     @get:UserSessionBinding("pendingProposalScheduler")
     val userSessionPendingProposalScheduler: PendingProposalScheduler
-
-    @get:UserSessionBinding("endCallOnMLSReset")
-    val userSessionEndCallOnMLSReset: EndCallOnMLSResetUseCase
 
     @get:UserSessionBinding("callBackgroundManager")
     val userSessionCallBackgroundManager: CallBackgroundManager
@@ -680,44 +453,14 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("getCallConversationType")
     val userSessionGetCallConversationType: GetCallConversationTypeProvider
 
-    @get:UserSessionBinding("updateConversationClientsForCurrentCall")
-    val userSessionUpdateConversationClientsForCurrentCall: UserSessionValue<Lazy<UpdateConversationClientsForCurrentCallUseCase>>
-
     @get:UserSessionBinding("reactionRepository")
     val userSessionReactionRepository: ReactionRepositoryImpl
 
     @get:UserSessionBinding("receiptRepository")
     val userSessionReceiptRepository: ReceiptRepositoryImpl
 
-    @get:UserSessionBinding("persistReaction")
-    val userSessionPersistReaction: PersistReactionUseCase
-
-    @get:UserSessionBinding("mlsUnpacker")
-    val userSessionMlsUnpacker: MLSMessageUnpacker
-
-    @get:UserSessionBinding("proteusUnpacker")
-    val userSessionProteusUnpacker: ProteusMessageUnpacker
-
-    @get:UserSessionBinding("messageEncoder")
-    val userSessionMessageEncoder: MessageContentEncoder
-
     @get:UserSessionBinding("systemMessageInserter")
     val userSessionSystemMessageInserter: SystemMessageInserterImpl
-
-    @get:UserSessionBinding("receiptMessageHandler")
-    val userSessionReceiptMessageHandler: ReceiptMessageHandlerImpl
-
-    @get:UserSessionBinding("isMessageSentInSelfConversation")
-    val userSessionIsMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
-
-    @get:UserSessionBinding("assetMessageHandler")
-    val userSessionAssetMessageHandler: AssetMessageHandler
-
-    @get:UserSessionBinding("buttonActionConfirmationHandler")
-    val userSessionButtonActionConfirmationHandler: ButtonActionConfirmationHandler
-
-    @get:UserSessionBinding("dataTransferEventHandler")
-    val userSessionDataTransferEventHandler: DataTransferEventHandler
 
     @get:UserSessionBinding("inCallReactionsRepository")
     val userSessionInCallReactionsRepository: InCallReactionsRepository
@@ -725,80 +468,17 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("callModerationActionsRepository")
     val userSessionCallModerationActionsRepository: CallModerationActionsRepository
 
-    @get:UserSessionBinding("buttonActionHandler")
-    val userSessionButtonActionHandler: ButtonActionHandler
-
-    @get:UserSessionBinding("callingMessageHandler")
-    val userSessionCallingMessageHandler: CallingMessageHandler
-
-    @get:UserSessionBinding("applicationMessageHandler")
-    val userSessionApplicationMessageHandler: ApplicationMessageHandler
-
-    @get:UserSessionBinding("linkPreviewsResolver")
-    val userSessionLinkPreviewsResolver: LinkPreviewImagesResolver
-
     @get:UserSessionBinding("staleEpochVerifier")
     val userSessionStaleEpochVerifier: StaleEpochVerifier
-
-    @get:UserSessionBinding("newMessageHandler")
-    val userSessionNewMessageHandler: NewMessageEventHandler
 
     @get:UserSessionBinding("newGroupConversationSystemMessagesCreator")
     val userSessionNewGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
 
-    @get:UserSessionBinding("newConversationHandler")
-    val userSessionNewConversationHandler: NewConversationEventHandler
-
-    @get:UserSessionBinding("deletedConversationHandler")
-    val userSessionDeletedConversationHandler: DeletedConversationEventHandler
-
-    @get:UserSessionBinding("deleteConversationReminderEventHandler")
-    val userSessionDeleteConversationReminderEventHandler: DeleteConversationReminderEventHandler
-
     @get:UserSessionBinding("memberJoinHandler")
     val userSessionMemberJoinHandler: MemberJoinEventHandler
 
-    @get:UserSessionBinding("memberLeaveHandler")
-    val userSessionMemberLeaveHandler: MemberLeaveEventHandler
-
-    @get:UserSessionBinding("memberChangeHandler")
-    val userSessionMemberChangeHandler: MemberChangeEventHandler
-
-    @get:UserSessionBinding("mlsWelcomeHandler")
-    val userSessionMlsWelcomeHandler: MLSWelcomeEventHandler
-
     @get:UserSessionBinding("renamedConversationHandler")
     val userSessionRenamedConversationHandler: RenamedConversationEventHandler
-
-    @get:UserSessionBinding("receiptModeUpdateEventHandler")
-    val userSessionReceiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler
-
-    @get:UserSessionBinding("conversationMessageTimerEventHandler")
-    val userSessionConversationMessageTimerEventHandler: ConversationMessageTimerEventHandler
-
-    @get:UserSessionBinding("conversationCodeUpdateHandler")
-    val userSessionConversationCodeUpdateHandler: CodeUpdatedHandler
-
-    @get:UserSessionBinding("conversationCodeDeletedHandler")
-    val userSessionConversationCodeDeletedHandler: CodeDeletedHandler
-
-    @get:UserSessionBinding("typingIndicatorHandler")
-    val userSessionTypingIndicatorHandler: TypingIndicatorHandler
-
-    @get:UserSessionBinding("protocolUpdateEventHandler")
-    val userSessionProtocolUpdateEventHandler: ProtocolUpdateEventHandler
-
-    @get:UserSessionBinding("channelAddPermissionUpdateEventHandler")
-    val userSessionChannelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler
-
-    @get:UserSessionBinding("conversationAccessUpdateEventHandler")
-    val userSessionConversationAccessUpdateEventHandler: AccessUpdateEventHandler
-
-    @get:UserSessionBinding("mlsResetConversationEventHandler")
-    val userSessionMlsResetConversationEventHandler: MLSResetConversationEventHandler
-
-    @get:UserSessionBinding("conversationEventReceiver")
-    val userSessionConversationEventReceiver: ConversationEventReceiver
 
     @get:UserSessionBinding("legalHoldRequestHandler")
     val userSessionLegalHoldRequestHandler: LegalHoldRequestHandlerImpl
@@ -833,107 +513,14 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("approveLegalHoldRequest")
     val userSessionApproveLegalHoldRequest: ApproveLegalHoldRequestUseCase
 
-    @get:UserSessionBinding("fetchUsersClientsFromRemote")
-    val userSessionFetchUsersClientsFromRemote: FetchUsersClientsFromRemoteUseCase
-
     @get:UserSessionBinding("membersHavingLegalHoldClient")
     val userSessionMembersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
-
-    @get:UserSessionBinding("fetchLegalHoldForSelfUserFromRemoteUseCase")
-    val userSessionFetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase
-
-    @get:UserSessionBinding("userEventReceiver")
-    val userSessionUserEventReceiver: UserEventReceiver
-
-    @get:UserSessionBinding("userPropertiesEventReceiver")
-    val userSessionUserPropertiesEventReceiver: UserPropertiesEventReceiver
-
-    @get:UserSessionBinding("federationEventReceiver")
-    val userSessionFederationEventReceiver: FederationEventReceiver
-
-    @get:UserSessionBinding("teamEventReceiver")
-    val userSessionTeamEventReceiver: TeamEventReceiver
-
-    @get:UserSessionBinding("guestRoomConfigHandler")
-    val userSessionGuestRoomConfigHandler: GuestRoomConfigHandler
-
-    @get:UserSessionBinding("fileSharingConfigHandler")
-    val userSessionFileSharingConfigHandler: FileSharingConfigHandler
-
-    @get:UserSessionBinding("mlsConfigHandler")
-    val userSessionMlsConfigHandler: MLSConfigHandler
-
-    @get:UserSessionBinding("mlsMigrationConfigHandler")
-    val userSessionMlsMigrationConfigHandler: MLSMigrationConfigHandler
-
-    @get:UserSessionBinding("classifiedDomainsConfigHandler")
-    val userSessionClassifiedDomainsConfigHandler: ClassifiedDomainsConfigHandler
-
-    @get:UserSessionBinding("conferenceCallingConfigHandler")
-    val userSessionConferenceCallingConfigHandler: ConferenceCallingConfigHandler
-
-    @get:UserSessionBinding("consumableNotificationsConfigHandler")
-    val userSessionConsumableNotificationsConfigHandler: ConsumableNotificationsConfigHandler
-
-    @get:UserSessionBinding("appsFeatureHandler")
-    val userSessionAppsFeatureHandler: AppsFeatureHandler
-
-    @get:UserSessionBinding("secondFactorPasswordChallengeConfigHandler")
-    val userSessionSecondFactorPasswordChallengeConfigHandler: SecondFactorPasswordChallengeConfigHandler
-
-    @get:UserSessionBinding("selfDeletingMessagesConfigHandler")
-    val userSessionSelfDeletingMessagesConfigHandler: SelfDeletingMessagesConfigHandler
-
-    @get:UserSessionBinding("e2eiConfigHandler")
-    val userSessionE2eiConfigHandler: E2EIConfigHandler
-
-    @get:UserSessionBinding("appLockConfigHandler")
-    val userSessionAppLockConfigHandler: AppLockConfigHandler
-
-    @get:UserSessionBinding("allowedGlobalOperationsHandler")
-    val userSessionAllowedGlobalOperationsHandler: AllowedGlobalOperationsHandler
-
-    @get:UserSessionBinding("cellsConfigHandler")
-    val userSessionCellsConfigHandler: CellsConfigHandler
-
-    @get:UserSessionBinding("enableUserProfileQRCodeConfigHandler")
-    val userSessionEnableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler
-
-    @get:UserSessionBinding("assetAuditLogConfigHandler")
-    val userSessionAssetAuditLogConfigHandler: AssetAuditLogConfigHandler
-
-    @get:UserSessionBinding("preventAdminlessGroupsConfigHandler")
-    val userSessionPreventAdminlessGroupsConfigHandler: PreventAdminlessGroupsConfigHandler
-
-    @get:UserSessionBinding("meetingsConfigHandler")
-    val userSessionMeetingsConfigHandler: MeetingsConfigHandler
-
-    @get:UserSessionBinding("featureConfigEventReceiver")
-    val userSessionFeatureConfigEventReceiver: FeatureConfigEventReceiver
-
-    @get:UserSessionBinding("meetingCreateEventHandler")
-    val userSessionMeetingCreateEventHandler: MeetingCreateEventHandler
-
-    @get:UserSessionBinding("meetingDeleteEventHandler")
-    val userSessionMeetingDeleteEventHandler: MeetingDeleteEventHandler
-
-    @get:UserSessionBinding("meetingUpdateEventHandler")
-    val userSessionMeetingUpdateEventHandler: MeetingUpdateEventHandler
-
-    @get:UserSessionBinding("meetingMemberAddEventHandler")
-    val userSessionMeetingMemberAddEventHandler: MeetingMemberAddEventHandler
-
-    @get:UserSessionBinding("meetingEventReceiver")
-    val userSessionMeetingEventReceiver: MeetingEventReceiver
 
     @get:UserSessionBinding("preKeyRepository")
     val userSessionPreKeyRepository: PreKeyRepository
 
     @get:UserSessionBinding("certificateRevocationListRepository")
     val userSessionCertificateRevocationListRepository: CertificateRevocationListRepository
-
-    @get:UserSessionBinding("proteusPreKeyRefiller")
-    val userSessionProteusPreKeyRefiller: ProteusPreKeyRefiller
 
     @get:UserSessionBinding("userConfigSyncWorker")
     val userSessionUserConfigSyncWorker: UserConfigSyncWorker
@@ -962,20 +549,8 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("protoContentMapper")
     val userSessionProtoContentMapper: ProtoContentMapper
 
-    @get:UserSessionBinding("oneOnOneProtocolSelector")
-    val userSessionOneOnOneProtocolSelector: OneOnOneProtocolSelector
-
-    @get:UserSessionBinding("acmeCertificatesSyncUseCase")
-    val userSessionAcmeCertificatesSyncUseCase: ACMECertificatesSyncUseCase
-
     @get:UserSessionBinding("refreshUsersWithoutMetadata")
     val userSessionRefreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
-
-    @get:UserSessionBinding("clearUserData")
-    val userSessionClearUserData: ClearUserDataUseCase
-
-    @get:UserSessionBinding("validateAssetMimeType")
-    val userSessionValidateAssetMimeType: ValidateAssetFileTypeUseCase
 
     @get:UserSessionBinding("logout")
     val userSessionLogout: LogoutUseCase
@@ -1088,17 +663,11 @@ internal interface UserSessionApi {
     @get:UserSessionBinding("getProxyCredentials")
     val userSessionGetProxyCredentials: GetProxyCredentialsUseCase
 
-    @get:UserSessionBinding("fetchMLSVerificationStatusUseCase")
-    val userSessionFetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase
-
     @get:UserSessionBinding("observeE2EIConversationsVerificationStatuses")
     val userSessionObserveE2EIConversationsVerificationStatuses: ObserveE2EIConversationsVerificationStatusesUseCase
 
     @get:UserSessionBinding("typingIndicatorSyncManager")
     val userSessionTypingIndicatorSyncManager: TypingIndicatorSyncManager
-
-    @get:UserSessionBinding("analyticsRepository")
-    val userSessionAnalyticsRepository: AnalyticsRepository
 
     @get:UserSessionBinding("getTeamUrlUseCase")
     val userSessionGetTeamUrlUseCase: GetTeamUrlUseCase

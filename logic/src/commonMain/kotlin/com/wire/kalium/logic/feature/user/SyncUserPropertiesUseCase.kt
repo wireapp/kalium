@@ -21,12 +21,16 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 internal interface SyncUserPropertiesUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class SyncUserPropertiesUseCaseImpl internal constructor(
+    @UserSessionBinding("userPropertyRepository")
     private val userPropertyRepository: UserPropertyRepository
 ) : SyncUserPropertiesUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> = userPropertyRepository.syncPropertiesStatuses()

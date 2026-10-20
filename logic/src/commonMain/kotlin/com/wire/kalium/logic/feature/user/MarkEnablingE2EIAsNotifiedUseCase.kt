@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -36,7 +38,9 @@ public interface MarkEnablingE2EIAsNotifiedUseCase {
     public suspend operator fun invoke(tillTheEndOfGracePeriod: Duration)
 }
 
+@Inject
 internal class MarkEnablingE2EIAsNotifiedUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository
 ) : MarkEnablingE2EIAsNotifiedUseCase {
 

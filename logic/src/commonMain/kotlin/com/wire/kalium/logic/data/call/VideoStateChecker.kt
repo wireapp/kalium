@@ -19,12 +19,14 @@
 package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.calling.VideoStateCalling
+import dev.zacsweers.metro.Inject
 
 internal interface VideoStateChecker {
     fun isCameraOn(state: VideoStateCalling): Boolean
     fun isSharingScreen(state: VideoStateCalling): Boolean
 }
 
+@Inject
 internal class VideoStateCheckerImpl : VideoStateChecker {
 
     override fun isCameraOn(state: VideoStateCalling) = when (state) {

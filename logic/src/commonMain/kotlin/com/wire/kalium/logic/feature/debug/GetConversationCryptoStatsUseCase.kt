@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationWithOtherUserName
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.DebugKaliumApi
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
@@ -42,9 +43,9 @@ public interface GetConversationCryptoStatsUseCase {
     public suspend operator fun invoke(): GetConversationCryptoStatsResult
 }
 
-internal class GetConversationCryptoStatsUseCaseImpl(
-    private val conversationRepository: ConversationRepository,
-    private val transactionProvider: CryptoTransactionProvider,
+internal class GetConversationCryptoStatsUseCaseImpl @Inject constructor(
+    @LegacyDebugBinding("conversationRepository") private val conversationRepository: ConversationRepository,
+    @LegacyDebugBinding("transactionProvider") private val transactionProvider: CryptoTransactionProvider,
 ) : GetConversationCryptoStatsUseCase {
 
     override suspend fun invoke(): GetConversationCryptoStatsResult =

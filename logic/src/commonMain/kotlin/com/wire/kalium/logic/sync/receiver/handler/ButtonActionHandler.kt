@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 internal interface ButtonActionHandler {
     suspend fun handle(
@@ -34,9 +36,13 @@ internal interface ButtonActionHandler {
     )
 }
 
+@Inject
 internal class ButtonActionHandlerImpl internal constructor(
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("compositeMessageRepository")
     private val compositeMessageRepository: CompositeMessageRepository,
+    @UserSessionBinding("userScopedLogger")
     logger: KaliumLogger = kaliumLogger,
 ) : ButtonActionHandler {
 

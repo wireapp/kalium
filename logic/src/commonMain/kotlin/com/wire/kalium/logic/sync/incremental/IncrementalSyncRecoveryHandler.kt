@@ -18,13 +18,15 @@
 
 package com.wire.kalium.logic.sync.incremental
 
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
+import dev.zacsweers.metro.Inject
 
 /**
  * Represents a handler for recovering from incremental sync.
@@ -48,9 +50,13 @@ internal fun interface OnIncrementalSyncRetryCallback {
  * @property restartSlowSyncProcessForRecoveryUseCase The use case for restarting the slow sync process.
  * @property eventRepository The repository for accessing events.
  */
+@Inject
 internal class IncrementalSyncRecoveryHandlerImpl(
+    @UserSessionBinding("restartSlowSyncProcessForRecoveryUseCase")
     private val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase,
+    @UserSessionBinding("eventRepository")
     private val eventRepository: EventRepository,
+    @UserSessionBinding("userScopedLogger")
     logger: KaliumLogger = kaliumLogger,
 ) : IncrementalSyncRecoveryHandler {
 

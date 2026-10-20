@@ -41,15 +41,21 @@ import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.InternalKaliumApi
+import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.Provider
 
 /** A typed factory allows consumer repositories to select the retained message-API coordinator.
  * Every create still reads each actual resource in the original constructor argument order.
  */
+@Inject
 internal class UserSessionMessageRepositoryFactory(
+    @UserSessionBinding("messageApi")
     private val messageApi: Provider<com.wire.kalium.network.api.base.authenticated.message.MessageApi>,
+    @UserSessionBinding("mlsMessageApi")
     private val mlsMessageApi: Provider<com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi>,
+    @UserSessionBinding("messageDao")
     private val messageDao: Provider<com.wire.kalium.persistence.dao.message.MessageDAO>,
+    @UserSessionBinding("userId")
     private val userId: Provider<UserId>,
 ) {
     fun create(coordinator: NomadMessagePagingCoordinator?): MessageRepository = MessageDataSource(
@@ -63,6 +69,7 @@ internal class UserSessionMessageRepositoryFactory(
 
 /** Caller-supplied gatherer override; recovery callbacks retain the existing lease/mutex owner. */
 @Suppress("LongParameterList") // Explicit providers retain deferred worker callbacks.
+@Inject
 internal class UserSessionIncrementalWorkerFactory(
     @UserSessionBinding("enableDurableMLSReceiveRecovery")
     private val enableDurableMLSReceiveRecovery: Provider<Boolean>,

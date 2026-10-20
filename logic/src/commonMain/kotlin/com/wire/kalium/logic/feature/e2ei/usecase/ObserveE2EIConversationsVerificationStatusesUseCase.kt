@@ -19,6 +19,8 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 /**
  * Observes all the MLS Conversations epoch changes and call to re-check Verification status.
@@ -27,10 +29,14 @@ internal interface ObserveE2EIConversationsVerificationStatusesUseCase {
     suspend operator fun invoke()
 }
 
+@Inject
 @Suppress("LongParameterList")
 internal class ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
+    @UserSessionBinding("fetchMLSVerificationStatusUseCase")
     private val fetchMLSVerificationStatus: FetchMLSVerificationStatusUseCase,
+    @UserSessionBinding("epochChangesObserver")
     private val epochChangesObserver: EpochChangesObserver,
+    @UserSessionBinding("userScopedLogger")
     kaliumLogger: KaliumLogger
 ) : ObserveE2EIConversationsVerificationStatusesUseCase {
 

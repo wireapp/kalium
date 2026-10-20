@@ -20,10 +20,10 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
@@ -32,18 +32,25 @@ import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
+import dev.zacsweers.metro.Inject
 
 internal interface MemberChangeEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class MemberChangeEventHandlerImpl(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("fetchConversationIfUnknownUseCase")
     private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
+    @UserSessionBinding("persistMessage")
     private val persistMessage: PersistMessageUseCase,
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
 ) : MemberChangeEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }

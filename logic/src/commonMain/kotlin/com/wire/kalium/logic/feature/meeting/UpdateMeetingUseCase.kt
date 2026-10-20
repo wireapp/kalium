@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
+import dev.zacsweers.metro.Inject
 
 /**
  * Use case for updating existing meeting.
@@ -55,12 +56,12 @@ public interface UpdateMeetingUseCase {
     }
 }
 
-internal class UpdateMeetingUseCaseImpl(
-    private val meetingRepository: MeetingRepository,
-    private val userRepository: UserRepository,
-    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
-    private val resetMLSConversation: ResetMLSConversationUseCase,
-    private val transactionProvider: CryptoTransactionProvider,
+internal class UpdateMeetingUseCaseImpl @Inject constructor(
+    @LegacyMeetingBinding("meetingRepository") private val meetingRepository: MeetingRepository,
+    @LegacyMeetingBinding("userRepository") private val userRepository: UserRepository,
+    @LegacyMeetingBinding("refreshUsersWithoutMetadata") private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
+    @LegacyMeetingBinding("resetMLSConversation") private val resetMLSConversation: ResetMLSConversationUseCase,
+    @LegacyMeetingBinding("transactionProvider") private val transactionProvider: CryptoTransactionProvider,
 ) : UpdateMeetingUseCase {
     private val logger = kaliumLogger.withTextTag("UpdateMeetingUseCase")
 

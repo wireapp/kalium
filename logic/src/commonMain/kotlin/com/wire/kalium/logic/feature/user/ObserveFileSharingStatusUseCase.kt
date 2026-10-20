@@ -19,10 +19,12 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.configuration.FileSharingStatus
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -34,7 +36,11 @@ public interface ObserveFileSharingStatusUseCase {
     public operator fun invoke(): Flow<FileSharingStatus>
 }
 
-internal class ObserveFileSharingStatusUseCaseImpl(private val userConfigRepository: UserConfigRepository) :
+@Inject
+internal class ObserveFileSharingStatusUseCaseImpl(
+    @UserSessionBinding("userConfigRepository")
+    private val userConfigRepository: UserConfigRepository
+) :
     ObserveFileSharingStatusUseCase {
     override operator fun invoke(): Flow<FileSharingStatus> =
         userConfigRepository.isFileSharingEnabledFlow().map { fileSharingStatusFlow ->

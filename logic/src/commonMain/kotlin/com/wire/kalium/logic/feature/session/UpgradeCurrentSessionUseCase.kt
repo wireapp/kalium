@@ -20,14 +20,16 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.di.UserSessionBinding
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
+import dev.zacsweers.metro.Inject
 
 /**
  * Upgrade the current login session to be associated with self user's client ID
@@ -36,9 +38,13 @@ internal interface UpgradeCurrentSessionUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit>
 }
 
+@Inject
 internal class UpgradeCurrentSessionUseCaseImpl(
+    @UserSessionBinding("authenticatedNetworkContainer")
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer,
+    @UserSessionBinding("accessTokenRefresher")
     private val accessTokenRefresher: AccessTokenRefresher,
+    @UserSessionBinding("sessionManager")
     private val sessionManager: SessionManager
 ) : UpgradeCurrentSessionUseCase {
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit> =

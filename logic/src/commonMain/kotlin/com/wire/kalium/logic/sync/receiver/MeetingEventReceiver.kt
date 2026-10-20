@@ -22,17 +22,24 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
+import dev.zacsweers.metro.Inject
 
 internal interface MeetingEventReceiver : EventReceiver<Event.Meeting>
 
+@Inject
 internal class MeetingEventReceiverImpl(
+    @UserSessionBinding("meetingCreateEventHandler")
     private val meetingCreateEventHandler: MeetingCreateEventHandler,
+    @UserSessionBinding("meetingDeleteEventHandler")
     private val meetingDeleteEventHandler: MeetingDeleteEventHandler,
+    @UserSessionBinding("meetingUpdateEventHandler")
     private val meetingUpdateEventHandler: MeetingUpdateEventHandler,
+    @UserSessionBinding("meetingMemberAddEventHandler")
     private val meetingMemberAddEventHandler: MeetingMemberAddEventHandler,
 ) : MeetingEventReceiver {
 

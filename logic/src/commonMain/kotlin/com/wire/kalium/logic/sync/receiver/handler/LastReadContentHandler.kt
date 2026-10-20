@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 internal interface LastReadContentHandler {
     suspend fun handle(
@@ -38,11 +40,16 @@ internal interface LastReadContentHandler {
     suspend fun flushPendingLastReads()
 }
 
+@Inject
 // This class handles the messages that arrive when some client has read the conversation.
 internal class LastReadContentHandlerImpl internal constructor(
+    @UserSessionBinding("conversationRepository")
     private val conversationRepository: ConversationRepository,
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("isMessageSentInSelfConversation")
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
+    @UserSessionBinding("notificationEventsManager")
     private val notificationEventsManager: NotificationEventsManager
 ) : LastReadContentHandler {
 

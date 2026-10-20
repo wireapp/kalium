@@ -22,16 +22,23 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
+import dev.zacsweers.metro.Inject
 
 internal interface ConversationsRecoveryManager {
     suspend fun invoke()
 }
 
+@Inject
 internal class ConversationsRecoveryManagerImpl(
+    @UserSessionBinding("incrementalSyncRepository")
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    @UserSessionBinding("addSystemMessageToAllConversationsUseCase")
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase,
+    @UserSessionBinding("slowSyncRepository")
     private val slowSyncRepository: SlowSyncRepository,
+    @UserSessionBinding("userScopedLogger")
     kaliumLogger: KaliumLogger
 ) : ConversationsRecoveryManager {
 

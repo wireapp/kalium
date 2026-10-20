@@ -37,7 +37,9 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserSessionBinding
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
+import dev.zacsweers.metro.Inject
 
 internal sealed class RegisterMLSClientResult {
     internal data object Success : RegisterMLSClientResult()
@@ -52,14 +54,22 @@ internal interface RegisterMLSClientUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult>
 }
 
+@Inject
 @Suppress("LongParameterList")
 internal class RegisterMLSClientUseCaseImpl(
+    @UserSessionBinding("mlsClientProvider")
     private val mlsClientProvider: MLSClientProvider,
+    @UserSessionBinding("clientRepository")
     private val clientRepository: ClientRepository,
+    @UserSessionBinding("keyPackageRepository")
     private val keyPackageRepository: KeyPackageRepository,
+    @UserSessionBinding("keyPackageLimitsProvider")
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
+    @UserSessionBinding("userConfigRepository")
     private val userConfigRepository: UserConfigRepository,
+    @UserSessionBinding("userId")
     private val selfUserId: UserId,
+    @UserSessionBinding("currentCryptoStateChangeHookNotifier")
     private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier
 ) : RegisterMLSClientUseCase {
 

@@ -20,6 +20,8 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PollMessageRepository
+import com.wire.kalium.logic.di.UserSessionBinding
+import dev.zacsweers.metro.Inject
 
 internal interface PollVoteHandler {
     suspend fun handle(
@@ -28,7 +30,9 @@ internal interface PollVoteHandler {
     )
 }
 
+@Inject
 internal class PollVoteHandlerImpl internal constructor(
+    @UserSessionBinding("pollMessageRepository")
     private val pollMessageRepository: PollMessageRepository
 ) : PollVoteHandler {
     override suspend fun handle(
