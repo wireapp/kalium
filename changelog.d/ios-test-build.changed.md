@@ -1,3 +1,3 @@
 - iOS CI selects affected tests before running them, reusing one Gradle daemon with limits suited to the free macOS runner. It links the test binaries before booting the simulator, so the two no longer exhaust the runner's memory together. Build timing and memory reports are saved for performance diagnosis.
-- Native test builds use a dedicated Gradle cache with fallback restores, so build script edits and faster macOS jobs no longer discard their reusable outputs.
+- Native test builds use a dedicated Gradle cache with fallback restores, so build script edits and faster macOS jobs no longer discard their reusable outputs. Only develop saves it, so pull requests no longer evict shared caches.
 - Apple database test fixtures close every connection before deleting files and after each test, preventing resources from accumulating across a full native suite.

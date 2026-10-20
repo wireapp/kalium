@@ -56,7 +56,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          # Separate native test outputs from faster macOS jobs. Each commit can save
+          # Separate native test outputs from faster macOS jobs. Each develop commit saves
           # new outputs, while fallback restores retain reusable work after build edits.
           key: gradle-ios-macos26-${{ runner.arch }}-jdk21-v1-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle.properties') }}-${{ github.sha }}
           restore-keys: |
@@ -184,7 +184,8 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
       - name: Save iOS Gradle build cache
-        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-cache.outcome == 'success' && steps.gradle-cache.outputs.cache-hit != 'true' }}
+        # Only develop saves: each entry is about 2 GB, and PR entries evicted the shared caches.
+        if: ${{ always() && github.event_name == 'push' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-cache.outcome == 'success' && steps.gradle-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: |
