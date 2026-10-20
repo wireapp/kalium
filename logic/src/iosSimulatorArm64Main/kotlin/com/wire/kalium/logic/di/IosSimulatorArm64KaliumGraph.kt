@@ -19,9 +19,16 @@
 package com.wire.kalium.logic.di
 
 import dev.zacsweers.metro.DependencyGraph
-import dev.zacsweers.metro.createGraph
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.createGraphFactory
 
 @DependencyGraph(KaliumLifetime::class)
-internal interface IosSimulatorArm64KaliumGraph : KaliumGraph
+internal interface IosSimulatorArm64KaliumGraph : KaliumGraph {
+    @DependencyGraph.Factory
+    interface Factory {
+        fun create(@Provides inputs: GlobalGraphInputs, @Provides owner: GlobalGraphOwner): IosSimulatorArm64KaliumGraph
+    }
+}
 
-internal actual fun createKaliumGraph(): KaliumGraph = createGraph<IosSimulatorArm64KaliumGraph>()
+internal actual fun createKaliumGraph(inputs: GlobalGraphInputs, owner: GlobalGraphOwner): KaliumGraph =
+    createGraphFactory<IosSimulatorArm64KaliumGraph.Factory>().create(inputs, owner)

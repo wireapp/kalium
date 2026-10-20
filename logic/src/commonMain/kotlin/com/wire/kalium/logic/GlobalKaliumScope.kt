@@ -20,47 +20,29 @@
 
 package com.wire.kalium.logic
 
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.di.GlobalGraphInputs
+import com.wire.kalium.logic.di.GlobalGraphOwner
 import com.wire.kalium.logic.di.KaliumGraph
 import com.wire.kalium.logic.di.createKaliumGraph
-import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
-import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
-import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
-import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
-import com.wire.kalium.logic.data.client.UserClientRepositoryProvider
-import com.wire.kalium.logic.data.client.UserClientRepositoryProviderImpl
-import com.wire.kalium.logic.data.session.SessionDataSource
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCase
-import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
-import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManager
 import com.wire.kalium.logic.feature.auth.ObserveLoginContextUseCase
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCase
-import com.wire.kalium.logic.feature.auth.ValidateEmailUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
-import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
-import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AuthenticationScopeForConfigIdUseCase
 import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase
-import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCase
-import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCaseImpl
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCase
-import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppLockEditableUseCase
-import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppLockEditableUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
-import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.IsCrossBackendLoginBlockedUseCase
 import com.wire.kalium.logic.feature.server.ServerConfigForAccountUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
-import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
 import com.wire.kalium.logic.feature.session.DoesValidNomadAccountExistUseCase
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCase
@@ -70,25 +52,16 @@ import com.wire.kalium.logic.feature.session.IsCurrentSessionNomadAccountUseCase
 import com.wire.kalium.logic.feature.session.ObserveSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
-import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
-import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.SetPersistentWebSocketForAllUsersUseCase
-import com.wire.kalium.logic.feature.user.webSocketStatus.SetPersistentWebSocketForAllUsersUseCaseImpl
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
-import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
-import com.wire.kalium.network.utils.MockUnboundNetworkClient
-import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
-import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.InternalKaliumApi
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Scope that exposes all operations that are user and backend agnostic, like
@@ -99,170 +72,117 @@ import kotlin.coroutines.CoroutineContext
  * @see [com.wire.kalium.logic.feature.auth.AuthenticationScope]
  * @see [com.wire.kalium.logic.feature.UserSessionScope]
  */
-@Suppress("LongParameterList")
-public class GlobalKaliumScope internal constructor(
-    userAgent: String,
-    private val globalDatabase: GlobalDatabaseBuilder,
-    private val globalPreferences: GlobalPrefProvider,
-    private val kaliumConfigs: KaliumConfigs,
-    private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
-    private val authenticationScopeProvider: AuthenticationScopeProvider,
-    public val logoutCallbackManager: LogoutCallbackManager,
-    internal val workSchedulerProvider: WorkSchedulerProvider,
-    internal val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
-) : CoroutineScope {
-
-    internal val kaliumGraph: KaliumGraph by lazy { createKaliumGraph() }
+public class GlobalKaliumScope internal constructor(inputs: GlobalGraphInputs) : CoroutineScope {
+    internal val kaliumGraph: KaliumGraph by lazy { createKaliumGraph(inputs, GlobalGraphOwner { this }) }
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
-    internal val unboundNetworkContainer: UnboundNetworkContainer by lazy {
-        UnboundNetworkContainerCommon(
-            userAgent,
-            kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
-            kaliumConfigs.certPinningConfig,
-            kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
-            kaliumConfigs.developmentApiEnabled,
-            httpTrafficObserver = kaliumConfigs.httpTrafficObserver,
-        )
-    }
+    internal val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
+        get() = kaliumGraph.globalAudioNormalizedLoudnessBuilder
+
+    internal val workSchedulerProvider: WorkSchedulerProvider
+        get() = kaliumGraph.globalWorkSchedulerProvider
+
+    public val logoutCallbackManager: LogoutCallbackManager
+        get() = kaliumGraph.globalLogoutCallbackManager
+
+    internal val unboundNetworkContainer: UnboundNetworkContainer
+        get() = kaliumGraph.globalUnboundNetworkContainer
 
     internal val sessionRepository: SessionRepository
-        get() = SessionDataSource(
-            globalDatabase.accountsDAO,
-            globalPreferences.authTokenStorage,
-            globalDatabase.serverConfigurationDAO
-        )
+        get() = kaliumGraph.globalSessionRepository
 
     public val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
-        get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
+        get() = kaliumGraph.globalObservePersistentWebSocketConnectionStatus
 
     public val setAllPersistentWebSocketEnabled: SetPersistentWebSocketForAllUsersUseCase
-        get() = SetPersistentWebSocketForAllUsersUseCaseImpl(sessionRepository)
+        get() = kaliumGraph.globalSetAllPersistentWebSocketEnabled
 
-    private val notificationTokenRepository: NotificationTokenRepository
-        get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
+    public val validateEmailUseCase: ValidateEmailUseCase
+        get() = kaliumGraph.globalValidateEmailUseCase
 
-    private val customServerConfigRepository: CustomServerConfigRepository
-        get() = CustomServerConfigDataSource(
-            unboundNetworkContainer.versionApi,
-            unboundNetworkContainer.serverConfigApi,
-            developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
-            globalDatabase.serverConfigurationDAO
-        )
-    public val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
-    public val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
-    public val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
-    public val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
-    public val observeLoginContext: ObserveLoginContextUseCase get() = ObserveLoginContextUseCase(customServerConfigRepository)
+    public val validateSSOCodeUseCase: ValidateSSOCodeUseCase
+        get() = kaliumGraph.globalValidateSSOCodeUseCase
+
+    public val validateUserHandleUseCase: ValidateUserHandleUseCase
+        get() = kaliumGraph.globalValidateUserHandleUseCase
+
+    public val validatePasswordUseCase: ValidatePasswordUseCase
+        get() = kaliumGraph.globalValidatePasswordUseCase
+
+    public val observeLoginContext: ObserveLoginContextUseCase
+        get() = kaliumGraph.globalObserveLoginContext
 
     public val addAuthenticatedAccount: AddAuthenticatedUserUseCase
-        get() =
-            AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO, userSessionScopeProvider.value)
-    public val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
-    public val getAllSessions: GetAllSessionsUseCase get() = GetAllSessionsUseCase(sessionRepository)
-    public val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
-    public val doesValidNomadAccountExist: DoesValidNomadAccountExistUseCase get() = DoesValidNomadAccountExistUseCase(sessionRepository)
+        get() = kaliumGraph.globalAddAuthenticatedAccount
+
+    public val getSessions: GetSessionsUseCase
+        get() = kaliumGraph.globalGetSessions
+
+    public val getAllSessions: GetAllSessionsUseCase
+        get() = kaliumGraph.globalGetAllSessions
+
+    public val doesValidSessionExist: DoesValidSessionExistUseCase
+        get() = kaliumGraph.globalDoesValidSessionExist
+
+    public val doesValidNomadAccountExist: DoesValidNomadAccountExistUseCase
+        get() = kaliumGraph.globalDoesValidNomadAccountExist
+
     public val isCurrentSessionNomadAccount: IsCurrentSessionNomadAccountUseCase
-        get() = IsCurrentSessionNomadAccountUseCase(
-            sessionRepository
-        )
-    public val observeValidAccounts: ObserveValidAccountsUseCase by lazy {
-        ObserveValidAccountsUseCaseImpl(
-            sessionRepository,
-            userSessionScopeProvider.value
-        )
-    }
+        get() = kaliumGraph.globalIsCurrentSessionNomadAccount
 
-    public val observeAllValidSessionsFlow: ObserveSessionsUseCase by lazy { ObserveSessionsUseCase(sessionRepository) }
+    public val observeValidAccounts: ObserveValidAccountsUseCase
+        get() = kaliumGraph.globalObserveValidAccounts
 
-    public val session: SessionScope get() = SessionScope(sessionRepository)
-    public val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(customServerConfigRepository)
+    public val observeAllValidSessionsFlow: ObserveSessionsUseCase
+        get() = kaliumGraph.globalObserveAllValidSessionsFlow
+
+    public val session: SessionScope
+        get() = kaliumGraph.globalSession
+
+    public val fetchServerConfigFromDeepLink: GetServerConfigUseCase
+        get() = kaliumGraph.globalFetchServerConfigFromDeepLink
+
     public val updateApiVersions: UpdateApiVersionsUseCase
-        get() = UpdateApiVersionsUseCaseImpl(
-            sessionRepository,
-            globalPreferences.authTokenStorage,
-            { serverConfig, proxyCredentials ->
-                authenticationScopeProvider.provide(
-                    serverConfig = serverConfig,
-                    proxyCredentials = proxyCredentials,
-                    globalDatabase = globalDatabase,
-                    kaliumConfigs = kaliumConfigs,
-                ).serverConfigRepository
-            },
-        )
+        get() = kaliumGraph.globalUpdateApiVersions
 
     public val saveNotificationToken: SaveNotificationTokenUseCase
-        get() = SaveNotificationTokenUseCaseImpl(
-            notificationTokenRepository,
-            observeValidAccounts,
-            userSessionScopeProvider.value
-        )
+        get() = kaliumGraph.globalSaveNotificationToken
 
     public val deleteSession: DeleteSessionUseCase
-        get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
+        get() = kaliumGraph.globalDeleteSession
 
     public val serverConfigForAccounts: ServerConfigForAccountUseCase
-        get() = ServerConfigForAccountUseCase(globalDatabase.serverConfigurationDAO)
+        get() = kaliumGraph.globalServerConfigForAccounts
 
     public val isCrossBackendLoginBlocked: IsCrossBackendLoginBlockedUseCase
-        get() {
-            val currentSessionUseCase = session.currentSession
-            val serverConfigForAccountUseCase = serverConfigForAccounts
-            return IsCrossBackendLoginBlockedUseCase(
-                kaliumConfigs = kaliumConfigs,
-                currentSession = { currentSessionUseCase() },
-                serverConfigForAccount = { userId -> serverConfigForAccountUseCase(userId) },
-            )
-        }
+        get() = kaliumGraph.globalIsCrossBackendLoginBlocked
 
     public val authenticationScopeForConfigId: AuthenticationScopeForConfigIdUseCase
-        get() = AuthenticationScopeForConfigIdUseCase(
-            serverConfigurationDAO = globalDatabase.serverConfigurationDAO,
-            serverConfigMapper = MapperProvider.serverConfigMapper(),
-            authenticationScopeFactory = { serverConfig ->
-                authenticationScopeProvider.provide(
-                    serverConfig = serverConfig,
-                    proxyCredentials = null,
-                    globalDatabase = globalDatabase,
-                    kaliumConfigs = kaliumConfigs,
-                )
-            }
-        )
+        get() = kaliumGraph.globalAuthenticationScopeForConfigId
 
     public val observeIfAppUpdateRequired: ObserveIfAppUpdateRequiredUseCase
-        get() = ObserveIfAppUpdateRequiredUseCaseImpl(
-            customServerConfigRepository,
-            authenticationScopeProvider,
-            userSessionScopeProvider.value,
-            globalDatabase,
-            kaliumConfigs
-        )
-
-    private val userClientRepositoryProvider: UserClientRepositoryProvider
-        get() = UserClientRepositoryProviderImpl(userSessionScopeProvider.value)
+        get() = kaliumGraph.globalObserveIfAppUpdateRequired
 
     public val observeNewClientsUseCase: ObserveNewClientsUseCase
-        get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, userClientRepositoryProvider)
+        get() = kaliumGraph.globalObserveNewClientsUseCase
 
     public val clearNewClientsForUser: ClearNewClientsForUserUseCase
-        get() = ClearNewClientsForUserUseCaseImpl(userSessionScopeProvider.value)
+        get() = kaliumGraph.globalClearNewClientsForUser
 
     public val observeIsAppLockEditableUseCase: ObserveIsAppLockEditableUseCase
-        get() = ObserveIsAppLockEditableUseCaseImpl(userSessionScopeProvider.value, sessionRepository)
+        get() = kaliumGraph.globalObserveIsAppLockEditableUseCase
 
-    internal val updateApiVersionsWorker: UpdateApiVersionsWorker by lazy { UpdateApiVersionsWorker(updateApiVersions) }
+    internal val updateApiVersionsWorker: UpdateApiVersionsWorker
+        get() = kaliumGraph.globalUpdateApiVersionsWorker
 
-    private val globalWorkScheduler: GlobalWorkScheduler by lazy {
-        workSchedulerProvider.globalWorkScheduler(this)
-    }
-    public val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
+    public val updateApiVersionsScheduler: UpdateApiVersionsScheduler
+        get() = kaliumGraph.globalUpdateApiVersionsScheduler
 
     init {
-        // On iOS avoid eager periodic scheduler bootstrap during global scope creation.
-        // TODO(iOS): trigger schedulePeriodicApiVersionUpdate() from app bootstrap once lifecycle/background handling is ready.
+        // Preserve the existing platform bootstrap; iOS starts periodic work explicitly.
         if (clientPlatform != "ios") {
-            globalWorkScheduler.schedulePeriodicApiVersionUpdate()
+            kaliumGraph.globalGlobalWorkScheduler.schedulePeriodicApiVersionUpdate()
         }
     }
 }

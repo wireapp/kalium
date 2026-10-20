@@ -17,6 +17,20 @@
  */
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
+import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserLifetime
+import com.wire.kalium.logic.feature.conversation.LeaveConversationUseCase
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
+import com.wire.kalium.util.KaliumDispatcher
+import dev.zacsweers.metro.DependencyGraph
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.createGraphFactory
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -230,17 +244,20 @@ class DeleteMeetingForEveryoneIntegrationTest {
                 events += "deleted-hook"
             }
         }
-        val scope = MeetingScope(
-            dispatcher = KaliumDispatcherImpl,
-            meetingRepository = meetings,
-            userRepository = mock(),
-            conversationRepository = conversations,
-            refreshUsersWithoutMetadata = mock(),
-            resetMLSConversation = mock(),
-            joinExistingMLSConversation = mock(),
-            leaveConversation = mock(),
-            deleteConversation = DeleteConversationUseCaseImpl(conversations, mlsRepository, deletedHook, TestUser.USER_ID),
-            transactionProvider = cryptoTransactionProvider,
+        val scope = MeetingScope(createGraphFactory<MeetingIntegrationGraph.Factory>().create(
+                object : LegacyMeetingDependencies {
+                    override val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+                    override val meetingRepository: MeetingRepository = meetings
+                    override val userRepository: UserRepository = mock()
+                    override val conversationRepository: ConversationRepository = conversations
+                    override val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase = mock()
+                    override val resetMLSConversation: ResetMLSConversationUseCase = mock()
+                    override val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock()
+                    override val leaveConversation: LeaveConversationUseCase = mock()
+                    override val deleteConversation: DeleteConversationUseCase = DeleteConversationUseCaseImpl(conversations, mlsRepository, deletedHook, TestUser.USER_ID)
+                    override val transactionProvider: CryptoTransactionProvider = cryptoTransactionProvider
+                },
+            )
         )
         private val calls = mock<CallRepository>()
         private val endCall = mock<EndCallUseCase>()
@@ -317,5 +334,13 @@ class DeleteMeetingForEveryoneIntegrationTest {
             tzid = "Europe/Berlin",
             recurrence = null,
         )
+    }
+}
+
+@DependencyGraph(UserLifetime::class)
+internal interface MeetingIntegrationGraph : LegacyMeetingBindings {
+    @DependencyGraph.Factory
+    interface Factory {
+        fun create(@Provides dependencies: LegacyMeetingDependencies): MeetingIntegrationGraph
     }
 }

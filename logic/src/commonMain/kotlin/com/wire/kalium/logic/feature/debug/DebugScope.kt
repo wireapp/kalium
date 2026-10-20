@@ -1,4 +1,3 @@
-@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 /*
  * Wire
  * Copyright (C) 2024 Wire Swiss GmbH
@@ -17,308 +16,103 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+// Preserve the existing debug API network-event return type.
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
-import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
-import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
-import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.event.EventGenerator
-import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
-import com.wire.kalium.logic.data.message.SessionEstablisher
-import com.wire.kalium.logic.data.message.SessionEstablisherImpl
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
-import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.message.ProteusRecipientsDataSource
-import com.wire.kalium.logic.feature.message.SyncedSendingSession
-import com.wire.kalium.messaging.sending.MessageSendFailureHandler
-import com.wire.kalium.messaging.sending.MessageSendFailureHandlerImpl
-import com.wire.kalium.messaging.sending.MessageSenderImpl
-import com.wire.kalium.userstorage.di.UserStorage
-import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
-import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
-import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
-import com.wire.kalium.messaging.sending.MessageEnvelopeCreatorImpl
-import com.wire.kalium.logic.feature.message.MessageSendingInterceptor
-import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
-import com.wire.kalium.logic.feature.message.MessageSendingScheduler
-import com.wire.kalium.logic.feature.message.StaleEpochVerifier
-import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
-import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
-import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
-import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenToAPIUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
-import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.sync.incremental.EventProcessor
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import com.wire.kalium.messaging.sending.MLSMessageCreator
-import com.wire.kalium.messaging.sending.MLSMessageCreatorImpl
 
-/*
- * This scope can be used to test client behaviour. Debug functions are not needed for normal client activity.
- */
+/** Compatibility facade over the individual bindings retained by the user owner. */
 @DebugKaliumApi("Debug-only scope for developer tooling, QA, and profiling APIs.")
-@Suppress("LongParameterList")
-public class DebugScope internal constructor(
-    internal val messageRepository: MessageRepository,
-    private val conversationRepository: ConversationRepository,
-    private val mlsConversationRepository: MLSConversationRepository,
-    private val joinExistingMLSConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
-    private val clientRepository: ClientRepository,
-    private val clientRemoteRepository: ClientRemoteRepository,
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val preKeyRepository: PreKeyRepository,
-    private val userRepository: UserRepository,
-    private val featureConfigRepository: FeatureConfigRepository,
-    private val userId: UserId,
-    private val assetRepository: AssetRepository,
-    private val eventRepository: EventRepository,
-    private val syncManager: SyncManager,
-    private val slowSyncRepository: SlowSyncRepository,
-    private val messageSendingScheduler: MessageSendingScheduler,
-    private val selfConversationIdProvider: SelfConversationIdProvider,
-    private val staleEpochVerifier: StaleEpochVerifier,
-    private val eventProcessor: EventProcessor,
-    private val legalHoldHandler: LegalHoldHandler,
-    private val notificationTokenRepository: NotificationTokenRepository,
-    private val scope: CoroutineScope,
-    private val userStorage: UserStorage,
-    private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
-    private val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider,
-    private val fetchConversationUseCase: FetchConversationUseCase,
-    private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
-    private val transactionProvider: CryptoTransactionProvider,
-    private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
-    private val certificateRevocationListRepository: CertificateRevocationListRepository,
-    logger: KaliumLogger,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-) {
+public class DebugScope internal constructor(private val api: LegacyDebugApi) {
+    internal val messageRepository: MessageRepository
+        get() = api.debugMessageRepository
+
+    internal val dispatcher: KaliumDispatcher
+        get() = api.debugDispatcher
 
     @DebugKaliumApi("Debug-only API for inspecting the active SQLCipher version.")
     public val getSqlCipherVersion: GetSqlCipherVersionUseCase
-        get() = GetSqlCipherVersionUseCase(userStorage)
+        get() = api.debugGetSqlCipherVersion
 
     @OptIn(InternalKaliumApi::class)
     public val establishSession: EstablishSessionUseCase
-        get() = EstablishSessionUseCaseImpl(sessionEstablisher, transactionProvider)
+        get() = api.debugEstablishSession
 
     public val breakSession: BreakSessionUseCase
-        get() = BreakSessionUseCaseImpl(transactionProvider)
+        get() = api.debugBreakSession
 
     @OptIn(InternalKaliumApi::class)
     public val sendBrokenAssetMessage: SendBrokenAssetMessageUseCase
-        get() = SendBrokenAssetMessageUseCaseImpl(
-            currentClientIdProvider,
-            assetRepository,
-            userId,
-            slowSyncRepository,
-            messageSender,
-            messageRepository
-        )
+        get() = api.debugSendBrokenAssetMessage
 
     @OptIn(InternalKaliumApi::class)
     public val sendConfirmation: SendConfirmationUseCase
-        get() = SendConfirmationUseCase(
-            currentClientIdProvider = currentClientIdProvider,
-            slowSyncRepository = slowSyncRepository,
-            messageSender = messageSender,
-            selfUserId = userId,
-        )
+        get() = api.debugSendConfirmation
 
     public val disableEventProcessing: DisableEventProcessingUseCase
-        get() = DisableEventProcessingUseCaseImpl(
-            eventProcessor = eventProcessor
-        )
+        get() = api.debugDisableEventProcessing
 
     public val getConversationEpochFromCC: GetConversationEpochFromCCUseCase
-        get() = GetConversationEpochFromCCUseCaseImpl(
-            conversationRepository = conversationRepository,
-            transactionProvider = transactionProvider
-        )
+        get() = api.debugGetConversationEpochFromCC
 
     public val synchronizeExternalData: SynchronizeExternalDataUseCase
-        get() = SynchronizeExternalDataUseCaseImpl(
-            eventRepository = eventRepository,
-            eventProcessor = eventProcessor,
-            transactionProvider = transactionProvider
-        )
-
-    private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(
-            recipients = ProteusRecipientsDataSource(
-                userRepository,
-                clientRepository,
-                clientRemoteRepository,
-                fetchConversationUseCase
-            ),
-            updateMessageStatus = messageRepository::updateMessageStatus,
-            scheduleResend = messageSendingScheduler::scheduleSendingOfPendingMessages
-        )
-
-    private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(preKeyRepository::establishSessions)
-
-    private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl(selfUserId = userId)
-
-    private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(
-            legalHoldStatus = { conversationRepository.observeLegalHoldStatus(it).first() },
-            selfUserId = userId,
-            protoContentMapper = protoContentMapper
-        )
-
-    private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(
-            legalHoldStatus = { conversationRepository.observeLegalHoldStatus(it).first() },
-            commitPendingProposals = mlsConversationRepository::commitPendingProposals,
-            joinConversation = { context, conversationId -> joinExistingMLSConversationUseCaseProvider()(context, conversationId) },
-            encrypt = mlsConversationRepository::encryptMessage,
-            selfUserId = userId,
-            protoContentMapper = protoContentMapper
-        )
-
-    private val messageContentEncoder = MessageContentEncoder()
-    private val messageSendingInterceptor: MessageSendingInterceptor
-        get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
+        get() = api.debugSynchronizeExternalData
 
     internal val messageSender: MessageSender
-        get() = MessageSenderImpl(
-            messages = messageRepository,
-            transport = messageRepository,
-            conversations = conversationRepository,
-            session = SyncedSendingSession(syncManager, transactionProvider),
-            messageSendFailureHandler = messageSendFailureHandler,
-            sessionEstablisher = sessionEstablisher,
-            messageEnvelopeCreator = messageEnvelopeCreator,
-            mlsMessageCreator = mlsMessageCreator,
-            prepareMessage = messageSendingInterceptor::prepareMessage,
-            legalHoldEnabledAfter = legalHoldHandler::handleMessageSendFailure,
-            verifyEpoch = { context, conversationId -> staleEpochVerifier.verifyEpoch(context, conversationId) },
-            handleGroupOutOfSync = mlsMissingUsersMessageRejectionHandlerProvider()::handle,
-            broadcastRecipients = userRepository::getAllRecipients,
-            enqueueSelfDeletion = { message, expirationData ->
-                ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData)
-            },
-            scope = scope
-        )
-
-    private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
-        get() = DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
-            messageRepository = messageRepository,
-            assetRepository = assetRepository,
-            currentClientIdProvider = currentClientIdProvider,
-            messageSender = messageSender,
-            selfUserId = userId,
-            selfConversationIdProvider = selfConversationIdProvider,
-            syncManager = syncManager,
-        )
-
-    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
-        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(
-            messageRepository = messageRepository,
-            assetRepository = assetRepository,
-        )
-
-    private val ephemeralMessageDeletionHandler =
-        EphemeralMessageDeletionHandlerImpl(
-            userSessionCoroutineScope = scope,
-            messageRepository = messageRepository,
-            deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
-            deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
-            selfUserId = userId,
-            kaliumLogger = logger
-        )
+        get() = api.debugMessageSender
 
     public val sendFCMTokenToServer: SendFCMTokenUseCase
-        get() = SendFCMTokenToAPIUseCaseImpl(
-            currentClientIdProvider,
-            clientRepository,
-            notificationTokenRepository,
-        )
+        get() = api.debugSendFCMTokenToServer
 
-    public val changeProfiling: ChangeProfilingUseCase get() = ChangeProfilingUseCase(userStorage)
+    public val changeProfiling: ChangeProfilingUseCase
+        get() = api.debugChangeProfiling
 
-    public val observeDatabaseLoggerState: ObserveDatabaseLoggerStateUseCase get() = ObserveDatabaseLoggerStateUseCase(userStorage)
+    public val observeDatabaseLoggerState: ObserveDatabaseLoggerStateUseCase
+        get() = api.debugObserveDatabaseLoggerState
 
     public val optimizeDatabase: OptimizeDatabaseUseCase
-        get() = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
+        get() = api.debugOptimizeDatabase
 
     public val debugFeedConversationUseCase: DebugFeedConversationUseCase
-        get(): DebugFeedConversationUseCase = DebugFeedConversationUseCaseImpl(
-            userStorage.database.messagesFeeder,
-            userStorage.database.reactionFeeder,
-            userStorage.database.unreadEventsFeeder,
-            userStorage.database.mentionsFeeder,
-        )
+        get() = api.debugDebugFeedConversationUseCase
 
     public val getFeatureConfig: GetFeatureConfigUseCase
-        get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
+        get() = api.debugGetFeatureConfig
 
     public val getCryptoServiceReport: GetCryptoServiceReportUseCase
-        get() = GetCryptoServiceReportUseCaseImpl(dispatcher)
+        get() = api.debugGetCryptoServiceReport
 
     public val getDebugE2EICertificateExpiration: GetDebugE2EICertificateExpirationUseCase
-        get() = GetDebugE2EICertificateExpirationUseCaseImpl(x509CredentialAcquisitionConfigProvider)
+        get() = api.debugGetDebugE2EICertificateExpiration
 
     public val setDebugE2EICertificateExpiration: SetDebugE2EICertificateExpirationUseCase
-        get() = SetDebugE2EICertificateExpirationUseCaseImpl(x509CredentialAcquisitionConfigProvider)
+        get() = api.debugSetDebugE2EICertificateExpiration
 
     public val observeDebugCRLExpirationAfterOneMinute: ObserveDebugCRLExpirationAfterOneMinuteUseCase
-        get() = ObserveDebugCRLExpirationAfterOneMinuteUseCaseImpl(certificateRevocationListRepository)
+        get() = api.debugObserveDebugCRLExpirationAfterOneMinute
 
     public val setDebugCRLExpirationAfterOneMinute: SetDebugCRLExpirationAfterOneMinuteUseCase
-        get() = SetDebugCRLExpirationAfterOneMinuteUseCaseImpl(certificateRevocationListRepository)
+        get() = api.debugSetDebugCRLExpirationAfterOneMinute
 
-    public val repairFaultyRemovalKeysUseCase: RepairFaultyRemovalKeysUseCase by lazy {
-        RepairFaultyRemovalKeysUseCaseImpl(
-            selfUserId = userId,
-            conversationRepository = conversationRepository,
-            resetMLSConversation = resetMLSConversationUseCase,
-            transactionProvider = transactionProvider
-        )
-    }
+    public val repairFaultyRemovalKeysUseCase: RepairFaultyRemovalKeysUseCase
+        get() = api.debugRepairFaultyRemovalKeysUseCase
 
     public val getConversationCryptoStats: GetConversationCryptoStatsUseCase
-        get() = GetConversationCryptoStatsUseCaseImpl(
-            conversationRepository = conversationRepository,
-            transactionProvider = transactionProvider
-        )
+        get() = api.debugGetConversationCryptoStats
 
     /**
      * Refills MLS key packages on the backend.
@@ -327,14 +121,7 @@ public class DebugScope internal constructor(
     @OptIn(InternalKaliumApi::class)
     @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
     public suspend fun refillKeyPackages(): Either<CoreFailure, Unit> {
-        return transactionProvider.transaction { transactionContext ->
-            transactionContext.wrapInMLSContext { mlsContext ->
-                when (val result = refillKeyPackagesUseCase(mlsContext)) {
-                    is RefillKeyPackagesResult.Success -> Either.Right(Unit)
-                    is RefillKeyPackagesResult.Failure -> Either.Left(result.failure)
-                }
-            }
-        }
+        return api.debugRefillKeyPackages()
     }
 
     /**
@@ -348,24 +135,12 @@ public class DebugScope internal constructor(
      * @return A flow of generated event responses
      */
     @InternalKaliumApi
-    @Suppress("TooGenericExceptionThrown")
     public suspend fun generateEvents(
         targetUserId: UserId,
         targetClientId: ClientId,
         conversationId: ConversationId,
         limit: Int
     ): Flow<EventResponse> {
-        val selfClientId = currentClientIdProvider().getOrNull() ?: throw RuntimeException("No current client ID available")
-        val generator = EventGenerator(
-            selfClient = QualifiedClientID(
-                clientId = selfClientId,
-                userId = userId
-            ),
-            targetClient = QualifiedClientID(
-                clientId = targetClientId,
-                userId = targetUserId
-            )
-        )
-        return generator.generateEvents(transactionProvider, limit, conversationId)
+        return api.debugGenerateEvents(targetUserId, targetClientId, conversationId, limit)
     }
 }

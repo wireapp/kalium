@@ -23,6 +23,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.GlobalGraphInputs
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformRootPathsProvider
 import com.wire.kalium.logic.di.RootPathsProvider
@@ -78,17 +79,17 @@ public abstract class CoreLogicCommon internal constructor(
     internal val syncShutdownCoordinator = SyncShutdownCoordinator()
 
     private val globalKaliumScope by lazy {
-        GlobalKaliumScope(
-            userAgent,
-            globalDatabaseBuilder,
-            globalPreferences,
-            kaliumConfigs,
-            userSessionScopeProvider,
-            authenticationScopeProvider,
-            logoutCallbackManager,
-            workSchedulerProvider,
-            audioNormalizedLoudnessBuilder
-        )
+        GlobalKaliumScope(object : GlobalGraphInputs {
+            override val userAgent: String = this@CoreLogicCommon.userAgent
+            override val globalDatabase: GlobalDatabaseBuilder = globalDatabaseBuilder
+            override val globalPreferences: GlobalPrefProvider = this@CoreLogicCommon.globalPreferences
+            override val kaliumConfigs: KaliumConfigs = this@CoreLogicCommon.kaliumConfigs
+            override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = this@CoreLogicCommon.userSessionScopeProvider
+            override val authenticationScopeProvider: AuthenticationScopeProvider = this@CoreLogicCommon.authenticationScopeProvider
+            override val logoutCallbackManager = this@CoreLogicCommon.logoutCallbackManager
+            override val workSchedulerProvider: WorkSchedulerProvider = this@CoreLogicCommon.workSchedulerProvider
+            override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = this@CoreLogicCommon.audioNormalizedLoudnessBuilder
+        })
     }
 
     /** Permanently stops sync for all accounts and waits for current event processing before restarting the app. */

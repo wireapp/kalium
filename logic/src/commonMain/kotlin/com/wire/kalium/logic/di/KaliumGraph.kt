@@ -20,13 +20,25 @@ package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.feature.channels.LegacyChannelsBindings
+import com.wire.kalium.logic.feature.channels.LegacyChannelsDependencies
+import com.wire.kalium.logic.feature.client.LegacyClientBindings
+import com.wire.kalium.logic.feature.client.LegacyClientDependencies
 import com.wire.kalium.logic.feature.conversation.LegacyConversationBindings
 import com.wire.kalium.logic.feature.conversation.LegacyConversationDependencies
 import com.wire.kalium.logic.feature.conversation.ObserveConversationDetailsUseCase
+import com.wire.kalium.logic.feature.debug.LegacyDebugBindings
+import com.wire.kalium.logic.feature.debug.LegacyDebugDependencies
+import com.wire.kalium.logic.feature.meeting.LegacyMeetingBindings
+import com.wire.kalium.logic.feature.meeting.LegacyMeetingDependencies
 import com.wire.kalium.logic.feature.message.GetMessageByIdUseCase
 import com.wire.kalium.logic.feature.message.LegacyMessageBindings
 import com.wire.kalium.logic.feature.message.LegacyMessageDependencies
 import com.wire.kalium.logic.feature.message.ObserveMessageByIdUseCase
+import com.wire.kalium.logic.feature.search.LegacySearchBindings
+import com.wire.kalium.logic.feature.search.LegacySearchDependencies
+import com.wire.kalium.logic.feature.user.LegacyUserBindings
+import com.wire.kalium.logic.feature.user.LegacyUserDependencies
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import dev.zacsweers.metro.GraphExtension
@@ -46,15 +58,23 @@ internal interface UserGraphDependencies {
 }
 
 /** Final annotated roots and their create intrinsics live in each platform's leaf source set. */
-internal interface KaliumGraph {
+internal interface KaliumGraph : GlobalBindings {
     val userGraphFactory: KaliumUserGraph.Factory
 }
 
-internal expect fun createKaliumGraph(): KaliumGraph
+internal expect fun createKaliumGraph(inputs: GlobalGraphInputs, owner: GlobalGraphOwner): KaliumGraph
 
 /** Retained for the active account generation, including ordinary Apple background suspension. */
 @GraphExtension(UserLifetime::class)
-internal interface KaliumUserGraph : LegacyConversationBindings, LegacyMessageBindings {
+internal interface KaliumUserGraph :
+    LegacyConversationBindings,
+    LegacyMessageBindings,
+    LegacyClientBindings,
+    LegacyUserBindings,
+    LegacySearchBindings,
+    LegacyChannelsBindings,
+    LegacyMeetingBindings,
+    LegacyDebugBindings {
     val consumerGraphFactory: KaliumConsumerGraph.Factory
 
     @GraphExtension.Factory
@@ -63,6 +83,12 @@ internal interface KaliumUserGraph : LegacyConversationBindings, LegacyMessageBi
             @Provides dependencies: UserGraphDependencies,
             @Provides legacyConversationDependencies: LegacyConversationDependencies,
             @Provides legacyMessageDependencies: LegacyMessageDependencies,
+            @Provides legacyDebugDependencies: LegacyDebugDependencies,
+            @Provides legacyMeetingDependencies: LegacyMeetingDependencies,
+            @Provides legacyChannelsDependencies: LegacyChannelsDependencies,
+            @Provides legacySearchDependencies: LegacySearchDependencies,
+            @Provides legacyUserDependencies: LegacyUserDependencies,
+            @Provides legacyClientDependencies: LegacyClientDependencies,
         ): KaliumUserGraph
     }
 }

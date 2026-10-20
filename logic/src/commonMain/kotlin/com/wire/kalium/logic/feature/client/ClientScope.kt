@@ -18,165 +18,68 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
-import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
-import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.logout.LogoutRepository
-import com.wire.kalium.logic.data.notification.PushTokenRepository
-import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CachedClientIdClearer
-import com.wire.kalium.logic.feature.UserSessionScopeProvider
-import kotlinx.coroutines.CoroutineScope
-import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
-import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
-import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
-import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
-import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
-import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
-import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
-import com.wire.kalium.util.DelicateKaliumApi
 
-@Suppress("LongParameterList")
-public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
-    internal val clientRepository: ClientRepository,
-    private val pushTokenRepository: PushTokenRepository,
-    private val logoutRepository: LogoutRepository,
-    private val preKeyRepository: PreKeyRepository,
-    private val keyPackageRepository: KeyPackageRepository,
-    private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
-    private val mlsClientProvider: MLSClientProvider,
-    private val notificationTokenRepository: NotificationTokenRepository,
-    private val clientRemoteRepository: ClientRemoteRepository,
-    private val proteusClientProvider: ProteusClientProvider,
-    private val sessionRepository: SessionRepository,
-    private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
-    private val selfUserId: UserId,
-    private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
-    private val clientIdProvider: CurrentClientIdProvider,
-    private val userRepository: UserRepository,
-    private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
-    private val slowSyncRepository: SlowSyncRepository,
-    private val cachedClientIdClearer: CachedClientIdClearer,
-    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
-    private val registerMLSClientUseCase: RegisterMLSClientUseCase,
-    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,
-    private val userConfigRepository: UserConfigRepository,
-    private val transactionProvider: CryptoTransactionProvider,
-    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
-    private val originatingScope: CoroutineScope,
-    private val userSessionScopeProvider: UserSessionScopeProvider,
-) {
+/** Compatibility facade over individual bindings retained by the user owner. */
+public class ClientScope internal constructor(private val api: LegacyClientApi) {
+    internal val clientRepository: ClientRepository
+        get() = api.clientClientRepository
 
-    @OptIn(DelicateKaliumApi::class)
     internal val register: RegisterClientUseCase
-        get() = RegisterClientUseCaseImpl(
-            isAllowedToRegisterMLSClient,
-            clientRepository,
-            preKeyRepository,
-            sessionRepository,
-            selfUserId,
-            userRepository,
-            secondFactorVerificationRepository,
-            registerMLSClientUseCase
-        )
+        get() = api.clientRegister
 
     public val fetchSelfClients: FetchSelfClientsFromRemoteUseCase
-        get() = FetchSelfClientsFromRemoteUseCaseImpl(clientRepository, clientIdProvider)
+        get() = api.clientFetchSelfClients
+
     public val fetchUsersClients: FetchUsersClientsFromRemoteUseCase
-        get() = FetchUsersClientsFromRemoteUseCaseImpl(clientRemoteRepository, clientRepository)
-    public val getOtherUserClients: ObserveClientsByUserIdUseCase get() = ObserveClientsByUserIdUseCase(clientRepository)
+        get() = api.clientFetchUsersClients
+
+    public val getOtherUserClients: ObserveClientsByUserIdUseCase
+        get() = api.clientGetOtherUserClients
+
     public val observeClientDetailsUseCase: ObserveClientDetailsUseCase
-        get() = ObserveClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
+        get() = api.clientObserveClientDetailsUseCase
+
     public val deleteClient: DeleteClientUseCase
-        get() = DeleteClientUseCaseImpl(
-            clientRepository,
-            updateSupportedProtocolsAndResolveOneOnOnes,
-            transactionProvider
-        )
+        get() = api.clientDeleteClient
+
     public val needsToRegisterClient: NeedsToRegisterClientUseCase
-        get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, transactionProvider, selfUserId)
+        get() = api.clientNeedsToRegisterClient
+
     internal val deregisterNativePushToken: DeregisterTokenUseCase
-        get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
+        get() = api.clientDeregisterNativePushToken
+
     public val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
-        get() = MLSKeyPackageCountUseCaseImpl(
-            keyPackageRepository = keyPackageRepository,
-            currentClientIdProvider = clientIdProvider,
-            keyPackageLimitsProvider = keyPackageLimitsProvider,
-            userConfigRepository = userConfigRepository,
-            transactionProvider = transactionProvider
-        )
+        get() = api.clientMlsKeyPackageCountUseCase
+
     public val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
-        get() = RestartSlowSyncProcessForRecoveryUseCaseImpl(slowSyncRepository)
+        get() = api.clientRestartSlowSyncProcessForRecoveryUseCase
+
     internal val refillKeyPackages: RefillKeyPackagesUseCase
-        get() = RefillKeyPackagesUseCaseImpl(
-            keyPackageRepository = keyPackageRepository,
-            keyPackageLimitsProvider = keyPackageLimitsProvider,
-            currentClientIdProvider = clientIdProvider,
-            selfUserId = selfUserId,
-            cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier,
-            userConfigRepository = userConfigRepository,
-        )
+        get() = api.clientRefillKeyPackages
 
     public val observeCurrentClientId: ObserveCurrentClientIdUseCase
-        get() = ObserveCurrentClientIdUseCaseImpl(clientRepository)
+        get() = api.clientObserveCurrentClientId
 
     internal val clearClientData: ClearClientDataUseCase
-        get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider)
+        get() = api.clientClearClientData
 
     public val getProteusFingerprint: GetProteusFingerprintUseCase
-        get() = GetProteusFingerprintUseCaseImpl(transactionProvider)
+        get() = api.clientGetProteusFingerprint
 
-    @OptIn(DelicateKaliumApi::class)
-    private val verifyExistingClientUseCase: VerifyExistingClientUseCase
-        get() = VerifyExistingClientUseCaseImpl(
-            selfUserId,
-            clientRepository,
-            isAllowedToRegisterMLSClient,
-            registerMLSClientUseCase,
-            slowSyncRepository
-        )
     internal val importClient: ImportClientUseCase
-        get() = ImportClientUseCaseImpl(
-            clientRepository,
-            getOrRegister
-        )
+        get() = api.clientImportClient
 
     public val getOrRegister: GetOrRegisterClientUseCase
-        get() = GetOrRegisterClientUseCaseImpl(
-            clientRepository,
-            pushTokenRepository,
-            logoutRepository,
-            register,
-            clearClientData,
-            verifyExistingClientUseCase,
-            upgradeCurrentSessionUseCase,
-            cachedClientIdClearer,
-            syncFeatureConfigsUseCase,
-            selfUserId,
-            originatingScope,
-            userSessionScopeProvider,
-        )
+        get() = api.clientGetOrRegister
 
     public val remoteClientFingerPrint: ClientFingerprintUseCase
-        get() = ClientFingerprintUseCaseImpl(transactionProvider, preKeyRepository)
-    public val updateClientVerificationStatus: UpdateClientVerificationStatusUseCase
-        get() = UpdateClientVerificationStatusUseCase(clientRepository)
+        get() = api.clientRemoteClientFingerPrint
 
+    public val updateClientVerificationStatus: UpdateClientVerificationStatusUseCase
+        get() = api.clientUpdateClientVerificationStatus
 }

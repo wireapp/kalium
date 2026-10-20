@@ -15,41 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.logic.feature.search
 
-import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
-import com.wire.kalium.logic.data.publicuser.SearchUserRepository
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUseCase
-import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-
-@Suppress("LongParameterList")
-public class SearchScope internal constructor(
-    private val mlsPublicKeysRepository: MLSPublicKeysRepository,
-    private val getDefaultProtocol: GetDefaultProtocolUseCase,
-    private val getConversationProtocolInfo: GetConversationProtocolInfoUseCase,
-    private val searchUserRepository: SearchUserRepository,
-    private val sessionRepository: SessionRepository,
-    private val selfUserId: UserId,
-    private val kaliumConfigs: KaliumConfigs
-) {
+/** Compatibility facade over the individual bindings retained by the user owner. */
+public class SearchScope internal constructor(private val api: LegacySearchApi) {
     public val searchUsersByName: SearchUsersByNameUseCase
-        get() = SearchUsersByNameUseCaseImpl(
-            searchUserRepository,
-            selfUserId,
-            kaliumConfigs.maxRemoteSearchResultCount
-        )
+        get() = api.searchSearchUsersByName
 
     public val searchUsersByHandle: SearchUsersByHandleUseCase
-        get() = SearchUsersByHandleUseCaseImpl(
-            searchUserRepository,
-            selfUserId,
-            kaliumConfigs.maxRemoteSearchResultCount
-        )
-    public val federatedSearchParser: FederatedSearchParser get() = FederatedSearchParser(sessionRepository, selfUserId)
+        get() = api.searchSearchUsersByHandle
+
+    public val federatedSearchParser: FederatedSearchParser
+        get() = api.searchFederatedSearchParser
 
     public val isFederationSearchAllowedUseCase: IsFederationSearchAllowedUseCase
-        get() = IsFederationSearchAllowedUseCase(mlsPublicKeysRepository, getDefaultProtocol, getConversationProtocolInfo)
+        get() = api.searchIsFederationSearchAllowedUseCase
 }

@@ -15,31 +15,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.logic.feature.channels
 
 import com.wire.kalium.logic.configuration.ChannelsConfigurationStorage
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.SelfUserObservationProvider
 import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddPermissionUseCase
-import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddPermissionUseCaseImpl
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.persistence.dao.MetadataDAO
 
-public class ChannelsScope internal constructor(
-    internal val selfUser: () -> GetSelfUserUseCase,
-    internal val conversationRepository: () -> ConversationRepository,
-    internal val metadataDaoProvider: () -> MetadataDAO,
+/** Compatibility facade over the individual bindings retained by the user owner. */
+public class ChannelsScope internal constructor(private val api: LegacyChannelsApi) {
+    internal val selfUser: () -> GetSelfUserUseCase
+        get() = api.channelsSelfUser.value
+
+    internal val conversationRepository: () -> ConversationRepository
+        get() = api.channelsConversationRepository.value
+
+    internal val metadataDaoProvider: () -> MetadataDAO
+        get() = api.channelsMetadataDaoProvider.value
+
     internal val selfUserObservationProvider: () -> SelfUserObservationProvider
-) {
+        get() = api.channelsSelfUserObservationProvider.value
+
     internal val channelsConfigStorage: ChannelsConfigurationStorage
-        get() = ChannelsConfigurationStorage(metadataDaoProvider())
+        get() = api.channelsChannelsConfigStorage
 
     internal val channelsFeatureConfigHandler: ChannelsFeatureConfigurationHandler
-        get() = ChannelsFeatureConfigurationHandler(channelsConfigStorage)
+        get() = api.channelsChannelsFeatureConfigHandler
 
     public val observeChannelsCreationPermissionUseCase: ObserveChannelsCreationPermissionUseCase
-        get() = ObserveChannelsCreationPermissionUseCase(channelsConfigStorage, selfUserObservationProvider())
+        get() = api.channelsObserveChannelsCreationPermissionUseCase
 
     public val updateChannelAddPermission: UpdateChannelAddPermissionUseCase
-        get() = UpdateChannelAddPermissionUseCaseImpl(conversationRepository())
+        get() = api.channelsUpdateChannelAddPermission
 }
