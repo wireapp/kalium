@@ -84,6 +84,15 @@ update at once. If sending fails, it restores the previous vote, unless a newer
 vote replaced it in the meantime, and returns a failure so the UI can tell the
 user.
 
+### Replies
+
+A text message can quote a poll. A quote carries a hash of the quoted message,
+and the hash of a poll is the hash of a text message whose body is the poll
+question, at the poll's time. Options are left out, so the rule stays as simple
+as the text rule for other clients to adopt. `QuotedMessageDetails.Poll` gives
+the UI the question. Clients without poll support cannot verify the quote and
+show it as unavailable, like a quote of any message they cannot read.
+
 ## Consequences
 
 Poll creation and voting stay end-to-end encrypted and work without bots. Every

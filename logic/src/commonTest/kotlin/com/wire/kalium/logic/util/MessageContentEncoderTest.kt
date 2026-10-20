@@ -140,6 +140,24 @@ class MessageContentEncoderTest {
         assertEquals(expectedHash, result.sha256Digest.toHexString())
     }
 
+    @Test
+    fun givenAPollMessage_whenEncoding_ThenResultHasTheHashOfItsQuestionAsText() = runTest {
+        val poll = MessageContent.Poll(
+            question = textWithEmoji.first.first,
+            options = listOf(MessageContent.Poll.Option("a", "Yes"), MessageContent.Poll.Option("b", "No")),
+            allowMultipleAnswers = false
+        )
+
+        val result = messageContentEncoder.encodeMessageContent(
+            messageInstant = textWithEmoji.first.second,
+            messageContent = poll
+        )
+
+        // then
+        assertNotNull(result)
+        assertEquals(textWithEmoji.second.second, result.sha256Digest.toHexString())
+    }
+
     private companion object TestData {
         val textWithEmoji =
             (

@@ -60,6 +60,13 @@ class MessageContentEncoder {
                 )
             }
 
+            // A poll is hashed like a text message whose body is the question.
+            is MessageContent.Poll ->
+                encodeMessageTextBody(
+                    messageTimeStampInMillis = messageInstant.toEpochMilliseconds(),
+                    messageTextBody = messageContent.question
+                )
+
             else -> {
                 kaliumLogger.w("Attempting to encode message with unsupported content type")
                 null
