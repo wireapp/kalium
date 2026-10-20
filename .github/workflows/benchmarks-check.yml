@@ -76,14 +76,14 @@ jobs:
           STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
         run: |
           bencher run \
-          --branch '${GITHUB_HEAD_REF}' \
-          --branch-start-point '${GITHUB_BASE_REF}' \
+          --branch "$GITHUB_HEAD_REF" \
+          --branch-start-point "$GITHUB_BASE_REF" \
           --branch-start-point-hash "$PULL_REQUEST_BASE_SHA" \
           --adapter java_jmh \
           --testbed ubuntu-latest \
           --err \
           --github-actions "$GITHUB_ACTIONS_TOKEN" \
-          --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
+          --file "$STEPS_PATH_OUTPUTS_REPORT_FULL_PATH"
 
       - name: Run Bencher on base branch
         if: github.event_name == 'push' && github.ref_name == 'develop'
@@ -93,7 +93,7 @@ jobs:
           --adapter java_jmh \
           --testbed ubuntu-latest \
           --err \
-          --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
+          --file "$STEPS_PATH_OUTPUTS_REPORT_FULL_PATH"
         env:
           STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
 
