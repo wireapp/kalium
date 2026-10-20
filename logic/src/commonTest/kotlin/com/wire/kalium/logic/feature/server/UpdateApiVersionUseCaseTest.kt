@@ -38,7 +38,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -91,7 +90,7 @@ class UpdateApiVersionUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigRepository1.updateConfigMetaData(eq(serverConfig1))
+            arrangement.serverConfigRepository1.updateConfigMetaData(serverConfig1)
         }
     }
 
@@ -203,11 +202,11 @@ class UpdateApiVersionUseCaseTest {
 
         assertEquals(2, arrangement.serverConfigProviderCalledCount)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.tokenStorage.proxyCredentials(eq(userId2.toDao()))
+            arrangement.tokenStorage.proxyCredentials(userId2.toDao())
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.tokenStorage.proxyCredentials(eq(userId1.toDao()))
+            arrangement.tokenStorage.proxyCredentials(userId1.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -283,7 +282,7 @@ class UpdateApiVersionUseCaseTest {
             result: ProxyCredentialsEntity?
         ) {
             every {
-                tokenStorage.proxyCredentials(eq(userId))
+                tokenStorage.proxyCredentials(userId)
             } returns result
         }
 

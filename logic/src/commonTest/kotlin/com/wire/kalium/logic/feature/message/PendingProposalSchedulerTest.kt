@@ -44,7 +44,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -82,7 +81,7 @@ class PendingProposalSchedulerTest {
         pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.setProposalTimer(eq(Arrangement.PROPOSAL_TIMER), eq(false))
+            arrangement.mlsConversationRepository.setProposalTimer(Arrangement.PROPOSAL_TIMER, false)
         }
     }
 
@@ -96,7 +95,7 @@ class PendingProposalSchedulerTest {
         pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.subgroupProposals.schedule(eq(Arrangement.PROPOSAL_TIMER.groupID), eq(Arrangement.PROPOSAL_TIMER.timestamp))
+            arrangement.subgroupProposals.schedule(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
         }
     }
 
@@ -111,7 +110,7 @@ class PendingProposalSchedulerTest {
         yield()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), MockConversation.GROUP_ID)
         }
     }
 
@@ -143,7 +142,7 @@ class PendingProposalSchedulerTest {
         yield()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), MockConversation.GROUP_ID)
         }
     }
 
@@ -159,7 +158,7 @@ class PendingProposalSchedulerTest {
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), MockConversation.GROUP_ID)
         }
     }
 
@@ -177,7 +176,7 @@ class PendingProposalSchedulerTest {
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), MockConversation.GROUP_ID)
         }
     }
 
@@ -197,7 +196,7 @@ class PendingProposalSchedulerTest {
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), MockConversation.GROUP_ID)
         }
     }
 
@@ -213,11 +212,11 @@ class PendingProposalSchedulerTest {
         yield()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), MockConversation.GROUP_ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.clearProposalTimer(eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.clearProposalTimer(MockConversation.GROUP_ID)
         }
     }
 
@@ -234,11 +233,11 @@ class PendingProposalSchedulerTest {
             yield()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+                arrangement.mlsConversationRepository.commitPendingProposals(any(), MockConversation.GROUP_ID)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsConversationRepository.clearProposalTimer(eq(MockConversation.GROUP_ID))
+                arrangement.mlsConversationRepository.clearProposalTimer(MockConversation.GROUP_ID)
             }
         }
 
@@ -254,11 +253,11 @@ class PendingProposalSchedulerTest {
         yield()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), MockConversation.GROUP_ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.clearProposalTimer(eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.clearProposalTimer(MockConversation.GROUP_ID)
         }
     }
 
@@ -274,7 +273,7 @@ class PendingProposalSchedulerTest {
         yield()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), MockConversation.GROUP_ID)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -298,10 +297,10 @@ class PendingProposalSchedulerTest {
             arrangement.mlsContext.conversationExists(any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(record.group))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), record.group)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.subgroupProposals.acknowledge(eq(record))
+            arrangement.subgroupProposals.acknowledge(record)
         }
     }
 
@@ -361,7 +360,7 @@ class PendingProposalSchedulerTest {
             runCurrent()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.subgroupProposals.acknowledge(eq(record))
+                arrangement.subgroupProposals.acknowledge(record)
             }
         }
 
@@ -400,7 +399,7 @@ class PendingProposalSchedulerTest {
 
         suspend fun withSubconversationRepositoryContainsGroup(groupID: GroupID) = apply {
             everySuspend {
-                subconversationRepository.containsSubconversation(eq(groupID))
+                subconversationRepository.containsSubconversation(groupID)
             } returns true
         }
 
@@ -424,7 +423,7 @@ class PendingProposalSchedulerTest {
 
         suspend fun withPendingSubconversationProposal(record: PendingSubconversationProposal) = apply {
             everySuspend { subgroupProposals.observe() } returns flowOf(listOf(record))
-            everySuspend { subgroupProposals.isCurrent(eq(record)) } returns true
+            everySuspend { subgroupProposals.isCurrent(record) } returns true
             withScheduledProposalTimers(emptyList())
         }
 

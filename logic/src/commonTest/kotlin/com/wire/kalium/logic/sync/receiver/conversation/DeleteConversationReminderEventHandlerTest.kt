@@ -25,7 +25,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -42,13 +41,13 @@ class DeleteConversationReminderEventHandlerTest {
 
         handler.handle(event)
         verifySuspend(VerifyMode.exactly(1)) {
-            dao.insertAdminlessGroupDelete(eq(event.conversationId.toDao()), eq(event.deletionScheduledFor))
+            dao.insertAdminlessGroupDelete(event.conversationId.toDao(), event.deletionScheduledFor)
         }
 
         everySuspend { dao.insertAdminlessGroupDelete(any(), any()) } throws IllegalStateException("storage failure")
         handler.handle(event)
         verifySuspend(VerifyMode.exactly(1)) {
-            dao.insertAdminlessGroupDelete(eq(event.conversationId.toDao()), eq(event.deletionScheduledFor))
+            dao.insertAdminlessGroupDelete(event.conversationId.toDao(), event.deletionScheduledFor)
         }
     }
 }

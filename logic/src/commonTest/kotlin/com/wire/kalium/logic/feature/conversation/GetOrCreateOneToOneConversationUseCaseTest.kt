@@ -33,7 +33,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -115,7 +114,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         assertIs<CreateConversationResult.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), eq(OTHER_USER), any(), eq(true))
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), OTHER_USER, any(), true)
         }
     }
 
@@ -168,7 +167,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
 
         suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, com.wire.kalium.logic.data.id.ConversationId>) {
             everySuspend {
-                oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any(), eq(true))
+                oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any(), true)
             } returns result
         }
 

@@ -41,8 +41,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -168,12 +167,12 @@ class RecoverMLSConversationsUseCaseTests {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateConversationGroupState(
-                eq(Arrangement.GROUP_ID1), eq(GroupState.PENDING_AFTER_RESET)
+                Arrangement.GROUP_ID1, GroupState.PENDING_AFTER_RESET
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION2.id), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), Arrangement.MLS_CONVERSATION2.id, any(), any())
         }
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -196,7 +195,7 @@ class RecoverMLSConversationsUseCaseTests {
 
         verifySuspend(VerifyMode.exactly(conversations.size)) {
             arrangement.conversationRepository.updateConversationGroupState(
-                any(), eq(GroupState.PENDING_AFTER_RESET)
+                any(), GroupState.PENDING_AFTER_RESET
             )
         }
 
@@ -288,7 +287,7 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withConversationMembers(conversationId: ConversationId, members: List<UserId>) = apply {
             everySuspend {
-                conversationRepository.getConversationMembers(eq(conversationId))
+                conversationRepository.getConversationMembers(conversationId)
             } returns Either.Right(members)
         }
 
@@ -300,16 +299,16 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withConversationIsOutOfSyncReturnsTrueFor(groupIds: List<GroupID>) = apply {
             everySuspend {
-                mlsConversationRepository.isLocalGroupEpochStale(any(), matching { it in groupIds }, any())
+                mlsConversationRepository.isLocalGroupEpochStale(any(), matches { it in groupIds }, any())
             } returns Either.Right(true)
         }
 
         suspend fun withConversationIsOutOfSyncReturnsFalseFor(groupID: GroupID) = apply {
             everySuspend {
-                mlsConversationRepository.isLocalGroupEpochStale(any(), eq(groupID), any())
+                mlsConversationRepository.isLocalGroupEpochStale(any(), groupID, any())
             } returns Either.Right(false)
             everySuspend {
-                mlsConversationRepository.isLocalGroupEpochStale(any(), matching { it != groupID }, any())
+                mlsConversationRepository.isLocalGroupEpochStale(any(), matches { it != groupID }, any())
             } returns Either.Right(true)
         }
 
@@ -321,16 +320,16 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withEpochCheckFailsWithConversationNotFoundFor(groupID: GroupID) = apply {
             everySuspend {
-                mlsConversationRepository.isLocalGroupEpochStale(any(), eq(groupID), any())
+                mlsConversationRepository.isLocalGroupEpochStale(any(), groupID, any())
             } returns Either.Left(MLSFailure.ConversationNotFound)
         }
 
         suspend fun withJoinExistingMLSConversationUseCaseFailsFor(failedGroupId: ConversationId) = apply {
             everySuspend {
-                joinExistingMLSConversationUseCase.invoke(any(), eq(failedGroupId), any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), failedGroupId, any(), any())
             } returns Either.Left(StorageFailure.DataNotFound)
             everySuspend {
-                joinExistingMLSConversationUseCase.invoke(any(), matching { it != failedGroupId }, any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), matches { it != failedGroupId }, any(), any())
             } returns Either.Right(Unit)
         }
 

@@ -41,7 +41,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -70,7 +69,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.ENABLED), interactionResult)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+                arrangement.conversationRepository.observeConversationDetailsById(conversationId)
             }
 
             awaitComplete()
@@ -93,7 +92,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.NOT_MEMBER), interactionResult)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+                arrangement.conversationRepository.observeConversationDetailsById(conversationId)
             }
 
             awaitComplete()
@@ -116,7 +115,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             assertIs<IsInteractionAvailableResult.Failure>(interactionResult)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+                arrangement.conversationRepository.observeConversationDetailsById(conversationId)
             }
 
             awaitComplete()
@@ -139,7 +138,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.BLOCKED_USER), interactionResult)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+                arrangement.conversationRepository.observeConversationDetailsById(conversationId)
             }
 
             awaitComplete()
@@ -161,7 +160,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.DELETED_USER), interactionResult)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+                arrangement.conversationRepository.observeConversationDetailsById(conversationId)
             }
 
             awaitComplete()

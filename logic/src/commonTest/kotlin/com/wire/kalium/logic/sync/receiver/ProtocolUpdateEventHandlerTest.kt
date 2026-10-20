@@ -35,7 +35,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -60,7 +59,7 @@ class ProtocolUpdateEventHandlerTest {
         useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
+            arrangement.updateConversationProtocol(any(), event.conversationId, event.protocol, true)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -81,7 +80,7 @@ class ProtocolUpdateEventHandlerTest {
         useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
+            arrangement.updateConversationProtocol(any(), event.conversationId, event.protocol, true)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -108,7 +107,7 @@ class ProtocolUpdateEventHandlerTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
+            arrangement.updateConversationProtocol(any(), event.conversationId, event.protocol, true)
         }
     }
 
@@ -155,7 +154,7 @@ class ProtocolUpdateEventHandlerTest {
         useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
+            arrangement.updateConversationProtocol(any(), event.conversationId, event.protocol, true)
         }
     }
 
@@ -172,9 +171,9 @@ class ProtocolUpdateEventHandlerTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(
-                eq(event.conversationId),
-                eq(event.senderUserId),
-                eq(event.protocol)
+                event.conversationId,
+                event.senderUserId,
+                event.protocol
             )
         }
     }

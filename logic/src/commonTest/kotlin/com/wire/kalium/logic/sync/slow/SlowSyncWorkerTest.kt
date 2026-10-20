@@ -52,7 +52,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -622,7 +621,7 @@ class SlowSyncWorkerTest {
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.eventRepository.updateLastSavedEventId(eq(fetchedEventId))
+            arrangement.eventRepository.updateLastSavedEventId(fetchedEventId)
         }
     }
 
@@ -645,7 +644,7 @@ class SlowSyncWorkerTest {
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinMLSConversations.invoke(eq(true), eq(false))
+            arrangement.joinMLSConversations.invoke(true, false)
         }
     }
 
@@ -673,7 +672,7 @@ class SlowSyncWorkerTest {
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinMLSConversations.invoke(eq(true), eq(true))
+            arrangement.joinMLSConversations.invoke(true, true)
         }
     }
 
@@ -696,7 +695,7 @@ class SlowSyncWorkerTest {
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), eq(false), eq(false))
+            arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), false, false)
         }
     }
 
@@ -724,7 +723,7 @@ class SlowSyncWorkerTest {
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), eq(false), eq(true))
+            arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), false, true)
         }
     }
 
@@ -975,7 +974,7 @@ class SlowSyncWorkerTest {
             allowJoinByExternalCommit: Boolean = false,
         ) = apply {
             everySuspend {
-                joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit))
+                joinMLSConversations.invoke(keepRetryingOnFailure, allowJoinByExternalCommit)
             } returns failure
         }
 
@@ -984,7 +983,7 @@ class SlowSyncWorkerTest {
             allowJoinByExternalCommit: Boolean = false,
         ) = apply {
             everySuspend {
-                joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit))
+                joinMLSConversations.invoke(keepRetryingOnFailure, allowJoinByExternalCommit)
             } returns success
         }
 
@@ -1004,7 +1003,7 @@ class SlowSyncWorkerTest {
             allowJoinByExternalCommit: Boolean = false,
         ) = apply {
             everySuspend {
-                oneOnOneResolver.resolveAllOneOnOneConversations(any(), any(), eq(allowJoinByExternalCommit))
+                oneOnOneResolver.resolveAllOneOnOneConversations(any(), any(), allowJoinByExternalCommit)
             } returns success
         }
 

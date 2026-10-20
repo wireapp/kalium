@@ -25,7 +25,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -47,8 +46,8 @@ class FetchConversationIfUnknownUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversation(
                 any(),
-                eq(TestConversation.ID),
-                eq(ConversationSyncReason.Other)
+                TestConversation.ID,
+                ConversationSyncReason.Other
             )
         }
     }
@@ -76,13 +75,13 @@ class FetchConversationIfUnknownUseCaseTest {
 
         suspend fun withGetConversationLeft() = apply {
             everySuspend {
-                conversationRepository.getConversationById(eq(TestConversation.ID))
+                conversationRepository.getConversationById(TestConversation.ID)
             } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withGetConversationRight() = apply {
             everySuspend {
-                conversationRepository.getConversationById(eq(TestConversation.ID))
+                conversationRepository.getConversationById(TestConversation.ID)
             } returns Either.Right(TestConversation.CONVERSATION)
         }
 
@@ -90,8 +89,8 @@ class FetchConversationIfUnknownUseCaseTest {
             everySuspend {
                 fetchConversation(
                     any(),
-                    eq(TestConversation.ID),
-                    eq(ConversationSyncReason.Other)
+                    TestConversation.ID,
+                    ConversationSyncReason.Other
                 )
             } returns Either.Right(Unit)
         }

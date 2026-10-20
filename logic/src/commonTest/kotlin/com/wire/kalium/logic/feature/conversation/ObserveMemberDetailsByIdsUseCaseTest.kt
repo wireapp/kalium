@@ -26,7 +26,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
@@ -75,7 +74,7 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstOtherUser.id)
 
         everySuspend {
-            userRepository.observeUser(eq(TestUser.SELF.id))
+            userRepository.observeUser(TestUser.SELF.id)
         } returns flowOf(TestUser.SELF)
 
         everySuspend {
@@ -96,11 +95,11 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(knownUser.id, notKnownUserId)
 
         everySuspend {
-            userRepository.observeUser(eq(knownUser.id))
+            userRepository.observeUser(knownUser.id)
         } returns flowOf(knownUser)
 
         everySuspend {
-            userRepository.observeUser(eq(notKnownUserId))
+            userRepository.observeUser(notKnownUserId)
         } returns flowOf(null)
 
         observeMemberDetailsByIds(userIds).test {

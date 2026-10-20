@@ -26,7 +26,6 @@ import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -51,17 +50,17 @@ class MarkConversationAsReadLocallyUseCaseTest {
             selfUserId = TestUser.SELF.id,
         )
 
-        everySuspend { conversationRepository.getConversationById(eq(conversation.id)) } returns Either.Right(conversation)
+        everySuspend { conversationRepository.getConversationById(conversation.id) } returns Either.Right(conversation)
         everySuspend {
-            conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(conversation.id), eq(newLastRead))
+            conversationRepository.updateReadDateAndGetHasUnreadEvents(conversation.id, newLastRead)
         } returns Either.Right(false)
 
         useCase(conversation.id, newLastRead)
 
         verifySuspend(VerifyMode.exactly(1)) {
             hookNotifier.onConversationLastReadPersisted(
-                eq(ConversationLastReadEventData(conversation.id, newLastRead)),
-                eq(TestUser.SELF.id)
+                ConversationLastReadEventData(conversation.id, newLastRead),
+                TestUser.SELF.id
             )
         }
     }

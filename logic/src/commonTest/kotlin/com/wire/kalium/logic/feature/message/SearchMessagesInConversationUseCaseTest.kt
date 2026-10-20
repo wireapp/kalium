@@ -34,7 +34,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -58,10 +57,10 @@ class SearchMessagesInConversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByText(
-                eq(CONVERSATION_ID),
-                eq(SEARCH_QUERY),
-                eq(DEFAULT_LIMIT),
-                eq(DEFAULT_OFFSET)
+                CONVERSATION_ID,
+                SEARCH_QUERY,
+                DEFAULT_LIMIT,
+                DEFAULT_OFFSET
             )
         }
     }
@@ -78,10 +77,10 @@ class SearchMessagesInConversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByText(
-                eq(CONVERSATION_ID),
-                eq(SEARCH_QUERY),
-                eq(customLimit),
-                eq(customOffset)
+                CONVERSATION_ID,
+                SEARCH_QUERY,
+                customLimit,
+                customOffset
             )
         }
     }
@@ -157,10 +156,10 @@ class SearchMessagesInConversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByText(
-                eq(CONVERSATION_ID),
-                eq(SEARCH_QUERY),
-                eq(100),
-                eq(0)
+                CONVERSATION_ID,
+                SEARCH_QUERY,
+                100,
+                0
             )
         }
     }
@@ -179,8 +178,8 @@ class SearchMessagesInConversationUseCaseTest {
         ) = apply {
             everySuspend {
                 messageRepository.searchMessagesByText(
-                    eq(conversationId),
-                    eq(searchQuery),
+                    conversationId,
+                    searchQuery,
                     any(),
                     any()
                 )

@@ -49,7 +49,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.every
 import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -89,7 +88,7 @@ class LogoutUseCaseTest {
             arrangement.globalTestScope.advanceUntilIdle()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.sessionRepository.logout(any(), eq(reason))
+                arrangement.sessionRepository.logout(any(), reason)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.sessionRepository.updateCurrentSession(any())
@@ -103,15 +102,15 @@ class LogoutUseCaseTest {
 
             if (reason == LogoutReason.SELF_HARD_LOGOUT) {
                 verifySuspend(VerifyMode.not) {
-                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(true)
                 }
             } else {
                 verifySuspend(VerifyMode.exactly(1)) {
-                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(true)
                 }
             }
             verifySuspend {
-                arrangement.logoutCallback(any<UserId>(), eq(reason))
+                arrangement.logoutCallback(any<UserId>(), reason)
             }
         }
     }
@@ -447,7 +446,7 @@ class LogoutUseCaseTest {
             arrangement.clientRepository.clearRetainedClientId()
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(true)
         }
     }
 

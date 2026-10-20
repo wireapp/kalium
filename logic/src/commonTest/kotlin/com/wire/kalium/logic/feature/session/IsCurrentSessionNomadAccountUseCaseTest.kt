@@ -31,7 +31,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -108,7 +107,7 @@ internal class IsCurrentSessionNomadAccountUseCaseTest {
         }
 
         suspend fun withFullAccountInfo(userId: UserId, result: Either<StorageFailure, Account>) = apply {
-            everySuspend { sessionRepository.fullAccountInfo(eq(userId)) } returns result
+            everySuspend { sessionRepository.fullAccountInfo(userId) } returns result
         }
 
         fun arrange() = this to useCase

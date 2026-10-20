@@ -41,7 +41,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -130,7 +130,7 @@ class SendKnockUserCaseTest {
         assertIs<MessageOperationResult.Success>(result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matching {
+                message = matches {
                     assertIs<Message.Regular>(it)
                     it.expirationData?.expireAfter == expectedDuration
                 },

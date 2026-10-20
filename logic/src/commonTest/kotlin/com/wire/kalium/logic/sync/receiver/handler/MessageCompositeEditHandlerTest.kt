@@ -28,7 +28,6 @@ import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -53,10 +52,10 @@ class MessageCompositeEditHandlerTest {
             with(arrangement) {
                 verifySuspend(VerifyMode.exactly(1)) {
                     messageRepository.updateCompositeMessage(
-                        eq(EDIT_MESSAGE.conversationId),
-                        eq(EDIT_COMPOSITE_CONTENT),
-                        eq(EDIT_MESSAGE.id),
-                        eq(EDIT_MESSAGE.date)
+                        EDIT_MESSAGE.conversationId,
+                        EDIT_COMPOSITE_CONTENT,
+                        EDIT_MESSAGE.id,
+                        EDIT_MESSAGE.date
                     )
                 }
             }

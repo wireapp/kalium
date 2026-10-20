@@ -51,8 +51,7 @@ import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -149,9 +148,9 @@ class GroupConversationCreatorTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.createGroupConversationWithPendingResult(
-                eq(name),
-                eq(members),
-                eq(conversationOptions)
+                name,
+                members,
+                conversationOptions
             )
         }
     }
@@ -251,7 +250,7 @@ class GroupConversationCreatorTest {
         createGroupConversation(name, members, conversationOptions)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationModifiedDate(any(), matching { it.wasInTheLastSecond })
+            arrangement.conversationRepository.updateConversationModifiedDate(any(), matches { it.wasInTheLastSecond })
         }
     }
 
@@ -622,13 +621,13 @@ class GroupConversationCreatorTest {
 
         suspend fun withMarkingConversationDeletedLocallySucceeding() = apply {
             everySuspend {
-                conversationRepository.setConversationDeletedLocally(any(), eq(true))
+                conversationRepository.setConversationDeletedLocally(any(), true)
             } returns Either.Right(Unit)
         }
 
         suspend fun withMarkingConversationDeletedLocallyFailing() = apply {
             everySuspend {
-                conversationRepository.setConversationDeletedLocally(any(), eq(true))
+                conversationRepository.setConversationDeletedLocally(any(), true)
             } returns Either.Left(StorageFailure.DataNotFound)
         }
 

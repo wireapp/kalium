@@ -24,7 +24,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -44,13 +43,13 @@ class FlipToFrontCameraUseCaseTest {
     @Test
     fun givenFlowManagerService_whenUseCaseCaseIsInvoked_thenInvokeFlipToFrontCameraOnce() = runTest {
         everySuspend {
-            flowManagerService.flipToFrontCamera(eq(conversationId))
+            flowManagerService.flipToFrontCamera(conversationId)
         } returns (Unit)
 
         flipToFrontCamera(conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            flowManagerService.flipToFrontCamera(eq(conversationId))
+            flowManagerService.flipToFrontCamera(conversationId)
         }
     }
 

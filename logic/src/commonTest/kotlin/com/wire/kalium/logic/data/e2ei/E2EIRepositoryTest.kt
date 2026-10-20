@@ -57,7 +57,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -102,10 +101,10 @@ class E2EIRepositoryTest {
         repository.rotateKeysAndMigrateConversations(arrangement.transactionProvider, checkpoint).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.acmeApi.getTrustAnchors(eq(DISCOVERY_URL))
-            arrangement.coreCrypto.addPkiTrustAnchors(eq(TRUST_ANCHOR))
-            arrangement.coreCrypto.startX509CredentialAcquisition(eq(ACQUISITION_CONFIG), eq(null))
-            arrangement.coreCrypto.installCredential(eq(arrangement.credential))
+            arrangement.acmeApi.getTrustAnchors(DISCOVERY_URL)
+            arrangement.coreCrypto.addPkiTrustAnchors(TRUST_ANCHOR)
+            arrangement.coreCrypto.startX509CredentialAcquisition(ACQUISITION_CONFIG, null)
+            arrangement.coreCrypto.installCredential(arrangement.credential)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.mlsClient.initializeBasicCredential()
@@ -136,13 +135,13 @@ class E2EIRepositoryTest {
         assertEquals(E2EIAuthenticationRequest(IDP_URL, KEY_AUTH, ACME_AUDIENCE), authenticationRequest)
         assertEquals(ID_TOKEN, arrangement.returnedIdToken)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.acmeApi.getTrustAnchors(eq(DISCOVERY_URL))
-            arrangement.coreCrypto.addPkiTrustAnchors(eq(TRUST_ANCHOR))
+            arrangement.acmeApi.getTrustAnchors(DISCOVERY_URL)
+            arrangement.coreCrypto.addPkiTrustAnchors(TRUST_ANCHOR)
             arrangement.coreCrypto.startX509CredentialAcquisition(
-                eq(ACQUISITION_CONFIG),
-                eq(arrangement.previousCredentialRef)
+                ACQUISITION_CONFIG,
+                arrangement.previousCredentialRef
             )
-            arrangement.coreCrypto.installCredential(eq(arrangement.credential))
+            arrangement.coreCrypto.installCredential(arrangement.credential)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.mlsClient.getCredentialRef(CredentialType.Basic)
@@ -178,8 +177,8 @@ class E2EIRepositoryTest {
             arrangement.mlsClient.getCredentialRef(CredentialType.X509)
             arrangement.mlsClient.getCredentialRef(CredentialType.Basic)
             arrangement.coreCrypto.startX509CredentialAcquisition(
-                eq(ACQUISITION_CONFIG),
-                eq(arrangement.previousCredentialRef)
+                ACQUISITION_CONFIG,
+                arrangement.previousCredentialRef
             )
         }
     }
@@ -231,7 +230,7 @@ class E2EIRepositoryTest {
         val (arrangement, repository) = Arrangement().arrange {
             everySuspend { userConfigRepository.getE2EISettings() } returns PROXIED_E2EI_SETTINGS.right()
             everySuspend {
-                acmeApi.getClientDomainCRL(eq(CRL_URL), eq(CRL_PROXY_URL))
+                acmeApi.getClientDomainCRL(CRL_URL, CRL_PROXY_URL)
             } returns success(PROXIED_CRL)
         }
 
@@ -246,7 +245,7 @@ class E2EIRepositoryTest {
         assertEquals(200.toUShort(), response.status)
         assertContentEquals(PROXIED_CRL, response.body)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.acmeApi.getClientDomainCRL(eq(CRL_URL), eq(CRL_PROXY_URL))
+            arrangement.acmeApi.getClientDomainCRL(CRL_URL, CRL_PROXY_URL)
         }
     }
 
@@ -412,24 +411,24 @@ class E2EIRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.migrateConversationCredential(
-                eq(arrangement.mlsContext),
-                eq(arrangement.newCredentialRef),
-                eq(groupOne)
+                arrangement.mlsContext,
+                arrangement.newCredentialRef,
+                groupOne
             )
             arrangement.mlsConversationRepository.migrateConversationCredential(
-                eq(arrangement.mlsContext),
-                eq(arrangement.newCredentialRef),
-                eq(groupTwo)
+                arrangement.mlsContext,
+                arrangement.newCredentialRef,
+                groupTwo
             )
             arrangement.mlsConversationRepository.prepareX509KeyPackages(
-                eq(arrangement.mlsContext),
-                eq(arrangement.newCredentialRef)
+                arrangement.mlsContext,
+                arrangement.newCredentialRef
             )
             arrangement.mlsConversationRepository.replaceX509KeyPackages(
-                eq(TestClient.CLIENT_ID),
-                eq(prepared)
+                TestClient.CLIENT_ID,
+                prepared
             )
-            arrangement.mlsContext.removeCredential(eq(arrangement.previousCredentialRef))
+            arrangement.mlsContext.removeCredential(arrangement.previousCredentialRef)
             arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
         }
     }
@@ -458,28 +457,28 @@ class E2EIRepositoryTest {
                 newCredentialRef
             }
             everySuspend {
-                mlsConversationRepository.migrateConversationCredential(any(), any(), eq(groupOne))
+                mlsConversationRepository.migrateConversationCredential(any(), any(), groupOne)
             } calls {
                 operations += "migrate-group-1"
             }
             everySuspend {
-                mlsConversationRepository.migrateConversationCredential(any(), any(), eq(groupTwo))
+                mlsConversationRepository.migrateConversationCredential(any(), any(), groupTwo)
             } calls {
                 operations += "migrate-group-2"
             }
             everySuspend {
-                mlsConversationRepository.prepareX509KeyPackages(any(), eq(newCredentialRef))
+                mlsConversationRepository.prepareX509KeyPackages(any(), newCredentialRef)
             } calls {
                 operations += "prepare-local-key-packages"
                 prepared
             }
             everySuspend {
-                mlsConversationRepository.replaceX509KeyPackages(eq(TestClient.CLIENT_ID), eq(prepared))
+                mlsConversationRepository.replaceX509KeyPackages(TestClient.CLIENT_ID, prepared)
             } calls {
                 operations += "replace-backend-key-packages"
                 Unit.right()
             }
-            everySuspend { mlsContext.removeCredential(eq(previousCredentialRef)) } calls {
+            everySuspend { mlsContext.removeCredential(previousCredentialRef) } calls {
                 operations += "remove-previous-credential"
             }
             everySuspend { userConfigRepository.deleteE2EIRotationCheckpoint() } calls {
@@ -533,18 +532,18 @@ class E2EIRepositoryTest {
                 operations += "migrate-conversation"
             }
             everySuspend {
-                mlsConversationRepository.prepareX509KeyPackages(any(), eq(newCredentialRef))
+                mlsConversationRepository.prepareX509KeyPackages(any(), newCredentialRef)
             } calls {
                 operations += "prepare-local-key-packages"
                 prepared
             }
             everySuspend {
-                mlsConversationRepository.replaceX509KeyPackages(eq(TestClient.CLIENT_ID), eq(prepared))
+                mlsConversationRepository.replaceX509KeyPackages(TestClient.CLIENT_ID, prepared)
             } calls {
                 operations += "replace-backend-key-packages"
                 if (backendReplacementFails) backendFailure.left() else Unit.right()
             }
-            everySuspend { mlsContext.removeCredential(eq(previousCredentialRef)) } calls {
+            everySuspend { mlsContext.removeCredential(previousCredentialRef) } calls {
                 operations += "remove-previous-credential"
             }
             everySuspend { userConfigRepository.deleteE2EIRotationCheckpoint() } calls {
@@ -635,10 +634,10 @@ class E2EIRepositoryTest {
         repository.fetchAndAddTrustAnchors().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.acmeApi.getTrustAnchors(eq(DISCOVERY_URL))
+            arrangement.acmeApi.getTrustAnchors(DISCOVERY_URL)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.coreCrypto.addPkiTrustAnchors(eq(TRUST_ANCHOR))
+            arrangement.coreCrypto.addPkiTrustAnchors(TRUST_ANCHOR)
         }
     }
 

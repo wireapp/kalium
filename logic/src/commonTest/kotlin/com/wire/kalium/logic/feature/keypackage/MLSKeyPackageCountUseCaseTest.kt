@@ -42,7 +42,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -68,7 +67,7 @@ class MLSKeyPackageCountUseCaseTest {
         val actual = keyPackageCountUseCase()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(TestClient.CLIENT_ID, expectedCipherSuite)
         }
 
         assertIs<MLSKeyPackageCountResult.Failure.FetchClientIdFailure>(actual)
@@ -91,7 +90,7 @@ class MLSKeyPackageCountUseCaseTest {
         val actual = keyPackageCountUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(TestClient.CLIENT_ID, expectedCipherSuite)
         }
         assertIs<MLSKeyPackageCountResult.Success>(actual)
         assertEquals(actual, MLSKeyPackageCountResult.Success(TestClient.CLIENT_ID, KEY_PACKAGE_COUNT, true))
@@ -112,7 +111,7 @@ class MLSKeyPackageCountUseCaseTest {
         val actual = keyPackageCountUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(TestClient.CLIENT_ID, expectedCipherSuite)
         }
         assertIs<MLSKeyPackageCountResult.Failure.NetworkCallFailure>(actual)
         assertEquals(actual.networkFailure, NETWORK_FAILURE)
@@ -136,7 +135,7 @@ class MLSKeyPackageCountUseCaseTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
+            arrangement.keyPackageRepository.getAvailableKeyPackageCount(TestClient.CLIENT_ID, expectedCipherSuite)
         }
         assertIs<MLSKeyPackageCountResult.Failure.NotEnabled>(actual)
     }

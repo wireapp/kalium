@@ -37,7 +37,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -163,7 +163,7 @@ class SendPendingMessagesUseCaseTest {
         assertIs<SendPendingMessagesUseCase.Result.Success>(result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matching {
+                matches {
                     val content = it.content as? MessageContent.TextEdited
                     it is Message.Signaling &&
                             it.id != message.id &&

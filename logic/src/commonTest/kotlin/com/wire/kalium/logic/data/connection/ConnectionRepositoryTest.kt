@@ -67,9 +67,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
-import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -146,7 +144,7 @@ class ConnectionRepositoryTest {
         // then
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionApi.createConnection(eq(userId))
+            arrangement.connectionApi.createConnection(userId)
         }
     }
 
@@ -167,7 +165,7 @@ class ConnectionRepositoryTest {
         // then
         result.shouldFail()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionApi.createConnection(eq(userId))
+            arrangement.connectionApi.createConnection(userId)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
@@ -201,7 +199,7 @@ class ConnectionRepositoryTest {
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionApi.createConnection(eq(userId))
+            arrangement.connectionApi.createConnection(userId)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionDAO.insertConnection(any())
@@ -225,7 +223,7 @@ class ConnectionRepositoryTest {
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+            arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.ACCEPTED)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
@@ -245,7 +243,7 @@ class ConnectionRepositoryTest {
         // then
         result.shouldFail {}
         verifySuspend(VerifyMode.exactly(0)) {
-            arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+            arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.ACCEPTED)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
@@ -265,7 +263,7 @@ class ConnectionRepositoryTest {
         // then
         result.shouldFail {}
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+            arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.ACCEPTED)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
@@ -285,7 +283,7 @@ class ConnectionRepositoryTest {
         // then
         result.shouldFail {}
         verifySuspend(VerifyMode.exactly(0)) {
-            arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.PENDING))
+            arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.PENDING)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
@@ -309,10 +307,10 @@ class ConnectionRepositoryTest {
         // then
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionDAO.deleteConnectionDataAndConversation(eq(conversationId.toDao()))
+            arrangement.connectionDAO.deleteConnectionDataAndConversation(conversationId.toDao())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDAO.upsertConnectionStatuses(eq(mapOf(connection.qualifiedToId.toDao() to ConnectionEntity.State.CANCELLED)))
+            arrangement.userDAO.upsertConnectionStatuses(mapOf(connection.qualifiedToId.toDao() to ConnectionEntity.State.CANCELLED))
         }
     }
 
@@ -329,7 +327,7 @@ class ConnectionRepositoryTest {
             assertEquals(connection.qualifiedConversationId.toModel(), it.conversationId)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionDAO.getConnection(eq(connection.qualifiedConversationId))
+            arrangement.connectionDAO.getConnection(connection.qualifiedConversationId)
         }
     }
 
@@ -369,7 +367,7 @@ class ConnectionRepositoryTest {
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionDAO.insertConnection(
-                matching {
+                matches {
                     it.conversationId == arrangement.connectionEntity.conversationId &&
                             it.from == arrangement.connectionEntity.from &&
                             it.qualifiedConversationId == arrangement.connectionEntity.qualifiedConversationId &&
@@ -396,7 +394,7 @@ class ConnectionRepositoryTest {
             assertIs<StorageFailure.DataNotFound>(it)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionDAO.getConnection(eq(connection.qualifiedConversationId))
+            arrangement.connectionDAO.getConnection(connection.qualifiedConversationId)
         }
     }
 
@@ -620,7 +618,7 @@ class ConnectionRepositoryTest {
             userId: NetworkUserId
         ): Arrangement {
             everySuspend {
-                connectionApi.createConnection(eq(userId))
+                connectionApi.createConnection(userId)
             }.returns(NetworkResponse.Success(result, mapOf(), 200))
 
             return this
@@ -628,7 +626,7 @@ class ConnectionRepositoryTest {
 
         suspend fun withSuccessfulGetConversationById(conversationId: QualifiedIDEntity): Arrangement {
             everySuspend {
-                conversationDAO.observeConversationDetailsById(eq(conversationId))
+                conversationDAO.observeConversationDetailsById(conversationId)
             }.returns(flowOf(TestConversation.VIEW_ENTITY))
 
             return this
@@ -643,7 +641,7 @@ class ConnectionRepositoryTest {
 
         suspend fun withErrorOnCreateConnectionResponse(userId: NetworkUserId): Arrangement {
             everySuspend {
-                connectionApi.createConnection(eq(userId))
+                connectionApi.createConnection(userId)
             }.returns(NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))))
 
             return this
@@ -659,7 +657,7 @@ class ConnectionRepositoryTest {
 
         suspend fun withSuccessfulUpdateConnectionStatusResponse(userId: NetworkUserId): Arrangement = apply {
             everySuspend {
-                connectionApi.updateConnection(eq(userId), any())
+                connectionApi.updateConnection(userId, any())
             }.returns(NetworkResponse.Success(stubConnectionOne, mapOf(), 200))
 
             withUpdateOrInsertOneOnOneMemberSuccess(
@@ -672,7 +670,7 @@ class ConnectionRepositoryTest {
             exception: KaliumException = KaliumException.GenericError(RuntimeException("An error the server threw!"))
         ): Arrangement = apply {
             everySuspend {
-                connectionApi.updateConnection(eq(userId), any())
+                connectionApi.updateConnection(userId, any())
             }.returns(NetworkResponse.Error(exception))
         }
 
@@ -681,13 +679,13 @@ class ConnectionRepositoryTest {
             userId: com.wire.kalium.network.api.model.UserId
         ) = apply {
             everySuspend {
-                connectionApi.userConnectionInfo(eq(userId))
+                connectionApi.userConnectionInfo(userId)
             }.returns(result)
         }
 
         suspend fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {
             everySuspend {
-                connectionDAO.deleteConnectionDataAndConversation(eq(conversationId))
+                connectionDAO.deleteConnectionDataAndConversation(conversationId)
             }.returns(Unit)
         }
 
@@ -724,7 +722,7 @@ class ConnectionRepositoryTest {
 
         suspend fun withSuccessfulGetUserById(id: QualifiedIDEntity): Arrangement {
             everySuspend {
-                userDAO.observeUserDetailsByQualifiedID(eq(id))
+                userDAO.observeUserDetailsByQualifiedID(id)
             }.returns(flowOf(stubUserEntity))
 
             return this

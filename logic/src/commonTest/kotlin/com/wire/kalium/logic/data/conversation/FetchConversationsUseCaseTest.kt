@@ -31,7 +31,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -63,8 +62,8 @@ class FetchConversationsUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistConversations(
                 any(),
-                eq(batch.response.conversationsFound),
-                eq(true),
+                batch.response.conversationsFound,
+                true,
                 any()
             )
         }
@@ -86,7 +85,7 @@ class FetchConversationsUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.fetchConversations(null) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.fetchConversations("s1") }
         verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.persistConversations(any(), any(), eq(true), any())
+            arrangement.persistConversations(any(), any(), true, any())
         }
     }
 
@@ -126,7 +125,7 @@ class FetchConversationsUseCaseTest {
         useCase(arrangement.transactionContext)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.persistIncompleteConversations(eq(failed))
+            arrangement.conversationRepository.persistIncompleteConversations(failed)
         }
     }
 
@@ -142,7 +141,7 @@ class FetchConversationsUseCaseTest {
         val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), eq(emptyList()),eq( true), eq(ConversationSyncReason.Other)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), emptyList(),true, ConversationSyncReason.Other) }
     }
 
     @Test
@@ -158,8 +157,8 @@ class FetchConversationsUseCaseTest {
         val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), eq(emptyList()), eq(true), eq(ConversationSyncReason.Other)) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), eq(batch2.response.conversationsFound), eq(true), eq(ConversationSyncReason.Other)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), emptyList(), true, ConversationSyncReason.Other) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), batch2.response.conversationsFound, true, ConversationSyncReason.Other) }
     }
 
 
@@ -197,7 +196,7 @@ class FetchConversationsUseCaseTest {
         suspend fun withFetchConversationsSequence(results: List<ConversationBatch>) = apply {
             results.forEachIndexed { index, result ->
                 val param = if (index == 0) null else results[index - 1].lastPagingState
-                everySuspend { conversationRepository.fetchConversations(eq(param)) } returns Either.Right(result)
+                everySuspend { conversationRepository.fetchConversations(param) } returns Either.Right(result)
             }
         }
 
@@ -206,7 +205,7 @@ class FetchConversationsUseCaseTest {
         }
 
         suspend fun withPersistConversationsSuccess() = apply {
-            everySuspend { persistConversations(any(), any(), eq(true), any()) } returns Either.Right(Unit)
+            everySuspend { persistConversations(any(), any(), true, any()) } returns Either.Right(Unit)
         }
 
         suspend fun withPersistIncompleteConversations() = apply {
@@ -215,7 +214,7 @@ class FetchConversationsUseCaseTest {
 
         suspend fun withPersistConversationsFails() = apply {
             everySuspend {
-                persistConversations(any(), any(), eq(true), eq(ConversationSyncReason.Other))
+                persistConversations(any(), any(), true, ConversationSyncReason.Other)
             } returns Either.Left(CoreFailure.Unknown(null))
         }
 

@@ -63,7 +63,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -84,7 +83,7 @@ class TeamRepositoryTest {
 
         // Verifies that teamDAO insertTeam was called with the correct mapped values
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamDAO.insertTeam(eq(TestTeam.TEAM_ENTITY))
+            arrangement.teamDAO.insertTeam(TestTeam.TEAM_ENTITY)
         }
 
         // Verifies that when fetching team by id, it succeeded
@@ -201,7 +200,7 @@ class TeamRepositoryTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
         everySuspend {
-            arrangement.teamDAO.getTeamById(eq("teamId"))
+            arrangement.teamDAO.getTeamById("teamId")
         }.returns(flowOf(teamEntity))
 
         teamRepository.getTeam(teamId = TeamId("teamId")).test {
@@ -215,7 +214,7 @@ class TeamRepositoryTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
         everySuspend {
-            arrangement.teamDAO.getTeamById(eq("teamId"))
+            arrangement.teamDAO.getTeamById("teamId")
         }.returns(flowOf(null))
 
         teamRepository.getTeam(teamId = TeamId("teamId")).test {
@@ -236,7 +235,7 @@ class TeamRepositoryTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamsApi.deleteConversation(eq("valueConvo"), eq("aTeamId"))
+            arrangement.teamsApi.deleteConversation("valueConvo", "aTeamId")
         }
     }
 
@@ -252,7 +251,7 @@ class TeamRepositoryTest {
 
         result.shouldFail()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamsApi.deleteConversation(eq("valueConvo"), eq("aTeamId"))
+            arrangement.teamsApi.deleteConversation("valueConvo", "aTeamId")
         }
     }
 
@@ -295,7 +294,7 @@ class TeamRepositoryTest {
             })
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.appDAO.upsertApps(eq(listOf(
+            arrangement.appDAO.upsertApps(listOf(
                 AppEntity(
                     id = QualifiedIDEntity("appId", appProfile.id.domain),
                     name = appProfile.name,
@@ -305,7 +304,7 @@ class TeamRepositoryTest {
                     previewAssetId = QualifiedIDEntity("value1", appProfile.id.domain),
                     completeAssetId = QualifiedIDEntity("value2", appProfile.id.domain)
                 )
-            )))
+            ))
         }
     }
 
@@ -326,11 +325,11 @@ class TeamRepositoryTest {
         result.shouldSucceed()
         val expectedUserIds = listOf(QualifiedIDEntity("collaboratorId", TestUser.USER_ID.domain))
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDAO.insertOrIgnoreIncompleteUsers(eq(expectedUserIds))
+            arrangement.userDAO.insertOrIgnoreIncompleteUsers(expectedUserIds)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.upsertConnectionStatuses(
-                eq(expectedUserIds.associateWith { ConnectionEntity.State.ACCEPTED })
+                expectedUserIds.associateWith { ConnectionEntity.State.ACCEPTED }
             )
         }
     }
@@ -454,7 +453,7 @@ class TeamRepositoryTest {
             arrangement.teamsApi.getTeamInfo(any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamDAO.updateTeam(eq(TestTeam.TEAM_ENTITY))
+            arrangement.teamDAO.updateTeam(TestTeam.TEAM_ENTITY)
         }
     }
 
@@ -503,7 +502,7 @@ class TeamRepositoryTest {
 
         suspend fun withApiGetTeamInfoSuccess(teamDTO: TeamDTO) = apply {
             everySuspend {
-                teamsApi.getTeamInfo(eq(teamDTO.id))
+                teamsApi.getTeamInfo(teamDTO.id)
             }.returns(NetworkResponse.Success(value = teamDTO, headers = mapOf(), httpCode = 200))
         }
 

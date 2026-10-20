@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.service.ServiceRepository
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -68,7 +67,7 @@ class ObserveIsServiceMemberUseCaseTest {
             conversationId: ConversationId
         ) = apply {
             everySuspend {
-                serviceRepository.observeIsServiceMember(eq(serviceId), eq(conversationId))
+                serviceRepository.observeIsServiceMember(serviceId, conversationId)
             } returns flowOf(Either.Right(userId))
         }
 

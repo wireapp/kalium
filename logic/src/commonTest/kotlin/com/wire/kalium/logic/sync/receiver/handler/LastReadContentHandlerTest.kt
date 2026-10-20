@@ -33,7 +33,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -57,7 +56,7 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to newer)))
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(mapOf(CONVERSATION_ID to newer))
         }
     }
 
@@ -74,7 +73,7 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to timestamp)))
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(mapOf(CONVERSATION_ID to timestamp))
         }
     }
 
@@ -99,11 +98,9 @@ class LastReadContentHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(
-                eq(
-                    mapOf(
-                        CONVERSATION_ID to timestamp,
-                        OTHER_CONVERSATION_ID to timestamp
-                    )
+                mapOf(
+                    CONVERSATION_ID to timestamp,
+                    OTHER_CONVERSATION_ID to timestamp
                 )
             )
         }
@@ -140,7 +137,7 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to timestamp)))
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(mapOf(CONVERSATION_ID to timestamp))
         }
     }
 
@@ -158,7 +155,7 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
         handler.flushPendingLastReads()
         verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to timestamp)))
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(mapOf(CONVERSATION_ID to timestamp))
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.notificationEventsManager.scheduleConversationSeenNotification(CONVERSATION_ID)
@@ -187,12 +184,12 @@ class LastReadContentHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(
-                eq(mapOf(CONVERSATION_ID to newer, OTHER_CONVERSATION_ID to older))
+                mapOf(CONVERSATION_ID to newer, OTHER_CONVERSATION_ID to older)
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(
-                eq(mapOf(CONVERSATION_ID to older, OTHER_CONVERSATION_ID to older))
+                mapOf(CONVERSATION_ID to older, OTHER_CONVERSATION_ID to older)
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
