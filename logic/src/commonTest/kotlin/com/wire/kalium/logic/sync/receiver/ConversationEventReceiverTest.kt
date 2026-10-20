@@ -57,9 +57,9 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.time.Instant
 
 class ConversationEventReceiverTest {
     @Test
