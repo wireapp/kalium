@@ -2710,6 +2710,11 @@ public class UserSessionScope internal constructor(
             userSessionScopeProvider,
         )
     }
+
+    /** Counts unread conversations once each and respects their notification mute settings. */
+    public fun observeUnreadConversationBadgeCount(): Flow<Long> =
+        userStorage.database.conversationDAO.observeUnreadConversationBadgeCount()
+
     public val conversations: ConversationScope by lazy {
         ConversationScope(
             conversationRepository,
