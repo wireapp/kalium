@@ -371,21 +371,23 @@ public final class com/wire/kalium/logic/data/conversation/ConversationListPrevi
 
 public final class com/wire/kalium/logic/data/conversation/ConversationListQuery {
 	public fun <init> ()V
-	public fun <init> (Lcom/wire/kalium/logic/data/conversation/ConversationListSource;Ljava/lang/String;ZZZ)V
-	public synthetic fun <init> (Lcom/wire/kalium/logic/data/conversation/ConversationListSource;Ljava/lang/String;ZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/conversation/ConversationListSource;Ljava/lang/String;ZZZZ)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/conversation/ConversationListSource;Ljava/lang/String;ZZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/conversation/ConversationListSource;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Z
 	public final fun component4 ()Z
 	public final fun component5 ()Z
-	public final fun copy (Lcom/wire/kalium/logic/data/conversation/ConversationListSource;Ljava/lang/String;ZZZ)Lcom/wire/kalium/logic/data/conversation/ConversationListQuery;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListQuery;Lcom/wire/kalium/logic/data/conversation/ConversationListSource;Ljava/lang/String;ZZZILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListQuery;
+	public final fun component6 ()Z
+	public final fun copy (Lcom/wire/kalium/logic/data/conversation/ConversationListSource;Ljava/lang/String;ZZZZ)Lcom/wire/kalium/logic/data/conversation/ConversationListQuery;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListQuery;Lcom/wire/kalium/logic/data/conversation/ConversationListSource;Ljava/lang/String;ZZZZILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListQuery;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFromArchive ()Z
 	public final fun getOnlyInteractionEnabled ()Z
 	public final fun getSearchQuery ()Ljava/lang/String;
 	public final fun getSource ()Lcom/wire/kalium/logic/data/conversation/ConversationListSource;
 	public final fun getStrictMlsFilter ()Z
+	public final fun getUnreadOnly ()Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -1263,17 +1265,6 @@ public final class com/wire/kalium/logic/data/sync/SyncState$Waiting : com/wire/
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/failure/LegalHoldEnabledForConversationFailure : com/wire/kalium/common/error/CoreFailure$FeatureFailure {
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/logic/failure/LegalHoldEnabledForConversationFailure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/failure/LegalHoldEnabledForConversationFailure;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/failure/LegalHoldEnabledForConversationFailure;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getMessageId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class com/wire/kalium/logic/failure/NoClientsForUser : com/wire/kalium/common/error/CoreFailure$FeatureFailure {
 	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
@@ -1350,6 +1341,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getSendPendingMessages ()Lcom/wire/kalium/logic/sync/SendPendingMessagesUseCase;
 	public final fun getService ()Lcom/wire/kalium/logic/feature/service/ServiceScope;
 	public final fun getSetNewUserTrackingIdentifier ()Lcom/wire/kalium/logic/feature/analytics/SetNewUserTrackingIdentifierUseCase;
+	public final fun getSlowSyncStatus ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getSyncExecutor ()Lcom/wire/kalium/logic/sync/SyncExecutor;
 	public final fun getSyncManager ()Lcom/wire/kalium/logic/sync/SyncStateObserver;
 	public final fun getSyncMeetingsUseCase ()Lcom/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase;
@@ -2901,6 +2893,7 @@ public final class com/wire/kalium/logic/feature/call/CallsScope {
 	public final fun getRequestVideoStreams ()Lcom/wire/kalium/logic/feature/call/usecase/RequestVideoStreamsUseCase;
 	public final fun getSetBackground ()Lcom/wire/kalium/logic/feature/call/usecase/SetBackgroundUseCase;
 	public final fun getSetCallQualityInterval ()Lcom/wire/kalium/logic/feature/call/usecase/SetCallQualityIntervalUseCase;
+	public final fun getSetHandRaised ()Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase;
 	public final fun getSetTestPreviewActive ()Lcom/wire/kalium/logic/feature/call/usecase/SetTestPreviewActiveUseCase;
 	public final fun getSetTestRemoteVideoStates ()Lcom/wire/kalium/logic/feature/call/usecase/SetTestRemoteVideoStatesUseCase;
 	public final fun getSetTestVideoType ()Lcom/wire/kalium/logic/feature/call/usecase/SetTestVideoTypeUseCase;
@@ -3076,6 +3069,45 @@ public final class com/wire/kalium/logic/feature/call/usecase/RequestVideoStream
 
 public abstract interface class com/wire/kalium/logic/feature/call/usecase/SetBackgroundUseCase {
 	public abstract fun invoke (ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase {
+	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ZLjava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Busy : com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Busy;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Failure : com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$NotJoined : com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$NotJoined;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Success : com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/call/usecase/SetCallQualityIntervalUseCase {
@@ -3714,6 +3746,10 @@ public abstract interface class com/wire/kalium/logic/feature/connection/MarkCon
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/connection/ObservePendingConnectionRequestsUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public abstract class com/wire/kalium/logic/feature/connection/SendConnectionRequestResult {
 }
 
@@ -4075,6 +4111,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 	public final fun getGetOrCreateOneToOneConversationUseCase ()Lcom/wire/kalium/logic/feature/conversation/GetOrCreateOneToOneConversationUseCase;
 	public final fun getJoinConversationViaCode ()Lcom/wire/kalium/logic/feature/conversation/JoinConversationViaCodeUseCase;
 	public final fun getLeaveConversation ()Lcom/wire/kalium/logic/feature/conversation/LeaveConversationUseCase;
+	public final fun getManageConversationFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/ManageConversationFolderUseCase;
 	public final fun getMarkConnectionRequestAsNotified ()Lcom/wire/kalium/logic/feature/connection/MarkConnectionRequestAsNotifiedUseCase;
 	public final fun getMarkConversationAsDeletedLocallyUseCase ()Lcom/wire/kalium/logic/feature/conversation/delete/MarkConversationAsDeletedLocallyUseCase;
 	public final fun getMarkConversationAsReadLocally ()Lcom/wire/kalium/logic/feature/conversation/MarkConversationAsReadLocallyUseCase;
@@ -4093,6 +4130,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 	public final fun getObserveGuestRoomLink ()Lcom/wire/kalium/logic/feature/conversation/guestroomlink/ObserveGuestRoomLinkUseCase;
 	public final fun getObserveInformAboutVerificationBeforeMessagingFlagUseCase ()Lcom/wire/kalium/logic/feature/conversation/ObserveDegradedConversationNotifiedUseCase;
 	public final fun getObserveIsSelfUserMemberUseCase ()Lcom/wire/kalium/logic/feature/conversation/ObserveIsSelfUserMemberUseCase;
+	public final fun getObservePendingConnectionRequests ()Lcom/wire/kalium/logic/feature/connection/ObservePendingConnectionRequestsUseCase;
 	public final fun getObserveUserFolders ()Lcom/wire/kalium/logic/feature/conversation/folder/ObserveUserFoldersUseCase;
 	public final fun getObserveUserListById ()Lcom/wire/kalium/logic/feature/conversation/ObserveUserListByIdUseCase;
 	public final fun getObserveUsersTyping ()Lcom/wire/kalium/logic/feature/conversation/ObserveUsersTypingUseCase;
@@ -5010,6 +5048,14 @@ public final class com/wire/kalium/logic/feature/conversation/folder/GetFavorite
 	public final fun getFolder ()Lcom/wire/kalium/logic/data/conversation/ConversationFolder;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/folder/ManageConversationFolderUseCase {
+	public abstract fun delete (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getFolder (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun reorder (Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun save (Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;Ljava/util/Set;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun updateMembership (Ljava/lang/String;Ljava/util/Set;Ljava/util/Set;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/folder/MoveConversationToFolderUseCase {
@@ -7458,6 +7504,10 @@ public abstract interface class com/wire/kalium/logic/feature/user/GetDefaultPro
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class com/wire/kalium/logic/feature/user/GetMessageContentPreferenceUseCase {
+	public final fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/user/GetSelfTeamIdUseCase {
 	public abstract fun invoke-wWPKaVU (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -7615,6 +7665,10 @@ public final class com/wire/kalium/logic/feature/user/SelfServerConfigUseCase$Re
 	public final fun getServerLinks ()Lcom/wire/kalium/logic/configuration/server/ServerConfig;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/user/SetMessageContentPreferenceUseCase {
+	public final fun invoke (ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/user/SetUserHandleResult {
@@ -7855,6 +7909,7 @@ public final class com/wire/kalium/logic/feature/user/UserScope {
 	public final fun getGetE2EICertificate ()Lcom/wire/kalium/logic/feature/e2ei/usecase/GetMLSClientIdentityUseCase;
 	public final fun getGetKnownUser ()Lcom/wire/kalium/logic/feature/publicuser/GetKnownUserUseCase;
 	public final fun getGetMembersE2EICertificateStatuses ()Lcom/wire/kalium/logic/feature/e2ei/usecase/GetMembersE2EICertificateStatusesUseCase;
+	public final fun getGetMessageContentPreference ()Lcom/wire/kalium/logic/feature/user/GetMessageContentPreferenceUseCase;
 	public final fun getGetPublicAsset ()Lcom/wire/kalium/logic/feature/asset/GetAvatarAssetUseCase;
 	public final fun getGetSelfTeamId ()Lcom/wire/kalium/logic/feature/user/GetSelfTeamIdUseCase;
 	public final fun getGetSelfUser ()Lcom/wire/kalium/logic/feature/user/GetSelfUserUseCase;
@@ -7874,6 +7929,7 @@ public final class com/wire/kalium/logic/feature/user/UserScope {
 	public final fun getPersistTypingIndicatorStatusConfig ()Lcom/wire/kalium/logic/feature/user/typingIndicator/PersistTypingIndicatorStatusConfigUseCase;
 	public final fun getRefreshUsersWithoutMetadata ()Lcom/wire/kalium/logic/feature/publicuser/RefreshUsersWithoutMetadataUseCase;
 	public final fun getServerLinks ()Lcom/wire/kalium/logic/feature/user/SelfServerConfigUseCase;
+	public final fun getSetMessageContentPreference ()Lcom/wire/kalium/logic/feature/user/SetMessageContentPreferenceUseCase;
 	public final fun getSetUserHandle ()Lcom/wire/kalium/logic/feature/user/SetUserHandleUseCase;
 	public final fun getUpdateAccentColor ()Lcom/wire/kalium/logic/feature/user/UpdateAccentColorUseCase;
 	public final fun getUpdateDisplayName ()Lcom/wire/kalium/logic/feature/user/UpdateDisplayNameUseCase;

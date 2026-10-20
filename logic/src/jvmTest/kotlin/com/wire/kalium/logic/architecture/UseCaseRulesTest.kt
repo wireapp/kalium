@@ -107,7 +107,7 @@ class UseCaseRulesTest {
 
         // Check public interfaces in kalium/logic module only
         scope.interfaces()
-            .filter { it.containingFile.path.contains("/kalium/logic/src/") }
+            .filter { it.containingFile.path.contains("/logic/src/") }
             .filter { it.hasPublicOrDefaultModifier }
             .forEach { iface ->
                 iface.functions()
@@ -132,7 +132,7 @@ class UseCaseRulesTest {
 
         // Check public classes in kalium/logic module only
         scope.classes()
-            .filter { it.containingFile.path.contains("/kalium/logic/src/") }
+            .filter { it.containingFile.path.contains("/logic/src/") }
             .filter { it.hasPublicOrDefaultModifier }
             .forEach { clazz ->
                 clazz.functions()

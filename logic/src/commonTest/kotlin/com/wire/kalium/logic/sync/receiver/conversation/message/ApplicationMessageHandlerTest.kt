@@ -865,6 +865,20 @@ class ApplicationMessageHandlerTest {
         )
     }
 
+    @Test
+    fun handSignalRoutesQualifiedDeviceAndEnvelopeWithoutPersistingChatMessage() = runTest {
+        val (arrangement, handler) = Arrangement().arrange()
+        val event = dispatch(arrangement, handler, MessageContent.InCallHandRaise(true))
+        verify {
+            arrangement.callRepository.updateHand(
+                event.conversationId,
+                com.wire.kalium.logic.data.call.CallHandIdentity(TestUser.USER_ID, event.senderClientId.value),
+                true, event.messageInstant, any(), null
+            )
+        }
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+    }
+
     private class Arrangement(
         kaliumLogger: KaliumLogger = KaliumLogger.disabled(),
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -883,6 +897,9 @@ class ApplicationMessageHandlerTest {
         val receiptMessageHandler = mock<ReceiptMessageHandler>(MockMode.autoUnit)
         val assetMessageHandler = mock<AssetMessageHandler>(MockMode.autoUnit)
         val buttonActionConfirmationHandler = mock<ButtonActionConfirmationHandler>(MockMode.autoUnit)
+        val callRepository = mock<com.wire.kalium.logic.data.call.CallRepository>(MockMode.autoUnit).also { repository ->
+            every { repository.updateHand(any(), any(), any(), any(), any(), any()) } returns true
+        }
         val inCallReactionsRepository = mock<InCallReactionsRepository>(MockMode.autoUnit)
         val dataTransferEventHandler = mock<DataTransferEventHandler>(MockMode.autoUnit)
         val buttonActionHandler = mock<ButtonActionHandler>(MockMode.autoUnit)
@@ -908,6 +925,7 @@ class ApplicationMessageHandlerTest {
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
             inCallReactionsRepository,
+            callRepository,
             buttonActionHandler,
             messageCompositeEditHandler,
             callingMessageHandler,

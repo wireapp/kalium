@@ -39,8 +39,6 @@ jobs:
         uses: ./.github/actions/setup-java-gradle
       - name: Run Benchmarks
         run: ./gradlew benchmark
-      - name: Generate HTML Report
-        run: ./gradlew jmhReport
       - name: Archive Reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -51,7 +49,7 @@ jobs:
         id: benchmark-table
         uses: boswelja/kotlinx-benchmark-table-action@0b1ff502591bcba42a55bd052eae6a82b187968b
         with:
-          benchmark-results: ./test/benchmarks/build/reports/benchmarks/main/**/jvm.json
+          benchmark-results: ./test/benchmarks/build/reports/benchmarks/main/**/main.json
       - name: Post Results
         run: |
           echo '## Benchmarks results ⏱️' >> $GITHUB_STEP_SUMMARY
@@ -63,7 +61,7 @@ jobs:
         id: path
         shell: bash
         run: |
-          REPORT_FULL_PATH_REF="$(set -- ./test/benchmarks/build/reports/benchmarks/main/**/jvm.json; echo $1)"
+          REPORT_FULL_PATH_REF="$(set -- ./test/benchmarks/build/reports/benchmarks/main/**/main.json; echo $1)"
           echo "report_full_path=$REPORT_FULL_PATH_REF" >> $GITHUB_OUTPUT
           unset REPORT_FULL_PATH_REF
 

@@ -685,6 +685,17 @@ class ProtoContentMapperTest {
         assertEquals(decoded, protoContent)
     }
 
+    @Test
+    fun handRaiseRoundTripPreservesBothStates() {
+        for (raised in listOf(true, false)) {
+            val content = ProtoContent.Readable(
+                TEST_MESSAGE_UUID, MessageContent.InCallHandRaise(raised), false,
+                legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN
+            )
+            assertEquals(content, protoContentMapper.decodeFromProtobuf(protoContentMapper.encodeToProtobuf(content)))
+        }
+    }
+
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"
         val TEST_CONVERSATION_ID = TestConversation.ID

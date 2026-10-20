@@ -58,6 +58,7 @@ class JoinPendingMLSConversationsManagerTest {
                 keepRetryingOnFailure = true,
                 allowJoinByExternalCommit = true,
                 includePendingWelcome = true,
+                onProgress = any(),
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
@@ -75,7 +76,7 @@ class JoinPendingMLSConversationsManagerTest {
         manager()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.joinExistingMLSConversations(any(), any(), any())
+            arrangement.joinExistingMLSConversations(any(), any(), any(), any())
         }
     }
 
@@ -89,7 +90,7 @@ class JoinPendingMLSConversationsManagerTest {
         manager()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.joinExistingMLSConversations(any(), any(), any())
+            arrangement.joinExistingMLSConversations(any(), any(), any(), any())
         }
     }
 
@@ -123,7 +124,7 @@ class JoinPendingMLSConversationsManagerTest {
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversations(any(), any(), any())
+            arrangement.joinExistingMLSConversations(any(), any(), any(), any())
         }
         job.cancel()
     }
@@ -142,7 +143,7 @@ class JoinPendingMLSConversationsManagerTest {
         }
 
         suspend fun withJoinResult(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend { joinExistingMLSConversations(any(), any(), any()) } returns result
+            everySuspend { joinExistingMLSConversations(any(), any(), any(), any()) } returns result
         }
 
         suspend fun arrange() = apply {

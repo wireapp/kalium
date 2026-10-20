@@ -156,6 +156,143 @@ class DagCommandTaskTest {
         assertEquals(setOf(":core", ":feature", ":app"), readAffectedModules(projectDir))
     }
 
+    @Test
+    fun listsAffectedIosTasksWithoutLaunchingANestedBuild() {
+        val projectDir = setupProject(
+            modulePaths = listOf(":core", ":feature", ":app", ":unrelated"),
+            moduleDependencies = mapOf(
+                ":feature" to listOf(":core"),
+                ":app" to listOf(":feature")
+            )
+        )
+        commitFeatureChange(projectDir, "core/src.txt", "core changed")
+
+        val result = listIosTasks(projectDir)
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":iOSOnlyAffectedTest")?.outcome)
+        assertEquals(setOf(":core", ":feature", ":app"), readSelectedIosModules(projectDir))
+        assertFalse(result.output.contains("test ran"))
+    }
+
+    @Test
+    fun listsAllIosTasksForRootBuildChangesAndStillExcludesIgnoredModules() {
+        val projectDir = setupProject(modulePaths = listOf(":core", ":feature", ":data:protobuf"))
+        commitFeatureChange(projectDir, "gradle.properties", "org.gradle.parallel=true\n")
+
+        listIosTasks(projectDir)
+
+        assertEquals(setOf(":core", ":feature"), readSelectedIosModules(projectDir))
+    }
+
+    @Test
+    fun clearsStaleSelectedTasksWhenNoTestsAreAffected() {
+        val projectDir = setupProject(modulePaths = listOf(":core"))
+        val selectedFile = projectDir.resolve("build/affected-tests/iOSOnlyAffectedTest.txt")
+        selectedFile.parent.createDirectories()
+        selectedFile.writeText(":core:iosSimulatorArm64Test\n")
+
+        listIosTasks(projectDir)
+
+        assertEquals("", selectedFile.readText())
+    }
+
+    @Test
+    fun listsAllIosTasksWhenAffectedModuleDataIsUnavailable() {
+        val projectDir = setupProject(
+            modulePaths = listOf(":core", ":feature"),
+            defaultBranch = "origin/missing-branch"
+        )
+
+        val result = listIosTasks(projectDir)
+
+        assertEquals(setOf(":core", ":feature"), readSelectedIosModules(projectDir))
+        assertTrue(result.output.contains("Running all tests because affected-modules data is unavailable."))
+    }
+
+    @Test
+    fun iosShardsCoverEveryEligibleModuleExactlyOnceOnDevelop() {
+        val modules = listOf(
+            ":logic", ":data:persistence", ":data:network", ":core:cryptography",
+            ":nse", ":share", ":domain:messaging:receiving", ":future:module", ":data:protobuf"
+        )
+        val projectDir = setupProject(modulePaths = modules)
+        val expectedGroups = mapOf(
+            "logic" to setOf(":logic"),
+            "data" to setOf(":data:persistence", ":data:network", ":core:cryptography"),
+            "receiving" to setOf(":domain:messaging:receiving"),
+            "extensions" to setOf(":nse", ":share", ":future:module")
+        )
+        val selected = expectedGroups.flatMap { (shard, expectedModules) ->
+            val result = listIosTasks(projectDir, "--all-modules", "--ios-shard=$shard")
+            assertFalse(result.output.contains("test ran"))
+            val selectedModules = readSelectedIosModules(projectDir)
+            assertEquals(expectedModules, selectedModules, "Unexpected modules in $shard")
+            selectedModules.toList()
+        }
+
+        assertEquals(modules.toSet() - ":data:protobuf", selected.toSet())
+        assertEquals(selected.toSet().size, selected.size, "Each module must run in exactly one shard")
+    }
+
+    @Test
+    fun iosShardsPreserveAffectedDependentsAndClearEmptySelections() {
+        val projectDir = setupProject(
+            modulePaths = listOf(":data:persistence", ":logic", ":domain:messaging:receiving", ":nse", ":share", ":unrelated"),
+            moduleDependencies = mapOf(
+                ":logic" to listOf(":data:persistence"),
+                ":domain:messaging:receiving" to listOf(":data:persistence"),
+                ":nse" to listOf(":domain:messaging:receiving")
+            ),
+            defaultBranch = "origin/develop"
+        )
+        commitFeatureChange(projectDir, "data/persistence/src.txt", "database changed")
+
+        listIosTasks(projectDir, "--ios-shard=logic")
+        assertEquals(setOf(":logic"), readSelectedIosModules(projectDir))
+        listIosTasks(projectDir, "--ios-shard=data")
+        assertEquals(setOf(":data:persistence"), readSelectedIosModules(projectDir))
+        listIosTasks(projectDir, "--ios-shard=receiving")
+        assertEquals(setOf(":domain:messaging:receiving"), readSelectedIosModules(projectDir))
+        listIosTasks(projectDir, "--ios-shard=extensions")
+        assertEquals(setOf(":nse"), readSelectedIosModules(projectDir))
+
+        // A later extension-only change must not reuse this file's earlier selected tasks.
+        runCommand(projectDir, "git", "update-ref", "refs/remotes/origin/develop", "HEAD")
+        commitFeatureChange(projectDir, "share/src.txt", "share changed")
+        listOf("logic", "data", "receiving").forEach { shard ->
+            listIosTasks(projectDir, "--ios-shard=$shard")
+            assertEquals(emptySet(), readSelectedIosModules(projectDir))
+        }
+    }
+
+    @Test
+    fun iosWorkflowAndFixtureChangesRunAllEligibleTests() {
+        val projectDir = setupProject(
+            modulePaths = listOf(":logic", ":nse", ":share", ":data:protobuf"),
+            defaultBranch = "origin/develop"
+        )
+        commitFeatureChange(projectDir, ".github/workflows/gradle-ios-tests.yml", "workflow changed")
+        listIosTasks(projectDir)
+        assertEquals(setOf(":logic", ":nse", ":share"), readSelectedIosModules(projectDir))
+
+        runCommand(projectDir, "git", "update-ref", "refs/remotes/origin/develop", "HEAD")
+        commitFeatureChange(projectDir, "nse/scripts/x509_fixture_server.py", "fixture changed")
+        listIosTasks(projectDir)
+        assertEquals(setOf(":logic", ":nse", ":share"), readSelectedIosModules(projectDir))
+    }
+
+    @Test
+    fun rejectsUnknownIosShardInsteadOfPassingWithNoTests() {
+        val projectDir = setupProject(modulePaths = listOf(":logic"))
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withPluginClasspath()
+            .withArguments("iOSOnlyAffectedTest", "--list-only", "--ios-shard=typo")
+            .buildAndFail()
+
+        assertTrue(result.output.contains("Unknown iOS shard: typo"))
+    }
+
     private fun setupProject(
         modulePaths: List<String>,
         moduleDependencies: Map<String, List<String>> = emptyMap(),
@@ -216,7 +353,9 @@ class DagCommandTaskTest {
                 }
                 """.trimIndent() + "\n"
             }
-            moduleDir.resolve("build.gradle").writeText(buildFile)
+            moduleDir.resolve("build.gradle").writeText(
+                buildFile + "\ntasks.register('iosSimulatorArm64Test') { doLast { println('test ran') } }\n"
+            )
         }
     }
 
@@ -227,6 +366,7 @@ class DagCommandTaskTest {
         runCommand(projectDir, "git", "add", ".")
         runCommand(projectDir, "git", "commit", "-m", "initial")
         runCommand(projectDir, "git", "branch", "-M", "develop")
+        runCommand(projectDir, "git", "update-ref", "refs/remotes/origin/develop", "develop")
         runCommand(projectDir, "git", "checkout", "-b", "feature")
     }
 
@@ -243,6 +383,20 @@ class DagCommandTaskTest {
         .withPluginClasspath()
         .withArguments("dag-command", "--stacktrace")
         .build()
+
+    private fun listIosTasks(projectDir: Path, vararg options: String) = GradleRunner.create()
+        .withProjectDir(projectDir.toFile())
+        .withPluginClasspath()
+        .withArguments(listOf("iOSOnlyAffectedTest", "--list-only", "--stacktrace") + options)
+        .build()
+
+    private fun readSelectedIosModules(projectDir: Path): Set<String> =
+        projectDir.resolve("build/affected-tests/iOSOnlyAffectedTest.txt")
+            .readText()
+            .lineSequence()
+            .filter { it.isNotBlank() }
+            .map { it.removeSuffix(":iosSimulatorArm64Test") }
+            .toSet()
 
     private fun affectedModulesFile(projectDir: Path): Path =
         projectDir.resolve("build/dag-command/affected-modules.json")
