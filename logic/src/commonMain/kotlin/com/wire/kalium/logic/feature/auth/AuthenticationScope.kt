@@ -15,177 +15,78 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
-@file:OptIn(InternalKaliumApi::class)
 
 package com.wire.kalium.logic.feature.auth
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
-import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
-import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
-import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.data.auth.login.LoginRepository
-import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
-import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
-import com.wire.kalium.logic.data.auth.settings.PendingLoginSystemSettingsRepositoryImpl
-import com.wire.kalium.logic.data.auth.settings.UnauthorizedSettingsRepository
-import com.wire.kalium.logic.data.auth.settings.UnauthorizedSettingsRepositoryImpl
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
-import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepositoryImpl
-import com.wire.kalium.logic.data.register.RegisterAccountDataSource
-import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCase
-import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
-import com.wire.kalium.network.networkContainer.TransientAuthenticatedNetworkContainer
-import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
-import com.wire.kalium.util.InternalKaliumApi
+import dev.zacsweers.metro.createGraphFactory
 
+/** The existing cache owns one authentication graph per server configuration/proxy pair. */
 internal class AuthenticationScopeProvider internal constructor(
-    private val userAgent: String
+    private val userAgent: String,
+    private val graphFactory: AuthenticationGraph.Factory = createGraphFactory<AuthenticationGraph.Factory>(),
 ) {
-
     private val authenticationScopeStorage: ConcurrentMutableMap<
-            Pair<ServerConfig, ProxyCredentials?>,
-            AuthenticationScope
-            > by lazy {
+        Pair<ServerConfig, ProxyCredentials?>,
+        AuthenticationScope
+        > by lazy {
         ConcurrentMutableMap()
     }
 
-    @Suppress("LongParameterList")
     internal fun provide(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
         globalDatabase: GlobalDatabaseBuilder,
-        kaliumConfigs: KaliumConfigs
+        kaliumConfigs: KaliumConfigs,
     ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
-                userAgent,
-                serverConfig,
-                proxyCredentials,
-                kaliumConfigs = kaliumConfigs,
-                globalDatabase = globalDatabase
+                graphFactory.create(
+                    AuthenticationGraphInputValues(userAgent, serverConfig, proxyCredentials, globalDatabase, kaliumConfigs)
+                )
             )
         }
 }
 
-public class AuthenticationScope internal constructor(
-    private val userAgent: String,
-    private val serverConfig: ServerConfig,
-    private val proxyCredentials: ProxyCredentials?,
-    private val globalDatabase: GlobalDatabaseBuilder,
-    private val kaliumConfigs: KaliumConfigs,
-) {
-
-    private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
-        UnauthenticatedNetworkContainer.create(
-            serverConfigDTO = MapperProvider.serverConfigMapper().toDTO(serverConfig),
-            proxyCredentials = proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
-            userAgent = userAgent,
-            developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
-            certificatePinning = kaliumConfigs.certPinningConfig,
-            mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
-            httpTrafficObserver = kaliumConfigs.httpTrafficObserver,
-        )
-    }
-
+/** Compatibility facade over the authentication cache's individual bindings. */
+public class AuthenticationScope internal constructor(private val api: AuthenticationApi) {
     internal val serverConfigRepository: ServerConfigRepository
-        get() = ServerConfigDataSource(
-            globalDatabase.serverConfigurationDAO,
-            unauthenticatedNetworkContainer.remoteVersion,
-        )
-
-    private val loginRepository: LoginRepository
-        get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, unauthenticatedNetworkContainer.getDomainRegistrationApi)
-
-    private val registerAccountRepository: RegisterAccountRepository
-        get() = RegisterAccountDataSource(
-            unauthenticatedNetworkContainer.registerApi
-        )
-
-    private val customServerConfigRepository: CustomServerConfigRepository
-        get() = CustomServerConfigDataSource(
-            unauthenticatedNetworkContainer.remoteVersion,
-            unauthenticatedNetworkContainer.serverConfigApi,
-            kaliumConfigs.developmentApiEnabled,
-            globalDatabase.serverConfigurationDAO
-        )
+        get() = api.serverConfigRepository
 
     internal val ssoLoginRepository: SSOLoginRepository
-        get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso, unauthenticatedNetworkContainer.domainLookupApi)
+        get() = api.ssoLoginRepository
 
-    internal val secondFactorVerificationRepository: SecondFactorVerificationRepository =
-        SecondFactorVerificationRepositoryImpl(unauthenticatedNetworkContainer.verificationCodeApi)
-
-    private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
-    private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
-
-    private val appVersionRepository: AppVersionRepository
-        get() = AppVersionRepositoryImpl(unauthenticatedNetworkContainer.appVersioningApi)
-    private val unauthorizedSettingsRepository: UnauthorizedSettingsRepository
-        get() = UnauthorizedSettingsRepositoryImpl(unauthenticatedNetworkContainer.unauthorizedSettingsApi)
+    // This was eager before Metro: creating the facade must still initialize 2FA and its network.
+    internal val secondFactorVerificationRepository: SecondFactorVerificationRepository = api.secondFactorVerificationRepository
 
     public val getLoginFlowForDomainUseCase: GetLoginFlowForDomainUseCase
-        get() = GetLoginFlowForDomainUseCase(loginRepository, ssoLoginRepository, customServerConfigRepository)
-
+        get() = api.getLoginFlowForDomainUseCase
     public val login: LoginUseCase
-        get() = LoginUseCaseImpl(
-            loginRepository,
-            validateEmailUseCase,
-            validateUserHandleUseCase,
-            serverConfig,
-            proxyCredentials,
-            secondFactorVerificationRepository
-        )
+        get() = api.login
     public val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
-        get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
+        get() = api.requestSecondFactorVerificationCode
     public val registerScope: RegisterScope
-        get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
+        get() = api.registerScope
     public val ssoLoginScope: SSOLoginScope
-        get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials, pendingLoginSystemSettingsRepository)
-
-    private val pendingLoginSystemSettingsRepository get() = PendingLoginSystemSettingsRepositoryImpl(
-        containerFactory = { session ->
-            TransientAuthenticatedNetworkContainer.create(
-                session = session,
-                serverConfigDTO = MapperProvider.serverConfigMapper().toDTO(serverConfig),
-                proxyCredentials = proxyCredentials?.let {
-                    MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it)
-                },
-                userAgent = userAgent,
-                certificatePinning = kaliumConfigs.certPinningConfig,
-                mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
-                kaliumLogger = kaliumLogger,
-                httpTrafficObserver = kaliumConfigs.httpTrafficObserver,
-            )
-        }
-    )
+        get() = api.ssoLoginScope
     internal val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
-        get() = CheckIfUpdateRequiredUseCaseImpl(appVersionRepository)
-
+        get() = api.checkIfUpdateRequired
     public val domainLookup: DomainLookupUseCase
-        get() = DomainLookupUseCase(
-            customServerConfigRepository = customServerConfigRepository,
-            ssoLoginRepository = ssoLoginRepository
-        )
+        get() = api.domainLookup
     public val isNomadProfilesEnabled: IsNomadProfilesEnabledUseCase
-        get() = IsNomadProfilesEnabledUseCase(unauthorizedSettingsRepository)
+        get() = api.isNomadProfilesEnabled
 
-    public val currentServerConfig: () -> ServerConfig = {
-        serverConfig
-    }
+    // Retain one function value and read the graph input when invoked, not when the facade is built.
+    public val currentServerConfig: () -> ServerConfig = { api.serverConfig }
 }

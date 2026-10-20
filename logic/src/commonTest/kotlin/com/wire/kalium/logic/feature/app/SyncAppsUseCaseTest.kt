@@ -102,7 +102,7 @@ class SyncAppsUseCaseTest {
     private class Arrangement(apiVersion: Int) {
         val appRepository = mock<AppRepository>()
         val selfTeamIdProvider = mock<SelfTeamIdProvider>()
-        val useCase = AppScope(appRepository, selfTeamIdProvider, apiVersion).syncApps
+        val useCase = SyncAppsUseCaseImpl(appRepository, selfTeamIdProvider, apiVersion)
 
         fun withTeam(teamId: TeamId?) = apply {
             everySuspend { selfTeamIdProvider() } returns Either.Right(teamId)

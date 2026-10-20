@@ -19,132 +19,43 @@
 
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.logic.feature.UserSessionScopeProvider
-import kotlinx.coroutines.CoroutineScope
-import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
-import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
-import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.util.DelicateKaliumApi
-import kotlinx.coroutines.sync.Mutex
 
-@Suppress("LongParameterList")
-public class BackupScope internal constructor(
-    private val userId: UserId,
-    private val clientIdProvider: CurrentClientIdProvider,
-    private val userRepository: UserRepository,
-    private val clientRepository: ClientRepository,
-    private val eventRepository: EventRepository,
-    private val upgradeCurrentSession: UpgradeCurrentSessionUseCase,
-    private val kaliumFileSystem: KaliumFileSystem,
-    private val userStorage: UserStorage,
-    private val cryptoTransactionProvider: CryptoTransactionProvider,
-    internal val globalPreferences: GlobalPrefProvider,
-    private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository,
-    private val rootPathsProvider: RootPathsProvider,
-    private val originatingScope: CoroutineScope,
-    private val userSessionScopeProvider: UserSessionScopeProvider,
-) {
-    private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+/** Compatibility facade over its own fresh operation graph. */
+public class BackupScope internal constructor(private val api: LegacyBackupApi) {
+    init {
+        // Preserve eager per-facade helper and mutex creation; use cases remain lazy.
+        api.backupSecurityHelper
+        api.backupBackupAndUploadCryptoStateMutex
+    }
 
     public val create: CreateBackupUseCase
-        get() = CreateBackupUseCaseImpl(
-            userId,
-            clientIdProvider,
-            userRepository,
-            kaliumFileSystem,
-            userStorage.database.databaseExporter,
-            securityHelper = securityHelper
-        )
+        get() = api.backupCreate
 
     public val verify: VerifyBackupUseCase
-        get() = VerifyBackupUseCaseImpl(userId, kaliumFileSystem)
+        get() = api.backupVerify
 
     public val restore: RestoreBackupUseCase
-        get() = RestoreBackupUseCaseImpl(
-            userStorage.database.databaseImporter,
-            kaliumFileSystem,
-            userId,
-            userRepository,
-            clientIdProvider,
-        )
+        get() = api.backupRestore
 
     @DelicateKaliumApi("this is NOT a backup feature, but a feature to create an unencrypted and obfuscated copy of the database")
     public val createUnEncryptedCopy: CreateObfuscatedCopyUseCase
-        get() = CreateObfuscatedCopyUseCase(
-            userId,
-            clientIdProvider,
-            userRepository,
-            kaliumFileSystem,
-            userStorage.database.obfuscatedCopyExporter,
-        )
+        get() = api.backupCreateUnEncryptedCopy
 
-    internal val backupCryptoDB: BackupCryptoDBUseCase by lazy {
-        BackupCryptoDBUseCaseImpl(
-            userId,
-            cryptoTransactionProvider,
-            eventRepository,
-            kaliumFileSystem,
-        )
-    }
+    internal val backupCryptoDB: BackupCryptoDBUseCase
+        get() = api.backupBackupCryptoDB
 
-    private val backupAndUploadCryptoStateMutex = Mutex()
-
-    public val backupAndUploadCryptoState: BackupAndUploadCryptoStateUseCase by lazy {
-        BackupAndUploadCryptoStateUseCaseImpl(
-            backupCryptoDBUseCase = backupCryptoDB,
-            cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
-            kaliumFileSystem = kaliumFileSystem,
-            currentClientIdProvider = clientIdProvider,
-            executionMutex = backupAndUploadCryptoStateMutex,
-        )
-    }
-
-    private val downloadCryptoState: DownloadCryptoStateUseCase
-        get() = DownloadCryptoStateUseCaseImpl(
-            userId,
-            cryptoStateBackupRemoteRepository,
-            kaliumFileSystem,
-        )
-
-    private val extractCryptoState: ExtractCryptoStateUseCase
-        get() = ExtractCryptoStateUseCaseImpl(
-            kaliumFileSystem = kaliumFileSystem,
-        )
+    public val backupAndUploadCryptoState: BackupAndUploadCryptoStateUseCase
+        get() = api.backupBackupAndUploadCryptoState
 
     public val setLastDeviceId: SetLastDeviceIdUseCase
-        get() = SetLastDeviceIdUseCaseImpl(
-            cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
-        )
-
-    private val applyCryptoState: ApplyCryptoStateUseCase
-        get() = ApplyCryptoStateUseCaseImpl(
-            userId = userId,
-            rootPathsProvider = rootPathsProvider,
-            kaliumFileSystem = kaliumFileSystem,
-            securityHelper = securityHelper,
-            clientRepository = clientRepository,
-            eventRepository = eventRepository,
-            originatingScope = originatingScope,
-            userSessionScopeProvider = userSessionScopeProvider,
-        )
+        get() = api.backupSetLastDeviceId
 
     public val restoreCryptoState: RestoreCryptoStateUseCase
-        get() = RestoreCryptoStateUseCaseImpl(
-            downloadCryptoState = downloadCryptoState,
-            extractCryptoState = extractCryptoState,
-            setLastDeviceId = setLastDeviceId,
-            clientRepository = clientRepository,
-            upgradeCurrentSession = upgradeCurrentSession,
-            applyCryptoState = applyCryptoState,
-        )
+        get() = api.backupRestoreCryptoState
+
+    internal val globalPreferences: GlobalPrefProvider
+        get() = api.backupGlobalPreferences
+
 }

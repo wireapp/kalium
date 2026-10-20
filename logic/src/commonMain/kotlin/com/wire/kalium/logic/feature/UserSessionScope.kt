@@ -20,6 +20,10 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logic.feature.team.LegacyTeamDependencies
+import com.wire.kalium.logic.feature.service.LegacyServiceDependencies
+import com.wire.kalium.logic.feature.app.LegacyAppDependencies
+import com.wire.kalium.logic.feature.connection.LegacyConnectionDependencies
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -68,6 +72,12 @@ import com.wire.kalium.logic.data.client.guardedBy
 import com.wire.kalium.logic.network.guardedBy
 
 import com.wire.kalium.cells.CellsScope
+import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
+import com.wire.kalium.logic.feature.call.FlowManagerService
+import com.wire.kalium.logic.feature.call.MediaManagerService
+import com.wire.kalium.logic.feature.call.LegacyCallsDependencies
+import com.wire.kalium.logic.feature.backup.LegacyBackupDependencies
+import com.wire.kalium.logic.feature.backup.LegacyMultiPlatformBackupDependencies
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.getOrNull
@@ -1358,20 +1368,23 @@ public class UserSessionScope internal constructor(
 
     public val backup: BackupScope
         get() = BackupScope(
-            userId = userId,
-            clientIdProvider = clientIdProvider,
-            userRepository = userRepository,
-            clientRepository = clientRepository,
-            eventRepository = eventRepository,
-            kaliumFileSystem = kaliumFileSystem,
-            userStorage = userStorage,
-            cryptoTransactionProvider = cryptoTransactionProvider,
-            globalPreferences = globalPreferences,
-            cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
-            rootPathsProvider = rootPathsProvider,
-            upgradeCurrentSession = upgradeCurrentSessionUseCase,
-            originatingScope = this,
-            userSessionScopeProvider = userSessionScopeProvider,
+            kaliumUserGraph.legacyBackupGraphFactory.create(object : LegacyBackupDependencies {
+                override val userId: UserId = this@UserSessionScope.userId
+                override val clientIdProvider: CurrentClientIdProvider = this@UserSessionScope.clientIdProvider
+                override val userRepository: UserRepository = this@UserSessionScope.userRepository
+                override val clientRepository: ClientRepository = this@UserSessionScope.clientRepository
+                override val eventRepository: EventRepository = this@UserSessionScope.eventRepository
+                override val kaliumFileSystem: KaliumFileSystem = this@UserSessionScope.kaliumFileSystem
+                override val userStorage: UserStorage = this@UserSessionScope.userStorage
+                override val cryptoTransactionProvider: CryptoTransactionProvider = this@UserSessionScope.cryptoTransactionProvider
+                override val globalPreferences: GlobalPrefProvider = this@UserSessionScope.globalPreferences
+                override val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository =
+                    this@UserSessionScope.cryptoStateBackupRemoteRepository
+                override val rootPathsProvider: RootPathsProvider = this@UserSessionScope.rootPathsProvider
+                override val upgradeCurrentSession: UpgradeCurrentSessionUseCase = this@UserSessionScope.upgradeCurrentSessionUseCase
+                override val originatingScope: CoroutineScope = this@UserSessionScope
+                override val userSessionScopeProvider: UserSessionScopeProvider = this@UserSessionScope.userSessionScopeProvider
+            }),
         )
 
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository
@@ -1379,13 +1392,16 @@ public class UserSessionScope internal constructor(
 
     public val multiPlatformBackup: MultiPlatformBackupScope
         get() = MultiPlatformBackupScope(
-            selfUserId = userId,
-            backupRepository = backupRepository,
-            userRepository = userRepository,
-            kaliumFileSystem = kaliumFileSystem,
-            refreshConversationsWithoutMetadata = kaliumUserGraph.conversationRefreshConversationsWithoutMetadata,
-            userSessionScope = this,
-            waitUntilSyncLive = syncManager::waitUntilLive,
+            kaliumUserGraph.legacyMultiPlatformBackupGraphFactory.create(object : LegacyMultiPlatformBackupDependencies {
+                override val selfUserId: UserId = this@UserSessionScope.userId
+                override val backupRepository: BackupRepository = this@UserSessionScope.backupRepository
+                override val userRepository: UserRepository = this@UserSessionScope.userRepository
+                override val kaliumFileSystem: KaliumFileSystem = this@UserSessionScope.kaliumFileSystem
+                override val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase =
+                    this@UserSessionScope.kaliumUserGraph.conversationRefreshConversationsWithoutMetadata
+                override val userSessionScope: CoroutineScope = this@UserSessionScope
+                override val waitUntilSyncLive: suspend () -> Unit = this@UserSessionScope.syncManager::waitUntilLive
+            }),
         )
 
     internal val persistMessage: PersistMessageUseCase
@@ -3362,26 +3378,66 @@ public class UserSessionScope internal constructor(
             meetingsConfigHandler,
         )
 
+    private val legacyTeamDependencies: LegacyTeamDependencies
+        get() = object : LegacyTeamDependencies {
+            override val teamRepository: TeamRepository
+                get() = this@UserSessionScope.teamRepository
+            override val slowSyncRepository: SlowSyncRepository
+                get() = this@UserSessionScope.slowSyncRepository
+            override val selfTeamIdProvider: SelfTeamIdProvider
+                get() = this@UserSessionScope.selfTeamId
+        }
+
+    private val legacyServiceDependencies: LegacyServiceDependencies
+        get() = object : LegacyServiceDependencies {
+            override val serviceRepository: ServiceRepository
+                get() = this@UserSessionScope.serviceRepository
+            override val teamRepository: TeamRepository
+                get() = this@UserSessionScope.teamRepository
+            override val userConfigRepository: UserConfigRepository
+                get() = this@UserSessionScope.userConfigRepository
+            override val selfTeamIdProvider: SelfTeamIdProvider
+                get() = this@UserSessionScope.selfTeamId
+        }
+
+    private val legacyAppDependencies: LegacyAppDependencies
+        get() = object : LegacyAppDependencies {
+            override val appRepository: AppRepository
+                get() = this@UserSessionScope.appRepository
+            override val selfTeamIdProvider: SelfTeamIdProvider
+                get() = this@UserSessionScope.selfTeamId
+        }
+
+    private val legacyConnectionDependencies: LegacyConnectionDependencies
+        get() = object : LegacyConnectionDependencies {
+            override val connectionRepository: ConnectionRepository
+                get() = this@UserSessionScope.connectionRepository
+            override val conversationRepository: ConversationRepository
+                get() = this@UserSessionScope.conversationRepository
+            override val userRepository: UserRepository
+                get() = this@UserSessionScope.userRepository
+            override val oneOnOneResolver: OneOnOneResolver
+                get() = this@UserSessionScope.oneOnOneResolver
+            override val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+                get() = this@UserSessionScope.newGroupConversationSystemMessagesCreator
+            override val fetchConversationUseCase: FetchConversationUseCase
+                get() = this@UserSessionScope.fetchConversationUseCase
+            override val transactionProvider: CryptoTransactionProvider
+                get() = this@UserSessionScope.cryptoTransactionProvider
+        }
+
     public val team: TeamScope
-        get() = TeamScope(
-            teamRepository = teamRepository,
-            slowSyncRepository = slowSyncRepository,
-            selfTeamIdProvider = selfTeamId
-        )
+        get() = TeamScope(kaliumUserGraph.teamFacadeGraphFactory.create(legacyTeamDependencies))
 
     public val service: ServiceScope
-        get() = ServiceScope(
-            serviceRepository,
-            teamRepository,
-            userConfigRepository,
-            selfTeamId
-        )
+        get() = ServiceScope(kaliumUserGraph.serviceFacadeGraphFactory.create(legacyServiceDependencies))
 
     public val apps: AppScope
         get() = AppScope(
-            appRepository = appRepository,
-            selfTeamIdProvider = selfTeamId,
-            apiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version
+            kaliumUserGraph.appFacadeGraphFactory.create(
+                legacyAppDependencies,
+                sessionManager.serverConfig().metaData.commonApiVersion.version,
+            )
         )
 
     /** Resume NSE-committed signaling using this session's existing full calling engine. */
@@ -3409,35 +3465,31 @@ public class UserSessionScope internal constructor(
 
     public val calls: CallsScope
         get() = CallsScope(
-            callManager = callManager,
-            callBackgroundManager = callBackgroundManager,
-            callRepository = callRepository,
-            conversationRepository = conversationRepository,
-            flowManagerService = flowManagerService,
-            mediaManagerService = mediaManagerService,
-            syncStateObserver = syncStateObserver,
-            qualifiedIdMapper = qualifiedIdMapper,
-            currentClientIdProvider = clientIdProvider,
-            userConfigRepository = userConfigRepository,
-            getCallConversationType = getCallConversationType,
-            conversationClientsInCallUpdater = conversationClientsInCallUpdater,
-            kaliumConfigs = kaliumConfigs,
-            inCallReactionsRepository = inCallReactionsRepository,
-            callModerationActionsRepository = callModerationActionsRepository,
-            selfUserId = userId,
-            userRepository = userRepository
+            kaliumUserGraph.legacyCallsGraphFactory.create(object : LegacyCallsDependencies {
+                override val callManager: Lazy<CallManager> = this@UserSessionScope.callManager
+                override val callBackgroundManager: CallBackgroundManager = this@UserSessionScope.callBackgroundManager
+                override val callRepository: CallRepository = this@UserSessionScope.callRepository
+                override val conversationRepository: ConversationRepository = this@UserSessionScope.conversationRepository
+                override val flowManagerService: FlowManagerService = this@UserSessionScope.flowManagerService
+                override val mediaManagerService: MediaManagerService = this@UserSessionScope.mediaManagerService
+                override val syncStateObserver: Lazy<SyncStateObserver> = this@UserSessionScope.syncStateObserver
+                override val qualifiedIdMapper: QualifiedIdMapper = this@UserSessionScope.qualifiedIdMapper
+                override val currentClientIdProvider: CurrentClientIdProvider = this@UserSessionScope.clientIdProvider
+                override val userConfigRepository: UserConfigRepository = this@UserSessionScope.userConfigRepository
+                override val getCallConversationType: GetCallConversationTypeProvider = this@UserSessionScope.getCallConversationType
+                override val conversationClientsInCallUpdater: ConversationClientsInCallUpdater =
+                    this@UserSessionScope.conversationClientsInCallUpdater
+                override val kaliumConfigs: KaliumConfigs = this@UserSessionScope.kaliumConfigs
+                override val inCallReactionsRepository: InCallReactionsRepository = this@UserSessionScope.inCallReactionsRepository
+                override val callModerationActionsRepository: CallModerationActionsRepository =
+                    this@UserSessionScope.callModerationActionsRepository
+                override val selfUserId: UserId = this@UserSessionScope.userId
+                override val userRepository: UserRepository = this@UserSessionScope.userRepository
+            }),
         )
 
     public val connection: ConnectionScope
-        get() = ConnectionScope(
-            connectionRepository,
-            conversationRepository,
-            userRepository,
-            oneOnOneResolver,
-            newGroupConversationSystemMessagesCreator,
-            fetchConversationUseCase,
-            cryptoTransactionProvider
-        )
+        get() = ConnectionScope(kaliumUserGraph.connectionFacadeGraphFactory.create(legacyConnectionDependencies))
 
     public val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
         get() = ObserveSecurityClassificationLabelUseCaseImpl(
@@ -3601,7 +3653,7 @@ public class UserSessionScope internal constructor(
             coreCryptoTransactionProvider = cryptoTransactionProvider
         )
 
-    public val longWork: LongWorkScope = LongWorkScope(
+    public val longWork: LongWorkScope = LongWorkScope.prepareForRuntime(
         { this },
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
     )
@@ -3654,6 +3706,7 @@ public class UserSessionScope internal constructor(
         UserSessionRuntime(
             scope = this,
             logger = userScopedLogger,
+            startInitialSyncMonitoring = { longWork.startInitialSyncMonitoring() },
             registerNomadHooks = ::registerNomadHooksIfConfigured,
             waitUntilClientIdIsAvailable = ::waitUntilClientIdIsAvailable,
             pendingProposalScheduler = { pendingProposalScheduler },

@@ -19,6 +19,7 @@ package com.wire.kalium.work
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 internal class InitialSyncWorkMonitor(
@@ -27,7 +28,10 @@ internal class InitialSyncWorkMonitor(
     private val repository: WorkRepository
 ) {
 
+    private val started = MutableStateFlow(false)
+
     fun startMonitoring() {
+        if (!started.compareAndSet(false, true)) return
         scope.launch {
             isSlowSyncOngoingFlow.collect { isSlowSyncOngoing ->
                 val status = if (isSlowSyncOngoing) {

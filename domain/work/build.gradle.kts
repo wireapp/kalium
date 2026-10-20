@@ -20,6 +20,7 @@ import com.wire.kalium.plugins.FrequentModules
 
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.metro)
 }
 
 kaliumLibrary {
@@ -34,6 +35,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(libs.coroutines.core)
+                implementation(libs.metro.runtime)
             }
         }
         val commonTest by getting {

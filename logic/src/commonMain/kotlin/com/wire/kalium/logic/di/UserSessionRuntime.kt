@@ -51,6 +51,7 @@ import kotlinx.coroutines.launch
 internal class UserSessionRuntime(
     private val scope: CoroutineScope,
     private val logger: KaliumLogger,
+    private val startInitialSyncMonitoring: () -> Unit,
     private val registerNomadHooks: () -> Unit,
     private val waitUntilClientIdIsAvailable: suspend () -> Unit,
     private val pendingProposalScheduler: () -> PendingProposalScheduler,
@@ -78,6 +79,7 @@ internal class UserSessionRuntime(
     @Suppress("TooGenericExceptionCaught")
     fun start() {
         if (!started.compareAndSet(false, true)) return
+        startInitialSyncMonitoring()
         pendingProposalScheduler().start()
         registerNomadHooks()
 

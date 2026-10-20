@@ -18,6 +18,14 @@
 
 package com.wire.kalium.logic.di
 
+import com.wire.kalium.logic.feature.team.LegacyTeamFacadeGraph
+import com.wire.kalium.logic.feature.service.LegacyServiceFacadeGraph
+import com.wire.kalium.logic.feature.app.LegacyAppFacadeGraph
+import com.wire.kalium.logic.feature.connection.LegacyConnectionFacadeGraph
+import com.wire.kalium.logic.feature.session.SessionGraph
+import com.wire.kalium.logic.feature.call.LegacyCallsGraph
+import com.wire.kalium.logic.feature.backup.LegacyBackupGraph
+import com.wire.kalium.logic.feature.backup.LegacyMultiPlatformBackupGraph
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.feature.channels.LegacyChannelsBindings
@@ -60,6 +68,7 @@ internal interface UserGraphDependencies {
 /** Final annotated roots and their create intrinsics live in each platform's leaf source set. */
 internal interface KaliumGraph : GlobalBindings {
     val userGraphFactory: KaliumUserGraph.Factory
+    val sessionGraphFactory: SessionGraph.Factory
 }
 
 internal expect fun createKaliumGraph(inputs: GlobalGraphInputs, owner: GlobalGraphOwner): KaliumGraph
@@ -76,6 +85,13 @@ internal interface KaliumUserGraph :
     LegacyMeetingBindings,
     LegacyDebugBindings {
     val consumerGraphFactory: KaliumConsumerGraph.Factory
+    val teamFacadeGraphFactory: LegacyTeamFacadeGraph.Factory
+    val serviceFacadeGraphFactory: LegacyServiceFacadeGraph.Factory
+    val appFacadeGraphFactory: LegacyAppFacadeGraph.Factory
+    val connectionFacadeGraphFactory: LegacyConnectionFacadeGraph.Factory
+    val legacyCallsGraphFactory: LegacyCallsGraph.Factory
+    val legacyBackupGraphFactory: LegacyBackupGraph.Factory
+    val legacyMultiPlatformBackupGraphFactory: LegacyMultiPlatformBackupGraph.Factory
 
     @GraphExtension.Factory
     interface Factory {

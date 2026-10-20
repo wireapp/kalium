@@ -18,15 +18,12 @@
 
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.logic.data.session.SessionRepository
-
-public class SessionScope internal constructor(
-    private val sessionRepository: SessionRepository
-) {
-    public val allSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
-    public val allSessionsIncludingInvalid: GetAllSessionsUseCase get() = GetAllSessionsUseCase(sessionRepository)
-    public val allSessionsFlow: ObserveSessionsUseCase get() = ObserveSessionsUseCase(sessionRepository)
-    public val currentSession: CurrentSessionUseCase get() = CurrentSessionUseCase(sessionRepository)
-    public val currentSessionFlow: CurrentSessionFlowUseCase get() = CurrentSessionFlowUseCase(sessionRepository)
-    public val updateCurrentSession: UpdateCurrentSessionUseCase get() = UpdateCurrentSessionUseCase(sessionRepository)
+/** Compatibility facade over one fresh session graph and its captured repository. */
+public class SessionScope internal constructor(private val api: SessionApi) {
+    public val allSessions: GetSessionsUseCase get() = api.allSessions
+    public val allSessionsIncludingInvalid: GetAllSessionsUseCase get() = api.allSessionsIncludingInvalid
+    public val allSessionsFlow: ObserveSessionsUseCase get() = api.allSessionsFlow
+    public val currentSession: CurrentSessionUseCase get() = api.currentSession
+    public val currentSessionFlow: CurrentSessionFlowUseCase get() = api.currentSessionFlow
+    public val updateCurrentSession: UpdateCurrentSessionUseCase get() = api.updateCurrentSession
 }

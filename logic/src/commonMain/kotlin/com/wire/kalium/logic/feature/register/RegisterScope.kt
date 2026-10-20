@@ -18,15 +18,8 @@
 
 package com.wire.kalium.logic.feature.register
 
-import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.data.auth.login.ProxyCredentials
-import com.wire.kalium.logic.data.register.RegisterAccountRepository
-
-public class RegisterScope internal constructor(
-    private val registerAccountRepository: RegisterAccountRepository,
-    private val serverConfig: ServerConfig,
-    private val proxyCredentials: ProxyCredentials?
-) {
-    public val register: RegisterAccountUseCase get() = RegisterAccountUseCase(registerAccountRepository, serverConfig, proxyCredentials)
-    public val requestActivationCode: RequestActivationCodeUseCase get() = RequestActivationCodeUseCase(registerAccountRepository)
+/** Compatibility facade; its graph retains this facade's original constructor captures. */
+public class RegisterScope internal constructor(private val api: RegisterApi) {
+    public val register: RegisterAccountUseCase get() = api.register
+    public val requestActivationCode: RequestActivationCodeUseCase get() = api.requestActivationCode
 }

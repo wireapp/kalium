@@ -19,55 +19,17 @@
 
 package com.wire.kalium.logic.feature.backup
 
-import kotlinx.coroutines.CoroutineScope
-import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import com.wire.kalium.logic.data.backup.BackupRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.CoroutineDispatcher
 
-@Suppress("LongParameterList")
-public class MultiPlatformBackupScope internal constructor(
-    private val selfUserId: UserId,
-    private val kaliumFileSystem: KaliumFileSystem,
-    private val backupRepository: BackupRepository,
-    private val userRepository: UserRepository,
-    private val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase,
-    private val userSessionScope: CoroutineScope,
-    private val waitUntilSyncLive: suspend () -> Unit,
-) {
-
+/** Compatibility facade over its own fresh operation graph. */
+public class MultiPlatformBackupScope internal constructor(private val api: LegacyMultiPlatformBackupApi) {
     public val create: CreateMPBackupUseCase
-        get() = CreateMPBackupUseCaseImpl(
-            backupRepository = backupRepository,
-            userRepository = userRepository,
-            kaliumFileSystem = kaliumFileSystem,
-        )
+        get() = api.mpBackupCreate
 
     public val restore: RestoreMPBackupUseCase
-        get() = RestoreMPBackupUseCaseImpl(
-            selfUserId = selfUserId,
-            refreshConversationsWithoutMetadata = refreshConversationsWithoutMetadata,
-            userSessionScope = userSessionScope,
-            waitUntilSyncLive = waitUntilSyncLive,
-            backupRepository = backupRepository,
-            kaliumFileSystem = kaliumFileSystem,
-        )
+        get() = api.mpBackupRestore
 
-    /**
-     * Creates a restore use case that dispatches progress callbacks on [progressDispatcher].
-     * This allows consumers without a UI main dispatcher to restore history.
-     * The existing `restore` property continues to dispatch progress on the main dispatcher.
-     */
+    /** Dispatch progress on the caller-selected dispatcher; the property keeps its default. */
     public fun restore(progressDispatcher: CoroutineDispatcher): RestoreMPBackupUseCase =
-        RestoreMPBackupUseCaseImpl(
-            selfUserId = selfUserId,
-            refreshConversationsWithoutMetadata = refreshConversationsWithoutMetadata,
-            userSessionScope = userSessionScope,
-            waitUntilSyncLive = waitUntilSyncLive,
-            backupRepository = backupRepository,
-            kaliumFileSystem = kaliumFileSystem,
-            progressDispatcher = progressDispatcher,
-        )
+        api.mpRestoreFactory.create(progressDispatcher)
 }

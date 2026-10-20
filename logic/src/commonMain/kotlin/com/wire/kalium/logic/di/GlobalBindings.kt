@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.di
 
+import com.wire.kalium.logic.feature.session.SessionGraph
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
@@ -408,8 +409,9 @@ internal interface GlobalBindings : GlobalApi {
     @GlobalBinding("session")
     fun provideGlobalSession(
         @GlobalBinding("sessionRepository") sessionRepository: SessionRepository,
+        factory: SessionGraph.Factory,
     ): SessionScope =
-        SessionScope(sessionRepository)
+        SessionScope(factory.create(sessionRepository))
 
     @Provides
     @GlobalBinding("fetchServerConfigFromDeepLink")

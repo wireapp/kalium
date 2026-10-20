@@ -18,77 +18,37 @@
 
 package com.wire.kalium.logic.feature.call
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.call.CallModerationActionsRepository
-import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.CallingParticipantsOrder
-import com.wire.kalium.logic.data.call.CallingParticipantsOrderImpl
-import com.wire.kalium.logic.data.call.InCallReactionsRepository
-import com.wire.kalium.logic.data.call.ParticipantsFilterImpl
-import com.wire.kalium.logic.data.call.ParticipantsOrderByNameImpl
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
-import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCase
-import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.EndCallResultListenerImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
-import com.wire.kalium.logic.feature.call.usecase.EndCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.FlipToBackCameraUseCase
 import com.wire.kalium.logic.feature.call.usecase.FlipToFrontCameraUseCase
-import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
-import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.IsCallRunningUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsEligibleToStartCallUseCase
-import com.wire.kalium.logic.feature.call.usecase.IsEligibleToStartCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
-import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
-import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveActiveCallsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveActiveCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallModerationActionsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveCallModerationActionsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallQualityDataUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveCallQualityDataUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveJoinableCallsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveJoinableCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveLastActiveCallWithSortedParticipantsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveLastActiveCallWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingAndIncomingCallsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingAndIncomingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOutgoingCallUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveOutgoingCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveRecentlyEndedCallMetadataUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveRecentlyEndedCallMetadataUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveSpeakerUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveStaleOpenCallsCleanupUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveStaleOpenCallsCleanupUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.RequestVideoStreamsUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetBackgroundUseCase
-import com.wire.kalium.logic.feature.call.usecase.SetBackgroundUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.SetCallQualityIntervalUseCase
-import com.wire.kalium.logic.feature.call.usecase.SetCallQualityIntervalUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.SetTestPreviewActiveUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestRemoteVideoStatesUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestVideoTypeUseCase
@@ -98,211 +58,151 @@ import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOffUseCase
 import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOnUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
-import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
-import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.observeAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.call.usecase.video.SetVideoSendStateUseCase
 import com.wire.kalium.logic.feature.call.usecase.video.UpdateVideoStateUseCase
-import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.user.UpdateNextTimeCallFeedbackUseCase
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
 
-@Suppress("LongParameterList")
-public class CallsScope internal constructor(
-    private val callManager: Lazy<CallManager>,
-    private val callBackgroundManager: CallBackgroundManager,
-    private val callRepository: CallRepository,
-    private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository,
-    private val flowManagerService: FlowManagerService,
-    private val mediaManagerService: MediaManagerService,
-    private val syncStateObserver: Lazy<SyncStateObserver>,
-    private val qualifiedIdMapper: QualifiedIdMapper,
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val userConfigRepository: UserConfigRepository,
-    private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
-    private val getCallConversationType: GetCallConversationTypeProvider,
-    private val kaliumConfigs: KaliumConfigs,
-    private val inCallReactionsRepository: InCallReactionsRepository,
-    private val callModerationActionsRepository: CallModerationActionsRepository,
-    private val selfUserId: UserId,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) {
-
+/** Compatibility facade over its own fresh operation graph. */
+public class CallsScope internal constructor(private val api: LegacyCallsApi) {
     public val allCallsWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
-        get() = ObserveEstablishedCallWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
+        get() = api.callsAllCallsWithSortedParticipants
 
     public val establishedCall: ObserveEstablishedCallsUseCase
-        get() = ObserveEstablishedCallsUseCaseImpl(
-            callRepository = callRepository,
-        )
+        get() = api.callsEstablishedCall
 
     public val getIncomingCalls: GetIncomingCallsUseCase
-        get() = GetIncomingCallsUseCaseImpl(
-            callRepository = callRepository,
-            conversationRepository = conversationRepository,
-            userRepository = userRepository,
-        )
+        get() = api.callsGetIncomingCalls
+
     public val observeOutgoingCall: ObserveOutgoingCallUseCase
-        get() = ObserveOutgoingCallUseCaseImpl(
-            callRepository = callRepository
-        )
+        get() = api.callsObserveOutgoingCall
 
     public val isCallRunning: IsCallRunningUseCase
-        get() = IsCallRunningUseCase(
-            callRepository = callRepository
-        )
+        get() = api.callsIsCallRunning
 
     public val observeOngoingCalls: ObserveOngoingCallsUseCase
-        get() = ObserveOngoingCallsUseCaseImpl(
-            callRepository = callRepository,
-        )
+        get() = api.callsObserveOngoingCalls
 
     public val observeJoinableCalls: ObserveJoinableCallsUseCase
-        get() = ObserveJoinableCallsUseCaseImpl(
-            callRepository = callRepository,
-        )
+        get() = api.callsObserveJoinableCalls
 
-    internal val observeOngoingAndIncomingCalls: ObserveOngoingAndIncomingCallsUseCase by lazy {
-        ObserveOngoingAndIncomingCallsUseCaseImpl(callRepository = callRepository)
-    }
+    internal val observeOngoingAndIncomingCalls: ObserveOngoingAndIncomingCallsUseCase
+        get() = api.callsObserveOngoingAndIncomingCalls
 
     public val observeEstablishedCallWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
-        get() = ObserveEstablishedCallWithSortedParticipantsUseCaseImpl(
-            callRepository = callRepository,
-            callingParticipantsOrder = callingParticipantsOrder
-        )
+        get() = api.callsObserveEstablishedCallWithSortedParticipants
 
     public val observeActiveCalls: ObserveActiveCallsUseCase
-        get() = ObserveActiveCallsUseCaseImpl(
-            callRepository = callRepository
-        )
+        get() = api.callsObserveActiveCalls
 
     public val startCall: StartCallUseCase
-        get() = StartCallUseCase(
-            callManager = callManager,
-            syncStateObserver = syncStateObserver.value,
-            callRepository = callRepository,
-            answerCall = answerCall,
-            getCallConversationType = getCallConversationType,
-            kaliumConfigs = kaliumConfigs
-        )
+        get() = api.callsStartCall
 
     public val answerCall: AnswerCallUseCase
-        get() = AnswerCallUseCaseImpl(
-            observeOngoingAndIncomingCalls,
-            callManager,
-            muteCall,
-            kaliumConfigs
-        )
+        get() = api.callsAnswerCall
 
     public val endCall: EndCallUseCase
-        get() = EndCallUseCaseImpl(
-            callManager = callManager,
-            callRepository = callRepository,
-            endCallListener = EndCallResultListenerImpl,
-            shouldAskCallFeedback = shouldAskCallFeedback
-        )
+        get() = api.callsEndCall
 
     public val endCallOnConversationChange: EndCallOnConversationChangeUseCase
-        get() = EndCallOnConversationChangeUseCaseImpl(
-            callRepository = callRepository,
-            conversationRepository = conversationRepository,
-            endCallUseCase = endCall,
-            endCallListener = EndCallResultListenerImpl
-        )
+        get() = api.callsEndCallOnConversationChange
 
     internal val updateConversationClientsForCurrentCallUseCase: UpdateConversationClientsForCurrentCallUseCase
-        get() = UpdateConversationClientsForCurrentCallUseCaseImpl(
-            callRepository,
-            conversationClientsInCallUpdater
-        )
+        get() = api.callsUpdateConversationClientsForCurrentCallUseCase
 
-    public val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
+    public val rejectCall: RejectCallUseCase
+        get() = api.callsRejectCall
 
-    public val muteCall: MuteCallUseCase get() = MuteCallUseCaseImpl(callManager, callRepository)
+    public val muteCall: MuteCallUseCase
+        get() = api.callsMuteCall
 
-    public val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCaseImpl(callManager, callRepository)
+    public val unMuteCall: UnMuteCallUseCase
+        get() = api.callsUnMuteCall
 
-    public val updateVideoState: UpdateVideoStateUseCase get() = UpdateVideoStateUseCase(callRepository)
-    public val setVideoSendState: SetVideoSendStateUseCase get() = SetVideoSendStateUseCase(callManager)
+    public val updateVideoState: UpdateVideoStateUseCase
+        get() = api.callsUpdateVideoState
 
-    public val setVideoPreview: SetVideoPreviewUseCase get() = SetVideoPreviewUseCase(flowManagerService)
-    public val setUIRotation: SetUIRotationUseCase get() = SetUIRotationUseCase(flowManagerService)
-    public val flipToFrontCamera: FlipToFrontCameraUseCase get() = FlipToFrontCameraUseCase(flowManagerService)
-    public val flipToBackCamera: FlipToBackCameraUseCase get() = FlipToBackCameraUseCase(flowManagerService)
+    public val setVideoSendState: SetVideoSendStateUseCase
+        get() = api.callsSetVideoSendState
 
-    public val setTestVideoType: SetTestVideoTypeUseCase get() = SetTestVideoTypeUseCase(callManager)
-    public val setTestPreviewActive: SetTestPreviewActiveUseCase get() = SetTestPreviewActiveUseCase(callManager)
-    public val setTestRemoteVideoStates: SetTestRemoteVideoStatesUseCase get() = SetTestRemoteVideoStatesUseCase(callManager)
+    public val setVideoPreview: SetVideoPreviewUseCase
+        get() = api.callsSetVideoPreview
 
-    public val turnLoudSpeakerOff: TurnLoudSpeakerOffUseCase get() = TurnLoudSpeakerOffUseCase(mediaManagerService)
+    public val setUIRotation: SetUIRotationUseCase
+        get() = api.callsSetUIRotation
 
-    public val turnLoudSpeakerOn: TurnLoudSpeakerOnUseCase get() = TurnLoudSpeakerOnUseCase(mediaManagerService)
+    public val flipToFrontCamera: FlipToFrontCameraUseCase
+        get() = api.callsFlipToFrontCamera
 
-    public val observeSpeaker: ObserveSpeakerUseCase get() = ObserveSpeakerUseCase(mediaManagerService)
+    public val flipToBackCamera: FlipToBackCameraUseCase
+        get() = api.callsFlipToBackCamera
 
-    private val callingParticipantsOrder: CallingParticipantsOrder
-        get() = CallingParticipantsOrderImpl(
-            currentClientIdProvider = currentClientIdProvider,
-            participantsFilter = ParticipantsFilterImpl(qualifiedIdMapper),
-            participantsOrderByName = ParticipantsOrderByNameImpl(),
-            selfUserId = selfUserId
-        )
+    public val setTestVideoType: SetTestVideoTypeUseCase
+        get() = api.callsSetTestVideoType
 
-    public val isLastCallClosed: IsLastCallClosedUseCase get() = IsLastCallClosedUseCaseImpl(callRepository)
+    public val setTestPreviewActive: SetTestPreviewActiveUseCase
+        get() = api.callsSetTestPreviewActive
 
-    public val requestVideoStreams: RequestVideoStreamsUseCase get() = RequestVideoStreamsUseCase(callManager, KaliumDispatcherImpl)
+    public val setTestRemoteVideoStates: SetTestRemoteVideoStatesUseCase
+        get() = api.callsSetTestRemoteVideoStates
+
+    public val turnLoudSpeakerOff: TurnLoudSpeakerOffUseCase
+        get() = api.callsTurnLoudSpeakerOff
+
+    public val turnLoudSpeakerOn: TurnLoudSpeakerOnUseCase
+        get() = api.callsTurnLoudSpeakerOn
+
+    public val observeSpeaker: ObserveSpeakerUseCase
+        get() = api.callsObserveSpeaker
+
+    public val isLastCallClosed: IsLastCallClosedUseCase
+        get() = api.callsIsLastCallClosed
+
+    public val requestVideoStreams: RequestVideoStreamsUseCase
+        get() = api.callsRequestVideoStreams
 
     public val isEligibleToStartCall: IsEligibleToStartCallUseCase
-        get() = IsEligibleToStartCallUseCaseImpl(
-            userConfigRepository,
-            callRepository
-        )
+        get() = api.callsIsEligibleToStartCall
 
     public val observeConferenceCallingEnabled: ObserveConferenceCallingEnabledUseCase
-        get() = ObserveConferenceCallingEnabledUseCaseImpl(userConfigRepository)
+        get() = api.callsObserveConferenceCallingEnabled
 
     public val observeEndCallDueToDegradationDialog: ObserveEndCallDueToConversationDegradationUseCase
-        get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
+        get() = api.callsObserveEndCallDueToDegradationDialog
+
     public val observeAskCallFeedbackUseCase: ObserveAskCallFeedbackUseCase
-        get() = observeAskCallFeedbackUseCase(EndCallResultListenerImpl)
+        get() = api.callsObserveAskCallFeedbackUseCase
 
-    private val shouldAskCallFeedback: ShouldAskCallFeedbackUseCase by lazy {
-        ShouldAskCallFeedbackUseCase(userConfigRepository)
-    }
-
-    public val updateNextTimeCallFeedback: UpdateNextTimeCallFeedbackUseCase by lazy {
-        UpdateNextTimeCallFeedbackUseCase(userConfigRepository)
-    }
+    public val updateNextTimeCallFeedback: UpdateNextTimeCallFeedbackUseCase
+        get() = api.callsUpdateNextTimeCallFeedback
 
     public val observeRecentlyEndedCallMetadata: ObserveRecentlyEndedCallMetadataUseCase
-        get() = ObserveRecentlyEndedCallMetadataUseCaseImpl(
-            callRepository = callRepository
-        )
+        get() = api.callsObserveRecentlyEndedCallMetadata
 
     public val observeInCallReactions: ObserveInCallReactionsUseCase
-        get() = ObserveInCallReactionsUseCaseImpl(inCallReactionsRepository)
+        get() = api.callsObserveInCallReactions
 
     public val observeLastActiveCallWithSortedParticipants: ObserveLastActiveCallWithSortedParticipantsUseCase
-        get() = ObserveLastActiveCallWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
+        get() = api.callsObserveLastActiveCallWithSortedParticipants
 
     public val setBackground: SetBackgroundUseCase
-        get() = SetBackgroundUseCaseImpl(callBackgroundManager = callBackgroundManager)
+        get() = api.callsSetBackground
 
     public val observeCallQualityData: ObserveCallQualityDataUseCase
-        get() = ObserveCallQualityDataUseCaseImpl(callRepository = callRepository)
+        get() = api.callsObserveCallQualityData
 
     public val setCallQualityInterval: SetCallQualityIntervalUseCase
-        get() = SetCallQualityIntervalUseCaseImpl(callManager = callManager, dispatchers = dispatcher)
+        get() = api.callsSetCallQualityInterval
 
     public val observeCallModerationActions: ObserveCallModerationActionsUseCase
-        get() = ObserveCallModerationActionsUseCaseImpl(callModerationActionsRepository = callModerationActionsRepository)
+        get() = api.callsObserveCallModerationActions
 
     public val observeStaleOpenCallsCleanup: ObserveStaleOpenCallsCleanupUseCase
-        get() = ObserveStaleOpenCallsCleanupUseCaseImpl(callRepository = callRepository)
+        get() = api.callsObserveStaleOpenCallsCleanup
+
+    internal val dispatcher: KaliumDispatcher
+        get() = api.callsDispatcher
+
 }

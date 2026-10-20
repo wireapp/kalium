@@ -29,6 +29,8 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
@@ -51,10 +53,12 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -71,6 +75,14 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class UserSessionScopeProviderLogoutTest {
+
+    // Custom registries and retired generations no longer appear in CoreLogic's provider cache.
+    // Retain the actual owners until their jobs have completed and their database can be closed.
+    private val fixtureScopes = ConcurrentLinkedQueue<UserSessionScope>()
+    private val fixtureDatabases = ConcurrentLinkedQueue<UserDatabaseBuilder>()
+    private val fixtureGlobalDatabases = ConcurrentLinkedQueue<GlobalDatabaseBuilder>()
+    private val fixtureGlobalJobs = ConcurrentLinkedQueue<Job>()
+    private val fixtureProviders = mutableListOf<UserSessionScopeProvider>()
 
     @Test
     fun startupWorkerLogoutRecognizesPrivateOwnerAndPreventsOutgoingPublication() = runTest {
@@ -278,7 +290,7 @@ class UserSessionScopeProviderLogoutTest {
     fun staleOriginCannotPrepareClearStopOrRemoveReopenedGeneration() = runTest {
         val userId = UserId("stale-origin", "example.com")
         withAccounts(userId) { logic, network ->
-            val provider = logic.userSessionScopeProvider.value
+            val provider = retainingProvider(logic)
             val first = provider.getOrCreate(userId)
             assertTrue(provider.logout(userId, first, prepare = {}, clearLocalData = {}))
             val second = provider.open(userId)
@@ -352,8 +364,9 @@ class UserSessionScopeProviderLogoutTest {
             val delegate = logic.userSessionScopeProvider.value as UserSessionScopeProviderCommon
             val provider = commonProvider(logic, createScope = { id ->
                 delegate.create(id).also { scope ->
-                    // Explicit runtime startup is counted below. LongWork's existing constructor
-                    // monitor remains a separate owner/capture until its migration slice.
+                    retainScope(logic, scope)
+                    // LongWork monitoring is prepared without launching; explicit runtime
+                    // startup is counted below, after the registry retains its owner.
                     if (id == userId) {
                         constructed.complete(scope)
                         check(finishCreation.await(30, TimeUnit.SECONDS))
@@ -392,8 +405,13 @@ class UserSessionScopeProviderLogoutTest {
             } finally {
                 finishCreation.countDown()
                 thread.shutdownNow()
-                provider.delete(userId)
-                provider.delete(otherUser)
+                withContext(NonCancellable + Dispatchers.Default) {
+                    provider.delete(userId)
+                    provider.delete(otherUser)
+                    fixtureScopes.forEach { scope ->
+                        assertTrue(scope.coroutineContext.job.isCompleted, "Custom account worker did not drain: ${scope.userId}")
+                    }
+                }
             }
         }
     }
@@ -445,7 +463,7 @@ class UserSessionScopeProviderLogoutTest {
     fun storeSessionReplacesGenerationAndRejectsOutgoingConsumersBeforeCredentialMutation() = runTest {
         val userId = UserId("relogin", "example.com")
         withAccounts(userId) { logic, _ ->
-            val provider = logic.userSessionScopeProvider.value
+            val provider = retainingProvider(logic)
             val first = provider.getOrCreate(userId)
             val storing = CompletableDeferred<Unit>()
             val finishStore = CompletableDeferred<Unit>()
@@ -494,7 +512,7 @@ class UserSessionScopeProviderLogoutTest {
     fun deleteSessionSerializesMetadataDeletionAgainstReopen() = runTest {
         val userId = UserId("deleting-session", "example.com")
         withAccounts(userId) { logic, _ ->
-            val provider = logic.userSessionScopeProvider.value
+            val provider = retainingProvider(logic)
             val scope = provider.getOrCreate(userId)
             val deleting = CompletableDeferred<Unit>()
             val finishDelete = CompletableDeferred<Unit>()
@@ -555,7 +573,7 @@ class UserSessionScopeProviderLogoutTest {
     fun logoutClosesAdmissionBeforePreparationAndRetainsOutgoingScopeOnFailure() = runTest {
         val userId = UserId("failed-prepare", "example.com")
         withAccounts(userId) { logic, network ->
-            val provider = logic.userSessionScopeProvider.value
+            val provider = retainingProvider(logic)
             val scope = provider.getOrCreate(userId)
             val storage = logic.userStorageProvider.get(userId)
             val apis = network.get(userId.toApi())
@@ -585,8 +603,8 @@ class UserSessionScopeProviderLogoutTest {
             rootPath = root.absolutePath,
             kaliumConfigs = KaliumConfigs(enableCalling = false, mockedRequests = emptyList()),
             userAgent = "kalium-logout-test",
-        )
-        val provider = logic.userSessionScopeProvider.value
+        ).also { retainGlobalDatabase(it) }
+        val provider = retainingProvider(logic)
         val scope = provider.getOrCreate(userId)
         val release = CompletableDeferred<Unit>()
         val stuckWorker = scope.launch { withContext(NonCancellable) { release.await() } }
@@ -599,7 +617,7 @@ class UserSessionScopeProviderLogoutTest {
         } finally {
             release.complete(Unit)
             stuckWorker.join()
-            root.deleteRecursively()
+            closeFixture(root, logic, userId)
         }
     }
 
@@ -612,8 +630,8 @@ class UserSessionScopeProviderLogoutTest {
             rootPath = root.absolutePath,
             kaliumConfigs = KaliumConfigs(enableCalling = false, mockedRequests = emptyList()),
             userAgent = "kalium-logout-test",
-        )
-        val provider = logic.userSessionScopeProvider.value
+        ).also { retainGlobalDatabase(it) }
+        val provider = retainingProvider(logic)
         val scope = provider.getOrCreate(userId)
         val cells = scope.cells
         val worker = cells.launch(start = CoroutineStart.UNDISPATCHED) { awaitCancellation() }
@@ -628,8 +646,7 @@ class UserSessionScopeProviderLogoutTest {
             assertNull(provider.get(userId))
         } finally {
             worker.cancel()
-            logic.getGlobalScope().coroutineContext.job.cancel()
-            root.deleteRecursively()
+            closeFixture(root, logic, userId)
         }
     }
 
@@ -645,13 +662,11 @@ class UserSessionScopeProviderLogoutTest {
             kaliumConfigs = KaliumConfigs(enableCalling = false, mockedRequests = emptyList()),
             userAgent = "kalium-registry-test",
             userAuthenticatedNetworkProvider = network,
-        )
+        ).also { retainGlobalDatabase(it) }
         try {
             block(logic, network)
         } finally {
-            users.forEach { logic.userSessionScopeProvider.value.delete(it) }
-            logic.getGlobalScope().coroutineContext.job.cancel()
-            root.deleteRecursively()
+            closeFixture(root, logic, *users)
         }
     }
 
@@ -666,8 +681,78 @@ class UserSessionScopeProviderLogoutTest {
         removeNetwork,
         "kalium-registry-test",
     ) {
-        override fun create(userId: UserId): UserSessionScope = createScope(userId)
+        override fun create(userId: UserId): UserSessionScope = createScope(userId).also { retainScope(logic, it) }
         override fun startRuntime(scope: UserSessionScope) = startScope(scope)
+    }.also {
+        fixtureProviders.add(it)
+        fixtureGlobalJobs.add(logic.getGlobalScope().coroutineContext.job)
+    }
+
+    private fun retainingProvider(logic: CoreLogic): UserSessionScopeProvider {
+        val delegate = logic.userSessionScopeProvider.value
+        fixtureGlobalJobs.add(logic.getGlobalScope().coroutineContext.job)
+        return object : UserSessionScopeProvider by delegate {
+            override fun getOrCreate(userId: UserId): UserSessionScope =
+                delegate.getOrCreate(userId).also { retainScope(logic, it) }
+
+            override suspend fun open(userId: UserId): UserSessionScope =
+                delegate.open(userId).also { retainScope(logic, it) }
+
+            override fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T = getOrCreate(userId).action()
+
+            override suspend fun <T> open(userId: UserId, action: UserSessionScope.() -> T): T = open(userId).action()
+        }.also { fixtureProviders.add(it) }
+    }
+
+    private fun retainScope(logic: CoreLogic, scope: UserSessionScope) {
+        // userStorage is an eager retained val; capture its actual builder before cache eviction.
+        fixtureScopes.add(scope)
+        fixtureDatabases.add(scope.userStorage.database)
+        fixtureGlobalJobs.add(logic.getGlobalScope().coroutineContext.job)
+    }
+
+    private fun retainGlobalDatabase(logic: CoreLogic) {
+        // CoreLogic initializes this database eagerly. Reflection reads its protected getter; it
+        // neither initializes a lazy resource nor changes the SDK's visibility for this test.
+        val getter = CoreLogic::class.java.getDeclaredMethod("getGlobalDatabaseBuilder")
+        getter.isAccessible = true
+        fixtureGlobalDatabases.add(getter.invoke(logic) as GlobalDatabaseBuilder)
+    }
+
+    private suspend fun closeFixture(root: File, logic: CoreLogic, vararg users: UserId) {
+        // Only teardown uses the real clock. Tests explicitly advancing the legacy timeout retain
+        // their virtual-time operations and every existing assertion.
+        withContext(NonCancellable + Dispatchers.Default) {
+            withTimeout(30_000) {
+                val globalJobs = fixtureGlobalJobs.toList().distinct()
+                globalJobs.forEach { it.cancel() }
+                globalJobs.forEach { it.join() }
+                val defaultProvider = logic.userSessionScopeProvider.takeIf { it.isInitialized() }?.value
+                val providers = fixtureProviders.toList() + listOfNotNull(defaultProvider)
+                users.forEach { user -> providers.forEach { it.delete(user) } }
+                val scopes = fixtureScopes.toList().distinct()
+                scopes.forEach { it.coroutineContext.job.cancel() }
+                scopes.forEach { it.coroutineContext.job.join() }
+                // A prior best-effort timeout can leave later shutdown steps unvisited. Re-run
+                // shutdown on the retained owner after its session job has actually finished.
+                scopes.forEach { it.stopAccountWork() }
+                scopes.forEach {
+                    assertTrue(it.coroutineContext.job.isCompleted, "Account work still owns fixture storage: ${it.userId}")
+                    assertTrue(it.coroutineContext.job.children.none(), "Account retains child jobs: ${it.userId}")
+                    if (it.isCellsInitialized) {
+                        assertTrue(it.cells.coroutineContext.job.isCompleted, "Cells work still owns fixture storage: ${it.userId}")
+                    }
+                }
+                globalJobs.forEach {
+                    assertTrue(it.isCompleted, "Global work still owns fixture storage")
+                    assertTrue(it.children.none(), "Global owner retains child jobs")
+                }
+                // remove(userId) only evicts the cache; it does not close the evicted JDBC driver.
+                fixtureDatabases.toList().distinct().forEach { it.close() }
+                fixtureGlobalDatabases.toList().distinct().forEach { it.close() }
+                assertTrue(root.deleteRecursively(), "Unable to remove drained fixture storage: $root")
+            }
+        }
     }
 
     private suspend fun storeAccount(root: File, userId: UserId) {

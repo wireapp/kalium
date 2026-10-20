@@ -111,7 +111,7 @@ class UserSessionRuntimeTest {
 
             // These are worker calls and real workers' port calls, rather than factory reads.
             val expectedWorkers = listOf(
-                "pending-proposals", "nomad-hooks", "api-migration", "asset-reset", "stale-call-cleanup",
+                "initial-sync", "pending-proposals", "nomad-hooks", "api-migration", "asset-reset", "stale-call-cleanup",
                 "push-tokens", "mls-recovery", "join-pending-mls", "conversation-recovery", "self-deletion",
                 "e2ei", "typing", "repair-mls-keys", "avs", "confirmations", "pending-deliveries",
                 "sync", "local-events", "user-config-sync", "meeting-occurrences-sync", "calling",
@@ -138,9 +138,9 @@ class UserSessionRuntimeTest {
         withFixture {
             runtime.start()
 
-            assertEquals(listOf("proposals", "sync", "work-scheduler", "work-scheduler"), resolutions)
+            assertEquals(listOf("initial-sync", "proposals", "sync", "work-scheduler", "work-scheduler"), resolutions)
             assertEquals(
-                listOf("pending-proposals", "nomad-hooks", "sync", "user-config-sync", "meeting-occurrences-sync"),
+                listOf("initial-sync", "pending-proposals", "nomad-hooks", "sync", "user-config-sync", "meeting-occurrences-sync"),
                 workerStarts,
             )
 
@@ -505,6 +505,7 @@ class UserSessionRuntimeTest {
             UserSessionRuntime(
                 scope = scope,
                 logger = logger,
+                startInitialSyncMonitoring = { resolve("initial-sync") { workerStarts += "initial-sync" } },
                 registerNomadHooks = { workerStarts += "nomad-hooks" },
                 waitUntilClientIdIsAvailable = {
                     clientWaits++

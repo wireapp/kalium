@@ -75,8 +75,7 @@ class AuthenticationScopeSSOTest {
 
     private val proxy = ProxyCredentials("proxy-user", "proxy-password")
 
-    private fun scope(version: Int, settings: String, settingsStatus: HttpStatusCode = HttpStatusCode.OK) = AuthenticationScope(
-        userAgent = "test/useragent",
+    private fun scope(version: Int, settings: String, settingsStatus: HttpStatusCode = HttpStatusCode.OK) = AuthenticationScopeProvider("test/useragent").provide(
         serverConfig = newServerConfig(version),
         proxyCredentials = proxy,
         // The closed database cannot service a query. Pending login has no account resource dependency.

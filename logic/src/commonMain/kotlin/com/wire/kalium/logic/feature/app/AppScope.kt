@@ -17,39 +17,20 @@
  */
 package com.wire.kalium.logic.feature.app
 
-import com.wire.kalium.logic.data.app.AppRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-
-public class AppScope internal constructor(
-    private val appRepository: AppRepository,
-    private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val apiVersion: Int
-) {
-
+/** Compatibility facade retaining only its own fresh extension and its constructor captures. */
+public class AppScope internal constructor(private val api: LegacyAppApi) {
     public val syncApps: SyncAppsUseCase
-        get() = SyncAppsUseCaseImpl(
-            appRepository = appRepository,
-            selfTeamIdProvider = selfTeamIdProvider,
-            apiVersion = apiVersion
-        )
+        get() = api.appSyncApps
 
     public val getAppById: GetAppByIdUseCase
-        get() = GetAppByIdUseCaseImpl(
-            appRepository = appRepository
-        )
+        get() = api.appGetAppById
 
     public val observeIsAppMember: ObserveIsAppMemberUseCase
-        get() = ObserveIsAppMemberUseCaseImpl(
-            appRepository = appRepository
-        )
+        get() = api.appObserveIsAppMember
 
     public val observeAllApps: ObserveAllAppsUseCase
-        get() = ObserveAllAppsUseCaseImpl(
-            appRepository = appRepository
-        )
+        get() = api.appObserveAllApps
 
     public val searchAppsByName: SearchAppsByNameUseCase
-        get() = SearchAppsByNameUseCaseImpl(
-            appRepository = appRepository
-        )
+        get() = api.appSearchAppsByName
 }

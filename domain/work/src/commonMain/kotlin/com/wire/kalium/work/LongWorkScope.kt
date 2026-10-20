@@ -17,19 +17,37 @@
  */
 package com.wire.kalium.work
 
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
-public class LongWorkScope(
-    userScopeProvider: () -> CoroutineScope,
-    isSlowSyncOngoingFlowProvider: () -> Flow<Boolean>
-) {
-    private val repository = InMemoryWorkRepository()
+/** Compatibility owner; the public constructor still starts initial-sync monitoring immediately. */
+public class LongWorkScope private constructor(private val graph: LongWorkGraph, startImmediately: Boolean) {
+    public constructor(
+        userScopeProvider: () -> CoroutineScope,
+        isSlowSyncOngoingFlowProvider: () -> Flow<Boolean>,
+    ) : this(createLongWorkGraph(LongWorkInputs(userScopeProvider, isSlowSyncOngoingFlowProvider)), true)
 
-    public val observeWorkStatus: ObserveWorkStatusUseCase = ObserveWorkStatusUseCase(repository)
-    public val observeNewWorks: ObserveNewWorkUseCase = ObserveNewWorkUseCase(repository)
+    public val observeWorkStatus: ObserveWorkStatusUseCase = graph.observeWorkStatus
+    public val observeNewWorks: ObserveNewWorkUseCase = graph.observeNewWorks
 
     init {
-        InitialSyncWorkMonitor(userScopeProvider(), isSlowSyncOngoingFlowProvider(), repository).startMonitoring()
+        if (startImmediately) graph.initialSyncWorkMonitor.startMonitoring()
+    }
+
+    /** Start only after the account owner is registered; repeated startup is harmless. */
+    @InternalKaliumApi
+    public fun startInitialSyncMonitoring(): Unit = graph.initialSyncWorkMonitor.startMonitoring()
+
+    public companion object {
+        /** Retain the original repository/use-case owner without launching work during account construction. */
+        @InternalKaliumApi
+        public fun prepareForRuntime(
+            userScopeProvider: () -> CoroutineScope,
+            isSlowSyncOngoingFlowProvider: () -> Flow<Boolean>,
+        ): LongWorkScope = LongWorkScope(
+            createLongWorkGraph(LongWorkInputs(userScopeProvider, isSlowSyncOngoingFlowProvider)),
+            false,
+        )
     }
 }

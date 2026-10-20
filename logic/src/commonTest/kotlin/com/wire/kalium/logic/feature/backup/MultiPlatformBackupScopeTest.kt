@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import dev.mokkery.answering.calls
+import dev.zacsweers.metro.DependencyGraph
+import dev.zacsweers.metro.createGraph
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
@@ -71,17 +73,21 @@ class MultiPlatformBackupScopeTest {
         assertFalse(progressCalled)
     }
 
-    private class Arrangement(userSessionScope: CoroutineScope) {
+    private class Arrangement(originatingScope: CoroutineScope) {
         private val fileSystem = mock<KaliumFileSystem>()
         private val workDirectory = "source-compatibility-restore-workdir".toPath()
         val scope = MultiPlatformBackupScope(
-            selfUserId = QualifiedID("self", "example.com"),
-            kaliumFileSystem = fileSystem,
-            backupRepository = mock<BackupRepository>(),
-            userRepository = mock<UserRepository>(),
-            refreshConversationsWithoutMetadata = mock<RefreshConversationsWithoutMetadataUseCase>(),
-            userSessionScope = userSessionScope,
-            waitUntilSyncLive = {},
+            createGraph<MultiPlatformBackupCompatibilityGraph>().factory.create(
+                object : LegacyMultiPlatformBackupDependencies {
+                    override val selfUserId = QualifiedID("self", "example.com")
+                    override val kaliumFileSystem = fileSystem
+                    override val backupRepository = mock<BackupRepository>()
+                    override val userRepository = mock<UserRepository>()
+                    override val refreshConversationsWithoutMetadata = mock<RefreshConversationsWithoutMetadataUseCase>()
+                    override val userSessionScope: CoroutineScope = originatingScope
+                    override val waitUntilSyncLive: suspend () -> Unit = {}
+                },
+            ),
         )
 
         init {
@@ -109,4 +115,9 @@ class MultiPlatformBackupScopeTest {
             verify(VerifyMode.exactly(2)) { fileSystem.deleteContents(workDirectory, any()) }
         }
     }
+}
+
+@DependencyGraph
+internal interface MultiPlatformBackupCompatibilityGraph {
+    val factory: LegacyMultiPlatformBackupGraph.Factory
 }

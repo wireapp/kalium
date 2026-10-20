@@ -19,6 +19,7 @@ plugins {
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
+    alias(libs.plugins.metro)
 }
 
 kaliumLibrary {
@@ -36,6 +37,7 @@ kotlin {
                 implementation(projects.core.util)
                 implementation(projects.data.persistence)
                 implementation(libs.coroutines.core)
+                implementation(libs.metro.runtime)
                 implementation(libs.ktor.authClient)
                 implementation(libs.okio.core)
                 implementation(libs.sqldelight.androidxPaging)

@@ -17,46 +17,25 @@
  */
 package com.wire.kalium.logic.feature.service
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.service.ServiceRepository
-import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppsAllowedForUsageUseCase
-import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppsAllowedForUsageUseCaseImpl
 
-public class ServiceScope internal constructor(
-    private val serviceRepository: ServiceRepository,
-    private val teamRepository: TeamRepository,
-    private val userConfigRepository: UserConfigRepository,
-    private val selfTeamIdProvider: SelfTeamIdProvider
-) {
-
+/** Compatibility facade retaining only its own fresh extension and its constructor captures. */
+public class ServiceScope internal constructor(private val api: LegacyServiceApi) {
     public val getServiceById: GetServiceByIdUseCase
-        get() = GetServiceByIdUseCaseImpl(
-            serviceRepository = serviceRepository
-        )
+        get() = api.serviceGetServiceById
 
     public val observeIsServiceMember: ObserveIsServiceMemberUseCase
-        get() = ObserveIsServiceMemberUseCaseImpl(
-            serviceRepository = serviceRepository
-        )
+        get() = api.serviceObserveIsServiceMember
 
     public val observeAllServices: ObserveAllServicesUseCase
-        get() = ObserveAllServicesUseCaseImpl(
-            serviceRepository = serviceRepository
-        )
+        get() = api.serviceObserveAllServices
 
     public val syncServices: SyncServicesUseCase
-        get() = SyncServicesUseCaseImpl(
-            teamRepository = teamRepository,
-            selfTeamIdProvider = selfTeamIdProvider
-        )
+        get() = api.serviceSyncServices
 
     public val searchServicesByName: SearchServicesByNameUseCase
-        get() = SearchServicesByNameUseCaseImpl(
-            serviceRepository = serviceRepository
-        )
+        get() = api.serviceSearchServicesByName
 
     public val observeIsAppsAllowedForUsage: ObserveIsAppsAllowedForUsageUseCase
-        get() = ObserveIsAppsAllowedForUsageUseCaseImpl(userConfigRepository, selfTeamIdProvider)
+        get() = api.serviceObserveIsAppsAllowedForUsage
 }
