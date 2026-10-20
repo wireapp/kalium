@@ -52,6 +52,23 @@ public interface KaliumConsumer : AutoCloseable {
     public val observeConversationDetails: ObserveConversationDetailsUseCase
     public val observeMessageById: ObserveMessageByIdUseCase
     public val getMessageById: GetMessageByIdUseCase
+
+    /**
+     * Admits the creator's actual synchronous construction, including work after consumer creation.
+     * Returns only if this consumer is still active when construction finishes. Otherwise [onDiscard]
+     * releases the unpublished value before construction is considered drained. If [create] throws,
+     * it is responsible for any partially constructed value; the caller must close this consumer.
+     *
+     * [ownedJob] may expose the constructed value's own job, never a user/global or caller job. It is
+     * cancelled on consumer closure and included in [closeAndJoin], including its children's unwind.
+     * [onDiscard] must release only creator-owned resources and is also called if [ownedJob] throws.
+     */
+    public fun <T> assemble(
+        create: () -> T,
+        onDiscard: (T) -> Unit,
+        ownedJob: (T) -> Job? = { null },
+    ): T
+
     public override fun close()
     public suspend fun closeAndJoin()
 }
@@ -68,11 +85,16 @@ internal class KaliumConsumerRegistry(
 
     private val lock = Lock()
     private var active = true
+
     // Keep closed consumers until their admitted work (including synchronous construction) drains.
     private val consumers = mutableSetOf<ConsumerWork>()
 
+    @Suppress("TooGenericExceptionCaught") // Every failed construction must close its admitted work.
     fun createConsumer(): KaliumConsumer {
-        val work = ConsumerWork { drained -> lock.withLock { consumers.remove(drained) } }
+        val work = ConsumerWork(
+            isGenerationActive = { lock.withLock { active } },
+            onDrained = { drained -> lock.withLock { consumers.remove(drained) } },
+        )
         lock.withLock {
             check(active) { "The user graph generation has been invalidated" }
             consumers.add(work)
@@ -118,6 +140,9 @@ private class OwnedKaliumConsumer(
     override val getMessageById: GetMessageByIdUseCase
         get() = work.resolve { graph.getMessageById }
 
+    override fun <T> assemble(create: () -> T, onDiscard: (T) -> Unit, ownedJob: (T) -> Job?): T =
+        work.assemble(create, onDiscard, ownedJob)
+
     override fun close() = work.close()
 
     override suspend fun closeAndJoin() {
@@ -132,10 +157,14 @@ private class OwnedKaliumConsumer(
  * Jobs are children of the caller (so caller cancellation still works), and are also tracked here.
  * Drain counts actual finally/unwind, rather than Job cancellation, including non-cancellable cleanup.
  */
-internal class ConsumerWork(private val onDrained: (ConsumerWork) -> Unit = {}) {
+internal class ConsumerWork(
+    private val isGenerationActive: () -> Boolean = { true },
+    private val onDrained: (ConsumerWork) -> Unit = {},
+) {
     private val lock = Lock()
     private var open = true
     private val operations = mutableSetOf<CompletableJob>()
+    private val ownedJobs = mutableSetOf<Job>()
     private val drained = CompletableDeferred<Unit>()
 
     fun <T> resolve(block: () -> T): T {
@@ -144,6 +173,28 @@ internal class ConsumerWork(private val onDrained: (ConsumerWork) -> Unit = {}) 
             val value = block()
             checkOpen()
             value
+        } finally {
+            release(operation)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught", "NestedBlockDepth") // Preserve the original failure even if discard also fails.
+    fun <T> assemble(create: () -> T, onDiscard: (T) -> Unit, ownedJob: (T) -> Job?): T {
+        val operation = admit()
+        try {
+            val value = create()
+            try {
+                ownedJob(value)?.let(::own)
+                checkOpen()
+                return value
+            } catch (failure: Throwable) {
+                try {
+                    onDiscard(value)
+                } catch (cleanupFailure: Throwable) {
+                    if (cleanupFailure !== failure) failure.addSuppressed(cleanupFailure)
+                }
+                throw failure
+            }
         } finally {
             release(operation)
         }
@@ -168,7 +219,7 @@ internal class ConsumerWork(private val onDrained: (ConsumerWork) -> Unit = {}) 
     fun close() {
         val outgoing = lock.withLock {
             open = false
-            operations.toList()
+            operations.toList() + ownedJobs.toList()
         }
         outgoing.forEach { it.cancel(CancellationException("Kalium consumer closed")) }
         completeIfDrained()
@@ -180,6 +231,9 @@ internal class ConsumerWork(private val onDrained: (ConsumerWork) -> Unit = {}) 
 
     private fun checkOpen() = lock.withLock {
         if (!open) throw CancellationException("Kalium consumer closed")
+        // Invalidation closes the generation before iterating consumers. An earlier consumer's
+        // cancellation may still be unwinding, so checking only this consumer's open flag is late.
+        if (!isGenerationActive()) throw CancellationException("The user graph generation has been invalidated")
     }
 
     private fun admit(parent: Job? = null): CompletableJob = lock.withLock {
@@ -193,8 +247,20 @@ internal class ConsumerWork(private val onDrained: (ConsumerWork) -> Unit = {}) 
         completeIfDrained()
     }
 
+    private fun own(job: Job) {
+        val cancel = lock.withLock {
+            ownedJobs.add(job)
+            !open
+        }
+        job.invokeOnCompletion {
+            lock.withLock { ownedJobs.remove(job) }
+            completeIfDrained()
+        }
+        if (cancel) job.cancel(CancellationException("Kalium consumer closed during construction"))
+    }
+
     private fun completeIfDrained() {
-        val complete = lock.withLock { !open && operations.isEmpty() }
+        val complete = lock.withLock { !open && operations.isEmpty() && ownedJobs.isEmpty() }
         if (complete && drained.complete(Unit)) onDrained(this)
     }
 }
@@ -217,5 +283,7 @@ internal class ConsumerConversationRepository(
 ) : ConversationRepository by delegate {
     override suspend fun observeConversationDetailsById(
         conversationID: ConversationId,
-    ): Flow<Either<StorageFailure, ConversationDetails>> = work.flow { delegate.observeConversationDetailsById(conversationID) }
+    ): Flow<Either<StorageFailure, ConversationDetails>> = work.flow {
+        delegate.observeConversationDetailsById(conversationID)
+    }
 }

@@ -39,6 +39,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
@@ -61,6 +62,134 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class KaliumConsumerTest {
+    @Test
+    fun assemblyDoesNotResolveUnrequestedUseCasesAndAClosedConsumerRejectsItsCallback() = runTest {
+        val dependencies = ConsumerTestDependencies(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val registry = KaliumConsumerRegistry(dependencies.userGraph())
+        val consumer = registry.createConsumer()
+        val value = Any()
+        assertSame(value, consumer.assemble(create = { value }, onDiscard = { error("Active assembly was discarded") }))
+        consumer.closeAndJoin()
+        assertFailsWith<CancellationException> {
+            consumer.assemble(create = { error("Closed consumer admitted assembly") }, onDiscard = { error("No value exists") })
+        }
+        assertTrue(dependencies.messages.isEmpty())
+        assertTrue(dependencies.conversations.isEmpty())
+        registry.invalidateAndJoin()
+    }
+
+    @Test
+    fun invalidationDuringAssemblyDiscardsTheValueAndDrainsItsOwnedJobWithoutCancellingTheParent() = runTest {
+        val dependencies = ConsumerTestDependencies(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val registry = KaliumConsumerRegistry(dependencies.userGraph())
+        val consumer = registry.createConsumer()
+        val parent = Job()
+        val owner = SupervisorJob(parent)
+        val finishCleanup = CompletableDeferred<Unit>()
+        var unwound = false
+        var discards = 0
+        val ownedWork = launch(owner, start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+            try {
+                awaitCancellation()
+            } finally {
+                withContext(NonCancellable) {
+                    finishCleanup.await()
+                    unwound = true
+                }
+            }
+        }
+        val value = Any()
+
+        assertFailsWith<CancellationException> {
+            consumer.assemble(
+                create = { registry.invalidate(); value },
+                onDiscard = { assertSame(value, it); discards++ },
+                ownedJob = { owner },
+            )
+        }
+        val drain = async { registry.invalidateAndJoin() }
+        runCurrent()
+        assertEquals(1, discards)
+        assertTrue(owner.isCancelled)
+        assertFalse(drain.isCompleted)
+        assertFalse(unwound)
+        assertTrue(parent.isActive)
+        assertEquals(0, dependencies.resources.closes)
+        finishCleanup.complete(Unit)
+        drain.await()
+        ownedWork.join()
+        assertTrue(unwound)
+        assertTrue(parent.isActive)
+        parent.cancel()
+    }
+
+    @Test
+    fun acceptedAssemblyRetainsItsOwnedJobForLaterInvalidationAndDrain() = runTest {
+        val dependencies = ConsumerTestDependencies(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val registry = KaliumConsumerRegistry(dependencies.userGraph())
+        val consumer = registry.createConsumer()
+        val owner = SupervisorJob()
+        val finishCleanup = CompletableDeferred<Unit>()
+        var unwound = false
+        launch(owner, start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+            try {
+                awaitCancellation()
+            } finally {
+                withContext(NonCancellable) {
+                    finishCleanup.await()
+                    unwound = true
+                }
+            }
+        }
+        consumer.assemble(create = { owner }, onDiscard = { error("Active assembly was discarded") }, ownedJob = { it })
+
+        val drain = async { registry.invalidateAndJoin() }
+        runCurrent()
+        assertTrue(owner.isCancelled)
+        assertFalse(drain.isCompleted)
+        assertFalse(unwound)
+        finishCleanup.complete(Unit)
+        drain.await()
+        assertTrue(unwound)
+        assertEquals(0, dependencies.resources.closes)
+    }
+
+    @Test
+    fun failedAssemblyReleasesAdmissionAndPreservesConstructionAndDiscardFailures() = runTest {
+        val dependencies = ConsumerTestDependencies(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val registry = KaliumConsumerRegistry(dependencies.userGraph())
+        val consumer = registry.createConsumer()
+        val constructionFailure = IllegalArgumentException("assembly failed")
+        val thrown = assertFailsWith<IllegalArgumentException> {
+            consumer.assemble(create = { throw constructionFailure }, onDiscard = { error("No value exists") })
+        }
+        assertSame(constructionFailure, thrown)
+        consumer.closeAndJoin()
+
+        val ownerFailure = IllegalArgumentException("owner lookup failed")
+        val ownerLookup = registry.createConsumer()
+        val value = Any()
+        var discards = 0
+        assertSame(ownerFailure, assertFailsWith<IllegalArgumentException> {
+            ownerLookup.assemble(
+                create = { value },
+                onDiscard = { assertSame(value, it); discards++ },
+                ownedJob = { throw ownerFailure },
+            )
+        })
+        assertEquals(1, discards)
+        ownerLookup.closeAndJoin()
+
+        val other = registry.createConsumer()
+        val cleanupFailure = IllegalStateException("discard failed")
+        val cancelled = assertFailsWith<CancellationException> {
+            other.assemble(create = { registry.invalidate(); Any() }, onDiscard = { throw cleanupFailure })
+        }
+        assertEquals(listOf(cleanupFailure), cancelled.suppressedExceptions)
+        registry.invalidateAndJoin()
+        assertEquals(0, dependencies.resources.closes)
+    }
+
     @Test
     fun invalidatingAnUnusedRegistryDoesNotResolveTheGraphOrResources() = runTest {
         var creations = 0

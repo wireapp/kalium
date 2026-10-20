@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.feature.asset.ObservePaginatedAssetImageMessages
+import com.wire.kalium.logic.feature.asset.GetPaginatedFlowOfAssetMessageByConversationIdUseCase
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
@@ -415,6 +417,22 @@ internal interface LegacyMessageApi {
 
     @get:LegacyMessageBinding("detectLinkPreviewTarget")
     val messageDetectLinkPreviewTarget: DetectLinkPreviewTargetUseCase
+
+    @get:LegacyMessageBinding("getPaginatedFlowOfMessagesByConversation")
+    val messageGetPaginatedFlowOfMessagesByConversation: GetPaginatedFlowOfMessagesByConversationUseCase
+
+    @get:LegacyMessageBinding("getPaginatedFlowOfMessagesBySearchQueryAndConversation")
+    val messageGetPaginatedFlowOfMessagesBySearchQueryAndConversation: GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase
+
+    @get:LegacyMessageBinding("getPaginatedFlowOfAssetMessageByConversationId")
+    val messageGetPaginatedFlowOfAssetMessageByConversationId: GetPaginatedFlowOfAssetMessageByConversationIdUseCase
+
+    @get:LegacyMessageBinding("observePaginatedImageAssetMessageByConversationId")
+    val messageObservePaginatedImageAssetMessageByConversationId: ObservePaginatedAssetImageMessages
+
+    @get:LegacyMessageBinding("fetchOlderMessagesByConversationId")
+    val messageFetchOlderMessagesByConversationId: FetchOlderNomadMessagesByConversationUseCase
+
 }
 
 /**
@@ -422,7 +440,7 @@ internal interface LegacyMessageApi {
  * Constructor captures and formerly cached properties retain their original user lifetime. Factory
  * getters stay unscoped, including senders retained by the scoped delivery/self-deletion handlers.
  */
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass") // Individual declarative bindings, not a feature constructor.
 internal interface LegacyMessageBindings : LegacyMessageApi {
     @Provides
     @SingleIn(UserLifetime::class)
@@ -1686,4 +1704,46 @@ internal interface LegacyMessageBindings : LegacyMessageApi {
         followRedirects = false
         expectSuccess = false
     }
+
+    @Provides
+    @LegacyMessageBinding("getPaginatedFlowOfMessagesByConversation")
+    fun provideMessageGetPaginatedFlowOfMessagesByConversation(
+        @LegacyMessageBinding("dispatcher") dispatcher: KaliumDispatcher,
+        @LegacyMessageBinding("messageRepository") messageRepository: MessageRepository,
+    ): GetPaginatedFlowOfMessagesByConversationUseCase = GetPaginatedFlowOfMessagesByConversationUseCase(dispatcher, messageRepository)
+
+    @Provides
+    @LegacyMessageBinding("getPaginatedFlowOfMessagesBySearchQueryAndConversation")
+    fun provideMessageGetPaginatedFlowOfMessagesBySearchQueryAndConversation(
+        @LegacyMessageBinding("dispatcher") dispatcher: KaliumDispatcher,
+        @LegacyMessageBinding("messageRepository") messageRepository: MessageRepository,
+    ): GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase = GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase(
+        dispatcher,
+        messageRepository
+    )
+
+    @Provides
+    @LegacyMessageBinding("getPaginatedFlowOfAssetMessageByConversationId")
+    fun provideMessageGetPaginatedFlowOfAssetMessageByConversationId(
+        @LegacyMessageBinding("dispatcher") dispatcher: KaliumDispatcher,
+        @LegacyMessageBinding("messageRepository") messageRepository: MessageRepository,
+    ): GetPaginatedFlowOfAssetMessageByConversationIdUseCase = GetPaginatedFlowOfAssetMessageByConversationIdUseCase(
+        dispatcher,
+        messageRepository
+    )
+
+    @Provides
+    @LegacyMessageBinding("observePaginatedImageAssetMessageByConversationId")
+    fun provideMessageObservePaginatedImageAssetMessageByConversationId(
+        @LegacyMessageBinding("dispatcher") dispatcher: KaliumDispatcher,
+        @LegacyMessageBinding("messageRepository") messageRepository: MessageRepository,
+    ): ObservePaginatedAssetImageMessages = ObservePaginatedAssetImageMessages(dispatcher, messageRepository)
+
+    @Provides
+    @LegacyMessageBinding("fetchOlderMessagesByConversationId")
+    fun provideMessageFetchOlderMessagesByConversationId(
+        @LegacyMessageBinding("dispatcher") dispatcher: KaliumDispatcher,
+        @LegacyMessageBinding("messageRepository") messageRepository: MessageRepository,
+    ): FetchOlderNomadMessagesByConversationUseCase = FetchOlderNomadMessagesByConversationUseCaseImpl(dispatcher, messageRepository)
+
 }

@@ -658,25 +658,20 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecovery
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecoveryStore
 import com.wire.kalium.logic.sync.receiver.conversation.message.AppMLSReceiveRecovery
 import com.wire.kalium.logic.sync.receiver.conversation.message.recoveryOrThrow
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.withTimeout
 import okio.Path.Companion.toPath
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
@@ -726,6 +721,10 @@ public class UserSessionScope internal constructor(
 
     internal fun invalidateConsumers() {
         consumers.invalidate()
+    }
+
+    internal suspend fun drainConsumers() {
+        consumers.invalidateAndJoin()
     }
 
     private val notificationEventsManager = NotificationEventsManagerImpl()
@@ -998,19 +997,7 @@ public class UserSessionScope internal constructor(
 
     /** The host must first cancel/join public account operations and account/global observers. */
     internal suspend fun stopAccountWork() {
-        consumers.invalidate()
-        withTimeout(LogoutUseCaseImpl.SCOPE_DRAIN_TIMEOUT_MS) {
-            consumers.invalidateAndJoin()
-            if (isCellsInitialized) {
-                val uploadCoordinator = cells.uploadCoordinator
-                uploadCoordinator.cancelAll()
-                uploadCoordinator.dismissAll()
-                cells.cancel()
-            }
-            this@UserSessionScope.coroutineContext.job.cancelAndJoin()
-            if (isCellsInitialized) cells.coroutineContext.job.join()
-            if (callManager.isInitialized()) callManager.value.cancelJobs()
-        }
+        UserSessionShutdown(consumers, coroutineContext.job, cellsLazy, callManager).stop()
     }
 
     /**

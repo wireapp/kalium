@@ -302,4 +302,15 @@ public class ConversationScope internal constructor(private val api: LegacyConve
     public val isSelfUserViewerOnConversation: IsSelfUserViewerOnConversationUseCase
         get() = api.conversationIsSelfUserViewerOnConversation
 
+    internal val bindingGetPaginatedFlowOfConversationDetailsWithEventsBySearchQuery:
+        GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
+        get() = api.conversationGetPaginatedFlowOfConversationDetailsWithEventsBySearchQuery
+
+    internal val bindingGetPaginatedFlowOfConversationDetailsWithMembersBySearchQuery:
+        GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase
+        get() = api.conversationGetPaginatedFlowOfConversationDetailsWithMembersBySearchQuery
+
+    internal val bindingObserveConversationListItems: ObserveConversationListItemsUseCase
+        get() = api.conversationObserveConversationListItems
+
 }

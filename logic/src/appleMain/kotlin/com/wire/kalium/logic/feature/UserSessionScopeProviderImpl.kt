@@ -136,7 +136,7 @@ internal actual open class UserSessionScopeProviderImpl(
             account.mutex.withLock {
                 checkOwnedScope(account, userId, originatingScope)
                 account.canRefreshReadiness = false
-                prepareOwned(account, userId, checkNotNull(super.get(userId))).also {
+                prepareOwned(account, userId, checkNotNull(getRaw(userId))).also {
                     account.canRefreshReadiness = it is Either.Right
                 }
             }
@@ -144,7 +144,7 @@ internal actual open class UserSessionScopeProviderImpl(
     }
 
     private fun checkOwnedScope(account: OwnedAccount, userId: UserId, originatingScope: CoroutineScope) {
-        check(!account.unavailable && account.lease != null && super.get(userId) === originatingScope) {
+        check(!account.unavailable && account.lease != null && getRaw(userId) === originatingScope) {
             "Account preparation requires the current owned session"
         }
         check(originatingScope.coroutineContext.job.isActive) { "Account workers are stopped" }
@@ -216,7 +216,7 @@ internal actual open class UserSessionScopeProviderImpl(
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
         return withOwnedAccount(account, userId) {
             check(!account.unavailable) { "Account resources are unavailable until process exit" }
-            super.get(userId)?.let {
+            getRaw(userId)?.let {
                 if (!it.coroutineContext.job.isActive) {
                     account.unavailable = true
                     error("Account workers stopped before resources were released")
@@ -251,16 +251,17 @@ internal actual open class UserSessionScopeProviderImpl(
         prepare: suspend () -> Unit,
         clearLocalData: suspend () -> Unit,
     ): Boolean {
-        val account = accounts[userId]?.takeIf { super.get(userId) === originatingScope } ?: return false
+        val account = accounts[userId]?.takeIf { getRaw(userId) === originatingScope } ?: return false
         return withOwnedAccount(account, userId) {
             // A queued logout for an old scope must not mutate a released or reopened account.
-            if (super.get(userId) !== originatingScope) return@withOwnedAccount false
+            if (getRaw(userId) !== originatingScope) return@withOwnedAccount false
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
             acquire(account, userId)
             account.unavailable = true
+            invalidateSession(userId)
             revokeReadiness(account, userId)
             prepare()
-            super.get(userId)?.stopAccountWork()
+            getRaw(userId)?.stopAccountWork()
             clearLocalData()
             // Shares handed to the app live outside the account's directory; they leave with the account.
             deleteShareOutbox(rootPathsProvider.rootPath, userId)
@@ -282,7 +283,7 @@ internal actual open class UserSessionScopeProviderImpl(
                     // Access does not gate the WebSocket: stop sync and close it while sync can still finish
                     // its writes. Pause holds its transition, so reopening cannot resume sync before release.
                     quiesce = {
-                        if (access === account.access) syncSuspension = super.get(userId)?.suspendSync()
+                        if (access === account.access) syncSuspension = getRaw(userId)?.suspendSync()
                     },
                 ) {
                     // Drain before taking the lifecycle mutex: admitted operations may still need it
@@ -303,7 +304,7 @@ internal actual open class UserSessionScopeProviderImpl(
             if (access !== account.access || account.lease == null) return@withLock
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
             try {
-                super.get(userId)?.let { scope ->
+                getRaw(userId)?.let { scope ->
                     if (account.canRefreshReadiness) prepareOwned(account, userId, scope)
                     else revokeReadiness(account, userId)
                 }
@@ -324,7 +325,8 @@ internal actual open class UserSessionScopeProviderImpl(
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
             acquire(account, userId)
             account.unavailable = true
-            super.get(userId)?.let { scope ->
+            invalidateSession(userId)
+            getRaw(userId)?.let { scope ->
                 // Drain before entering crypto: a worker can hold a non-cancellable transaction.
                 scope.stopAccountWork()
                 // Ordinary release may refresh established readiness, never certify an interrupted login.
@@ -337,7 +339,7 @@ internal actual open class UserSessionScopeProviderImpl(
 
     private suspend fun closeAndRelease(account: OwnedAccount, userId: UserId) {
         // On any failure keep the scope and lease: successful retry cannot establish native cleanup.
-        super.get(userId)?.closeAccountResources()
+        getRaw(userId)?.closeAccountResources()
         super.delete(userId)
         account.lease?.release()
         account.lease = null
@@ -356,8 +358,9 @@ internal actual open class UserSessionScopeProviderImpl(
                 check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
                 acquire(account, userId)
                 account.unavailable = true
+                invalidateSession(userId)
                 revokeReadiness(account, userId)
-                withContext(NonCancellable) { super.get(userId)?.closeAccountResources() }
+                withContext(NonCancellable) { getRaw(userId)?.closeAccountResources() }
                 val result = sessionRepository.deleteSession(userId)
                 if (result is Either.Right) {
                     withContext(NonCancellable) {
@@ -393,10 +396,11 @@ internal actual open class UserSessionScopeProviderImpl(
                 check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
                 acquire(account, userId)
                 account.unavailable = true
+                invalidateSession(userId)
                 revokeReadiness(account, userId)
                 // Drain old token refreshes before replacing credentials, retaining ownership throughout.
                 withContext(NonCancellable) {
-                    super.get(userId)?.closeAccountResources()
+                    getRaw(userId)?.closeAccountResources()
                     super.delete(userId)
                     account.needsCryptoReopen = false
                     account.canRefreshReadiness = false
@@ -441,7 +445,7 @@ internal actual open class UserSessionScopeProviderImpl(
                         if (access === account.access) {
                             acquire(account, userId)
                             revokeReadiness(account, userId)
-                            super.get(userId)?.let { session ->
+                            getRaw(userId)?.let { session ->
                                 session.userStorage.database.refreshAfterExternalWrites()
                                 session.resumeSync()
                             }

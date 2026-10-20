@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.feature.asset.ObservePaginatedAssetImageMessages
+import com.wire.kalium.logic.feature.asset.GetPaginatedFlowOfAssetMessageByConversationIdUseCase
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
@@ -223,4 +225,20 @@ public class MessageScope internal constructor(private val api: LegacyMessageApi
 
     public val detectLinkPreviewTarget: DetectLinkPreviewTargetUseCase
         get() = api.messageDetectLinkPreviewTarget
+    internal val bindingGetPaginatedFlowOfMessagesByConversation: GetPaginatedFlowOfMessagesByConversationUseCase
+        get() = api.messageGetPaginatedFlowOfMessagesByConversation
+
+    internal val bindingGetPaginatedFlowOfMessagesBySearchQueryAndConversation:
+        GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase
+        get() = api.messageGetPaginatedFlowOfMessagesBySearchQueryAndConversation
+
+    internal val bindingGetPaginatedFlowOfAssetMessageByConversationId: GetPaginatedFlowOfAssetMessageByConversationIdUseCase
+        get() = api.messageGetPaginatedFlowOfAssetMessageByConversationId
+
+    internal val bindingObservePaginatedImageAssetMessageByConversationId: ObservePaginatedAssetImageMessages
+        get() = api.messageObservePaginatedImageAssetMessageByConversationId
+
+    internal val bindingFetchOlderMessagesByConversationId: FetchOlderNomadMessagesByConversationUseCase
+        get() = api.messageFetchOlderMessagesByConversationId
+
 }

@@ -519,9 +519,21 @@ internal interface LegacyConversationApi {
     @get:LegacyConversationBinding("isSelfUserViewerOnConversation")
     val conversationIsSelfUserViewerOnConversation: IsSelfUserViewerOnConversationUseCase
 
+    @get:LegacyConversationBinding("getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery")
+    val conversationGetPaginatedFlowOfConversationDetailsWithEventsBySearchQuery:
+        GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
+
+    @get:LegacyConversationBinding("getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery")
+    val conversationGetPaginatedFlowOfConversationDetailsWithMembersBySearchQuery:
+        GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase
+
+    @get:LegacyConversationBinding("observeConversationListItems")
+    val conversationObserveConversationListItems: ObserveConversationListItemsUseCase
+
 }
 
 /** Bindings share the user graph; feature packages do not create runtime graphs. */
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass") // Individual declarative bindings, not a feature constructor.
 internal interface LegacyConversationBindings : LegacyConversationApi {
     @Provides
     @SingleIn(UserLifetime::class)
@@ -860,7 +872,10 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
     fun provideConversationObserveEligibleMembersForConversationAdminRole(
         @LegacyConversationBinding("selfUserId") selfUserId: UserId,
         @LegacyConversationBinding("observeConversationMembers") observeConversationMembers: ObserveConversationMembersUseCase,
-    ): ObserveEligibleMembersForConversationAdminRoleUseCase = ObserveEligibleMembersForConversationAdminRoleUseCaseImpl(observeConversationMembers, selfUserId)
+    ): ObserveEligibleMembersForConversationAdminRoleUseCase = ObserveEligibleMembersForConversationAdminRoleUseCaseImpl(
+        observeConversationMembers,
+        selfUserId
+    )
 
     @Provides
     @LegacyConversationBinding("observeUserListById")
@@ -897,7 +912,8 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
     fun provideConversationNotifyConversationIsOpen(
         @LegacyConversationBinding("conversationRepository") conversationRepository: ConversationRepository,
         @LegacyConversationBinding("slowSyncRepository") slowSyncRepository: SlowSyncRepository,
-        @LegacyConversationBinding("deleteEphemeralMessageEndDate") deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
+        @LegacyConversationBinding("deleteEphemeralMessageEndDate") deleteEphemeralMessageEndDate:
+            DeleteEphemeralMessagesAfterEndDateUseCase,
         @LegacyConversationBinding("oneOnOneResolver") oneOnOneResolver: OneOnOneResolver,
         @LegacyConversationBinding("kaliumLogger") kaliumLogger: KaliumLogger,
         @LegacyConversationBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
@@ -938,7 +954,12 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
         @LegacyConversationBinding("selfTeamIdProvider") selfTeamIdProvider: SelfTeamIdProvider,
         @LegacyConversationBinding("deleteConversationUseCase") deleteConversationUseCase: DeleteConversationUseCase,
         @LegacyConversationBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
-    ): DeleteTeamConversationUseCase = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, deleteConversationUseCase, transactionProvider)
+    ): DeleteTeamConversationUseCase = DeleteTeamConversationUseCaseImpl(
+        selfTeamIdProvider,
+        teamRepository,
+        deleteConversationUseCase,
+        transactionProvider
+    )
 
     @Provides
     @LegacyConversationBinding("createGroupConversation")
@@ -948,7 +969,8 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
         @LegacyConversationBinding("syncManager") syncManager: SyncManager,
         @LegacyConversationBinding("currentClientIdProvider") currentClientIdProvider: CurrentClientIdProvider,
         @LegacyConversationBinding("refreshUsersWithoutMetadata") refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
-        @LegacyConversationBinding("newGroupConversationSystemMessagesCreator") newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+        @LegacyConversationBinding("newGroupConversationSystemMessagesCreator") newGroupConversationSystemMessagesCreator:
+            NewGroupConversationSystemMessagesCreator,
         @LegacyConversationBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
         @LegacyConversationBinding("joinExistingMLSConversation") joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
         @LegacyConversationBinding("pendingActionsRepository") pendingActionsRepository: PendingActionsRepository,
@@ -1003,7 +1025,8 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
         @LegacyConversationBinding("userRepository") userRepository: UserRepository,
         @LegacyConversationBinding("oneOnOneResolver") oneOnOneResolver: OneOnOneResolver,
         @LegacyConversationBinding("transactionProvider") transactionProvider: CryptoTransactionProvider,
-        @LegacyConversationBinding("checkOneToOneConversationIsReadyUseCase") checkOneToOneConversationIsReadyUseCase: CheckOneToOneConversationIsReadyUseCase,
+        @LegacyConversationBinding("checkOneToOneConversationIsReadyUseCase") checkOneToOneConversationIsReadyUseCase:
+            CheckOneToOneConversationIsReadyUseCase,
     ): GetOrCreateOneToOneConversationUseCase = GetOrCreateOneToOneConversationUseCaseImpl(
             conversationRepository,
             userRepository,
@@ -1045,7 +1068,8 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
     @Provides
     @LegacyConversationBinding("observeConnectionList")
     fun provideConversationObserveConnectionList(
-        @LegacyConversationBinding("observePendingConnectionRequests") observePendingConnectionRequests: ObservePendingConnectionRequestsUseCase,
+        @LegacyConversationBinding("observePendingConnectionRequests") observePendingConnectionRequests:
+            ObservePendingConnectionRequestsUseCase,
     ): ObserveConnectionListUseCase = observePendingConnectionRequests
 
     @Provides
@@ -1110,7 +1134,11 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
         @LegacyConversationBinding("conversationRepository") conversationRepository: ConversationRepository,
         @LegacyConversationBinding("conversationGroupRepository") conversationGroupRepository: ConversationGroupRepository,
         @LegacyConversationBinding("syncManager") syncManager: SyncManager,
-    ): UpdateConversationAccessRoleUseCase = UpdateConversationAccessRoleUseCaseImpl(conversationRepository, conversationGroupRepository, syncManager)
+    ): UpdateConversationAccessRoleUseCase = UpdateConversationAccessRoleUseCaseImpl(
+        conversationRepository,
+        conversationGroupRepository,
+        syncManager
+    )
 
     @Provides
     @LegacyConversationBinding("changeAccessForAppsInConversation")
@@ -1118,7 +1146,11 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
         @LegacyConversationBinding("selfUserId") selfUserId: UserId,
         @LegacyConversationBinding("systemMessageInserter") systemMessageInserter: SystemMessageInserter,
         @LegacyConversationBinding("updateConversationAccess") updateConversationAccess: UpdateConversationAccessRoleUseCase,
-    ): ChangeAccessForAppsInConversationUseCase = ChangeAccessForAppsInConversationUseCase(updateConversationAccess, systemMessageInserter, selfUserId)
+    ): ChangeAccessForAppsInConversationUseCase = ChangeAccessForAppsInConversationUseCase(
+        updateConversationAccess,
+        systemMessageInserter,
+        selfUserId
+    )
 
     @Provides
     @LegacyConversationBinding("updateConversationMemberRole")
@@ -1144,14 +1176,18 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
     fun provideConversationPromoteAdminAndLeaveConversation(
         @LegacyConversationBinding("updateConversationMemberRole") updateConversationMemberRole: UpdateConversationMemberRoleUseCase,
         @LegacyConversationBinding("leaveConversation") leaveConversation: LeaveConversationUseCase,
-    ): PromoteAdminAndLeaveConversationUseCase = PromoteAdminAndLeaveConversationUseCaseImpl(updateConversationMemberRole, leaveConversation)
+    ): PromoteAdminAndLeaveConversationUseCase = PromoteAdminAndLeaveConversationUseCaseImpl(
+        updateConversationMemberRole,
+        leaveConversation
+    )
 
     @Provides
     @LegacyConversationBinding("checkConversationLeaveConditions")
     fun provideConversationCheckConversationLeaveConditions(
         @LegacyConversationBinding("conversationRepository") conversationRepository: ConversationRepository,
         @LegacyConversationBinding("selfUserId") selfUserId: UserId,
-        @LegacyConversationBinding("observeEligibleMembersForConversationAdminRole") observeEligibleMembersForConversationAdminRole: ObserveEligibleMembersForConversationAdminRoleUseCase,
+        @LegacyConversationBinding("observeEligibleMembersForConversationAdminRole") observeEligibleMembersForConversationAdminRole:
+            ObserveEligibleMembersForConversationAdminRoleUseCase,
     ): CheckConversationLeaveConditionsUseCase = CheckConversationLeaveConditionsUseCaseImpl(
             conversationRepository,
             observeEligibleMembersForConversationAdminRole,
@@ -1340,7 +1376,10 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
     fun provideConversationTypingIndicatorSenderHandler(
         @LegacyConversationBinding("conversationRepository") conversationRepository: ConversationRepository,
         @LegacyConversationBinding("scope") scope: CoroutineScope,
-    ): TypingIndicatorSenderHandler = TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
+    ): TypingIndicatorSenderHandler = TypingIndicatorSenderHandlerImpl(
+        conversationRepository = conversationRepository,
+        userSessionCoroutineScope = scope
+    )
 
     @Provides
     @SingleIn(UserLifetime::class)
@@ -1366,20 +1405,23 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
     @Provides
     @LegacyConversationBinding("sendTypingEvent")
     fun provideConversationSendTypingEvent(
-        @LegacyConversationBinding("typingIndicatorOutgoingRepository") typingIndicatorOutgoingRepository: TypingIndicatorOutgoingRepositoryImpl,
+        @LegacyConversationBinding("typingIndicatorOutgoingRepository") typingIndicatorOutgoingRepository:
+            TypingIndicatorOutgoingRepositoryImpl,
     ): SendTypingEventUseCase = SendTypingEventUseCaseImpl(typingIndicatorOutgoingRepository)
 
     @Provides
     @LegacyConversationBinding("observeUsersTyping")
     fun provideConversationObserveUsersTyping(
         @LegacyConversationBinding("userRepository") userRepository: UserRepository,
-        @LegacyConversationBinding("typingIndicatorIncomingRepository") typingIndicatorIncomingRepository: TypingIndicatorIncomingRepositoryImpl,
+        @LegacyConversationBinding("typingIndicatorIncomingRepository") typingIndicatorIncomingRepository:
+            TypingIndicatorIncomingRepositoryImpl,
     ): ObserveUsersTypingUseCase = ObserveUsersTypingUseCaseImpl(typingIndicatorIncomingRepository, userRepository)
 
     @Provides
     @LegacyConversationBinding("clearUsersTypingEvents")
     fun provideConversationClearUsersTypingEvents(
-        @LegacyConversationBinding("typingIndicatorIncomingRepository") typingIndicatorIncomingRepository: TypingIndicatorIncomingRepositoryImpl,
+        @LegacyConversationBinding("typingIndicatorIncomingRepository") typingIndicatorIncomingRepository:
+            TypingIndicatorIncomingRepositoryImpl,
     ): ClearUsersTypingEventsUseCase = ClearUsersTypingEventsUseCaseImpl(typingIndicatorIncomingRepository)
 
     @Provides
@@ -1476,5 +1518,39 @@ internal interface LegacyConversationBindings : LegacyConversationApi {
             conversationRepository = conversationRepository,
             selfTeamIdProvider = selfTeamIdProvider,
         )
+
+    @Provides
+    @LegacyConversationBinding("getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery")
+    fun provideConversationGetPaginatedFlowOfConversationDetailsWithEventsBySearchQuery(
+        @LegacyConversationBinding("dispatcher") dispatcher: KaliumDispatcher,
+        @LegacyConversationBinding("conversationRepository") conversationRepository: ConversationRepository,
+        @LegacyConversationBinding("callRepository") callRepository: CallRepository,
+    ): GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase =
+        GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase(
+        dispatcher,
+        conversationRepository,
+        callRepository
+    )
+
+    @Provides
+    @LegacyConversationBinding("getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery")
+    fun provideConversationGetPaginatedFlowOfConversationDetailsWithMembersBySearchQuery(
+        @LegacyConversationBinding("dispatcher") dispatcher: KaliumDispatcher,
+        @LegacyConversationBinding("conversationRepository") conversationRepository: ConversationRepository,
+        @LegacyConversationBinding("selfTeamIdProvider") selfTeamIdProvider: SelfTeamIdProvider,
+        @LegacyConversationBinding("selfUserId") selfUserId: UserId,
+    ): GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase =
+        GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase(
+        dispatcher,
+        conversationRepository,
+        selfTeamIdProvider,
+        selfUserId
+    )
+
+    @Provides
+    @LegacyConversationBinding("observeConversationListItems")
+    fun provideConversationObserveConversationListItems(
+        @LegacyConversationBinding("conversationRepository") conversationRepository: ConversationRepository,
+    ): ObserveConversationListItemsUseCase = ObserveConversationListItemsUseCaseImpl(conversationRepository)
 
 }

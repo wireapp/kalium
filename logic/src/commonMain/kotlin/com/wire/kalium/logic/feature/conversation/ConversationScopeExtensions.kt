@@ -19,21 +19,12 @@ package com.wire.kalium.logic.feature.conversation
 
 public val ConversationScope.getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery:
         GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
-    get() = GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase(
-        dispatcher,
-        conversationRepository,
-        callRepository
-    )
+    get() = bindingGetPaginatedFlowOfConversationDetailsWithEventsBySearchQuery
 
 public val ConversationScope.getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery:
         GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase
-    get() = GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase(
-        dispatcher,
-        conversationRepository,
-        selfTeamIdProvider,
-        selfUserId
-    )
+    get() = bindingGetPaginatedFlowOfConversationDetailsWithMembersBySearchQuery
 
 /** Keyset-paginated conversation rows, ordered by stored activity time and conversation ID. */
 public val ConversationScope.observeConversationListItems: ObserveConversationListItemsUseCase
-    get() = ObserveConversationListItemsUseCaseImpl(conversationRepository)
+    get() = bindingObserveConversationListItems

@@ -22,17 +22,17 @@ import com.wire.kalium.logic.feature.asset.GetPaginatedFlowOfAssetMessageByConve
 import com.wire.kalium.logic.feature.asset.ObservePaginatedAssetImageMessages
 
 public val MessageScope.getPaginatedFlowOfMessagesByConversation: GetPaginatedFlowOfMessagesByConversationUseCase
-    get() = GetPaginatedFlowOfMessagesByConversationUseCase(dispatcher, messageRepository)
+    get() = bindingGetPaginatedFlowOfMessagesByConversation
 
 public val MessageScope.getPaginatedFlowOfMessagesBySearchQueryAndConversation:
         GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase
-    get() = GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase(dispatcher, messageRepository)
+    get() = bindingGetPaginatedFlowOfMessagesBySearchQueryAndConversation
 
 public val MessageScope.getPaginatedFlowOfAssetMessageByConversationId: GetPaginatedFlowOfAssetMessageByConversationIdUseCase
-    get() = GetPaginatedFlowOfAssetMessageByConversationIdUseCase(dispatcher, messageRepository)
+    get() = bindingGetPaginatedFlowOfAssetMessageByConversationId
 
 public val MessageScope.observePaginatedImageAssetMessageByConversationId: ObservePaginatedAssetImageMessages
-    get() = ObservePaginatedAssetImageMessages(dispatcher, messageRepository)
+    get() = bindingObservePaginatedImageAssetMessageByConversationId
 
 public val MessageScope.fetchOlderMessagesByConversationId: FetchOlderNomadMessagesByConversationUseCase
-    get() = FetchOlderNomadMessagesByConversationUseCaseImpl(dispatcher, messageRepository)
+    get() = bindingFetchOlderMessagesByConversationId
