@@ -66,6 +66,8 @@ fun MessageUnpackResult.ApplicationMessage.toRegularMessage(
         visibility = visibility,
         expectsReadConfirmation = content.expectsReadConfirmation,
         isSelfMessage = senderUserId == selfUserId,
+        targeted = targeted,
+        transient = transient,
         expirationData = content.expiresAfterMillis?.let {
             Message.ExpirationData(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
@@ -87,6 +89,8 @@ fun MessageUnpackResult.ApplicationMessage.toSignalingMessage(selfUserId: UserId
     status = Message.Status.Sent,
     isSelfMessage = senderUserId == selfUserId,
     expirationData = content.expiresAfterMillis?.let { Message.ExpirationData(it.toDuration(DurationUnit.MILLISECONDS)) },
+    targeted = targeted,
+    transient = transient,
 )
 
 /** Missing or mismatching quotes are unverified; a failed storage read remains a failure. */

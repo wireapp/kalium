@@ -22,7 +22,10 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
+import com.wire.kalium.logic.data.message.getType
+import com.wire.kalium.logic.sync.receiver.conversation.message.isAcceptedDelivery
 import com.wire.kalium.logic.sync.receiver.conversation.message.unpack
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.util.DateTimeUtil
@@ -139,7 +142,7 @@ internal class ReceivedMLSHandler(
                 }
                 is DecryptedMessageBundle.Text -> {
                     val message = bundle.unpack(event.conversationId, event.messageInstant, mapper)
-                    if (message is MessageUnpackResult.ApplicationMessage) {
+                    if (message is MessageUnpackResult.ApplicationMessage && acceptDelivery(message)) {
                         effects += ReceivedPayload.Application(message, isMLS = true)
                     }
                 }
@@ -152,6 +155,17 @@ internal class ReceivedMLSHandler(
         touchedGroups += protocol.groupId
         return effects
     }
+
+    /** Applies [isAcceptedDelivery], logging content rejected for having been sent as targeted and/or transient. */
+    private fun acceptDelivery(message: MessageUnpackResult.ApplicationMessage): Boolean =
+        message.isAcceptedDelivery().also { accepted ->
+            if (!accepted) {
+                kaliumLogger.w(
+                    "Rejected ${message.content.messageContent.getType()} message received as " +
+                        "targeted = ${message.targeted}, transient = ${message.transient}"
+                )
+            }
+        }
 
     suspend fun welcome(context: MlsCoreCryptoContext, content: EventContentDTO.Conversation.MLSWelcomeDTO, payloadId: String): Boolean {
         val id = content.qualifiedConversation.toModel()
