@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.KaliumUserApi
 import com.wire.kalium.logic.di.UserLifetime
 import com.wire.kalium.logic.feature.TimestampKeyRepositoryImpl
 import com.wire.kalium.logic.feature.asset.DeleteAssetUseCase
@@ -164,7 +165,7 @@ internal interface LegacyUserDependencies {
 }
 
 /** Individual accessors; qualified captures preserve the cached facade's original identities. */
-internal interface LegacyUserApi {
+internal interface LegacyUserApi : KaliumUserApi {
     @get:LegacyUserBinding("userRepository")
     val userUserRepository: UserRepository
 
@@ -226,7 +227,7 @@ internal interface LegacyUserApi {
     val userClientRepository: ClientRepository
 
     @get:LegacyUserBinding("refreshUsersWithoutMetadata")
-    val userRefreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
+    override val userRefreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
 
     @get:LegacyUserBinding("isE2EIEnabledUseCase")
     val userIsE2EIEnabledUseCase: IsE2EIEnabledUseCase
@@ -283,28 +284,28 @@ internal interface LegacyUserApi {
     val userValidateUserHandleUseCase: ValidateUserHandleUseCase
 
     @get:LegacyUserBinding("getSelfUser")
-    val userGetSelfUser: GetSelfUserUseCase
+    override val userGetSelfUser: GetSelfUserUseCase
 
     @get:LegacyUserBinding("getSelfTeamId")
-    val userGetSelfTeamId: GetSelfTeamIdUseCase
+    override val userGetSelfTeamId: GetSelfTeamIdUseCase
 
     @get:LegacyUserBinding("observeSelfUser")
-    val userObserveSelfUser: ObserveSelfUserUseCase
+    override val userObserveSelfUser: ObserveSelfUserUseCase
 
     @get:LegacyUserBinding("observeSelfUserWithTeam")
-    val userObserveSelfUserWithTeam: ObserveSelfUserWithTeamUseCase
+    override val userObserveSelfUserWithTeam: ObserveSelfUserWithTeamUseCase
 
     @get:LegacyUserBinding("observeUserInfo")
-    val userObserveUserInfo: ObserveUserInfoUseCase
+    override val userObserveUserInfo: ObserveUserInfoUseCase
 
     @get:LegacyUserBinding("uploadUserAvatar")
-    val userUploadUserAvatar: UploadUserAvatarUseCase
+    override val userUploadUserAvatar: UploadUserAvatarUseCase
 
     @get:LegacyUserBinding("persistSelfUserEmail")
     val userPersistSelfUserEmail: PersistSelfUserEmailUseCase
 
     @get:LegacyUserBinding("getPublicAsset")
-    val userGetPublicAsset: GetAvatarAssetUseCase
+    override val userGetPublicAsset: GetAvatarAssetUseCase
 
     @get:LegacyUserBinding("enrollE2EI")
     val userEnrollE2EI: EnrollE2EIUseCase
@@ -313,46 +314,46 @@ internal interface LegacyUserApi {
     val userGetTeamUrl: GetTeamUrlUseCase
 
     @get:LegacyUserBinding("finalizeMLSClientAfterE2EIEnrollment")
-    val userFinalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollmentUseCase
+    override val userFinalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollmentUseCase
 
     @get:LegacyUserBinding("getE2EICertificate")
-    val userGetE2EICertificate: GetMLSClientIdentityUseCase
+    override val userGetE2EICertificate: GetMLSClientIdentityUseCase
 
     @get:LegacyUserBinding("getUserE2eiCertificateStatus")
-    val userGetUserE2eiCertificateStatus: IsOtherUserE2EIVerifiedUseCase
+    override val userGetUserE2eiCertificateStatus: IsOtherUserE2EIVerifiedUseCase
 
     @get:LegacyUserBinding("getUserMlsClientIdentities")
-    val userGetUserMlsClientIdentities: GetUserMlsClientIdentitiesUseCase
+    override val userGetUserMlsClientIdentities: GetUserMlsClientIdentitiesUseCase
 
     @get:LegacyUserBinding("getMembersE2EICertificateStatuses")
-    val userGetMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
+    override val userGetMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
 
     @get:LegacyUserBinding("deleteAsset")
-    val userDeleteAsset: DeleteAssetUseCase
+    override val userDeleteAsset: DeleteAssetUseCase
 
     @get:LegacyUserBinding("setUserHandle")
-    val userSetUserHandle: SetUserHandleUseCase
+    override val userSetUserHandle: SetUserHandleUseCase
 
     @get:LegacyUserBinding("getAllKnownUsers")
-    val userGetAllKnownUsers: GetAllContactsUseCase
+    override val userGetAllKnownUsers: GetAllContactsUseCase
 
     @get:LegacyUserBinding("getKnownUser")
-    val userGetKnownUser: GetKnownUserUseCase
+    override val userGetKnownUser: GetKnownUserUseCase
 
     @get:LegacyUserBinding("getUserInfo")
-    val userGetUserInfo: GetUserInfoUseCase
+    override val userGetUserInfo: GetUserInfoUseCase
 
     @get:LegacyUserBinding("updateSelfAvailabilityStatus")
-    val userUpdateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
+    override val userUpdateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
 
     @get:LegacyUserBinding("getAllContactsNotInConversation")
-    val userGetAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
+    override val userGetAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
 
     @get:LegacyUserBinding("isPasswordRequired")
-    val userIsPasswordRequired: IsPasswordRequiredUseCase
+    override val userIsPasswordRequired: IsPasswordRequiredUseCase
 
     @get:LegacyUserBinding("isReadOnlyAccount")
-    val userIsReadOnlyAccount: IsReadOnlyAccountUseCase
+    override val userIsReadOnlyAccount: IsReadOnlyAccountUseCase
 
     @get:LegacyUserBinding("getMessageContentPreference")
     val userGetMessageContentPreference: GetMessageContentPreferenceUseCase
@@ -361,25 +362,25 @@ internal interface LegacyUserApi {
     val userSetMessageContentPreference: SetMessageContentPreferenceUseCase
 
     @get:LegacyUserBinding("observeReadReceiptsEnabled")
-    val userObserveReadReceiptsEnabled: ObserveReadReceiptsEnabledUseCase
+    override val userObserveReadReceiptsEnabled: ObserveReadReceiptsEnabledUseCase
 
     @get:LegacyUserBinding("observeTypingIndicatorEnabled")
-    val userObserveTypingIndicatorEnabled: ObserveTypingIndicatorEnabledUseCase
+    override val userObserveTypingIndicatorEnabled: ObserveTypingIndicatorEnabledUseCase
 
     @get:LegacyUserBinding("observeLinkPreviewsEnabled")
-    val userObserveLinkPreviewsEnabled: ObserveLinkPreviewsEnabledUseCase
+    override val userObserveLinkPreviewsEnabled: ObserveLinkPreviewsEnabledUseCase
 
     @get:LegacyUserBinding("persistReadReceiptsStatusConfig")
-    val userPersistReadReceiptsStatusConfig: PersistReadReceiptsStatusConfigUseCase
+    override val userPersistReadReceiptsStatusConfig: PersistReadReceiptsStatusConfigUseCase
 
     @get:LegacyUserBinding("persistTypingIndicatorStatusConfig")
-    val userPersistTypingIndicatorStatusConfig: PersistTypingIndicatorStatusConfigUseCase
+    override val userPersistTypingIndicatorStatusConfig: PersistTypingIndicatorStatusConfigUseCase
 
     @get:LegacyUserBinding("persistLinkPreviewsStatusConfig")
-    val userPersistLinkPreviewsStatusConfig: PersistLinkPreviewsStatusConfigUseCase
+    override val userPersistLinkPreviewsStatusConfig: PersistLinkPreviewsStatusConfigUseCase
 
     @get:LegacyUserBinding("serverLinks")
-    val userServerLinks: SelfServerConfigUseCase
+    override val userServerLinks: SelfServerConfigUseCase
 
     @get:LegacyUserBinding("timestampKeyRepository")
     val userTimestampKeyRepository: TimestampKeyRepositoryImpl
@@ -388,19 +389,19 @@ internal interface LegacyUserApi {
     val userPersistMigratedUsers: PersistMigratedUsersUseCase
 
     @get:LegacyUserBinding("updateDisplayName")
-    val userUpdateDisplayName: UpdateDisplayNameUseCase
+    override val userUpdateDisplayName: UpdateDisplayNameUseCase
 
     @get:LegacyUserBinding("updateAccentColor")
-    val userUpdateAccentColor: UpdateAccentColorUseCase
+    override val userUpdateAccentColor: UpdateAccentColorUseCase
 
     @get:LegacyUserBinding("updateEmail")
-    val userUpdateEmail: UpdateEmailUseCase
+    override val userUpdateEmail: UpdateEmailUseCase
 
     @get:LegacyUserBinding("getAssetSizeLimit")
-    val userGetAssetSizeLimit: GetAssetSizeLimitUseCase
+    override val userGetAssetSizeLimit: GetAssetSizeLimitUseCase
 
     @get:LegacyUserBinding("deleteAccount")
-    val userDeleteAccount: DeleteAccountUseCase
+    override val userDeleteAccount: DeleteAccountUseCase
 
     @get:LegacyUserBinding("updateSupportedProtocols")
     val userUpdateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase
@@ -412,22 +413,22 @@ internal interface LegacyUserApi {
     val userSyncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase
 
     @get:LegacyUserBinding("isPersonalToTeamAccountSupportedByBackend")
-    val userIsPersonalToTeamAccountSupportedByBackend: CanMigrateFromPersonalToTeamUseCase
+    override val userIsPersonalToTeamAccountSupportedByBackend: CanMigrateFromPersonalToTeamUseCase
 
     @get:LegacyUserBinding("foregroundActions")
-    val userForegroundActions: ForegroundActionsUseCase
+    override val userForegroundActions: ForegroundActionsUseCase
 
     @get:LegacyUserBinding("isWireCellsEnabled")
-    val userIsWireCellsEnabled: IsWireCellsEnabledUseCase
+    override val userIsWireCellsEnabled: IsWireCellsEnabledUseCase
 
     @get:LegacyUserBinding("observeIsWireCellsEnabled")
-    val userObserveIsWireCellsEnabled: ObserveIsWireCellsEnabledUseCase
+    override val userObserveIsWireCellsEnabled: ObserveIsWireCellsEnabledUseCase
 
     @get:LegacyUserBinding("isWireCellsEnabledForConversation")
-    val userIsWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase
+    override val userIsWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase
 
     @get:LegacyUserBinding("isProfileQRCodeEnabled")
-    val userIsProfileQRCodeEnabled: IsProfileQRCodeEnabledUseCase
+    override val userIsProfileQRCodeEnabled: IsProfileQRCodeEnabledUseCase
 
     @get:LegacyUserBinding("assetAuditLog")
     val userAssetAuditLog: AssetAuditFeatureHandler

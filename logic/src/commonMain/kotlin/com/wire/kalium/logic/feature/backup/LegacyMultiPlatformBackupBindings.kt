@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.KaliumMultiPlatformBackupApi
 import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import dev.zacsweers.metro.GraphExtension
 import dev.zacsweers.metro.Provides
@@ -52,7 +53,7 @@ internal interface LegacyMultiPlatformBackupDependencies {
     val waitUntilSyncLive: suspend () -> Unit
 }
 
-internal interface LegacyMultiPlatformBackupApi {
+internal interface LegacyMultiPlatformBackupApi : KaliumMultiPlatformBackupApi {
     @get:LegacyMultiPlatformBackupBinding("selfUserId")
     val mpBackupSelfUserId: UserId
 
@@ -75,10 +76,10 @@ internal interface LegacyMultiPlatformBackupApi {
     val mpBackupWaitUntilSyncLive: CapturedWaitUntilSyncLive
 
     @get:LegacyMultiPlatformBackupBinding("create")
-    val mpBackupCreate: CreateMPBackupUseCase
+    override val mpBackupCreate: CreateMPBackupUseCase
 
     @get:LegacyMultiPlatformBackupBinding("restore")
-    val mpBackupRestore: RestoreMPBackupUseCase
+    override val mpBackupRestore: RestoreMPBackupUseCase
 
     val mpRestoreFactory: LegacyMPRestoreFactory
 }

@@ -21,8 +21,6 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logic.feature.asset.ObservePaginatedAssetImageMessages
-import com.wire.kalium.logic.feature.asset.GetPaginatedFlowOfAssetMessageByConversationIdUseCase
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
@@ -64,6 +62,7 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.KaliumMessageApi
 import com.wire.kalium.logic.di.UserLifetime
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
@@ -72,10 +71,12 @@ import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationU
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
+import com.wire.kalium.logic.feature.asset.GetPaginatedFlowOfAssetMessageByConversationIdUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ObservePaginatedAssetImageMessages
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
@@ -212,7 +213,7 @@ internal interface LegacyMessageDependencies {
 internal class LegacyMessageCapture<out T>(val value: T)
 
 /** Individual entry points shared by the compatibility facade and user runtime. */
-internal interface LegacyMessageApi {
+internal interface LegacyMessageApi : KaliumMessageApi {
     @get:LegacyMessageBinding("messageRepository")
     val messageMessageRepository: MessageRepository
 
@@ -259,7 +260,7 @@ internal interface LegacyMessageApi {
     val messageConfirmationDeliveryHandler: ConfirmationDeliveryHandler
 
     @get:LegacyMessageBinding("enqueueMessageSelfDeletion")
-    val messageEnqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase
+    override val messageEnqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase
 
     @get:LegacyMessageBinding("deleteEphemeralMessageEndDate")
     val messageDeleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase
@@ -271,16 +272,16 @@ internal interface LegacyMessageApi {
     val messagePersistMessage: PersistMessageUseCase
 
     @get:LegacyMessageBinding("sendTextMessage")
-    val messageSendTextMessage: SendTextMessageUseCase
+    override val messageSendTextMessage: SendTextMessageUseCase
 
     @get:LegacyMessageBinding("sendMultipartMessage")
-    val messageSendMultipartMessage: SendMultipartMessageUseCase
+    override val messageSendMultipartMessage: SendMultipartMessageUseCase
 
     @get:LegacyMessageBinding("sendEditTextMessage")
-    val messageSendEditTextMessage: SendEditTextMessageUseCase
+    override val messageSendEditTextMessage: SendEditTextMessageUseCase
 
     @get:LegacyMessageBinding("sendEditMultipartMessage")
-    val messageSendEditMultipartMessage: SendEditMultipartMessageUseCase
+    override val messageSendEditMultipartMessage: SendEditMultipartMessageUseCase
 
     @get:LegacyMessageBinding("getAssetMessageTransferStatus")
     val messageGetAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
@@ -289,7 +290,7 @@ internal interface LegacyMessageApi {
     val messageSendPendingAssetMessage: SendPendingAssetMessageUseCase
 
     @get:LegacyMessageBinding("retryFailedMessage")
-    val messageRetryFailedMessage: RetryFailedMessageUseCase
+    override val messageRetryFailedMessage: RetryFailedMessageUseCase
 
     @get:LegacyMessageBinding("getMessageById")
     val messageGetMessageById: GetMessageByIdUseCase
@@ -304,46 +305,46 @@ internal interface LegacyMessageApi {
     val messageUploadAssetUseCase: UploadAssetUseCase
 
     @get:LegacyMessageBinding("sendAssetMessage")
-    val messageSendAssetMessage: ScheduleNewAssetMessageUseCase
+    override val messageSendAssetMessage: ScheduleNewAssetMessageUseCase
 
     @get:LegacyMessageBinding("scheduleAssetMessage")
     val messageScheduleAssetMessage: ScheduleNewAssetMessageUseCaseImpl
 
     @get:LegacyMessageBinding("getAssetMessage")
-    val messageGetAssetMessage: GetMessageAssetUseCase
+    override val messageGetAssetMessage: GetMessageAssetUseCase
 
     @get:LegacyMessageBinding("getImageAssetMessagesByConversation")
-    val messageGetImageAssetMessagesByConversation: GetImageAssetMessagesForConversationUseCase
+    override val messageGetImageAssetMessagesByConversation: GetImageAssetMessagesForConversationUseCase
 
     @get:LegacyMessageBinding("getRecentMessages")
     val messageGetRecentMessages: GetRecentMessagesUseCase
 
     @get:LegacyMessageBinding("deleteMessage")
-    val messageDeleteMessage: DeleteMessageUseCase
+    override val messageDeleteMessage: DeleteMessageUseCase
 
     @get:LegacyMessageBinding("toggleReaction")
-    val messageToggleReaction: ToggleReactionUseCase
+    override val messageToggleReaction: ToggleReactionUseCase
 
     @get:LegacyMessageBinding("observeMessageReactions")
-    val messageObserveMessageReactions: ObserveMessageReactionsUseCase
+    override val messageObserveMessageReactions: ObserveMessageReactionsUseCase
 
     @get:LegacyMessageBinding("observeMessageReceipts")
-    val messageObserveMessageReceipts: ObserveMessageReceiptsUseCase
+    override val messageObserveMessageReceipts: ObserveMessageReceiptsUseCase
 
     @get:LegacyMessageBinding("sendKnock")
-    val messageSendKnock: SendKnockUseCase
+    override val messageSendKnock: SendKnockUseCase
 
     @get:LegacyMessageBinding("sendLocation")
-    val messageSendLocation: SendLocationUseCase
+    override val messageSendLocation: SendLocationUseCase
 
     @get:LegacyMessageBinding("markMessagesAsNotified")
-    val messageMarkMessagesAsNotified: MarkMessagesAsNotifiedUseCase
+    override val messageMarkMessagesAsNotified: MarkMessagesAsNotifiedUseCase
 
     @get:LegacyMessageBinding("updateAssetMessageTransferStatus")
-    val messageUpdateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase
+    override val messageUpdateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase
 
     @get:LegacyMessageBinding("getNotifications")
-    val messageGetNotifications: GetNotificationsUseCase
+    override val messageGetNotifications: GetNotificationsUseCase
 
     @get:LegacyMessageBinding("sendConfirmation")
     val messageSendConfirmation: SendConfirmationUseCase
@@ -352,13 +353,13 @@ internal interface LegacyMessageApi {
     val messageSessionResetSender: SessionResetSender
 
     @get:LegacyMessageBinding("resetSession")
-    val messageResetSession: ResetSessionUseCase
+    override val messageResetSession: ResetSessionUseCase
 
     @get:LegacyMessageBinding("sendButtonActionConfirmationMessage")
     val messageSendButtonActionConfirmationMessage: SendButtonActionConfirmationMessageUseCase
 
     @get:LegacyMessageBinding("sendButtonActionMessage")
-    val messageSendButtonActionMessage: SendButtonActionMessageUseCase
+    override val messageSendButtonActionMessage: SendButtonActionMessageUseCase
 
     @OptIn(InternalKaliumApi::class)
     @get:LegacyMessageBinding("sendButtonMessage")
@@ -377,7 +378,7 @@ internal interface LegacyMessageApi {
     val messageDeleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 
     @get:LegacyMessageBinding("getSearchedConversationMessagePosition")
-    val messageGetSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
+    override val messageGetSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
 
     @get:LegacyMessageBinding("searchMessagesInConversation")
     val messageSearchMessagesInConversation: SearchMessagesInConversationUseCase
@@ -386,22 +387,22 @@ internal interface LegacyMessageApi {
     val messageSearchMessagesGlobally: SearchMessagesGloballyUseCase
 
     @get:LegacyMessageBinding("observeAssetStatuses")
-    val messageObserveAssetStatuses: ObserveAssetStatusesUseCase
+    override val messageObserveAssetStatuses: ObserveAssetStatusesUseCase
 
     @get:LegacyMessageBinding("saveMessageDraftUseCase")
-    val messageSaveMessageDraftUseCase: SaveMessageDraftUseCase
+    override val messageSaveMessageDraftUseCase: SaveMessageDraftUseCase
 
     @get:LegacyMessageBinding("getMessageDraftUseCase")
-    val messageGetMessageDraftUseCase: GetMessageDraftUseCase
+    override val messageGetMessageDraftUseCase: GetMessageDraftUseCase
 
     @get:LegacyMessageBinding("removeMessageDraftUseCase")
-    val messageRemoveMessageDraftUseCase: RemoveMessageDraftUseCase
+    override val messageRemoveMessageDraftUseCase: RemoveMessageDraftUseCase
 
     @get:LegacyMessageBinding("sendInCallReactionUseCase")
-    val messageSendInCallReactionUseCase: SendInCallReactionUseCase
+    override val messageSendInCallReactionUseCase: SendInCallReactionUseCase
 
     @get:LegacyMessageBinding("getSenderNameByMessageId")
-    val messageGetSenderNameByMessageId: GetSenderNameByMessageIdUseCase
+    override val messageGetSenderNameByMessageId: GetSenderNameByMessageIdUseCase
 
     @get:LegacyMessageBinding("getNextAudioMessageInConversation")
     val messageGetNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
@@ -410,31 +411,32 @@ internal interface LegacyMessageApi {
     val messageObserveAssetUploadState: ObserveAssetUploadStateUseCase
 
     @get:LegacyMessageBinding("updateAudioMessageNormalizedLoudnessUseCase")
-    val messageUpdateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
+    override val messageUpdateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
 
     @get:LegacyMessageBinding("linkPreviewRepository")
     val messageLinkPreviewRepository: LinkPreviewRepository
 
     @get:LegacyMessageBinding("generateLinkPreview")
-    val messageGenerateLinkPreview: GenerateLinkPreviewUseCase
+    override val messageGenerateLinkPreview: GenerateLinkPreviewUseCase
 
     @get:LegacyMessageBinding("detectLinkPreviewTarget")
-    val messageDetectLinkPreviewTarget: DetectLinkPreviewTargetUseCase
+    override val messageDetectLinkPreviewTarget: DetectLinkPreviewTargetUseCase
 
     @get:LegacyMessageBinding("getPaginatedFlowOfMessagesByConversation")
-    val messageGetPaginatedFlowOfMessagesByConversation: GetPaginatedFlowOfMessagesByConversationUseCase
+    override val messageGetPaginatedFlowOfMessagesByConversation: GetPaginatedFlowOfMessagesByConversationUseCase
 
     @get:LegacyMessageBinding("getPaginatedFlowOfMessagesBySearchQueryAndConversation")
-    val messageGetPaginatedFlowOfMessagesBySearchQueryAndConversation: GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase
+    override val messageGetPaginatedFlowOfMessagesBySearchQueryAndConversation:
+        GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase
 
     @get:LegacyMessageBinding("getPaginatedFlowOfAssetMessageByConversationId")
-    val messageGetPaginatedFlowOfAssetMessageByConversationId: GetPaginatedFlowOfAssetMessageByConversationIdUseCase
+    override val messageGetPaginatedFlowOfAssetMessageByConversationId: GetPaginatedFlowOfAssetMessageByConversationIdUseCase
 
     @get:LegacyMessageBinding("observePaginatedImageAssetMessageByConversationId")
-    val messageObservePaginatedImageAssetMessageByConversationId: ObservePaginatedAssetImageMessages
+    override val messageObservePaginatedImageAssetMessageByConversationId: ObservePaginatedAssetImageMessages
 
     @get:LegacyMessageBinding("fetchOlderMessagesByConversationId")
-    val messageFetchOlderMessagesByConversationId: FetchOlderNomadMessagesByConversationUseCase
+    override val messageFetchOlderMessagesByConversationId: FetchOlderNomadMessagesByConversationUseCase
 
 }
 

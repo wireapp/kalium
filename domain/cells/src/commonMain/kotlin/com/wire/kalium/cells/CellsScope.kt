@@ -136,6 +136,10 @@ public class CellsScope(
         )
     }
 
+    /** Borrow this owner's graph; closing it remains the existing Cells/session owner's responsibility. */
+    public val individualApi: KaliumCellsApi
+        get() = bindings
+
     private val nodeServiceApiCache = CellsNodeServiceCache()
 
     private suspend fun getNodeServiceApiCached(credentials: () -> CellsCredentialsProvider): NodeServiceApi =

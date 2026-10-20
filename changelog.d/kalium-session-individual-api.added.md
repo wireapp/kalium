@@ -1,0 +1,3 @@
+Added framework-neutral individual use-case APIs for conversations, messages, clients, users, search, channels, meetings, and debug tooling. Obtain each API from the active `UserSessionScope` through `conversationApi`, `messageApi`, `clientApi`, `userApi`, `searchApi`, `channelsApi`, `meetingApi`, or `debugApi` (debug opt-in applies).
+
+Existing facade accessors remain available with their existing types and fresh/cached behavior. These APIs expose user-owned bindings; they do not create an ephemeral consumer. Continue using `createConsumer()` for its three guarded read paths and close/drain that explicit owner. Stop legacy API work before account shutdown. Public additions require ABI/Swift export validation before release.

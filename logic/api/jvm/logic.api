@@ -9,14 +9,18 @@ public final class com/wire/kalium/logic/CoreLogic : com/wire/kalium/logic/CoreL
 
 public abstract class com/wire/kalium/logic/CoreLogicCommon {
 	public final fun getAuthenticationScopeForConfigId ()Lcom/wire/kalium/logic/feature/auth/autoVersioningAuth/AuthenticationScopeForConfigIdUseCase;
+	public final fun getGlobalAccountsApi ()Lcom/wire/kalium/logic/di/KaliumGlobalAccountsApi;
 	protected abstract fun getGlobalDatabaseBuilder ()Lcom/wire/kalium/persistence/db/GlobalDatabaseBuilder;
 	protected abstract fun getGlobalPreferences ()Lcom/wire/kalium/persistence/kmmSettings/GlobalPrefProvider;
+	public final fun getGlobalRuntimeApi ()Lcom/wire/kalium/logic/di/KaliumGlobalRuntimeApi;
 	public final fun getGlobalScope ()Lcom/wire/kalium/logic/GlobalKaliumScope;
+	public final fun getGlobalValidationApi ()Lcom/wire/kalium/logic/di/KaliumGlobalValidationApi;
 	protected final fun getIdMapper ()Lcom/wire/kalium/logic/data/id/IdMapper;
 	protected final fun getKaliumConfigs ()Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
 	public abstract fun getNetworkStateObserver ()Lcom/wire/kalium/network/NetworkStateObserver;
 	protected final fun getRootPath ()Ljava/lang/String;
 	public abstract fun getSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/UserSessionScope;
+	public final fun getSessionSelectionApiFactory ()Lcom/wire/kalium/logic/di/KaliumSessionSelectionApi$Factory;
 	protected final fun getUserAgent ()Ljava/lang/String;
 	public final fun globalScope (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public final fun openSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -1265,6 +1269,108 @@ public final class com/wire/kalium/logic/data/sync/SyncState$Waiting : com/wire/
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class com/wire/kalium/logic/di/KaliumAppApi {
+	public abstract fun getAppGetAppById ()Lcom/wire/kalium/logic/feature/app/GetAppByIdUseCase;
+	public abstract fun getAppObserveAllApps ()Lcom/wire/kalium/logic/feature/app/ObserveAllAppsUseCase;
+	public abstract fun getAppObserveIsAppMember ()Lcom/wire/kalium/logic/feature/app/ObserveIsAppMemberUseCase;
+	public abstract fun getAppSearchAppsByName ()Lcom/wire/kalium/logic/feature/app/SearchAppsByNameUseCase;
+	public abstract fun getAppSyncApps ()Lcom/wire/kalium/logic/feature/app/SyncAppsUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumAppApi$Factory {
+	public abstract fun create ()Lcom/wire/kalium/logic/di/KaliumAppApi;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumAuthenticationVerificationApi {
+	public abstract fun getRequestSecondFactorVerificationCode ()Lcom/wire/kalium/logic/feature/auth/verification/RequestSecondFactorVerificationCodeUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumBackupApi {
+	public abstract fun getBackupBackupAndUploadCryptoState ()Lcom/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateUseCase;
+	public abstract fun getBackupCreate ()Lcom/wire/kalium/logic/feature/backup/CreateBackupUseCase;
+	public abstract fun getBackupCreateUnEncryptedCopy ()Lcom/wire/kalium/logic/feature/backup/CreateObfuscatedCopyUseCase;
+	public abstract fun getBackupRestore ()Lcom/wire/kalium/logic/feature/backup/RestoreBackupUseCase;
+	public abstract fun getBackupSetLastDeviceId ()Lcom/wire/kalium/logic/feature/backup/SetLastDeviceIdUseCase;
+	public abstract fun getBackupVerify ()Lcom/wire/kalium/logic/feature/backup/VerifyBackupUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumBackupApi$Factory {
+	public abstract fun create ()Lcom/wire/kalium/logic/di/KaliumBackupApi;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumCallsApi {
+	public abstract fun getCallsAnswerCall ()Lcom/wire/kalium/logic/feature/call/usecase/AnswerCallUseCase;
+	public abstract fun getCallsEndCall ()Lcom/wire/kalium/logic/feature/call/usecase/EndCallUseCase;
+	public abstract fun getCallsEndCallOnConversationChange ()Lcom/wire/kalium/logic/feature/call/usecase/EndCallOnConversationChangeUseCase;
+	public abstract fun getCallsEstablishedCall ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveEstablishedCallsUseCase;
+	public abstract fun getCallsFlipToBackCamera ()Lcom/wire/kalium/logic/feature/call/usecase/FlipToBackCameraUseCase;
+	public abstract fun getCallsFlipToFrontCamera ()Lcom/wire/kalium/logic/feature/call/usecase/FlipToFrontCameraUseCase;
+	public abstract fun getCallsGetIncomingCalls ()Lcom/wire/kalium/logic/feature/call/usecase/GetIncomingCallsUseCase;
+	public abstract fun getCallsIsCallRunning ()Lcom/wire/kalium/logic/feature/call/usecase/IsCallRunningUseCase;
+	public abstract fun getCallsIsEligibleToStartCall ()Lcom/wire/kalium/logic/feature/call/usecase/IsEligibleToStartCallUseCase;
+	public abstract fun getCallsIsLastCallClosed ()Lcom/wire/kalium/logic/feature/call/usecase/IsLastCallClosedUseCase;
+	public abstract fun getCallsMuteCall ()Lcom/wire/kalium/logic/feature/call/usecase/MuteCallUseCase;
+	public abstract fun getCallsObserveActiveCalls ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveActiveCallsUseCase;
+	public abstract fun getCallsObserveCallModerationActions ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveCallModerationActionsUseCase;
+	public abstract fun getCallsObserveCallQualityData ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveCallQualityDataUseCase;
+	public abstract fun getCallsObserveConferenceCallingEnabled ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveConferenceCallingEnabledUseCase;
+	public abstract fun getCallsObserveEstablishedCallWithSortedParticipants ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveEstablishedCallWithSortedParticipantsUseCase;
+	public abstract fun getCallsObserveInCallReactions ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveInCallReactionsUseCase;
+	public abstract fun getCallsObserveJoinableCalls ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveJoinableCallsUseCase;
+	public abstract fun getCallsObserveLastActiveCallWithSortedParticipants ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveLastActiveCallWithSortedParticipantsUseCase;
+	public abstract fun getCallsObserveOngoingCalls ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveOngoingCallsUseCase;
+	public abstract fun getCallsObserveOutgoingCall ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveOutgoingCallUseCase;
+	public abstract fun getCallsObserveSpeaker ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveSpeakerUseCase;
+	public abstract fun getCallsRejectCall ()Lcom/wire/kalium/logic/feature/call/usecase/RejectCallUseCase;
+	public abstract fun getCallsRequestVideoStreams ()Lcom/wire/kalium/logic/feature/call/usecase/RequestVideoStreamsUseCase;
+	public abstract fun getCallsSetCallQualityInterval ()Lcom/wire/kalium/logic/feature/call/usecase/SetCallQualityIntervalUseCase;
+	public abstract fun getCallsSetUIRotation ()Lcom/wire/kalium/logic/feature/call/usecase/SetUIRotationUseCase;
+	public abstract fun getCallsSetVideoPreview ()Lcom/wire/kalium/logic/feature/call/usecase/SetVideoPreviewUseCase;
+	public abstract fun getCallsSetVideoSendState ()Lcom/wire/kalium/logic/feature/call/usecase/video/SetVideoSendStateUseCase;
+	public abstract fun getCallsStartCall ()Lcom/wire/kalium/logic/feature/call/usecase/StartCallUseCase;
+	public abstract fun getCallsTurnLoudSpeakerOff ()Lcom/wire/kalium/logic/feature/call/usecase/TurnLoudSpeakerOffUseCase;
+	public abstract fun getCallsTurnLoudSpeakerOn ()Lcom/wire/kalium/logic/feature/call/usecase/TurnLoudSpeakerOnUseCase;
+	public abstract fun getCallsUnMuteCall ()Lcom/wire/kalium/logic/feature/call/usecase/UnMuteCallUseCase;
+	public abstract fun getCallsUpdateVideoState ()Lcom/wire/kalium/logic/feature/call/usecase/video/UpdateVideoStateUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumCallsApi$Factory {
+	public abstract fun create ()Lcom/wire/kalium/logic/di/KaliumCallsApi;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumChannelsApi {
+	public abstract fun getChannelsObserveChannelsCreationPermissionUseCase ()Lcom/wire/kalium/logic/feature/channels/ObserveChannelsCreationPermissionUseCase;
+	public abstract fun getChannelsUpdateChannelAddPermission ()Lcom/wire/kalium/logic/feature/conversation/channel/UpdateChannelAddPermissionUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumClientApi {
+	public abstract fun getClientDeleteClient ()Lcom/wire/kalium/logic/feature/client/DeleteClientUseCase;
+	public abstract fun getClientFetchSelfClients ()Lcom/wire/kalium/logic/feature/client/FetchSelfClientsFromRemoteUseCase;
+	public abstract fun getClientFetchUsersClients ()Lcom/wire/kalium/logic/feature/client/FetchUsersClientsFromRemoteUseCase;
+	public abstract fun getClientGetOrRegister ()Lcom/wire/kalium/logic/feature/client/GetOrRegisterClientUseCase;
+	public abstract fun getClientGetOtherUserClients ()Lcom/wire/kalium/logic/feature/client/ObserveClientsByUserIdUseCase;
+	public abstract fun getClientMlsKeyPackageCountUseCase ()Lcom/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountUseCase;
+	public abstract fun getClientNeedsToRegisterClient ()Lcom/wire/kalium/logic/feature/client/NeedsToRegisterClientUseCase;
+	public abstract fun getClientObserveClientDetailsUseCase ()Lcom/wire/kalium/logic/feature/client/ObserveClientDetailsUseCase;
+	public abstract fun getClientObserveCurrentClientId ()Lcom/wire/kalium/logic/feature/client/ObserveCurrentClientIdUseCase;
+	public abstract fun getClientRemoteClientFingerPrint ()Lcom/wire/kalium/logic/feature/client/ClientFingerprintUseCase;
+	public abstract fun getClientRestartSlowSyncProcessForRecoveryUseCase ()Lcom/wire/kalium/logic/sync/slow/RestartSlowSyncProcessForRecoveryUseCase;
+	public abstract fun getClientUpdateClientVerificationStatus ()Lcom/wire/kalium/logic/feature/client/UpdateClientVerificationStatusUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumConnectionApi {
+	public abstract fun getConnectionAcceptConnectionRequest ()Lcom/wire/kalium/logic/feature/connection/AcceptConnectionRequestUseCase;
+	public abstract fun getConnectionBlockUser ()Lcom/wire/kalium/logic/feature/connection/BlockUserUseCase;
+	public abstract fun getConnectionCancelConnectionRequest ()Lcom/wire/kalium/logic/feature/connection/CancelConnectionRequestUseCase;
+	public abstract fun getConnectionIgnoreConnectionRequest ()Lcom/wire/kalium/logic/feature/connection/IgnoreConnectionRequestUseCase;
+	public abstract fun getConnectionSendConnectionRequest ()Lcom/wire/kalium/logic/feature/connection/SendConnectionRequestUseCase;
+	public abstract fun getConnectionUnblockUser ()Lcom/wire/kalium/logic/feature/connection/UnblockUserUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumConnectionApi$Factory {
+	public abstract fun create ()Lcom/wire/kalium/logic/di/KaliumConnectionApi;
+}
+
 public abstract interface class com/wire/kalium/logic/di/KaliumConsumer : java/lang/AutoCloseable {
 	public abstract fun assemble (Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public static synthetic fun assemble$default (Lcom/wire/kalium/logic/di/KaliumConsumer;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
@@ -1277,6 +1383,239 @@ public abstract interface class com/wire/kalium/logic/di/KaliumConsumer : java/l
 
 public final class com/wire/kalium/logic/di/KaliumConsumer$DefaultImpls {
 	public static synthetic fun assemble$default (Lcom/wire/kalium/logic/di/KaliumConsumer;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumConversationApi {
+	public abstract fun getConversationAddConversationToFavorites ()Lcom/wire/kalium/logic/feature/conversation/folder/AddConversationToFavoritesUseCase;
+	public abstract fun getConversationAddMemberToConversationUseCase ()Lcom/wire/kalium/logic/feature/conversation/AddMemberToConversationUseCase;
+	public abstract fun getConversationAddServiceToConversationUseCase ()Lcom/wire/kalium/logic/feature/conversation/AddServiceToConversationUseCase;
+	public abstract fun getConversationCanCreatePasswordProtectedLinks ()Lcom/wire/kalium/logic/feature/conversation/guestroomlink/CanCreatePasswordProtectedLinksUseCase;
+	public abstract fun getConversationChangeAccessForAppsInConversation ()Lcom/wire/kalium/logic/feature/conversation/apps/ChangeAccessForAppsInConversationUseCase;
+	public abstract fun getConversationCheckConversationLeaveConditions ()Lcom/wire/kalium/logic/feature/conversation/CheckConversationLeaveConditionsUseCase;
+	public abstract fun getConversationCheckOneToOneConversationIsReadyUseCase ()Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase;
+	public abstract fun getConversationClearConversationContent ()Lcom/wire/kalium/logic/feature/conversation/ClearConversationContentUseCase;
+	public abstract fun getConversationClearUsersTypingEvents ()Lcom/wire/kalium/logic/feature/conversation/ClearUsersTypingEventsUseCase;
+	public abstract fun getConversationCreateChannel ()Lcom/wire/kalium/logic/feature/conversation/createconversation/CreateChannelUseCase;
+	public abstract fun getConversationCreateConversationFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/CreateConversationFolderUseCase;
+	public abstract fun getConversationCreateRegularGroup ()Lcom/wire/kalium/logic/feature/conversation/createconversation/CreateRegularGroupUseCase;
+	public abstract fun getConversationDeleteTeamConversation ()Lcom/wire/kalium/logic/feature/team/DeleteTeamConversationUseCase;
+	public abstract fun getConversationGenerateGuestRoomLink ()Lcom/wire/kalium/logic/feature/conversation/guestroomlink/GenerateGuestRoomLinkUseCase;
+	public abstract fun getConversationGetConversationProtocolInfo ()Lcom/wire/kalium/logic/feature/conversation/GetConversationProtocolInfoUseCase;
+	public abstract fun getConversationGetConversationUnreadEventsCountUseCase ()Lcom/wire/kalium/logic/feature/conversation/GetConversationUnreadEventsCountUseCase;
+	public abstract fun getConversationGetFavoriteFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/GetFavoriteFolderUseCase;
+	public abstract fun getConversationGetMembersToMention ()Lcom/wire/kalium/logic/feature/conversation/MembersToMentionUseCase;
+	public abstract fun getConversationGetOneToOneConversation ()Lcom/wire/kalium/logic/feature/conversation/GetOneToOneConversationDetailsUseCase;
+	public abstract fun getConversationGetOrCreateOneToOneConversationUseCase ()Lcom/wire/kalium/logic/feature/conversation/GetOrCreateOneToOneConversationUseCase;
+	public abstract fun getConversationGetPaginatedFlowOfConversationDetailsWithEventsBySearchQuery ()Lcom/wire/kalium/logic/feature/conversation/GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase;
+	public abstract fun getConversationGetPaginatedFlowOfConversationDetailsWithMembersBySearchQuery ()Lcom/wire/kalium/logic/feature/conversation/GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase;
+	public abstract fun getConversationIsOneToOneConversationCreatedUseCase ()Lcom/wire/kalium/logic/feature/conversation/IsOneToOneConversationCreatedUseCase;
+	public abstract fun getConversationIsSelfUserViewerOnConversation ()Lcom/wire/kalium/logic/feature/conversation/IsSelfUserViewerOnConversationUseCase;
+	public abstract fun getConversationJoinConversationViaCode ()Lcom/wire/kalium/logic/feature/conversation/JoinConversationViaCodeUseCase;
+	public abstract fun getConversationLeaveConversation ()Lcom/wire/kalium/logic/feature/conversation/LeaveConversationUseCase;
+	public abstract fun getConversationMarkConversationAsDeletedLocallyUseCase ()Lcom/wire/kalium/logic/feature/conversation/delete/MarkConversationAsDeletedLocallyUseCase;
+	public abstract fun getConversationMarkConversationAsReadLocally ()Lcom/wire/kalium/logic/feature/conversation/MarkConversationAsReadLocallyUseCase;
+	public abstract fun getConversationMoveConversationToFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/MoveConversationToFolderUseCase;
+	public abstract fun getConversationNotifyConversationIsOpen ()Lcom/wire/kalium/logic/feature/conversation/NotifyConversationIsOpenUseCase;
+	public abstract fun getConversationObserveArchivedUnreadConversationsCount ()Lcom/wire/kalium/logic/feature/conversation/ObserveArchivedUnreadConversationsCountUseCase;
+	public abstract fun getConversationObserveConversationInteractionAvailabilityUseCase ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationInteractionAvailabilityUseCase;
+	public abstract fun getConversationObserveConversationListDetails ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationListDetailsUseCase;
+	public abstract fun getConversationObserveConversationListDetailsWithEvents ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationListDetailsWithEventsUseCase;
+	public abstract fun getConversationObserveConversationMembers ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationMembersUseCase;
+	public abstract fun getConversationObserveConversationUnderLegalHoldNotified ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationUnderLegalHoldNotifiedUseCase;
+	public abstract fun getConversationObserveConversationsFromFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/ObserveConversationsFromFolderUseCase;
+	public abstract fun getConversationObserveEligibleMembersForConversationAdminRole ()Lcom/wire/kalium/logic/feature/conversation/ObserveEligibleMembersForConversationAdminRoleUseCase;
+	public abstract fun getConversationObserveGuestRoomLink ()Lcom/wire/kalium/logic/feature/conversation/guestroomlink/ObserveGuestRoomLinkUseCase;
+	public abstract fun getConversationObserveInformAboutVerificationBeforeMessagingFlagUseCase ()Lcom/wire/kalium/logic/feature/conversation/ObserveDegradedConversationNotifiedUseCase;
+	public abstract fun getConversationObserveIsSelfUserMemberUseCase ()Lcom/wire/kalium/logic/feature/conversation/ObserveIsSelfUserMemberUseCase;
+	public abstract fun getConversationObserveUserFolders ()Lcom/wire/kalium/logic/feature/conversation/folder/ObserveUserFoldersUseCase;
+	public abstract fun getConversationObserveUserListById ()Lcom/wire/kalium/logic/feature/conversation/ObserveUserListByIdUseCase;
+	public abstract fun getConversationObserveUsersTyping ()Lcom/wire/kalium/logic/feature/conversation/ObserveUsersTypingUseCase;
+	public abstract fun getConversationPromoteAdminAndLeaveConversation ()Lcom/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase;
+	public abstract fun getConversationRefreshConversationsWithoutMetadata ()Lcom/wire/kalium/logic/feature/conversation/RefreshConversationsWithoutMetadataUseCase;
+	public abstract fun getConversationRemoveConversationFromFavorites ()Lcom/wire/kalium/logic/feature/conversation/folder/RemoveConversationFromFavoritesUseCase;
+	public abstract fun getConversationRemoveConversationFromFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/RemoveConversationFromFolderUseCase;
+	public abstract fun getConversationRemoveMemberFromConversation ()Lcom/wire/kalium/logic/feature/conversation/RemoveMemberFromConversationUseCase;
+	public abstract fun getConversationRenameConversation ()Lcom/wire/kalium/logic/feature/conversation/RenameConversationUseCase;
+	public abstract fun getConversationRevokeGuestRoomLink ()Lcom/wire/kalium/logic/feature/conversation/guestroomlink/RevokeGuestRoomLinkUseCase;
+	public abstract fun getConversationSendTypingEvent ()Lcom/wire/kalium/logic/feature/conversation/SendTypingEventUseCase;
+	public abstract fun getConversationSetNotifiedAboutConversationUnderLegalHold ()Lcom/wire/kalium/logic/feature/conversation/SetNotifiedAboutConversationUnderLegalHoldUseCase;
+	public abstract fun getConversationSetUserInformedAboutVerificationBeforeMessagingUseCase ()Lcom/wire/kalium/logic/feature/conversation/SetUserInformedAboutVerificationUseCase;
+	public abstract fun getConversationSyncConversationCode ()Lcom/wire/kalium/logic/feature/conversation/SyncConversationCodeUseCase;
+	public abstract fun getConversationUpdateConversationAccess ()Lcom/wire/kalium/logic/feature/conversation/UpdateConversationAccessRoleUseCase;
+	public abstract fun getConversationUpdateConversationArchivedStatus ()Lcom/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase;
+	public abstract fun getConversationUpdateConversationMemberRole ()Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMemberRoleUseCase;
+	public abstract fun getConversationUpdateConversationMutedStatus ()Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase;
+	public abstract fun getConversationUpdateConversationReadDateUseCase ()Lcom/wire/kalium/logic/feature/conversation/UpdateConversationReadDateUseCase;
+	public abstract fun getConversationUpdateConversationReceiptMode ()Lcom/wire/kalium/logic/feature/conversation/UpdateConversationReceiptModeUseCase;
+	public abstract fun getConversationUpdateMessageTimer ()Lcom/wire/kalium/logic/feature/conversation/messagetimer/UpdateMessageTimerUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumGlobalAccountsApi {
+	public abstract fun getGlobalAddAuthenticatedAccount ()Lcom/wire/kalium/logic/feature/auth/AddAuthenticatedUserUseCase;
+	public abstract fun getGlobalClearNewClientsForUser ()Lcom/wire/kalium/logic/feature/client/ClearNewClientsForUserUseCase;
+	public abstract fun getGlobalDeleteSession ()Lcom/wire/kalium/logic/feature/session/DeleteSessionUseCase;
+	public abstract fun getGlobalDoesValidNomadAccountExist ()Lcom/wire/kalium/logic/feature/session/DoesValidNomadAccountExistUseCase;
+	public abstract fun getGlobalDoesValidSessionExist ()Lcom/wire/kalium/logic/feature/session/DoesValidSessionExistUseCase;
+	public abstract fun getGlobalObserveNewClientsUseCase ()Lcom/wire/kalium/logic/feature/client/ObserveNewClientsUseCase;
+	public abstract fun getGlobalObserveValidAccounts ()Lcom/wire/kalium/logic/feature/user/ObserveValidAccountsUseCase;
+	public abstract fun getGlobalServerConfigForAccounts ()Lcom/wire/kalium/logic/feature/server/ServerConfigForAccountUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumGlobalRuntimeApi {
+	public abstract fun getGlobalObserveIfAppUpdateRequired ()Lcom/wire/kalium/logic/feature/appVersioning/ObserveIfAppUpdateRequiredUseCase;
+	public abstract fun getGlobalObserveIsAppLockEditableUseCase ()Lcom/wire/kalium/logic/feature/featureConfig/ObserveIsAppLockEditableUseCase;
+	public abstract fun getGlobalObservePersistentWebSocketConnectionStatus ()Lcom/wire/kalium/logic/feature/user/webSocketStatus/ObservePersistentWebSocketConnectionStatusUseCase;
+	public abstract fun getGlobalUpdateApiVersionsScheduler ()Lcom/wire/kalium/logic/sync/periodic/UpdateApiVersionsScheduler;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumGlobalValidationApi {
+	public abstract fun getGlobalFetchServerConfigFromDeepLink ()Lcom/wire/kalium/logic/feature/server/GetServerConfigUseCase;
+	public abstract fun getGlobalValidateEmailUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidateEmailUseCase;
+	public abstract fun getGlobalValidatePasswordUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidatePasswordUseCase;
+	public abstract fun getGlobalValidateSSOCodeUseCase ()Lcom/wire/kalium/logic/feature/auth/sso/ValidateSSOCodeUseCase;
+	public abstract fun getGlobalValidateUserHandleUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidateUserHandleUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumMeetingApi {
+	public abstract fun getMeetingCreateNewMeeting ()Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase;
+	public abstract fun getMeetingDeleteMeetingForEveryone ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase;
+	public abstract fun getMeetingDeleteMeetingForMe ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase;
+	public abstract fun getMeetingEnsureMeetingIsMLSEstablished ()Lcom/wire/kalium/logic/feature/meeting/EnsureMeetingIsMLSEstablishedUseCase;
+	public abstract fun getMeetingGetNextUnfinishedMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;
+	public abstract fun getMeetingGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
+	public abstract fun getMeetingObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
+	public abstract fun getMeetingUpdateMeeting ()Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumMessageApi {
+	public abstract fun getMessageDeleteMessage ()Lcom/wire/kalium/logic/feature/message/DeleteMessageUseCase;
+	public abstract fun getMessageDetectLinkPreviewTarget ()Lcom/wire/kalium/logic/feature/message/linkpreview/DetectLinkPreviewTargetUseCase;
+	public abstract fun getMessageEnqueueMessageSelfDeletion ()Lcom/wire/kalium/logic/feature/message/ephemeral/EnqueueMessageSelfDeletionUseCase;
+	public abstract fun getMessageFetchOlderMessagesByConversationId ()Lcom/wire/kalium/logic/feature/message/FetchOlderNomadMessagesByConversationUseCase;
+	public abstract fun getMessageGenerateLinkPreview ()Lcom/wire/kalium/logic/feature/message/linkpreview/GenerateLinkPreviewUseCase;
+	public abstract fun getMessageGetAssetMessage ()Lcom/wire/kalium/logic/feature/asset/GetMessageAssetUseCase;
+	public abstract fun getMessageGetImageAssetMessagesByConversation ()Lcom/wire/kalium/logic/feature/asset/GetImageAssetMessagesForConversationUseCase;
+	public abstract fun getMessageGetMessageDraftUseCase ()Lcom/wire/kalium/logic/feature/message/draft/GetMessageDraftUseCase;
+	public abstract fun getMessageGetNotifications ()Lcom/wire/kalium/logic/feature/message/GetNotificationsUseCase;
+	public abstract fun getMessageGetPaginatedFlowOfAssetMessageByConversationId ()Lcom/wire/kalium/logic/feature/asset/GetPaginatedFlowOfAssetMessageByConversationIdUseCase;
+	public abstract fun getMessageGetPaginatedFlowOfMessagesByConversation ()Lcom/wire/kalium/logic/feature/message/GetPaginatedFlowOfMessagesByConversationUseCase;
+	public abstract fun getMessageGetPaginatedFlowOfMessagesBySearchQueryAndConversation ()Lcom/wire/kalium/logic/feature/message/GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase;
+	public abstract fun getMessageGetSearchedConversationMessagePosition ()Lcom/wire/kalium/logic/feature/message/GetSearchedConversationMessagePositionUseCase;
+	public abstract fun getMessageGetSenderNameByMessageId ()Lcom/wire/kalium/logic/feature/message/GetSenderNameByMessageIdUseCase;
+	public abstract fun getMessageMarkMessagesAsNotified ()Lcom/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedUseCase;
+	public abstract fun getMessageObserveAssetStatuses ()Lcom/wire/kalium/logic/feature/asset/ObserveAssetStatusesUseCase;
+	public abstract fun getMessageObserveMessageReactions ()Lcom/wire/kalium/logic/feature/message/ObserveMessageReactionsUseCase;
+	public abstract fun getMessageObserveMessageReceipts ()Lcom/wire/kalium/logic/feature/message/ObserveMessageReceiptsUseCase;
+	public abstract fun getMessageObservePaginatedImageAssetMessageByConversationId ()Lcom/wire/kalium/logic/feature/asset/ObservePaginatedAssetImageMessages;
+	public abstract fun getMessageRemoveMessageDraftUseCase ()Lcom/wire/kalium/logic/feature/message/draft/RemoveMessageDraftUseCase;
+	public abstract fun getMessageResetSession ()Lcom/wire/kalium/logic/feature/sessionreset/ResetSessionUseCase;
+	public abstract fun getMessageRetryFailedMessage ()Lcom/wire/kalium/logic/feature/message/RetryFailedMessageUseCase;
+	public abstract fun getMessageSaveMessageDraftUseCase ()Lcom/wire/kalium/logic/feature/message/draft/SaveMessageDraftUseCase;
+	public abstract fun getMessageSendAssetMessage ()Lcom/wire/kalium/logic/feature/asset/upload/ScheduleNewAssetMessageUseCase;
+	public abstract fun getMessageSendButtonActionMessage ()Lcom/wire/kalium/logic/feature/message/composite/SendButtonActionMessageUseCase;
+	public abstract fun getMessageSendEditMultipartMessage ()Lcom/wire/kalium/logic/feature/message/SendEditMultipartMessageUseCase;
+	public abstract fun getMessageSendEditTextMessage ()Lcom/wire/kalium/logic/feature/message/SendEditTextMessageUseCase;
+	public abstract fun getMessageSendInCallReactionUseCase ()Lcom/wire/kalium/logic/feature/incallreaction/SendInCallReactionUseCase;
+	public abstract fun getMessageSendKnock ()Lcom/wire/kalium/logic/feature/message/SendKnockUseCase;
+	public abstract fun getMessageSendLocation ()Lcom/wire/kalium/logic/feature/message/SendLocationUseCase;
+	public abstract fun getMessageSendMultipartMessage ()Lcom/wire/kalium/logic/feature/message/SendMultipartMessageUseCase;
+	public abstract fun getMessageSendTextMessage ()Lcom/wire/kalium/logic/feature/message/SendTextMessageUseCase;
+	public abstract fun getMessageToggleReaction ()Lcom/wire/kalium/logic/feature/message/ToggleReactionUseCase;
+	public abstract fun getMessageUpdateAssetMessageTransferStatus ()Lcom/wire/kalium/logic/feature/asset/UpdateAssetMessageTransferStatusUseCase;
+	public abstract fun getMessageUpdateAudioMessageNormalizedLoudnessUseCase ()Lcom/wire/kalium/logic/feature/asset/UpdateAudioMessageNormalizedLoudnessUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumMultiPlatformBackupApi {
+	public abstract fun getMpBackupCreate ()Lcom/wire/kalium/logic/feature/backup/CreateMPBackupUseCase;
+	public abstract fun getMpBackupRestore ()Lcom/wire/kalium/logic/feature/backup/RestoreMPBackupUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumMultiPlatformBackupApi$Factory {
+	public abstract fun create ()Lcom/wire/kalium/logic/di/KaliumMultiPlatformBackupApi;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumSearchApi {
+	public abstract fun getSearchFederatedSearchParser ()Lcom/wire/kalium/logic/feature/search/FederatedSearchParser;
+	public abstract fun getSearchIsFederationSearchAllowedUseCase ()Lcom/wire/kalium/logic/feature/search/IsFederationSearchAllowedUseCase;
+	public abstract fun getSearchSearchUsersByHandle ()Lcom/wire/kalium/logic/feature/search/SearchUsersByHandleUseCase;
+	public abstract fun getSearchSearchUsersByName ()Lcom/wire/kalium/logic/feature/search/SearchUsersByNameUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumServiceApi {
+	public abstract fun getServiceGetServiceById ()Lcom/wire/kalium/logic/feature/service/GetServiceByIdUseCase;
+	public abstract fun getServiceObserveAllServices ()Lcom/wire/kalium/logic/feature/service/ObserveAllServicesUseCase;
+	public abstract fun getServiceObserveIsAppsAllowedForUsage ()Lcom/wire/kalium/logic/feature/featureConfig/ObserveIsAppsAllowedForUsageUseCase;
+	public abstract fun getServiceObserveIsServiceMember ()Lcom/wire/kalium/logic/feature/service/ObserveIsServiceMemberUseCase;
+	public abstract fun getServiceSearchServicesByName ()Lcom/wire/kalium/logic/feature/service/SearchServicesByNameUseCase;
+	public abstract fun getServiceSyncServices ()Lcom/wire/kalium/logic/feature/service/SyncServicesUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumServiceApi$Factory {
+	public abstract fun create ()Lcom/wire/kalium/logic/di/KaliumServiceApi;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumSessionSelectionApi {
+	public abstract fun getAllSessions ()Lcom/wire/kalium/logic/feature/session/GetSessionsUseCase;
+	public abstract fun getAllSessionsFlow ()Lcom/wire/kalium/logic/feature/session/ObserveSessionsUseCase;
+	public abstract fun getCurrentSession ()Lcom/wire/kalium/logic/feature/session/CurrentSessionUseCase;
+	public abstract fun getCurrentSessionFlow ()Lcom/wire/kalium/logic/feature/session/CurrentSessionFlowUseCase;
+	public abstract fun getUpdateCurrentSession ()Lcom/wire/kalium/logic/feature/session/UpdateCurrentSessionUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumSessionSelectionApi$Factory {
+	public abstract fun create ()Lcom/wire/kalium/logic/di/KaliumSessionSelectionApi;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumTeamApi {
+	public abstract fun getTeamIsSelfATeamMember ()Lcom/wire/kalium/logic/feature/user/IsSelfATeamMemberUseCase;
+	public abstract fun getTeamSyncSelfTeamInfoUseCase ()Lcom/wire/kalium/logic/feature/team/SyncSelfTeamInfoUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumTeamApi$Factory {
+	public abstract fun create ()Lcom/wire/kalium/logic/di/KaliumTeamApi;
+}
+
+public abstract interface class com/wire/kalium/logic/di/KaliumUserApi {
+	public abstract fun getUserDeleteAccount ()Lcom/wire/kalium/logic/feature/user/DeleteAccountUseCase;
+	public abstract fun getUserDeleteAsset ()Lcom/wire/kalium/logic/feature/asset/DeleteAssetUseCase;
+	public abstract fun getUserFinalizeMLSClientAfterE2EIEnrollment ()Lcom/wire/kalium/logic/feature/client/FinalizeMLSClientAfterE2EIEnrollmentUseCase;
+	public abstract fun getUserForegroundActions ()Lcom/wire/kalium/logic/sync/ForegroundActionsUseCase;
+	public abstract fun getUserGetAllContactsNotInConversation ()Lcom/wire/kalium/logic/feature/conversation/GetAllContactsNotInConversationUseCase;
+	public abstract fun getUserGetAllKnownUsers ()Lcom/wire/kalium/logic/feature/publicuser/GetAllContactsUseCase;
+	public abstract fun getUserGetAssetSizeLimit ()Lcom/wire/kalium/logic/feature/asset/GetAssetSizeLimitUseCase;
+	public abstract fun getUserGetE2EICertificate ()Lcom/wire/kalium/logic/feature/e2ei/usecase/GetMLSClientIdentityUseCase;
+	public abstract fun getUserGetKnownUser ()Lcom/wire/kalium/logic/feature/publicuser/GetKnownUserUseCase;
+	public abstract fun getUserGetMembersE2EICertificateStatuses ()Lcom/wire/kalium/logic/feature/e2ei/usecase/GetMembersE2EICertificateStatusesUseCase;
+	public abstract fun getUserGetPublicAsset ()Lcom/wire/kalium/logic/feature/asset/GetAvatarAssetUseCase;
+	public abstract fun getUserGetSelfTeamId ()Lcom/wire/kalium/logic/feature/user/GetSelfTeamIdUseCase;
+	public abstract fun getUserGetSelfUser ()Lcom/wire/kalium/logic/feature/user/GetSelfUserUseCase;
+	public abstract fun getUserGetUserE2eiCertificateStatus ()Lcom/wire/kalium/logic/feature/e2ei/usecase/IsOtherUserE2EIVerifiedUseCase;
+	public abstract fun getUserGetUserInfo ()Lcom/wire/kalium/logic/feature/user/GetUserInfoUseCase;
+	public abstract fun getUserGetUserMlsClientIdentities ()Lcom/wire/kalium/logic/feature/e2ei/usecase/GetUserMlsClientIdentitiesUseCase;
+	public abstract fun getUserIsPasswordRequired ()Lcom/wire/kalium/logic/feature/user/IsPasswordRequiredUseCase;
+	public abstract fun getUserIsPersonalToTeamAccountSupportedByBackend ()Lcom/wire/kalium/logic/feature/personaltoteamaccount/CanMigrateFromPersonalToTeamUseCase;
+	public abstract fun getUserIsProfileQRCodeEnabled ()Lcom/wire/kalium/logic/feature/client/IsProfileQRCodeEnabledUseCase;
+	public abstract fun getUserIsReadOnlyAccount ()Lcom/wire/kalium/logic/feature/user/IsReadOnlyAccountUseCase;
+	public abstract fun getUserIsWireCellsEnabled ()Lcom/wire/kalium/logic/feature/client/IsWireCellsEnabledUseCase;
+	public abstract fun getUserIsWireCellsEnabledForConversation ()Lcom/wire/kalium/logic/feature/client/IsWireCellsEnabledForConversationUseCase;
+	public abstract fun getUserObserveIsWireCellsEnabled ()Lcom/wire/kalium/logic/feature/client/ObserveIsWireCellsEnabledUseCase;
+	public abstract fun getUserObserveLinkPreviewsEnabled ()Lcom/wire/kalium/logic/feature/user/linkPreviews/ObserveLinkPreviewsEnabledUseCase;
+	public abstract fun getUserObserveReadReceiptsEnabled ()Lcom/wire/kalium/logic/feature/user/readReceipts/ObserveReadReceiptsEnabledUseCase;
+	public abstract fun getUserObserveSelfUser ()Lcom/wire/kalium/logic/feature/user/ObserveSelfUserUseCase;
+	public abstract fun getUserObserveSelfUserWithTeam ()Lcom/wire/kalium/logic/feature/user/ObserveSelfUserWithTeamUseCase;
+	public abstract fun getUserObserveTypingIndicatorEnabled ()Lcom/wire/kalium/logic/feature/user/typingIndicator/ObserveTypingIndicatorEnabledUseCase;
+	public abstract fun getUserObserveUserInfo ()Lcom/wire/kalium/logic/feature/user/ObserveUserInfoUseCase;
+	public abstract fun getUserPersistLinkPreviewsStatusConfig ()Lcom/wire/kalium/logic/feature/user/linkPreviews/PersistLinkPreviewsStatusConfigUseCase;
+	public abstract fun getUserPersistReadReceiptsStatusConfig ()Lcom/wire/kalium/logic/feature/user/readReceipts/PersistReadReceiptsStatusConfigUseCase;
+	public abstract fun getUserPersistTypingIndicatorStatusConfig ()Lcom/wire/kalium/logic/feature/user/typingIndicator/PersistTypingIndicatorStatusConfigUseCase;
+	public abstract fun getUserRefreshUsersWithoutMetadata ()Lcom/wire/kalium/logic/feature/publicuser/RefreshUsersWithoutMetadataUseCase;
+	public abstract fun getUserServerLinks ()Lcom/wire/kalium/logic/feature/user/SelfServerConfigUseCase;
+	public abstract fun getUserSetUserHandle ()Lcom/wire/kalium/logic/feature/user/SetUserHandleUseCase;
+	public abstract fun getUserUpdateAccentColor ()Lcom/wire/kalium/logic/feature/user/UpdateAccentColorUseCase;
+	public abstract fun getUserUpdateDisplayName ()Lcom/wire/kalium/logic/feature/user/UpdateDisplayNameUseCase;
+	public abstract fun getUserUpdateEmail ()Lcom/wire/kalium/logic/feature/user/UpdateEmailUseCase;
+	public abstract fun getUserUpdateSelfAvailabilityStatus ()Lcom/wire/kalium/logic/feature/user/UpdateSelfAvailabilityStatusUseCase;
+	public abstract fun getUserUploadUserAvatar ()Lcom/wire/kalium/logic/feature/user/UploadUserAvatarUseCase;
 }
 
 public final class com/wire/kalium/logic/failure/NoClientsForUser : com/wire/kalium/common/error/CoreFailure$FeatureFailure {
@@ -1294,17 +1633,24 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun callPresentations (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun createConsumer ()Lcom/wire/kalium/logic/di/KaliumConsumer;
 	public final fun getAnalyticsIdentifierManager ()Lcom/wire/kalium/logic/feature/analytics/AnalyticsIdentifierManager;
+	public final fun getAppApiFactory ()Lcom/wire/kalium/logic/di/KaliumAppApi$Factory;
 	public final fun getAppLockTeamFeatureConfigObserver ()Lcom/wire/kalium/logic/feature/applock/AppLockTeamFeatureConfigObserver;
 	public final fun getApproveLegalHoldRequest ()Lcom/wire/kalium/logic/feature/legalhold/ApproveLegalHoldRequestUseCase;
 	public final fun getApps ()Lcom/wire/kalium/logic/feature/app/AppScope;
 	public final fun getAuthenticationScope ()Lcom/wire/kalium/logic/feature/auth/AuthenticationScope;
 	public final fun getBackup ()Lcom/wire/kalium/logic/feature/backup/BackupScope;
+	public final fun getBackupApiFactory ()Lcom/wire/kalium/logic/di/KaliumBackupApi$Factory;
 	public final fun getCalls ()Lcom/wire/kalium/logic/feature/call/CallsScope;
+	public final fun getCallsApiFactory ()Lcom/wire/kalium/logic/di/KaliumCallsApi$Factory;
 	public final fun getCells ()Lcom/wire/kalium/cells/CellsScope;
 	public final fun getChannels ()Lcom/wire/kalium/logic/feature/channels/ChannelsScope;
+	public final fun getChannelsApi ()Lcom/wire/kalium/logic/di/KaliumChannelsApi;
 	public final fun getCheckCrlRevocationList ()Lcom/wire/kalium/logic/feature/e2ei/CheckCrlRevocationListUseCase;
 	public final fun getClient ()Lcom/wire/kalium/logic/feature/client/ClientScope;
+	public final fun getClientApi ()Lcom/wire/kalium/logic/di/KaliumClientApi;
 	public final fun getConnection ()Lcom/wire/kalium/logic/feature/connection/ConnectionScope;
+	public final fun getConnectionApiFactory ()Lcom/wire/kalium/logic/di/KaliumConnectionApi$Factory;
+	public final fun getConversationApi ()Lcom/wire/kalium/logic/di/KaliumConversationApi;
 	public final fun getConversations ()Lcom/wire/kalium/logic/feature/conversation/ConversationScope;
 	public fun getCoroutineContext ()Lkotlin/coroutines/CoroutineContext;
 	public final fun getFederatedIdMapper ()Lcom/wire/kalium/logic/data/id/FederatedIdMapper;
@@ -1326,11 +1672,14 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getMarkNotifyForRevokedCertificateAsNotified ()Lcom/wire/kalium/logic/feature/user/e2ei/MarkNotifyForRevokedCertificateAsNotifiedUseCase;
 	public final fun getMarkSelfDeletingMessagesAsNotified ()Lcom/wire/kalium/logic/feature/user/MarkSelfDeletionStatusAsNotifiedUseCase;
 	public final fun getMarkTeamAppLockStatusAsNotified ()Lcom/wire/kalium/logic/feature/applock/MarkTeamAppLockStatusAsNotifiedUseCase;
+	public final fun getMeetingApi ()Lcom/wire/kalium/logic/di/KaliumMeetingApi;
 	public final fun getMeetings ()Lcom/wire/kalium/logic/feature/meeting/MeetingScope;
+	public final fun getMessageApi ()Lcom/wire/kalium/logic/di/KaliumMessageApi;
 	public final fun getMessages ()Lcom/wire/kalium/logic/feature/message/MessageScope;
 	public final fun getMigrateConversationToMLS ()Lcom/wire/kalium/logic/feature/conversation/MigrateConversationToMLSUseCase;
 	public final fun getMigrateFromPersonalToTeam ()Lcom/wire/kalium/logic/feature/user/migration/MigrateFromPersonalToTeamUseCase;
 	public final fun getMultiPlatformBackup ()Lcom/wire/kalium/logic/feature/backup/MultiPlatformBackupScope;
+	public final fun getMultiPlatformBackupApiFactory ()Lcom/wire/kalium/logic/di/KaliumMultiPlatformBackupApi$Factory;
 	public final fun getObserveAnalyticsTrackingIdentifierStatus ()Lcom/wire/kalium/logic/feature/analytics/ObserveAnalyticsTrackingIdentifierStatusUseCase;
 	public final fun getObserveE2EIRequired ()Lcom/wire/kalium/logic/feature/user/ObserveE2EIRequiredUseCase;
 	public final fun getObserveFileSharingStatus ()Lcom/wire/kalium/logic/feature/user/ObserveFileSharingStatusUseCase;
@@ -1353,13 +1702,17 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getRecoverMLSConversationsForUser ()Lcom/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserUseCase;
 	public final fun getResetMlsConversation ()Lcom/wire/kalium/logic/data/conversation/ResetMLSConversationUseCase;
 	public final fun getSearch ()Lcom/wire/kalium/logic/feature/search/SearchScope;
+	public final fun getSearchApi ()Lcom/wire/kalium/logic/di/KaliumSearchApi;
 	public final fun getSendPendingMessages ()Lcom/wire/kalium/logic/sync/SendPendingMessagesUseCase;
 	public final fun getService ()Lcom/wire/kalium/logic/feature/service/ServiceScope;
+	public final fun getServiceApiFactory ()Lcom/wire/kalium/logic/di/KaliumServiceApi$Factory;
 	public final fun getSetNewUserTrackingIdentifier ()Lcom/wire/kalium/logic/feature/analytics/SetNewUserTrackingIdentifierUseCase;
 	public final fun getSyncExecutor ()Lcom/wire/kalium/logic/sync/SyncExecutor;
 	public final fun getSyncManager ()Lcom/wire/kalium/logic/sync/SyncStateObserver;
 	public final fun getSyncMeetingsUseCase ()Lcom/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase;
 	public final fun getTeam ()Lcom/wire/kalium/logic/feature/team/TeamScope;
+	public final fun getTeamApiFactory ()Lcom/wire/kalium/logic/di/KaliumTeamApi$Factory;
+	public final fun getUserApi ()Lcom/wire/kalium/logic/di/KaliumUserApi;
 	public final fun getUsers ()Lcom/wire/kalium/logic/feature/user/UserScope;
 	public final fun isCellsInitialized ()Z
 	public final fun isE2EIEnabled ()Lcom/wire/kalium/logic/feature/user/IsE2EIEnabledUseCase;
@@ -1850,6 +2203,7 @@ public final class com/wire/kalium/logic/feature/auth/AuthenticationScope {
 	public final fun getCurrentServerConfig ()Lkotlin/jvm/functions/Function0;
 	public final fun getDomainLookup ()Lcom/wire/kalium/logic/feature/auth/DomainLookupUseCase;
 	public final fun getGetLoginFlowForDomainUseCase ()Lcom/wire/kalium/logic/feature/auth/GetLoginFlowForDomainUseCase;
+	public final fun getIndividualVerificationApi ()Lcom/wire/kalium/logic/di/KaliumAuthenticationVerificationApi;
 	public final fun getLogin ()Lcom/wire/kalium/logic/feature/auth/LoginUseCase;
 	public final fun getRegisterScope ()Lcom/wire/kalium/logic/feature/register/RegisterScope;
 	public final fun getRequestSecondFactorVerificationCode ()Lcom/wire/kalium/logic/feature/auth/verification/RequestSecondFactorVerificationCodeUseCase;

@@ -98,6 +98,20 @@ public abstract class CoreLogicCommon internal constructor(
         syncShutdownCoordinator.stopForRestart()
     }
 
+    public val globalAccountsApi: com.wire.kalium.logic.di.KaliumGlobalAccountsApi
+        get() = getGlobalScope().kaliumGraph
+
+    public val globalValidationApi: com.wire.kalium.logic.di.KaliumGlobalValidationApi
+        get() = getGlobalScope().kaliumGraph
+
+    public val globalRuntimeApi: com.wire.kalium.logic.di.KaliumGlobalRuntimeApi
+        get() = getGlobalScope().kaliumGraph
+
+    public val sessionSelectionApiFactory: com.wire.kalium.logic.di.KaliumSessionSelectionApi.Factory
+        get() = com.wire.kalium.logic.di.KaliumSessionSelectionApi.Factory {
+            getGlobalScope().createIndividualSessionApi()
+        }
+
     public fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS

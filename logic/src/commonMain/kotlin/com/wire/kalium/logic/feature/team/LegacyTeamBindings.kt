@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.team
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.di.KaliumTeamApi
 import com.wire.kalium.logic.feature.LegacyFacadeLifetime
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
@@ -44,7 +45,7 @@ internal interface LegacyTeamDependencies {
 }
 
 /** Individual entry points; capture accessors also preserve explicit legacy aliases. */
-internal interface LegacyTeamApi {
+internal interface LegacyTeamApi : KaliumTeamApi {
     @get:LegacyTeamBinding("teamRepository")
     val teamTeamRepository: TeamRepository
 
@@ -55,10 +56,10 @@ internal interface LegacyTeamApi {
     val teamSelfTeamIdProvider: SelfTeamIdProvider
 
     @get:LegacyTeamBinding("syncSelfTeamInfoUseCase")
-    val teamSyncSelfTeamInfoUseCase: SyncSelfTeamInfoUseCase
+    override val teamSyncSelfTeamInfoUseCase: SyncSelfTeamInfoUseCase
 
     @get:LegacyTeamBinding("isSelfATeamMember")
-    val teamIsSelfATeamMember: IsSelfATeamMemberUseCase
+    override val teamIsSelfATeamMember: IsSelfATeamMemberUseCase
 }
 
 /** Per-instance capture providers and individual, unscoped use-case constructors. */

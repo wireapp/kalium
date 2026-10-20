@@ -179,7 +179,7 @@ internal interface CellsOwnerPorts {
     suspend fun getNodeServiceApi(credentials: () -> CellsCredentialsProvider): NodeServiceApi
 }
 
-internal interface LegacyCellsApi {
+internal interface LegacyCellsApi : KaliumCellsApi {
     @get:LegacyCellsBinding("cellsCredentialsProvider")
     val cellsCellsCredentialsProvider: CellsCredentialsProvider
 
@@ -211,170 +211,169 @@ internal interface LegacyCellsApi {
     val cellsCellFileRepository: CellFileRepository
 
     @get:LegacyCellsBinding("uploadManager")
-    val cellsUploadManager: CellUploadManager
+    override val cellsUploadManager: CellUploadManager
 
     @get:LegacyCellsBinding("uploadCoordinator")
-    val cellsUploadCoordinator: CellUploadCoordinator
+    override val cellsUploadCoordinator: CellUploadCoordinator
 
     @get:LegacyCellsBinding("addAttachment")
-    val cellsAddAttachment: AddAttachmentDraftUseCase
+    override val cellsAddAttachment: AddAttachmentDraftUseCase
 
     @get:LegacyCellsBinding("removeAttachment")
-    val cellsRemoveAttachment: RemoveAttachmentDraftUseCase
+    override val cellsRemoveAttachment: RemoveAttachmentDraftUseCase
 
     @get:LegacyCellsBinding("removeAttachments")
-    val cellsRemoveAttachments: RemoveAttachmentDraftsUseCase
+    override val cellsRemoveAttachments: RemoveAttachmentDraftsUseCase
 
     @get:LegacyCellsBinding("observeAttachments")
-    val cellsObserveAttachments: ObserveAttachmentDraftsUseCase
+    override val cellsObserveAttachments: ObserveAttachmentDraftsUseCase
 
     @get:LegacyCellsBinding("publishAttachments")
-    val cellsPublishAttachments: PublishAttachmentsUseCase
+    override val cellsPublishAttachments: PublishAttachmentsUseCase
 
     @get:LegacyCellsBinding("selfTeamIdProvider")
     val cellsSelfTeamIdProvider: SelfTeamIdProvider
 
     @get:LegacyCellsBinding("observeFiles")
-    val cellsObserveFiles: GetPaginatedNodesUseCase
+    override val cellsObserveFiles: GetPaginatedNodesUseCase
 
     @get:LegacyCellsBinding("observePagedFiles")
-    val cellsObservePagedFiles: GetCellFilesPagedUseCase
+    override val cellsObservePagedFiles: GetCellFilesPagedUseCase
 
     @get:LegacyCellsBinding("downloadCellFile")
-    val cellsDownloadCellFile: DownloadCellFileUseCase
+    override val cellsDownloadCellFile: DownloadCellFileUseCase
 
     @get:LegacyCellsBinding("fileDownloader")
     val cellsFileDownloader: FileDownloader
 
     @get:LegacyCellsBinding("refreshAsset")
-    val cellsRefreshAsset: RefreshCellAssetStateUseCase
+    override val cellsRefreshAsset: RefreshCellAssetStateUseCase
 
     @get:LegacyCellsBinding("deleteAttachmentsUseCase")
     val cellsDeleteAttachmentsUseCase: DeleteMessageAttachmentsUseCase
 
     @get:LegacyCellsBinding("deleteCellAssetUseCase")
-    val cellsDeleteCellAssetUseCase: DeleteCellAssetUseCase
+    override val cellsDeleteCellAssetUseCase: DeleteCellAssetUseCase
 
     @get:LegacyCellsBinding("createPublicLinkUseCase")
-    val cellsCreatePublicLinkUseCase: CreatePublicLinkUseCase
+    override val cellsCreatePublicLinkUseCase: CreatePublicLinkUseCase
 
     @get:LegacyCellsBinding("getPublicLinkUseCase")
-    val cellsGetPublicLinkUseCase: GetPublicLinkUseCase
+    override val cellsGetPublicLinkUseCase: GetPublicLinkUseCase
 
     @get:LegacyCellsBinding("deletePublicLinkUseCase")
-    val cellsDeletePublicLinkUseCase: DeletePublicLinkUseCase
+    override val cellsDeletePublicLinkUseCase: DeletePublicLinkUseCase
 
     @get:LegacyCellsBinding("retryAttachmentUpload")
-    val cellsRetryAttachmentUpload: RetryAttachmentUploadUseCase
+    override val cellsRetryAttachmentUpload: RetryAttachmentUploadUseCase
 
     @get:LegacyCellsBinding("createFolderUseCase")
-    val cellsCreateFolderUseCase: CreateFolderUseCase
+    override val cellsCreateFolderUseCase: CreateFolderUseCase
 
     @get:LegacyCellsBinding("createSpreadsheetFileUseCase")
-    val cellsCreateSpreadsheetFileUseCase: CreateSpreadsheetFileUseCase
+    override val cellsCreateSpreadsheetFileUseCase: CreateSpreadsheetFileUseCase
 
     @get:LegacyCellsBinding("createPresentationFileUseCase")
-    val cellsCreatePresentationFileUseCase: CreatePresentationFileUseCase
+    override val cellsCreatePresentationFileUseCase: CreatePresentationFileUseCase
 
     @get:LegacyCellsBinding("createDocumentFileUseCase")
-    val cellsCreateDocumentFileUseCase: CreateDocumentFileUseCase
+    override val cellsCreateDocumentFileUseCase: CreateDocumentFileUseCase
 
     @get:LegacyCellsBinding("moveNodeUseCase")
-    val cellsMoveNodeUseCase: MoveNodeUseCase
+    override val cellsMoveNodeUseCase: MoveNodeUseCase
 
     @get:LegacyCellsBinding("getFoldersUseCase")
-    val cellsGetFoldersUseCase: GetFoldersUseCase
+    override val cellsGetFoldersUseCase: GetFoldersUseCase
 
     @get:LegacyCellsBinding("restoreNodeFromRecycleBin")
-    val cellsRestoreNodeFromRecycleBin: RestoreNodeFromRecycleBinUseCase
+    override val cellsRestoreNodeFromRecycleBin: RestoreNodeFromRecycleBinUseCase
 
     @get:LegacyCellsBinding("getAllTags")
-    val cellsGetAllTags: GetAllTagsUseCase
+    override val cellsGetAllTags: GetAllTagsUseCase
 
     @get:LegacyCellsBinding("updateNodeTagsUseCase")
-    val cellsUpdateNodeTagsUseCase: UpdateNodeTagsUseCase
+    override val cellsUpdateNodeTagsUseCase: UpdateNodeTagsUseCase
 
     @get:LegacyCellsBinding("removeNodeTagsUseCase")
-    val cellsRemoveNodeTagsUseCase: RemoveNodeTagsUseCase
+    override val cellsRemoveNodeTagsUseCase: RemoveNodeTagsUseCase
 
     @get:LegacyCellsBinding("renameNodeUseCase")
-    val cellsRenameNodeUseCase: RenameNodeUseCase
+    override val cellsRenameNodeUseCase: RenameNodeUseCase
 
     @get:LegacyCellsBinding("isCellAvailable")
-    val cellsIsCellAvailable: IsAtLeastOneCellAvailableUseCase
+    override val cellsIsCellAvailable: IsAtLeastOneCellAvailableUseCase
 
     @get:LegacyCellsBinding("observeIsCellAvailable")
-    val cellsObserveIsCellAvailable: ObserveIsAtLeastOneCellAvailableUseCase
+    override val cellsObserveIsCellAvailable: ObserveIsAtLeastOneCellAvailableUseCase
 
     @get:LegacyCellsBinding("getMessageAttachmentUseCase")
-    val cellsGetMessageAttachmentUseCase: GetMessageAttachmentUseCase
+    override val cellsGetMessageAttachmentUseCase: GetMessageAttachmentUseCase
 
     @get:LegacyCellsBinding("getOwnersUseCase")
-    val cellsGetOwnersUseCase: GetOwnersUseCase
+    override val cellsGetOwnersUseCase: GetOwnersUseCase
 
     @get:LegacyCellsBinding("getCellGroupConversationsUseCase")
     val cellsGetCellGroupConversationsUseCase: GetCellGroupConversationsUseCase
 
     @get:LegacyCellsBinding("getCellConversationsPagedUseCase")
-    val cellsGetCellConversationsPagedUseCase: GetCellConversationsPagedUseCase
+    override val cellsGetCellConversationsPagedUseCase: GetCellConversationsPagedUseCase
 
     @get:LegacyCellsBinding("getMessageAttachmentsUseCase")
     val cellsGetMessageAttachmentsUseCase: GetMessageAttachmentsUseCase
 
     @get:LegacyCellsBinding("getCellFileUseCase")
-    val cellsGetCellFileUseCase: GetCellFileUseCase
+    override val cellsGetCellFileUseCase: GetCellFileUseCase
 
     @get:LegacyCellsBinding("createPublicLinkPasswordUseCase")
-    val cellsCreatePublicLinkPasswordUseCase: CreatePublicLinkPasswordUseCase
+    override val cellsCreatePublicLinkPasswordUseCase: CreatePublicLinkPasswordUseCase
 
     @get:LegacyCellsBinding("updatePublicLinkPasswordUseCase")
-    val cellsUpdatePublicLinkPasswordUseCase: UpdatePublicLinkPasswordUseCase
+    override val cellsUpdatePublicLinkPasswordUseCase: UpdatePublicLinkPasswordUseCase
 
     @get:LegacyCellsBinding("getPublicLinkPassword")
-    val cellsGetPublicLinkPassword: GetPublicLinkPasswordUseCase
+    override val cellsGetPublicLinkPassword: GetPublicLinkPasswordUseCase
 
     @get:LegacyCellsBinding("setPublicLinkExpiration")
-    val cellsSetPublicLinkExpiration: SetPublicLinkExpirationUseCase
+    override val cellsSetPublicLinkExpiration: SetPublicLinkExpirationUseCase
 
     @get:LegacyCellsBinding("getEditorUrl")
-    val cellsGetEditorUrl: GetEditorUrlUseCase
+    override val cellsGetEditorUrl: GetEditorUrlUseCase
 
     @get:LegacyCellsBinding("getPdfPreviewUrl")
-    val cellsGetPdfPreviewUrl: GetPdfPreviewUrlUseCase
+    override val cellsGetPdfPreviewUrl: GetPdfPreviewUrlUseCase
 
     @get:LegacyCellsBinding("getNodeVersions")
-    val cellsGetNodeVersions: GetNodeVersionsUseCase
+    override val cellsGetNodeVersions: GetNodeVersionsUseCase
 
     @get:LegacyCellsBinding("restoreNodeVersion")
-    val cellsRestoreNodeVersion: RestoreNodeVersionUseCase
+    override val cellsRestoreNodeVersion: RestoreNodeVersionUseCase
 
     @get:LegacyCellsBinding("downloadCellVersion")
-    val cellsDownloadCellVersion: DownloadCellVersionUseCase
+    override val cellsDownloadCellVersion: DownloadCellVersionUseCase
 
     @get:LegacyCellsBinding("getCellConfig")
-    val cellsGetCellConfig: GetWireCellConfigurationUseCase
+    override val cellsGetCellConfig: GetWireCellConfigurationUseCase
 
     @get:LegacyCellsBinding("saveOfflineFile")
-    val cellsSaveOfflineFile: SaveOfflineFileUseCase
+    override val cellsSaveOfflineFile: SaveOfflineFileUseCase
 
     @get:LegacyCellsBinding("deleteOfflineFile")
-    val cellsDeleteOfflineFile: DeleteOfflineFileUseCase
+    override val cellsDeleteOfflineFile: DeleteOfflineFileUseCase
 
     @get:LegacyCellsBinding("observeOfflineFiles")
-    val cellsObserveOfflineFiles: ObserveOfflineFilesUseCase
+    override val cellsObserveOfflineFiles: ObserveOfflineFilesUseCase
 
     @get:LegacyCellsBinding("observeOfflineFilesByConversation")
-    val cellsObserveOfflineFilesByConversation: ObserveOfflineFilesByConversationUseCase
+    override val cellsObserveOfflineFilesByConversation: ObserveOfflineFilesByConversationUseCase
 
     @get:LegacyCellsBinding("getOfflineFile")
-    val cellsGetOfflineFile: GetOfflineFileUseCase
+    override val cellsGetOfflineFile: GetOfflineFileUseCase
 
     @get:LegacyCellsBinding("getConversationName")
-    val cellsGetConversationName: GetConversationNameUseCase
+    override val cellsGetConversationName: GetConversationNameUseCase
 
     @get:LegacyCellsBinding("getUserName")
-    val cellsGetUserName: GetUserNameUseCase
-
+    override val cellsGetUserName: GetUserNameUseCase
 }
 
 /** Canonical common contract; final annotated roots live in the platform leaf source sets. */

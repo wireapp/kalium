@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.app
 
 import com.wire.kalium.logic.data.app.AppRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.di.KaliumAppApi
 import com.wire.kalium.logic.feature.LegacyFacadeLifetime
 import dev.zacsweers.metro.GraphExtension
 import dev.zacsweers.metro.Provides
@@ -41,7 +42,7 @@ internal interface LegacyAppDependencies {
 }
 
 /** Individual entry points; capture accessors also preserve explicit legacy aliases. */
-internal interface LegacyAppApi {
+internal interface LegacyAppApi : KaliumAppApi {
     @get:LegacyAppBinding("appRepository")
     val appAppRepository: AppRepository
 
@@ -52,19 +53,19 @@ internal interface LegacyAppApi {
     val appApiVersion: Int
 
     @get:LegacyAppBinding("syncApps")
-    val appSyncApps: SyncAppsUseCase
+    override val appSyncApps: SyncAppsUseCase
 
     @get:LegacyAppBinding("getAppById")
-    val appGetAppById: GetAppByIdUseCase
+    override val appGetAppById: GetAppByIdUseCase
 
     @get:LegacyAppBinding("observeIsAppMember")
-    val appObserveIsAppMember: ObserveIsAppMemberUseCase
+    override val appObserveIsAppMember: ObserveIsAppMemberUseCase
 
     @get:LegacyAppBinding("observeAllApps")
-    val appObserveAllApps: ObserveAllAppsUseCase
+    override val appObserveAllApps: ObserveAllAppsUseCase
 
     @get:LegacyAppBinding("searchAppsByName")
-    val appSearchAppsByName: SearchAppsByNameUseCase
+    override val appSearchAppsByName: SearchAppsByNameUseCase
 }
 
 /** Per-instance capture providers and individual, unscoped use-case constructors. */

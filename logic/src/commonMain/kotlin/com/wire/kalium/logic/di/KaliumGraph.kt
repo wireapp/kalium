@@ -47,6 +47,7 @@ import com.wire.kalium.logic.feature.search.LegacySearchBindings
 import com.wire.kalium.logic.feature.search.LegacySearchDependencies
 import com.wire.kalium.logic.feature.user.LegacyUserBindings
 import com.wire.kalium.logic.feature.user.LegacyUserDependencies
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorkerImpl
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import dev.zacsweers.metro.GraphExtension
@@ -76,6 +77,7 @@ internal expect fun createKaliumGraph(inputs: GlobalGraphInputs, owner: GlobalGr
 /** Retained for the active account generation, including ordinary Apple background suspension. */
 @GraphExtension(UserLifetime::class)
 internal interface KaliumUserGraph :
+    UserSessionBindings,
     LegacyConversationBindings,
     LegacyMessageBindings,
     LegacyClientBindings,
@@ -85,6 +87,7 @@ internal interface KaliumUserGraph :
     LegacyMeetingBindings,
     LegacyDebugBindings {
     val consumerGraphFactory: KaliumConsumerGraph.Factory
+    val audioNormalizedLoudnessWorkerFactory: AudioNormalizedLoudnessWorkerImpl.Factory
     val teamFacadeGraphFactory: LegacyTeamFacadeGraph.Factory
     val serviceFacadeGraphFactory: LegacyServiceFacadeGraph.Factory
     val appFacadeGraphFactory: LegacyAppFacadeGraph.Factory
@@ -106,6 +109,10 @@ internal interface KaliumUserGraph :
             @Provides legacySearchDependencies: LegacySearchDependencies,
             @Provides legacyUserDependencies: LegacyUserDependencies,
             @Provides legacyClientDependencies: LegacyClientDependencies,
+            @Provides userSessionResourceInputs: UserSessionResourceInputs,
+            @Provides userSessionStateInputs: UserSessionStateInputs,
+            @Provides userSessionOwnershipInputs: UserSessionOwnershipInputs,
+            @Provides userSessionGlobalInputs: UserSessionGlobalInputs,
         ): KaliumUserGraph
     }
 }

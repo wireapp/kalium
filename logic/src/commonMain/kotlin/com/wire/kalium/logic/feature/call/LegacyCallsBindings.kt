@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.KaliumCallsApi
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
@@ -54,7 +55,6 @@ import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveActiveCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveActiveCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
-import com.wire.kalium.logic.feature.call.usecase.observeAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallModerationActionsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallModerationActionsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallQualityDataUseCase
@@ -102,6 +102,7 @@ import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.observeAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.call.usecase.video.SetVideoSendStateUseCase
 import com.wire.kalium.logic.feature.call.usecase.video.UpdateVideoStateUseCase
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
@@ -145,7 +146,7 @@ internal interface LegacyCallsDependencies {
     val dispatcher: KaliumDispatcher get() = KaliumDispatcherImpl
 }
 
-internal interface LegacyCallsApi {
+internal interface LegacyCallsApi : KaliumCallsApi {
     @get:LegacyCallsBinding("callManager")
     val callsCallManager: CapturedCallManager
 
@@ -204,73 +205,73 @@ internal interface LegacyCallsApi {
     val callsAllCallsWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
 
     @get:LegacyCallsBinding("establishedCall")
-    val callsEstablishedCall: ObserveEstablishedCallsUseCase
+    override val callsEstablishedCall: ObserveEstablishedCallsUseCase
 
     @get:LegacyCallsBinding("getIncomingCalls")
-    val callsGetIncomingCalls: GetIncomingCallsUseCase
+    override val callsGetIncomingCalls: GetIncomingCallsUseCase
 
     @get:LegacyCallsBinding("observeOutgoingCall")
-    val callsObserveOutgoingCall: ObserveOutgoingCallUseCase
+    override val callsObserveOutgoingCall: ObserveOutgoingCallUseCase
 
     @get:LegacyCallsBinding("isCallRunning")
-    val callsIsCallRunning: IsCallRunningUseCase
+    override val callsIsCallRunning: IsCallRunningUseCase
 
     @get:LegacyCallsBinding("observeOngoingCalls")
-    val callsObserveOngoingCalls: ObserveOngoingCallsUseCase
+    override val callsObserveOngoingCalls: ObserveOngoingCallsUseCase
 
     @get:LegacyCallsBinding("observeJoinableCalls")
-    val callsObserveJoinableCalls: ObserveJoinableCallsUseCase
+    override val callsObserveJoinableCalls: ObserveJoinableCallsUseCase
 
     @get:LegacyCallsBinding("observeOngoingAndIncomingCalls")
     val callsObserveOngoingAndIncomingCalls: ObserveOngoingAndIncomingCallsUseCase
 
     @get:LegacyCallsBinding("observeEstablishedCallWithSortedParticipants")
-    val callsObserveEstablishedCallWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
+    override val callsObserveEstablishedCallWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
 
     @get:LegacyCallsBinding("observeActiveCalls")
-    val callsObserveActiveCalls: ObserveActiveCallsUseCase
+    override val callsObserveActiveCalls: ObserveActiveCallsUseCase
 
     @get:LegacyCallsBinding("startCall")
-    val callsStartCall: StartCallUseCase
+    override val callsStartCall: StartCallUseCase
 
     @get:LegacyCallsBinding("answerCall")
-    val callsAnswerCall: AnswerCallUseCase
+    override val callsAnswerCall: AnswerCallUseCase
 
     @get:LegacyCallsBinding("endCall")
-    val callsEndCall: EndCallUseCase
+    override val callsEndCall: EndCallUseCase
 
     @get:LegacyCallsBinding("endCallOnConversationChange")
-    val callsEndCallOnConversationChange: EndCallOnConversationChangeUseCase
+    override val callsEndCallOnConversationChange: EndCallOnConversationChangeUseCase
 
     @get:LegacyCallsBinding("updateConversationClientsForCurrentCallUseCase")
     val callsUpdateConversationClientsForCurrentCallUseCase: UpdateConversationClientsForCurrentCallUseCase
 
     @get:LegacyCallsBinding("rejectCall")
-    val callsRejectCall: RejectCallUseCase
+    override val callsRejectCall: RejectCallUseCase
 
     @get:LegacyCallsBinding("muteCall")
-    val callsMuteCall: MuteCallUseCase
+    override val callsMuteCall: MuteCallUseCase
 
     @get:LegacyCallsBinding("unMuteCall")
-    val callsUnMuteCall: UnMuteCallUseCase
+    override val callsUnMuteCall: UnMuteCallUseCase
 
     @get:LegacyCallsBinding("updateVideoState")
-    val callsUpdateVideoState: UpdateVideoStateUseCase
+    override val callsUpdateVideoState: UpdateVideoStateUseCase
 
     @get:LegacyCallsBinding("setVideoSendState")
-    val callsSetVideoSendState: SetVideoSendStateUseCase
+    override val callsSetVideoSendState: SetVideoSendStateUseCase
 
     @get:LegacyCallsBinding("setVideoPreview")
-    val callsSetVideoPreview: SetVideoPreviewUseCase
+    override val callsSetVideoPreview: SetVideoPreviewUseCase
 
     @get:LegacyCallsBinding("setUIRotation")
-    val callsSetUIRotation: SetUIRotationUseCase
+    override val callsSetUIRotation: SetUIRotationUseCase
 
     @get:LegacyCallsBinding("flipToFrontCamera")
-    val callsFlipToFrontCamera: FlipToFrontCameraUseCase
+    override val callsFlipToFrontCamera: FlipToFrontCameraUseCase
 
     @get:LegacyCallsBinding("flipToBackCamera")
-    val callsFlipToBackCamera: FlipToBackCameraUseCase
+    override val callsFlipToBackCamera: FlipToBackCameraUseCase
 
     @get:LegacyCallsBinding("setTestVideoType")
     val callsSetTestVideoType: SetTestVideoTypeUseCase
@@ -282,28 +283,28 @@ internal interface LegacyCallsApi {
     val callsSetTestRemoteVideoStates: SetTestRemoteVideoStatesUseCase
 
     @get:LegacyCallsBinding("turnLoudSpeakerOff")
-    val callsTurnLoudSpeakerOff: TurnLoudSpeakerOffUseCase
+    override val callsTurnLoudSpeakerOff: TurnLoudSpeakerOffUseCase
 
     @get:LegacyCallsBinding("turnLoudSpeakerOn")
-    val callsTurnLoudSpeakerOn: TurnLoudSpeakerOnUseCase
+    override val callsTurnLoudSpeakerOn: TurnLoudSpeakerOnUseCase
 
     @get:LegacyCallsBinding("observeSpeaker")
-    val callsObserveSpeaker: ObserveSpeakerUseCase
+    override val callsObserveSpeaker: ObserveSpeakerUseCase
 
     @get:LegacyCallsBinding("callingParticipantsOrder")
     val callsCallingParticipantsOrder: CallingParticipantsOrder
 
     @get:LegacyCallsBinding("isLastCallClosed")
-    val callsIsLastCallClosed: IsLastCallClosedUseCase
+    override val callsIsLastCallClosed: IsLastCallClosedUseCase
 
     @get:LegacyCallsBinding("requestVideoStreams")
-    val callsRequestVideoStreams: RequestVideoStreamsUseCase
+    override val callsRequestVideoStreams: RequestVideoStreamsUseCase
 
     @get:LegacyCallsBinding("isEligibleToStartCall")
-    val callsIsEligibleToStartCall: IsEligibleToStartCallUseCase
+    override val callsIsEligibleToStartCall: IsEligibleToStartCallUseCase
 
     @get:LegacyCallsBinding("observeConferenceCallingEnabled")
-    val callsObserveConferenceCallingEnabled: ObserveConferenceCallingEnabledUseCase
+    override val callsObserveConferenceCallingEnabled: ObserveConferenceCallingEnabledUseCase
 
     @get:LegacyCallsBinding("observeEndCallDueToDegradationDialog")
     val callsObserveEndCallDueToDegradationDialog: ObserveEndCallDueToConversationDegradationUseCase
@@ -321,26 +322,25 @@ internal interface LegacyCallsApi {
     val callsObserveRecentlyEndedCallMetadata: ObserveRecentlyEndedCallMetadataUseCase
 
     @get:LegacyCallsBinding("observeInCallReactions")
-    val callsObserveInCallReactions: ObserveInCallReactionsUseCase
+    override val callsObserveInCallReactions: ObserveInCallReactionsUseCase
 
     @get:LegacyCallsBinding("observeLastActiveCallWithSortedParticipants")
-    val callsObserveLastActiveCallWithSortedParticipants: ObserveLastActiveCallWithSortedParticipantsUseCase
+    override val callsObserveLastActiveCallWithSortedParticipants: ObserveLastActiveCallWithSortedParticipantsUseCase
 
     @get:LegacyCallsBinding("setBackground")
     val callsSetBackground: SetBackgroundUseCase
 
     @get:LegacyCallsBinding("observeCallQualityData")
-    val callsObserveCallQualityData: ObserveCallQualityDataUseCase
+    override val callsObserveCallQualityData: ObserveCallQualityDataUseCase
 
     @get:LegacyCallsBinding("setCallQualityInterval")
-    val callsSetCallQualityInterval: SetCallQualityIntervalUseCase
+    override val callsSetCallQualityInterval: SetCallQualityIntervalUseCase
 
     @get:LegacyCallsBinding("observeCallModerationActions")
-    val callsObserveCallModerationActions: ObserveCallModerationActionsUseCase
+    override val callsObserveCallModerationActions: ObserveCallModerationActionsUseCase
 
     @get:LegacyCallsBinding("observeStaleOpenCallsCleanup")
     val callsObserveStaleOpenCallsCleanup: ObserveStaleOpenCallsCleanupUseCase
-
 }
 
 /** Individual bindings retained only by an existing fresh facade owner. */

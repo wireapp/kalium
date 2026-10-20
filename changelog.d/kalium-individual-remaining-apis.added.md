@@ -1,0 +1,3 @@
+Added individual APIs for fresh call, backup, multiplatform backup, team, service, app and connection operations, plus borrowed Cells/authentication APIs and individual global/session selection APIs. Fresh API factories preserve each operation's existing captures and caches; Cells and authentication retain their existing owners. Existing facade APIs remain available.
+
+These APIs preserve legacy account-quiescence obligations. They do not expand the three guarded consumer read paths or rewire parent-built use cases. Consumer hosts continue to create and close their explicit consumer owner. Android paging adapters remain Android-only. Public additions require published-module ABI and Apple/Swift export validation before release.

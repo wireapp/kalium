@@ -137,6 +137,11 @@ public class GlobalKaliumScope internal constructor(inputs: GlobalGraphInputs) :
     public val observeAllValidSessionsFlow: ObserveSessionsUseCase
         get() = kaliumGraph.globalObserveAllValidSessionsFlow
 
+    internal fun createIndividualSessionApi(): com.wire.kalium.logic.di.KaliumSessionSelectionApi {
+        val repository = kaliumGraph.globalSessionRepository
+        return com.wire.kalium.logic.di.createSessionSelectionApi(kaliumGraph.sessionGraphFactory, repository)
+    }
+
     public val session: SessionScope
         get() = kaliumGraph.globalSession
 

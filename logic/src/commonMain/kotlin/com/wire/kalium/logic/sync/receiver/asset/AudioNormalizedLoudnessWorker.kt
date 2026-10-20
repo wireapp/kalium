@@ -21,12 +21,19 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.feature.asset.MessageAssetResult
+import com.wire.kalium.logic.di.GlobalBinding
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
+import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
+import com.wire.kalium.logic.feature.asset.MessageAssetResult
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
 import com.wire.kalium.logic.feature.message.GetMessageByIdUseCase
-import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.message.LegacyMessageBinding
 import com.wire.kalium.logic.sync.DefaultWorker
 import com.wire.kalium.logic.sync.Result
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.Provider
 
 internal interface AudioNormalizedLoudnessWorker : DefaultWorker {
     override suspend fun doWork(): Result
@@ -36,11 +43,20 @@ internal interface AudioNormalizedLoudnessWorker : DefaultWorker {
     }
 }
 
+/** Providers preserve fresh lookup at each old facade getter read, including repeated work. */
+@AssistedInject
+@Suppress("LongParameterList") // Two operation IDs, three deferred use cases and the existing global builder.
 internal class AudioNormalizedLoudnessWorkerImpl(
-    private val conversationId: ConversationId,
-    private val messageId: String,
-    private val messageScope: MessageScope,
-    private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
+    @Assisted private val conversationId: ConversationId,
+    @Assisted private val messageId: String,
+    @LegacyMessageBinding("getMessageById")
+    private val getMessageById: Provider<GetMessageByIdUseCase>,
+    @LegacyMessageBinding("getAssetMessage")
+    private val getAssetMessage: Provider<GetMessageAssetUseCase>,
+    @LegacyMessageBinding("updateAudioMessageNormalizedLoudnessUseCase")
+    private val updateAudioMessageNormalizedLoudness: Provider<UpdateAudioMessageNormalizedLoudnessUseCase>,
+    @GlobalBinding("audioNormalizedLoudnessBuilder")
+    private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
 ) : AudioNormalizedLoudnessWorker {
     override suspend fun doWork(): Result {
         getAssetContentOrNull()?.let { assetContent ->
@@ -54,7 +70,7 @@ internal class AudioNormalizedLoudnessWorkerImpl(
                     null
                 }
                 if (normalizedLoudness != null) {
-                    messageScope.updateAudioMessageNormalizedLoudnessUseCase(conversationId, messageId, normalizedLoudness)
+                    updateAudioMessageNormalizedLoudness()(conversationId, messageId, normalizedLoudness)
                     return Result.Success
                 }
             }
@@ -62,14 +78,14 @@ internal class AudioNormalizedLoudnessWorkerImpl(
         return Result.Failure // if any of the conditions are not met
     }
 
-    private suspend fun getAssetContentOrNull(): AssetContent? = messageScope.getMessageById(conversationId, messageId).let {
+    private suspend fun getAssetContentOrNull(): AssetContent? = getMessageById()(conversationId, messageId).let {
         (it as? GetMessageByIdUseCase.Result.Success)?.message?.content?.let {
             (it as? MessageContent.Asset)?.value
         }
     }
 
     private suspend fun getAssetPathOrNull(): String? = when (
-        val result = messageScope.getAssetMessage(
+        val result = getAssetMessage()(
             conversationId,
             messageId
         )
@@ -77,5 +93,10 @@ internal class AudioNormalizedLoudnessWorkerImpl(
     ) {
         is MessageAssetResult.Success -> result.decodedAssetPath.toString()
         else -> null
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(conversationId: ConversationId, messageId: String): AudioNormalizedLoudnessWorkerImpl
     }
 }

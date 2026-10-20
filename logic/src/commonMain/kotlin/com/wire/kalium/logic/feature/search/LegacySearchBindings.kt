@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.KaliumSearchApi
 import com.wire.kalium.logic.di.UserLifetime
 import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUseCase
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
@@ -57,7 +58,7 @@ internal interface LegacySearchDependencies {
 }
 
 /** Individual entry points for the compatibility facade and user runtime. */
-internal interface LegacySearchApi {
+internal interface LegacySearchApi : KaliumSearchApi {
     @get:LegacySearchBinding("mlsPublicKeysRepository")
     val searchMlsPublicKeysRepository: MLSPublicKeysRepository
 
@@ -80,16 +81,16 @@ internal interface LegacySearchApi {
     val searchKaliumConfigs: KaliumConfigs
 
     @get:LegacySearchBinding("searchUsersByName")
-    val searchSearchUsersByName: SearchUsersByNameUseCase
+    override val searchSearchUsersByName: SearchUsersByNameUseCase
 
     @get:LegacySearchBinding("searchUsersByHandle")
-    val searchSearchUsersByHandle: SearchUsersByHandleUseCase
+    override val searchSearchUsersByHandle: SearchUsersByHandleUseCase
 
     @get:LegacySearchBinding("federatedSearchParser")
-    val searchFederatedSearchParser: FederatedSearchParser
+    override val searchFederatedSearchParser: FederatedSearchParser
 
     @get:LegacySearchBinding("isFederationSearchAllowedUseCase")
-    val searchIsFederationSearchAllowedUseCase: IsFederationSearchAllowedUseCase
+    override val searchIsFederationSearchAllowedUseCase: IsFederationSearchAllowedUseCase
 }
 
 /**

@@ -49,4 +49,8 @@ internal fun KaliumUserGraph.Factory.create(
     legacyChannelsDependencies = mock<LegacyChannelsDependencies>(),
     legacyMeetingDependencies = mock<LegacyMeetingDependencies>(),
     legacyDebugDependencies = mock<LegacyDebugDependencies>(),
+    userSessionResourceInputs = mock<UserSessionResourceInputs>(),
+    userSessionStateInputs = mock<UserSessionStateInputs>(),
+    userSessionOwnershipInputs = mock<UserSessionOwnershipInputs>(),
+    userSessionGlobalInputs = mock<UserSessionGlobalInputs>(),
 )

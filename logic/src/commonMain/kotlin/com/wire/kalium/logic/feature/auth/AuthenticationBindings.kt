@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepo
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepositoryImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
+import com.wire.kalium.logic.di.KaliumAuthenticationVerificationApi
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCase
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseImpl
@@ -82,14 +83,14 @@ internal class AuthenticationGraphInputValues(
     override val kaliumConfigs: KaliumConfigs,
 ) : AuthenticationGraphInputs
 
-internal interface AuthenticationApi {
+internal interface AuthenticationApi : KaliumAuthenticationVerificationApi {
     val serverConfig: ServerConfig
     val serverConfigRepository: ServerConfigRepository
     val ssoLoginRepository: SSOLoginRepository
     val secondFactorVerificationRepository: SecondFactorVerificationRepository
     val getLoginFlowForDomainUseCase: GetLoginFlowForDomainUseCase
     val login: LoginUseCase
-    val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
+    override val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
     val registerScope: RegisterScope
     val ssoLoginScope: SSOLoginScope
     val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase

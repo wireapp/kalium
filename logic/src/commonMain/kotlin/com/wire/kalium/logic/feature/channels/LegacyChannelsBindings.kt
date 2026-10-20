@@ -24,6 +24,7 @@ package com.wire.kalium.logic.feature.channels
 import com.wire.kalium.logic.configuration.ChannelsConfigurationStorage
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.SelfUserObservationProvider
+import com.wire.kalium.logic.di.KaliumChannelsApi
 import com.wire.kalium.logic.di.UserLifetime
 import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddPermissionUseCase
 import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddPermissionUseCaseImpl
@@ -59,7 +60,7 @@ internal interface LegacyChannelsDependencies {
 internal class LegacyChannelsCapture<out T>(val value: T)
 
 /** Individual entry points for the compatibility facade and user runtime. */
-internal interface LegacyChannelsApi {
+internal interface LegacyChannelsApi : KaliumChannelsApi {
     @get:LegacyChannelsBinding("selfUser")
     val channelsSelfUser: LegacyChannelsCapture<() -> GetSelfUserUseCase>
 
@@ -79,10 +80,10 @@ internal interface LegacyChannelsApi {
     val channelsChannelsFeatureConfigHandler: ChannelsFeatureConfigurationHandler
 
     @get:LegacyChannelsBinding("observeChannelsCreationPermissionUseCase")
-    val channelsObserveChannelsCreationPermissionUseCase: ObserveChannelsCreationPermissionUseCase
+    override val channelsObserveChannelsCreationPermissionUseCase: ObserveChannelsCreationPermissionUseCase
 
     @get:LegacyChannelsBinding("updateChannelAddPermission")
-    val channelsUpdateChannelAddPermission: UpdateChannelAddPermissionUseCase
+    override val channelsUpdateChannelAddPermission: UpdateChannelAddPermissionUseCase
 }
 
 /**

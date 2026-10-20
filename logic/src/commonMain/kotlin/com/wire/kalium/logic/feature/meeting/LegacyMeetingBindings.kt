@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.KaliumMeetingApi
 import com.wire.kalium.logic.di.UserLifetime
 import com.wire.kalium.logic.feature.conversation.LeaveConversationUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
@@ -64,7 +65,7 @@ internal interface LegacyMeetingDependencies {
 }
 
 /** Individual entry points for the compatibility facade and user runtime. */
-internal interface LegacyMeetingApi {
+internal interface LegacyMeetingApi : KaliumMeetingApi {
     @get:LegacyMeetingBinding("dispatcher")
     val meetingDispatcher: KaliumDispatcher
 
@@ -99,28 +100,28 @@ internal interface LegacyMeetingApi {
     val meetingMaintainMeetingOccurrences: MaintainMeetingOccurrencesUseCase
 
     @get:LegacyMeetingBinding("getPaginatedMeetingOccurrenceDetails")
-    val meetingGetPaginatedMeetingOccurrenceDetails: GetPaginatedMeetingOccurrencesUseCase
+    override val meetingGetPaginatedMeetingOccurrenceDetails: GetPaginatedMeetingOccurrencesUseCase
 
     @get:LegacyMeetingBinding("observeMeetingOccurrence")
-    val meetingObserveMeetingOccurrence: ObserveMeetingOccurrenceUseCase
+    override val meetingObserveMeetingOccurrence: ObserveMeetingOccurrenceUseCase
 
     @get:LegacyMeetingBinding("deleteMeetingForEveryone")
-    val meetingDeleteMeetingForEveryone: DeleteMeetingForEveryoneUseCase
+    override val meetingDeleteMeetingForEveryone: DeleteMeetingForEveryoneUseCase
 
     @get:LegacyMeetingBinding("deleteMeetingForMe")
-    val meetingDeleteMeetingForMe: DeleteMeetingForMeUseCase
+    override val meetingDeleteMeetingForMe: DeleteMeetingForMeUseCase
 
     @get:LegacyMeetingBinding("getNextUnfinishedMeetingOccurrence")
-    val meetingGetNextUnfinishedMeetingOccurrence: GetNextUnfinishedMeetingOccurrenceUseCase
+    override val meetingGetNextUnfinishedMeetingOccurrence: GetNextUnfinishedMeetingOccurrenceUseCase
 
     @get:LegacyMeetingBinding("ensureMeetingIsMLSEstablished")
-    val meetingEnsureMeetingIsMLSEstablished: EnsureMeetingIsMLSEstablishedUseCase
+    override val meetingEnsureMeetingIsMLSEstablished: EnsureMeetingIsMLSEstablishedUseCase
 
     @get:LegacyMeetingBinding("createNewMeeting")
-    val meetingCreateNewMeeting: CreateNewMeetingUseCase
+    override val meetingCreateNewMeeting: CreateNewMeetingUseCase
 
     @get:LegacyMeetingBinding("updateMeeting")
-    val meetingUpdateMeeting: UpdateMeetingUseCase
+    override val meetingUpdateMeeting: UpdateMeetingUseCase
 
     @get:LegacyMeetingBinding("meetingReminders")
     val meetingMeetingReminders: MeetingRemindersUseCase

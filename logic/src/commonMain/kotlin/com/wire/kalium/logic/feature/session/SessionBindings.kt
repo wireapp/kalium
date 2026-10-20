@@ -19,16 +19,17 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.di.KaliumSessionSelectionApi
 import dev.zacsweers.metro.GraphExtension
 import dev.zacsweers.metro.Provides
 
-internal interface SessionApi {
-    val allSessions: GetSessionsUseCase
+internal interface SessionApi : KaliumSessionSelectionApi {
+    override val allSessions: GetSessionsUseCase
     val allSessionsIncludingInvalid: GetAllSessionsUseCase
-    val allSessionsFlow: ObserveSessionsUseCase
-    val currentSession: CurrentSessionUseCase
-    val currentSessionFlow: CurrentSessionFlowUseCase
-    val updateCurrentSession: UpdateCurrentSessionUseCase
+    override val allSessionsFlow: ObserveSessionsUseCase
+    override val currentSession: CurrentSessionUseCase
+    override val currentSessionFlow: CurrentSessionFlowUseCase
+    override val updateCurrentSession: UpdateCurrentSessionUseCase
 }
 
 /**

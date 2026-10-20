@@ -110,7 +110,7 @@ internal fun interface GlobalGraphOwner {
     fun scope(): GlobalKaliumScope
 }
 
-internal interface GlobalApi {
+internal interface GlobalApi : KaliumGlobalAccountsApi, KaliumGlobalValidationApi, KaliumGlobalRuntimeApi {
     @get:GlobalBinding("audioNormalizedLoudnessBuilder")
     val globalAudioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 
@@ -127,7 +127,7 @@ internal interface GlobalApi {
     val globalSessionRepository: SessionRepository
 
     @get:GlobalBinding("observePersistentWebSocketConnectionStatus")
-    val globalObservePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
+    override val globalObservePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
 
     @get:GlobalBinding("setAllPersistentWebSocketEnabled")
     val globalSetAllPersistentWebSocketEnabled: SetPersistentWebSocketForAllUsersUseCase
@@ -139,22 +139,22 @@ internal interface GlobalApi {
     val globalCustomServerConfigRepository: CustomServerConfigRepository
 
     @get:GlobalBinding("validateEmailUseCase")
-    val globalValidateEmailUseCase: ValidateEmailUseCase
+    override val globalValidateEmailUseCase: ValidateEmailUseCase
 
     @get:GlobalBinding("validateSSOCodeUseCase")
-    val globalValidateSSOCodeUseCase: ValidateSSOCodeUseCase
+    override val globalValidateSSOCodeUseCase: ValidateSSOCodeUseCase
 
     @get:GlobalBinding("validateUserHandleUseCase")
-    val globalValidateUserHandleUseCase: ValidateUserHandleUseCase
+    override val globalValidateUserHandleUseCase: ValidateUserHandleUseCase
 
     @get:GlobalBinding("validatePasswordUseCase")
-    val globalValidatePasswordUseCase: ValidatePasswordUseCase
+    override val globalValidatePasswordUseCase: ValidatePasswordUseCase
 
     @get:GlobalBinding("observeLoginContext")
     val globalObserveLoginContext: ObserveLoginContextUseCase
 
     @get:GlobalBinding("addAuthenticatedAccount")
-    val globalAddAuthenticatedAccount: AddAuthenticatedUserUseCase
+    override val globalAddAuthenticatedAccount: AddAuthenticatedUserUseCase
 
     @get:GlobalBinding("getSessions")
     val globalGetSessions: GetSessionsUseCase
@@ -163,16 +163,16 @@ internal interface GlobalApi {
     val globalGetAllSessions: GetAllSessionsUseCase
 
     @get:GlobalBinding("doesValidSessionExist")
-    val globalDoesValidSessionExist: DoesValidSessionExistUseCase
+    override val globalDoesValidSessionExist: DoesValidSessionExistUseCase
 
     @get:GlobalBinding("doesValidNomadAccountExist")
-    val globalDoesValidNomadAccountExist: DoesValidNomadAccountExistUseCase
+    override val globalDoesValidNomadAccountExist: DoesValidNomadAccountExistUseCase
 
     @get:GlobalBinding("isCurrentSessionNomadAccount")
     val globalIsCurrentSessionNomadAccount: IsCurrentSessionNomadAccountUseCase
 
     @get:GlobalBinding("observeValidAccounts")
-    val globalObserveValidAccounts: ObserveValidAccountsUseCase
+    override val globalObserveValidAccounts: ObserveValidAccountsUseCase
 
     @get:GlobalBinding("observeAllValidSessionsFlow")
     val globalObserveAllValidSessionsFlow: ObserveSessionsUseCase
@@ -181,7 +181,7 @@ internal interface GlobalApi {
     val globalSession: SessionScope
 
     @get:GlobalBinding("fetchServerConfigFromDeepLink")
-    val globalFetchServerConfigFromDeepLink: GetServerConfigUseCase
+    override val globalFetchServerConfigFromDeepLink: GetServerConfigUseCase
 
     @get:GlobalBinding("updateApiVersions")
     val globalUpdateApiVersions: UpdateApiVersionsUseCase
@@ -190,10 +190,10 @@ internal interface GlobalApi {
     val globalSaveNotificationToken: SaveNotificationTokenUseCase
 
     @get:GlobalBinding("deleteSession")
-    val globalDeleteSession: DeleteSessionUseCase
+    override val globalDeleteSession: DeleteSessionUseCase
 
     @get:GlobalBinding("serverConfigForAccounts")
-    val globalServerConfigForAccounts: ServerConfigForAccountUseCase
+    override val globalServerConfigForAccounts: ServerConfigForAccountUseCase
 
     @get:GlobalBinding("isCrossBackendLoginBlocked")
     val globalIsCrossBackendLoginBlocked: IsCrossBackendLoginBlockedUseCase
@@ -202,19 +202,19 @@ internal interface GlobalApi {
     val globalAuthenticationScopeForConfigId: AuthenticationScopeForConfigIdUseCase
 
     @get:GlobalBinding("observeIfAppUpdateRequired")
-    val globalObserveIfAppUpdateRequired: ObserveIfAppUpdateRequiredUseCase
+    override val globalObserveIfAppUpdateRequired: ObserveIfAppUpdateRequiredUseCase
 
     @get:GlobalBinding("userClientRepositoryProvider")
     val globalUserClientRepositoryProvider: UserClientRepositoryProvider
 
     @get:GlobalBinding("observeNewClientsUseCase")
-    val globalObserveNewClientsUseCase: ObserveNewClientsUseCase
+    override val globalObserveNewClientsUseCase: ObserveNewClientsUseCase
 
     @get:GlobalBinding("clearNewClientsForUser")
-    val globalClearNewClientsForUser: ClearNewClientsForUserUseCase
+    override val globalClearNewClientsForUser: ClearNewClientsForUserUseCase
 
     @get:GlobalBinding("observeIsAppLockEditableUseCase")
-    val globalObserveIsAppLockEditableUseCase: ObserveIsAppLockEditableUseCase
+    override val globalObserveIsAppLockEditableUseCase: ObserveIsAppLockEditableUseCase
 
     @get:GlobalBinding("updateApiVersionsWorker")
     val globalUpdateApiVersionsWorker: UpdateApiVersionsWorker
@@ -223,7 +223,7 @@ internal interface GlobalApi {
     val globalGlobalWorkScheduler: GlobalWorkScheduler
 
     @get:GlobalBinding("updateApiVersionsScheduler")
-    val globalUpdateApiVersionsScheduler: UpdateApiVersionsScheduler
+    override val globalUpdateApiVersionsScheduler: UpdateApiVersionsScheduler
 }
 
 /** Individual global bindings; provider caches retain their separate GLOBAL/LOCAL policy. */

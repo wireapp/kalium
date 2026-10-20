@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
@@ -40,6 +39,7 @@ import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepository
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -50,8 +50,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.userstorage.di.UserStorage
+import com.wire.kalium.logic.di.KaliumConversationApi
+import com.wire.kalium.logic.di.UserLifetime
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
@@ -74,10 +74,10 @@ import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolde
 import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase
-import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ManageConversationFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.ManageConversationFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCase
@@ -110,14 +110,15 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
-import com.wire.kalium.logic.di.UserLifetime
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.Qualifier
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.CoroutineScope
 
 @Qualifier
 internal annotation class LegacyConversationBinding(val value: String)
@@ -167,7 +168,7 @@ internal interface LegacyConversationDependencies {
 }
 
 /** Individual legacy accessors; qualification preserves each original capture. */
-internal interface LegacyConversationApi {
+internal interface LegacyConversationApi : KaliumConversationApi {
     @get:LegacyConversationBinding("conversationRepository")
     val conversationConversationRepository: ConversationRepository
 
@@ -295,25 +296,25 @@ internal interface LegacyConversationApi {
     val conversationGetConversationDetails: GetConversationUseCase
 
     @get:LegacyConversationBinding("getOneToOneConversation")
-    val conversationGetOneToOneConversation: GetOneToOneConversationDetailsUseCase
+    override val conversationGetOneToOneConversation: GetOneToOneConversationDetailsUseCase
 
     @get:LegacyConversationBinding("observeConversationListDetails")
-    val conversationObserveConversationListDetails: ObserveConversationListDetailsUseCase
+    override val conversationObserveConversationListDetails: ObserveConversationListDetailsUseCase
 
     @get:LegacyConversationBinding("observeConversationListDetailsWithEvents")
-    val conversationObserveConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
+    override val conversationObserveConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
 
     @get:LegacyConversationBinding("observeConversationMembers")
-    val conversationObserveConversationMembers: ObserveConversationMembersUseCase
+    override val conversationObserveConversationMembers: ObserveConversationMembersUseCase
 
     @get:LegacyConversationBinding("getMembersToMention")
-    val conversationGetMembersToMention: MembersToMentionUseCase
+    override val conversationGetMembersToMention: MembersToMentionUseCase
 
     @get:LegacyConversationBinding("observeEligibleMembersForConversationAdminRole")
-    val conversationObserveEligibleMembersForConversationAdminRole: ObserveEligibleMembersForConversationAdminRoleUseCase
+    override val conversationObserveEligibleMembersForConversationAdminRole: ObserveEligibleMembersForConversationAdminRoleUseCase
 
     @get:LegacyConversationBinding("observeUserListById")
-    val conversationObserveUserListById: ObserveUserListByIdUseCase
+    override val conversationObserveUserListById: ObserveUserListByIdUseCase
 
     @get:LegacyConversationBinding("observeConversationDetails")
     val conversationObserveConversationDetails: ObserveConversationDetailsUseCase
@@ -322,49 +323,49 @@ internal interface LegacyConversationApi {
     val conversationObserveConversationRoleForUser: ObserveConversationRoleForUserUseCase
 
     @get:LegacyConversationBinding("getConversationProtocolInfo")
-    val conversationGetConversationProtocolInfo: GetConversationProtocolInfoUseCase
+    override val conversationGetConversationProtocolInfo: GetConversationProtocolInfoUseCase
 
     @get:LegacyConversationBinding("notifyConversationIsOpen")
-    val conversationNotifyConversationIsOpen: NotifyConversationIsOpenUseCase
+    override val conversationNotifyConversationIsOpen: NotifyConversationIsOpenUseCase
 
     @get:LegacyConversationBinding("observeIsSelfUserMemberUseCase")
-    val conversationObserveIsSelfUserMemberUseCase: ObserveIsSelfUserMemberUseCase
+    override val conversationObserveIsSelfUserMemberUseCase: ObserveIsSelfUserMemberUseCase
 
     @get:LegacyConversationBinding("observeConversationInteractionAvailabilityUseCase")
-    val conversationObserveConversationInteractionAvailabilityUseCase: ObserveConversationInteractionAvailabilityUseCase
+    override val conversationObserveConversationInteractionAvailabilityUseCase: ObserveConversationInteractionAvailabilityUseCase
 
     @get:LegacyConversationBinding("deleteTeamConversation")
-    val conversationDeleteTeamConversation: DeleteTeamConversationUseCase
+    override val conversationDeleteTeamConversation: DeleteTeamConversationUseCase
 
     @get:LegacyConversationBinding("createGroupConversation")
     val conversationCreateGroupConversation: GroupConversationCreator
 
     @get:LegacyConversationBinding("createRegularGroup")
-    val conversationCreateRegularGroup: CreateRegularGroupUseCase
+    override val conversationCreateRegularGroup: CreateRegularGroupUseCase
 
     @get:LegacyConversationBinding("createChannel")
-    val conversationCreateChannel: CreateChannelUseCase
+    override val conversationCreateChannel: CreateChannelUseCase
 
     @get:LegacyConversationBinding("addMemberToConversationUseCase")
-    val conversationAddMemberToConversationUseCase: AddMemberToConversationUseCase
+    override val conversationAddMemberToConversationUseCase: AddMemberToConversationUseCase
 
     @get:LegacyConversationBinding("addServiceToConversationUseCase")
-    val conversationAddServiceToConversationUseCase: AddServiceToConversationUseCase
+    override val conversationAddServiceToConversationUseCase: AddServiceToConversationUseCase
 
     @get:LegacyConversationBinding("getOrCreateOneToOneConversationUseCase")
-    val conversationGetOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
+    override val conversationGetOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
 
     @get:LegacyConversationBinding("checkOneToOneConversationIsReadyUseCase")
-    val conversationCheckOneToOneConversationIsReadyUseCase: CheckOneToOneConversationIsReadyUseCase
+    override val conversationCheckOneToOneConversationIsReadyUseCase: CheckOneToOneConversationIsReadyUseCase
 
     @get:LegacyConversationBinding("isOneToOneConversationCreatedUseCase")
-    val conversationIsOneToOneConversationCreatedUseCase: IsOneToOneConversationCreatedUseCase
+    override val conversationIsOneToOneConversationCreatedUseCase: IsOneToOneConversationCreatedUseCase
 
     @get:LegacyConversationBinding("updateConversationMutedStatus")
-    val conversationUpdateConversationMutedStatus: UpdateConversationMutedStatusUseCase
+    override val conversationUpdateConversationMutedStatus: UpdateConversationMutedStatusUseCase
 
     @get:LegacyConversationBinding("updateConversationArchivedStatus")
-    val conversationUpdateConversationArchivedStatus: UpdateConversationArchivedStatusUseCase
+    override val conversationUpdateConversationArchivedStatus: UpdateConversationArchivedStatusUseCase
 
     @get:LegacyConversationBinding("observeConnectionList")
     val conversationObserveConnectionList: ObserveConnectionListUseCase
@@ -379,34 +380,34 @@ internal interface LegacyConversationApi {
     val conversationConversationWorkQueue: ConversationWorkQueue
 
     @get:LegacyConversationBinding("updateConversationReadDateUseCase")
-    val conversationUpdateConversationReadDateUseCase: UpdateConversationReadDateUseCase
+    override val conversationUpdateConversationReadDateUseCase: UpdateConversationReadDateUseCase
 
     @get:LegacyConversationBinding("markConversationAsReadLocally")
-    val conversationMarkConversationAsReadLocally: MarkConversationAsReadLocallyUseCase
+    override val conversationMarkConversationAsReadLocally: MarkConversationAsReadLocallyUseCase
 
     @get:LegacyConversationBinding("updateConversationAccess")
-    val conversationUpdateConversationAccess: UpdateConversationAccessRoleUseCase
+    override val conversationUpdateConversationAccess: UpdateConversationAccessRoleUseCase
 
     @get:LegacyConversationBinding("changeAccessForAppsInConversation")
-    val conversationChangeAccessForAppsInConversation: ChangeAccessForAppsInConversationUseCase
+    override val conversationChangeAccessForAppsInConversation: ChangeAccessForAppsInConversationUseCase
 
     @get:LegacyConversationBinding("updateConversationMemberRole")
-    val conversationUpdateConversationMemberRole: UpdateConversationMemberRoleUseCase
+    override val conversationUpdateConversationMemberRole: UpdateConversationMemberRoleUseCase
 
     @get:LegacyConversationBinding("removeMemberFromConversation")
-    val conversationRemoveMemberFromConversation: RemoveMemberFromConversationUseCase
+    override val conversationRemoveMemberFromConversation: RemoveMemberFromConversationUseCase
 
     @get:LegacyConversationBinding("leaveConversation")
-    val conversationLeaveConversation: LeaveConversationUseCase
+    override val conversationLeaveConversation: LeaveConversationUseCase
 
     @get:LegacyConversationBinding("promoteAdminAndLeaveConversation")
-    val conversationPromoteAdminAndLeaveConversation: PromoteAdminAndLeaveConversationUseCase
+    override val conversationPromoteAdminAndLeaveConversation: PromoteAdminAndLeaveConversationUseCase
 
     @get:LegacyConversationBinding("checkConversationLeaveConditions")
-    val conversationCheckConversationLeaveConditions: CheckConversationLeaveConditionsUseCase
+    override val conversationCheckConversationLeaveConditions: CheckConversationLeaveConditionsUseCase
 
     @get:LegacyConversationBinding("renameConversation")
-    val conversationRenameConversation: RenameConversationUseCase
+    override val conversationRenameConversation: RenameConversationUseCase
 
     @get:LegacyConversationBinding("updateMLSGroupsKeyingMaterials")
     val conversationUpdateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
@@ -415,46 +416,46 @@ internal interface LegacyConversationApi {
     val conversationClearConversationAssetsLocally: ClearConversationAssetsLocallyUseCase
 
     @get:LegacyConversationBinding("clearConversationContent")
-    val conversationClearConversationContent: ClearConversationContentUseCase
+    override val conversationClearConversationContent: ClearConversationContentUseCase
 
     @get:LegacyConversationBinding("markConversationAsDeletedLocallyUseCase")
-    val conversationMarkConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
+    override val conversationMarkConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
 
     @get:LegacyConversationBinding("deleteConversationLocallyUseCase")
     val conversationDeleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
 
     @get:LegacyConversationBinding("joinConversationViaCode")
-    val conversationJoinConversationViaCode: JoinConversationViaCodeUseCase
+    override val conversationJoinConversationViaCode: JoinConversationViaCodeUseCase
 
     @get:LegacyConversationBinding("checkIConversationInviteCode")
     val conversationCheckIConversationInviteCode: CheckConversationInviteCodeUseCase
 
     @get:LegacyConversationBinding("updateConversationReceiptMode")
-    val conversationUpdateConversationReceiptMode: UpdateConversationReceiptModeUseCase
+    override val conversationUpdateConversationReceiptMode: UpdateConversationReceiptModeUseCase
 
     @get:LegacyConversationBinding("generateGuestRoomLink")
-    val conversationGenerateGuestRoomLink: GenerateGuestRoomLinkUseCase
+    override val conversationGenerateGuestRoomLink: GenerateGuestRoomLinkUseCase
 
     @get:LegacyConversationBinding("revokeGuestRoomLink")
-    val conversationRevokeGuestRoomLink: RevokeGuestRoomLinkUseCase
+    override val conversationRevokeGuestRoomLink: RevokeGuestRoomLinkUseCase
 
     @get:LegacyConversationBinding("observeGuestRoomLink")
-    val conversationObserveGuestRoomLink: ObserveGuestRoomLinkUseCase
+    override val conversationObserveGuestRoomLink: ObserveGuestRoomLinkUseCase
 
     @get:LegacyConversationBinding("updateMessageTimer")
-    val conversationUpdateMessageTimer: UpdateMessageTimerUseCase
+    override val conversationUpdateMessageTimer: UpdateMessageTimerUseCase
 
     @get:LegacyConversationBinding("getConversationUnreadEventsCountUseCase")
-    val conversationGetConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
+    override val conversationGetConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
 
     @get:LegacyConversationBinding("refreshConversationsWithoutMetadata")
-    val conversationRefreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
+    override val conversationRefreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
 
     @get:LegacyConversationBinding("canCreatePasswordProtectedLinks")
-    val conversationCanCreatePasswordProtectedLinks: CanCreatePasswordProtectedLinksUseCase
+    override val conversationCanCreatePasswordProtectedLinks: CanCreatePasswordProtectedLinksUseCase
 
     @get:LegacyConversationBinding("observeArchivedUnreadConversationsCount")
-    val conversationObserveArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
+    override val conversationObserveArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
 
     @get:LegacyConversationBinding("typingIndicatorSenderHandler")
     val conversationTypingIndicatorSenderHandler: TypingIndicatorSenderHandler
@@ -466,65 +467,65 @@ internal interface LegacyConversationApi {
     val conversationTypingIndicatorOutgoingRepository: TypingIndicatorOutgoingRepositoryImpl
 
     @get:LegacyConversationBinding("sendTypingEvent")
-    val conversationSendTypingEvent: SendTypingEventUseCase
+    override val conversationSendTypingEvent: SendTypingEventUseCase
 
     @get:LegacyConversationBinding("observeUsersTyping")
-    val conversationObserveUsersTyping: ObserveUsersTypingUseCase
+    override val conversationObserveUsersTyping: ObserveUsersTypingUseCase
 
     @get:LegacyConversationBinding("clearUsersTypingEvents")
-    val conversationClearUsersTypingEvents: ClearUsersTypingEventsUseCase
+    override val conversationClearUsersTypingEvents: ClearUsersTypingEventsUseCase
 
     @get:LegacyConversationBinding("setUserInformedAboutVerificationBeforeMessagingUseCase")
-    val conversationSetUserInformedAboutVerificationBeforeMessagingUseCase: SetUserInformedAboutVerificationUseCase
+    override val conversationSetUserInformedAboutVerificationBeforeMessagingUseCase: SetUserInformedAboutVerificationUseCase
 
     @get:LegacyConversationBinding("observeInformAboutVerificationBeforeMessagingFlagUseCase")
-    val conversationObserveInformAboutVerificationBeforeMessagingFlagUseCase: ObserveDegradedConversationNotifiedUseCase
+    override val conversationObserveInformAboutVerificationBeforeMessagingFlagUseCase: ObserveDegradedConversationNotifiedUseCase
 
     @get:LegacyConversationBinding("setNotifiedAboutConversationUnderLegalHold")
-    val conversationSetNotifiedAboutConversationUnderLegalHold: SetNotifiedAboutConversationUnderLegalHoldUseCase
+    override val conversationSetNotifiedAboutConversationUnderLegalHold: SetNotifiedAboutConversationUnderLegalHoldUseCase
 
     @get:LegacyConversationBinding("observeConversationUnderLegalHoldNotified")
-    val conversationObserveConversationUnderLegalHoldNotified: ObserveConversationUnderLegalHoldNotifiedUseCase
+    override val conversationObserveConversationUnderLegalHoldNotified: ObserveConversationUnderLegalHoldNotifiedUseCase
 
     @get:LegacyConversationBinding("syncConversationCode")
-    val conversationSyncConversationCode: SyncConversationCodeUseCase
+    override val conversationSyncConversationCode: SyncConversationCodeUseCase
 
     @get:LegacyConversationBinding("observeConversationsFromFolder")
-    val conversationObserveConversationsFromFolder: ObserveConversationsFromFolderUseCase
+    override val conversationObserveConversationsFromFolder: ObserveConversationsFromFolderUseCase
 
     @get:LegacyConversationBinding("getFavoriteFolder")
-    val conversationGetFavoriteFolder: GetFavoriteFolderUseCase
+    override val conversationGetFavoriteFolder: GetFavoriteFolderUseCase
 
     @get:LegacyConversationBinding("addConversationToFavorites")
-    val conversationAddConversationToFavorites: AddConversationToFavoritesUseCase
+    override val conversationAddConversationToFavorites: AddConversationToFavoritesUseCase
 
     @get:LegacyConversationBinding("removeConversationFromFavorites")
-    val conversationRemoveConversationFromFavorites: RemoveConversationFromFavoritesUseCase
+    override val conversationRemoveConversationFromFavorites: RemoveConversationFromFavoritesUseCase
 
     @get:LegacyConversationBinding("observeUserFolders")
-    val conversationObserveUserFolders: ObserveUserFoldersUseCase
+    override val conversationObserveUserFolders: ObserveUserFoldersUseCase
 
     @get:LegacyConversationBinding("moveConversationToFolder")
-    val conversationMoveConversationToFolder: MoveConversationToFolderUseCase
+    override val conversationMoveConversationToFolder: MoveConversationToFolderUseCase
 
     @get:LegacyConversationBinding("removeConversationFromFolder")
-    val conversationRemoveConversationFromFolder: RemoveConversationFromFolderUseCase
+    override val conversationRemoveConversationFromFolder: RemoveConversationFromFolderUseCase
 
     @get:LegacyConversationBinding("createConversationFolder")
-    val conversationCreateConversationFolder: CreateConversationFolderUseCase
+    override val conversationCreateConversationFolder: CreateConversationFolderUseCase
 
     @get:LegacyConversationBinding("manageConversationFolder")
     val conversationManageConversationFolder: ManageConversationFolderUseCase
 
     @get:LegacyConversationBinding("isSelfUserViewerOnConversation")
-    val conversationIsSelfUserViewerOnConversation: IsSelfUserViewerOnConversationUseCase
+    override val conversationIsSelfUserViewerOnConversation: IsSelfUserViewerOnConversationUseCase
 
     @get:LegacyConversationBinding("getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery")
-    val conversationGetPaginatedFlowOfConversationDetailsWithEventsBySearchQuery:
+    override val conversationGetPaginatedFlowOfConversationDetailsWithEventsBySearchQuery:
         GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
 
     @get:LegacyConversationBinding("getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery")
-    val conversationGetPaginatedFlowOfConversationDetailsWithMembersBySearchQuery:
+    override val conversationGetPaginatedFlowOfConversationDetailsWithMembersBySearchQuery:
         GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase
 
     @get:LegacyConversationBinding("observeConversationListItems")

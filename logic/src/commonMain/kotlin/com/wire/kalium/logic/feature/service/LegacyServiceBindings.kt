@@ -21,6 +21,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.di.KaliumServiceApi
 import com.wire.kalium.logic.feature.LegacyFacadeLifetime
 import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppsAllowedForUsageUseCase
 import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppsAllowedForUsageUseCaseImpl
@@ -47,7 +48,7 @@ internal interface LegacyServiceDependencies {
 }
 
 /** Individual entry points; capture accessors also preserve explicit legacy aliases. */
-internal interface LegacyServiceApi {
+internal interface LegacyServiceApi : KaliumServiceApi {
     @get:LegacyServiceBinding("serviceRepository")
     val serviceServiceRepository: ServiceRepository
 
@@ -61,22 +62,22 @@ internal interface LegacyServiceApi {
     val serviceSelfTeamIdProvider: SelfTeamIdProvider
 
     @get:LegacyServiceBinding("getServiceById")
-    val serviceGetServiceById: GetServiceByIdUseCase
+    override val serviceGetServiceById: GetServiceByIdUseCase
 
     @get:LegacyServiceBinding("observeIsServiceMember")
-    val serviceObserveIsServiceMember: ObserveIsServiceMemberUseCase
+    override val serviceObserveIsServiceMember: ObserveIsServiceMemberUseCase
 
     @get:LegacyServiceBinding("observeAllServices")
-    val serviceObserveAllServices: ObserveAllServicesUseCase
+    override val serviceObserveAllServices: ObserveAllServicesUseCase
 
     @get:LegacyServiceBinding("syncServices")
-    val serviceSyncServices: SyncServicesUseCase
+    override val serviceSyncServices: SyncServicesUseCase
 
     @get:LegacyServiceBinding("searchServicesByName")
-    val serviceSearchServicesByName: SearchServicesByNameUseCase
+    override val serviceSearchServicesByName: SearchServicesByNameUseCase
 
     @get:LegacyServiceBinding("observeIsAppsAllowedForUsage")
-    val serviceObserveIsAppsAllowedForUsage: ObserveIsAppsAllowedForUsageUseCase
+    override val serviceObserveIsAppsAllowedForUsage: ObserveIsAppsAllowedForUsageUseCase
 }
 
 /** Per-instance capture providers and individual, unscoped use-case constructors. */

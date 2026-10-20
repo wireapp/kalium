@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.KaliumClientApi
 import com.wire.kalium.logic.di.UserLifetime
 import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -94,7 +95,7 @@ internal interface LegacyClientDependencies {
 }
 
 /** Individual accessors; qualified captures preserve the cached facade's original identities. */
-internal interface LegacyClientApi {
+internal interface LegacyClientApi : KaliumClientApi {
     @get:LegacyClientBinding("clientRepository")
     val clientClientRepository: ClientRepository
 
@@ -180,37 +181,37 @@ internal interface LegacyClientApi {
     val clientRegister: RegisterClientUseCase
 
     @get:LegacyClientBinding("fetchSelfClients")
-    val clientFetchSelfClients: FetchSelfClientsFromRemoteUseCase
+    override val clientFetchSelfClients: FetchSelfClientsFromRemoteUseCase
 
     @get:LegacyClientBinding("fetchUsersClients")
-    val clientFetchUsersClients: FetchUsersClientsFromRemoteUseCase
+    override val clientFetchUsersClients: FetchUsersClientsFromRemoteUseCase
 
     @get:LegacyClientBinding("getOtherUserClients")
-    val clientGetOtherUserClients: ObserveClientsByUserIdUseCase
+    override val clientGetOtherUserClients: ObserveClientsByUserIdUseCase
 
     @get:LegacyClientBinding("observeClientDetailsUseCase")
-    val clientObserveClientDetailsUseCase: ObserveClientDetailsUseCase
+    override val clientObserveClientDetailsUseCase: ObserveClientDetailsUseCase
 
     @get:LegacyClientBinding("deleteClient")
-    val clientDeleteClient: DeleteClientUseCase
+    override val clientDeleteClient: DeleteClientUseCase
 
     @get:LegacyClientBinding("needsToRegisterClient")
-    val clientNeedsToRegisterClient: NeedsToRegisterClientUseCase
+    override val clientNeedsToRegisterClient: NeedsToRegisterClientUseCase
 
     @get:LegacyClientBinding("deregisterNativePushToken")
     val clientDeregisterNativePushToken: DeregisterTokenUseCase
 
     @get:LegacyClientBinding("mlsKeyPackageCountUseCase")
-    val clientMlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
+    override val clientMlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
 
     @get:LegacyClientBinding("restartSlowSyncProcessForRecoveryUseCase")
-    val clientRestartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
+    override val clientRestartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase
 
     @get:LegacyClientBinding("refillKeyPackages")
     val clientRefillKeyPackages: RefillKeyPackagesUseCase
 
     @get:LegacyClientBinding("observeCurrentClientId")
-    val clientObserveCurrentClientId: ObserveCurrentClientIdUseCase
+    override val clientObserveCurrentClientId: ObserveCurrentClientIdUseCase
 
     @get:LegacyClientBinding("clearClientData")
     val clientClearClientData: ClearClientDataUseCase
@@ -225,13 +226,13 @@ internal interface LegacyClientApi {
     val clientImportClient: ImportClientUseCase
 
     @get:LegacyClientBinding("getOrRegister")
-    val clientGetOrRegister: GetOrRegisterClientUseCase
+    override val clientGetOrRegister: GetOrRegisterClientUseCase
 
     @get:LegacyClientBinding("remoteClientFingerPrint")
-    val clientRemoteClientFingerPrint: ClientFingerprintUseCase
+    override val clientRemoteClientFingerPrint: ClientFingerprintUseCase
 
     @get:LegacyClientBinding("updateClientVerificationStatus")
-    val clientUpdateClientVerificationStatus: UpdateClientVerificationStatusUseCase
+    override val clientUpdateClientVerificationStatus: UpdateClientVerificationStatusUseCase
 }
 
 /** Individual bindings in the user graph; this package does not introduce a feature graph. */

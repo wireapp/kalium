@@ -57,6 +57,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.KaliumDebugApi
 import com.wire.kalium.logic.di.UserLifetime
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
@@ -156,7 +157,7 @@ internal interface LegacyDebugDependencies {
 internal class LegacyDebugCapture<out T>(val value: T)
 
 /** Individual entry points for the compatibility facade and user runtime. */
-internal interface LegacyDebugApi {
+internal interface LegacyDebugApi : KaliumDebugApi {
     @get:LegacyDebugBinding("messageRepository")
     val debugMessageRepository: MessageRepository
 
@@ -254,13 +255,13 @@ internal interface LegacyDebugApi {
     val debugDispatcher: KaliumDispatcher
 
     @get:LegacyDebugBinding("getSqlCipherVersion")
-    val debugGetSqlCipherVersion: GetSqlCipherVersionUseCase
+    override val debugGetSqlCipherVersion: GetSqlCipherVersionUseCase
 
     @get:LegacyDebugBinding("establishSession")
     val debugEstablishSession: EstablishSessionUseCase
 
     @get:LegacyDebugBinding("breakSession")
-    val debugBreakSession: BreakSessionUseCase
+    override val debugBreakSession: BreakSessionUseCase
 
     @get:LegacyDebugBinding("sendBrokenAssetMessage")
     val debugSendBrokenAssetMessage: SendBrokenAssetMessageUseCase
@@ -269,10 +270,10 @@ internal interface LegacyDebugApi {
     val debugSendConfirmation: SendConfirmationUseCase
 
     @get:LegacyDebugBinding("disableEventProcessing")
-    val debugDisableEventProcessing: DisableEventProcessingUseCase
+    override val debugDisableEventProcessing: DisableEventProcessingUseCase
 
     @get:LegacyDebugBinding("getConversationEpochFromCC")
-    val debugGetConversationEpochFromCC: GetConversationEpochFromCCUseCase
+    override val debugGetConversationEpochFromCC: GetConversationEpochFromCCUseCase
 
     @get:LegacyDebugBinding("synchronizeExternalData")
     val debugSynchronizeExternalData: SynchronizeExternalDataUseCase
@@ -311,43 +312,43 @@ internal interface LegacyDebugApi {
     val debugEphemeralMessageDeletionHandler: EphemeralMessageDeletionHandlerImpl
 
     @get:LegacyDebugBinding("sendFCMTokenToServer")
-    val debugSendFCMTokenToServer: SendFCMTokenUseCase
+    override val debugSendFCMTokenToServer: SendFCMTokenUseCase
 
     @get:LegacyDebugBinding("changeProfiling")
-    val debugChangeProfiling: ChangeProfilingUseCase
+    override val debugChangeProfiling: ChangeProfilingUseCase
 
     @get:LegacyDebugBinding("observeDatabaseLoggerState")
-    val debugObserveDatabaseLoggerState: ObserveDatabaseLoggerStateUseCase
+    override val debugObserveDatabaseLoggerState: ObserveDatabaseLoggerStateUseCase
 
     @get:LegacyDebugBinding("optimizeDatabase")
     val debugOptimizeDatabase: OptimizeDatabaseUseCase
 
     @get:LegacyDebugBinding("debugFeedConversationUseCase")
-    val debugDebugFeedConversationUseCase: DebugFeedConversationUseCase
+    override val debugDebugFeedConversationUseCase: DebugFeedConversationUseCase
 
     @get:LegacyDebugBinding("getFeatureConfig")
-    val debugGetFeatureConfig: GetFeatureConfigUseCase
+    override val debugGetFeatureConfig: GetFeatureConfigUseCase
 
     @get:LegacyDebugBinding("getCryptoServiceReport")
-    val debugGetCryptoServiceReport: GetCryptoServiceReportUseCase
+    override val debugGetCryptoServiceReport: GetCryptoServiceReportUseCase
 
     @get:LegacyDebugBinding("getDebugE2EICertificateExpiration")
-    val debugGetDebugE2EICertificateExpiration: GetDebugE2EICertificateExpirationUseCase
+    override val debugGetDebugE2EICertificateExpiration: GetDebugE2EICertificateExpirationUseCase
 
     @get:LegacyDebugBinding("setDebugE2EICertificateExpiration")
-    val debugSetDebugE2EICertificateExpiration: SetDebugE2EICertificateExpirationUseCase
+    override val debugSetDebugE2EICertificateExpiration: SetDebugE2EICertificateExpirationUseCase
 
     @get:LegacyDebugBinding("observeDebugCRLExpirationAfterOneMinute")
-    val debugObserveDebugCRLExpirationAfterOneMinute: ObserveDebugCRLExpirationAfterOneMinuteUseCase
+    override val debugObserveDebugCRLExpirationAfterOneMinute: ObserveDebugCRLExpirationAfterOneMinuteUseCase
 
     @get:LegacyDebugBinding("setDebugCRLExpirationAfterOneMinute")
-    val debugSetDebugCRLExpirationAfterOneMinute: SetDebugCRLExpirationAfterOneMinuteUseCase
+    override val debugSetDebugCRLExpirationAfterOneMinute: SetDebugCRLExpirationAfterOneMinuteUseCase
 
     @get:LegacyDebugBinding("repairFaultyRemovalKeysUseCase")
-    val debugRepairFaultyRemovalKeysUseCase: RepairFaultyRemovalKeysUseCase
+    override val debugRepairFaultyRemovalKeysUseCase: RepairFaultyRemovalKeysUseCase
 
     @get:LegacyDebugBinding("getConversationCryptoStats")
-    val debugGetConversationCryptoStats: GetConversationCryptoStatsUseCase
+    override val debugGetConversationCryptoStats: GetConversationCryptoStatsUseCase
 
     @get:LegacyDebugBinding("refillKeyPackages")
     val debugRefillKeyPackages: DebugRefillKeyPackages

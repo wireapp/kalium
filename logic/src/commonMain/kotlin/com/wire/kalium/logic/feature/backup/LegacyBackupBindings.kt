@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.KaliumBackupApi
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
@@ -74,7 +75,7 @@ internal interface LegacyBackupDependencies {
     fun obfuscatedCopyExporter(): ObfuscatedCopyExporter = userStorage.database.obfuscatedCopyExporter
 }
 
-internal interface LegacyBackupApi {
+internal interface LegacyBackupApi : KaliumBackupApi {
     @get:LegacyBackupBinding("userId")
     val backupUserId: UserId
 
@@ -121,16 +122,16 @@ internal interface LegacyBackupApi {
     val backupSecurityHelper: SecurityHelper
 
     @get:LegacyBackupBinding("create")
-    val backupCreate: CreateBackupUseCase
+    override val backupCreate: CreateBackupUseCase
 
     @get:LegacyBackupBinding("verify")
-    val backupVerify: VerifyBackupUseCase
+    override val backupVerify: VerifyBackupUseCase
 
     @get:LegacyBackupBinding("restore")
-    val backupRestore: RestoreBackupUseCase
+    override val backupRestore: RestoreBackupUseCase
 
     @get:LegacyBackupBinding("createUnEncryptedCopy")
-    val backupCreateUnEncryptedCopy: CreateObfuscatedCopyUseCase
+    override val backupCreateUnEncryptedCopy: CreateObfuscatedCopyUseCase
 
     @get:LegacyBackupBinding("backupCryptoDB")
     val backupBackupCryptoDB: BackupCryptoDBUseCase
@@ -139,7 +140,7 @@ internal interface LegacyBackupApi {
     val backupBackupAndUploadCryptoStateMutex: Mutex
 
     @get:LegacyBackupBinding("backupAndUploadCryptoState")
-    val backupBackupAndUploadCryptoState: BackupAndUploadCryptoStateUseCase
+    override val backupBackupAndUploadCryptoState: BackupAndUploadCryptoStateUseCase
 
     @get:LegacyBackupBinding("downloadCryptoState")
     val backupDownloadCryptoState: DownloadCryptoStateUseCase
@@ -148,7 +149,7 @@ internal interface LegacyBackupApi {
     val backupExtractCryptoState: ExtractCryptoStateUseCase
 
     @get:LegacyBackupBinding("setLastDeviceId")
-    val backupSetLastDeviceId: SetLastDeviceIdUseCase
+    override val backupSetLastDeviceId: SetLastDeviceIdUseCase
 
     @get:LegacyBackupBinding("applyCryptoState")
     val backupApplyCryptoState: ApplyCryptoStateUseCase
@@ -167,7 +168,6 @@ internal interface LegacyBackupApi {
 
     @get:LegacyBackupBinding("obfuscatedCopyExporter")
     val backupObfuscatedCopyExporter: ObfuscatedCopyExporter
-
 }
 
 /** Individual bindings retained only by an existing fresh facade owner. */

@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.KaliumConnectionApi
 import com.wire.kalium.logic.feature.LegacyFacadeLifetime
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import dev.zacsweers.metro.GraphExtension
@@ -52,7 +53,7 @@ internal interface LegacyConnectionDependencies {
 }
 
 /** Individual entry points; capture accessors also preserve explicit legacy aliases. */
-internal interface LegacyConnectionApi {
+internal interface LegacyConnectionApi : KaliumConnectionApi {
     @get:LegacyConnectionBinding("connectionRepository")
     val connectionConnectionRepository: ConnectionRepository
 
@@ -75,25 +76,25 @@ internal interface LegacyConnectionApi {
     val connectionTransactionProvider: CryptoTransactionProvider
 
     @get:LegacyConnectionBinding("sendConnectionRequest")
-    val connectionSendConnectionRequest: SendConnectionRequestUseCase
+    override val connectionSendConnectionRequest: SendConnectionRequestUseCase
 
     @get:LegacyConnectionBinding("acceptConnectionRequest")
-    val connectionAcceptConnectionRequest: AcceptConnectionRequestUseCase
+    override val connectionAcceptConnectionRequest: AcceptConnectionRequestUseCase
 
     @get:LegacyConnectionBinding("cancelConnectionRequest")
-    val connectionCancelConnectionRequest: CancelConnectionRequestUseCase
+    override val connectionCancelConnectionRequest: CancelConnectionRequestUseCase
 
     @get:LegacyConnectionBinding("ignoreConnectionRequest")
-    val connectionIgnoreConnectionRequest: IgnoreConnectionRequestUseCase
+    override val connectionIgnoreConnectionRequest: IgnoreConnectionRequestUseCase
 
     @get:LegacyConnectionBinding("markConnectionRequestAsNotified")
     val connectionMarkConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
 
     @get:LegacyConnectionBinding("blockUser")
-    val connectionBlockUser: BlockUserUseCase
+    override val connectionBlockUser: BlockUserUseCase
 
     @get:LegacyConnectionBinding("unblockUser")
-    val connectionUnblockUser: UnblockUserUseCase
+    override val connectionUnblockUser: UnblockUserUseCase
 }
 
 /** Per-instance capture providers and individual, unscoped use-case constructors. */

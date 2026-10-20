@@ -24,6 +24,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
+import com.wire.kalium.logic.di.KaliumAuthenticationVerificationApi
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCase
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
@@ -86,6 +87,10 @@ public class AuthenticationScope internal constructor(private val api: Authentic
         get() = api.domainLookup
     public val isNomadProfilesEnabled: IsNomadProfilesEnabledUseCase
         get() = api.isNomadProfilesEnabled
+
+    /** Same keyed graph, after this owner's eager 2FA/network initialization. */
+    public val individualVerificationApi: KaliumAuthenticationVerificationApi
+        get() = api
 
     // Retain one function value and read the graph input when invoked, not when the facade is built.
     public val currentServerConfig: () -> ServerConfig = { api.serverConfig }
