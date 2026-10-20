@@ -30,6 +30,12 @@ struct ReceiveFixture {
                 deliveredNotifications: []
             )
             let result = try await receiver.process(request: request)
+            let diagnostic = "SWIFT_RECEIVE_RESULT route=\(account["route"]!) status=\(String(describing: result.status)) " +
+                "shouldNotify=\(result.shouldNotify) messageId=\(String(describing: result.messageId)) " +
+                "failureReason=\(String(describing: result.failureReason)) presentationReason=\(String(describing: result.presentationReason)) " +
+                "stoppedReason=\(String(describing: result.stoppedReason)) generic=\(result.presentGenericAlert) " +
+                "calls=\(result.calls.count) alerts=\(result.alerts.count)\n"
+            FileHandle.standardError.write(Data(diagnostic.utf8))
             precondition(result.status == .success, "Receive failed for \(account["route"]!)")
             if account["callingEvents"] as? Bool == true {
                 precondition(result.calls.count == 1 && result.calls[0].type == .incoming, "Missing incoming call")

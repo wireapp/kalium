@@ -428,6 +428,10 @@ def main():
                     self.end_headers()
                     self.wfile.write(body)
 
+                def log_request(self, code="-", size="-"):
+                    # Fixture route/status only: never log Authorization or other headers.
+                    print(f"FIXTURE_HTTP {self.command} {urlsplit(self.path).path} status={code}", flush=True)
+
                 def log_message(self, *_):
                     pass
 
@@ -471,6 +475,10 @@ def main():
                         pass
                     sync_events.append([account["route"], "closed"])
                     self.close_connection = True
+
+                def log_request(self, code="-", size="-"):
+                    # Fixture route/status only: never log Authorization or other headers.
+                    print(f"FIXTURE_HTTP {self.command} {urlsplit(self.path).path} status={code}", flush=True)
 
                 def log_message(self, *_):
                     pass
@@ -722,6 +730,23 @@ def main():
                 "mlsCommitBeforeText": options.mls_commit,
             }, indent=2) + "\n")
             print("Swift receiving and app handoff verification passed for Proteus and MLS", flush=True)
+        except BaseException as failure:
+            # Preserve a failed attempt separately; result.json remains success-only.
+            try:
+                report.parent.mkdir(parents=True, exist_ok=True)
+                report.with_name(report.stem + "-failure.json").write_text(json.dumps({
+                    "success": False,
+                    "failureType": type(failure).__name__,
+                    "failure": str(failure),
+                    "runtime": locals().get("runtime"),
+                    "syncToLiveMostRecentRequests": locals().get("last_requests", []),
+                    "syncToLiveSocketsAndPages": locals().get("sync_events", []),
+                    "authenticatedREST": locals().get("requests", []),
+                    "proposalCommitRequests": locals().get("proposal_requests", []),
+                }, indent=2) + "\n")
+            except Exception as diagnostic_failure:
+                print(f"Failed to preserve receiving diagnostics: {diagnostic_failure}", flush=True)
+            raise
         finally:
             if server_thread is not None:
                 server.shutdown()

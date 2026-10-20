@@ -12511,7 +12511,12 @@ class NotificationProcessorNativeTest {
                 SELF, CLIENT, ServerConfig(
                     "test",
                     // Ktor's legacy socket uses the WSS default port on the endpoint's host and path.
-                    apiEndpoint?.let { ServerConfig.DUMMY.copy(api = it, webSocket = it.replaceFirst(LOCAL_API, "wss://localhost")) }
+                    apiEndpoint?.let {
+                        ServerConfig.DUMMY.copy(
+                            api = it,
+                            webSocket = it.replaceFirst(LOCAL_API, "wss://localhost").trimEnd('/')
+                        )
+                    }
                         ?: ServerConfig.DUMMY,
                     ServerConfig.MetaData(false, CommonApiVersionType.Valid(apiVersion), SELF.domain)
                 ),
