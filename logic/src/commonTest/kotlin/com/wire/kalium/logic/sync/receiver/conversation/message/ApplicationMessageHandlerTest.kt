@@ -409,6 +409,104 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
+    fun givenTextMessageReceivedAsTargeted_whenHandling_thenMessageIsRejected() = runTest {
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            textProtoContent(),
+            targeted = true,
+            transient = false
+        )
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+    }
+
+    @Test
+    fun givenTextMessageReceivedAsTransient_whenHandling_thenMessageIsRejected() = runTest {
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            textProtoContent(),
+            targeted = false,
+            transient = true
+        )
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+    }
+
+    @Test
+    fun givenTextMessageReceivedAsApplicationMessage_whenHandling_thenMessageIsPersistedWithoutDeliveryFlags() = runTest {
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            textProtoContent(),
+            targeted = false,
+            transient = false
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matches { it is Message.Regular && !it.targeted && !it.transient })
+        }
+    }
+
+    @Test
+    fun givenCallingMessageReceivedAsTransientTargeted_whenHandling_thenSignalingIsRejected() = runTest {
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val callingContent = MessageContent.Calling(value = "json content", conversationId = messageEvent.conversationId)
+        val (arrangement, messageHandler) = Arrangement()
+            .arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            ProtoContent.Readable(
+                messageUid = "messageId",
+                messageContent = callingContent,
+                expectsReadConfirmation = false,
+                legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+            ),
+            targeted = true,
+            transient = true
+        )
+
+        verifySuspend(VerifyMode.not) { arrangement.callingMessageHandler.handle(any(), any()) }
+    }
+
+    private fun textProtoContent() = ProtoContent.Readable(
+        messageUid = "messageId",
+        messageContent = MessageContent.Text("Hello"),
+        expectsReadConfirmation = false,
+        legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+    )
+
+    @Test
     fun givenTextMessageWithLinkPreviewImage_whenHandling_thenLinkPreviewResolutionIsTriggered() = runTest {
         val messageId = "messageId"
         val textContent = MessageContent.Text(
