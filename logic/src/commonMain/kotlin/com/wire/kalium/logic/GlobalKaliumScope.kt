@@ -20,6 +20,8 @@
 
 package com.wire.kalium.logic
 
+import com.wire.kalium.logic.di.KaliumGraph
+import com.wire.kalium.logic.di.createKaliumGraph
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
@@ -109,6 +111,8 @@ public class GlobalKaliumScope internal constructor(
     internal val workSchedulerProvider: WorkSchedulerProvider,
     internal val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 ) : CoroutineScope {
+
+    internal val kaliumGraph: KaliumGraph by lazy { createKaliumGraph() }
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 

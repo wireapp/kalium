@@ -18,6 +18,7 @@ ktor = "3.5.0"
 okio = "3.16.4"
 ok-http = "4.12.0"
 mokkery = "3.3.0"
+metro = "1.4.5"
 android-work = "2.9.0"
 android-test-runner = "1.6.2"
 android-test-core-ktx = "1.7.0"
@@ -84,6 +85,7 @@ ksoup = "0.2.6"
 bouncycastle = "1.79"
 
 [plugins]
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 # Home-made convention plugins
 kalium-library = { id = "kalium.library" }
 kalium-mutation-testing = { id = "kalium.mutation-testing" }
@@ -112,6 +114,7 @@ detekt-test = ["detekt-cli", "detekt-test"]
 detekt-core = ["detekt-api"]
 
 [libraries]
+metro-runtime = { module = "dev.zacsweers.metro:runtime", version.ref = "metro" }
 # Kotlin Gradle Plugin
 kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }

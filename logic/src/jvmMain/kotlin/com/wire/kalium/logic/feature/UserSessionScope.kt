@@ -79,5 +79,5 @@ internal fun UserSessionScope(
         networkStateObserver,
         logoutCallback,
         syncShutdownCoordinator,
-    )
+    ).also { it.startRuntime() }
 }

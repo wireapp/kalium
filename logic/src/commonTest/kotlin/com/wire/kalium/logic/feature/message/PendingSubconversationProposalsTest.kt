@@ -153,7 +153,7 @@ class PendingSubconversationProposalsTest {
             }
             val sync = InMemoryIncrementalSyncRepository()
             PendingProposalSchedulerImpl(sync, lazy { mls }, lazy { subgroups }, transaction.cryptoTransactionProvider,
-                queue, TestKaliumDispatcher, backgroundScope.coroutineContext)
+                queue, TestKaliumDispatcher, backgroundScope.coroutineContext).also { it.start() }
             sync.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             val remaining = queue.observe().first { records -> records.none { it.group == other } }
             assertEquals(group, remaining.single().group)
@@ -193,7 +193,7 @@ class PendingSubconversationProposalsTest {
                 queue,
                 TestKaliumDispatcher,
                 backgroundScope.coroutineContext,
-            )
+            ).also { it.start() }
             sync.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             val remaining = queue.observe().first { records -> records.none { it.group == ready } }
             assertEquals(group, remaining.single().group)
@@ -226,7 +226,7 @@ class PendingSubconversationProposalsTest {
             }
             val sync = InMemoryIncrementalSyncRepository()
             PendingProposalSchedulerImpl(sync, lazy { mls }, lazy { subgroups }, transaction.cryptoTransactionProvider,
-                PendingSubconversationProposalsImpl(db.builder.pendingSubconversationProposalDAO), TestKaliumDispatcher, backgroundScope.coroutineContext)
+                PendingSubconversationProposalsImpl(db.builder.pendingSubconversationProposalDAO), TestKaliumDispatcher, backgroundScope.coroutineContext).also { it.start() }
             sync.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             queue.observe().first { it.isEmpty() }
             assertEquals(2, attempts)
@@ -260,7 +260,7 @@ class PendingSubconversationProposalsTest {
                 queue,
                 TestKaliumDispatcher,
                 backgroundScope.coroutineContext,
-            )
+            ).also { it.start() }
             sync.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             queue.observe().first { it.isEmpty() }
             assertEquals(2, attempts)

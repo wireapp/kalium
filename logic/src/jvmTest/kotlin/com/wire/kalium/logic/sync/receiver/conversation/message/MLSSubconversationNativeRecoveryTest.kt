@@ -176,7 +176,7 @@ class MLSSubconversationNativeRecoveryTest {
             PendingProposalSchedulerImpl(
                 sync, lazy { mls }, lazy { subgroups }, provider, restartedQueue,
                 TestKaliumDispatcher, backgroundScope.coroutineContext,
-            )
+            ).also { it.start() }
             sync.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             // CoreCrypto runs on native threads; virtual time must not outrun its transaction.
             val retired = withContext(Dispatchers.Default) {

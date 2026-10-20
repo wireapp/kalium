@@ -68,6 +68,9 @@ import kotlinx.coroutines.launch
  */
 internal interface PendingProposalScheduler {
 
+    /** Start the account-owned collector once the application runtime is started. */
+    fun start()
+
     /**
      * Schedule to commit pending proposals in a given MLS group.
      *
@@ -96,7 +99,10 @@ internal class PendingProposalSchedulerImpl(
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
     private val commitPendingProposalsScope = CoroutineScope(parentContext + dispatcher)
 
-    init {
+    private val started = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    override fun start() {
+        if (!started.compareAndSet(false, true)) return
         commitPendingProposalsScope.launch {
             incrementalSyncRepository.incrementalSyncState.collectLatest { syncState ->
                 ensureActive()

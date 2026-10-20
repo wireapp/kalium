@@ -28,6 +28,7 @@ plugins {
     id("com.wire.kalium.apple-avs-runtime")
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
+    alias(libs.plugins.metro)
     alias(libs.plugins.skie)
 }
 
@@ -103,6 +104,8 @@ kotlin {
                 implementation(projects.domain.usernetwork)
                 implementation(projects.domain.messaging.sending)
                 implementation(projects.domain.messaging.hooks)
+
+                implementation(libs.metro.runtime)
 
                 // coroutines
                 implementation(libs.coroutines.core)

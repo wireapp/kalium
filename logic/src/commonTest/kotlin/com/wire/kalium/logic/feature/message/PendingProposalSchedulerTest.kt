@@ -388,7 +388,7 @@ class PendingProposalSchedulerTest {
             subgroupProposals,
             testDispatcher,
             parentContext,
-        ).also {
+        ).also { it.start() }.also {
             withTransactionReturning(Either.Right(Unit))
         }
 
