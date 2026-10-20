@@ -718,8 +718,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithMembersEntity>>(this)
 
     private fun memberSearchUser(value: String) = newUserEntity(UserIDEntity(value, selfUserId.domain))
-    private fun getPager(
-        searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL): KaliumPager<ConversationDetailsWithEventsEntity> =
+    private fun getPager(searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL): KaliumPager<ConversationDetailsWithEventsEntity> =
         conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
             pagingConfig = PagingConfig(PAGE_SIZE),
             queryConfig = ConversationExtensions.QueryConfig(searchQuery = searchQuery, fromArchive = fromArchive, conversationFilter = filter),
