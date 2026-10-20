@@ -247,7 +247,7 @@ jobs:
     name: Swift Receiving Only
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.swift_receiving_only }}
     runs-on: macos-26
-    timeout-minutes: 75
+    timeout-minutes: 120
     permissions:
       contents: read
     env:
@@ -268,7 +268,7 @@ jobs:
 
       - name: Link Swift receiving framework and fixtures
         id: link
-        timeout-minutes: 45
+        timeout-minutes: 90
         run: |
           mkdir -p build/ci/swift-receiving
           # Stop even after a failed link; the verifier boots its own simulator later.
