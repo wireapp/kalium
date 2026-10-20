@@ -429,6 +429,99 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
+    fun givenTextMessageReceivedAsTargeted_whenHandling_thenMessageIsRejected() = runTest {
+        val message = applicationMessage.copy(
+            senderUserId = TestUser.OTHER_USER_ID_2,
+            content = applicationMessage.content.copy(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED),
+            targeted = true
+        )
+        val (arrangement, handler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Right(listOf(message)))
+            .arrange()
+
+        handler.handleNewMLSMessage(
+            arrangement.transactionContext,
+            TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant()),
+            TestEvent.liveDeliveryInfo
+        ).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.legalHoldHandler.handleNewMessage(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }
+    }
+
+    @Test
+    fun givenTextMessageReceivedAsTransient_whenHandling_thenMessageIsRejected() = runTest {
+        val message = applicationMessage.copy(
+            content = applicationMessage.content.copy(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED),
+            transient = true
+        )
+        val (arrangement, handler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Right(listOf(message)))
+            .arrange()
+
+        handler.handleNewMLSMessage(
+            arrangement.transactionContext,
+            TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant()),
+            TestEvent.liveDeliveryInfo
+        ).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.legalHoldHandler.handleNewMessage(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun givenCallingMessageReceivedAsTransientTargeted_whenHandling_thenSignalingIsAccepted() = runTest {
+        val message = signalingMessage.copy(
+            content = signalingMessage.content.copy(
+                messageContent = MessageContent.Calling(value = "json content", conversationId = signalingMessage.conversationId),
+                legalHoldStatus = Conversation.LegalHoldStatus.ENABLED
+            ),
+            targeted = true,
+            transient = true
+        )
+        val (arrangement, handler) = Arrangement()
+            .withHandleLegalHoldSuccess()
+            .withMLSUnpackerReturning(Either.Right(listOf(message)))
+            .arrange()
+
+        handler.handleNewMLSMessage(
+            arrangement.transactionContext,
+            TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant()),
+            TestEvent.liveDeliveryInfo
+        ).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.legalHoldHandler.handleNewMessage(message, true) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), message.content, true, true)
+        }
+    }
+
+    @Test
+    fun transientProteusMessageIsRejectedBeforeLegalHoldAndSelfDeletion() = runTest {
+        val message = applicationMessage.copy(
+            content = applicationMessage.content.copy(
+                legalHoldStatus = Conversation.LegalHoldStatus.ENABLED,
+                expiresAfterMillis = 123L
+            ),
+            transient = true
+        )
+        val (arrangement, handler) = Arrangement()
+            .withProteusUnpackerReturning(Either.Right(message))
+            .arrange()
+
+        handler.handleNewProteusMessage(
+            arrangement.transactionContext,
+            TestEvent.newMessageEvent("encryptedContent"),
+            TestEvent.liveDeliveryInfo
+        )
+
+        verifySuspend(VerifyMode.not) { arrangement.legalHoldHandler.handleNewMessage(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any()) }
+        verify(VerifyMode.not) { arrangement.ephemeralMessageDeletionHandler.startSelfDeletion(any(), any()) }
+    }
+
+    @Test
     fun givenEphemeralMessageFromSelf_whenHandling_thenEnqueueForSelfDelete() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withHandleLegalHoldSuccess()
