@@ -21,6 +21,13 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.logic.data.asset.isVideoMimeType
+import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
+import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
@@ -79,6 +86,7 @@ internal class PersistNewAssetMessageUseCaseImpl(
                 .flatMap { persistedAssetDataPath ->
                     // Generate the otr asymmetric key that will be used to encrypt the data
                     val currentAssetMessageContent = asset.createTempAssetMetadata(generatedAssetUuid, persistedAssetDataPath)
+                        .copy(preview = persistPreview(asset))
 
                     val message = Message.Regular(
                         id = messageId,
@@ -94,8 +102,36 @@ internal class PersistNewAssetMessageUseCaseImpl(
                         isSelfMessage = true
                     )
                     // We persist the asset message right away so that it can be displayed on the conversation screen loading
-                    persistMessage(message).map { currentAssetMessageContent to message }
+                    persistMessage(message).onFailure {
+                        currentAssetMessageContent.preview?.let { assetDataSource.deleteAssetLocally(it.remoteData.assetId) }
+                    }.map { currentAssetMessageContent to message }
                 }
         }
+    }
+
+    private suspend fun persistPreview(asset: AssetUploadParams): AssetContent.Preview? {
+        val preview = asset.preview?.takeIf {
+            isVideoMimeType(asset.assetMimeType) && isDisplayableImageMimeType(it.mimeType) &&
+                it.assetDataSize in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES &&
+                it.width in 1..AssetContent.Preview.MAX_DIMENSION && it.height in 1..AssetContent.Preview.MAX_DIMENSION
+        } ?: return null
+        val id = Uuid.random().toString()
+        return assetDataSource.persistAsset(id, "", preview.assetDataPath, preview.assetDataSize, "jpg")
+            .getOrNull()?.let {
+                AssetContent.Preview(
+                    mimeType = preview.mimeType,
+                    sizeInBytes = preview.assetDataSize,
+                    width = preview.width,
+                    height = preview.height,
+                    remoteData = AssetContent.RemoteData(
+                        otrKey = generateRandomAES256Key().data,
+                        sha256 = byteArrayOf(),
+                        assetId = id,
+                        assetToken = null,
+                        assetDomain = "",
+                        encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
+                    ),
+                )
+            }
     }
 }

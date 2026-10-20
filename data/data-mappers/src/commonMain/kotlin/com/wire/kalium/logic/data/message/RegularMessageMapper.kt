@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.asset.toProto
+import pbandk.encodeToByteArray
 import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -152,6 +154,9 @@ class RegularMessageMapper(
                 else -> null
             }
             MessageEntityContent.Asset(
+                assetPreview = preview?.toProto()?.encodeToByteArray(),
+                assetPreviewId = preview?.remoteData?.assetId,
+                assetPreviewDomain = preview?.remoteData?.assetDomain,
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,

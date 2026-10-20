@@ -171,7 +171,7 @@ internal class MessageDAOImpl internal constructor(
             if (!queries.messageExists(message.id, message.conversationId).awaitAsOne()) {
                 insertReceivedMessageInTransaction(message, updateConversationOrder)
             } else if (isValidAssetMessageUpdate(message)) {
-                // Reuse the app's preview-to-valid-keys rule. A completed asset is immutable here.
+                // Original asset data remains immutable; an optional preview can arrive later.
                 insertReceivedMessageInTransaction(message, updateConversationOrder)
             }
             // Do not recreate unread state or update conversation dates on replay.

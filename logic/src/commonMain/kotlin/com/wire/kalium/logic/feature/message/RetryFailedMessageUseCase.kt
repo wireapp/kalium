@@ -19,6 +19,8 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.feature.asset.upload.uploadPreviewIfNeeded
+import com.wire.kalium.logic.feature.asset.upload.deleteTemporaryPreview
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
@@ -269,8 +271,13 @@ public class RetryFailedMessageUseCase internal constructor(
                             }.map { updatedMessage } // we need to persist new asset remoteData and status
                         }
                     }
-                    .onSuccess { updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id) }
-
+                    .onSuccess { updatedMessage ->
+                        updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
+                        assetRepository.deleteTemporaryPreview(
+                            content.preview,
+                            (updatedMessage.content as MessageContent.Asset).value.preview
+                        )
+                    }
             }
 
             AssetTransferStatus.UPLOADED -> Either.Right(message)
@@ -306,6 +313,7 @@ public class RetryFailedMessageUseCase internal constructor(
                 }
                 .map { (uploadedAssetId, sha256key) ->
                     assetContent.copy(
+                        preview = assetRepository.uploadPreviewIfNeeded(preview, conversationId),
                         remoteData = assetContent.remoteData.copy(
                             sha256 = sha256key.data,
                             assetId = uploadedAssetId.key,

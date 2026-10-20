@@ -19,6 +19,8 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
+import com.wire.kalium.logic.data.message.RegularMessageMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -95,6 +97,57 @@ class AssetMapperTest {
         assertNull(
             (result.original?.metaData as Asset.Original.MetaData.Audio).value.normalizedLoudness
         )
+    }
+
+    private fun videoWithPreview(): AssetContent {
+        val original = AssetContent.RemoteData(
+            byteArrayOf(1), byteArrayOf(2), "video", "video-token", "video.domain", MessageEncryptionAlgorithm.AES_CBC,
+        )
+        val preview = AssetContent.Preview(
+            "image/jpeg", 1024, 512, 288,
+            original.copy(
+                assetId = "preview", assetDomain = "preview.domain", assetToken = "preview-token",
+                otrKey = byteArrayOf(3), sha256 = byteArrayOf(4),
+            ),
+        )
+        return AssetContent(100_000, "video.mp4", "video/mp4", AssetContent.AssetMetadata.Video(1920, 1080, 1000), original, preview)
+    }
+
+    @Test
+    fun videoPreviewWireRoundTripPreservesIndependentRemoteData() {
+        val mapper = AssetMapperImpl()
+        val content = videoWithPreview()
+        val proto = mapper.fromAssetContentToProtoAssetMessage(MessageContent.Asset(content), true, LegalHoldStatus.DISABLED)
+        val decoded = mapper.fromProtoAssetMessageToAssetContent(proto)
+        assertEquals(content, decoded)
+        assertEquals("video", decoded.remoteData.assetId)
+        assertEquals("preview", decoded.preview?.remoteData?.assetId)
+    }
+
+    @Test
+    fun pendingPreviewPersistenceRoundTripRetainsLocalIdentityButDoesNotPublishInvalidRemotePreview() {
+        val video = videoWithPreview()
+        val preview = requireNotNull(video.preview)
+        val content = video.copy(preview = preview.copy(remoteData = preview.remoteData.copy(sha256 = byteArrayOf())))
+        val entity = RegularMessageMapper(UserId("self", "domain")).toMessageEntityContent(MessageContent.Asset(content))
+        val restored = AssetMapperImpl().fromAssetEntityToAssetContent(
+            entity as com.wire.kalium.persistence.dao.message.MessageEntityContent.Asset,
+        )
+        assertEquals(content, restored)
+        val proto = AssetMapperImpl().fromAssetContentToProtoAssetMessage(MessageContent.Asset(content), false, LegalHoldStatus.DISABLED)
+        assertNull(proto.preview)
+    }
+
+    @Test
+    fun missingAndMalformedPreviewsDoNotChangeOriginal() {
+        val mapper = AssetMapperImpl()
+        val content = videoWithPreview()
+        val wire = mapper.fromAssetContentToProtoAssetMessage(MessageContent.Asset(content), false, LegalHoldStatus.DISABLED)
+        for (preview in listOf(null, wire.preview!!.copy(mimeType = "video/mp4"), wire.preview!!.copy(size = 2_000_000))) {
+            val result = mapper.fromProtoAssetMessageToAssetContent(wire.copy(preview = preview))
+            assertNull(result.preview)
+            assertEquals(content.remoteData, result.remoteData)
+        }
     }
 
     private class Arrangement(

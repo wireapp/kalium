@@ -19,6 +19,11 @@ package com.wire.kalium.logic.feature.asset.upload
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import dev.mokkery.matcher.matches
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.functional.Either
@@ -26,6 +31,7 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -320,6 +326,57 @@ class UploadAssetUseCaseTest {
             withPersistMessageFailure()
         }
         assertEquals(CoreFailure.Unknown(null).left(), uploadAsset(assetMessage(), uploadMetadata))
+
+    }
+
+    @Test
+    fun previewFailureStillPersistsAndSendsVideoWithoutPreview() = runTest(testDispatcher.default) {
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+            everySuspend { assetDataSource.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), false) } returns
+                Either.Left(StorageFailure.DataNotFound)
+        }
+        val preview = AssetContent.Preview(
+            "image/jpeg", 1024, 512, 288,
+            AssetContent.RemoteData(ByteArray(32) { 1 }, byteArrayOf(), "temp-preview", null, "", MessageEncryptionAlgorithm.AES_CBC),
+        )
+        uploadAsset(assetMessage(), uploadMetadata.copy(mimeType = "video/mp4", preview = preview))
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage(matches { (it.content as? MessageContent.Asset)?.value?.let { asset ->
+                asset.mimeType == "video/mp4" && asset.preview == null && asset.remoteData.assetId == "remote-asset-id"
+            } == true })
+            arrangement.messageSender.sendMessage(
+                matches { (it.content as? MessageContent.Asset)?.value?.preview == null }, any()
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetDataSource.deleteAssetLocally("temp-preview") }
+    }
+
+    @Test
+    fun successfulPreviewIsPersistedWithVideoBeforeTemporaryPreviewIsRemoved() = runTest(testDispatcher.default) {
+        val uploadedPreview = UploadedAssetId("uploaded-preview", "preview.domain", "preview-token")
+        val previewHash = SHA256Key(ByteArray(32) { 4 })
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+            everySuspend { assetDataSource.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), false) } returns
+                Either.Right(FetchedAssetData("preview.jpg".toPath(), false))
+            everySuspend {
+                assetDataSource.uploadAndPersistPrivateAsset(eq("image/jpeg"), any(), any(), any(), any(), any(), any())
+            } returns
+                Either.Right(uploadedPreview to previewHash)
+        }
+        val preview = AssetContent.Preview(
+            "image/jpeg", 1024, 512, 288,
+            AssetContent.RemoteData(ByteArray(32) { 1 }, byteArrayOf(), "temp-preview", null, "", MessageEncryptionAlgorithm.AES_CBC),
+        )
+        uploadAsset(assetMessage(), uploadMetadata.copy(mimeType = "video/mp4", preview = preview))
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage(matches { (it.content as? MessageContent.Asset)?.value?.preview?.remoteData?.let { remote ->
+                remote.assetId == uploadedPreview.key && remote.assetDomain == uploadedPreview.domain &&
+                    remote.assetToken == uploadedPreview.assetToken && remote.sha256.contentEquals(previewHash.data)
+            } == true })
+        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetDataSource.deleteAssetLocally("temp-preview") }
     }
 
     private fun testGeneratingAudioNormalizedLoudness(

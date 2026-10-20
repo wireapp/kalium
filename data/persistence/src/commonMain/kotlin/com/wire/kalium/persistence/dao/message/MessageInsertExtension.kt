@@ -67,17 +67,22 @@ internal class MessageInsertExtensionImpl(
     private val selfUserIDEntity: UserIDEntity
 ) : MessageInsertExtension {
 
+    @Suppress("ReturnCount", "CyclomaticComplexMethod")
     override suspend fun isValidAssetMessageUpdate(message: MessageEntity): Boolean {
         if (message !is MessageEntity.Regular) return false
-        // If asset has no valid keys, no need to query the DB
-        val hasValidKeys = message.content is MessageEntityContent.Asset && message.content.hasValidRemoteData()
-        val currentMessageHasMissingAssetInformation =
-            hasValidKeys && messagesQueries.selectById(message.id, message.conversationId).awaitAsList().firstOrNull()?.let {
-                val isFromSameSender = message.senderUserId == it.senderUserId
-                        && message.senderClientId == it.senderClientId
-                (it.assetId.isNullOrEmpty() || it.assetOtrKey.isNullOrEmpty() || it.assetSha256.isNullOrEmpty()) && isFromSameSender
-            } ?: false
-        return currentMessageHasMissingAssetInformation
+        val content = message.content as? MessageEntityContent.Asset ?: return false
+        if (!content.hasValidRemoteData() && content.assetPreview == null) return false
+        return messagesQueries.selectById(message.id, message.conversationId).awaitAsList().firstOrNull()?.let {
+            val sameSender = message.senderUserId == it.senderUserId && message.senderClientId == it.senderClientId
+            val missingOriginal = it.assetId.isNullOrEmpty() || it.assetOtrKey.isNullOrEmpty() || it.assetSha256.isNullOrEmpty()
+            sameSender && (
+                (content.hasValidRemoteData() && missingOriginal) ||
+                    (
+                        content.assetPreview != null && content.assetId == it.assetId &&
+                            !content.assetPreview.contentEquals(it.assetPreview)
+                        )
+                )
+        } ?: false
     }
 
     override suspend fun updateAssetMessage(message: MessageEntity) {
@@ -85,7 +90,20 @@ internal class MessageInsertExtensionImpl(
             return
         }
         val assetMessageContent = message.content as MessageEntityContent.Asset
+        val existingOriginalIsComplete = messagesQueries.selectById(message.id, message.conversationId).awaitAsList().firstOrNull()?.let {
+            !it.assetId.isNullOrEmpty() && !it.assetOtrKey.isNullOrEmpty() && !it.assetSha256.isNullOrEmpty()
+        } ?: false
         with(assetMessageContent) {
+            if (!hasValidRemoteData() || existingOriginalIsComplete) {
+                messagesQueries.updateAssetPreviewContent(
+                    messageId = message.id,
+                    conversationId = message.conversationId,
+                    assetPreview = assetPreview,
+                    assetPreviewId = assetPreviewId,
+                    assetPreviewDomain = assetPreviewDomain,
+                )
+                return
+            }
             // This will ONLY update the VISIBILITY of the original base message and all the asset content related fields
             messagesQueries.updateAssetContent(
                 messageId = message.id,
@@ -101,6 +119,9 @@ internal class MessageInsertExtensionImpl(
                 assetSha256 = assetSha256Key,
                 assetEncryptionAlgorithm = assetEncryptionAlgorithm,
                 assetNormalizedLoudness = assetNormalizedLoudness,
+                assetPreview = assetPreview,
+                assetPreviewId = assetPreviewId,
+                assetPreviewDomain = assetPreviewDomain,
             ).await()
         }
     }
@@ -203,7 +224,10 @@ internal class MessageInsertExtensionImpl(
                     asset_width = content.assetWidth,
                     asset_height = content.assetHeight,
                     asset_duration_ms = content.assetDurationMs,
-                    asset_normalized_loudness = content.assetNormalizedLoudness
+                    asset_normalized_loudness = content.assetNormalizedLoudness,
+                    asset_preview = content.assetPreview,
+                    preview_asset_id = content.assetPreviewId,
+                    preview_asset_domain = content.assetPreviewDomain,
                 )
             }
 

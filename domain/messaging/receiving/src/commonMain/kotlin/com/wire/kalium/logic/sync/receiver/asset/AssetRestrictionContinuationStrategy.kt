@@ -59,13 +59,15 @@ fun prepareReceivedAssetMessage(
         if (restrictWithoutPreview) message.restrictedAssetMessage() else message.copy(
             visibility = if (content.value.isAssetDataComplete) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
         )
-    } else if (existing.senderUserId != message.senderUserId || existing !is Message.Regular) {
+    } else if (existing.senderUserId != message.senderUserId || existing !is Message.Regular ||
+        existing.senderClientId != message.senderClientId
+    ) {
         kaliumLogger.e("The previously persisted message has a different sender id than the one we are trying to process")
         null
-    } else existing.withAssetDecryptionKeys(content.value.remoteData)
+    } else existing.withAssetDecryptionKeys(content.value)
 }
 
-private fun Message.Regular.withAssetDecryptionKeys(remoteData: AssetContent.RemoteData): Message.Regular? {
+private fun Message.Regular.withAssetDecryptionKeys(incoming: AssetContent): Message.Regular? {
     val asset = when (val content = content) {
         is MessageContent.Asset -> content
         is MessageContent.RestrictedAsset -> null
@@ -77,8 +79,10 @@ private fun Message.Regular.withAssetDecryptionKeys(remoteData: AssetContent.Rem
         }
     }
     return asset?.let {
+        val remoteData = if (it.value.remoteData.hasValidData()) it.value.remoteData
+        else incoming.remoteData.takeIf { data -> data.hasValidData() } ?: it.value.remoteData
         copy(
-            content = it.copy(value = it.value.copy(remoteData = remoteData)),
+            content = it.copy(value = it.value.copy(remoteData = remoteData, preview = incoming.preview ?: it.value.preview)),
             visibility = if (remoteData.hasValidData()) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
         )
     }

@@ -123,6 +123,7 @@ public data class MessageListAsset(
     public val height: Int?,
     public val durationMs: Long?,
     public val hasCompleteRemoteData: Boolean,
+    public val previewAssetId: AssetId? = null,
 )
 
 public data class MessageListAttachment(

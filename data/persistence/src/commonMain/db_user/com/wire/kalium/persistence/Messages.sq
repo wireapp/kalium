@@ -131,6 +131,9 @@ CREATE TABLE MessageAssetContent (
       asset_height INTEGER AS Int,
       asset_duration_ms INTEGER,
       asset_normalized_loudness BLOB,
+      asset_preview BLOB,
+      preview_asset_id TEXT,
+      preview_asset_domain TEXT,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -415,8 +418,8 @@ insertMessageAssetContent:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey MessageAssetContent
-INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,  ?, ?);
+INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness, asset_preview, preview_asset_id, preview_asset_domain)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?);
 
 insertMessageUnknownContent:
 -- @NotifyCustomKey message_list_:conversation_id
@@ -577,7 +580,7 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
 
     UPDATE OR ROLLBACK MessageAssetContent
-    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm, asset_normalized_loudness = :assetNormalizedLoudness
+    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm, asset_normalized_loudness = :assetNormalizedLoudness, asset_preview = :assetPreview, preview_asset_id = :assetPreviewId, preview_asset_domain = :assetPreviewDomain
     WHERE message_id = :messageId AND conversation_id = :conversationId;
 }
 
@@ -803,3 +806,10 @@ updateAudioMessageNormalizedLoudness:
 UPDATE MessageAssetContent
 SET asset_normalized_loudness = ?
 WHERE message_id = ? AND conversation_id = ?;
+
+updateAssetPreviewContent:
+-- @NotifyCustomKey message_list_:conversationId
+-- @NotifyCustomKey MessageAssetContent
+UPDATE MessageAssetContent
+SET asset_preview = :assetPreview, preview_asset_id = :assetPreviewId, preview_asset_domain = :assetPreviewDomain
+WHERE message_id = :messageId AND conversation_id = :conversationId;

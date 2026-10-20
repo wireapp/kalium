@@ -44,6 +44,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import okio.Path
 import okio.Path.Companion.toPath
 import pbandk.ByteArr
+import pbandk.decodeFromByteArray
 
 interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest
@@ -110,6 +111,9 @@ class AssetMapperImpl(
                 sizeInBytes = assetSizeInBytes,
                 name = assetName,
                 metadata = getAssetContentMetadata(assetMimeType, assetContentEntity),
+                preview = assetPreview?.let {
+                    runCatching { Asset.Preview.decodeFromByteArray(it).toModel(allowPending = true) }.getOrNull()
+                },
                 remoteData = AssetContent.RemoteData(
                     otrKey = assetOtrKey,
                     sha256 = assetSha256Key,
@@ -164,6 +168,7 @@ class AssetMapperImpl(
         )
         with(protoAssetMessage) {
             return AssetContent(
+                preview = preview?.toModel(),
                 sizeInBytes = original?.size ?: 0,
                 name = original?.name,
                 mimeType = original?.mimeType ?: "*/*",
@@ -209,6 +214,7 @@ class AssetMapperImpl(
         legalHoldStatus: LegalHoldStatus
     ): Asset = with(messageContent.value) {
         Asset(
+            preview = preview?.takeIf { it.remoteData.sha256.isNotEmpty() }?.toProto(),
             original = Asset.Original(
                 mimeType = mimeType,
                 size = sizeInBytes,
@@ -335,3 +341,42 @@ fun CellAsset.InitialMetaData<*>.toModel(): AssetContent.AssetMetadata =
             durationMs = value.durationInMillis
         )
     }
+
+/** The same preview envelope is used in local persistence and on the wire. */
+fun AssetContent.Preview.toProto(): Asset.Preview = Asset.Preview(
+    mimeType = mimeType,
+    size = sizeInBytes,
+    remote = Asset.RemoteData(
+        otrKey = ByteArr(remoteData.otrKey),
+        sha256 = ByteArr(remoteData.sha256),
+        assetId = remoteData.assetId,
+        assetDomain = remoteData.assetDomain,
+        assetToken = remoteData.assetToken,
+        encryption = EncryptionAlgorithmMapper().toProtoBufModel(remoteData.encryptionAlgorithm),
+    ),
+    metaData = Asset.Preview.MetaData.Image(Asset.ImageMetaData(width, height)),
+)
+
+@Suppress("ReturnCount", "ComplexCondition")
+private fun Asset.Preview.toModel(allowPending: Boolean = false): AssetContent.Preview? {
+    val data = remote ?: return null
+    val image = (metaData as? Asset.Preview.MetaData.Image)?.value ?: return null
+    if (!isDisplayableImageMimeType(mimeType) || size !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES ||
+        image.width !in 1..AssetContent.Preview.MAX_DIMENSION || image.height !in 1..AssetContent.Preview.MAX_DIMENSION ||
+        data.assetId.isNullOrEmpty() || data.otrKey.array.isEmpty() || (!allowPending && data.sha256.array.isEmpty())
+    ) return null
+    return AssetContent.Preview(
+        mimeType = mimeType,
+        sizeInBytes = size,
+        width = image.width,
+        height = image.height,
+        remoteData = AssetContent.RemoteData(
+            otrKey = data.otrKey.array,
+            sha256 = data.sha256.array,
+            assetId = data.assetId.orEmpty(),
+            assetToken = data.assetToken,
+            assetDomain = data.assetDomain,
+            encryptionAlgorithm = EncryptionAlgorithmMapper().fromProtobufModel(data.encryption),
+        ),
+    )
+}

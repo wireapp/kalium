@@ -1,0 +1,1 @@
+Support optional, separately encrypted video image previews in asset messages. Upload parameters can include a preview; received previews are persisted and can be resolved without downloading the original video through `MessageScope.getAssetMessagePreview`.

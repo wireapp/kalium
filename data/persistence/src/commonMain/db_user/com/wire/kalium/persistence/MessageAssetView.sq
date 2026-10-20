@@ -88,4 +88,7 @@ WHERE conversationId = :conversationId
 AND contentType IN :contentTypes
 AND assetId IS NOT NULL
 AND dataPath IS NOT NULL
-ORDER BY date DESC;
+UNION
+SELECT preview.preview_asset_id AS assetId
+FROM MessageAssetContent preview JOIN Asset cache ON cache.key = preview.preview_asset_id
+WHERE preview.conversation_id = :conversationId AND preview.preview_asset_id IS NOT NULL;

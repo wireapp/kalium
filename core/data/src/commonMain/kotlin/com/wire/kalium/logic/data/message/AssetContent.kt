@@ -29,6 +29,8 @@ data class AssetContent(
     val mimeType: String,
     val metadata: AssetMetadata? = null,
     val remoteData: RemoteData,
+    /** Independently encrypted image preview, with its own cache identity and remote credentials. */
+    val preview: Preview? = null,
 ) : MessageAttachment {
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
@@ -65,6 +67,19 @@ data class AssetContent(
                 result = 31 * result + (normalizedLoudness?.contentHashCode() ?: 0)
                 return result
             }
+        }
+    }
+
+    data class Preview(
+        val mimeType: String,
+        val sizeInBytes: Long,
+        val width: Int,
+        val height: Int,
+        val remoteData: RemoteData,
+    ) {
+        companion object {
+            const val MAX_SIZE_IN_BYTES: Long = 1_048_576
+            const val MAX_DIMENSION: Int = 4096
         }
     }
 

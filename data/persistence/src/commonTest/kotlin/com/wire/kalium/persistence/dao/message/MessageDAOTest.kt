@@ -82,6 +82,57 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(1003L, messageDAO.countMessagesForBackup(MessageEntity.ContentType.entries))
     }
 
+    @Test
+    fun previewOnlyUpdateRetainsOriginalKeysAndSurvivesReloadAndFileCleanup() = runTest {
+        insertInitialData()
+        val original = MessageEntityContent.Asset(
+            assetSizeInBytes = 100_000, assetName = "video.mp4", assetMimeType = "video/mp4",
+            assetOtrKey = byteArrayOf(1, 2), assetSha256Key = byteArrayOf(3, 4), assetId = "video-id",
+            assetEncryptionAlgorithm = "AES_CBC", assetWidth = 1920, assetHeight = 1080,
+        )
+        val message = newRegularMessageEntity(
+            id = "video-preview-test", conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id, content = original,
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(message))
+        val withPreview = original.copy(
+            assetOtrKey = byteArrayOf(), assetSha256Key = byteArrayOf(),
+            assetPreview = byteArrayOf(5, 6, 7), assetPreviewId = "preview-id", assetPreviewDomain = "preview.domain",
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(message.copy(content = withPreview)))
+        val reloaded = messageDAO.getMessageById(message.id, message.conversationId)!!.content as MessageEntityContent.Asset
+        assertContentEquals(original.assetOtrKey, reloaded.assetOtrKey)
+        assertContentEquals(original.assetSha256Key, reloaded.assetSha256Key)
+        assertEquals(original.assetSizeInBytes, reloaded.assetSizeInBytes)
+        assertContentEquals(withPreview.assetPreview, reloaded.assetPreview)
+        assertEquals("preview-id", reloaded.assetPreviewId)
+        assetDao.insertAsset(AssetEntity("video-id", "domain", "/video.mp4", 100_000, downloadedDate = null))
+        assetDao.insertAsset(AssetEntity("preview-id", "preview.domain", "/preview.jpg", 1024, downloadedDate = null))
+        val files = mutableListOf<String>()
+        assetDao.deleteMessageFiles(message.conversationId, message.id) { files.add(it) }
+        assertEquals(setOf("/video.mp4", "/preview.jpg"), files.toSet())
+        assertNull(assetDao.getAssetByKey("preview-id").first())
+    }
+
+    @Test
+    fun previewUpdateFromDifferentClientCannotChangeCompletedAsset() = runTest {
+        insertInitialData()
+        val original = MessageEntityContent.Asset(
+            assetSizeInBytes = 100_000, assetMimeType = "video/mp4", assetOtrKey = byteArrayOf(1),
+            assetSha256Key = byteArrayOf(2), assetId = "video-id", assetEncryptionAlgorithm = "AES_CBC",
+        )
+        val message = newRegularMessageEntity(
+            id = "video-preview-security", conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id, senderClientId = "sender-client", content = original,
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(message))
+        messageDAO.insertOrIgnoreMessages(listOf(message.copy(senderClientId = "other-client", content = original.copy(
+            assetPreview = byteArrayOf(5), assetPreviewId = "spoofed-preview",
+        ))))
+        val reloaded = messageDAO.getMessageById(message.id, message.conversationId)!!.content as MessageEntityContent.Asset
+        assertNull(reloaded.assetPreview)
+    }
+
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO

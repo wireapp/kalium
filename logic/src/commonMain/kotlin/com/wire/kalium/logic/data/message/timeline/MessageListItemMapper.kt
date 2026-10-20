@@ -129,6 +129,7 @@ internal class MessageListItemMapper(private val selfUserId: UserId) {
                 row.asset_height,
                 row.asset_duration_ms,
                 row.asset_complete,
+                row.preview_asset_id?.let { AssetId(it, row.preview_asset_domain.orEmpty()) },
             )
         )
         MessageEntity.ContentType.RESTRICTED_ASSET -> MessageListContent.RestrictedAsset(
