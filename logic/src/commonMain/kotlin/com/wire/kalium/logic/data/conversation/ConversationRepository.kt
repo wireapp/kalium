@@ -313,6 +313,8 @@ internal interface ConversationRepository : SendingConversations {
 
     fun observeUnreadArchivedConversationsCount(): Flow<Long>
 
+    fun observeUnreadConversationBadgeCount(): Flow<Long>
+
     suspend fun sendTypingIndicatorStatus(
         conversationId: ConversationId,
         typingStatus: Conversation.TypingIndicatorMode
@@ -1057,6 +1059,11 @@ internal class ConversationDataSource internal constructor(
 
     override fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         conversationDAO.observeUnreadArchivedConversationsCount()
+            .wrapStorageRequest()
+            .mapToRightOr(0L)
+
+    override fun observeUnreadConversationBadgeCount(): Flow<Long> =
+        conversationDAO.observeUnreadConversationBadgeCount()
             .wrapStorageRequest()
             .mapToRightOr(0L)
 
