@@ -583,6 +583,8 @@ public abstract interface class com/wire/kalium/logic/data/id/FederatedIdMapper 
 
 public final class com/wire/kalium/logic/data/message/timeline/MessageListAsset {
 	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;JLjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;Z)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;JLjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;ZLcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;JLjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;ZLcom/wire/kalium/logic/data/id/QualifiedID;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
@@ -591,8 +593,11 @@ public final class com/wire/kalium/logic/data/message/timeline/MessageListAsset 
 	public final fun component6 ()Ljava/lang/Integer;
 	public final fun component7 ()Ljava/lang/Long;
 	public final fun component8 ()Z
+	public final fun component9 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;JLjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;Z)Lcom/wire/kalium/logic/data/message/timeline/MessageListAsset;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;JLjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;ZLcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/data/message/timeline/MessageListAsset;
 	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/timeline/MessageListAsset;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;JLjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;ZILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/timeline/MessageListAsset;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/timeline/MessageListAsset;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;JLjava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;ZLcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/timeline/MessageListAsset;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDurationMs ()Ljava/lang/Long;
 	public final fun getHasCompleteRemoteData ()Z
@@ -600,6 +605,7 @@ public final class com/wire/kalium/logic/data/message/timeline/MessageListAsset 
 	public final fun getId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getMimeType ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
+	public final fun getPreviewAssetId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getSizeInBytes ()J
 	public final fun getWidth ()Ljava/lang/Integer;
 	public fun hashCode ()I
@@ -1506,6 +1512,15 @@ public abstract interface class com/wire/kalium/logic/feature/asset/GetImageAsse
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;IILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/asset/GetMessageAssetPreviewUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/asset/GetMessageAssetPreviewUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/asset/GetMessageAssetPreviewUseCase$DefaultImpls {
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/asset/GetMessageAssetPreviewUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/asset/GetMessageAssetUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -1603,6 +1618,25 @@ public final class com/wire/kalium/logic/feature/asset/UpdateTransferStatusResul
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams {
+	public fun <init> (Lokio/Path;JLjava/lang/String;II)V
+	public final fun component1 ()Lokio/Path;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()I
+	public final fun component5 ()I
+	public final fun copy (Lokio/Path;JLjava/lang/String;II)Lcom/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams;Lokio/Path;JLjava/lang/String;IIILjava/lang/Object;)Lcom/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAssetDataPath ()Lokio/Path;
+	public final fun getAssetDataSize ()J
+	public final fun getHeight ()I
+	public final fun getMimeType ()Ljava/lang/String;
+	public final fun getWidth ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion {
 }
 
@@ -1633,7 +1667,10 @@ public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadComplet
 
 public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadParams {
 	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lokio/Path;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;J[B)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lokio/Path;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;J[BLcom/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams;)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lokio/Path;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;J[BLcom/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component10 ()Lcom/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams;
 	public final fun component2 ()Lokio/Path;
 	public final fun component3 ()J
 	public final fun component4 ()Ljava/lang/String;
@@ -1643,7 +1680,9 @@ public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadParams 
 	public final fun component8 ()J
 	public final fun component9 ()[B
 	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lokio/Path;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;J[B)Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadParams;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lokio/Path;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;J[BLcom/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams;)Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadParams;
 	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadParams;Lcom/wire/kalium/logic/data/id/QualifiedID;Lokio/Path;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;J[BILjava/lang/Object;)Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadParams;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadParams;Lcom/wire/kalium/logic/data/id/QualifiedID;Lokio/Path;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;J[BLcom/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadParams;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAssetDataPath ()Lokio/Path;
 	public final fun getAssetDataSize ()J
@@ -1654,6 +1693,7 @@ public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadParams 
 	public final fun getAudioLengthInMs ()J
 	public final fun getAudioNormalizedLoudness ()[B
 	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getPreview ()Lcom/wire/kalium/logic/feature/asset/upload/AssetPreviewUploadParams;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -6010,6 +6050,7 @@ public final class com/wire/kalium/logic/feature/message/MessageScope {
 	public final fun getEnqueueMessageSelfDeletion ()Lcom/wire/kalium/logic/feature/message/ephemeral/EnqueueMessageSelfDeletionUseCase;
 	public final fun getGenerateLinkPreview ()Lcom/wire/kalium/logic/feature/message/linkpreview/GenerateLinkPreviewUseCase;
 	public final fun getGetAssetMessage ()Lcom/wire/kalium/logic/feature/asset/GetMessageAssetUseCase;
+	public final fun getGetAssetMessagePreview ()Lcom/wire/kalium/logic/feature/asset/GetMessageAssetPreviewUseCase;
 	public final fun getGetImageAssetMessagesByConversation ()Lcom/wire/kalium/logic/feature/asset/GetImageAssetMessagesForConversationUseCase;
 	public final fun getGetMessageById ()Lcom/wire/kalium/logic/feature/message/GetMessageByIdUseCase;
 	public final fun getGetMessageDraftUseCase ()Lcom/wire/kalium/logic/feature/message/draft/GetMessageDraftUseCase;

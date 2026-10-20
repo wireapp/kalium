@@ -321,6 +321,58 @@ public data class AssetUploadParams(
     val audioNormalizedLoudness: ByteArray?,
     val preview: AssetPreviewUploadParams? = null,
 ) {
+    /** Preserves the constructor used by previously compiled SDK consumers. */
+    @Suppress("LongParameterList")
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public constructor(
+        conversationId: ConversationId,
+        assetDataPath: Path,
+        assetDataSize: Long,
+        assetName: String,
+        assetMimeType: String,
+        assetWidth: Int?,
+        assetHeight: Int?,
+        audioLengthInMs: Long,
+        audioNormalizedLoudness: ByteArray?,
+    ) : this(
+        conversationId = conversationId,
+        assetDataPath = assetDataPath,
+        assetDataSize = assetDataSize,
+        assetName = assetName,
+        assetMimeType = assetMimeType,
+        assetWidth = assetWidth,
+        assetHeight = assetHeight,
+        audioLengthInMs = audioLengthInMs,
+        audioNormalizedLoudness = audioNormalizedLoudness,
+        preview = null,
+    )
+
+    /** Preserves legacy copy/default-argument descriptors while retaining the optional preview. */
+    @Suppress("LongParameterList")
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public fun copy(
+        conversationId: ConversationId = this.conversationId,
+        assetDataPath: Path = this.assetDataPath,
+        assetDataSize: Long = this.assetDataSize,
+        assetName: String = this.assetName,
+        assetMimeType: String = this.assetMimeType,
+        assetWidth: Int? = this.assetWidth,
+        assetHeight: Int? = this.assetHeight,
+        audioLengthInMs: Long = this.audioLengthInMs,
+        audioNormalizedLoudness: ByteArray? = this.audioNormalizedLoudness,
+    ): AssetUploadParams = copy(
+        conversationId = conversationId,
+        assetDataPath = assetDataPath,
+        assetDataSize = assetDataSize,
+        assetName = assetName,
+        assetMimeType = assetMimeType,
+        assetWidth = assetWidth,
+        assetHeight = assetHeight,
+        audioLengthInMs = audioLengthInMs,
+        audioNormalizedLoudness = audioNormalizedLoudness,
+        preview = this.preview,
+    )
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false

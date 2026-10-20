@@ -124,7 +124,55 @@ public data class MessageListAsset(
     public val durationMs: Long?,
     public val hasCompleteRemoteData: Boolean,
     public val previewAssetId: AssetId? = null,
-)
+) {
+    /** Preserves the constructor used by previously compiled SDK consumers. */
+    @Suppress("LongParameterList")
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public constructor(
+        id: AssetId,
+        name: String?,
+        mimeType: String,
+        sizeInBytes: Long,
+        width: Int?,
+        height: Int?,
+        durationMs: Long?,
+        hasCompleteRemoteData: Boolean,
+    ) : this(
+        id = id,
+        name = name,
+        mimeType = mimeType,
+        sizeInBytes = sizeInBytes,
+        width = width,
+        height = height,
+        durationMs = durationMs,
+        hasCompleteRemoteData = hasCompleteRemoteData,
+        previewAssetId = null,
+    )
+
+    /** Preserves legacy copy/default-argument descriptors while retaining the optional preview. */
+    @Suppress("LongParameterList")
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public fun copy(
+        id: AssetId = this.id,
+        name: String? = this.name,
+        mimeType: String = this.mimeType,
+        sizeInBytes: Long = this.sizeInBytes,
+        width: Int? = this.width,
+        height: Int? = this.height,
+        durationMs: Long? = this.durationMs,
+        hasCompleteRemoteData: Boolean = this.hasCompleteRemoteData,
+    ): MessageListAsset = copy(
+        id = id,
+        name = name,
+        mimeType = mimeType,
+        sizeInBytes = sizeInBytes,
+        width = width,
+        height = height,
+        durationMs = durationMs,
+        hasCompleteRemoteData = hasCompleteRemoteData,
+        previewAssetId = this.previewAssetId,
+    )
+}
 
 public data class MessageListAttachment(
     public val id: String,

@@ -32,6 +32,39 @@ data class AssetContent(
     /** Independently encrypted image preview, with its own cache identity and remote credentials. */
     val preview: Preview? = null,
 ) : MessageAttachment {
+    /** Preserves the constructor used by previously compiled SDK consumers. */
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public constructor(
+        sizeInBytes: Long,
+        name: String? = null,
+        mimeType: String,
+        metadata: AssetMetadata? = null,
+        remoteData: RemoteData,
+    ) : this(
+        sizeInBytes = sizeInBytes,
+        name = name,
+        mimeType = mimeType,
+        metadata = metadata,
+        remoteData = remoteData,
+        preview = null,
+    )
+
+    /** Preserves legacy copy/default-argument descriptors while retaining the optional preview. */
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public fun copy(
+        sizeInBytes: Long = this.sizeInBytes,
+        name: String? = this.name,
+        mimeType: String = this.mimeType,
+        metadata: AssetMetadata? = this.metadata,
+        remoteData: RemoteData = this.remoteData,
+    ): AssetContent = copy(
+        sizeInBytes = sizeInBytes,
+        name = name,
+        mimeType = mimeType,
+        metadata = metadata,
+        remoteData = remoteData,
+        preview = this.preview,
+    )
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
 
