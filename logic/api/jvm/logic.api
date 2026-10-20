@@ -1341,6 +1341,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getSendPendingMessages ()Lcom/wire/kalium/logic/sync/SendPendingMessagesUseCase;
 	public final fun getService ()Lcom/wire/kalium/logic/feature/service/ServiceScope;
 	public final fun getSetNewUserTrackingIdentifier ()Lcom/wire/kalium/logic/feature/analytics/SetNewUserTrackingIdentifierUseCase;
+	public final fun getSlowSyncStatus ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getSyncExecutor ()Lcom/wire/kalium/logic/sync/SyncExecutor;
 	public final fun getSyncManager ()Lcom/wire/kalium/logic/sync/SyncStateObserver;
 	public final fun getSyncMeetingsUseCase ()Lcom/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase;
