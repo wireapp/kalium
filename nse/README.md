@@ -173,8 +173,12 @@ session without polling or opening another runtime. NSE also returns pending
 messages in `alerts`, including its primary message when covered by the queue; the
 native host must suppress a second primary presentation in that case.
 `processAndDeliver` awaits the native enqueue callback and acknowledges acceptance
-before releasing the account lease. Cancellation waits for an already started
-callback and its acknowledgement; a failed enqueue stays pending. The legacy
+before releasing the account lease. Cancellation stops waiting for the native
+callback so runtime cleanup can release the account. A late completion cannot
+access the account database; an unacknowledged or failed enqueue stays pending
+for identity-based reconciliation on the next attempt. Only an acknowledgement
+already in progress is drained before release. Pending replay is oldest-first,
+including records written by earlier versions. The legacy
 `process` entry point only returns presentation data and does not acknowledge it.
 
 A committed result is a claim to present, **not acknowledgement of OS delivery**.

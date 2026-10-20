@@ -37,7 +37,7 @@ class PendingMessageAlerts internal constructor(
     suspend fun read(showContent: Boolean = true): List<ReceivedMessageResult> = database.writeMessageEffects {
         val records = read(metadata)
         val retained = mutableListOf<PendingMessageAlert>()
-        val result = mutableListOf<ReceivedMessageResult>()
+        val result = mutableListOf<Pair<Instant, ReceivedMessageResult>>()
         val preference = UserConfigDataSource(prefs, config, lazy { error("Unused by notification preferences") })
             .getMessageContentPreference()
         val mapper = RegularMessageMapper(selfUserId)
@@ -52,10 +52,12 @@ class PendingMessageAlerts internal constructor(
                 message, conversation.copy(lastNotificationDate = null), mapper, selfUserId, messages, users,
             )?.takeIf { it.shouldNotify } ?: continue
             retained.add(record)
-            result.add(alert.copy(messageId = record.message).notificationPreview(showContent, preference))
+            result.add(message.date to alert.copy(messageId = record.message).notificationPreview(showContent, preference))
         }
         if (retained != records) write(metadata, retained)
-        result
+        // Persisted batches (including older versions) may be newest-first. Native presentation
+        // selects the last alert as primary, so rebuild chronological order from canonical rows.
+        result.sortedBy { it.first }.map { it.second }
     }
 
     /** Call only after native enqueue succeeded, or the same identity is already delivered/pending in iOS. */

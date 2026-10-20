@@ -39,10 +39,6 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
 import kotlin.time.Duration.Companion.milliseconds
@@ -167,7 +163,11 @@ public data class KaliumNSECall(
     public val isGroupConversation: Boolean = false,
 )
 
-/** Native enqueue acknowledgement while the NSE still holds the exclusive account lease. */
+/**
+ * Enqueue using only the supplied alert and native notification APIs, never account resources.
+ * Cancellation may release the account before this callback completes; late acceptance is replayed
+ * through stable notification identities rather than acknowledging against a closed database.
+ */
 public interface KaliumNSEMessageDelivery {
     public suspend fun deliver(alert: KaliumNSEAlert): Boolean
 }
@@ -251,7 +251,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         if (received.prefixComplete) claims.take()
         val unnotified = claims.pending.read(request.showMessageContent)
         val result = reconcileNotifications(runtime, received, unnotified, request)
-        if (delivery != null) deliverPending(claims, result.alerts, delivery)
+        if (delivery != null) deliverMessageAlerts(result.alerts, delivery) { key ->
+            claims.pending.acknowledge(listOf(key))
+        }
         return result.copy(
             stoppedReason = received.stoppedReason,
             presentGenericAlert = !result.shouldNotify && result.alerts.isEmpty() &&
@@ -425,26 +427,6 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         const val PROCESS_SHARE = 0.85
         const val QUEUE_END = "QUEUE_END"
         const val BUDGET = "BUDGET"
-    }
-}
-
-private suspend fun deliverPending(
-    claims: UnnotifiedMessageAlerts,
-    alerts: List<KaliumNSEAlert>,
-    delivery: KaliumNSEMessageDelivery,
-) {
-    for (alert in alerts) {
-        currentCoroutineContext().ensureActive()
-        // Finish an accepted native enqueue before account release, including NSE expiry during the callback.
-        withContext(NonCancellable) {
-            if (delivery.deliver(alert)) {
-                val key = NotificationMessageKey(
-                    alert.messageId,
-                    QualifiedIDEntity(alert.conversationValue, alert.conversationDomain),
-                )
-                claims.pending.acknowledge(listOf(key))
-            }
-        }
     }
 }
 

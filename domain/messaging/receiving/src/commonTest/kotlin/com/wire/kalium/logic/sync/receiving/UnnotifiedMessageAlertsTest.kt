@@ -15,6 +15,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.job
@@ -31,6 +32,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -166,10 +168,28 @@ class UnnotifiedMessageAlertsTest {
                     })
                 }
             }
-            assertEquals("first", seen.receive())
-            database.builder.messageDAO.insertOrIgnoreMessage(message("later", time + 1.seconds))
-            assertEquals("later", seen.receive())
-            observation.cancel()
+            try {
+                assertEquals("first", seen.receive())
+                database.builder.messageDAO.insertOrIgnoreMessage(message("later", time + 1.seconds))
+                assertEquals("later", seen.receive())
+            } finally {
+                observation.cancelAndJoin()
+            }
+            assertTrue(observation.isCompleted)
+        }
+    }
+
+    @Test
+    fun pendingReplayKeepsOldestFirstAcrossBatchesAndAcknowledgement() = runTest {
+        fixture { database, alerts, _ ->
+            database.builder.messageDAO.insertOrIgnoreMessage(message("second", time + 1.seconds))
+            assertEquals(listOf("first", "second"), alerts.take().map { it.messageId })
+            database.builder.messageDAO.insertOrIgnoreMessage(message("third", time + 2.seconds))
+            alerts.take()
+            val reopened = UnnotifiedMessageAlerts(database.builder, self) { time + 3.seconds }
+            assertEquals(listOf("first", "second", "third"), reopened.pending.read().map { it.messageId })
+            reopened.pending.acknowledge(listOf(NotificationMessageKey("second", conversation.id)))
+            assertEquals(listOf("first", "third"), reopened.pending.read().map { it.messageId })
         }
     }
 
