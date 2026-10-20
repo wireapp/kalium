@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -67,12 +68,33 @@ class MLSDeliveryFlagsTest {
     }
 
     @Test
-    fun givenDeliveryFlags_whenCheckingPolicy_thenOnlyApplicationMessagesAreAccepted() {
+    fun givenDeliveryFlags_whenCheckingPolicy_thenOnlyAllowedContentIsAccepted() {
         assertTrue(applicationMessage(MessageContent.Text("text"), targeted = false, transient = false).isAcceptedDelivery())
         assertFalse(applicationMessage(MessageContent.Text("text"), targeted = true, transient = false).isAcceptedDelivery())
         assertFalse(applicationMessage(MessageContent.Text("text"), targeted = false, transient = true).isAcceptedDelivery())
-        assertFalse(applicationMessage(MessageContent.Calling("call"), targeted = true, transient = true).isAcceptedDelivery())
+        assertFalse(applicationMessage(MessageContent.Text("text"), targeted = true, transient = true).isAcceptedDelivery())
         assertFalse(
+            applicationMessage(MessageContent.DeleteForMe("message", CONVERSATION_ID), targeted = true, transient = false)
+                .isAcceptedDelivery()
+        )
+    }
+
+    @Test
+    fun givenExistingTargetedContent_whenCheckingPolicy_thenTargetedAndTransientDeliveryIsAccepted() {
+        val allowedContent = listOf(
+            MessageContent.Calling("call"),
+            MessageContent.ClientAction,
+            MessageContent.Receipt(ReceiptType.READ, listOf("message")),
+            MessageContent.ButtonActionConfirmation("message", "button"),
+            MessageContent.DeleteMessage("message")
+        )
+
+        allowedContent.forEach { content ->
+            assertTrue(applicationMessage(content, targeted = true, transient = false).isAcceptedDelivery())
+            assertTrue(applicationMessage(content, targeted = false, transient = true).isAcceptedDelivery())
+            assertTrue(applicationMessage(content, targeted = true, transient = true).isAcceptedDelivery())
+        }
+        assertTrue(
             applicationMessage(MessageContent.Calling("call"), targeted = true, transient = false).toSignalingMessage(self)
                 .isAcceptedDelivery()
         )

@@ -25,11 +25,17 @@ import com.wire.kalium.logic.data.message.MessageContent
  * Whether content received as a targeted and/or transient MLS message may be processed.
  *
  * Targeted and transient messages have weaker security guarantees than messages to the whole conversation, so
- * content is only accepted through them once a feature explicitly allows it here. Everything else is rejected.
+ * only content already sent to specific recipients is accepted through them. Everything else is rejected.
  */
-@Suppress("UNUSED_PARAMETER") // Per-content decisions are added as features need them.
 internal fun isAcceptedDelivery(content: MessageContent.FromProto, targeted: Boolean, transient: Boolean): Boolean =
-    !targeted && !transient
+    if (!targeted && !transient) true else when (content) {
+        is MessageContent.Calling,
+        MessageContent.ClientAction,
+        is MessageContent.Receipt,
+        is MessageContent.ButtonActionConfirmation,
+        is MessageContent.DeleteMessage -> true
+        else -> false
+    }
 
 /** @see isAcceptedDelivery */
 fun Message.Sendable.isAcceptedDelivery(): Boolean = isAcceptedDelivery(content, targeted, transient)

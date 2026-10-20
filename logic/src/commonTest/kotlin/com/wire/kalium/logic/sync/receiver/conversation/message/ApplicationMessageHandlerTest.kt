@@ -409,6 +409,36 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
+    fun givenTextMessageReceivedAsApplicationMessage_whenHandling_thenMessageIsPersistedWithoutDeliveryFlags() = runTest {
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            textProtoContent(),
+            targeted = false,
+            transient = false
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matches { it is Message.Regular && !it.targeted && !it.transient })
+        }
+    }
+
+    private fun textProtoContent() = ProtoContent.Readable(
+        messageUid = "messageId",
+        messageContent = MessageContent.Text("Hello"),
+        expectsReadConfirmation = false,
+        legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+    )
+
+    @Test
     fun givenTextMessageWithLinkPreviewImage_whenHandling_thenLinkPreviewResolutionIsTriggered() = runTest {
         val messageId = "messageId"
         val textContent = MessageContent.Text(

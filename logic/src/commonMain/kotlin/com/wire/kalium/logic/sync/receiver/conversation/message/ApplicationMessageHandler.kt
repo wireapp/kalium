@@ -62,6 +62,7 @@ import kotlin.time.Instant
 
 internal interface ApplicationMessageHandler {
 
+    /** Processes decrypted [content] after the delivery policy has been checked by [NewMessageEventHandler]. */
     @Suppress("LongParameterList")
     suspend fun handleContent(
         transactionContext: CryptoTransactionContext,
@@ -70,6 +71,8 @@ internal interface ApplicationMessageHandler {
         senderUserId: UserId,
         senderClientId: ClientId,
         content: ProtoContent.Readable,
+        targeted: Boolean = false,
+        transient: Boolean = false,
     )
 
     @Suppress("LongParameterList")
@@ -122,28 +125,27 @@ internal class ApplicationMessageHandlerImpl(
         messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
-        content: ProtoContent.Readable
+        content: ProtoContent.Readable,
+        targeted: Boolean,
+        transient: Boolean
     ) {
+        val applicationMessage = MessageUnpackResult.ApplicationMessage(
+            conversationId,
+            messageInstant,
+            senderUserId,
+            senderClientId,
+            content,
+            targeted,
+            transient
+        )
         when (content.messageContent) {
             is MessageContent.Regular -> {
-                val message = MessageUnpackResult.ApplicationMessage(
-                    conversationId,
-                    messageInstant,
-                    senderUserId,
-                    senderClientId,
-                    content
-                ).toRegularMessage(selfUserId)
+                val message = applicationMessage.toRegularMessage(selfUserId)
                 processMessage(message)
             }
 
             is MessageContent.Signaling -> {
-                val signalingMessage = MessageUnpackResult.ApplicationMessage(
-                    conversationId,
-                    messageInstant,
-                    senderUserId,
-                    senderClientId,
-                    content
-                ).toSignalingMessage(selfUserId)
+                val signalingMessage = applicationMessage.toSignalingMessage(selfUserId)
                 processSignaling(transactionContext, signalingMessage)
             }
         }
