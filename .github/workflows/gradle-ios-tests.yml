@@ -2,6 +2,12 @@ name: "iOS Tests"
 
 on:
   workflow_dispatch:
+    inputs:
+      swift_receiving_only:
+        description: Run only the real Swift receiving verifier on this CI host
+        type: boolean
+        required: false
+        default: false
   merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
@@ -10,7 +16,8 @@ on:
       - develop
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+    # Preserve existing groups; isolate the optional verifier from ordinary runs.
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}${{ github.event_name == 'workflow_dispatch' && inputs.swift_receiving_only && format('-swift-receiving-{0}', github.ref) || '' }}
     cancel-in-progress: true
 
 permissions:
@@ -19,9 +26,11 @@ permissions:
 jobs:
   detekt:
     name: Detekt
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.swift_receiving_only) }}
     uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
     name: Gradle Run Tests
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.swift_receiving_only) }}
     needs: [detekt]
     permissions:
       contents: read # required to read repository metadata in private repositories
@@ -212,7 +221,7 @@ jobs:
     name: Upload Test Results Datadadog
     runs-on: ubuntu-latest
     needs: gradle-run-tests
-    if: always()
+    if: ${{ always() && !(github.event_name == 'workflow_dispatch' && inputs.swift_receiving_only) }}
 
     steps:
       - name: Download tests results
@@ -233,3 +242,134 @@ jobs:
         run: |
           # xargs splits the report paths into batches that fit the argument limit.
           find . -name "*.xml" -type f -print0 | xargs -0 -r datadog-ci junit upload --service kalium-ios
+
+  swift-receiving:
+    name: Swift Receiving Only
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.swift_receiving_only }}
+    runs-on: macos-26
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    env:
+      # Serialize native links and leave room for the linker on the 7 GB runner.
+      GRADLE_OPTS: -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs="-Xmx3g -XX:+UseParallelGC"
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Link Swift receiving framework and fixtures
+        id: link
+        timeout-minutes: 45
+        run: |
+          mkdir -p build/ci/swift-receiving
+          # Stop even after a failed link; the verifier boots its own simulator later.
+          trap './gradlew --stop >> build/ci/swift-receiving/link.log 2>&1 || true' EXIT
+          ./gradlew --console=plain -Dorg.gradle.logging.level=lifecycle --profile \
+            --no-parallel --max-workers=2 \
+            :nse:linkDebugFrameworkIosSimulatorArm64 \
+            :nse:generateAvsXcodeConfig \
+            :domain:messaging:receiving:linkSwiftFixtureDebugExecutableIosSimulatorArm64 \
+            :logic:linkSwiftAppFixtureDebugExecutableIosSimulatorArm64 \
+            2>&1 | tee build/ci/swift-receiving/link.log
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install verifier dependencies
+        timeout-minutes: 5
+        run: |
+          python3 -m venv "$RUNNER_TEMP/swift-receiving-venv"
+          "$RUNNER_TEMP/swift-receiving-venv/bin/pip" install --quiet \
+            -r nse/scripts/requirements-ios-tests.txt \
+            2>&1 | tee build/ci/swift-receiving/dependencies.log
+
+      - name: Verify real Swift receiving through the loopback relay
+        id: verify
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          if [[ "$(id -u)" == 0 ]]; then
+            echo '::error::The verifier and simulator must run as the regular runner user'
+            exit 1
+          fi
+          log_dir="$GITHUB_WORKSPACE/build/ci/swift-receiving"
+          relay_pid_file="$RUNNER_TEMP/swift-receiving-relay-$$.pid"
+          relay_launcher_pid=''
+          cleanup() {
+            result=$?
+            trap - EXIT
+            if [[ -s "$relay_pid_file" ]]; then
+              read -r relay_pid < "$relay_pid_file"
+              if [[ "$relay_pid" =~ ^[0-9]+$ ]]; then
+                sudo -n /bin/kill -TERM "$relay_pid" 2>/dev/null || true
+              fi
+            fi
+            if [[ -n "$relay_launcher_pid" ]]; then
+              # Also cover an interruption while sudo is still starting the relay.
+              kill "$relay_launcher_pid" 2>/dev/null || true
+              wait "$relay_launcher_pid" 2>/dev/null || true
+            fi
+            rm -f "$relay_pid_file" || true
+            exit "$result"
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          relay_python="$(command -v python3)"
+          # Only this stdlib TCP relay is root. It never terminates TLS or handles HTTP.
+          sudo -n /bin/sh -c 'echo "$$" > "$1"; exec "$2" -I -u "$3" --listen-port 443 --upstream-port 8443' \
+            swift-receiving-relay "$relay_pid_file" "$relay_python" \
+            "$GITHUB_WORKSPACE/nse/scripts/local-wss-relay.py" \
+            > "$log_dir/relay.log" 2>&1 &
+          relay_launcher_pid=$!
+          relay_ready=false
+          for attempt in {1..100}; do
+            if grep -q '^Loopback TCP relay 127.0.0.1:443 -> 127.0.0.1:8443;' "$log_dir/relay.log"; then
+              relay_ready=true
+              break
+            fi
+            sleep 0.1
+          done
+          if [[ "$relay_ready" != true ]]; then
+            echo '::error::Loopback relay did not bind port 443; see relay.log'
+            exit 1
+          fi
+          "$RUNNER_TEMP/swift-receiving-venv/bin/python" -u \
+            nse/scripts/verify-swift-receiving-relayed.py --skip-build \
+            2>&1 | tee "$log_dir/verifier.log"
+
+      - name: Record verifier outcome and runner diagnostics
+        if: always()
+        env:
+          LINK_OUTCOME: ${{ steps.link.outcome }}
+          VERIFIER_OUTCOME: ${{ steps.verify.outcome }}
+        run: |
+          mkdir -p build/ci/swift-receiving
+          {
+            printf 'commit=%s\nlink=%s\nverifier=%s\n' "$GITHUB_SHA" "$LINK_OUTCOME" "$VERIFIER_OUTCOME"
+            xcodebuild -version
+            xcrun simctl list runtimes
+            sysctl hw.memsize vm.swapusage
+            vm_stat
+            df -h
+          } > build/ci/swift-receiving/runner.log 2>&1
+
+      - name: Archive Swift receiving reports and logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: swift-receiving-verification
+          retention-days: 7
+          path: |
+            nse/build/reports/swift-receiving/**
+            build/ci/swift-receiving/**
+            build/reports/profile/**
