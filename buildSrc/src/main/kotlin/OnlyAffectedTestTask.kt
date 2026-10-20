@@ -43,6 +43,14 @@ open class OnlyAffectedTestTask : DefaultTask() {
     @set:Option(option = "list-only", description = "Write selected task paths without starting a nested build.")
     var listOnly: Boolean = false
 
+    @Input
+    @set:Option(option = "all-modules", description = "Select all eligible modules, even when no changes are detected.")
+    var allModules: Boolean = false
+
+    @Input
+    @set:Option(option = "ios-shard", description = "Select one iOS CI group: logic, data, or extensions.")
+    var iosShard: String = ""
+
     init {
         group = "verification"
         description = "Runs tests for affected modules when available, otherwise runs all tests."
@@ -51,9 +59,13 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
     @TaskAction
     fun runOnlyAffectedConnectedTest() {
+        require(iosShard in setOf("", "logic", "data", "extensions")) { "Unknown iOS shard: $iosShard" }
+        require(iosShard.isEmpty() || configuration == TestTaskConfiguration.IOS_TEST_TASK) {
+            "--ios-shard is only supported by iOSOnlyAffectedTest"
+        }
         val affectedModules = readAffectedModules()
         val missingAffectedModulesData = affectedModules == null
-        val runAllTests = hasToRunAllTests() || missingAffectedModulesData
+        val runAllTests = allModules || hasToRunAllTests() || missingAffectedModulesData
 
         if (!runAllTests && affectedModules.orEmpty().isEmpty()) {
             writeSelectedTasks(emptyList())
@@ -72,6 +84,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
         val tasksName = mutableListOf<String>()
         project.subprojects
             .filter { (runAllTests || affectedModules.contains(it.path)) && !ignoredModules.contains(it.path) }
+            .filter { belongsToIosShard(it.path) }
             .forEach { childProject ->
                 val targetTaskName = childProject.tasks.names.firstOrNull { it.equals(configuration.testTarget, true) }
                 targetTaskName?.let { taskName ->
@@ -90,6 +103,15 @@ open class OnlyAffectedTestTask : DefaultTask() {
         }
 
         if (!listOnly) runTargetTasks(tasksName)
+    }
+
+    private fun belongsToIosShard(modulePath: String): Boolean = when (iosShard) {
+        "" -> true
+        "logic" -> modulePath == ":logic"
+        "data" -> modulePath in IOS_DATA_MODULES
+        // New modules belong here automatically, so adding a module cannot silently remove test coverage.
+        "extensions" -> modulePath != ":logic" && modulePath !in IOS_DATA_MODULES
+        else -> error("Unknown iOS shard: $iosShard")
     }
 
     private fun writeSelectedTasks(tasksName: List<String>) {
@@ -148,7 +170,11 @@ open class OnlyAffectedTestTask : DefaultTask() {
             "build.gradle.kts",
             "gradle.properties",
             "settings.gradle.kts",
-        )
+        ) + if (configuration == TestTaskConfiguration.IOS_TEST_TASK) {
+            listOf(".github/workflows/gradle-ios-tests.yml", "scripts/boot-ios-simulator.py", "nse/scripts")
+        } else {
+            emptyList()
+        }
 
         val process = ProcessBuilder(
             listOf("git", "-C", project.rootDir.absolutePath, "diff", "--quiet", "origin/develop", "--") + globalBuildSettingsFiles
@@ -174,6 +200,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
     }
 
     private companion object {
+        val IOS_DATA_MODULES = setOf(":data:persistence", ":data:network", ":core:cryptography")
         val IGNORED_MODULES = listOf(":data:protobuf", ":tools:protobuf-codegen")
         const val AFFECTED_MODULES_FILE = "dag-command/affected-modules.json"
     }

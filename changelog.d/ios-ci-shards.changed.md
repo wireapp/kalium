@@ -1,0 +1,2 @@
+- iOS CI distributes affected tests across three macOS jobs, isolates the largest native test binary, and limits each runner to one Gradle worker. Tests use a smaller Gradle heap after linking to leave memory for the simulator.
+- Develop caches shared dependencies once and saves build outputs separately for each test group. Reports remain available per group, and the existing combined test check requires every group to succeed.
