@@ -6242,6 +6242,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-service>(): com.wire.kalium.logic.feature.service/ServiceScope // com.wire.kalium.logic.feature/UserSessionScope.service.<get-service>|<get-service>(){}[0]
     final val setNewUserTrackingIdentifier // com.wire.kalium.logic.feature/UserSessionScope.setNewUserTrackingIdentifier|{}setNewUserTrackingIdentifier[0]
         final fun <get-setNewUserTrackingIdentifier>(): com.wire.kalium.logic.feature.analytics/SetNewUserTrackingIdentifierUseCase // com.wire.kalium.logic.feature/UserSessionScope.setNewUserTrackingIdentifier.<get-setNewUserTrackingIdentifier>|<get-setNewUserTrackingIdentifier>(){}[0]
+    final val slowSyncStatus // com.wire.kalium.logic.feature/UserSessionScope.slowSyncStatus|{}slowSyncStatus[0]
+        final fun <get-slowSyncStatus>(): kotlinx.coroutines.flow/StateFlow<com.wire.kalium.logic.data.sync/SlowSyncStatus> // com.wire.kalium.logic.feature/UserSessionScope.slowSyncStatus.<get-slowSyncStatus>|<get-slowSyncStatus>(){}[0]
     final val syncExecutor // com.wire.kalium.logic.feature/UserSessionScope.syncExecutor|{}syncExecutor[0]
         final fun <get-syncExecutor>(): com.wire.kalium.logic.sync/SyncExecutor // com.wire.kalium.logic.feature/UserSessionScope.syncExecutor.<get-syncExecutor>|<get-syncExecutor>(){}[0]
     final val syncManager // com.wire.kalium.logic.feature/UserSessionScope.syncManager|{}syncManager[0]
