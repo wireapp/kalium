@@ -19,6 +19,7 @@
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.options.Option
 import org.gradle.kotlin.dsl.support.get
 import org.gradle.process.ExecOperations
 
@@ -38,6 +39,10 @@ open class OnlyAffectedTestTask : DefaultTask() {
     @Input
     var ignoredModules: List<String> = emptyList()
 
+    @Input
+    @set:Option(option = "list-only", description = "Write selected task paths without starting a nested build.")
+    var listOnly: Boolean = false
+
     init {
         group = "verification"
         description = "Runs tests for affected modules when available, otherwise runs all tests."
@@ -51,6 +56,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
         val runAllTests = hasToRunAllTests() || missingAffectedModulesData
 
         if (!runAllTests && affectedModules.orEmpty().isEmpty()) {
+            writeSelectedTasks(emptyList())
             println("\uD83E\uDD8B It is not necessary to run any test, ending here to free up some resources.")
             return
         }
@@ -77,12 +83,20 @@ open class OnlyAffectedTestTask : DefaultTask() {
         if (missingAffectedModulesData) {
             println("\uD83D\uDD27 Running all tests because affected-modules data is unavailable.")
         }
+        writeSelectedTasks(tasksName)
         if (tasksName.isEmpty()) {
             println("\uD83E\uDD8B No matching test tasks found for the selected modules.")
             return
         }
 
-        runTargetTasks(tasksName)
+        if (!listOnly) runTargetTasks(tasksName)
+    }
+
+    private fun writeSelectedTasks(tasksName: List<String>) {
+        val outputFile = project.layout.buildDirectory.file("affected-tests/$name.txt").get().asFile
+        outputFile.parentFile.mkdirs()
+        outputFile.writeText(tasksName.joinToString(separator = "\n", postfix = if (tasksName.isEmpty()) "" else "\n"))
+        println("Selected test tasks: $outputFile")
     }
 
     private fun readAffectedModules(): Set<String>? {
@@ -136,10 +150,11 @@ open class OnlyAffectedTestTask : DefaultTask() {
             "settings.gradle.kts",
         )
 
-        val anySettingsFileChanged = globalBuildSettingsFiles.any { relativePath ->
-            val exitCode = "git diff --quiet origin/develop -- ${project.rootDir}/$relativePath".execute().exitValue()
-            exitCode != 0
-        }
+        val process = ProcessBuilder(
+            listOf("git", "-C", project.rootDir.absolutePath, "diff", "--quiet", "origin/develop", "--") + globalBuildSettingsFiles
+        ).redirectErrorStream(true).start()
+        process.inputStream.bufferedReader().use { it.readText() }
+        val anySettingsFileChanged = process.waitFor() != 0
         if (anySettingsFileChanged) {
             println("\uD83D\uDD27 Running all tests because there are changes at the root level")
         }

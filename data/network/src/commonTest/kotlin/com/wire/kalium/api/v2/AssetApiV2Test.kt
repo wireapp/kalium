@@ -42,6 +42,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
 import okio.Path.Companion.toPath
@@ -61,16 +63,18 @@ internal class AssetApiV2Test : ApiTest() {
     fun concurrentUploadsReplayCompleteBodiesAfterAuthenticationChallenge() = runTest {
         val firstBodies = mutableMapOf<String, ByteArray>()
         val retryBodies = mutableMapOf<String, ByteArray>()
+        // The engine handles the concurrent uploads on several threads.
+        val bodiesLock = Mutex()
         var refreshes = 0
         val engine = MockEngine { request ->
             val body = request.body.toByteArray()
             val text = body.decodeToString()
             val asset = (0 until 6).map { "fixture-asset-$it" }.single { it in text }
             if (request.headers["Authorization"] == "Bearer expired") {
-                firstBodies[asset] = body
+                bodiesLock.withLock { firstBodies[asset] = body }
                 respond("", HttpStatusCode.Unauthorized, headersOf("WWW-Authenticate", "Bearer"))
             } else {
-                retryBodies[asset] = body
+                bodiesLock.withLock { retryBodies[asset] = body }
                 respond(
                     VALID_ASSET_UPLOAD_RESPONSE.toJsonString(),
                     HttpStatusCode.Created,

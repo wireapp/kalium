@@ -12,7 +12,7 @@ import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -27,7 +27,7 @@ import kotlin.time.Instant
 
 class ReceivedMLSRejoinTest {
     @Test
-    fun onlyExplicitJoinCanSendAndUsesCommitBundleSerialization() = runBlocking {
+    fun onlyExplicitJoinCanSendAndUsesCommitBundleSerialization() = runTest {
         val api = FakeApi()
         val metadata = FakeMetadata()
         val rejoin = ReceivedMLSRejoin(api, metadata)
@@ -48,7 +48,7 @@ class ReceivedMLSRejoinTest {
     }
 
     @Test
-    fun mismatchedNativeGroupIsRejectedAndTransportCloses() = runBlocking {
+    fun mismatchedNativeGroupIsRejectedAndTransportCloses() = runTest {
         val api = FakeApi()
         val rejoin = ReceivedMLSRejoin(api, FakeMetadata())
         val native = FakeNative { "other-group" }
@@ -60,7 +60,7 @@ class ReceivedMLSRejoinTest {
     }
 
     @Test
-    fun unexpectedEventsAreRetainedAndBlockNextNativeJoin() = runBlocking {
+    fun unexpectedEventsAreRetainedAndBlockNextNativeJoin() = runTest {
         val api = FakeApi(events = listOf(
             EventContentDTO.Unknown("unexpected-server-event"),
             EventContentDTO.Federation.FederationDeleteDTO("retained.example"),
@@ -85,7 +85,7 @@ class ReceivedMLSRejoinTest {
     }
 
     @Test
-    fun cancellationReleasesJoinGuard() = runBlocking {
+    fun cancellationReleasesJoinGuard() = runTest {
         val api = FakeApi()
         val rejoin = ReceivedMLSRejoin(api, FakeMetadata())
         val native = FakeNative { throw CancellationException("cancelled") }
@@ -96,7 +96,7 @@ class ReceivedMLSRejoinTest {
     }
 
     @Test
-    fun failedRetentionStillBlocksAnotherJoinInThisTransportInstance() = runBlocking {
+    fun failedRetentionStillBlocksAnotherJoinInThisTransportInstance() = runTest {
         val metadata = FakeMetadata(failInsert = true)
         val api = FakeApi(events = listOf(EventContentDTO.Unknown("unexpected")))
         val rejoin = ReceivedMLSRejoin(api, metadata)

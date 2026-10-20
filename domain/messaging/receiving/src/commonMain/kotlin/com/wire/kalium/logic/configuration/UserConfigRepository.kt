@@ -49,15 +49,14 @@ import com.wire.kalium.persistence.config.WireCellsConfigEntity
 import com.wire.kalium.persistence.dao.UserConfigDAO
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlin.time.Instant
 import kotlin.io.encoding.Base64
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 @Suppress("TooManyFunctions")
 interface UserConfigRepository {
@@ -276,7 +275,7 @@ class UserConfigDataSource constructor(
             }
         }
 
-    override suspend fun isMLSEnabled(): Either<StorageFailure, Boolean> = withContext(Dispatchers.IO) {
+    override suspend fun isMLSEnabled(): Either<StorageFailure, Boolean> = withContext(KaliumDispatcherImpl.io) {
         wrapStorageRequest { userConfigStorage.isMLSEnabled() }
     }
 
@@ -374,7 +373,7 @@ class UserConfigDataSource constructor(
         userConfigStorage.persistUseSftForOneOnOneCalls(shouldUse)
     }
 
-    override suspend fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean> = withContext(Dispatchers.IO) {
+    override suspend fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean> = withContext(KaliumDispatcherImpl.io) {
         wrapStorageRequest {
             userConfigStorage.shouldUseSftForOneOnOneCalls()
         }

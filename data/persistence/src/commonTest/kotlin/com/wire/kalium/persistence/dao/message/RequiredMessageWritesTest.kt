@@ -45,10 +45,10 @@ class RequiredMessageWritesTest : BaseDatabaseTest() {
                 content = MessageEntityContent.Text("required text"), date = Instant.parse("2026-09-05T12:00:00Z"),
             )
             for (table in listOf("Message", "MessageTextContent", "UnreadEvent")) {
-                database.sqlDriver.execute(null, "CREATE TRIGGER fail_required BEFORE INSERT ON $table BEGIN SELECT RAISE(ABORT, 'write failed'); END", 0)
+                database.sqlDriver.execute(null, "CREATE TRIGGER fail_required BEFORE INSERT ON $table BEGIN SELECT RAISE(ABORT, 'write failed'); END", 0).await()
                 assertFails { database.messageDAO.insertOrIgnoreMessage(message) }
                 assertFalse(database.database.messagesQueries.messageExists(message.id, conversation.id).awaitAsOne())
-                database.sqlDriver.execute(null, "DROP TRIGGER fail_required", 0)
+                database.sqlDriver.execute(null, "DROP TRIGGER fail_required", 0).await()
             }
             database.messageDAO.insertOrIgnoreMessage(message)
             database.messageDAO.insertOrIgnoreMessage(message.copy(content = MessageEntityContent.Text("duplicate")))

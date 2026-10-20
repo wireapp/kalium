@@ -1,0 +1,2 @@
+- CI applies the shared develop and PR cache policy to Kotlin/Native tooling and Gradle's local build cache. Release, fork, manual, and other branch builds disable the Gradle build cache, and merge-queue jobs never save shared caches.
+- iOS CI disables the pinned Gradle action's cache management when using its dedicated cache, fixing setup failure from an unsupported cache-provider value.

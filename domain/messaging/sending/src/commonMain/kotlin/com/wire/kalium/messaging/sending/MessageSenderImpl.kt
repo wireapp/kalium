@@ -206,7 +206,7 @@ class MessageSenderImpl(
                     if (sent) startSelfDeletionIfNeeded(message)
                 }.map { Unit }
             }.onFailure {
-                logger.e("Failed to send message ${message::class.qualifiedName}. Failure = $it")
+                logger.e("Failed to send message ${message::class.simpleName}. Failure = $it")
             }
 
     override suspend fun broadcastMessage(

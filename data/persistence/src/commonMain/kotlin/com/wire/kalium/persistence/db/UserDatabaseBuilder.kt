@@ -109,7 +109,12 @@ import com.wire.kalium.persistence.db.feeders.ReactionsFeeder
 import com.wire.kalium.persistence.db.feeders.UnreadEventsFeeder
 import kotlin.jvm.JvmInline
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 
 @JvmInline
 value class UserDBSecret(val value: ByteArray)
@@ -171,6 +176,12 @@ class UserDatabaseBuilder internal constructor(
     val dbInvalidationController: DbInvalidationController,
     initializeSelfUser: Boolean = true,
 ) {
+    private val messageEffectsMutex = Mutex()
+
+    private class MessageEffectsContext(val database: UserDatabaseBuilder) : AbstractCoroutineContextElement(Key) {
+        companion object Key : CoroutineContext.Key<MessageEffectsContext>
+    }
+
     private var closeFailure: Throwable? = null
     private var closed = false
 
@@ -391,49 +402,60 @@ class UserDatabaseBuilder internal constructor(
      * Local file cleanup may run before its SQL references are removed. Callers awaiting network
      * work here must supply a fixed thread dispatcher for the native SQLite driver (as the NSE does).
      */
-    suspend fun <T> writeMessageEffects(block: suspend MessageEffectDAOs.() -> T): T = withContext(writeDispatcher.value) {
-        val transactionReads = ReadDispatcher(writeDispatcher.value)
-        val transactionMetadata = MetadataDAOImpl(database.metadataQueries, writeDispatcher, transactionReads)
-        database.transactionWithResult {
-            MessageEffectDAOs(
-                conversations = conversationDAO(transactionReads),
-                messages = messageDAO(transactionReads),
-                composites = CompositeMessageDAOImpl(database.buttonContentQueries, writeDispatcher),
-                polls = PollMessageDAOImpl(database.pollContentQueries, transactionReads, writeDispatcher),
-                assets = AssetDAOImpl(database.assetsQueries, transactionReads, writeDispatcher),
-                pendingActions = PendingActionDAOImpl(database.pendingActionsQueries, transactionReads, writeDispatcher),
-                reactions = ReactionDAOImpl(database.reactionsQueries, transactionReads, writeDispatcher),
-                deliveries = PendingDeliveryConfirmationDAOImpl(
-                    database.pendingDeliveryConfirmationsQueries,
-                    transactionReads,
-                    writeDispatcher
-                ),
-                receipts = ReceiptDAOImpl(database.receiptsQueries, TableMapper.receiptAdapter, transactionReads, writeDispatcher),
-                users = UserDAOImpl(database.usersQueries, transactionReads, writeDispatcher, rollbackUnchangedUpserts = false),
-                prefs = UserPrefsDAO(transactionMetadata),
-                config = UserConfigDAOImpl(transactionMetadata),
-                folders = ConversationFolderDAOImpl(database.conversationFoldersQueries, transactionReads, writeDispatcher),
-                metadata = transactionMetadata,
-                members = MemberDAOImpl(
-                    database.membersQueries,
-                    database.usersQueries,
-                    database.conversationsQueries,
-                    transactionReads,
-                    writeDispatcher
-                ),
-                meetings = MeetingDaoImpl(database.meetingsQueries, transactionReads, writeDispatcher),
-                apps = AppDAOImpl(database.appsQueries, transactionReads, writeDispatcher),
-                clients = ClientDAOImpl(database.clientsQueries, transactionReads, writeDispatcher, rollbackUnchangedUpserts = false),
-                newClients = NewClientDAOImpl(database.newClientQueries, transactionReads, writeDispatcher),
-                connections = ConnectionDAOImpl(
-                    database.connectionsQueries,
-                    database.conversationsQueries,
-                    transactionReads,
-                    writeDispatcher
-                ),
-            ).block()
+    suspend fun <T> writeMessageEffects(block: suspend MessageEffectDAOs.() -> T): T =
+        if (currentCoroutineContext()[MessageEffectsContext]?.database === this) {
+            writeMessageEffectsInTransaction(block)
+        } else {
+            // A single-thread dispatcher still interleaves suspending worker queries on JS.
+            messageEffectsMutex.withLock {
+                withContext(MessageEffectsContext(this)) { writeMessageEffectsInTransaction(block) }
+            }
         }
-    }
+
+    private suspend fun <T> writeMessageEffectsInTransaction(block: suspend MessageEffectDAOs.() -> T): T =
+        withContext(writeDispatcher.value) {
+            val transactionReads = ReadDispatcher(writeDispatcher.value)
+            val transactionMetadata = MetadataDAOImpl(database.metadataQueries, writeDispatcher, transactionReads)
+            database.transactionWithResult {
+                MessageEffectDAOs(
+                    conversations = conversationDAO(transactionReads),
+                    messages = messageDAO(transactionReads),
+                    composites = CompositeMessageDAOImpl(database.buttonContentQueries, writeDispatcher),
+                    polls = PollMessageDAOImpl(database.pollContentQueries, transactionReads, writeDispatcher),
+                    assets = AssetDAOImpl(database.assetsQueries, transactionReads, writeDispatcher),
+                    pendingActions = PendingActionDAOImpl(database.pendingActionsQueries, transactionReads, writeDispatcher),
+                    reactions = ReactionDAOImpl(database.reactionsQueries, transactionReads, writeDispatcher),
+                    deliveries = PendingDeliveryConfirmationDAOImpl(
+                        database.pendingDeliveryConfirmationsQueries,
+                        transactionReads,
+                        writeDispatcher
+                    ),
+                    receipts = ReceiptDAOImpl(database.receiptsQueries, TableMapper.receiptAdapter, transactionReads, writeDispatcher),
+                    users = UserDAOImpl(database.usersQueries, transactionReads, writeDispatcher, rollbackUnchangedUpserts = false),
+                    prefs = UserPrefsDAO(transactionMetadata),
+                    config = UserConfigDAOImpl(transactionMetadata),
+                    folders = ConversationFolderDAOImpl(database.conversationFoldersQueries, transactionReads, writeDispatcher),
+                    metadata = transactionMetadata,
+                    members = MemberDAOImpl(
+                        database.membersQueries,
+                        database.usersQueries,
+                        database.conversationsQueries,
+                        transactionReads,
+                        writeDispatcher
+                    ),
+                    meetings = MeetingDaoImpl(database.meetingsQueries, transactionReads, writeDispatcher),
+                    apps = AppDAOImpl(database.appsQueries, transactionReads, writeDispatcher),
+                    clients = ClientDAOImpl(database.clientsQueries, transactionReads, writeDispatcher, rollbackUnchangedUpserts = false),
+                    newClients = NewClientDAOImpl(database.newClientQueries, transactionReads, writeDispatcher),
+                    connections = ConnectionDAOImpl(
+                        database.connectionsQueries,
+                        database.conversationsQueries,
+                        transactionReads,
+                        writeDispatcher
+                    ),
+                ).block()
+            }
+        }
 
     val messageDraftDAO = MessageDraftDAOImpl(
         database.messageDraftsQueries,
