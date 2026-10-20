@@ -22,19 +22,17 @@ package com.wire.kalium.logic.feature.share
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.asset.upload.AssetUploadParams
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.share.ShareOutboxFile
 import com.wire.kalium.share.ShareOutboxSending
 import com.wire.kalium.share.ShareOutboxServer
 import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.Path.Companion.toPath
@@ -54,19 +52,19 @@ public suspend fun UserSessionScope.serveShareExtension(doorbell: Flow<Unit>) {
             selfUserId = userId,
             database = userStorage.database,
             restriction = kaliumConfigs.fileRestrictionState.value,
-            sending = ComposerSending(messages, slowSyncRepository),
+            sending = ComposerSending(lazy { messages }, syncStateObserver.value),
         ).serve(doorbell)
     }
 }
 
 /** Stores handed-off items with the composer's use cases. A stored message is the app's, sent or not. */
-private class ComposerSending(
-    private val messages: MessageScope,
-    private val slowSyncRepository: SlowSyncRepository,
+internal class ComposerSending(
+    private val messages: Lazy<MessageScope>,
+    private val syncStateObserver: SyncStateObserver,
 ) : ShareOutboxSending {
 
     override suspend fun awaitSynced() {
-        slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
+        syncStateObserver.waitUntilLive()
     }
 
     override suspend fun file(conversationId: ConversationId, file: ShareOutboxFile, messageId: String): String? {
@@ -82,7 +80,7 @@ private class ComposerSending(
             audioLengthInMs = file.durationMs ?: 0,
             audioNormalizedLoudness = null,
         )
-        return when (messages.scheduleAssetMessage.invoke(asset, messageId)) {
+        return when (messages.value.scheduleAssetMessage.invoke(asset, messageId)) {
             is ScheduleNewAssetMessageResult.Success -> null
             ScheduleNewAssetMessageResult.Failure.DisabledByTeam -> "FILE_SHARING_DISABLED"
             ScheduleNewAssetMessageResult.Failure.RestrictedFileType -> "FILE_TYPE_RESTRICTED"
@@ -91,5 +89,5 @@ private class ComposerSending(
     }
 
     override suspend fun text(conversationId: ConversationId, text: String, messageId: String): String? =
-        if (messages.sendTextMessage.store(messageId, conversationId, text)) null else "FAILED"
+        if (messages.value.sendTextMessage.store(messageId, conversationId, text)) null else "FAILED"
 }

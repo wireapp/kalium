@@ -1,0 +1,1 @@
+Message sends and broadcasts wait for incremental sync to reach live before preparation and encryption. The app also waits for live before checking sharing policy or importing files handed off by the iOS share extension.

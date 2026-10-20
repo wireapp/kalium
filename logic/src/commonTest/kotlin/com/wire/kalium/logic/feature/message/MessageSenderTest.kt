@@ -96,6 +96,9 @@ import dev.mokkery.verify
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runCurrent
@@ -112,6 +115,144 @@ import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
 import com.wire.kalium.messaging.sending.MLSMessageCreator
 
 class MessageSenderTest {
+    @Test
+    fun givenSyncIsNotLive_whenSending_thenWaitBeforePreparationAndCryptoOnEverySend() {
+        val live = MutableStateFlow(false)
+        val (arrangement, sender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            everySuspend { syncManager.waitUntilLive() } calls {
+                live.first { it }
+                Unit
+            }
+        }
+        arrangement.testScope.runTest {
+            val first = async { sender.sendMessage(TestMessage.TEXT_MESSAGE) }
+            runCurrent()
+            assertFalse(first.isCompleted)
+            assertEquals(emptyList(), arrangement.preparedMessages)
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.cryptoTransactionProvider.transaction<Any?>(any(), any())
+                arrangement.messageRepository.sendEnvelope(any(), any(), any())
+            }
+
+            live.value = true
+            first.await().shouldSucceed()
+
+            // A prior live state must not authorize a send during the next catch-up.
+            live.value = false
+            val second = async { sender.sendMessage(TestMessage.TEXT_MESSAGE) }
+            runCurrent()
+            assertFalse(second.isCompleted)
+            assertEquals(listOf<Message.Sendable>(TestMessage.TEXT_MESSAGE), arrangement.preparedMessages)
+
+            live.value = true
+            second.await().shouldSucceed()
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.messageRepository.sendEnvelope(any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenSyncIsNotLive_whenBroadcasting_thenWaitBeforeReadingRecipientsAndCrypto() {
+        val live = CompletableDeferred<Unit>()
+        val (arrangement, sender) = arrange {
+            withPrepareRecipientsForNewOutgoingMessage()
+            withAllRecipients(listOf(Arrangement.TEST_RECIPIENT_1) to emptyList())
+            withCreateOutgoingBroadcastEnvelope()
+            withBroadcastEnvelope()
+            everySuspend { syncManager.waitUntilLive() } calls { live.await() }
+        }
+        arrangement.testScope.runTest {
+            val send = async { sender.broadcastMessage(TestMessage.BROADCAST_MESSAGE, BroadcastMessageTarget.AllUsers(100)) }
+            runCurrent()
+            assertFalse(send.isCompleted)
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.cryptoTransactionProvider.transaction<Any?>(any(), any())
+                arrangement.userRepository.getAllRecipients()
+                arrangement.messageRepository.broadcastEnvelope(any(), any())
+            }
+
+            live.complete(Unit)
+            send.await().shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.broadcastEnvelope(any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenSendWaitingForLive_whenPendingMessageIsDeleted_thenCancelLocallyWithoutWaitingAndDoNotSend() {
+        val live = CompletableDeferred<Unit>()
+        val (arrangement, sender) = arrange {
+            everySuspend { syncManager.waitUntilLive() } calls { live.await() }
+        }
+        arrangement.testScope.runTest {
+            val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
+            var stored: Message? = pending
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls {
+                stored?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+            }
+            everySuspend { arrangement.messageRepository.deleteMessage(any(), any()) } calls {
+                stored = null
+                Either.Right(Unit)
+            }
+            arrangement.serializeTransactions()
+            val send = async { sender.sendMessage(pending) }
+            runCurrent()
+            assertFalse(send.isCompleted)
+
+            assertEquals(Either.Right(true), sender.cancelPendingMessage(pending.conversationId, pending.id))
+            live.complete(Unit)
+            send.await().shouldSucceed()
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.messageRepository.sendEnvelope(any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenSendWaitingForLive_whenCoroutineIsCancelled_thenNeverPrepareOrEnterCrypto() {
+        val live = CompletableDeferred<Unit>()
+        val (arrangement, sender) = arrange {
+            everySuspend { syncManager.waitUntilLive() } calls { live.await() }
+        }
+        arrangement.testScope.runTest {
+            val send = async { sender.sendMessage(TestMessage.TEXT_MESSAGE) }
+            runCurrent()
+            send.cancelAndJoin()
+            live.complete(Unit)
+            runCurrent()
+
+            assertEquals(emptyList(), arrangement.preparedMessages)
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.cryptoTransactionProvider.transaction<Any?>(any(), any())
+                arrangement.messageRepository.sendEnvelope(any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenBroadcastWaitingForLive_whenCallerIsCancelled_thenNeverEnterCrypto() {
+        val live = CompletableDeferred<Unit>()
+        val (arrangement, sender) = arrange {
+            everySuspend { syncManager.waitUntilLive() } calls { live.await() }
+        }
+        arrangement.testScope.runTest {
+            val send = async { sender.broadcastMessage(TestMessage.BROADCAST_MESSAGE, BroadcastMessageTarget.AllUsers(100)) }
+            runCurrent()
+            send.cancelAndJoin()
+            live.complete(Unit)
+            runCurrent()
+
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.cryptoTransactionProvider.transaction<Any?>(any(), any())
+                arrangement.messageRepository.broadcastEnvelope(any(), any())
+            }
+        }
+    }
+
     @Test
     fun givenOfflineEditOfSentMessage_whenCancellingPending_thenDoNotRemoveItLocally() {
         val (arrangement, sender) = arrange { }
@@ -1335,9 +1476,11 @@ class MessageSenderTest {
         val staleEpochVerifier = mock<StaleEpochVerifier>(mode = MockMode.autoUnit)
 
         val testScope = TestScope()
+        val preparedMessages = mutableListOf<Message.Sendable>()
 
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
             override suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
+                preparedMessages += message
                 return Either.Right(message)
             }
         }

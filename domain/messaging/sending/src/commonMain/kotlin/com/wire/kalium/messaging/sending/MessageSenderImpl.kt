@@ -163,8 +163,10 @@ class MessageSenderImpl(
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
         sendMessageWithOutcome(message, messageTarget).map { Unit }
 
-    override suspend fun sendMessageWithOutcome(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Boolean> =
-        prepareMessage(message)
+    override suspend fun sendMessageWithOutcome(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Boolean> {
+        // Catch-up needs crypto too: wait before preparing the message or entering a transaction.
+        session.waitUntilLive()
+        return prepareMessage(message)
             .flatMap { processedMessage ->
                 session.transaction("sendMessage") { transactionContext ->
                     // Cancellation uses this same transaction queue. Recheck after entering it, not before waiting.
@@ -211,16 +213,19 @@ class MessageSenderImpl(
             }.onFailure {
                 logger.e("Failed to send message ${message::class.simpleName}. Failure = $it")
             }
+    }
 
     override suspend fun broadcastMessage(
         message: BroadcastMessage,
         target: BroadcastMessageTarget
-    ): Either<CoreFailure, Unit> =
-        withContext(scope.coroutineContext) {
+    ): Either<CoreFailure, Unit> {
+        session.waitUntilLive()
+        return withContext(scope.coroutineContext) {
             session.transaction("broadcastMessage") {
                 attemptToBroadcastWithProteus(it, message, target, remainingAttempts = 2).map { }
             }
         }
+    }
 
     private suspend fun attemptToSend(
         transactionContext: CryptoTransactionContext,

@@ -57,6 +57,7 @@ interface MessageSender {
 
     /**
      * Attempts to send the given [Message] to suitable recipients.
+     * Suspends until the account has processed pending events and reached live, before preparing or encrypting it.
      *
      * Will handle all the needed encryption and possible set-up
      * steps and retries depending on the [ConversationOptions.Protocol].
@@ -85,6 +86,7 @@ interface MessageSender {
 
     /**
      * Attempts to send the given [BroadcastMessage] to suitable recipients.
+     * Suspends until the account has processed pending events and reached live, before reading recipients or encrypting it.
      *
      * Will handle all the needed encryption and possible set-up
      * steps
