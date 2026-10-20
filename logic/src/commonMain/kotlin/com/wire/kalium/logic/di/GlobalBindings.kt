@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.client.UserClientRepositoryProvider
 import com.wire.kalium.logic.data.client.UserClientRepositoryProviderImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCase
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl

@@ -88,7 +88,8 @@ public abstract class CoreLogicCommon internal constructor(
             override val authenticationScopeProvider: AuthenticationScopeProvider = this@CoreLogicCommon.authenticationScopeProvider
             override val logoutCallbackManager = this@CoreLogicCommon.logoutCallbackManager
             override val workSchedulerProvider: WorkSchedulerProvider = this@CoreLogicCommon.workSchedulerProvider
-            override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = this@CoreLogicCommon.audioNormalizedLoudnessBuilder
+            override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder =
+                this@CoreLogicCommon.audioNormalizedLoudnessBuilder
         })
     }
 

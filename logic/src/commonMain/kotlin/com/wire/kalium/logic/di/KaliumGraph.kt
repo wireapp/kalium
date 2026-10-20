@@ -79,6 +79,7 @@ internal interface KaliumUserGraph :
 
     @GraphExtension.Factory
     interface Factory {
+        @Suppress("LongParameterList") // Narrow deferred APIs compose one existing user owner without eager capture reads.
         fun create(
             @Provides dependencies: UserGraphDependencies,
             @Provides legacyConversationDependencies: LegacyConversationDependencies,

@@ -24,8 +24,6 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenReposit
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SelfUserObservationProvider
-import com.wire.kalium.logic.feature.CachedClientIdClearer
-import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.channels.LegacyChannelsDependencies
 import com.wire.kalium.logic.feature.client.LegacyClientDependencies
 import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUseCase
