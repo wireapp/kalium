@@ -41,6 +41,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.feature.conversation.ObserveUnreadConversationBadgeCountUseCaseImpl
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
@@ -116,7 +117,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Clock
@@ -913,6 +916,40 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun givenBadgeCountChanges_whenObservingThroughUseCase_thenUpdatesReachTheConsumer() = runTest {
+        val counts = MutableStateFlow(3L)
+        val (_, conversationRepository) = Arrangement()
+            .withUnreadConversationBadgeCounts(counts)
+            .arrange()
+        val observeBadgeCount = ObserveUnreadConversationBadgeCountUseCaseImpl(conversationRepository)
+
+        observeBadgeCount().test {
+            assertEquals(3L, awaitItem())
+            counts.value = 0L
+            assertEquals(0L, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenBadgeStorageFailure_whenObservingThroughUseCase_thenTheCountFallsBackToZero() = runTest {
+        val counts = flow {
+            emit(5L)
+            error("Badge count storage unavailable")
+        }
+        val (_, conversationRepository) = Arrangement()
+            .withUnreadConversationBadgeCounts(counts)
+            .arrange()
+        val observeBadgeCount = ObserveUnreadConversationBadgeCountUseCaseImpl(conversationRepository)
+
+        observeBadgeCount().test {
+            assertEquals(5L, awaitItem())
+            assertEquals(0L, awaitItem())
+            awaitComplete()
+        }
+    }
+
+    @Test
     fun givenNoChange_whenUpdatingProtocolToMls_thenShouldUpdateLocally() = runTest {
         // given
         val protocol = Conversation.Protocol.MLS
@@ -1289,6 +1326,12 @@ class ConversationRepositoryTest {
             everySuspend {
                 conversationDAO.observeUnreadArchivedConversationsCount()
             }.returns(flowOf(unreadCount))
+        }
+
+        suspend fun withUnreadConversationBadgeCounts(counts: Flow<Long>) = apply {
+            everySuspend {
+                conversationDAO.observeUnreadConversationBadgeCount()
+            }.returns(counts)
         }
 
         suspend fun withUnreadMessageCounter(unreadCounter: Map<ConversationIDEntity, Int>) = apply {

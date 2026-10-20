@@ -1355,7 +1355,6 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun observeCallPresentations ()Lkotlinx/coroutines/flow/Flow;
 	public final fun observeIfE2EIRequiredDuringLogin (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun observeNotificationRemovalCandidates (Ljava/util/List;)Lkotlinx/coroutines/flow/Flow;
-	public final fun observeUnreadConversationBadgeCount ()Lkotlinx/coroutines/flow/Flow;
 	public final fun rememberNotificationMessages (Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun resumeIncomingCallSignals (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun resumePendingCallSignals (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -4091,6 +4090,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 	public final fun getObserveInformAboutVerificationBeforeMessagingFlagUseCase ()Lcom/wire/kalium/logic/feature/conversation/ObserveDegradedConversationNotifiedUseCase;
 	public final fun getObserveIsSelfUserMemberUseCase ()Lcom/wire/kalium/logic/feature/conversation/ObserveIsSelfUserMemberUseCase;
 	public final fun getObservePendingConnectionRequests ()Lcom/wire/kalium/logic/feature/connection/ObservePendingConnectionRequestsUseCase;
+	public final fun getObserveUnreadConversationBadgeCount ()Lcom/wire/kalium/logic/feature/conversation/ObserveUnreadConversationBadgeCountUseCase;
 	public final fun getObserveUserFolders ()Lcom/wire/kalium/logic/feature/conversation/folder/ObserveUserFoldersUseCase;
 	public final fun getObserveUserListById ()Lcom/wire/kalium/logic/feature/conversation/ObserveUserListByIdUseCase;
 	public final fun getObserveUsersTyping ()Lcom/wire/kalium/logic/feature/conversation/ObserveUsersTypingUseCase;
@@ -4581,6 +4581,10 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/Obser
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/ObserveSecurityClassificationLabelUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/ObserveUnreadConversationBadgeCountUseCase {
+	public abstract fun invoke ()Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class com/wire/kalium/logic/feature/conversation/ObserveUserListByIdUseCase {

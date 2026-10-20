@@ -19,6 +19,7 @@ package com.wire.kalium.nse
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
@@ -38,8 +39,8 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
@@ -208,13 +209,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         return outcome
     }
 
-    private suspend fun KaliumNSEResult.withBadgeCount(runtime: AppleAccountRuntime): KaliumNSEResult = try {
-        copy(unreadConversationBadgeCount = runtime.database.conversationDAO.observeUnreadConversationBadgeCount().first())
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
-        this
-    }
+    private suspend fun KaliumNSEResult.withBadgeCount(runtime: AppleAccountRuntime): KaliumNSEResult =
+        copy(unreadConversationBadgeCount = runtime.readUnreadConversationBadgeCount().getOrNull())
 
     private suspend fun receive(
         runtime: AppleAccountRuntime,
