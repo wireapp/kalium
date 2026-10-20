@@ -75,7 +75,6 @@ public sealed class Node {
         val isEditSupported: Boolean = false,
         val conversationId: String?,
         val isViewerOnly: Boolean = false,
-        val pdfPreviewUrl: String? = null,
     ) : Node()
 }
 
