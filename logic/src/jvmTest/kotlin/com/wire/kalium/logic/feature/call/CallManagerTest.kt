@@ -51,6 +51,7 @@ import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.NetworkStateObserver
@@ -65,6 +66,7 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -76,6 +78,7 @@ import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class CallManagerTest {
@@ -175,6 +178,42 @@ internal class CallManagerTest {
     }
 
     @Test
+    fun rejectedNativeStartClosesTheLocalCallInsteadOfReportingRinging() = runTest {
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withCreateCallReturning()
+            .withCallMetadataReturning(CALL_CONV_ID, CALL_METADATA)
+            .onWcallStartReturning(17)
+            .arrange()
+        everySuspend { arrangement.callRepository.updateCallStatusById(CALL_CONV_ID, CallStatus.CLOSED) } returns Unit
+
+        assertFailsWith<CallStartException> {
+            callManager.startCall(CALL_CONV_ID, CallType.AUDIO, ConversationTypeCalling.Conference, false, false)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callRepository.updateCallStatusById(CALL_CONV_ID, CallStatus.CLOSED)
+        }
+    }
+
+    @Test
+    fun failedMlsJoinClosesTheLocalCallWithoutStartingAvs() = runTest {
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withCreateCallReturning()
+            .withCallMetadataReturning(CALL_CONV_ID, CALL_METADATA.copy(protocol = TestConversation.MLS_PROTOCOL_INFO))
+            .arrange()
+        everySuspend { arrangement.callRepository.joinMlsConference(CALL_CONV_ID, any(), any()) } returns
+            Either.Left(CoreFailure.Unknown(null))
+        everySuspend { arrangement.callRepository.updateCallStatusById(CALL_CONV_ID, CallStatus.CLOSED) } returns Unit
+
+        assertFailsWith<CallStartException> {
+            callManager.startCall(CALL_CONV_ID, CallType.AUDIO, ConversationTypeCalling.ConferenceMls, false, false)
+        }
+        verify(VerifyMode.exactly(0)) { arrangement.calling.wcall_start(any(), any(), any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callRepository.updateCallStatusById(CALL_CONV_ID, CallStatus.CLOSED)
+        }
+    }
+
+    @Test
     @Suppress("FunctionNaming") // native function has that name
     fun givenCallManager_whenSettingCallQualityInterval_then_wcall_set_network_quality_handler_IsCalled() = runTest {
         val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
@@ -226,8 +265,10 @@ internal class CallManagerTest {
         }
     }
 
-    inner class Arrangement(private val kaliumTestDispatcher: KaliumDispatcher) {
-        internal val calling = mock<Calling>(MockMode.autoUnit)
+    inner class Arrangement(
+        private val kaliumTestDispatcher: KaliumDispatcher,
+        internal val calling: Calling = mock<Calling>(MockMode.autoUnit)
+    ) {
         internal val callRepository = mock<CallRepository>()
         internal val messageSender = mock<MessageSender>()
         internal val currentClientIdProvider = mock<CurrentClientIdProvider>()
