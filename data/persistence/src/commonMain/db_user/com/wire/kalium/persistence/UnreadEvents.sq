@@ -58,9 +58,10 @@ getUnreadConversationBadgeCount:
 SELECT COUNT(*) FROM Conversation c
 WHERE c.deleted_locally = 0
     AND c.type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE')
-    AND (c.type != 'ONE_ON_ONE' OR EXISTS (
-        SELECT 1 FROM User u WHERE u.active_one_on_one_conversation_id = c.qualified_id
-            AND u.connection_status IS NOT 'BLOCKED' AND u.deleted IS NOT 1
+    -- Uncorrelated so User is scanned once; active_one_on_one_conversation_id has no index.
+    AND (c.type != 'ONE_ON_ONE' OR c.qualified_id IN (
+        SELECT u.active_one_on_one_conversation_id FROM User u
+        WHERE u.connection_status IS NOT 'BLOCKED' AND u.deleted IS NOT 1
     ))
     AND EXISTS (
         SELECT 1 FROM UnreadEvent ue WHERE ue.conversation_id = c.qualified_id
