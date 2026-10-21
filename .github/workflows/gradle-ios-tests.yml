@@ -275,7 +275,10 @@ jobs:
           import java.lang.management.ManagementFactory
           import com.sun.management.HotSpotDiagnosticMXBean
 
-          gradle.taskGraph.whenReady {
+          gradle.taskGraph.whenReady { graph ->
+              if (!graph.allTasks.any { it.path == ':logic:linkSwiftAppFixtureDebugExecutableIosSimulatorArm64' }) {
+                  return
+              }
               def heap = ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean).getVMOption('MaxHeapSize').value.toLong()
               def inProcess = gradle.startParameter.projectProperties['kotlin.native.disableCompilerDaemon'] == 'false'
               println "SWIFT_NATIVE_COMPILER_JVM maxHeapBytes=${heap} inProcess=${inProcess}"
