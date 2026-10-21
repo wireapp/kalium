@@ -58,6 +58,11 @@ import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.Dispatchers
@@ -462,6 +467,61 @@ class AppleAccountSessionTest {
                 // The failed drain deliberately quarantines this account until process exit.
             }
         }
+    }
+
+    @Test
+    fun `subscribed observer stays idle after full release until manual ownership open`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val owner = AppleAccountRuntimeOwner(root)
+            val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
+            val observer = launch {
+                logic.observeValidSession(userId) {
+                    val captured = this
+                    flow { emit(captured); awaitCancellation() }
+                }.collect { values.send(it) }
+            }
+            var external: AccountRuntimeLease? = null
+            try {
+                val first = values.nextAvailableScope()
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+                logic.releaseSessionScope(userId)
+                external = assertIs<Either.Right<AccountRuntimeLease>>(owner.tryAcquire(userId)).value
+                // Keep the external lease held: an idle repeated release must finish without trying
+                // to acquire it, even while the old observation remains subscribed to Valid metadata.
+                logic.releaseSessionScope(userId)
+                assertNull(logic.userSessionScopeProvider.value.get(userId))
+                assertEquals(Either.Right(true), logic.getGlobalScope().sessionRepository.doesValidSessionExist(userId))
+                assertTrue(observer.isActive)
+                val opening = async(start = CoroutineStart.UNDISPATCHED) { logic.openSessionScope(userId) }
+                assertFalse(opening.isCompleted)
+                assertEquals(Either.Left(AccountRuntimeFailure.BUSY), owner.tryAcquire(userId))
+                external.release()
+                external = null
+                val second = opening.await()
+                assertNotSame(first, second)
+                kotlin.test.assertSame(second, values.nextAvailableScope())
+                assertEquals(Either.Left(AccountRuntimeFailure.BUSY), owner.tryAcquire(userId))
+                // Ordinary background handoff retains the generation and the subscribed observer.
+                logic.suspendSessionScope(userId)
+                kotlin.test.assertSame(second, logic.getSessionScope(userId))
+                external = assertIs<Either.Right<AccountRuntimeLease>>(owner.tryAcquire(userId)).value
+                external.release()
+                external = null
+                kotlin.test.assertSame(second, logic.openSessionScope(userId))
+                assertTrue(observer.isActive)
+            } finally {
+                external?.release()
+                observer.cancelAndJoin()
+                logic.releaseSessionScope(userId)
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+                // Reuse the existing fixture policy for CoreLogic's process-owned global storage.
+            }
+        }
+    }
+
+    private suspend fun Channel<UserSessionScope?>.nextAvailableScope(): UserSessionScope {
+        while (true) receive()?.let { return it }
     }
 
     private fun session() = StoreSessionParam(

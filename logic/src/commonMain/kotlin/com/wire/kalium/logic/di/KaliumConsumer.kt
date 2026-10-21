@@ -164,6 +164,7 @@ private class OwnedKaliumConsumer(
 internal class ConsumerWork(
     private val isGenerationActive: () -> Boolean = { true },
     private val onDrained: (ConsumerWork) -> Unit = {},
+    private val revocation: CancellationException? = null,
 ) {
     private val lock = Lock()
     private var open = true
@@ -233,7 +234,7 @@ internal class ConsumerWork(
             open = false
             operations.toList() + discardedJobs.toList()
         }
-        outgoing.forEach { it.cancel(CancellationException("Kalium consumer closed")) }
+        outgoing.forEach { it.cancel(revocation ?: CancellationException("Kalium consumer closed")) }
         completeIfDrained()
     }
 
@@ -242,10 +243,10 @@ internal class ConsumerWork(
     }
 
     private fun checkOpen() = lock.withLock {
-        if (!open) throw CancellationException("Kalium consumer closed")
+        if (!open) throw (revocation ?: CancellationException("Kalium consumer closed"))
         // Invalidation closes the generation before iterating consumers. An earlier consumer's
         // cancellation may still be unwinding, so checking only this consumer's open flag is late.
-        if (!isGenerationActive()) throw CancellationException("The user graph generation has been invalidated")
+        if (!isGenerationActive()) throw (revocation ?: CancellationException("The user graph generation has been invalidated"))
     }
 
     private fun admit(parent: Job? = null): CompletableJob = lock.withLock {

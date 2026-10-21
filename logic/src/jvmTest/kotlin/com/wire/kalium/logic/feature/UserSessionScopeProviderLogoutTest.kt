@@ -17,6 +17,24 @@
  */
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logic.data.auth.AccountInfo
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.session.SessionDataSource
+import com.wire.kalium.logic.feature.session.CurrentSessionFlowUseCase
+import com.wire.kalium.logic.feature.session.CurrentSessionResult
+import com.wire.kalium.persistence.client.AuthTokenEntity
+import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.client.ProxyCredentialsEntity
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.auth.AccountTokens
@@ -72,6 +90,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass") // Share the existing real-storage/worker teardown fixture across lifecycle barrier cases.
 class UserSessionScopeProviderLogoutTest {
 
     // Custom registries and retired generations no longer appear in CoreLogic's provider cache.
@@ -511,6 +530,504 @@ class UserSessionScopeProviderLogoutTest {
         }
     }
 
+    @Test
+    fun sqlLogoutPublishesInvalidWhilePrepareWaitsWithoutReattachingOutgoingObserver() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("observed-logout", "example.com")
+            withAccounts(user) { logic, network ->
+                val repository = logic.getGlobalScope().sessionRepository
+                assertIs<Either.Right<Unit>>(repository.updateCurrentSession(user))
+                val attempts = Channel<Boolean>(Channel.UNLIMITED)
+                val provider = commonProvider(logic, startScope = {}, observationAttempt = { attempts.trySend(it != null) },
+                    removeNetwork = { network.remove(it.toApi()) })
+                val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
+                val drained = CompletableDeferred<Unit>()
+                val observation = launch {
+                    provider.observeValidSession(user, repository) {
+                        val captured = this
+                        flow {
+                            try {
+                                emit(captured)
+                                awaitCancellation()
+                            } finally {
+                                // Raw metadata reads during unwind must not wait for provider admission.
+                                repository.currentSession()
+                                drained.complete(Unit)
+                            }
+                        }
+                    }.collect { values.send(it) }
+                }
+                val raw = Channel<CurrentSessionResult>(Channel.UNLIMITED)
+                val metadata = launch { CurrentSessionFlowUseCase(repository)().collect { raw.send(it) } }
+                val finishPrepare = CompletableDeferred<Unit>()
+                var logout: Job? = null
+                try {
+                    val outgoing = values.nextAvailable()
+                    assertTrue(attempts.receive())
+                    assertIs<AccountInfo.Valid>(assertIs<CurrentSessionResult.Success>(raw.receive()).accountInfo)
+                    logout = launch {
+                        assertTrue(provider.logout(user, outgoing, prepare = {
+                            assertIs<Either.Right<Unit>>(repository.logout(user, LogoutReason.SESSION_EXPIRED))
+                            finishPrepare.await()
+                        }, clearLocalData = {}))
+                    }
+                    val invalid = assertIs<CurrentSessionResult.Success>(raw.receive()).accountInfo
+                    assertEquals(AccountInfo.Invalid(user, LogoutReason.SESSION_EXPIRED), invalid)
+                    drained.await()
+                    assertFalse(logout.isCompleted)
+                    assertNull(provider.get(user))
+                    // A delayed consumer receiving the already-persisted Invalid/old Valid remains live.
+                    val unavailable = async { provider.observeValidSession<Int>(user, repository) { error("Outgoing callback") }.first() }
+                    assertNull(unavailable.await())
+                    assertTrue(observation.isActive)
+                    finishPrepare.complete(Unit)
+                    logout.join()
+                    assertTrue(observation.isActive)
+                } finally {
+                    finishPrepare.complete(Unit)
+                    logout?.join()
+                    observation.cancelAndJoin()
+                    metadata.cancelAndJoin()
+                }
+            }
+        }
+    }
+
+    @Test
+    @Suppress("LongMethod") // Two transitions share one real CurrentAccount subscription to prove equal-Valid suppression.
+    fun retainedCurrentReauthWaitsForActualTokenWriteAndSameValidReplacementWakesByRevision() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("observed-reauth", "example.com")
+            withAccounts(user) { logic, network ->
+                val real = logic.getGlobalScope().sessionRepository
+                assertIs<Either.Right<Unit>>(real.updateCurrentSession(user))
+                assertIs<Either.Right<Unit>>(real.logout(user, LogoutReason.SESSION_EXPIRED))
+                val tokens = fixtureTokens(logic)
+                val tokenEntered = Channel<Unit>(Channel.UNLIMITED)
+                val finishToken = java.util.concurrent.Semaphore(0)
+                val blockedTokens = object : AuthTokenStorage by tokens {
+                    override fun addOrReplace(token: AuthTokenEntity, proxy: ProxyCredentialsEntity?) {
+                        tokenEntered.trySend(Unit)
+                        check(finishToken.tryAcquire(10, TimeUnit.SECONDS)) { "Token barrier timed out" }
+                        tokens.addOrReplace(token, proxy)
+                    }
+                }
+                val db = fixtureGlobalDatabases.last()
+                val repository = SessionDataSource(db.accountsDAO, blockedTokens, db.serverConfigurationDAO)
+                val firstValid = CompletableDeferred<Unit>()
+                val rejected = Channel<Unit>(Channel.UNLIMITED)
+                val provider = commonProvider(logic, startScope = {}, beforeObservation = { firstValid.await() },
+                    observationAttempt = { if (it == null) rejected.trySend(Unit) },
+                    removeNetwork = { network.remove(it.toApi()) })
+                val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
+                val attachedTokens = Channel<String?>(Channel.UNLIMITED)
+                val observation = launch {
+                    provider.observeValidSession(user, repository) {
+                        val captured = this
+                        attachedTokens.send(tokens.getToken(user.toDao())?.accessToken)
+                        flow { emit(captured); awaitCancellation() }
+                    }.collect { values.send(it) }
+                }
+                val raw = Channel<CurrentSessionResult>(Channel.UNLIMITED)
+                val metadata = launch { CurrentSessionFlowUseCase(repository)().collect { raw.send(it) } }
+                var replacement: Job? = null
+                try {
+                    assertIs<AccountInfo.Invalid>(assertIs<CurrentSessionResult.Success>(raw.receive()).accountInfo)
+                    assertNull(values.receive())
+                    replacement = launch { assertIs<Either.Right<Unit>>(provider.storeSession(session(user, "first"), repository)) }
+                    tokenEntered.receive()
+                    // This Valid is emitted by Accounts.sq's retained CurrentAccount upsert, while
+                    // the synchronous AuthTokenStorage write is still blocked on a worker thread.
+                    assertEquals(AccountInfo.Valid(user), assertIs<CurrentSessionResult.Success>(raw.receive()).accountInfo)
+                    firstValid.complete(Unit)
+                    rejected.receive() // Admission processed the early real Valid while token storage remains blocked.
+                    assertFalse(replacement.isCompleted)
+                    assertTrue(attachedTokens.tryReceive().isFailure)
+                    assertNull(tokens.getToken(user.toDao()))
+                    finishToken.release()
+                    replacement.join()
+                    val first = values.nextAvailable()
+                    assertEquals("first", attachedTokens.receive())
+                    // SQL emits equal Valid metadata. CurrentSessionFlow suppresses it. Reattachment
+                    // must therefore be driven by registry revision, not a fabricated metadata value.
+                    replacement = launch { assertIs<Either.Right<Unit>>(provider.storeSession(session(user, "second"), repository)) }
+                    tokenEntered.receive()
+                    assertFalse(replacement.isCompleted)
+                    assertTrue(attachedTokens.tryReceive().isFailure)
+                    finishToken.release()
+                    replacement.join()
+                    val second = values.nextAvailable()
+                    assertNotSame(first, second)
+                    assertEquals("second", attachedTokens.receive())
+                    assertTrue(raw.tryReceive().isFailure, "Equal Valid was not suppressed")
+                } finally {
+                    finishToken.release()
+                    replacement?.join()
+                    observation.cancelAndJoin()
+                    metadata.cancelAndJoin()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun observerUnwindCanInitializeCellsAndMustDrainBeforeShutdownSnapshotsUnusedState() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("observed-lazy-cells", "example.com")
+            withAccounts(user) { logic, network ->
+                val repository = logic.getGlobalScope().sessionRepository
+                val provider = commonProvider(logic, startScope = {}, removeNetwork = { network.remove(it.toApi()) })
+                val attached = CompletableDeferred<UserSessionScope>()
+                val unwind = CompletableDeferred<Unit>()
+                val finishUnwind = CompletableDeferred<Unit>()
+                val cellsWorker = CompletableDeferred<Job>()
+                val observation = launch {
+                    provider.observeValidSession<Int>(user, repository) {
+                        attached.complete(this)
+                        try {
+                            awaitCancellation()
+                        } finally {
+                            withContext(NonCancellable) {
+                                unwind.complete(Unit)
+                                finishUnwind.await()
+                                // The callback was admitted before close; construction may finish
+                                // after cancellation. Shutdown must not have skipped this lazy Cells.
+                                cellsWorker.complete(cells.launch(start = CoroutineStart.UNDISPATCHED) { awaitCancellation() })
+                            }
+                        }
+                    }.collect()
+                }
+                var deletion: Job? = null
+                try {
+                    val scope = attached.await()
+                    assertFalse(scope.isCellsInitialized)
+                    deletion = launch { provider.delete(user) }
+                    unwind.await()
+                    assertFalse(deletion.isCompleted)
+                    assertNotNull(logic.userStorageProvider.get(user))
+                    assertTrue(scope.coroutineContext.job.isActive, "Legacy shutdown ran before observer unwind")
+                    finishUnwind.complete(Unit)
+                    deletion.join()
+                    assertTrue(cellsWorker.await().isCompleted)
+                    assertTrue(scope.cells.coroutineContext.job.isCompleted)
+                } finally {
+                    finishUnwind.complete(Unit)
+                    deletion?.join()
+                    observation.cancelAndJoin()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun callbackFailuresAndCallerCancellationPropagateWithoutBeingUnavailable() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("observed-failure", "example.com")
+            withAccounts(user) { logic, network ->
+                val repository = logic.getGlobalScope().sessionRepository
+                val provider = commonProvider(logic, startScope = {}, removeNetwork = { network.remove(it.toApi()) })
+                val failure = IllegalStateException("Real callback defect")
+                val callbackFailure = runCatching {
+                    provider.observeValidSession<Int>(user, repository) { throw failure }.first { it != null }
+                }.exceptionOrNull()
+                assertTrue(assertIs<IllegalStateException>(callbackFailure).hasCauseIdentity(failure))
+                val callbackCancellation = CancellationException("Callback cancelled independently")
+                val cancelledCallback = runCatching {
+                    provider.observeValidSession<Int>(user, repository) { throw callbackCancellation }.first { it != null }
+                }.exceptionOrNull()
+                assertTrue(assertIs<CancellationException>(cancelledCallback).hasCauseIdentity(callbackCancellation))
+                val entered = CompletableDeferred<Unit>()
+                val unwound = CompletableDeferred<Unit>()
+                val collector = async {
+                    runCatching {
+                        provider.observeValidSession<Int>(user, repository) {
+                            entered.complete(Unit)
+                            try { awaitCancellation() } finally { unwound.complete(Unit) }
+                        }.collect()
+                    }.exceptionOrNull()
+                }
+                entered.await()
+                collector.cancel(CancellationException("Caller cancelled"))
+                collector.join()
+                unwound.await()
+                assertTrue(collector.isCancelled)
+                assertNotNull(provider.get(user), "Caller cancellation must not close the generation")
+            }
+        }
+    }
+
+    @Test
+    fun failedCredentialWriteAndProviderRemovalStayQuarantinedWhileQualifiedOtherUserProgresses() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("same", "example.com")
+            val other = UserId("same", "other.example")
+            withAccounts(user, other) { logic, network ->
+                val tokens = fixtureTokens(logic)
+                val db = fixtureGlobalDatabases.last()
+                val tokenFailure = IllegalStateException("Credential write failed")
+                val failedTokens = object : AuthTokenStorage by tokens {
+                    override fun addOrReplace(token: AuthTokenEntity, proxy: ProxyCredentialsEntity?) { throw tokenFailure }
+                }
+                val repository = SessionDataSource(db.accountsDAO, failedTokens, db.serverConfigurationDAO)
+                var failRemoval = false
+                val provider = commonProvider(logic, startScope = {}, removeNetwork = {
+                    if (failRemoval && it == user) error("Removal failed")
+                    network.remove(it.toApi())
+                })
+                val result = provider.storeSession(session(user, "partial"), repository)
+                assertSame(tokenFailure, assertIs<StorageFailure.Generic>(assertIs<Either.Left<StorageFailure>>(result).value).rootCause)
+                assertEquals(AccountInfo.Valid(user), assertIs<Either.Right<AccountInfo>>(repository.userAccountInfo(user)).value)
+                assertNull(provider.observeValidSession<Int>(user, repository) { error("Quarantined token owner") }.first())
+                assertNull(provider.get(user))
+                // A separately qualified user must not wait for A's failed mutation or unavailable observation.
+                val otherScope = provider.observeValidSession(other, repository) { flowOf(this) }.first { it != null }
+                assertEquals(other, assertNotNull(otherScope).userId)
+                provider.delete(user) // explicit supported cleanup; metadata remains Valid
+                val first = provider.getOrCreate(user)
+                try {
+                    failRemoval = true
+                    assertFailsWith<IllegalStateException> { provider.delete(user) }
+                    assertNull(provider.get(user))
+                    assertNull(provider.observeValidSession<Int>(user, repository) { error("Quarantined removal owner") }.first())
+                    assertEquals(first.userId, user)
+                } finally {
+                    failRemoval = false
+                    provider.delete(user)
+                }
+            }
+        }
+    }
+
+    @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun bufferedValidIsRecheckedAfterWaitAndLatestSwitchOrCallerCancellationCannotConstructA() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("observed-wait", "example.com")
+            val other = UserId("observed-wait", "other.example")
+            withAccounts(user, other) { logic, network ->
+                val repository = logic.getGlobalScope().sessionRepository
+                val snapshot = assertIs<Either.Right<List<AccountInfo>>>(repository.allSessions()).value
+                // Deliberately freeze the OLD metadata snapshot to model delayed flowOn/shareIn delivery.
+                // Live validity still comes from the actual DAO after the barrier.
+                val delayed = object : SessionRepository by repository {
+                    override fun allSessionsFlow() = flowOf(snapshot)
+                }
+                var gate = CompletableDeferred<Unit>()
+                val waiting = Channel<Unit>(Channel.UNLIMITED)
+                val attempted = Channel<Boolean>(Channel.UNLIMITED)
+                val constructed = ConcurrentLinkedQueue<UserId>()
+                val provider = commonProvider(logic, startScope = {}, createScope = {
+                    constructed.add(it)
+                    (logic.userSessionScopeProvider.value as UserSessionScopeProviderCommon).create(it)
+                }, beforeObservation = {
+                    if (it == user) { waiting.send(Unit); gate.await() }
+                }, observationAttempt = { attempted.trySend(it != null) }, removeNetwork = { network.remove(it.toApi()) })
+                val stale = launch { provider.observeValidSession<Int>(user, delayed) { error("Stale Valid callback") }.collect() }
+                try {
+                    waiting.receive()
+                    assertIs<Either.Right<Unit>>(repository.logout(user, LogoutReason.SESSION_EXPIRED))
+                    gate.complete(Unit)
+                    assertFalse(attempted.receive())
+                    assertTrue(constructed.isEmpty(), "Pre-wait Valid reopened an invalid account")
+                } finally { stale.cancelAndJoin() }
+
+                assertIs<Either.Right<Unit>>(repository.storeSession(session(user, "valid-again")))
+                gate = CompletableDeferred()
+                val selected = MutableStateFlow(user)
+                val ready = Channel<UserId>(Channel.UNLIMITED)
+                val switched = launch {
+                    selected.flatMapLatest { id ->
+                        provider.observeValidSession(id, delayed) { flowOf(this.userId) }
+                    }.collect { if (it != null) ready.send(it) }
+                }
+                try {
+                    waiting.receive()
+                    selected.value = other
+                    assertEquals(other, ready.receive())
+                    gate.complete(Unit)
+                    assertFalse(constructed.contains(user), "Cancelled A attachment resumed after switch to B")
+                } finally { switched.cancelAndJoin() }
+
+                gate = CompletableDeferred()
+                val cancelled = launch { provider.observeValidSession<Int>(user, delayed) { error("Cancelled callback") }.collect() }
+                waiting.receive()
+                cancelled.cancelAndJoin()
+                gate.complete(Unit)
+                assertTrue(cancelled.isCancelled)
+                assertFalse(constructed.contains(user))
+            }
+        }
+    }
+
+    @Test
+    fun resultWaitingAtDispatcherBoundaryCannotEscapeAfterRevocation() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("observed-delivery", "example.com")
+            withAccounts(user) { logic, network ->
+                val repository = logic.getGlobalScope().sessionRepository
+                val provider = commonProvider(logic, startScope = {}, removeNetwork = { network.remove(it.toApi()) })
+                val attached = CompletableDeferred<UserSessionScope>()
+                val subscriberPaused = CompletableDeferred<Unit>()
+                val resumeSubscriber = CompletableDeferred<Unit>()
+                val unavailableAgain = CompletableDeferred<Unit>()
+                val delivered = ConcurrentLinkedQueue<Int>()
+                var firstNull = true
+                val collector = launch {
+                    provider.observeValidSession(user, repository) {
+                        attached.complete(this)
+                        flowOf(7)
+                    }.collect { value ->
+                        if (value == null && firstNull) {
+                            firstNull = false
+                            subscriberPaused.complete(Unit)
+                            resumeSubscriber.await()
+                        } else if (value == null) unavailableAgain.complete(Unit)
+                        else delivered.add(value)
+                    }
+                }
+                try {
+                    subscriberPaused.await()
+                    val outgoing = attached.await()
+                    // The initial unavailable value has reached the subscriber. Its paused handler
+                    // keeps the outgoing result pending across the provider's dispatcher boundary.
+                    assertTrue(provider.logout(user, outgoing, prepare = {
+                        assertIs<Either.Right<Unit>>(repository.logout(user, LogoutReason.SESSION_EXPIRED))
+                    }, clearLocalData = {}))
+                    resumeSubscriber.complete(Unit)
+                    unavailableAgain.await()
+                    assertTrue(delivered.isEmpty(), "Outgoing result crossed revoked admission")
+                    assertTrue(collector.isActive)
+                } finally {
+                    resumeSubscriber.complete(Unit)
+                    collector.cancelAndJoin()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun failedStartupOwnerCannotBeReopenedByObservationAndOriginalFailureIsPreserved() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("observed-startup-failure", "example.com")
+            withAccounts(user) { logic, network ->
+                val repository = logic.getGlobalScope().sessionRepository
+                val failure = IllegalStateException("Startup failed")
+                var starts = 0
+                val attempts = Channel<Boolean>(Channel.UNLIMITED)
+                val provider = commonProvider(logic, startScope = { starts++; throw failure },
+                    observationAttempt = { attempts.trySend(it != null) }, removeNetwork = { network.remove(it.toApi()) })
+                assertSame(failure, runCatching { provider.getOrCreate(user) }.exceptionOrNull())
+                val observer = launch {
+                    provider.observeValidSession<Int>(user, repository) { error("Failed owner became ready") }.collect()
+                }
+                try {
+                    assertFalse(attempts.receive())
+                    assertNull(provider.get(user))
+                    assertEquals(1, starts)
+                    assertTrue(observer.isActive, "Quarantine terminated the observer instead of remaining unavailable")
+                } finally { observer.cancelAndJoin() }
+            }
+        }
+    }
+
+    @Test
+    fun explicitDeleteLeavesSubscribedObserversIdleUntilManualOpenOrSuccessfulStore() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("observed-explicit-release", "example.com")
+            withAccounts(user) { logic, network ->
+                val repository = logic.getGlobalScope().sessionRepository
+                assertIs<Either.Right<Unit>>(repository.updateCurrentSession(user))
+                var starts = 0
+                val provider = commonProvider(logic, startScope = { starts++ }, removeNetwork = { network.remove(it.toApi()) })
+                // Read the existing gate, without adding a production test accessor or resolving a lazy resource.
+                val field = UserSessionScopeProviderCommon::class.java.getDeclaredField("sessions").also { it.isAccessible = true }
+                @Suppress("UNCHECKED_CAST")
+                val account = (field.get(provider) as UserSessionRegistry<UserSessionScope>).account(user)
+                val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
+                val observer = launch {
+                    provider.observeValidSession(user, repository) {
+                        val captured = this
+                        flow { emit(captured); awaitCancellation() }
+                    }.collect { values.send(it) }
+                }
+                try {
+                    val first = values.nextAvailable() // A fresh CoreLogic can open its first valid observed owner.
+                    assertEquals(1, starts)
+                    provider.delete(user)
+                    assertFalse(account.isAvailable(account.revision.value), "Release re-enabled observer admission")
+                    assertNull(provider.get(user))
+                    assertEquals(AccountInfo.Valid(user), assertIs<Either.Right<AccountInfo>>(repository.currentSession()).value)
+                    assertEquals(1, starts)
+                    assertTrue(observer.isActive)
+                    val second = provider.open(user) // Explicit host open, not a new metadata value.
+                    assertSame(second, values.nextAvailable())
+                    assertNotSame(first, second)
+                    assertEquals(2, starts)
+                    provider.delete(user)
+                    assertFalse(account.isAvailable(account.revision.value))
+                    assertEquals(2, starts)
+                    assertIs<Either.Right<Unit>>(provider.storeSession(session(user, "after-release"), repository))
+                    val third = values.nextAvailable() // Equal Valid metadata; store release must wake the subscriber.
+                    assertNotSame(second, third)
+                    assertEquals(3, starts)
+                    assertTrue(observer.isActive)
+                } finally { observer.cancelAndJoin() }
+            }
+        }
+    }
+
+    @Test
+    fun ownedObserverCancellationAcrossIoRemainsUnavailableWithoutKillingSubscriber() = runTest {
+        withContext(Dispatchers.Default) {
+            val user = UserId("observed-recovered-revocation", "example.com")
+            withAccounts(user) { logic, network ->
+                val repository = logic.getGlobalScope().sessionRepository
+                val admissions = Channel<Observation<UserSessionScope>>(Channel.UNLIMITED)
+                val provider = commonProvider(logic, startScope = {}, observationAttempt = {
+                    if (it != null) admissions.trySend(it)
+                }, removeNetwork = { network.remove(it.toApi()) })
+                val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
+                val observer = launch {
+                    provider.observeValidSession(user, repository) {
+                        val captured = this
+                        flow { emit(captured); awaitCancellation() }
+                    }.collect { values.send(it) }
+                }
+                try {
+                    val first = values.nextAvailable()
+                    val admitted = admissions.receive()
+                    // Do not advance registry revision: collectLatest must remain active so the
+                    // withContext/IO cancellation reaches the provider's own-revocation handler.
+                    admitted.work.close()
+                    admitted.work.awaitClosed()
+                    assertNull(values.receive())
+                    assertTrue(observer.isActive)
+                    assertIs<Either.Right<Unit>>(provider.storeSession(session(user, "recovered"), repository))
+                    assertNotSame(first, values.nextAvailable())
+                    assertTrue(observer.isActive)
+                } finally { observer.cancelAndJoin() }
+            }
+        }
+    }
+
+    private suspend fun <T : Any> Channel<T?>.nextAvailable(): T {
+        while (true) receive()?.let { return it }
+    }
+
+    private fun session(user: UserId, token: String) = StoreSessionParam(
+        serverConfigId = SERVER_CONFIG_ID,
+        ssoId = null,
+        accountTokens = AccountTokens(user, token, "refresh-$token", "Bearer", null),
+        proxyCredentials = null,
+        isPersistentWebSocketEnabled = false,
+    )
+
+    private fun fixtureTokens(logic: CoreLogic): AuthTokenStorage {
+        val getter = CoreLogic::class.java.getDeclaredMethod("getGlobalPreferences")
+        getter.isAccessible = true
+        return (getter.invoke(logic) as GlobalPrefProvider).authTokenStorage
+    }
+
     private suspend fun withAccounts(
         vararg users: UserId,
         block: suspend (CoreLogic, PlatformUserAuthenticatedNetworkProvider) -> Unit,
@@ -535,6 +1052,8 @@ class UserSessionScopeProviderLogoutTest {
         logic: CoreLogic,
         createScope: (UserId) -> UserSessionScope = { (logic.userSessionScopeProvider.value as UserSessionScopeProviderCommon).create(it) },
         startScope: (UserSessionScope) -> Unit = { it.startRuntime() },
+        beforeObservation: suspend (UserId) -> Unit = {},
+        observationAttempt: (Observation<UserSessionScope>?) -> Unit = {},
         removeNetwork: suspend (UserId) -> Unit,
     ): UserSessionScopeProviderCommon = object : UserSessionScopeProviderCommon(
         logic.globalCallManager,
@@ -544,6 +1063,14 @@ class UserSessionScopeProviderLogoutTest {
     ) {
         override fun create(userId: UserId): UserSessionScope = createScope(userId).also { retainScope(logic, it) }
         override fun startRuntime(scope: UserSessionScope) = startScope(scope)
+        override suspend fun admitObservation(
+            userId: UserId,
+            sessionRepository: SessionRepository,
+            revision: Long,
+        ): Observation<UserSessionScope>? {
+            beforeObservation(userId)
+            return super.admitObservation(userId, sessionRepository, revision).also(observationAttempt)
+        }
     }.also {
         fixtureProviders.add(it)
         fixtureGlobalJobs.add(logic.getGlobalScope().coroutineContext.job)

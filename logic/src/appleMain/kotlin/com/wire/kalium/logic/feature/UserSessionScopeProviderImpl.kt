@@ -48,6 +48,8 @@ import com.wire.kalium.logic.sync.receiving.ApplePreparedAccountStore
 import com.wire.kalium.logic.sync.SyncSuspension
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
@@ -123,7 +125,7 @@ internal actual open class UserSessionScopeProviderImpl(
                     // may validate the restored files and publish readiness again.
                     account.needsCryptoReopen = account.needsCryptoReopen || cryptoReplacement
                 } catch (failure: Throwable) {
-                    account.unavailable = true
+                    markUnavailable(account, userId)
                     throw failure
                 }
             }
@@ -211,29 +213,72 @@ internal actual open class UserSessionScopeProviderImpl(
         check(metadata?.isRegularFile == true && (metadata.size ?: 0) > 0) { "Prepared crypto store is missing" }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     actual override suspend fun open(userId: UserId): UserSessionScope {
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
         return withOwnedAccount(account, userId) {
-            check(!account.unavailable) { "Account resources are unavailable until process exit" }
-            super.get(userId)?.let {
-                if (!it.coroutineContext.job.isActive) {
-                    account.unavailable = true
-                    error("Account workers stopped before resources were released")
-                }
-                return@withOwnedAccount it
-            }
+            if (account.unavailable) throw OwnedAccountUnavailable()
             acquire(account, userId)
-            try {
-                val prepared = ApplePreparedAccountStore(rootPathsProvider.rootPath, userId).read(checkNotNull(account.lease))
-                revokeReadiness(account, userId)
-                super.getOrCreate(userId).also { account.canRefreshReadiness = prepared != null }
-            } catch (failure: Throwable) {
-                // Failed construction/startup retains the private owner and cancels its workers in
-                // the registry. Native cleanup is still uncertain: keep this lease until process exit.
-                account.unavailable = true
-                throw failure
+            openOwned(account, userId)
+        }
+    }
+
+    @Suppress("ReturnCount") // Preserve Apple ownership order and normalize only established unavailability.
+    override suspend fun admitObservation(
+        userId: UserId,
+        sessionRepository: SessionRepository,
+        revision: Long,
+    ): Observation<UserSessionScope>? {
+        if (!isSessionAvailable(userId, revision)) return null
+        val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
+        if (account.unavailable) return null
+        val scope = try {
+            withOwnedAccount(account, userId) {
+                if (account.unavailable || !isSessionAvailable(userId, revision)) null
+                else {
+                    acquire(account, userId)
+                    validSession(userId, sessionRepository, revision) { openOwned(account, userId, revision) }
+                }
             }
+        } catch (unavailable: OwnedAccountUnavailable) {
+            currentCoroutineContext().ensureActive()
+            null
+        } catch (failure: IllegalStateException) {
+            currentCoroutineContext().ensureActive()
+            // AccountResourceAccess reports a previously failed native handoff by this exact cause.
+            // Do not normalize an acquisition/startup/programming error merely because it is an ISE.
+            val ownershipFailure = account.ownershipFailure
+            if (!account.unavailable || ownershipFailure == null || !failure.hasCauseIdentity(ownershipFailure)) throw failure
+            null
+        } ?: return null
+        currentCoroutineContext().ensureActive()
+        return admitSessionObservation(userId, revision, scope)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun openOwned(account: OwnedAccount, userId: UserId, observationRevision: Long? = null): UserSessionScope {
+        if (account.unavailable) throw OwnedAccountUnavailable()
+        super.get(userId)?.let {
+            if (!it.coroutineContext.job.isActive) {
+                markUnavailable(account, userId)
+                throw OwnedAccountUnavailable()
+            }
+            return it
+        }
+        check(account.lease != null) { "Account construction requires ownership" }
+        return try {
+            val prepared = ApplePreparedAccountStore(rootPathsProvider.rootPath, userId).read(checkNotNull(account.lease))
+            revokeReadiness(account, userId)
+            val scope = if (observationRevision == null) super.getOrCreate(userId)
+            else getOrCreateObservedSession(userId, observationRevision)
+            scope.also { account.canRefreshReadiness = prepared != null }
+        } catch (closed: SessionGenerationClosed) {
+            // Rejection before construction allocated no owner. A partially started owner still
+            // keeps Apple's existing uncertain-startup quarantine and lease retention policy.
+            if (hasFailedSessionStartup(userId)) markUnavailable(account, userId)
+            throw closed
+        } catch (failure: Throwable) {
+            markUnavailable(account, userId)
+            throw failure
         }
     }
 
@@ -254,13 +299,14 @@ internal actual open class UserSessionScopeProviderImpl(
     ): Boolean {
         // Private ownership is registered before workers start, even while public get() is not ready.
         val account = accounts[userId]?.takeIf { getRaw(userId) === originatingScope } ?: return false
-        return withOwnedAccount(account, userId) {
+        return withClosedSession(userId, originatingScope, serialize = { action ->
+            withOwnedAccount(account, userId, action)
+        }) {
             // A queued logout for an old scope must not mutate a released or reopened account.
-            if (getRaw(userId) !== originatingScope) return@withOwnedAccount false
+            if (getRaw(userId) !== originatingScope) return@withClosedSession false
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
             acquire(account, userId)
-            account.unavailable = true
-            invalidateSession(userId)
+            markUnavailable(account, userId)
             revokeReadiness(account, userId)
             prepare()
             getRaw(userId)?.stopAccountWork()
@@ -269,7 +315,7 @@ internal actual open class UserSessionScopeProviderImpl(
             deleteShareOutbox(rootPathsProvider.rootPath, userId)
             withContext(NonCancellable) { closeAndRelease(account, userId) }
             true
-        }
+        } ?: false
     }
 
     /** Keep the session and its public clients alive; transfer only writable/native resources. */
@@ -315,7 +361,8 @@ internal actual open class UserSessionScopeProviderImpl(
                 account.lease?.release()
                 account.lease = null
             } catch (failure: Throwable) {
-                account.unavailable = true
+                account.ownershipFailure = failure
+                markUnavailable(account, userId)
                 throw failure
             }
         }
@@ -323,21 +370,27 @@ internal actual open class UserSessionScopeProviderImpl(
 
     /** The host must quiesce account use cases and global account collectors before requesting release. */
     actual override suspend fun delete(userId: UserId) = withContext(NonCancellable) {
-        val account = accounts[userId] ?: return@withContext
-        withOwnedAccount(account, userId) {
+        // Keep a gate even if an observer has not reached ownership acquisition yet.
+        val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
+        withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, action) }) { scope ->
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
-            acquire(account, userId)
-            account.unavailable = true
-            invalidateSession(userId)
-            getRaw(userId)?.let { scope ->
-                // Drain before entering crypto: a worker can hold a non-cancellable transaction.
-                scope.stopAccountWork()
-                // Ordinary release may refresh established readiness, never certify an interrupted login.
-                if (account.canRefreshReadiness) prepareOwned(account, userId, scope)
-                else revokeReadiness(account, userId)
+            if (scope == null && account.lease == null) {
+                // An idle/pending observer must not make release acquire the extension's lease.
+                releaseUnusedSession(userId)
+            } else {
+                acquire(account, userId)
+                markUnavailable(account, userId)
+                scope?.let {
+                    // Drain before entering crypto: a worker can hold a non-cancellable transaction.
+                    it.stopAccountWork()
+                    // Ordinary release may refresh established readiness, never certify an interrupted login.
+                    if (account.canRefreshReadiness) prepareOwned(account, userId, it)
+                    else revokeReadiness(account, userId)
+                }
+                closeAndRelease(account, userId)
             }
-            closeAndRelease(account, userId)
         }
+        Unit
     }
 
     private suspend fun closeAndRelease(account: OwnedAccount, userId: UserId) {
@@ -356,12 +409,11 @@ internal actual open class UserSessionScopeProviderImpl(
     @Suppress("TooGenericExceptionCaught")
     actual override suspend fun deleteSession(userId: UserId, sessionRepository: SessionRepository): Either<StorageFailure, Unit> {
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return withOwnedAccount(account, userId) {
+        return checkNotNull(withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, action) }) {
             try {
                 check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
                 acquire(account, userId)
-                account.unavailable = true
-                invalidateSession(userId)
+                markUnavailable(account, userId)
                 revokeReadiness(account, userId)
                 withContext(NonCancellable) { getRaw(userId)?.closeAccountResources() }
                 val result = sessionRepository.deleteSession(userId)
@@ -383,7 +435,7 @@ internal actual open class UserSessionScopeProviderImpl(
             } catch (failure: Throwable) {
                 Either.Left(StorageFailure.Generic(failure))
             }
-        }
+        })
     }
 
     /** The host must quiesce public operations and collectors before replacing a cached session. */
@@ -394,12 +446,11 @@ internal actual open class UserSessionScopeProviderImpl(
     ): Either<StorageFailure, Unit> {
         val userId = session.accountTokens.userId
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return withOwnedAccount(account, userId) {
+        return checkNotNull(withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, action) }) {
             try {
                 check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
                 acquire(account, userId)
-                account.unavailable = true
-                invalidateSession(userId)
+                markUnavailable(account, userId)
                 revokeReadiness(account, userId)
                 // Drain old token refreshes before replacing credentials, retaining ownership throughout.
                 withContext(NonCancellable) {
@@ -412,14 +463,17 @@ internal actual open class UserSessionScopeProviderImpl(
                 }
                 sessionRepository.storeSession(session).also {
                     // A failed store may already have changed account metadata or credentials.
-                    if (it is Either.Right) account.unavailable = false
+                    if (it is Either.Right) {
+                        account.unavailable = false
+                        allowSessionObservation(userId)
+                    }
                 }
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (failure: Throwable) {
                 Either.Left(StorageFailure.Generic(failure))
             }
-        }
+        })
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -427,7 +481,7 @@ internal actual open class UserSessionScopeProviderImpl(
         try {
             ApplePreparedAccountStore(rootPathsProvider.rootPath, userId).revoke(checkNotNull(account.lease))
         } catch (failure: Throwable) {
-            account.unavailable = true
+            markUnavailable(account, userId)
             throw failure
         }
     }
@@ -444,7 +498,7 @@ internal actual open class UserSessionScopeProviderImpl(
             access.withResumedAccess(
                 openResources = {
                     account.mutex.withLock {
-                        check(!account.unavailable) { "Account resources are unavailable until process exit" }
+                        if (account.unavailable) throw OwnedAccountUnavailable()
                         if (access === account.access) {
                             acquire(account, userId)
                             revokeReadiness(account, userId)
@@ -478,6 +532,13 @@ internal actual open class UserSessionScopeProviderImpl(
         }
     }
 
+    private fun markUnavailable(account: OwnedAccount, userId: UserId) {
+        account.unavailable = true
+        invalidateSession(userId)
+    }
+
+    private class OwnedAccountUnavailable : IllegalStateException("Account resources are unavailable until process exit")
+
     private class OwnedAccount {
         val mutex = Mutex()
 
@@ -488,6 +549,8 @@ internal actual open class UserSessionScopeProviderImpl(
         @Volatile var lease: AccountRuntimeLease? = null
 
         @Volatile var unavailable = false
+
+        @Volatile var ownershipFailure: Throwable? = null
 
         var needsCryptoReopen = false
 

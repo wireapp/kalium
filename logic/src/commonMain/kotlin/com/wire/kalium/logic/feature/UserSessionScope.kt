@@ -3292,6 +3292,11 @@ public class UserSessionScope internal constructor(
         }
     }
 
+    private fun schedulePeriodicSyncWork() {
+        userSessionWorkScheduler.schedulePeriodicUserConfigSync()
+        userSessionWorkScheduler.schedulePeriodicMeetingOccurrencesSync()
+    }
+
     /** Started by the provider after retaining this owner and before publishing it. */
     internal fun startRuntime() {
         if (!runtimeStarted.compareAndSet(false, true)) return
@@ -3362,8 +3367,7 @@ public class UserSessionScope internal constructor(
             localEventManager.startProcessing()
         }
 
-        userSessionWorkScheduler.schedulePeriodicUserConfigSync()
-        userSessionWorkScheduler.schedulePeriodicMeetingOccurrencesSync()
+        schedulePeriodicSyncWork()
 
         launch {
             waitUntilClientIdIsAvailable()
