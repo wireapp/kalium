@@ -355,13 +355,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         showContent: Boolean,
         preference: Either<StorageFailure, MessageContentPreference>,
     ): KaliumNSEResult {
-        val savedAllowsPreview = when (preference) {
-            is Either.Left -> false
-            is Either.Right -> when (preference.value) {
-                MessageContentPreference.Unset, MessageContentPreference.Enabled -> true
-                MessageContentPreference.Disabled -> false
-            }
-        }
+        val savedAllowsPreview = preference is Either.Right && preference.value != MessageContentPreference.Disabled
         val message = result.message
         val preview = message?.notificationPreview(showContent, preference)
         val contentType = when (preview?.type) {
