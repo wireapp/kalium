@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 
 class MessageFailureCleanupTest : BaseDatabaseTest() {
     @Test
-    fun receiptBetweenCleanupReadAndWriteCannotBeOverwritten() = runTest {
+    fun receiptBetweenCleanupReadAndWriteCannotBeOverwritten() = runTest(dispatcher) {
         val self = UserIDEntity("cleanup-race", "example.com")
         deleteDatabase(self)
         val database = createDatabase(self, encryptedDBSecret, true)
