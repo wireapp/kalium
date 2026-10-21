@@ -1,7 +1,7 @@
 name: Link and Lint PR with Jira Ticket Number
 on:
   pull_request:
-    types: [opened, edited, synchronize]
+    types: [opened, edited, synchronize, labeled, unlabeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -103,8 +103,11 @@ jobs:
       pull-requests: write # required to update PR descriptions with Jira links
     uses: wireapp/.github/.github/workflows/jira-link-pr-reusable.yml@b00595235816b9a935c7463b990fae39864903a5
     with:
-      # Explicitly mark ticketless work in the PR title; keep Jira validation for other PRs.
-      skip-branches: ${{ contains(github.event.pull_request.title, '[no-jira]') && '.*' || '^(production-release|main|master|release\/v\d+)$' }}
+      # Explicitly mark ticketless work with a label or title marker.
+      skip-branches: >-
+        ${{ (contains(github.event.pull_request.labels.*.name, 'no-jira') ||
+             contains(github.event.pull_request.title, '[no-jira]')) &&
+             '.*' || '^(production-release|main|master|release\/v\d+)$' }}
       skip-actors: 'dependabot[bot],AndroidBob'
       version-name: ${{ needs.get-version.outputs.version_name }}
       fix-version-regex: '(?:^|[\s\-_])(v?\d+\.\d+(?:\.\d+)?(?:[\-\+][\w\.\-]*)?)'
