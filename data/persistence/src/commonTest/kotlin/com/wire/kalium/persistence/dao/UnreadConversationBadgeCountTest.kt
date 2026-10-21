@@ -111,6 +111,18 @@ class UnreadConversationBadgeCountTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun oneToOneConversationCountsOnlyOnceThePeerProfileIsKnown() = runTest(dispatcher) {
+        val conversation = conversation("one-on-one").copy(type = ConversationEntity.Type.ONE_ON_ONE)
+        val user = newUserEntity(sender).copy(team = null, activeOneOnOneConversationId = conversation.id)
+        db.conversationDAO.insertConversation(conversation)
+        db.userDAO.upsertUser(user.copy(name = null))
+        unread(conversation, "one-on-one")
+        assertEquals(0L, db.conversationDAO.observeUnreadConversationBadgeCount().first())
+        db.userDAO.upsertUser(user)
+        assertEquals(1L, db.conversationDAO.observeUnreadConversationBadgeCount().first())
+    }
+
+    @Test
     fun hardDeletingTheLastUnreadMessageUpdatesTheObservedCount() = runTest(dispatcher) {
         val cleared = conversation("cleared")
         val deletedForMe = conversation("deleted-for-me")
