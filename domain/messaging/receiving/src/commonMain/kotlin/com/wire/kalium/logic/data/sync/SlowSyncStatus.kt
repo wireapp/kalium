@@ -27,10 +27,13 @@ sealed interface SlowSyncStatus {
 
     data object Complete : SlowSyncStatus
 
-    data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
+    data class Ongoing(val currentStep: SlowSyncStep, val progress: SlowSyncProgress? = null) : SlowSyncStatus
 
     data class Failed(val failure: CoreFailure, val retryDelay: Duration) : SlowSyncStatus
 }
+
+/** Conversations processed in this attempt, including recoveries deferred by the existing join policy. */
+data class SlowSyncProgress(val completed: Int, val total: Int)
 
 enum class SlowSyncStep {
     MIGRATION,

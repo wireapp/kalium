@@ -600,7 +600,7 @@ class SlowSyncWorkerTest {
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinMLSConversations.invoke(eq(true), eq(false))
+            arrangement.joinMLSConversations.invoke(eq(true), eq(false), any(), any())
         }
     }
 
@@ -628,7 +628,7 @@ class SlowSyncWorkerTest {
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinMLSConversations.invoke(eq(true), eq(true))
+            arrangement.joinMLSConversations.invoke(eq(true), eq(true), any(), any())
         }
     }
 
@@ -753,7 +753,7 @@ class SlowSyncWorkerTest {
         }
 
         verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) 1 else 0)) {
-            arrangement.joinMLSConversations.invoke(any(), any())
+            arrangement.joinMLSConversations.invoke(any(), any(), any(), any())
         }
 
         verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.LEGAL_HOLD)) 1 else 0)) {
@@ -923,7 +923,7 @@ class SlowSyncWorkerTest {
             allowJoinByExternalCommit: Boolean = false,
         ) = apply {
             everySuspend {
-                joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit))
+                joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit), any(), any())
             } returns failure
         }
 
@@ -932,7 +932,7 @@ class SlowSyncWorkerTest {
             allowJoinByExternalCommit: Boolean = false,
         ) = apply {
             everySuspend {
-                joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit))
+                joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit), any(), any())
             } returns success
         }
 

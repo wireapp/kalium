@@ -113,7 +113,7 @@ messages, but does not delete them when that deadline passes; the app's expirati
 executor does.
 
 Ignored, as in the app or because the NSE has no live UI or call: typing, remote
-mute, in-call emoji, legal-hold events and configuration, history-client signaling,
+mute, in-call emoji and hand raises, legal-hold events and configuration, history-client signaling,
 explicitly ignored content and unknown event types. Typing preference properties
 are still stored.
 
@@ -145,6 +145,47 @@ Not supported; the attempt fails and the notification stays pending:
   default credential without a matching installed credential.
 - Undecodable payloads of known event types.
 
+
+## Preparing alerts with an existing app account
+
+`UserSessionScope.notificationAlerts` uses the session's existing database owner.
+The host must retain that session throughout the request; this API does not acquire
+another Apple account runtime or extend the application's background lifetime.
+
+`prepare` captures message identities without marking them notified or exposing
+preview content. The snapshot stays in the owning process and expires after a
+bounded monotonic deadline (20 seconds by default, at most 30 seconds). Abandoning
+it requires no cleanup. `commit` rechecks unread state, notification eligibility
+and the saved content preference in a writer transaction before advancing the
+conversation cursors. It returns `Committed`, `Expired`, or `Stale`; the last two
+leave notification state unchanged. A stale snapshot needs fresh preparation, for
+example when an older server event arrived after the snapshot. Overlapping claims
+use the persisted cursors to avoid returning the same alert twice. Read failures
+in the content preference hide text, names and typed preview labels.
+
+Commitment also stores pending message identities in the same writer transaction.
+`pending.read()` rebuilds current previews from canonical rows, rechecks eligibility
+and removes obsolete entries. `pending.acknowledge()` is called after native enqueue
+succeeds, or when iOS already contains that identity. Pending records contain no
+message text or contact names. The app can observe changes through the existing
+session without polling or opening another runtime. NSE also returns pending
+messages in `alerts`, including its primary message when covered by the queue; the
+native host must suppress a second primary presentation in that case.
+`processAndDeliver` awaits the native enqueue callback and acknowledges acceptance
+before releasing the account lease. Cancellation stops waiting for the native
+callback so runtime cleanup can release the account. A late completion cannot
+access the account database; an unacknowledged or failed enqueue stays pending
+for identity-based reconciliation on the next attempt. Only an acknowledgement
+already in progress is drained before release. Pending replay is oldest-first,
+including records written by earlier versions. The legacy
+`process` entry point only returns presentation data and does not acknowledge it.
+
+A committed result is a claim to present, **not acknowledgement of OS delivery**.
+The host must use a stable system request identity and reconcile delivered/pending
+requests before retrying after a crash. iOS has no durable receipt for an alert the
+user already dismissed, so exactly-once visible presentation cannot be guaranteed
+across a crash after enqueue but before acknowledgement. Android presentation is
+unchanged. This API does not extend background execution or implement uploads.
 
 ## Incoming calls
 

@@ -1,10 +1,12 @@
 """Local test CA and ACME responses used only to prepare native X.509 fixtures."""
 
 import base64
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import ssl
+import tempfile
 import threading
 import time
 from urllib.parse import parse_qs, urlsplit
@@ -13,6 +15,8 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import ExtensionOID, NameOID
+
+from ios_test_support import trust_local_certificate
 
 BASE = "https://localhost:18444"
 
@@ -186,3 +190,15 @@ class X509FixtureServer:
             builder = builder.add_revoked_certificate(x509.RevokedCertificateBuilder().serial_number(serial)
                                                      .revocation_date(now - timedelta(minutes=1)).build())
         return builder.sign(self.ca_key, hashes.SHA256()).public_bytes(serialization.Encoding.DER)
+
+
+@contextmanager
+def serving_x509_fixture(simulator):
+    """Trusts a localhost certificate on the booted simulator and serves the fixture until the block exits."""
+    with tempfile.TemporaryDirectory(prefix="kalium-ios-tests-") as directory:
+        certificate, key = trust_local_certificate(simulator, directory)
+        server = X509FixtureServer(certificate, key)
+        try:
+            yield
+        finally:
+            server.close()

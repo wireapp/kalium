@@ -123,6 +123,8 @@ public actual class CoreLogic(
     actual override suspend fun deleteSessionScope(userId: UserId) = releaseSessionScope(userId)
 
     /** Revalidate an owned, synced session for notification receiving after app restoration. */
+    // Retain the existing public result type for consumer compatibility.
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
     public suspend fun prepareSessionForNotifications(userId: UserId, scope: UserSessionScope): Either<CoreFailure, Unit> =
         userSessionScopeProvider.value.prepareReceiving(userId, scope)
 

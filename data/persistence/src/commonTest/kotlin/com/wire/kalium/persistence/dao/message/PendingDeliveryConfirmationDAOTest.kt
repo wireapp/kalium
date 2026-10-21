@@ -60,7 +60,7 @@ class PendingDeliveryConfirmationDAOTest : BaseDatabaseTest() {
         val database = createDatabase(userId, encryptedDBSecret, true)
         try {
             database.metadataDAO.insertValue("preserved", "migration-proof")
-            database.sqlDriver.execute(null, "DROP TABLE PendingDeliveryConfirmations", 0)
+            database.sqlDriver.execute(null, "DROP TABLE PendingDeliveryConfirmations", 0).await()
             UserDatabase.Schema.migrate(database.sqlDriver, 148, 149).await()
             database.pendingDeliveryConfirmationDAO.enqueue(conversation, "after-migration")
             assertEquals("preserved", database.metadataDAO.valueByKey("migration-proof"))

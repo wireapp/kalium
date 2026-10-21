@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.sync.SlowSyncProgress
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
@@ -89,7 +90,8 @@ internal class SlowSyncWorkerImpl(
     private val transactionProvider: CryptoTransactionProvider,
     private val optimizer: OptimizeDatabaseUseCase,
     private val syncMeetings: SyncMeetingsUseCase,
-    logger: KaliumLogger = kaliumLogger
+    logger: KaliumLogger = kaliumLogger,
+    private val onJoinProgress: (SlowSyncProgress) -> Unit = {},
 ) : SlowSyncWorker {
 
     private val logger = logger.withFeatureId(SYNC)
@@ -144,7 +146,8 @@ internal class SlowSyncWorkerImpl(
                     // commit that establishes this MLS group, so slow sync must not force an
                     // external-commit join here.
                     joinMLSConversations(
-                        allowJoinByExternalCommit = !lastSavedEventIdState.hasExistingLastSavedEventId
+                        allowJoinByExternalCommit = !lastSavedEventIdState.hasExistingLastSavedEventId,
+                        onProgress = { onJoinProgress(it) },
                     )
                 }
                 .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {

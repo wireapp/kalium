@@ -19,6 +19,7 @@
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.options.Option
 import org.gradle.kotlin.dsl.support.get
 import org.gradle.process.ExecOperations
 
@@ -38,6 +39,18 @@ open class OnlyAffectedTestTask : DefaultTask() {
     @Input
     var ignoredModules: List<String> = emptyList()
 
+    @Input
+    @set:Option(option = "list-only", description = "Write selected task paths without starting a nested build.")
+    var listOnly: Boolean = false
+
+    @Input
+    @set:Option(option = "all-modules", description = "Select all eligible modules, even when no changes are detected.")
+    var allModules: Boolean = false
+
+    @Input
+    @set:Option(option = "ios-shard", description = "Select one iOS CI group: logic, data, receiving, or extensions.")
+    var iosShard: String = ""
+
     init {
         group = "verification"
         description = "Runs tests for affected modules when available, otherwise runs all tests."
@@ -46,11 +59,16 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
     @TaskAction
     fun runOnlyAffectedConnectedTest() {
+        require(iosShard in setOf("", "logic", "data", "receiving", "extensions")) { "Unknown iOS shard: $iosShard" }
+        require(iosShard.isEmpty() || configuration == TestTaskConfiguration.IOS_TEST_TASK) {
+            "--ios-shard is only supported by iOSOnlyAffectedTest"
+        }
         val affectedModules = readAffectedModules()
         val missingAffectedModulesData = affectedModules == null
-        val runAllTests = hasToRunAllTests() || missingAffectedModulesData
+        val runAllTests = allModules || hasToRunAllTests() || missingAffectedModulesData
 
         if (!runAllTests && affectedModules.orEmpty().isEmpty()) {
+            writeSelectedTasks(emptyList())
             println("\uD83E\uDD8B It is not necessary to run any test, ending here to free up some resources.")
             return
         }
@@ -66,6 +84,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
         val tasksName = mutableListOf<String>()
         project.subprojects
             .filter { (runAllTests || affectedModules.contains(it.path)) && !ignoredModules.contains(it.path) }
+            .filter { belongsToIosShard(it.path) }
             .forEach { childProject ->
                 val targetTaskName = childProject.tasks.names.firstOrNull { it.equals(configuration.testTarget, true) }
                 targetTaskName?.let { taskName ->
@@ -77,12 +96,30 @@ open class OnlyAffectedTestTask : DefaultTask() {
         if (missingAffectedModulesData) {
             println("\uD83D\uDD27 Running all tests because affected-modules data is unavailable.")
         }
+        writeSelectedTasks(tasksName)
         if (tasksName.isEmpty()) {
             println("\uD83E\uDD8B No matching test tasks found for the selected modules.")
             return
         }
 
-        runTargetTasks(tasksName)
+        if (!listOnly) runTargetTasks(tasksName)
+    }
+
+    private fun belongsToIosShard(modulePath: String): Boolean = when (iosShard) {
+        "" -> true
+        "logic" -> modulePath == ":logic"
+        "data" -> modulePath in IOS_DATA_MODULES
+        "receiving" -> modulePath == IOS_RECEIVING_MODULE
+        // New modules belong here automatically, so adding a module cannot silently remove test coverage.
+        "extensions" -> modulePath != ":logic" && modulePath !in IOS_DATA_MODULES && modulePath != IOS_RECEIVING_MODULE
+        else -> error("Unknown iOS shard: $iosShard")
+    }
+
+    private fun writeSelectedTasks(tasksName: List<String>) {
+        val outputFile = project.layout.buildDirectory.file("affected-tests/$name.txt").get().asFile
+        outputFile.parentFile.mkdirs()
+        outputFile.writeText(tasksName.joinToString(separator = "\n", postfix = if (tasksName.isEmpty()) "" else "\n"))
+        println("Selected test tasks: $outputFile")
     }
 
     private fun readAffectedModules(): Set<String>? {
@@ -134,12 +171,17 @@ open class OnlyAffectedTestTask : DefaultTask() {
             "build.gradle.kts",
             "gradle.properties",
             "settings.gradle.kts",
-        )
-
-        val anySettingsFileChanged = globalBuildSettingsFiles.any { relativePath ->
-            val exitCode = "git diff --quiet origin/develop -- ${project.rootDir}/$relativePath".execute().exitValue()
-            exitCode != 0
+        ) + if (configuration == TestTaskConfiguration.IOS_TEST_TASK) {
+            listOf(".github/workflows/gradle-ios-tests.yml", "scripts/boot-ios-simulator.py", "nse/scripts")
+        } else {
+            emptyList()
         }
+
+        val process = ProcessBuilder(
+            listOf("git", "-C", project.rootDir.absolutePath, "diff", "--quiet", "origin/develop", "--") + globalBuildSettingsFiles
+        ).redirectErrorStream(true).start()
+        process.inputStream.bufferedReader().use { it.readText() }
+        val anySettingsFileChanged = process.waitFor() != 0
         if (anySettingsFileChanged) {
             println("\uD83D\uDD27 Running all tests because there are changes at the root level")
         }
@@ -159,6 +201,8 @@ open class OnlyAffectedTestTask : DefaultTask() {
     }
 
     private companion object {
+        const val IOS_RECEIVING_MODULE = ":domain:messaging:receiving"
+        val IOS_DATA_MODULES = setOf(":data:persistence", ":data:network", ":core:cryptography")
         val IGNORED_MODULES = listOf(":data:protobuf", ":tools:protobuf-codegen")
         const val AFFECTED_MODULES_FILE = "dag-command/affected-modules.json"
     }

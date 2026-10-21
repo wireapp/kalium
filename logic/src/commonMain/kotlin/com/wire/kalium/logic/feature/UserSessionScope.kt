@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logic.feature.call.usecase.SetCallHandRaisedUseCase
 import com.wire.kalium.logic.data.client.guardedBy
 import com.wire.kalium.logic.network.guardedBy
 
@@ -208,6 +209,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
@@ -582,6 +584,7 @@ import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiving.CallPresentationRecord
 import com.wire.kalium.logic.sync.receiving.CallSignalJournal
+import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
 import com.wire.kalium.logic.sync.receiving.PendingConversationCleanup
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
@@ -624,6 +627,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -1538,7 +1542,12 @@ public class UserSessionScope internal constructor(
             oneOnOneResolver,
             cryptoTransactionProvider,
             syncMeetings = syncMeetingsUseCase,
-            optimizer = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
+            optimizer = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer),
+            onJoinProgress = { progress ->
+                slowSyncRepository.updateSlowSyncStatus(
+                    SlowSyncStatus.Ongoing(SlowSyncStep.JOINING_MLS_CONVERSATIONS, progress)
+                )
+            },
         )
     }
 
@@ -2042,6 +2051,7 @@ public class UserSessionScope internal constructor(
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
             inCallReactionsRepository,
+            callRepository,
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
             callingMessageHandler,
@@ -2530,6 +2540,10 @@ public class UserSessionScope internal constructor(
             reactionDAO = userStorage.database.reactionDAO,
         )
 
+    /** Read-only progress of the current slow-sync attempt. */
+    public val slowSyncStatus: StateFlow<SlowSyncStatus>
+        get() = slowSyncRepository.slowSyncStatus
+
     public val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCaseImpl(syncManager)
 
@@ -2956,6 +2970,11 @@ public class UserSessionScope internal constructor(
     /** Prioritize the exact delivered Apple call, preserving all signaling in its conversation. */
     public suspend fun resumeIncomingCallSignals(callId: String): Unit = callManager.value.replayIncomingCallSignals(callId)
 
+    /** Apple alert claims using this session's existing account owner; the host must retain the session. */
+    public val notificationAlerts: UnnotifiedMessageAlerts by lazy {
+        UnnotifiedMessageAlerts(userStorage.database, userId)
+    }
+
     /** Register the identities of delivered Apple alerts before observing their canonical state. */
     public suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>): Unit =
         userStorage.database.messageDAO.rememberNotificationMessages(messages)
@@ -2973,8 +2992,19 @@ public class UserSessionScope internal constructor(
     public suspend fun callPresentations(): List<CallPresentationRecord> =
         CallSignalJournal(userStorage.database).presentations()
 
+    private val setCallHandRaised by lazy {
+        SetCallHandRaisedUseCase(
+            selfUserId = userId,
+            provideClientId = clientIdProvider,
+            messageSender = messages.messageSender,
+            calls = callRepository,
+            scope = this
+        )
+    }
+
     public val calls: CallsScope
         get() = CallsScope(
+            setHandRaised = setCallHandRaised,
             callManager = callManager,
             callBackgroundManager = callBackgroundManager,
             callRepository = callRepository,

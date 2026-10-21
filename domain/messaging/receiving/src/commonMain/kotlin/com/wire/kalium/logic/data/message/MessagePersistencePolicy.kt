@@ -85,6 +85,7 @@ fun MessageContent.shouldUpdateConversationOrder(): Boolean =
         is MessageContent.MemberChange.UserPromotedToAdmin -> true
         is MessageContent.TeamMemberRemoved -> false
         is MessageContent.DataTransfer -> false
+        is MessageContent.InCallHandRaise -> false
         is MessageContent.InCallEmoji -> false
         is MessageContent.Multipart -> true
         is MessageContent.History -> false
@@ -154,6 +155,7 @@ fun MessageContent.shouldNotifyUser(): Boolean =
         is MessageContent.MemberChange.UserPromotedToAdmin,
         is MessageContent.TeamMemberRemoved,
         is MessageContent.DataTransfer,
+        is MessageContent.InCallHandRaise,
         is MessageContent.InCallEmoji,
         is MessageContent.History,
         is MessageContent.NewConversationWithCellMessage,

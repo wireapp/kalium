@@ -48,5 +48,8 @@ data class Call(
     val callerTeamName: String?,
     val establishedTime: Instant? = null,
     val participants: List<Participant> = emptyList(),
-    val maxParticipants: Int = 0 // Was used for tracking
+    val maxParticipants: Int = 0, // Was used for tracking
+    val raisedHands: List<CallHandIdentity> = emptyList(),
+    /** Local participation identity for discarding obsolete command presentation. */
+    val handRaiseGeneration: String? = null
 )

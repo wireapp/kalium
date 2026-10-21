@@ -95,18 +95,18 @@ internal class MessageDAOImpl internal constructor(
     private val unreadEventMapper = UnreadEventMapper
 
     @Suppress("ReturnCount")
-    private fun withMultipartAttachments(message: MessageEntity): MessageEntity {
+    private suspend fun withMultipartAttachments(message: MessageEntity): MessageEntity {
         val regularMessage = message as? MessageEntity.Regular ?: return message
         val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return message
         val attachments = attachmentsQueries.getAttachments(
             regularMessage.id,
             regularMessage.conversationId,
             MessageAttachmentMapper::toDao
-        ).executeAsList()
+        ).awaitAsList()
         return regularMessage.copy(content = multipartContent.copy(attachments = attachments))
     }
 
-    private fun withMultipartAttachments(messages: List<MessageEntity>): List<MessageEntity> {
+    private suspend fun withMultipartAttachments(messages: List<MessageEntity>): List<MessageEntity> {
         val multipartMessagesByConversation = messages
             .filterIsInstance<MessageEntity.Regular>()
             .filter { it.content is MessageEntityContent.Multipart }
@@ -117,7 +117,7 @@ internal class MessageDAOImpl internal constructor(
         val attachmentsByConversation = multipartMessagesByConversation.mapValues { (conversationId, multipartMessages) ->
             attachmentsQueries
                 .getAttachmentsForMessages(conversationId, multipartMessages.map { it.id }, MessageAttachmentMapper::toDaoWithMessageId)
-                .executeAsList()
+                .awaitAsList()
                 .groupBy(keySelector = { it.first }, valueTransform = { it.second })
         }
 
@@ -374,7 +374,9 @@ internal class MessageDAOImpl internal constructor(
     }
 
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(readDispatcher.value) {
-        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()?.let(::withMultipartAttachments)
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()?.let {
+            withMultipartAttachments(it)
+        }
     }
 
     override suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity> = withContext(readDispatcher.value) {
@@ -385,7 +387,7 @@ internal class MessageDAOImpl internal constructor(
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
             .asFlow()
             .mapToOneOrNull()
-            .map { it?.let(::withMultipartAttachments) }
+            .map { it?.let { withMultipartAttachments(it) } }
             .distinctUntilChanged()
             .flowOn(readDispatcher.value)
 
@@ -443,6 +445,11 @@ internal class MessageDAOImpl internal constructor(
             ).associateBy { it.conversationId }
         }
 
+    override suspend fun resolveNotificationMessage(messageId: String, conversationId: QualifiedIDEntity): String? =
+        withContext(readDispatcher.value) {
+            notificationQueries.resolveNotificationMessage(messageId, conversationId).awaitAsOneOrNull()
+        }
+
     override suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>) {
         if (messages.isEmpty()) return
         withContext(writeDispatcher.value) {
@@ -461,6 +468,10 @@ internal class MessageDAOImpl internal constructor(
             .mapToList()
             .distinctUntilChanged()
             .flowOn(readDispatcher.value)
+
+    override fun observeNotificationMessages(): Flow<List<NotificationMessageEntity>> =
+        notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
+            .asFlow().mapToList().flowOn(readDispatcher.value)
 
     override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): List<NotificationMessageEntity> =
         withContext(readDispatcher.value) {

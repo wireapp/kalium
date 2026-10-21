@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
+import com.wire.kalium.logic.data.notification.classifyNotificationMessage
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
@@ -133,7 +135,7 @@ internal class ReceivedMessageHandler(
         data.messages.insertReceivedMessage(mapper.toEntity(stored), stored.content.shouldUpdateConversationOrder())
     }
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     suspend fun handle(
         unpacked: MessageUnpackResult.ApplicationMessage,
         laterMessages: List<MessageUnpackResult.ApplicationMessage>,
@@ -143,7 +145,8 @@ internal class ReceivedMessageHandler(
         recreatedLater: Set<QualifiedIDEntity> = emptySet(),
     ) {
         if (unpacked.content.messageContent is MessageContent.LegalHold ||
-            unpacked.content.messageContent is MessageContent.InCallEmoji
+            unpacked.content.messageContent is MessageContent.InCallEmoji ||
+            unpacked.content.messageContent is MessageContent.InCallHandRaise
         ) return
         val conversationId = unpacked.conversationId.toDao()
         val conversation = checkNotNull(data.conversations.getConversationById(conversationId)) {
@@ -548,7 +551,11 @@ internal suspend fun storedMessagePresentation(
         ?: "NOTIFICATION_POLICY".takeUnless { messages.needsToBeNotified(message.id, message.conversationId) }
     // Match Android: verification warnings affect reply eligibility, not message previews.
     val mayPreview = message.expireAfterMs == null
-    val text = (message.content as? MessageEntityContent.Text)?.messageBody
+    val text = when (val content = message.content) {
+        is MessageEntityContent.Text -> content.messageBody
+        is MessageEntityContent.Poll -> content.question
+        else -> null
+    }
     return ReceivedMessageResult(
         message.id,
         message.conversationId.value,
@@ -560,6 +567,7 @@ internal suspend fun storedMessagePresentation(
         isGroupConversation = conversation.type.isGroup,
         senderName = users.getNameAndHandle(message.senderUserId)?.name,
         suppressionReason = reason,
+        messageKind = classifyNotificationMessage(message.content),
         previewPolicyReason = if (mayPreview) null else
             "expiry=${message.expireAfterMs != null};mls=${conversation.mlsVerificationStatus.name};" +
                 "proteus=${conversation.proteusVerificationStatus.name}"
@@ -598,6 +606,7 @@ data class ReceivedMessageResult(
     val suppressionReason: String? = null,
     val previewPolicyReason: String? = null,
     val isGroupConversation: Boolean = false,
+    val messageKind: NotificationMessageKind? = null,
 )
 
 enum class ReceivedNotificationType { MESSAGE, CONVERSATION_DELETED, CONNECTION_REQUEST }

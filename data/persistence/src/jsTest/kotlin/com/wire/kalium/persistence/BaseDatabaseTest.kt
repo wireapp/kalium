@@ -18,19 +18,29 @@
 
 package com.wire.kalium.persistence
 
+import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlin.test.AfterTest
 
 actual open class BaseDatabaseTest actual constructor() {
+    // Keep worker storage alive across connection facades, as native test databases do.
+    private val databases = mutableMapOf<UserIDEntity, UserDatabaseBuilder>()
+
+    @AfterTest
+    fun closeWorkerDatabases() {
+        databases.values.forEach { it.close() }
+        databases.clear()
+    }
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
 
     actual fun deleteDatabase(userId: UserIDEntity) {
-        createDatabase(userId, null, enableWAL = false).nuke()
+        databases.remove(userId)?.close()
     }
 
     actual fun createDatabase(
@@ -39,13 +49,27 @@ actual open class BaseDatabaseTest actual constructor() {
         enableWAL: Boolean,
         dbInvalidationControlEnabled: Boolean
     ): UserDatabaseBuilder {
-        return com.wire.kalium.persistence.db.userDatabaseBuilder(
-            platformDatabaseData = PlatformDatabaseData(),
+        val storage = databases.getOrPut(userId) {
+            com.wire.kalium.persistence.db.userDatabaseBuilder(
+                platformDatabaseData = PlatformDatabaseData(),
+                userId = userId,
+                passphrase = passphrase,
+                dispatcher = dispatcher,
+                enableWAL = enableWAL,
+                dbInvalidationControlEnabled = dbInvalidationControlEnabled
+            )
+        }
+        return UserDatabaseBuilder(
             userId = userId,
-            passphrase = passphrase,
+            sqlDriver = object : SqlDriver by storage.sqlDriver {
+                // Closing a connection must not discard the named test database.
+                override fun close() = Unit
+            },
             dispatcher = dispatcher,
-            enableWAL = enableWAL,
-            dbInvalidationControlEnabled = dbInvalidationControlEnabled
+            platformDatabaseData = PlatformDatabaseData(),
+            isEncrypted = false,
+            dbInvalidationController = storage.dbInvalidationController,
+            initializeSelfUser = false,
         )
     }
 

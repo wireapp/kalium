@@ -55,9 +55,7 @@ public suspend fun AppleAccountRuntime.notificationProcessor(
     val rejoin = ReceivedMLSRejoin(network.mlsMessageApi, database.metadataDAO, diagnostics)
     val mls = mlsClient(rejoin)
     return NotificationProcessor(
-        isolateConversations = true,
         database = database,
-        notificationApi = network.notificationApi,
         clientId = prepared.clientId,
         selfUserId = prepared.userId,
         proteus = proteusCoreCrypto.proteusClient(),
