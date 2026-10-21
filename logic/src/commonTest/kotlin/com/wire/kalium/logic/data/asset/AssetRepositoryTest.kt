@@ -1107,6 +1107,10 @@ internal class AssetRepositoryTest {
         val assetApi = mock<AssetApi>()
         val assetDAO = mock<AssetDAO>()
 
+        init {
+            everySuspend { assetDAO.isFileReferenced(any()) } returns false
+        }
+
         private val assetAuditLog = mock<AssetAuditFeatureHandler>()
 
         private val assetMapper by lazy { AssetMapperImpl() }
