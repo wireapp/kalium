@@ -147,6 +147,7 @@ class MessageSenderImpl(
     }
 
     private suspend fun shouldSend(message: Message.Sendable): Either<CoreFailure, Boolean> {
+        val isEdit = message.content is MessageContent.TextEdited || message.content is MessageContent.MultipartEdited
         if (message !is Message.Regular || message.status != Message.Status.Pending) return Either.Right(true)
         return messages.getMessageById(message.conversationId, message.id).fold(
             { failure ->
