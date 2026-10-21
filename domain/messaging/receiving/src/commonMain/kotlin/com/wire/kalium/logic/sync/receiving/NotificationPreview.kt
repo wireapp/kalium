@@ -15,6 +15,7 @@ fun ReceivedMessageResult.notificationPreview(
     if (showContent && allowsPreview && messageAllowsPreview) return this
     return copy(
         text = null,
+        messageKind = null,
         conversationName = null,
         senderName = null,
         isGroupConversation = false,

@@ -1,6 +1,7 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.config.UserConfigStorage
@@ -205,6 +206,30 @@ class UnnotifiedMessageAlertsTest {
             reopened.pending.acknowledge(listOf(NotificationMessageKey("first", conversation.id)))
             assertEquals(emptyList(), reopened.pending.read())
             assertEquals(emptyList(), alerts.pending.read())
+        }
+    }
+
+    @Test
+    fun pendingImageRebuildsKindUsingCurrentPrivacyUntilAccepted() = runTest {
+        fixture { database, alerts, _ ->
+            val image = message("image", time + 1.seconds).copy(content = MessageEntityContent.Asset(
+                assetSizeInBytes = 10, assetName = "image.png", assetMimeType = "image/png",
+                assetOtrKey = byteArrayOf(1), assetSha256Key = byteArrayOf(2), assetId = "asset",
+                assetEncryptionAlgorithm = "AES_CBC",
+            ))
+            database.builder.messageDAO.insertOrIgnoreMessage(image)
+            assertEquals(NotificationMessageKind.PICTURE, alerts.take().single { it.messageId == "image" }.messageKind)
+            val reopened = UnnotifiedMessageAlerts(database.builder, self) { time + 2.seconds }
+            assertEquals(NotificationMessageKind.PICTURE, reopened.pending.read().single { it.messageId == "image" }.messageKind)
+            database.builder.userPrefsDAO.persistMessageContentPreference(false)
+            val hidden = reopened.pending.read().single { it.messageId == "image" }
+            assertNull(hidden.messageKind)
+            assertNull(hidden.senderName)
+            database.builder.userPrefsDAO.persistMessageContentPreference(true)
+            assertEquals(NotificationMessageKind.PICTURE, reopened.pending.read().single { it.messageId == "image" }.messageKind)
+            assertNull(reopened.pending.read(showContent = false).single { it.messageId == "image" }.messageKind)
+            reopened.pending.acknowledge(listOf(NotificationMessageKey("image", conversation.id)))
+            assertFalse(reopened.pending.read().any { it.messageId == "image" })
         }
     }
 

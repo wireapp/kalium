@@ -17,6 +17,11 @@
  */
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.notification.LocalNotificationMessage
+import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
+import kotlin.test.assertNull
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
@@ -39,6 +44,46 @@ import kotlin.test.assertIs
 internal class MessageMapperTest {
 
     val arrangement = Arrangement()
+
+    @Test
+    fun notificationClassificationPreservesContentAndSelfDeletePrivacy() {
+        val row = NotificationMessageEntity(
+            id = "message", contentType = MessageEntity.ContentType.TEXT, isSelfDelete = false,
+            senderUserId = TestUser.ENTITY_ID, senderImage = null, date = Instant.DISTANT_PAST,
+            senderName = "Sender", text = "secret", assetMimeType = "image/png", isQuotingSelf = true,
+            conversationId = QualifiedIDEntity("conversation", "example.com"), conversationName = "Team",
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED, conversationType = ConversationEntity.Type.GROUP,
+            degradedConversationNotified = true, legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+            legalHoldStatusChangeNotified = true,
+        )
+        val mapper = arrangement.messageMapper
+        val text = assertIs<LocalNotificationMessage.Text>(mapper.fromMessageToLocalNotificationMessage(row))
+        assertEquals("secret", text.text)
+        assertEquals("Sender", text.author.name)
+        assertEquals(true, text.isQuotingSelfUser)
+        for (type in listOf(MessageEntity.ContentType.TEXT, MessageEntity.ContentType.ASSET)) {
+            val hidden = assertIs<LocalNotificationMessage.SelfDeleteMessage>(
+                mapper.fromMessageToLocalNotificationMessage(row.copy(contentType = type, isSelfDelete = true))
+            )
+            assertNull(hidden.author)
+        }
+        val knock = assertIs<LocalNotificationMessage.SelfDeleteKnock>(
+            mapper.fromMessageToLocalNotificationMessage(row.copy(contentType = MessageEntity.ContentType.KNOCK, isSelfDelete = true))
+        )
+        assertNull(knock.author)
+        for ((mime, expected) in listOf(
+            "image/png" to LocalNotificationCommentType.PICTURE,
+            "video/mp4" to LocalNotificationCommentType.FILE,
+            "audio/ogg" to LocalNotificationCommentType.FILE,
+            "application/pdf" to LocalNotificationCommentType.FILE,
+        )) {
+            val comment = assertIs<LocalNotificationMessage.Comment>(mapper.fromMessageToLocalNotificationMessage(
+                row.copy(contentType = MessageEntity.ContentType.ASSET, assetMimeType = mime)
+            ))
+            assertEquals(expected, comment.type)
+            assertEquals("Sender", comment.author.name)
+        }
+    }
 
     @Test
     fun givenRegularMessageEntityWithDeliveredStatus_whenMapping_thenTheMessageHasExpectedData() {
