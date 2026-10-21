@@ -5795,7 +5795,7 @@ public abstract interface class com/wire/kalium/logic/feature/legalhold/ObserveL
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/meeting/UpsertMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/meeting/CreateMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
@@ -5966,7 +5966,7 @@ public final class com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Res
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/meeting/UpsertMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/meeting/UpdateMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
@@ -7551,6 +7551,7 @@ public abstract interface class com/wire/kalium/logic/feature/user/IsMLSEnabledU
 
 public abstract interface class com/wire/kalium/logic/feature/user/IsMeetingsEnabledUseCase {
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun isGuestLinkSharingEnabled (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/user/IsPasswordRequiredUseCase {
@@ -7617,6 +7618,7 @@ public abstract interface class com/wire/kalium/logic/feature/user/ObserveFileSh
 
 public abstract interface class com/wire/kalium/logic/feature/user/ObserveIsMeetingsEnabledUseCase {
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun observeGuestLinkSharingEnabled (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/user/ObserveSelfUserUseCase {

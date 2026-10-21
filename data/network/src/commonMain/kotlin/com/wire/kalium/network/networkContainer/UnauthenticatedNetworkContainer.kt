@@ -265,6 +265,15 @@ interface UnauthenticatedNetworkContainer {
                     engine = engine,
                 )
 
+                19 -> UnauthenticatedNetworkContainerV18(
+                    backendLinks = serverConfigDTO,
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
+                    mockEngine = mockEngine,
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
+                )
+
                 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
                 // bump API version and generate all needed classes
                 else -> error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")

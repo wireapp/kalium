@@ -56,7 +56,11 @@ data class Meeting(
     val endTime: Instant,
     val recurrence: Recurrence?,
     val tzid: String,
+    val type: Type = Type.SCHEDULED,
+    val link: String? = null,
+    val hasPassword: Boolean = false,
 ) {
+    enum class Type { IMMEDIATE, SCHEDULED }
     data class Recurrence(
         val frequency: Frequency,
         val interval: Long,
@@ -75,13 +79,25 @@ data class Meeting(
     }
 }
 
-data class UpsertMeeting(
+data class CreateMeeting(
     val title: String,
     val startTime: Instant,
     val endTime: Instant,
     val recurrence: Meeting.Recurrence?,
     val otherParticipants: List<UserId>,
     val tzid: String,
+    val type: Meeting.Type = Meeting.Type.SCHEDULED,
+    val password: String? = null,
+)
+
+data class UpdateMeeting(
+    val title: String,
+    val startTime: Instant,
+    val endTime: Instant,
+    val tzid: String,
+    val recurrence: Meeting.Recurrence?,
+    val otherParticipants: List<UserId>,
+    val type: Meeting.Type = Meeting.Type.SCHEDULED,
 )
 
 data class MeetingReminder(

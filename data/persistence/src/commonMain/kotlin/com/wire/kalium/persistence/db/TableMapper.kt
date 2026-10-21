@@ -316,7 +316,8 @@ internal object TableMapper {
         start_dateAdapter = InstantTypeAdapter,
         end_dateAdapter = InstantTypeAdapter,
         recurrence_frequencyAdapter = EnumColumnAdapter(),
-        recurrence_end_dateAdapter = InstantTypeAdapter
+        recurrence_end_dateAdapter = InstantTypeAdapter,
+        typeAdapter = EnumColumnAdapter(),
     )
 
     val meetingOccurrenceAdapter = MeetingOccurrence.Adapter(

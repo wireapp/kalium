@@ -84,7 +84,7 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.websocket.WebSocketSession
 
 @Suppress("LongParameterList")
-internal class AuthenticatedNetworkContainerV18 internal constructor(
+internal open class AuthenticatedNetworkContainerV18 internal constructor(
     private val sessionManager: SessionManager,
     nomadServiceUrl: String? = null,
     private val selfUserId: UserId,

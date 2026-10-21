@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
-import com.wire.kalium.logic.data.meeting.UpsertMeeting
+import com.wire.kalium.logic.data.meeting.UpdateMeeting
 import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
@@ -131,13 +131,13 @@ class UpdateMeetingUseCaseTest {
         val refreshUsersWithoutMetadata = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
         val resetMLSConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
 
-        fun withInsertIncompleteUsersSuccess(meeting: UpsertMeeting) = apply {
+        fun withInsertIncompleteUsersSuccess(meeting: UpdateMeeting) = apply {
             everySuspend { userRepository.insertOrIgnoreIncompleteUsers(meeting.otherParticipants) } returns Either.Right(Unit)
         }
 
         fun withUpdateMeetingReturning(
             meetingId: MeetingId,
-            meeting: UpsertMeeting,
+            meeting: UpdateMeeting,
             result: Either<CoreFailure, MLSAdditionResult>
         ) = apply {
             everySuspend {
@@ -170,7 +170,7 @@ class UpdateMeetingUseCaseTest {
     private companion object {
         val MEETING_ID = MeetingId("meetingId", "domain")
         val CONVERSATION_ID = ConversationId("conversationId", "domain")
-        val UPSERT_MEETING = UpsertMeeting(
+        val UPSERT_MEETING = UpdateMeeting(
             title = "Meeting",
             startTime = Instant.parse("2026-08-01T12:00:00.000Z"),
             endTime = Instant.parse("2026-08-01T13:00:00.000Z"),

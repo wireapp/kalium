@@ -64,6 +64,34 @@ class ObserveIsMeetingsEnabledUseCaseTest {
         testMeetings(enabled = false, supported = false, expected = false)
 
     @Test
+    fun guestLinkSharingTracksMeetingsFlagWhenApiSupportsIt() = runTest {
+        val meetingsEnabledFlow = MutableStateFlow(false)
+        val (_, useCase) = Arrangement()
+            .withMeetingsEnabledFlow(meetingsEnabledFlow)
+            .withGuestLinksSupported(true)
+            .arrange()
+
+        useCase.observeGuestLinkSharingEnabled().test {
+            assertEquals(false, awaitItem())
+            meetingsEnabledFlow.value = true
+            assertEquals(true, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun guestLinkSharingRemainsDisabledWhenApiDoesNotSupportIt() = runTest {
+        val (_, useCase) = Arrangement()
+            .withMeetingsEnabledFlow(flowOf(true))
+            .withGuestLinksSupported(false)
+            .arrange()
+        useCase.observeGuestLinkSharingEnabled().test {
+            assertEquals(false, awaitItem())
+            awaitComplete()
+        }
+    }
+
+    @Test
     fun givenMeetingsNotEnabledAndSupported_andChangesToEnabled_whenInvoked_thenReturnsFalseAndThenTrue() = runTest {
         val meetingsEnabledFlow = MutableStateFlow(false)
         val (_, useCase) = Arrangement()
@@ -91,6 +119,10 @@ class ObserveIsMeetingsEnabledUseCaseTest {
 
         fun withMeetingsSupported(supported: Boolean) = apply {
             every { featureSupport.isMeetingsSupported } returns supported
+        }
+
+        fun withGuestLinksSupported(supported: Boolean) = apply {
+            every { featureSupport.isMeetingsGuestLinksSupported } returns supported
         }
 
         fun arrange() = this to ObserveIsMeetingsEnabledUseCaseImpl(userConfigRepository, featureSupport)
