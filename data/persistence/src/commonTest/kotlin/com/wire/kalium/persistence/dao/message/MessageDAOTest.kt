@@ -115,6 +115,34 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun previewCleanupMatchesCachedDomainAndNormalizesMissingDomain() = runTest {
+        insertInitialData()
+        val original = MessageEntityContent.Asset(
+            assetSizeInBytes = 100_000, assetMimeType = "video/mp4", assetOtrKey = byteArrayOf(1),
+            assetSha256Key = byteArrayOf(2), assetId = "video-id", assetEncryptionAlgorithm = "AES_CBC",
+        )
+        val message = newRegularMessageEntity(
+            id = "preview-domain-test", conversationId = conversationEntity1.id, senderUserId = userEntity1.id,
+            content = original.copy(assetPreviewId = "same-key", assetPreviewDomain = "remote.domain"),
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(message))
+        assetDao.insertAsset(AssetEntity("same-key", "local.domain", "/unrelated.jpg", 123, downloadedDate = null))
+
+        assertEquals(emptyList(), messageDAO.getAllMessageAssetIdsForConversationId(message.conversationId))
+        val files = mutableListOf<String>()
+        assetDao.deleteMessageFiles(message.conversationId, message.id) { files.add(it) }
+        assertTrue(files.isEmpty())
+        assertNotNull(assetDao.getAssetByKey("same-key").first())
+
+        val local = message.copy(id = "local-preview", content = original.copy(assetPreviewId = "local-key", assetPreviewDomain = null))
+        messageDAO.insertOrIgnoreMessages(listOf(local))
+        assetDao.insertAsset(AssetEntity("local-key", null, "/local.jpg", 123, downloadedDate = null))
+        assertEquals(listOf("local-key"), messageDAO.getAllMessageAssetIdsForConversationId(message.conversationId))
+        assetDao.deleteMessageFiles(local.conversationId, local.id) { files.add(it) }
+        assertEquals(listOf("/local.jpg"), files)
+    }
+
+    @Test
     fun previewUpdateFromDifferentClientCannotChangeCompletedAsset() = runTest {
         insertInitialData()
         val original = MessageEntityContent.Asset(
