@@ -19,7 +19,6 @@ public abstract class com/wire/kalium/logic/CoreLogicCommon {
 	public abstract fun getSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/UserSessionScope;
 	protected final fun getUserAgent ()Ljava/lang/String;
 	public final fun globalScope (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
-	public final fun observeValidSession (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/jvm/functions/Function2;)Lkotlinx/coroutines/flow/Flow;
 	public final fun openSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun registerLogger (Lcom/wire/kalium/logger/KaliumLogger$Config;)V
 	public final fun sessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
@@ -1266,20 +1265,6 @@ public final class com/wire/kalium/logic/data/sync/SyncState$Waiting : com/wire/
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/wire/kalium/logic/di/KaliumConsumer : java/lang/AutoCloseable {
-	public abstract fun assemble (Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
-	public static synthetic fun assemble$default (Lcom/wire/kalium/logic/di/KaliumConsumer;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
-	public abstract fun close ()V
-	public abstract fun closeAndJoin (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public abstract fun getGetMessageById ()Lcom/wire/kalium/logic/feature/message/GetMessageByIdUseCase;
-	public abstract fun getObserveConversationDetails ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationDetailsUseCase;
-	public abstract fun getObserveMessageById ()Lcom/wire/kalium/logic/feature/message/ObserveMessageByIdUseCase;
-}
-
-public final class com/wire/kalium/logic/di/KaliumConsumer$DefaultImpls {
-	public static synthetic fun assemble$default (Lcom/wire/kalium/logic/di/KaliumConsumer;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
-}
-
 public final class com/wire/kalium/logic/failure/NoClientsForUser : com/wire/kalium/common/error/CoreFailure$FeatureFailure {
 	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
@@ -1293,7 +1278,6 @@ public final class com/wire/kalium/logic/failure/NoClientsForUser : com/wire/kal
 
 public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coroutines/CoroutineScope {
 	public final fun callPresentations (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun createConsumer ()Lcom/wire/kalium/logic/di/KaliumConsumer;
 	public final fun getAnalyticsIdentifierManager ()Lcom/wire/kalium/logic/feature/analytics/AnalyticsIdentifierManager;
 	public final fun getAppLockTeamFeatureConfigObserver ()Lcom/wire/kalium/logic/feature/applock/AppLockTeamFeatureConfigObserver;
 	public final fun getApproveLegalHoldRequest ()Lcom/wire/kalium/logic/feature/legalhold/ApproveLegalHoldRequestUseCase;
@@ -2580,10 +2564,15 @@ public abstract interface class com/wire/kalium/logic/feature/backup/CreateMPBac
 }
 
 public final class com/wire/kalium/logic/feature/backup/CreateObfuscatedCopyUseCase {
+	public static final field COPY_ENCRYPTED_FILE_NAME Ljava/lang/String;
+	public static final field COPY_FILE_NAME_PREFIX Ljava/lang/String;
+	public static final field COPY_METADATA_FILE_NAME Ljava/lang/String;
+	public static final field COPY_USER_DB_NAME Ljava/lang/String;
 	public final fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata {
+	public static final field CURRENT_VERSION Ljava/lang/String;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
@@ -5112,6 +5101,7 @@ public final class com/wire/kalium/logic/feature/conversation/folder/RemoveConve
 }
 
 public final class com/wire/kalium/logic/feature/conversation/guestroomlink/CanCreatePasswordProtectedLinksUseCase {
+	public static final field MIN_API_TO_SUPPORT_PASSWORD_LINKS I
 	public final fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -5973,6 +5963,7 @@ public final class com/wire/kalium/logic/feature/message/DeleteMessageUseCase {
 }
 
 public abstract interface class com/wire/kalium/logic/feature/message/FetchOlderNomadMessagesByConversationUseCase {
+	public static final field DEFAULT_PAGE_SIZE I
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/message/FetchOlderNomadMessagesByConversationUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
@@ -6873,6 +6864,8 @@ public final class com/wire/kalium/logic/feature/register/RequestActivationCodeU
 }
 
 public final class com/wire/kalium/logic/feature/search/FederatedSearchParser {
+	public static final field DOMAIN_REGEX Ljava/lang/String;
+	public static final field DOMAIN_SEPARATOR Ljava/lang/String;
 	public final fun invoke (Ljava/lang/String;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -8192,7 +8185,6 @@ public abstract interface class com/wire/kalium/logic/feature/user/webSocketStat
 }
 
 public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
-	public fun <init> ()V
 	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Z
