@@ -231,11 +231,12 @@ internal actual open class UserSessionScopeProviderImpl(
         if (!isSessionAvailable(userId, revision)) return null
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
         if (account.unavailable) return null
+        val attachment = ObservationAttachment()
         val scope = try {
-            withOwnedAccount(account, userId) {
+            withOwnedAccount(account, userId, attachment) {
                 if (account.unavailable || !isSessionAvailable(userId, revision)) null
                 else {
-                    acquire(account, userId)
+                    acquire(account, userId, attachment)
                     validSession(userId, sessionRepository, revision) { openOwned(account, userId, revision) }
                 }
             }
@@ -249,6 +250,8 @@ internal actual open class UserSessionScopeProviderImpl(
             val ownershipFailure = account.ownershipFailure
             if (!account.unavailable || ownershipFailure == null || !failure.hasCauseIdentity(ownershipFailure)) throw failure
             null
+        } finally {
+            releaseUnusedObservation(account, userId, attachment)
         } ?: return null
         currentCoroutineContext().ensureActive()
         return admitSessionObservation(userId, revision, scope)
@@ -304,7 +307,7 @@ internal actual open class UserSessionScopeProviderImpl(
         // Private ownership is registered before workers start, even while public get() is not ready.
         val account = accounts[userId]?.takeIf { getRaw(userId) === originatingScope } ?: return false
         return withClosedSession(userId, originatingScope, serialize = { action ->
-            withOwnedAccount(account, userId, action)
+            withOwnedAccount(account, userId, operation = action)
         }) {
             // A queued logout for an old scope must not mutate a released or reopened account.
             if (getRaw(userId) !== originatingScope) return@withClosedSession false
@@ -376,7 +379,7 @@ internal actual open class UserSessionScopeProviderImpl(
     actual override suspend fun delete(userId: UserId) = withContext(NonCancellable) {
         // Keep a gate even if an observer has not reached ownership acquisition yet.
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, action) }) { scope ->
+        withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, operation = action) }) { scope ->
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
             if (scope == null && account.lease == null) {
                 // An idle/pending observer must not make release acquire the extension's lease.
@@ -413,7 +416,7 @@ internal actual open class UserSessionScopeProviderImpl(
     @Suppress("TooGenericExceptionCaught")
     actual override suspend fun deleteSession(userId: UserId, sessionRepository: SessionRepository): Either<StorageFailure, Unit> {
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return checkNotNull(withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, action) }) {
+        return checkNotNull(withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, operation = action) }) {
             try {
                 check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
                 acquire(account, userId)
@@ -450,7 +453,7 @@ internal actual open class UserSessionScopeProviderImpl(
     ): Either<StorageFailure, Unit> {
         val userId = session.accountTokens.userId
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return checkNotNull(withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, action) }) {
+        return checkNotNull(withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, operation = action) }) {
             try {
                 check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
                 acquire(account, userId)
@@ -493,6 +496,7 @@ internal actual open class UserSessionScopeProviderImpl(
     private suspend fun <T> withOwnedAccount(
         account: OwnedAccount,
         userId: UserId,
+        attachment: ObservationAttachment? = null,
         operation: suspend () -> T,
     ): T {
         while (true) {
@@ -504,7 +508,7 @@ internal actual open class UserSessionScopeProviderImpl(
                     account.mutex.withLock {
                         if (account.unavailable) throw OwnedAccountUnavailable()
                         if (access === account.access) {
-                            acquire(account, userId)
+                            acquire(account, userId, attachment)
                             revokeReadiness(account, userId)
                             getRaw(userId)?.let { session ->
                                 session.userStorage.database.refreshAfterExternalWrites()
@@ -527,13 +531,39 @@ internal actual open class UserSessionScopeProviderImpl(
         }
     }
 
-    private suspend fun acquire(account: OwnedAccount, userId: UserId) {
+    private suspend fun acquire(account: OwnedAccount, userId: UserId, attachment: ObservationAttachment? = null) {
         if (account.lease == null) {
+            // Called under account.mutex, including automatic resume. Capture origin here, never
+            // before waiting for that gate: a host operation may have installed ownership meanwhile.
+            val unused = getRaw(userId) == null && account.crypto.isEmpty() && !hasFailedSessionStartup(userId)
             account.lease = when (val acquired = owner.acquire(userId)) {
                 is Either.Left -> error("Cannot acquire account ownership: ${acquired.value}")
                 is Either.Right -> acquired.value
             }
+            account.observationAcquisition = attachment?.takeIf { unused }
+            account.observationAcquisition?.lease = account.lease
         }
+        // Manual open/store/cleanup retains ownership even when it has not constructed a scope.
+        if (attachment == null) account.observationAcquisition = null
+    }
+
+    private suspend fun releaseUnusedObservation(account: OwnedAccount, userId: UserId, attachment: ObservationAttachment) {
+        if (attachment.lease == null) return
+        withContext(NonCancellable) {
+            account.mutex.withLock {
+                if (account.observationAcquisition !== attachment || account.lease !== attachment.lease) return@withLock
+                if (account.unavailable || hasFailedSessionStartup(userId)) return@withLock
+                if (getRaw(userId) != null || account.crypto.isNotEmpty()) return@withLock
+                // No resources were constructed, and no host operation adopted this exact lease.
+                account.lease?.release()
+                account.lease = null
+                account.observationAcquisition = null
+            }
+        }
+    }
+
+    private class ObservationAttachment {
+        var lease: AccountRuntimeLease? = null
     }
 
     private fun markUnavailable(account: OwnedAccount, userId: UserId) {
@@ -551,6 +581,9 @@ internal actual open class UserSessionScopeProviderImpl(
         val crypto = ConcurrentMutableMap<ReopenableCoreCryptoCentral, Unit>()
 
         @Volatile var lease: AccountRuntimeLease? = null
+
+        // Origin metadata for the existing lease, accessed only under mutex; not another owner.
+        var observationAcquisition: ObservationAttachment? = null
 
         @Volatile var unavailable = false
 

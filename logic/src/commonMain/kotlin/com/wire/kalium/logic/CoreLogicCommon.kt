@@ -127,6 +127,7 @@ public abstract class CoreLogicCommon internal constructor(
      * and caller cancellation propagate. Use only the receiver inside [observe]; do not reopen by ID
      * or launch detached resource work. Already delivered values cannot be retracted. Explicit session
      * release leaves observers unavailable until a successful manual open or credential store.
+     * Initiate terminal account cleanup outside [observe], since cleanup drains this callback.
      */
     public fun <T : Any> observeValidSession(
         userId: UserId,

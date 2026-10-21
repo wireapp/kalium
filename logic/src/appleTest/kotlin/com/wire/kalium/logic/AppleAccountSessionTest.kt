@@ -25,6 +25,7 @@ import app.cash.sqldelight.async.coroutines.synchronous
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -66,6 +67,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.withContext
@@ -88,6 +91,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass") // Share the real native owner and SQL fixture across lifecycle barrier cases.
 class AppleAccountSessionTest {
     private val userId = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
     private val fileManager = NSFileManager.defaultManager
@@ -476,7 +480,7 @@ class AppleAccountSessionTest {
             val owner = AppleAccountRuntimeOwner(root)
             val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
             val observer = launch {
-                logic.observeValidSession(userId) {
+                logic.observeValidSession<UserSessionScope>(userId) {
                     val captured = this
                     flow { emit(captured); awaitCancellation() }
                 }.collect { values.send(it) }
@@ -520,6 +524,295 @@ class AppleAccountSessionTest {
         }
     }
 
+    @Test
+    fun `continuously missing and Invalid observers leave account ownership free`() = runTest {
+        withContext(Dispatchers.Default) {
+            for (prepared in listOf(false, true)) {
+                val (root, logic) = fixture(prepared = prepared)
+                val repository = logic.getGlobalScope().sessionRepository
+                if (prepared) assertIs<Either.Right<Unit>>(repository.logout(userId, LogoutReason.SELF_SOFT_LOGOUT))
+                val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
+                val observer = launch {
+                    logic.observeValidSession<UserSessionScope>(userId) {
+                        error("Missing/Invalid account constructed an observation scope")
+                    }.collect { values.send(it) }
+                }
+                var external: AccountRuntimeLease? = null
+                try {
+                    assertNull(values.receive())
+                    external = assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    assertNull(logic.userSessionScopeProvider.value.get(userId))
+                    assertFalse(fileManager.fileExistsAtPath("${logic.rootPathsProvider.rootAccountPath(userId)}/storage"))
+                    assertTrue(observer.isActive)
+                    // Keep observing the real SQL snapshot while another process owns the account.
+                    assertEquals(Either.Right(false), repository.doesValidSessionExist(userId))
+                    observer.cancelAndJoin()
+                    assertEquals(Either.Left(AccountRuntimeFailure.BUSY), AppleAccountRuntimeOwner(root).tryAcquire(userId))
+                } finally {
+                    observer.cancelAndJoin()
+                    external?.release()
+                    logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `cancelled initial live validation releases only its unused lease and permits another qualified user`() = runTest {
+        withContext(Dispatchers.Default) {
+            val otherUser = UserId(userId.value, "other.example.com")
+            val (root, logic) = fixture(prepared = true, otherUser = otherUser)
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            val repository = logic.getGlobalScope().sessionRepository.pauseLiveValidity(root, entered, finish)
+            val provider = logic.userSessionScopeProvider.value
+            val observer = launch {
+                provider.observeValidSession<UserSessionScope>(userId, repository) {
+                    error("Cancelled attachment opened a scope")
+                }.collect()
+            }
+            val otherValues = Channel<UserSessionScope?>(Channel.UNLIMITED)
+            val otherObserver = launch {
+                logic.observeValidSession<UserSessionScope>(otherUser) {
+                    val captured = this
+                    flow { emit(captured); awaitCancellation() }
+                }.collect { otherValues.send(it) }
+            }
+            try {
+                entered.await() // The delegate checks the real native lease is already held.
+                assertNull(provider.get(userId))
+                assertEquals(otherUser, otherValues.nextAvailableScope().userId)
+                observer.cancelAndJoin()
+                assertTrue(observer.isCancelled)
+                assertFalse(fileManager.fileExistsAtPath("${logic.rootPathsProvider.rootAccountPath(userId)}/storage"))
+                assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value.release()
+                assertEquals(Either.Left(AccountRuntimeFailure.BUSY), AppleAccountRuntimeOwner(root).tryAcquire(otherUser))
+            } finally {
+                observer.cancelAndJoin()
+                otherObserver.cancelAndJoin()
+                logic.releaseSessionScope(userId)
+                logic.releaseSessionScope(otherUser)
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
+
+    @Test
+    fun `SQL Invalid emission cancels pending live validation and frees its lease while subscribed`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val repository = logic.getGlobalScope().sessionRepository
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
+            val observer = launch {
+                logic.userSessionScopeProvider.value.observeValidSession<UserSessionScope>(
+                    userId, repository.pauseLiveValidity(root, entered, finish),
+                ) { error("Invalidated attachment opened a scope") }.collect { values.send(it) }
+            }
+            try {
+                assertNull(values.receive())
+                entered.await()
+                assertIs<Either.Right<Unit>>(repository.logout(userId, LogoutReason.SELF_SOFT_LOGOUT))
+                // collectLatest joins the cancelled attachment (including lease cleanup) before
+                // delivering this next unavailable value from the actual SQL Invalid emission.
+                assertNull(values.receive())
+                assertTrue(observer.isActive)
+                assertNull(logic.userSessionScopeProvider.value.get(userId))
+                assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value.release()
+            } finally {
+                observer.cancelAndJoin()
+                logic.releaseSessionScope(userId)
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
+
+    @Test
+    fun `cancelled live validation unwinds automatic resume of an empty background account`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val repository = logic.getGlobalScope().sessionRepository
+            val provider = logic.userSessionScopeProvider.value
+            assertIs<Either.Right<Unit>>(provider.storeSession(session(), repository))
+            assertNull(provider.get(userId))
+            logic.suspendSessionScope(userId)
+            assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value.release()
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            val observer = launch {
+                provider.observeValidSession<UserSessionScope>(userId, repository.pauseLiveValidity(root, entered, finish)) {
+                    error("Cancelled resumed attachment opened a scope")
+                }.collect()
+            }
+            try {
+                entered.await() // withOwnedAccount's automatic openResources reacquired first.
+                observer.cancelAndJoin()
+                assertNull(provider.get(userId))
+                assertFalse(fileManager.fileExistsAtPath("${logic.rootPathsProvider.rootAccountPath(userId)}/storage"))
+                assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value.release()
+            } finally {
+                observer.cancelAndJoin()
+                logic.releaseSessionScope(userId)
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
+
+    @Test
+    fun `cancelling live validation preserves a prior credential store lease without a scope`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val repository = logic.getGlobalScope().sessionRepository
+            val provider = logic.userSessionScopeProvider.value
+            assertIs<Either.Right<Unit>>(provider.storeSession(session(), repository))
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            val observer = launch {
+                provider.observeValidSession<UserSessionScope>(userId, repository.pauseLiveValidity(root, entered, finish)) {
+                    error("Cancelled attachment opened a scope")
+                }.collect()
+            }
+            try {
+                entered.await()
+                observer.cancelAndJoin()
+                assertNull(provider.get(userId))
+                assertEquals(Either.Left(AccountRuntimeFailure.BUSY), AppleAccountRuntimeOwner(root).tryAcquire(userId))
+            } finally {
+                observer.cancelAndJoin()
+                logic.releaseSessionScope(userId)
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
+
+    @Test
+    fun `cancelling an admitted observer keeps the successful session and its lease`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
+            val observer = launch {
+                logic.observeValidSession<UserSessionScope>(userId) {
+                    val captured = this
+                    flow { emit(captured); awaitCancellation() }
+                }.collect { values.send(it) }
+            }
+            try {
+                val scope = values.nextAvailableScope()
+                observer.cancelAndJoin()
+                kotlin.test.assertSame(scope, logic.getSessionScope(userId))
+                assertTrue(scope.coroutineContext.job.isActive)
+                assertEquals(Either.Left(AccountRuntimeFailure.BUSY), AppleAccountRuntimeOwner(root).tryAcquire(userId))
+            } finally {
+                observer.cancelAndJoin()
+                logic.releaseSessionScope(userId)
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
+
+    @Test
+    fun `a credential store adopting the attachment lease prevents cancellation cleanup releasing it`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val repository = logic.getGlobalScope().sessionRepository
+            val provider = logic.userSessionScopeProvider.value
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            val observer = launch {
+                provider.observeValidSession<UserSessionScope>(
+                    userId, repository.pauseLiveValidity(root, entered, finish, finishOnCancellation = true),
+                ) { error("Cancelled attachment opened a scope") }.collect()
+            }
+            val writeEntered = CompletableDeferred<Unit>()
+            val writeFinish = CompletableDeferred<Unit>()
+            val storingRepository = object : SessionRepository by repository {
+                override suspend fun storeSession(session: StoreSessionParam): Either<StorageFailure, Unit> {
+                    writeEntered.complete(Unit)
+                    writeFinish.await()
+                    return repository.storeSession(session)
+                }
+            }
+            var storing: Job? = null
+            try {
+                entered.await()
+                // Start undispatched until blocked on the existing account mutex behind validation.
+                // Mutex FIFO puts this host operation ahead of the attachment's cleanup reacquisition.
+                val store = async(start = CoroutineStart.UNDISPATCHED) { provider.storeSession(session(), storingRepository) }
+                storing = store
+                assertFalse(store.isCompleted)
+                observer.cancel()
+                finish.complete(Unit)
+                writeEntered.await()
+                assertNull(provider.get(userId))
+                assertEquals(Either.Left(AccountRuntimeFailure.BUSY), AppleAccountRuntimeOwner(root).tryAcquire(userId))
+                writeFinish.complete(Unit)
+                assertIs<Either.Right<Unit>>(store.await())
+                observer.join()
+                assertNull(provider.get(userId))
+                assertEquals(Either.Left(AccountRuntimeFailure.BUSY), AppleAccountRuntimeOwner(root).tryAcquire(userId))
+            } finally {
+                finish.complete(Unit)
+                writeFinish.complete(Unit)
+                observer.cancelAndJoin()
+                storing?.cancelAndJoin()
+                logic.releaseSessionScope(userId)
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
+
+    @Test
+    fun `genuine live validation failure propagates after releasing its unused attachment lease`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val repository = logic.getGlobalScope().sessionRepository
+            val failure = IllegalStateException("Live validation failed")
+            val failingRepository = object : SessionRepository by repository {
+                override suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean> {
+                    assertEquals(Either.Left(AccountRuntimeFailure.BUSY), AppleAccountRuntimeOwner(root).tryAcquire(userId))
+                    throw failure
+                }
+            }
+            try {
+                val caught = assertFailsWith<IllegalStateException> {
+                    logic.userSessionScopeProvider.value.observeValidSession<UserSessionScope>(userId, failingRepository) {
+                        error("Failed validation opened a scope")
+                    }.collect()
+                }
+                kotlin.test.assertSame(failure, caught)
+                assertNull(logic.userSessionScopeProvider.value.get(userId))
+                assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value.release()
+            } finally {
+                logic.releaseSessionScope(userId)
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
+
+    /** Delegate only the live read barrier; SQL metadata, validity and the native provider remain real. */
+    private fun SessionRepository.pauseLiveValidity(
+        root: String,
+        entered: CompletableDeferred<Unit>,
+        finish: CompletableDeferred<Unit>,
+        finishOnCancellation: Boolean = false,
+    ): SessionRepository {
+        val repository = this
+        val target = userId
+        return object : SessionRepository by repository {
+            override suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean> {
+                if (userId == target) {
+                    val acquired = AppleAccountRuntimeOwner(root).tryAcquire(userId)
+                    if (acquired is Either.Right) acquired.value.release()
+                    assertEquals(Either.Left(AccountRuntimeFailure.BUSY), acquired)
+                    entered.complete(Unit)
+                    if (finishOnCancellation) withContext(NonCancellable) { finish.await() } else finish.await()
+                }
+                return repository.doesValidSessionExist(userId)
+            }
+        }
+    }
+
     private suspend fun Channel<UserSessionScope?>.nextAvailableScope(): UserSessionScope {
         while (true) receive()?.let { return it }
     }
@@ -530,7 +823,7 @@ class AppleAccountSessionTest {
         proxyCredentials = null, managedBy = null, isPersistentWebSocketEnabled = false,
     )
 
-    private suspend fun fixture(prepared: Boolean = false): Triple<String, CoreLogic, ApplePersistenceConfig> {
+    private suspend fun fixture(prepared: Boolean = false, otherUser: UserId? = null): Triple<String, CoreLogic, ApplePersistenceConfig> {
         val identity = NSUUID.UUID().UUIDString
         val root = "${NSTemporaryDirectory()}kalium-account-session-$identity"
         assertTrue(fileManager.createDirectoryAtPath(root, true, null, null))
@@ -549,9 +842,11 @@ class AppleAccountSessionTest {
                     isOnPremises = false, federation = false, domain = userId.domain, commonApiVersion = 8,
                     apiProxyHost = null, apiProxyNeedsAuthentication = null, apiProxyPort = null,
                 ))
-                database.accountsDAO.insertOrReplace(
-                    UserIDEntity(userId.value, userId.domain), null, null, "test-server", false, null, null,
-                )
+                listOfNotNull(userId, otherUser).forEach { account ->
+                    database.accountsDAO.insertOrReplace(
+                        UserIDEntity(account.value, account.domain), null, null, "test-server", false, null, null,
+                    )
+                }
             } finally {
                 database.close()
             }

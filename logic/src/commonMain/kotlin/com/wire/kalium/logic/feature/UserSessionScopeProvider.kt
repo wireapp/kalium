@@ -106,8 +106,11 @@ internal abstract class UserSessionScopeProviderCommon(
         }.distinctUntilChanged()
         // Subscribe to both signals before acquisition; equal metadata still wakes on replacement.
         return channelFlow {
-            combine(valid, account.revision) { _, revision -> revision }.collectLatest { revision ->
+            combine(valid, account.revision) { isValid, revision -> isValid to revision }.collectLatest { (isValid, revision) ->
                 send(ObservedValue<T>(null, null))
+                // Invalid/missing metadata cannot authorize even ownership resumption. Admission
+                // still live-reads validity and checks revision after cancellable ownership waiting.
+                if (!isValid) return@collectLatest
                 val admitted = admitObservation(userId, sessionRepository, revision) ?: return@collectLatest
                 try {
                     admitted.work.execute {
