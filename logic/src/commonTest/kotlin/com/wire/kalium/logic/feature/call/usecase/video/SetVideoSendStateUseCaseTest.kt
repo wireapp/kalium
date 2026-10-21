@@ -25,7 +25,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -40,7 +39,7 @@ class SetVideoSendStateUseCaseTest {
         setVideoSendState.invoke(TestConversation.ID, VideoState.STARTED)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.setVideoSendState(any(), eq(VideoState.STARTED))
+            arrangement.callManager.setVideoSendState(any(), VideoState.STARTED)
         }
     }
 

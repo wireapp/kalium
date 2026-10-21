@@ -32,7 +32,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -138,13 +137,13 @@ class MLSMigrationManagerTest {
 
         suspend fun withLastMLSMigrationCheck(hasPassed: Boolean) = apply {
             everySuspend {
-                timestampKeyRepository.hasPassed(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK), any())
+                timestampKeyRepository.hasPassed(TimestampKeys.LAST_MLS_MIGRATION_CHECK, any())
             } returns Either.Right(hasPassed)
         }
 
         suspend fun withLastMLSMigrationCheckResetSucceeds() = apply {
             everySuspend {
-                timestampKeyRepository.reset(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK))
+                timestampKeyRepository.reset(TimestampKeys.LAST_MLS_MIGRATION_CHECK)
             } returns Either.Right(Unit)
         }
 

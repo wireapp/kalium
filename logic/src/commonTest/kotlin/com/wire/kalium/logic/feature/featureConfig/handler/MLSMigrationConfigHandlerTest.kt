@@ -28,7 +28,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -47,7 +46,7 @@ class MLSMigrationConfigHandlerTest {
         handler.handle(MIGRATION_CONFIG, duringSlowSync = false)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setMigrationConfiguration(eq(MIGRATION_CONFIG))
+            arrangement.userConfigRepository.setMigrationConfiguration(MIGRATION_CONFIG)
         }
     }
 
@@ -66,7 +65,7 @@ class MLSMigrationConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(true))
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), true)
         }
     }
 
@@ -106,7 +105,7 @@ class MLSMigrationConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), eq(true))
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(arrangement.transactionContext, true)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())

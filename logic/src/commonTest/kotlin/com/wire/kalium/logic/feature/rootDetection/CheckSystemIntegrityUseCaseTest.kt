@@ -28,7 +28,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -52,11 +51,11 @@ class CheckSystemIntegrityUseCaseTest {
         assertEquals(CheckSystemIntegrityUseCase.Result.Failed, result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.deleteSession(eq(Arrangement.INVALID_ACCOUNT.userId))
+            arrangement.sessionRepository.deleteSession(Arrangement.INVALID_ACCOUNT.userId)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.deleteSession(eq(Arrangement.VALID_ACCOUNT.userId))
+            arrangement.sessionRepository.deleteSession(Arrangement.VALID_ACCOUNT.userId)
         }
     }
 
@@ -73,7 +72,7 @@ class CheckSystemIntegrityUseCaseTest {
         assertEquals(CheckSystemIntegrityUseCase.Result.Success, result)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.sessionRepository.deleteSession(eq(Arrangement.VALID_ACCOUNT.userId))
+            arrangement.sessionRepository.deleteSession(Arrangement.VALID_ACCOUNT.userId)
         }
     }
 
@@ -90,7 +89,7 @@ class CheckSystemIntegrityUseCaseTest {
         assertEquals(CheckSystemIntegrityUseCase.Result.Success, result)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.sessionRepository.deleteSession(eq(Arrangement.VALID_ACCOUNT.userId))
+            arrangement.sessionRepository.deleteSession(Arrangement.VALID_ACCOUNT.userId)
         }
     }
 

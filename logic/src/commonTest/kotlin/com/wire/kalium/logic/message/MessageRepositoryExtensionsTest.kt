@@ -39,8 +39,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
@@ -80,11 +79,11 @@ class MessageRepositoryExtensionsTest {
 
         verify(VerifyMode.exactly(1)) {
             arrangement.messageDaoExtensions.getPagerForConversation(
-                eq(CONVERSATION_ID_ENTITY), matching {
+                CONVERSATION_ID_ENTITY, matches {
                     val list = it.toList()
                     list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
-                }, eq(pagingConfig),
-                eq(startingOffset)
+                }, pagingConfig,
+                startingOffset
             )
         }
     }
@@ -107,9 +106,9 @@ class MessageRepositoryExtensionsTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(
-                conversationId = eq(TestConversation.ID),
-                pageSize = eq(5),
-                beforeTimestampMs = eq(1234L),
+                conversationId = TestConversation.ID,
+                pageSize = 5,
+                beforeTimestampMs = 1234L,
                 onInvalidate = any()
             )
         }

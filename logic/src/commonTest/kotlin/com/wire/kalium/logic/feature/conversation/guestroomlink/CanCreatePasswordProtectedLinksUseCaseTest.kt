@@ -27,7 +27,6 @@ import com.wire.kalium.logic.util.stubs.newServerConfig
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -52,7 +51,7 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigRepository.configForUser(eq(SELF_USER_ID))
+            arrangement.serverConfigRepository.configForUser(SELF_USER_ID)
         }
     }
 
@@ -70,7 +69,7 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigRepository.configForUser(eq(SELF_USER_ID))
+            arrangement.serverConfigRepository.configForUser(SELF_USER_ID)
         }
     }
 
@@ -88,7 +87,7 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigRepository.configForUser(eq(SELF_USER_ID))
+            arrangement.serverConfigRepository.configForUser(SELF_USER_ID)
         }
     }
 
@@ -110,7 +109,7 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
         }
 
         suspend fun withServerConfigForUser(result: Either<StorageFailure, ServerConfig>) {
-            everySuspend { serverConfigRepository.configForUser(eq(SELF_USER_ID)) } returns result
+            everySuspend { serverConfigRepository.configForUser(SELF_USER_ID) } returns result
         }
     }
 }

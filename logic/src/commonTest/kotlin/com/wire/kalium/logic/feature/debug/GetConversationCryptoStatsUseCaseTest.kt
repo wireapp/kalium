@@ -33,7 +33,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -102,7 +101,7 @@ class GetConversationCryptoStatsUseCaseTest {
         assertEquals(true, result.stats.conversationDetails.first().selfIsMember)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.conversationEpoch(eq(TestConversation.GROUP_ID.value))
+            arrangement.mlsContext.conversationEpoch(TestConversation.GROUP_ID.value)
         }
     }
 
@@ -339,15 +338,15 @@ class GetConversationCryptoStatsUseCaseTest {
         }
 
         fun withCCEpoch(groupId: String, epoch: ULong) = apply {
-            everySuspend { mlsContext.conversationEpoch(eq(groupId)) } returns epoch
+            everySuspend { mlsContext.conversationEpoch(groupId) } returns epoch
         }
 
         fun withCCEpochThrowing(groupId: String) = apply {
-            everySuspend { mlsContext.conversationEpoch(eq(groupId)) } throws IllegalStateException("Conversation not found")
+            everySuspend { mlsContext.conversationEpoch(groupId) } throws IllegalStateException("Conversation not found")
         }
 
         fun withCCEpochConversationNotFound(groupId: String) = apply {
-            everySuspend { mlsContext.conversationEpoch(eq(groupId)) } throws CommonizedMLSException(
+            everySuspend { mlsContext.conversationEpoch(groupId) } throws CommonizedMLSException(
                 failure = MLSFailure.ConversationNotFound,
                 cause = IllegalStateException("Conversation not found"),
             )

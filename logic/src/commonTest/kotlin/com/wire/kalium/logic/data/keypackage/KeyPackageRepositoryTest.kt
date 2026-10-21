@@ -45,7 +45,6 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -71,7 +70,7 @@ internal class KeyPackageRepositoryTest {
         keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 1)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.keyPackageApi.uploadKeyPackages(eq(Arrangement.SELF_CLIENT_ID.value), eq(Arrangement.KEY_PACKAGES_BASE64))
+            arrangement.keyPackageApi.uploadKeyPackages(Arrangement.SELF_CLIENT_ID.value, Arrangement.KEY_PACKAGES_BASE64)
         }
     }
 
@@ -139,7 +138,7 @@ internal class KeyPackageRepositoryTest {
         users.forEachIndexed { index, user ->
             everySuspend {
                 arrangement.keyPackageApi.claimKeyPackages(
-                    eq(KeyPackageApi.Param.SkipOwnClient(user.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                    KeyPackageApi.Param.SkipOwnClient(user.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
                 )
             } calls {
                 claimStarted[index].complete(Unit)
@@ -300,7 +299,7 @@ internal class KeyPackageRepositoryTest {
         result.shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
         verifySuspend(VerifyMode.not) {
             arrangement.keyPackageApi.claimKeyPackages(
-                eq(KeyPackageApi.Param.SkipOwnClient(user2.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                KeyPackageApi.Param.SkipOwnClient(user2.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
             )
         }
     }
@@ -318,7 +317,7 @@ internal class KeyPackageRepositoryTest {
 
         everySuspend {
             arrangement.keyPackageApi.claimKeyPackages(
-                eq(KeyPackageApi.Param.SkipOwnClient(failingUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                KeyPackageApi.Param.SkipOwnClient(failingUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
             )
         } calls {
             activeClaimStarted.await()
@@ -326,7 +325,7 @@ internal class KeyPackageRepositoryTest {
         }
         everySuspend {
             arrangement.keyPackageApi.claimKeyPackages(
-                eq(KeyPackageApi.Param.SkipOwnClient(activeUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                KeyPackageApi.Param.SkipOwnClient(activeUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
             )
         } calls {
             activeClaimStarted.complete(Unit)
@@ -342,12 +341,12 @@ internal class KeyPackageRepositoryTest {
         assertEquals(false, result.isCompleted)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageApi.claimKeyPackages(
-                eq(KeyPackageApi.Param.SkipOwnClient(activeUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                KeyPackageApi.Param.SkipOwnClient(activeUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
             )
         }
         verifySuspend(VerifyMode.not) {
             arrangement.keyPackageApi.claimKeyPackages(
-                eq(KeyPackageApi.Param.SkipOwnClient(waitingUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                KeyPackageApi.Param.SkipOwnClient(waitingUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
             )
         }
 
@@ -423,7 +422,7 @@ internal class KeyPackageRepositoryTest {
 
         suspend fun withGeneratingKeyPackagesSuccessful() = apply {
             everySuspend {
-                mlsContext.generateKeyPackages(eq(1))
+                mlsContext.generateKeyPackages(1)
             }.returns(KEY_PACKAGES)
         }
 
@@ -435,14 +434,14 @@ internal class KeyPackageRepositoryTest {
 
         suspend fun withGetAvailableKeyPackageCountSuccessful() = apply {
             everySuspend {
-                keyPackageApi.getAvailableKeyPackageCount(eq(SELF_CLIENT_ID.value), any())
+                keyPackageApi.getAvailableKeyPackageCount(SELF_CLIENT_ID.value, any())
             }.returns(NetworkResponse.Success(KEY_PACKAGE_COUNT_DTO, mapOf(), 200))
         }
 
         suspend fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
             everySuspend {
                 keyPackageApi.claimKeyPackages(
-                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                    KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
                 )
             }.returns(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
@@ -450,7 +449,7 @@ internal class KeyPackageRepositoryTest {
         suspend fun withClaimKeyPackagesForMultipleClients(userId: UserId) = apply {
             everySuspend {
                 keyPackageApi.claimKeyPackages(
-                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                    KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
                 )
             }.returns(NetworkResponse.Success(MULTI_CLIENT_CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
@@ -458,12 +457,10 @@ internal class KeyPackageRepositoryTest {
         suspend fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
             everySuspend {
                 keyPackageApi.claimKeyPackages(
-                    eq(
-                        KeyPackageApi.Param.SkipOwnClient(
-                            userId.toApi(),
-                            SELF_CLIENT_ID.value,
-                            CIPHER_SUITE.tag
-                        )
+                    KeyPackageApi.Param.SkipOwnClient(
+                        userId.toApi(),
+                        SELF_CLIENT_ID.value,
+                        CIPHER_SUITE.tag
                     )
                 )
             }.returns(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
@@ -472,7 +469,7 @@ internal class KeyPackageRepositoryTest {
         suspend fun withClaimKeyPackagesFederationError(userId: UserId) = apply {
             everySuspend {
                 keyPackageApi.claimKeyPackages(
-                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                    KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
                 )
             }.returns(
                 NetworkResponse.Error(
@@ -484,7 +481,7 @@ internal class KeyPackageRepositoryTest {
         suspend fun withClaimKeyPackagesNoNetworkError(userId: UserId) = apply {
             everySuspend {
                 keyPackageApi.claimKeyPackages(
-                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                    KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
                 )
             }.returns(NetworkResponse.Error(KaliumException.NoNetwork()))
         }
@@ -492,7 +489,7 @@ internal class KeyPackageRepositoryTest {
         suspend fun withClaimKeyPackagesServerError(userId: UserId) = apply {
             everySuspend {
                 keyPackageApi.claimKeyPackages(
-                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                    KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
                 )
             }.returns(
                 NetworkResponse.Error(

@@ -32,7 +32,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -54,7 +53,7 @@ class RemoveMemberFromConversationUseCaseTest {
         assertIs<RemoveMemberFromConversationUseCase.Result.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.deleteMember(eq(TestConversation.USER_1), eq(TestConversation.ID))
+            arrangement.conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
         }
     }
 
@@ -68,7 +67,7 @@ class RemoveMemberFromConversationUseCaseTest {
         assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.deleteMember(eq(TestConversation.USER_1), eq(TestConversation.ID))
+            arrangement.conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
         }
     }
 
@@ -86,7 +85,7 @@ class RemoveMemberFromConversationUseCaseTest {
 
         assertEquals(listOf(TestUser.OTHER_USER_ID), eligibleMembers)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.deleteMember(eq(TestConversation.USER_1), eq(TestConversation.ID))
+            arrangement.conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
         }
     }
 
@@ -100,7 +99,7 @@ class RemoveMemberFromConversationUseCaseTest {
 
         assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.deleteMember(eq(TestConversation.USER_1), eq(TestConversation.ID))
+            arrangement.conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
         }
     }
 

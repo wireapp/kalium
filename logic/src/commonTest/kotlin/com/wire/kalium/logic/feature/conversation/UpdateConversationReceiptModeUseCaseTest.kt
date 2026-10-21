@@ -30,8 +30,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -63,12 +62,12 @@ class UpdateConversationReceiptModeUseCaseTest {
         assertIs<ConversationUpdateReceiptModeResult.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateReceiptMode(eq(TestConversation.ID), eq(receiptMode))
+            arrangement.conversationRepository.updateReceiptMode(TestConversation.ID, receiptMode)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching {
+                matches {
                     val message = (it as Message.System)
                     message.content is MessageContent.ConversationReceiptModeChanged
                 }
@@ -98,7 +97,7 @@ class UpdateConversationReceiptModeUseCaseTest {
         assertIs<ConversationUpdateReceiptModeResult.Failure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateReceiptMode(eq(TestConversation.ID), eq(receiptMode))
+            arrangement.conversationRepository.updateReceiptMode(TestConversation.ID, receiptMode)
         }
     }
 
@@ -115,7 +114,7 @@ class UpdateConversationReceiptModeUseCaseTest {
 
         suspend fun withUpdateReceiptMode(receiptMode: Conversation.ReceiptMode, either: Either<CoreFailure, Unit>) = apply {
             everySuspend {
-                conversationRepository.updateReceiptMode(any(), eq(receiptMode))
+                conversationRepository.updateReceiptMode(any(), receiptMode)
             } returns either
         }
 

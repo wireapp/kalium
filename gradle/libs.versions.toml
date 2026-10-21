@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.3.20"
+kotlin = "2.4.20"
 # renovate: datasource=node-version depName=node versioning=node
 node = "24.19.0"
 ksp = "2.3.11"
@@ -17,7 +17,8 @@ android-security = "1.1.0"
 ktor = "3.5.0"
 okio = "3.16.4"
 ok-http = "4.12.0"
-mokkery = "3.3.0"
+mokkery = "3.5.1"
+metro = "1.4.5"
 android-work = "2.9.0"
 android-test-runner = "1.6.2"
 android-test-core-ktx = "1.7.0"
@@ -66,7 +67,7 @@ mordant = "3.0.2"
 apache-tika = "3.3.1"
 faker = "1.16.2"
 robolectric = "4.17"
-skie = "0.10.12"
+skie = "0.10.15"
 stately = "2.1.0"
 micrometer = "1.16.5"
 konsist = "0.17.3"
@@ -84,6 +85,7 @@ ksoup = "0.2.6"
 bouncycastle = "1.79"
 
 [plugins]
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 # Home-made convention plugins
 kalium-library = { id = "kalium.library" }
 kalium-mutation-testing = { id = "kalium.mutation-testing" }
@@ -112,6 +114,7 @@ detekt-test = ["detekt-cli", "detekt-test"]
 detekt-core = ["detekt-api"]
 
 [libraries]
+metro-runtime = { module = "dev.zacsweers.metro:runtime", version.ref = "metro" }
 # Kotlin Gradle Plugin
 kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }

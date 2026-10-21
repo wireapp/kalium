@@ -31,7 +31,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verifySuspend
 import kotlin.test.Test
@@ -56,7 +55,7 @@ class PersistReactionUseCaseTest {
         )
 
         verifySuspend {
-            arrangement.reactionRepository.updateReaction(any(), any(), any(), any(), eq(setOf("❤️")))
+            arrangement.reactionRepository.updateReaction(any(), any(), any(), any(), setOf("❤️"))
         }
     }
 

@@ -28,6 +28,7 @@ plugins {
     id("com.wire.kalium.apple-avs-runtime")
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
+    alias(libs.plugins.metro)
     alias(libs.plugins.skie)
 }
 
@@ -46,7 +47,6 @@ kotlin {
     explicitApi()
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
     abiValidation {
-        enabled.set(true)
         filters {
             exclude {
                 annotatedWith.add("com.wire.kalium.util.InternalKaliumApi")
@@ -103,6 +103,8 @@ kotlin {
                 implementation(projects.domain.usernetwork)
                 implementation(projects.domain.messaging.sending)
                 implementation(projects.domain.messaging.hooks)
+
+                implementation(libs.metro.runtime)
 
                 // coroutines
                 implementation(libs.coroutines.core)

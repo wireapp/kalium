@@ -17,19 +17,46 @@
  */
 package com.wire.kalium.work
 
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 
-public class LongWorkScope(
-    userScopeProvider: () -> CoroutineScope,
-    isSlowSyncOngoingFlowProvider: () -> Flow<Boolean>
+public class LongWorkScope private constructor(
+    private val userScopeProvider: () -> CoroutineScope,
+    private val isSlowSyncOngoingFlowProvider: () -> Flow<Boolean>,
+    startImmediately: Boolean,
 ) {
+    /** Preserve immediate monitoring for callers of the existing public constructor. */
+    public constructor(
+        userScopeProvider: () -> CoroutineScope,
+        isSlowSyncOngoingFlowProvider: () -> Flow<Boolean>,
+    ) : this(userScopeProvider, isSlowSyncOngoingFlowProvider, true)
+
     private val repository = InMemoryWorkRepository()
+    private val started = MutableStateFlow(false)
 
     public val observeWorkStatus: ObserveWorkStatusUseCase = ObserveWorkStatusUseCase(repository)
     public val observeNewWorks: ObserveNewWorkUseCase = ObserveNewWorkUseCase(repository)
 
     init {
+        if (startImmediately) startMonitoring()
+    }
+
+    /** The prepared account owner starts monitoring only after the session registry retains it. */
+    @InternalKaliumApi
+    public fun startInitialSyncMonitoring(): Unit = startMonitoring()
+
+    private fun startMonitoring() {
+        if (!started.compareAndSet(false, true)) return
         InitialSyncWorkMonitor(userScopeProvider(), isSlowSyncOngoingFlowProvider(), repository).startMonitoring()
+    }
+
+    public companion object {
+        @InternalKaliumApi
+        public fun prepareForRuntime(
+            userScopeProvider: () -> CoroutineScope,
+            isSlowSyncOngoingFlowProvider: () -> Flow<Boolean>,
+        ): LongWorkScope = LongWorkScope(userScopeProvider, isSlowSyncOngoingFlowProvider, false)
     }
 }

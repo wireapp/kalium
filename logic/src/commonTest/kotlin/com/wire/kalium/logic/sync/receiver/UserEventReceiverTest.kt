@@ -47,7 +47,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -73,7 +72,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.logoutUseCase.invoke(eq(LogoutReason.REMOVED_CLIENT), eq(false))
+            arrangement.logoutUseCase.invoke(LogoutReason.REMOVED_CLIENT, false)
         }
     }
 
@@ -102,7 +101,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.logoutUseCase.invoke(eq(LogoutReason.DELETED_ACCOUNT), eq(false))
+            arrangement.logoutUseCase.invoke(LogoutReason.DELETED_ACCOUNT, false)
         }
     }
 
@@ -194,7 +193,7 @@ class UserEventReceiverTest {
 
         assertIs<Either.Right<Unit>>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRefreshSuggestedEventHandler.handle(eq(event))
+            arrangement.sessionRefreshSuggestedEventHandler.handle(event)
         }
     }
 
@@ -253,7 +252,7 @@ class UserEventReceiverTest {
 
         assertIs<Either.Right<Unit>>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.insertConnectionFromEvent(any(), eq(event))
+            arrangement.connectionRepository.insertConnectionFromEvent(any(), event)
         }
     }
 
@@ -302,7 +301,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), eq(event.connection.qualifiedToId), eq(ZERO))
+            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), event.connection.qualifiedToId, ZERO)
         }
     }
 
@@ -324,8 +323,8 @@ class UserEventReceiverTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
                     any(),
-                    eq(event.connection.qualifiedToId),
-                    eq(3.seconds)
+                    event.connection.qualifiedToId,
+                    3.seconds
                 )
             }
         }
@@ -346,7 +345,7 @@ class UserEventReceiverTest {
             // then
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                    eq(event.connection.qualifiedConversationId),
+                    event.connection.qualifiedConversationId,
                     any()
                 )
             }
@@ -368,7 +367,7 @@ class UserEventReceiverTest {
             // then
             verifySuspend(VerifyMode.not) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                    eq(event.connection.qualifiedConversationId),
+                    event.connection.qualifiedConversationId,
                     any()
                 )
             }
@@ -389,7 +388,7 @@ class UserEventReceiverTest {
             eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             // then
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.legalHoldHandler.handleNewConnection(eq(event))
+                arrangement.legalHoldHandler.handleNewConnection(event)
             }
         }
 
@@ -435,7 +434,7 @@ class UserEventReceiverTest {
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                eq(event.connection.qualifiedConversationId),
+                event.connection.qualifiedConversationId,
                 any()
             )
         }

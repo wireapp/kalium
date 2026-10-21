@@ -53,8 +53,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -134,7 +133,7 @@ class DeleteMessageUseCaseTest {
         useCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).toEither().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSender.cancelPendingMessage(eq(TEST_CONVERSATION_ID), eq(TEST_MESSAGE_UUID))
+            arrangement.messageSender.cancelPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
         }
         verifySuspend(VerifyMode.exactly(0)) {
             arrangement.messageSender.sendMessage(any(), any())
@@ -184,14 +183,14 @@ class DeleteMessageUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matching { message ->
+                matches { message ->
                     message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
                 },
                 any()
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+            arrangement.messageRepository.markMessageAsDeleted(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
         }
     }
 
@@ -218,7 +217,7 @@ class DeleteMessageUseCaseTest {
             arrangement.messageRepository.markMessageAsDeleted(any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.deleteMessage(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+            arrangement.messageRepository.deleteMessage(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
         }
     }
 
@@ -244,7 +243,7 @@ class DeleteMessageUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matching { message ->
+                matches { message ->
                     message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
                 },
                 any()
@@ -252,7 +251,7 @@ class DeleteMessageUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+            arrangement.messageRepository.markMessageAsDeleted(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
         }
 
     }
@@ -279,7 +278,7 @@ class DeleteMessageUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matching { message ->
+                matches { message ->
                     message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
                 },
                 any()
@@ -287,11 +286,11 @@ class DeleteMessageUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAsset(eq(ASSET_ID.value), eq(ASSET_ID.domain), eq(ASSET_TOKEN))
+            arrangement.assetRepository.deleteAsset(ASSET_ID.value, ASSET_ID.domain, ASSET_TOKEN)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+            arrangement.messageRepository.markMessageAsDeleted(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
         }
     }
 
@@ -319,14 +318,14 @@ class DeleteMessageUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matching { message ->
+                matches { message ->
                     message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
                 },
                 any()
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.deleteMessage(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+            arrangement.messageRepository.deleteMessage(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
         }
     }
 

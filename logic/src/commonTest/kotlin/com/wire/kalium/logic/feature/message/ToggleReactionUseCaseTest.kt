@@ -42,7 +42,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -113,7 +113,7 @@ class ToggleReactionUseCaseTest {
 
         verifySuspend {
             arrangement.messageSender.sendMessage(
-                message = matching {
+                message = matches {
                     val content = it.content as MessageContent.Reaction
                     content.emojiSet.isEmpty() && content.messageId == TEST_MESSAGE_ID
                 },
@@ -176,7 +176,7 @@ class ToggleReactionUseCaseTest {
         toggleReactionUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_ID, emojiReaction)
 
         verifySuspend {
-            arrangement.messageSender.sendMessage(matching {
+            arrangement.messageSender.sendMessage(matches {
                 val content = it.content as MessageContent.Reaction
                 content.emojiSet.size == 1 &&
                         content.emojiSet.first() == emojiReaction &&

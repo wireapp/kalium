@@ -33,7 +33,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -59,10 +58,10 @@ class DeleteTeamConversationUseCaseTest {
             arrangement.selfTeamIdProvider.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
+            arrangement.teamRepository.deleteConversation(TestConversation.ID, TeamId(TestTeam.TEAM.id))
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.deleteConversation(any(), eq(TestConversation.ID))
+            arrangement.deleteConversation(any(), TestConversation.ID)
         }
     }
 
@@ -82,10 +81,10 @@ class DeleteTeamConversationUseCaseTest {
             arrangement.selfTeamIdProvider.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
+            arrangement.teamRepository.deleteConversation(TestConversation.ID, TeamId(TestTeam.TEAM.id))
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.deleteConversation(any(), eq(TestConversation.ID))
+            arrangement.deleteConversation(any(), TestConversation.ID)
         }
     }
 
@@ -105,10 +104,10 @@ class DeleteTeamConversationUseCaseTest {
             arrangement.selfTeamIdProvider.invoke()
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TestTeam.TEAM_ID))
+            arrangement.teamRepository.deleteConversation(TestConversation.ID, TestTeam.TEAM_ID)
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.deleteConversation(any(), eq(TestConversation.ID))
+            arrangement.deleteConversation(any(), TestConversation.ID)
         }
     }
 

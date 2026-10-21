@@ -58,11 +58,11 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
                     flowOf(listOf())
                 } else {
                     val flowsOfSelfUsers = accountList.map { accountInfo ->
-                        userSessionScopeProvider.open(accountInfo.userId).let {
-                            it.users.observeSelfUserWithTeam()
+                        userSessionScopeProvider.observeValidSession(accountInfo.userId, sessionRepository) {
+                            users.observeSelfUserWithTeam()
                         }
                     }
-                    combine(flowsOfSelfUsers) { it.asList() }
+                    combine(flowsOfSelfUsers) { it.filterNotNull() }
                 }
             }
             .mapToRightOr(emptyList())

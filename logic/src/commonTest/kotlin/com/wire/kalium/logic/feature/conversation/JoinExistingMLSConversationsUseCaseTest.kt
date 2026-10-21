@@ -47,7 +47,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -116,7 +115,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(
                 any(),
-                eq(Arrangement.MLS_PENDING_AFTER_RESET_CONVERSATION.id),
+                Arrangement.MLS_PENDING_AFTER_RESET_CONVERSATION.id,
                 any(),
                 any(),
             )
@@ -138,7 +137,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(
                 any(),
-                eq(Arrangement.MLS_PENDING_CREATION_CONVERSATION.id),
+                Arrangement.MLS_PENDING_CREATION_CONVERSATION.id,
                 any(),
                 any(),
             )
@@ -193,7 +192,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(eq(Arrangement.MLS_CONVERSATION1.id))
+            arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(Arrangement.MLS_CONVERSATION1.id)
         }
     }
 
@@ -211,7 +210,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(eq(Arrangement.MLS_CONVERSATION1.id))
+            arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(Arrangement.MLS_CONVERSATION1.id)
         }
     }
 
@@ -311,7 +310,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase(allowJoinByExternalCommit = false).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(false))
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), false)
         }
     }
 
@@ -329,7 +328,7 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.getConversationsByGroupState(
-                eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE)
+                Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE
             )
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }
@@ -350,13 +349,13 @@ class JoinExistingMLSConversationsUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(
                 any(),
-                eq(Arrangement.MLS_PENDING_WELCOME_CONVERSATION.id),
+                Arrangement.MLS_PENDING_WELCOME_CONVERSATION.id,
                 any(),
-                eq(true),
+                true,
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION1.id), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), Arrangement.MLS_CONVERSATION1.id, any(), any())
         }
     }
 
@@ -389,7 +388,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             everySuspend { pendingActionsRepository.enqueuePendingMLSGroupJoin(any()) } returns Unit
             everySuspend { conversationRepository.getConversationMembers(any()) } returns Either.Right(listOf(SELF_USER_ID))
             memberOverrides.forEach { (conversationId, members) ->
-                everySuspend { conversationRepository.getConversationMembers(eq(conversationId)) } returns Either.Right(members)
+                everySuspend { conversationRepository.getConversationMembers(conversationId) } returns Either.Right(members)
             }
         }
 
@@ -398,7 +397,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)
         ) = apply {
             everySuspend {
-                conversationRepository.getConversationsByGroupState(eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN))
+                conversationRepository.getConversationsByGroupState(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN)
             } returns Either.Right(conversations)
             withPendingAfterResetConversations(emptyList())
             withPendingCreationConversations(emptyList())
@@ -407,7 +406,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         suspend fun withPendingAfterResetConversations(conversations: List<Conversation>) = apply {
             everySuspend {
                 conversationRepository.getConversationsByGroupState(
-                    eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET)
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET
                 )
             } returns Either.Right(conversations)
         }
@@ -415,7 +414,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         suspend fun withPendingCreationConversations(conversations: List<Conversation>) = apply {
             everySuspend {
                 conversationRepository.getConversationsByGroupState(
-                    eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION)
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
                 )
             } returns Either.Right(conversations)
         }
@@ -423,7 +422,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         suspend fun withPendingWelcomeConversations(conversations: List<Conversation>) = apply {
             everySuspend {
                 conversationRepository.getConversationsByGroupState(
-                    eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE)
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE
                 )
             } returns Either.Right(conversations)
         }

@@ -85,7 +85,6 @@ import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
@@ -401,8 +400,8 @@ class CallRepositoryTest {
         // then
         verifySuspend {
             arrangement.callDAO.updateLastCallStatusByConversationId(
-                eq(CallEntity.Status.CLOSED),
-                eq(callEntity.conversationId)
+                CallEntity.Status.CLOSED,
+                callEntity.conversationId
             )
         }
 
@@ -451,7 +450,7 @@ class CallRepositoryTest {
 
         // then
         verifySuspend {
-            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            arrangement.leaveSubconversationUseCase.invoke(any(), Arrangement.conversationId, CALL_SUBCONVERSATION_ID)
         }
     }
 
@@ -527,7 +526,7 @@ class CallRepositoryTest {
 
         // then
         verifySuspend {
-            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            arrangement.leaveSubconversationUseCase.invoke(any(), Arrangement.conversationId, CALL_SUBCONVERSATION_ID)
         }
     }
 
@@ -766,7 +765,7 @@ class CallRepositoryTest {
 
         // then
         verifySuspend {
-            arrangement.callDAO.updateLastCallStatusByConversationId(eq(CallEntity.Status.CLOSED), eq(Arrangement.conversationId.toDao()))
+            arrangement.callDAO.updateLastCallStatusByConversationId(CallEntity.Status.CLOSED, Arrangement.conversationId.toDao())
         }
 
         verifySuspend {
@@ -869,8 +868,8 @@ class CallRepositoryTest {
         // then
         verifySuspend {
             arrangement.callDAO.updateLastCallStatusByConversationId(
-                eq(CallEntity.Status.ESTABLISHED),
-                eq(callEntity.conversationId)
+                CallEntity.Status.ESTABLISHED,
+                callEntity.conversationId
             )
         }
     }
@@ -1395,7 +1394,7 @@ class CallRepositoryTest {
         callRepository.persistMissedCall(Arrangement.conversationId)
 
         verifySuspend {
-            arrangement.callDAO.getCallerIdByConversationId(eq(Arrangement.conversationId.toDao()))
+            arrangement.callDAO.getCallerIdByConversationId(Arrangement.conversationId.toDao())
         }
 
         verifySuspend {
@@ -1414,7 +1413,7 @@ class CallRepositoryTest {
         callRepository.persistMissedCall(Arrangement.conversationId)
 
         verifySuspend {
-            arrangement.callDAO.getCallerIdByConversationId(eq(Arrangement.conversationId.toDao()))
+            arrangement.callDAO.getCallerIdByConversationId(Arrangement.conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.not) {
@@ -1440,7 +1439,7 @@ class CallRepositoryTest {
         }) { _, _ -> }
 
         verifySuspend {
-            arrangement.joinSubconversationUseCase.invoke(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            arrangement.joinSubconversationUseCase.invoke(Arrangement.conversationId, CALL_SUBCONVERSATION_ID)
         }
         assertTrue { hasJoined }
     }
@@ -1561,7 +1560,7 @@ class CallRepositoryTest {
         advanceUntilIdle()
 
         verifySuspend {
-            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            arrangement.leaveSubconversationUseCase.invoke(any(), Arrangement.conversationId, CALL_SUBCONVERSATION_ID)
         }
     }
 
@@ -1706,7 +1705,7 @@ class CallRepositoryTest {
         callRepository.advanceEpoch(Arrangement.conversationId)
 
         verifySuspend {
-            arrangement.mlsConversationRepository.updateKeyingMaterial(any(), eq(Arrangement.subconversationGroupId))
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any(), Arrangement.subconversationGroupId)
         }
     }
 
@@ -1742,8 +1741,8 @@ class CallRepositoryTest {
         verifySuspend {
             arrangement.mlsConversationRepository.removeClientsFromMLSGroup(
                 mlsContext = any(),
-                groupID = eq(Arrangement.subconversationGroupId),
-                clientIdList = eq(listOf(Arrangement.qualifiedClientID))
+                groupID = Arrangement.subconversationGroupId,
+                clientIdList = listOf(Arrangement.qualifiedClientID)
             )
         }
     }
@@ -1795,8 +1794,8 @@ class CallRepositoryTest {
         verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.removeClientsFromMLSGroup(
                 mlsContext = any(),
-                groupID = eq(Arrangement.subconversationGroupId),
-                clientIdList = eq(listOf(Arrangement.qualifiedClientID))
+                groupID = Arrangement.subconversationGroupId,
+                clientIdList = listOf(Arrangement.qualifiedClientID)
             )
         }
     }
@@ -2401,19 +2400,19 @@ class CallRepositoryTest {
 
         init {
             every {
-                qualifiedIdMapper.fromStringToQualifiedID(eq("convId@domainId"))
+                qualifiedIdMapper.fromStringToQualifiedID("convId@domainId")
             } returns QualifiedID("convId", "domainId")
 
             every {
-                qualifiedIdMapper.fromStringToQualifiedID(eq("random@domain"))
+                qualifiedIdMapper.fromStringToQualifiedID("random@domain")
             } returns QualifiedID("random", "domain")
 
             every {
-                qualifiedIdMapper.fromStringToQualifiedID(eq("callerId@domain"))
+                qualifiedIdMapper.fromStringToQualifiedID("callerId@domain")
             } returns QualifiedID("callerId", "domain")
 
             every {
-                qualifiedIdMapper.fromStringToQualifiedID(eq("callerId"))
+                qualifiedIdMapper.fromStringToQualifiedID("callerId")
             } returns QualifiedID("callerId", "")
 
         }

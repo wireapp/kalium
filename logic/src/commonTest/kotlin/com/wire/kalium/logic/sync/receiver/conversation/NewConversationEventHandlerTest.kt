@@ -52,7 +52,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -90,11 +89,11 @@ class NewConversationEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistConversation(any(), eq(event.conversation), any())
+            arrangement.persistConversation(any(), event.conversation, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersIfUnknownByIds(eq(members))
+            arrangement.userRepository.fetchUsersIfUnknownByIds(members)
         }
     }
 
@@ -124,7 +123,7 @@ class NewConversationEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationModifiedDate(eq(event.conversationId), matches { it.wasInTheLastSecond })
+            arrangement.conversationRepository.updateConversationModifiedDate(event.conversationId, matches { it.wasInTheLastSecond })
         }
     }
 
@@ -163,38 +162,38 @@ class NewConversationEventHandlerTest {
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStarted(any<UserId>(), eq(event.conversation), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStarted(any<UserId>(), event.conversation, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
-                eq(event.conversationId.toDao()),
-                eq(event.conversation.members.otherMembers.map { it.id.toModel() }),
-                eq(event.dateTime)
+                event.conversationId.toDao(),
+                event.conversation.members.otherMembers.map { it.id.toModel() },
+                event.dateTime
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
-                eq(event.conversation),
-                eq(event.dateTime)
+                event.conversation,
+                event.dateTime
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                eq(event.conversation.id.toModel()),
-                eq(event.dateTime)
+                event.conversation.id.toModel(),
+                event.dateTime
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
-                eq(event.id),
-                eq(event.conversation.id.toModel()),
-                eq(event.conversation.hasAppsAccessEnabled()),
-                eq(event.senderUserId),
-                eq(event.conversation.toConversationType(teamId))
+                event.id,
+                event.conversation.id.toModel(),
+                event.conversation.hasAppsAccessEnabled(),
+                event.senderUserId,
+                event.conversation.toConversationType(teamId)
             )
         }
     }
@@ -231,10 +230,10 @@ class NewConversationEventHandlerTest {
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
-                eq(event.conversationId),
-                eq(conversationTeamId),
-                eq(true),
-                eq(event.dateTime)
+                event.conversationId,
+                conversationTeamId,
+                true,
+                event.dateTime
             )
         }
     }
@@ -267,10 +266,10 @@ class NewConversationEventHandlerTest {
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
-                eq(event.conversationId),
-                eq(event.conversation.teamId),
-                eq(false),
-                eq(event.dateTime)
+                event.conversationId,
+                event.conversation.teamId,
+                false,
+                event.dateTime
             )
         }
     }
@@ -344,21 +343,21 @@ class NewConversationEventHandlerTest {
 
             // then
             verifySuspend(VerifyMode.not) {
-                arrangement.newGroupConversationSystemMessagesCreator.conversationStarted(any(), eq(event.conversation), any())
+                arrangement.newGroupConversationSystemMessagesCreator.conversationStarted(any(), event.conversation, any())
             }
 
             verifySuspend(VerifyMode.not) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
-                    eq(event.conversationId.toDao()),
-                    eq(event.conversation.members.otherMembers.map { it.id.toModel() }),
-                    eq(event.dateTime)
+                    event.conversationId.toDao(),
+                    event.conversation.members.otherMembers.map { it.id.toModel() },
+                    event.dateTime
                 )
             }
 
             verifySuspend(VerifyMode.not) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
-                    eq(event.conversation),
-                    eq(event.dateTime)
+                    event.conversation,
+                    event.dateTime
                 )
             }
         }
@@ -389,7 +388,7 @@ class NewConversationEventHandlerTest {
 
             // then
             verifySuspend(VerifyMode.not) {
-                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
+                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), true)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
@@ -427,7 +426,7 @@ class NewConversationEventHandlerTest {
 
             // then
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), eq(otherUserId), eq(true))
+                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), otherUserId, true)
             }
         }
 
@@ -502,7 +501,7 @@ class NewConversationEventHandlerTest {
 
         suspend fun withFetchUsersIfUnknownIds(members: Set<QualifiedID>) = apply {
             everySuspend {
-                userRepository.fetchUsersIfUnknownByIds(eq(members))
+                userRepository.fetchUsersIfUnknownByIds(members)
             } returns Either.Right(Unit)
         }
 
@@ -526,7 +525,7 @@ class NewConversationEventHandlerTest {
 
         suspend fun withResolveOneOnOneConversationWithUserId(result: Either<CoreFailure, ConversationId>) = apply {
             everySuspend {
-                oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
+                oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), true)
             } returns result
         }
 

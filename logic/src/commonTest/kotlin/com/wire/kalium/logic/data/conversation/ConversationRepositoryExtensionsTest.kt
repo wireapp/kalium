@@ -38,7 +38,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify
@@ -87,7 +86,7 @@ class ConversationRepositoryExtensionsTest {
                                 !it.newActivitiesOnTop &&
                                 it.ongoingCallConversationIds == listOf(ongoingCallConversationId.toDao())
                     },
-                    pagingConfig = eq(pagingConfig),
+                    pagingConfig = pagingConfig,
                     startingOffset = any()
                 )
         }

@@ -30,7 +30,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -72,7 +71,7 @@ class MigrateConversationToMLSUseCaseTest {
 
         assertIs<MigrateConversationToMLSUseCase.Result.Success>(result)
         verifySuspend {
-            arrangement.mlsMigrator.finalise(eq(arrangement.transactionContext), eq(CONVERSATION_ID))
+            arrangement.mlsMigrator.finalise(arrangement.transactionContext, CONVERSATION_ID)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.mlsMigrator.migrate(any(), any())
@@ -91,10 +90,10 @@ class MigrateConversationToMLSUseCaseTest {
 
         assertIs<MigrateConversationToMLSUseCase.Result.Success>(result)
         verifySuspend {
-            arrangement.mlsMigrator.migrate(eq(arrangement.transactionContext), eq(CONVERSATION_ID))
+            arrangement.mlsMigrator.migrate(arrangement.transactionContext, CONVERSATION_ID)
         }
         verifySuspend {
-            arrangement.mlsMigrator.finalise(eq(arrangement.transactionContext), eq(CONVERSATION_ID))
+            arrangement.mlsMigrator.finalise(arrangement.transactionContext, CONVERSATION_ID)
         }
     }
 
@@ -132,25 +131,25 @@ class MigrateConversationToMLSUseCaseTest {
 
         suspend fun withConversationProtocolInfo(protocolInfo: Conversation.ProtocolInfo) = apply {
             everySuspend {
-                conversationRepository.getConversationProtocolInfo(eq(CONVERSATION_ID))
+                conversationRepository.getConversationProtocolInfo(CONVERSATION_ID)
             } returns Either.Right(protocolInfo)
         }
 
         suspend fun withConversationProtocolInfoFailure(failure: StorageFailure) = apply {
             everySuspend {
-                conversationRepository.getConversationProtocolInfo(eq(CONVERSATION_ID))
+                conversationRepository.getConversationProtocolInfo(CONVERSATION_ID)
             } returns Either.Left(failure)
         }
 
         suspend fun withMigrateResult(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
-                mlsMigrator.migrate(eq(transactionContext), eq(CONVERSATION_ID))
+                mlsMigrator.migrate(transactionContext, CONVERSATION_ID)
             } returns result
         }
 
         suspend fun withFinaliseResult(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
-                mlsMigrator.finalise(eq(transactionContext), eq(CONVERSATION_ID))
+                mlsMigrator.finalise(transactionContext, CONVERSATION_ID)
             } returns result
         }
 

@@ -38,7 +38,6 @@ import com.wire.kalium.persistence.dao.reaction.MessageReactionEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -149,19 +148,19 @@ class ReactionsMapperTest {
 
         fun withDomainUserTypeStandard() = apply {
             every {
-                domainUserTypeMapper.fromUserTypeEntity(eq(UserTypeEntity.STANDARD))
+                domainUserTypeMapper.fromUserTypeEntity(UserTypeEntity.STANDARD)
             }.returns(UserTypeInfo.Regular(UserType.INTERNAL))
         }
 
         fun withConnectionStateAccepted() = apply {
             every {
-                connectionStateMapper.fromDaoConnectionStateToUser(eq(ConnectionEntity.State.ACCEPTED))
+                connectionStateMapper.fromDaoConnectionStateToUser(ConnectionEntity.State.ACCEPTED)
             }.returns(ConnectionState.ACCEPTED)
         }
 
         fun withAvailabilityStatusNone() = apply {
             every {
-                availabilityStatusMapper.fromDaoAvailabilityStatusToModel(eq(UserAvailabilityStatusEntity.NONE))
+                availabilityStatusMapper.fromDaoAvailabilityStatusToModel(UserAvailabilityStatusEntity.NONE)
             }.returns(UserAvailabilityStatus.NONE)
         }
 

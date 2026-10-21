@@ -44,6 +44,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.configurePersistenceDebug
 import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
+import kotlinx.coroutines.flow.Flow
 
 @Suppress("TooManyFunctions")
 public abstract class CoreLogicCommon internal constructor(
@@ -118,6 +119,20 @@ public abstract class CoreLogicCommon internal constructor(
      * On Apple, call this before using the synchronous cached [getSessionScope].
      */
     public suspend fun openSessionScope(userId: UserId): UserSessionScope = userSessionScopeProvider.value.open(userId)
+
+    /**
+     * Observes using the captured, ready generation while it is admitted. Null means currently
+     * unavailable (missing, invalid, transitioning or quarantined), without changing raw metadata.
+     * Revocation cancels and drains the callback/collection before account shutdown. Callback failures
+     * and caller cancellation propagate. Use only the receiver inside [observe]; do not reopen by ID
+     * or launch detached resource work. Already delivered values cannot be retracted. Explicit session
+     * release leaves observers unavailable until a successful manual open or credential store.
+     * Initiate terminal account cleanup outside [observe], since cleanup drains this callback.
+     */
+    public fun <T : Any> observeValidSession(
+        userId: UserId,
+        observe: suspend UserSessionScope.() -> Flow<T>,
+    ): Flow<T?> = userSessionScopeProvider.value.observeValidSession(userId, getGlobalScope().sessionRepository, observe)
 
     internal abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 

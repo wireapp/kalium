@@ -31,7 +31,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -63,7 +62,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(eq(pendingUserIds))
+            arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(pendingUserIds)
         }
     }
 
@@ -96,7 +95,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(eq(listOf(successfulUserId)))
+            arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(listOf(successfulUserId))
         }
     }
 
@@ -122,7 +121,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
                 oneOnOneResolver.resolveOneOnOneConversationWithUserId(
                     transactionContext = any(),
                     userId = any(),
-                    invalidateCurrentKnownProtocols = eq(true)
+                    invalidateCurrentKnownProtocols = true
                 )
             } returns result
         }
@@ -131,8 +130,8 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
             everySuspend {
                 oneOnOneResolver.resolveOneOnOneConversationWithUserId(
                     transactionContext = any(),
-                    userId = eq(userId),
-                    invalidateCurrentKnownProtocols = eq(true)
+                    userId = userId,
+                    invalidateCurrentKnownProtocols = true
                 )
             } returns result
         }

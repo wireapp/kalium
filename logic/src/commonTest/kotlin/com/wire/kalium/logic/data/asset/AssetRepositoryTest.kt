@@ -46,9 +46,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
-import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -280,7 +278,7 @@ internal class AssetRepositoryTest {
         // Then
         with(arrangement) {
             verifySuspend {
-                assetDAO.getAssetByKey(eq(assetKey.value))
+                assetDAO.getAssetByKey(assetKey.value)
             }
             verifySuspend {
                 assetApi.downloadAsset(
@@ -336,10 +334,10 @@ internal class AssetRepositoryTest {
                 assertEquals(true, justDownloaded)
                 assertEquals(expectedPath, realPath)
                 verifySuspend {
-                    assetDAO.getAssetByKey(eq(assetKey.value))
+                    assetDAO.getAssetByKey(assetKey.value)
                 }
                 verifySuspend {
-                    assetApi.downloadAsset(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(assetToken), any())
+                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, assetToken, any())
                 }
                 verifySuspend {
                     assetDAO.insertAsset(any())
@@ -383,7 +381,7 @@ internal class AssetRepositoryTest {
                     assetDAO.getAssetByKey(assetKey.value)
                 }
                 verifySuspend(mode = VerifyMode.not) {
-                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, eq(assetToken), any())
+                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, assetToken, any())
                 }
                 verifySuspend(mode = VerifyMode.not) {
                     assetDAO.insertAsset(any())
@@ -428,10 +426,10 @@ internal class AssetRepositoryTest {
                 assertEquals(false, justDownloaded)
                 assertEquals(assetPath, realPath)
                 verifySuspend {
-                    assetDAO.getAssetByKey(eq(assetKey.value))
+                    assetDAO.getAssetByKey(assetKey.value)
                 }
                 verifySuspend(mode = VerifyMode.not) {
-                    assetApi.downloadAsset(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(assetToken), any())
+                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, assetToken, any())
                 }
                 verifySuspend(mode = VerifyMode.not) {
                     assetDAO.insertAsset(any())
@@ -500,7 +498,7 @@ internal class AssetRepositoryTest {
 
         with(arrangement) {
             verifySuspend {
-                assetDAO.getAssetByKey(matching { it == assetKey.value })
+                assetDAO.getAssetByKey(matches { it == assetKey.value })
             }
             verifySuspend {
                 assetApi.downloadAsset(
@@ -547,13 +545,13 @@ internal class AssetRepositoryTest {
 
         with(arrangement) {
             verifySuspend {
-                assetDAO.getAssetByKey(matching { it == assetKey.value })
+                assetDAO.getAssetByKey(matches { it == assetKey.value })
             }
             verifySuspend {
                 assetApi.downloadAsset(
-                    matching { it == assetKey.value },
-                    matching { it == assetKey.domain },
-                    eq<String?>(null),
+                    matches { it == assetKey.value },
+                    matches { it == assetKey.domain },
+                    null,
                     any()
                 )
             }
@@ -581,13 +579,13 @@ internal class AssetRepositoryTest {
         // Then
         with(arrangement) {
             verifySuspend {
-                assetDAO.getAssetByKey(eq(assetKey.value))
+                assetDAO.getAssetByKey(assetKey.value)
             }
             verifySuspend(mode = VerifyMode.not) {
                 assetApi.downloadAsset(
-                    matching { it == assetKey.value },
-                    matching { it == assetKey.value },
-                    matching { it == null },
+                    matches { it == assetKey.value },
+                    matches { it == assetKey.value },
+                    matches { it == null },
                     any()
                 )
             }
@@ -753,7 +751,7 @@ internal class AssetRepositoryTest {
         }
         verifySuspend {
             arrangement.assetDAO.insertAsset(
-                matching {
+                matches {
                     it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
                 }
             )
@@ -788,7 +786,7 @@ internal class AssetRepositoryTest {
         actual.shouldFail()
         verifySuspend {
             arrangement.assetDAO.insertAsset(
-                matching {
+                matches {
                     it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
                 }
             )
@@ -852,7 +850,7 @@ internal class AssetRepositoryTest {
         // Then
         verifySuspend {
             arrangement.assetApi.uploadAsset(
-                matching {
+                matches {
                     it.conversationId == testConversationId &&
                     it.filename == testFilename &&
                     it.filetype == testFiletype
@@ -893,7 +891,7 @@ internal class AssetRepositoryTest {
         // Then
         verifySuspend {
             arrangement.assetApi.uploadAsset(
-                matching {
+                matches {
                     it.conversationId == testConversationId &&
                     it.filename == testFilename &&
                     it.filetype == testFiletype
@@ -934,7 +932,7 @@ internal class AssetRepositoryTest {
         // Then
         verifySuspend {
             arrangement.assetApi.uploadAsset(
-                matching {
+                matches {
                     it.conversationId == null &&
                     it.filename == null &&
                     it.filetype == null
@@ -1018,7 +1016,7 @@ internal class AssetRepositoryTest {
         // Then
         verifySuspend {
             arrangement.assetApi.uploadAsset(
-                matching {
+                matches {
                     it.conversationId == null &&
                     it.filename == null &&
                     it.filetype == null
@@ -1090,7 +1088,7 @@ internal class AssetRepositoryTest {
                 everySuspend {
                     assetApi.downloadAsset(
                         any(), any(), any(),
-                        matching {
+                        matches {
                             val buffer = Buffer()
                             buffer.write(assetData)
                             it.write(buffer, assetData.size.toLong())
@@ -1100,8 +1098,8 @@ internal class AssetRepositoryTest {
                 } returns NetworkResponse.Success(Unit, mapOf(), 200)
                 everySuspend {
                     assetApi.downloadAsset(
-                        any(), any(), matching { it == null },
-                        matching {
+                        any(), any(), matches { it == null },
+                        matches {
                             val buffer = Buffer()
                             buffer.write(assetData)
                             it.write(buffer, assetData.size.toLong())
@@ -1136,7 +1134,7 @@ internal class AssetRepositoryTest {
 
         fun withMockedAssetDaoGetByKeyCall(assetKey: UserAssetId, expectedAssetEntity: AssetEntity?): Arrangement = apply {
             everySuspend {
-                assetDAO.getAssetByKey(eq(assetKey.value))
+                assetDAO.getAssetByKey(assetKey.value)
             } returns flowOf(expectedAssetEntity)
         }
 

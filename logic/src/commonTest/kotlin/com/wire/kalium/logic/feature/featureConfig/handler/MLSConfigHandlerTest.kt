@@ -34,7 +34,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -60,7 +59,7 @@ class MLSConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setDefaultProtocol(eq(SupportedProtocol.MLS))
+            arrangement.userConfigRepository.setDefaultProtocol(SupportedProtocol.MLS)
         }
     }
 
@@ -81,7 +80,7 @@ class MLSConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setDefaultProtocol(eq(SupportedProtocol.PROTEUS))
+            arrangement.userConfigRepository.setDefaultProtocol(SupportedProtocol.PROTEUS)
         }
     }
 
@@ -102,7 +101,7 @@ class MLSConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setDefaultProtocol(eq(SupportedProtocol.PROTEUS))
+            arrangement.userConfigRepository.setDefaultProtocol(SupportedProtocol.PROTEUS)
         }
     }
 
@@ -124,7 +123,7 @@ class MLSConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setMLSEnabled(eq(true))
+            arrangement.userConfigRepository.setMLSEnabled(true)
         }
     }
 
@@ -145,7 +144,7 @@ class MLSConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setMLSEnabled(eq(false))
+            arrangement.userConfigRepository.setMLSEnabled(false)
         }
     }
 
@@ -167,7 +166,7 @@ class MLSConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(true))
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), true)
         }
     }
 
@@ -189,7 +188,7 @@ class MLSConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(false))
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), false)
         }
     }
 
@@ -214,7 +213,7 @@ class MLSConfigHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), eq(true))
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(arrangement.transactionContext, true)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
@@ -248,14 +247,12 @@ class MLSConfigHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setSupportedCipherSuite(
-                eq(
-                    SupportedCipherSuite(
-                        supported = listOf(
-                            CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-                            CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
-                        ),
-                        default = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
-                    )
+                SupportedCipherSuite(
+                    supported = listOf(
+                        CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                        CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                    ),
+                    default = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
                 )
             )
         }

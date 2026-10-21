@@ -30,7 +30,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -149,7 +148,7 @@ class AnalyticsRepositoryTest {
         }
 
         suspend fun withGetMetaDataDaoValue(key: String, result: String?) = apply {
-            everySuspend { metadataDAO.valueByKey(eq(key)) }.returns(result)
+            everySuspend { metadataDAO.valueByKey(key) }.returns(result)
         }
 
         suspend fun withCountContactsAmountResult(result: Int) = apply {

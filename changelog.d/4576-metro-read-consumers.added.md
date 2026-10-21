@@ -1,0 +1,1 @@
+Added explicit read consumers that share conversation and message repository wrappers for one caller, plus generation-bound session observation. Existing facade accessors remain available. Close each consumer when its owner finishes, and initiate terminal account cleanup outside observation callbacks.

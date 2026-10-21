@@ -38,7 +38,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -77,8 +76,8 @@ internal class EnrollE2EICertificateUseCaseTest {
         assertEquals(listOf(TestConversation.GROUP_ID, mixedGroup), arrangement.providedGroupIds)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2eiRepository.rotateKeysAndMigrateConversations(
-                eq(arrangement.transactionProvider),
-                eq(arrangement.checkpoint)
+                arrangement.transactionProvider,
+                arrangement.checkpoint
             )
         }
     }
@@ -120,7 +119,7 @@ internal class EnrollE2EICertificateUseCaseTest {
 
         assertIs<EnrollE2EIResult.Failure.Generic>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.e2eiRepository.acquireCredential(any(), any(), eq(false))
+            arrangement.e2eiRepository.acquireCredential(any(), any(), false)
         }
     }
 

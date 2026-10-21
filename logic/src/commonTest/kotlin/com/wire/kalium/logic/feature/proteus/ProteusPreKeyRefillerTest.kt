@@ -28,7 +28,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -76,7 +75,7 @@ class ProteusPreKeyRefillerTest {
         proteusPreKeyRefiller.refillIfNeeded()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.generateNewPreKeysAuto(eq(remoteTarget))
+            arrangement.preKeyRepository.generateNewPreKeysAuto(remoteTarget)
         }
     }
 
@@ -95,7 +94,7 @@ class ProteusPreKeyRefillerTest {
         proteusPreKeyRefiller.refillIfNeeded()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.generateNewPreKeysAuto(eq(remoteTarget))
+            arrangement.preKeyRepository.generateNewPreKeysAuto(remoteTarget)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.preKeyRepository.mostRecentPreKeyId()
@@ -165,11 +164,11 @@ class ProteusPreKeyRefillerTest {
         proteusPreKeyRefiller.refillIfNeeded()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.uploadNewPrekeyBatch(eq(generatedPreKeys))
+            arrangement.preKeyRepository.uploadNewPrekeyBatch(generatedPreKeys)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.updateMostRecentPreKeyId(eq(mostRecentPreKeyId))
+            arrangement.preKeyRepository.updateMostRecentPreKeyId(mostRecentPreKeyId)
         }
     }
 

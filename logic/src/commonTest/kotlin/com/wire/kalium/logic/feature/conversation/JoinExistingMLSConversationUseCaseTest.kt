@@ -59,8 +59,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -125,7 +124,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
-                any(), eq((conversation.protocol as Conversation.ProtocolInfo.MLS).groupId), any()
+                any(), (conversation.protocol as Conversation.ProtocolInfo.MLS).groupId, any()
             )
         }
     }
@@ -171,10 +170,10 @@ class JoinExistingMLSConversationUseCaseTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSGroup(
                     mlsContext = any(),
-                    groupID = eq(Arrangement.GROUP_ID3),
-                    members = eq(members),
+                    groupID = Arrangement.GROUP_ID3,
+                    members = members,
                     publicKeys = any(),
-                    allowSkippingUsersWithoutKeyPackages = eq(false)
+                    allowSkippingUsersWithoutKeyPackages = false
                 )
             }
         }
@@ -195,10 +194,10 @@ class JoinExistingMLSConversationUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(
                 any(),
-                eq(Arrangement.GROUP_ID_SELF),
-                eq(listOf(arrangement.selfUserId)),
+                Arrangement.GROUP_ID_SELF,
+                listOf(arrangement.selfUserId),
                 any(),
-                eq(false)
+                false
             )
         }
     }
@@ -223,10 +222,10 @@ class JoinExistingMLSConversationUseCaseTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSGroup(
                     mlsContext = any(),
-                    groupID = eq(Arrangement.GROUP_ID_ONE_ON_ONE),
-                    members = eq(members),
+                    groupID = Arrangement.GROUP_ID_ONE_ON_ONE,
+                    members = members,
                     publicKeys = any(),
-                    allowSkippingUsersWithoutKeyPackages = eq(false)
+                    allowSkippingUsersWithoutKeyPackages = false
                 )
             }
         }
@@ -248,13 +247,13 @@ class JoinExistingMLSConversationUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversation(
                 any(),
-                eq(Arrangement.MLS_CONVERSATION1.id),
-                eq(ConversationSyncReason.Other)
+                Arrangement.MLS_CONVERSATION1.id,
+                ConversationSyncReason.Other
             )
         }
 
         verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), eq(Arrangement.GROUP_ID1), any())
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), Arrangement.GROUP_ID1, any())
         }
 
     }
@@ -281,15 +280,15 @@ class JoinExistingMLSConversationUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversation(
                 any(),
-                eq(Arrangement.MLS_PENDING_AFTER_RESET_GROUP_CONVERSATION.id),
-                eq(ConversationSyncReason.Other)
+                Arrangement.MLS_PENDING_AFTER_RESET_GROUP_CONVERSATION.id,
+                ConversationSyncReason.Other
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                 any(),
-                eq(Arrangement.GROUP_ID3),
+                Arrangement.GROUP_ID3,
                 any()
             )
         }
@@ -319,10 +318,10 @@ class JoinExistingMLSConversationUseCaseTest {
         ).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.fetchConversation(any(), eq(Arrangement.MLS_PENDING_WELCOME_GROUP_CONVERSATION.id), any())
+            arrangement.fetchConversation(any(), Arrangement.MLS_PENDING_WELCOME_GROUP_CONVERSATION.id, any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), eq(Arrangement.GROUP_ID3), any())
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), Arrangement.GROUP_ID3, any())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
@@ -432,7 +431,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
         suspend fun withFetchConversationSuccessful() = apply {
             everySuspend {
-                fetchConversation.invoke(any(), any(), eq(ConversationSyncReason.Other))
+                fetchConversation.invoke(any(), any(), ConversationSyncReason.Other)
             } returns Either.Right(Unit)
         }
 
@@ -466,7 +465,7 @@ class JoinExistingMLSConversationUseCaseTest {
             var invocationCounter = 0
             everySuspend {
                 mlsConversationRepository.joinGroupByExternalCommit(
-                    any(), matching {
+                    any(), matches {
                         invocationCounter += 1
                         invocationCounter <= times
                     }, any()

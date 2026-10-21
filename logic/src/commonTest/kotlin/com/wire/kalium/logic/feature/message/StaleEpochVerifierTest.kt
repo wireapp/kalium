@@ -52,7 +52,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any as mokkeryAny
-import dev.mokkery.matcher.eq as mokkeryEq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -86,9 +85,9 @@ class StaleEpochVerifierTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversationUseCase.invoke(
-                mokkeryEq(arrangement.transactionContext),
-                mokkeryEq(CONVERSATION_ID),
-                mokkeryEq(ConversationSyncReason.Other)
+                arrangement.transactionContext,
+                CONVERSATION_ID,
+                ConversationSyncReason.Other
             )
         }
     }
@@ -126,7 +125,7 @@ class StaleEpochVerifierTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(
                 mokkeryAny(),
-                mokkeryEq(CONVERSATION_ID),
+                CONVERSATION_ID,
                 mokkeryAny(),
                 mokkeryAny()
             )
@@ -144,7 +143,7 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldFail()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.systemMessageInserter.insertLostCommitSystemMessage(mokkeryEq(CONVERSATION_ID), mokkeryAny())
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(CONVERSATION_ID, mokkeryAny())
         }
     }
 
@@ -160,7 +159,7 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.systemMessageInserter.insertLostCommitSystemMessage(mokkeryEq(CONVERSATION_ID), mokkeryAny())
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(CONVERSATION_ID, mokkeryAny())
         }
     }
 
@@ -183,7 +182,7 @@ class StaleEpochVerifierTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.getLocalGroupEpoch(
                 mokkeryAny(),
-                mokkeryEq(TestSubConversationDetails.groupId)
+                TestSubConversationDetails.groupId
             )
         }
     }
@@ -209,8 +208,8 @@ class StaleEpochVerifierTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                 mokkeryAny(),
-                mokkeryEq(TestSubConversationDetails.groupId),
-                mokkeryEq(TestGroupInfo)
+                TestSubConversationDetails.groupId,
+                TestGroupInfo
             )
         }
     }
@@ -259,7 +258,7 @@ class StaleEpochVerifierTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
-                mokkeryAny(), mokkeryEq(TestSubConversationDetails.groupId), mokkeryEq(TestGroupInfo)
+                mokkeryAny(), TestSubConversationDetails.groupId, TestGroupInfo
             )
         }
     }
@@ -336,7 +335,7 @@ class StaleEpochVerifierTest {
             result: Either<NetworkFailure, SubConversation>
         ) {
             everySuspend {
-                subconversationRepository.fetchRemoteSubConversationDetails(mokkeryEq(conversationId), mokkeryEq(subConversationId))
+                subconversationRepository.fetchRemoteSubConversationDetails(conversationId, subConversationId)
             } returns result
         }
 
@@ -346,13 +345,13 @@ class StaleEpochVerifierTest {
             result: Either<CoreFailure, ByteArray>
         ) {
             everySuspend {
-                subconversationRepository.fetchRemoteSubConversationGroupInfo(mokkeryEq(conversationId), mokkeryEq(subConversationId))
+                subconversationRepository.fetchRemoteSubConversationGroupInfo(conversationId, subConversationId)
             } returns result
         }
 
         suspend fun withJoinGroupByExternalCommit(groupId: GroupID, groupInfo: ByteArray, result: Either<CoreFailure, Unit>) {
             everySuspend {
-                mlsConversationRepository.joinGroupByExternalCommit(mokkeryAny(), mokkeryEq(groupId), mokkeryEq(groupInfo))
+                mlsConversationRepository.joinGroupByExternalCommit(mokkeryAny(), groupId, groupInfo)
             } returns result
         }
 

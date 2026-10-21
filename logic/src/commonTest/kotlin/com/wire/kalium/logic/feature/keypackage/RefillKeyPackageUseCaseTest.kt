@@ -39,7 +39,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -67,8 +66,8 @@ class RefillKeyPackageUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageRepository.uploadNewKeyPackages(
                 any(),
-                eq(TestClient.CLIENT_ID),
-                eq(Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount)
+                TestClient.CLIENT_ID,
+                Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount
             )
         }
 
@@ -107,7 +106,7 @@ class RefillKeyPackageUseCaseTest {
         assertIs<RefillKeyPackagesResult.Success>(actual)
         verifySuspend(VerifyMode.order) {
             arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(true)
-            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), eq(Arrangement.KEY_PACKAGE_LIMIT))
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.KEY_PACKAGE_LIMIT)
         }
     }
 
@@ -209,7 +208,7 @@ class RefillKeyPackageUseCaseTest {
 
         suspend fun withUploadKeyPackagesSuccessful() = apply {
             everySuspend {
-                keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), any())
+                keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, any())
             } returns Either.Right(Unit)
         }
 
