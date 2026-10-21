@@ -42,7 +42,7 @@ SELECT EXISTS(
 -- Keep all references until the caller has successfully removed every unshared file.
 messageHasLocalFiles:
 SELECT EXISTS(
-    SELECT 1 FROM MessageAssetContent m JOIN Asset a ON (a.key = m.asset_id OR (a.key = m.preview_asset_id AND a.domain = COALESCE(m.preview_asset_domain, '')))
+    SELECT 1 FROM MessageAssetContent m JOIN Asset a ON (a.key = m.asset_id OR a.key = m.preview_asset_id)
     WHERE m.conversation_id = :conversationId AND (:messageId IS NULL OR m.message_id = :messageId)
     UNION ALL
     SELECT 1 FROM MessageLinkPreview p LEFT JOIN Asset a ON a.key = p.image_asset_key
@@ -58,7 +58,7 @@ SELECT EXISTS(
 messageFilesToDelete:
 WITH file_references(conversation_id, message_id, path) AS (
     SELECT m.conversation_id, m.message_id, a.data_path
-    FROM MessageAssetContent m JOIN Asset a ON (a.key = m.asset_id OR (a.key = m.preview_asset_id AND a.domain = COALESCE(m.preview_asset_domain, '')))
+    FROM MessageAssetContent m JOIN Asset a ON (a.key = m.asset_id OR a.key = m.preview_asset_id)
     UNION ALL
     SELECT p.conversation_id, p.message_id, a.data_path
     FROM MessageLinkPreview p JOIN Asset a ON a.key = p.image_asset_key

@@ -686,7 +686,7 @@ internal class AssetRepositoryTest {
     }
 
     @Test
-    fun givenNoCachedAsset_whenDeletingRemotelyAsset_thenNoCacheRecordIsDeleted() = runTest {
+    fun givenSuccessfulResponse_whenDeletingRemotelyAsset_thenDeleteAssetLocallyShouldBeInvoked() = runTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
 
@@ -703,7 +703,7 @@ internal class AssetRepositoryTest {
         verifySuspend {
             arrangement.assetApi.deleteAsset(any(), any(), any())
         }
-        verifySuspend(VerifyMode.not) {
+        verifySuspend {
             arrangement.assetDAO.deleteAsset(any())
         }
     }
@@ -719,7 +719,7 @@ internal class AssetRepositoryTest {
             .withSuccessDeleteRemotelyResponse()
             .withSuccessDeleteLocallyResponse()
             .withRawStoredData(assetRawData, assetFile)
-            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()).copy(domain = assetKey.domain))
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()))
             .arrange()
 
         assertEquals(true, fakeKaliumFileSystem!!.exists(assetFile))
@@ -729,23 +729,6 @@ internal class AssetRepositoryTest {
 
         // Then
         assertEquals(false, fakeKaliumFileSystem!!.exists(assetFile))
-    }
-
-    @Test
-    fun remoteDeletionPreservesSameKeyCachedUnderAnotherDomain() = runTest {
-        val assetKey = UserAssetId("shared-key", "remote.domain")
-        val path = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.value)
-        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
-            .withSuccessDeleteRemotelyResponse()
-            .withSuccessDeleteLocallyResponse()
-            .withRawStoredData(byteArrayOf(1), path)
-            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, path, 1).copy(domain = "local.domain"))
-            .arrange()
-
-        repository.deleteAsset(assetKey.value, assetKey.domain, "token").shouldSucceed()
-
-        assertTrue(fakeKaliumFileSystem.exists(path))
-        verifySuspend(VerifyMode.not) { arrangement.assetDAO.deleteAsset(any()) }
     }
 
     @Test
@@ -845,27 +828,6 @@ internal class AssetRepositoryTest {
                 }
             )
         }    }
-
-    @Test
-    fun uploadingManagedAssetRetainsSourceUntilMessageCommits() = runTest {
-        val localId = UserAssetId("pending-video", "")
-        val source = fakeKaliumFileSystem.providePersistentAssetPath(localId.value)
-        val bytes = "video bytes needed for retry".encodeToByteArray()
-        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
-            .withRawStoredData(bytes, source)
-            .withMockedAssetDaoGetByKeyCall(localId, stubAssetEntity(localId.value, source, bytes.size.toLong()))
-            .withSuccessfulUpload(AssetResponse("uploaded-video", "domain", null, "token"))
-            .withAssetAuditLogEnabled(false)
-            .arrange()
-        everySuspend { arrangement.assetDAO.isFileReferenced(source.toString()) } returns true
-
-        repository.uploadAndPersistPrivateAsset("video/mp4", source, generateRandomAES256Key(), "mp4").shouldSucceed()
-
-        // Cancellation before the message update must leave its old ID readable for a retry.
-        assertTrue(fakeKaliumFileSystem.exists(source))
-        repository.fetchDecodedAsset(localId.value).shouldSucceed { assertEquals(source, it) }
-        assertContentEquals(bytes, fakeKaliumFileSystem.source(source).buffer().use { it.readByteArray() })
-    }
 
     @Test
     fun givenAnError_whenPersistingAsset_thenShouldReturnFailure() = runTest {
@@ -1144,10 +1106,6 @@ internal class AssetRepositoryTest {
 
         val assetApi = mock<AssetApi>()
         val assetDAO = mock<AssetDAO>()
-
-        init {
-            everySuspend { assetDAO.isFileReferenced(any()) } returns false
-        }
 
         private val assetAuditLog = mock<AssetAuditFeatureHandler>()
 

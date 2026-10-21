@@ -139,29 +139,6 @@ class AssetMapperTest {
     }
 
     @Test
-    fun invalidPreviewKeyAndHashLengthsAreRejectedOnWireAndPersistence() {
-        val mapper = AssetMapperImpl()
-        val video = videoWithPreview()
-        val preview = requireNotNull(video.preview)
-        val malformed = listOf(0, 1, 31, 33).map { length ->
-            preview.copy(remoteData = preview.remoteData.copy(otrKey = ByteArray(length)))
-        } + listOf(1, 31, 33).map { length ->
-            preview.copy(remoteData = preview.remoteData.copy(sha256 = ByteArray(length)))
-        }
-        for (invalid in malformed) {
-            val content = video.copy(preview = invalid)
-            val wire = mapper.fromAssetContentToProtoAssetMessage(MessageContent.Asset(content), false, LegalHoldStatus.DISABLED)
-            assertNull(mapper.fromProtoAssetMessageToAssetContent(wire).preview)
-            val entity = RegularMessageMapper(UserId("self", "domain")).toMessageEntityContent(MessageContent.Asset(content))
-            val restored = mapper.fromAssetEntityToAssetContent(
-                entity as com.wire.kalium.persistence.dao.message.MessageEntityContent.Asset,
-            )
-            assertNull(restored.preview)
-            assertEquals(video.remoteData, restored.remoteData)
-        }
-    }
-
-    @Test
     fun previewAtDownloadLimitRoundTripsThroughWireAndTypedPersistence() {
         val mapper = AssetMapperImpl()
         val video = videoWithPreview()

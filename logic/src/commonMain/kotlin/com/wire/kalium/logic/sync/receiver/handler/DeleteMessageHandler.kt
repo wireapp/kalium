@@ -54,14 +54,11 @@ internal class DeleteMessageHandlerImpl internal constructor(
             messageDAO.applyReceivedDeletion(messageToRemove.id, conversationId.toDao(), deletion).onSuccess { notify ->
                 if (notify) notificationEventsManager.scheduleDeleteMessageNotification(messageToRemove)
                 if (deletion != ReceivedMessageDeletion.NONE) {
-                    val assetContent = (messageToRemove.content as? MessageContent.Asset)?.value
-                    listOfNotNull(assetContent?.remoteData, assetContent?.preview?.remoteData)
-                        .distinctBy { it.assetId to it.assetDomain.orEmpty() }
-                        .forEach { asset ->
-                            assetRepository.deleteAssetLocally(asset.assetId, asset.assetDomain).onFailure {
-                                kaliumLogger.w("Deleted message asset cleanup failed: $it")
-                            }
+                    (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { asset ->
+                        assetRepository.deleteAssetLocally(asset.assetId).onFailure {
+                            kaliumLogger.w("Deleted message asset cleanup failed: $it")
                         }
+                    }
                 }
             }
         }

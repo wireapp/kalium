@@ -986,10 +986,6 @@ class RetryFailedMessageUseCaseTest {
         val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit)
     ) {
         val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
-        init {
-            everySuspend { assetRepository.deleteAssetLocally(any()) } returns Either.Right(Unit)
-        }
-
         val attachmentsRepository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)

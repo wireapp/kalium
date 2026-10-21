@@ -273,7 +273,6 @@ public class RetryFailedMessageUseCase internal constructor(
                     }
                     .onSuccess { updatedMessage ->
                         updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
-                        assetRepository.deleteAssetLocally(content.remoteData.assetId)
                         assetRepository.deleteTemporaryPreview(
                             content.preview,
                             (updatedMessage.content as MessageContent.Asset).value.preview

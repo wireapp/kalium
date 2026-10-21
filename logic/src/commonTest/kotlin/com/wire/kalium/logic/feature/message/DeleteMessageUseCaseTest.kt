@@ -288,9 +288,6 @@ class DeleteMessageUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.deleteAsset(eq(ASSET_ID.value), eq(ASSET_ID.domain), eq(ASSET_TOKEN))
         }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAsset(ASSET_ID.value, "preview.domain", ASSET_TOKEN)
-        }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
@@ -451,9 +448,6 @@ class DeleteMessageUseCaseTest {
         val MESSAGE_ASSET_CONTENT = MessageContent.Asset(
             AssetContent(
                 remoteData = DUMMY_ASSET_REMOTE_DATA,
-                preview = AssetContent.Preview(
-                    "image/jpeg", 123, 64, 48, DUMMY_ASSET_REMOTE_DATA.copy(assetDomain = "preview.domain")
-                ),
                 sizeInBytes = 0,
                 mimeType = "image/jpeg"
             ),

@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.feature.asset
 
-import com.wire.kalium.common.error.wrapStorageRequest
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -63,7 +61,7 @@ internal class GetMessageAssetPreviewUseCaseImpl(
                 if (preview == null || preview.sizeInBytes !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES || unexpectedPreview) {
                     MessageAssetResult.Failure(CoreFailure.Unknown(IllegalStateException("Asset preview unavailable")), false)
                 } else {
-                    wrapStorageRequest { assetRepository.fetchPreviewAsset(preview) }.flatMap { it }.fold(
+                    assetRepository.fetchPreviewAsset(preview).fold(
                         { MessageAssetResult.Failure(it, preview.remoteData.sha256.isNotEmpty()) },
                         { MessageAssetResult.Success(it.path, preview.sizeInBytes, "preview.jpg") },
                     )

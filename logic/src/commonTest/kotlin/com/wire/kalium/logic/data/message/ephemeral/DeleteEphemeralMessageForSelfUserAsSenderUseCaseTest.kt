@@ -58,15 +58,12 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(any(), any())
         }
-        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any()) }
     }
 
     @Test
     fun givenAssetMessage_whenDeleting_thenDeleteAssetLocally() = runTest {
-        val preview = AssetContent.Preview(
-            "image/jpeg", 123, 64, 48, ASSET_CONTENT_REMOTE_DATA.copy(assetId = "preview-id")
-        )
-        val assetContent = ASSET_IMAGE_CONTENT.copy(preview = preview)
+        val assetContent = ASSET_IMAGE_CONTENT
         val message = MESSAGE_REGULAR.copy(
             content = MessageContent.Asset(assetContent)
         )
@@ -80,9 +77,8 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         useCase(message.conversationId, message.id).toEither().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId, ASSET_CONTENT_REMOTE_DATA.assetDomain)
+            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId)
         }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally("preview-id", ASSET_CONTENT_REMOTE_DATA.assetDomain) }
     }
 
     @Test
@@ -96,9 +92,7 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         }
 
         useCase(message.conversationId, message.id).toEither().shouldSucceed()
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId, ASSET_CONTENT_REMOTE_DATA.assetDomain)
-        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.markMessageAsDeleted(message.id, message.conversationId) }
     }
 
@@ -168,7 +162,7 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         }
 
         suspend fun withDeleteAssetLocally(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
-            everySuspend { assetRepository.deleteAssetLocally(any(), any()) } returns result
+            everySuspend { assetRepository.deleteAssetLocally(any()) } returns result
         }
     }
 }
