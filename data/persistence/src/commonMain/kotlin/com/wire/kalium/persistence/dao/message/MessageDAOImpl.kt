@@ -453,6 +453,11 @@ internal class MessageDAOImpl internal constructor(
             ).associateBy { it.conversationId }
         }
 
+    override suspend fun resolveNotificationMessage(messageId: String, conversationId: QualifiedIDEntity): String? =
+        withContext(readDispatcher.value) {
+            notificationQueries.resolveNotificationMessage(messageId, conversationId).awaitAsOneOrNull()
+        }
+
     override suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>) {
         if (messages.isEmpty()) return
         withContext(writeDispatcher.value) {
@@ -471,6 +476,10 @@ internal class MessageDAOImpl internal constructor(
             .mapToList()
             .distinctUntilChanged()
             .flowOn(readDispatcher.value)
+
+    override fun observeNotificationMessages(): Flow<List<NotificationMessageEntity>> =
+        notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
+            .asFlow().mapToList().flowOn(readDispatcher.value)
 
     override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): List<NotificationMessageEntity> =
         withContext(readDispatcher.value) {
