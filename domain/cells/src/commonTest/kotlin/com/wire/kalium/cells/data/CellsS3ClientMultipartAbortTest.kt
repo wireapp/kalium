@@ -68,7 +68,6 @@ class CellsS3ClientMultipartAbortTest {
         // Wrapped as a local-source failure (not a connectivity one), with the original error as its cause.
         assertContains(exception.message.orEmpty(), "Failed to open upload source")
         assertContains(exception.cause?.message.orEmpty(), "read failed")
-        assertTrue(exception !is NoNetworkConnectionException)
         assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
         assertTrue(recorder.partNumbers.isEmpty())
         assertEquals(0, recorder.completeCount)
@@ -91,7 +90,6 @@ class CellsS3ClientMultipartAbortTest {
         }
 
         assertContains(exception.message.orEmpty(), "Upload multipart part failed: 403")
-        assertTrue(exception !is NoNetworkConnectionException)
         assertEquals(listOf(1, 2), recorder.partNumbers)
         assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
         assertEquals(0, recorder.completeCount)
@@ -266,11 +264,10 @@ class CellsS3ClientMultipartAbortTest {
             failPart = { partNumber -> SocketTimeoutException("simulated connection drop").takeIf { partNumber == 2 } },
         )
 
-        val exception = assertFailsWith<NoNetworkConnectionException> {
+        assertFailsWith<NoNetworkConnectionException> {
             client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
         }
 
-        assertTrue(exception is NoNetworkConnectionException)
         assertTrue(recorder.abortedUploadIds.isEmpty())
         assertEquals(listOf(1), recorder.partNumbers)
         assertEquals(0, recorder.completeCount)
@@ -290,11 +287,10 @@ class CellsS3ClientMultipartAbortTest {
             failPart = { partNumber -> KtorIOException("simulated network drop").takeIf { partNumber == 2 } },
         )
 
-        val exception = assertFailsWith<NoNetworkConnectionException> {
+        assertFailsWith<NoNetworkConnectionException> {
             client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
         }
 
-        assertTrue(exception is NoNetworkConnectionException)
         assertTrue(recorder.abortedUploadIds.isEmpty())
     }
 
