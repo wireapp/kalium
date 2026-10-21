@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.di.messageReads
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSendFailureHandlerImpl
 import com.wire.kalium.messaging.sending.MessageSenderImpl
@@ -392,11 +393,13 @@ public class MessageScope internal constructor(
     public val retryFailedMessageAndAwait: RetryFailedMessageAndAwaitUseCase
         get() = RetryFailedMessageAndAwaitUseCase(retryFailedMessage)
 
+    private val readUseCases by lazy { messageReads(messageRepository) }
+
     public val getMessageById: GetMessageByIdUseCase
-        get() = GetMessageByIdUseCase(messageRepository)
+        get() = readUseCases.getMessageById
 
     public val observeMessageById: ObserveMessageByIdUseCase
-        get() = ObserveMessageByIdUseCase(messageRepository)
+        get() = readUseCases.observeMessageById
 
     private val persistNewAssetMessageUseCase: PersistNewAssetMessageUseCase
         get() = PersistNewAssetMessageUseCaseImpl(

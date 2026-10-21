@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.di.conversationReads
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -189,8 +190,10 @@ public class ConversationScope internal constructor(
     public val observeUserListById: ObserveUserListByIdUseCase
         get() = ObserveUserListByIdUseCase(userRepository)
 
+    private val readUseCases by lazy { conversationReads(conversationRepository) }
+
     public val observeConversationDetails: ObserveConversationDetailsUseCase
-        get() = ObserveConversationDetailsUseCase(conversationRepository)
+        get() = readUseCases.observeConversationDetails
 
     public val observeConversationRoleForUser: ObserveConversationRoleForUserUseCase
         get() = ObserveConversationRoleForUserUseCase(
