@@ -60,7 +60,7 @@ fun prepareReceivedAssetMessage(
             visibility = if (content.value.isAssetDataComplete) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
         )
     } else if (existing.senderUserId != message.senderUserId || existing !is Message.Regular ||
-        existing.senderClientId != message.senderClientId
+        (content.value.preview != null && existing.senderClientId != message.senderClientId)
     ) {
         kaliumLogger.e("The previously persisted message has a different sender id than the one we are trying to process")
         null

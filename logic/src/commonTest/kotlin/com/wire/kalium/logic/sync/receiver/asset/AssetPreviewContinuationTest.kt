@@ -53,6 +53,20 @@ class AssetPreviewContinuationTest {
     }
 
     @Test
+    fun legacyKeyFollowUpFromSameAuthorPreservesOriginalClient() {
+        val current = existing.copy(content = MessageContent.Asset(content.copy(
+            remoteData = remote.copy(assetId = "", otrKey = byteArrayOf(), sha256 = byteArrayOf()),
+        )))
+        val incoming = existing.copy(
+            senderClientId = ClientId("different-client"),
+            content = MessageContent.Asset(content.copy(preview = null)),
+        )
+        val result = prepareReceivedAssetMessage(incoming, current, restrictWithoutPreview = true)
+        assertEquals(content, (result?.content as MessageContent.Asset).value)
+        assertEquals(current.senderClientId, result.senderClientId)
+    }
+
+    @Test
     fun differentClientCannotAttachPreviewToExistingMessage() {
         assertNull(prepareReceivedAssetMessage(existing.copy(senderClientId = ClientId("different-client")), existing, false))
     }
