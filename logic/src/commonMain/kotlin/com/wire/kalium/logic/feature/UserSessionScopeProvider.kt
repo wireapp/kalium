@@ -30,6 +30,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
 
 internal interface UserSessionScopeProvider {
@@ -135,6 +137,8 @@ internal abstract class UserSessionScopeProviderCommon(
         try {
             scope?.stopAccountWork()
         } catch (timeout: TimeoutCancellationException) {
+            // Only the SDK worker deadline is best effort; caller cancellation retains quarantine.
+            currentCoroutineContext().ensureActive()
             // A partially started runtime must complete every shutdown step before resource removal.
             // Retain its owner on timeout, including initialized Cells/calling work still to drain.
             if (failedStartup) throw timeout

@@ -132,6 +132,56 @@ class UserSessionScopeProviderLogoutTest {
     }
 
     @Test
+    fun callerTimeoutDuringCleanupRetainsTheClosingGenerationUntilRetry() = runTest {
+        val userId = UserId("caller-timeout", "example.com")
+        withAccounts(userId) { logic, network ->
+            var removed = false
+            val provider = commonProvider(logic, startScope = {}, removeNetwork = {
+                removed = true
+                network.remove(it.toApi())
+            })
+            val outgoing = provider.getOrCreate(userId)
+            val storage = assertNotNull(logic.userStorageProvider.get(userId))
+            val apis = assertNotNull(network.get(userId.toApi()))
+            val finishUnwind = CompletableDeferred<Unit>()
+            val worker = outgoing.launch(start = CoroutineStart.UNDISPATCHED) {
+                try {
+                    awaitCancellation()
+                } finally {
+                    withContext(NonCancellable) { finishUnwind.await() }
+                }
+            }
+            try {
+                val deletion = async { runCatching { withTimeout(1_000) { provider.delete(userId) } } }
+                advanceTimeBy(1_001)
+                runCurrent()
+                assertIs<TimeoutCancellationException>(deletion.await().exceptionOrNull())
+                assertFalse(removed)
+                assertFalse(worker.isCompleted)
+                assertSame(storage, logic.userStorageProvider.get(userId))
+                assertSame(apis, network.get(userId.toApi()))
+                assertNull(provider.get(userId))
+                assertFailsWith<IllegalStateException> { provider.getOrCreate(userId) }
+                finishUnwind.complete(Unit)
+                withContext(Dispatchers.Default) {
+                    worker.join()
+                    provider.delete(userId)
+                }
+                assertTrue(removed)
+                assertNull(logic.userStorageProvider.get(userId))
+                assertNull(network.get(userId.toApi()))
+                assertNotSame(outgoing, provider.getOrCreate(userId))
+            } finally {
+                finishUnwind.complete(Unit)
+                withContext(NonCancellable + Dispatchers.Default) {
+                    worker.join()
+                    provider.delete(userId)
+                }
+            }
+        }
+    }
+
+    @Test
     fun givenInitializedCells_whenLoggingOut_thenCellsWorkDrainsBeforeLocalDataIsCleared() = runTest {
         val userId = UserId("user", "example.com")
         withAccounts(userId) { logic, _ ->
