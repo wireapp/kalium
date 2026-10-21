@@ -289,7 +289,7 @@ class DeleteMessageUseCaseTest {
             arrangement.assetRepository.deleteAsset(eq(ASSET_ID.value), eq(ASSET_ID.domain), eq(ASSET_TOKEN))
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAsset("preview-id", ASSET_ID.domain, ASSET_TOKEN)
+            arrangement.assetRepository.deleteAsset(ASSET_ID.value, "preview.domain", ASSET_TOKEN)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -452,7 +452,7 @@ class DeleteMessageUseCaseTest {
             AssetContent(
                 remoteData = DUMMY_ASSET_REMOTE_DATA,
                 preview = AssetContent.Preview(
-                    "image/jpeg", 123, 64, 48, DUMMY_ASSET_REMOTE_DATA.copy(assetId = "preview-id")
+                    "image/jpeg", 123, 64, 48, DUMMY_ASSET_REMOTE_DATA.copy(assetDomain = "preview.domain")
                 ),
                 sizeInBytes = 0,
                 mimeType = "image/jpeg"

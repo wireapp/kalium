@@ -99,7 +99,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.deleteMessage(any(), any())
         }
-        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any(), any()) }
     }
 
     @Test
@@ -125,9 +125,9 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         useCase(message.conversationId, message.id).toEither().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId)
+            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId, ASSET_CONTENT_REMOTE_DATA.assetDomain)
         }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally("preview-id") }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally("preview-id", ASSET_CONTENT_REMOTE_DATA.assetDomain) }
     }
 
     @Test
@@ -145,7 +145,9 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         }
 
         useCase(message.conversationId, message.id).toEither().shouldSucceed()
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId, ASSET_CONTENT_REMOTE_DATA.assetDomain)
+        }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.markMessageAsDeleted(message.id, message.conversationId) }
         verifySuspend(VerifyMode.exactly(2)) { arrangement.messageSender.sendMessage(any(), any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.deleteMessage(message.id, message.conversationId) }
@@ -262,7 +264,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         }
 
         suspend fun withDeleteAssetLocally(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
-            everySuspend { assetRepository.deleteAssetLocally(any()) } returns result
+            everySuspend { assetRepository.deleteAssetLocally(any(), any()) } returns result
         }
 
         init {

@@ -150,9 +150,9 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private suspend fun deleteMessageAssetLocallyIfExists(message: Message) {
         val assetContent = (message.content as? MessageContent.Asset)?.value
         listOfNotNull(assetContent?.remoteData, assetContent?.preview?.remoteData)
-            .distinctBy { it.assetId }
+            .distinctBy { it.assetId to it.assetDomain.orEmpty() }
             .forEach { assetToRemove ->
-                assetRepository.deleteAssetLocally(assetToRemove.assetId).onFailure {
+                assetRepository.deleteAssetLocally(assetToRemove.assetId, assetToRemove.assetDomain).onFailure {
                     kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
                 }
             }

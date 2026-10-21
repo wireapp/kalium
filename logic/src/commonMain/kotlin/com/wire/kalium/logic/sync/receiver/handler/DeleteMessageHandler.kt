@@ -56,9 +56,9 @@ internal class DeleteMessageHandlerImpl internal constructor(
                 if (deletion != ReceivedMessageDeletion.NONE) {
                     val assetContent = (messageToRemove.content as? MessageContent.Asset)?.value
                     listOfNotNull(assetContent?.remoteData, assetContent?.preview?.remoteData)
-                        .distinctBy { it.assetId }
+                        .distinctBy { it.assetId to it.assetDomain.orEmpty() }
                         .forEach { asset ->
-                            assetRepository.deleteAssetLocally(asset.assetId).onFailure {
+                            assetRepository.deleteAssetLocally(asset.assetId, asset.assetDomain).onFailure {
                                 kaliumLogger.w("Deleted message asset cleanup failed: $it")
                             }
                         }

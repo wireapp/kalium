@@ -216,7 +216,7 @@ public class DeleteMessageUseCase internal constructor(
     private suspend fun deleteMessageAsset(message: Message, deleteForEveryone: Boolean) {
         val assetContent = (message.content as? MessageContent.Asset)?.value
         listOfNotNull(assetContent?.remoteData, assetContent?.preview?.remoteData)
-            .distinctBy { it.assetId }
+            .distinctBy { it.assetId to it.assetDomain.orEmpty() }
             .forEach { assetToRemove ->
 
                 assetRepository.deleteAsset(

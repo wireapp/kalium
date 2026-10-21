@@ -58,7 +58,7 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(any(), any())
         }
-        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any(), any()) }
     }
 
     @Test
@@ -80,9 +80,9 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         useCase(message.conversationId, message.id).toEither().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId)
+            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId, ASSET_CONTENT_REMOTE_DATA.assetDomain)
         }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally("preview-id") }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally("preview-id", ASSET_CONTENT_REMOTE_DATA.assetDomain) }
     }
 
     @Test
@@ -96,7 +96,9 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         }
 
         useCase(message.conversationId, message.id).toEither().shouldSucceed()
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId, ASSET_CONTENT_REMOTE_DATA.assetDomain)
+        }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.markMessageAsDeleted(message.id, message.conversationId) }
     }
 
@@ -166,7 +168,7 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         }
 
         suspend fun withDeleteAssetLocally(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
-            everySuspend { assetRepository.deleteAssetLocally(any()) } returns result
+            everySuspend { assetRepository.deleteAssetLocally(any(), any()) } returns result
         }
     }
 }

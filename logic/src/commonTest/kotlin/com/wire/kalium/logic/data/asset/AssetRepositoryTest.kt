@@ -686,7 +686,7 @@ internal class AssetRepositoryTest {
     }
 
     @Test
-    fun givenSuccessfulResponse_whenDeletingRemotelyAsset_thenDeleteAssetLocallyShouldBeInvoked() = runTest {
+    fun givenNoCachedAsset_whenDeletingRemotelyAsset_thenNoCacheRecordIsDeleted() = runTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
 
@@ -703,7 +703,7 @@ internal class AssetRepositoryTest {
         verifySuspend {
             arrangement.assetApi.deleteAsset(any(), any(), any())
         }
-        verifySuspend {
+        verifySuspend(VerifyMode.not) {
             arrangement.assetDAO.deleteAsset(any())
         }
     }
@@ -719,7 +719,7 @@ internal class AssetRepositoryTest {
             .withSuccessDeleteRemotelyResponse()
             .withSuccessDeleteLocallyResponse()
             .withRawStoredData(assetRawData, assetFile)
-            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()))
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()).copy(domain = assetKey.domain))
             .arrange()
 
         assertEquals(true, fakeKaliumFileSystem!!.exists(assetFile))
@@ -729,6 +729,23 @@ internal class AssetRepositoryTest {
 
         // Then
         assertEquals(false, fakeKaliumFileSystem!!.exists(assetFile))
+    }
+
+    @Test
+    fun remoteDeletionPreservesSameKeyCachedUnderAnotherDomain() = runTest {
+        val assetKey = UserAssetId("shared-key", "remote.domain")
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.value)
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withSuccessDeleteRemotelyResponse()
+            .withSuccessDeleteLocallyResponse()
+            .withRawStoredData(byteArrayOf(1), path)
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, path, 1).copy(domain = "local.domain"))
+            .arrange()
+
+        repository.deleteAsset(assetKey.value, assetKey.domain, "token").shouldSucceed()
+
+        assertTrue(fakeKaliumFileSystem.exists(path))
+        verifySuspend(VerifyMode.not) { arrangement.assetDAO.deleteAsset(any()) }
     }
 
     @Test
