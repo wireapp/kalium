@@ -111,7 +111,8 @@ data class AssetContent(
         val remoteData: RemoteData,
     ) {
         companion object {
-            const val MAX_SIZE_IN_BYTES: Long = 1_048_576
+            /** Maximum decoded image size: 200 decimal KB, excluding encryption overhead. */
+            const val MAX_SIZE_IN_BYTES: Long = 200_000
             const val MAX_DIMENSION: Int = 4096
         }
     }

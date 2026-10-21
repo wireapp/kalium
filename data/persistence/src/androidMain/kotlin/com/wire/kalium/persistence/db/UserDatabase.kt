@@ -25,7 +25,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.support.SqliteCallback
 import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
@@ -51,7 +50,7 @@ actual fun userDatabaseBuilder(
         context = platformDatabaseData.context,
         dbName = dbName,
         passphrase = passphrase?.value,
-        schema = UserDatabase.Schema.synchronous()
+        schema = UserDatabaseSchema.synchronous()
     ) {
         isWALEnabled = enableWAL
     }
@@ -101,12 +100,12 @@ fun inMemoryDatabase(
     val passphrase = "testPass".toByteArray()
     System.loadLibrary("sqlcipher")
     val rawDriver = AndroidSqliteDriver(
-        schema = UserDatabase.Schema.synchronous(),
+        schema = UserDatabaseSchema.synchronous(),
         context = context,
         name = null,
         factory = SupportOpenHelperFactory(passphrase),
         callback = SqliteCallback(
-            schema = UserDatabase.Schema.synchronous(),
+            schema = UserDatabaseSchema.synchronous(),
             // WAL is intentionally disabled for the test-only in-memory database.
             enableWAL = false,
             enforceForeignKeys = true,

@@ -79,7 +79,7 @@ internal class MessageInsertExtensionImpl(
                 (content.hasValidRemoteData() && missingOriginal) ||
                     (
                         content.assetPreview != null && content.assetId == it.assetId &&
-                            !content.assetPreview.contentEquals(it.assetPreview)
+                            content.assetPreview != it.toAssetPreviewEntity()
                         )
                 )
         } ?: false
@@ -98,9 +98,16 @@ internal class MessageInsertExtensionImpl(
                 messagesQueries.updateAssetPreviewContent(
                     messageId = message.id,
                     conversationId = message.conversationId,
-                    assetPreview = assetPreview,
-                    assetPreviewId = assetPreviewId,
-                    assetPreviewDomain = assetPreviewDomain,
+                    assetPreviewMimeType = assetPreview?.mimeType,
+                    assetPreviewSize = assetPreview?.size,
+                    assetPreviewWidth = assetPreview?.width,
+                    assetPreviewHeight = assetPreview?.height,
+                    assetPreviewId = assetPreview?.id,
+                    assetPreviewDomain = assetPreview?.domain,
+                    assetPreviewToken = assetPreview?.token,
+                    assetPreviewOtrKey = assetPreview?.otrKey,
+                    assetPreviewSha256 = assetPreview?.sha256,
+                    assetPreviewEncryptionAlgorithm = assetPreview?.encryptionAlgorithm,
                 )
                 return
             }
@@ -119,9 +126,16 @@ internal class MessageInsertExtensionImpl(
                 assetSha256 = assetSha256Key,
                 assetEncryptionAlgorithm = assetEncryptionAlgorithm,
                 assetNormalizedLoudness = assetNormalizedLoudness,
-                assetPreview = assetPreview,
-                assetPreviewId = assetPreviewId,
-                assetPreviewDomain = assetPreviewDomain,
+                assetPreviewMimeType = assetPreview?.mimeType,
+                assetPreviewSize = assetPreview?.size,
+                assetPreviewWidth = assetPreview?.width,
+                assetPreviewHeight = assetPreview?.height,
+                assetPreviewId = assetPreview?.id,
+                assetPreviewDomain = assetPreview?.domain,
+                assetPreviewToken = assetPreview?.token,
+                assetPreviewOtrKey = assetPreview?.otrKey,
+                assetPreviewSha256 = assetPreview?.sha256,
+                assetPreviewEncryptionAlgorithm = assetPreview?.encryptionAlgorithm,
             ).await()
         }
     }
@@ -225,9 +239,16 @@ internal class MessageInsertExtensionImpl(
                     asset_height = content.assetHeight,
                     asset_duration_ms = content.assetDurationMs,
                     asset_normalized_loudness = content.assetNormalizedLoudness,
-                    asset_preview = content.assetPreview,
-                    preview_asset_id = content.assetPreviewId,
-                    preview_asset_domain = content.assetPreviewDomain,
+                    preview_asset_mime_type = content.assetPreview?.mimeType,
+                    preview_asset_size = content.assetPreview?.size,
+                    preview_asset_width = content.assetPreview?.width,
+                    preview_asset_height = content.assetPreview?.height,
+                    preview_asset_id = content.assetPreview?.id,
+                    preview_asset_domain = content.assetPreview?.domain,
+                    preview_asset_token = content.assetPreview?.token,
+                    preview_asset_otr_key = content.assetPreview?.otrKey,
+                    preview_asset_sha256 = content.assetPreview?.sha256,
+                    preview_asset_encryption_algorithm = content.assetPreview?.encryptionAlgorithm,
                 )
             }
 

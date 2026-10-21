@@ -73,6 +73,8 @@ kotlin {
                 implementation(libs.sqldelight.androidxPaging)
                 api(libs.paging.common)
 
+                // One-time migration of the legacy preview envelope; current storage is typed.
+                implementation(projects.data.protobuf)
                 implementation(projects.core.util)
                 api(projects.core.logger)
             }

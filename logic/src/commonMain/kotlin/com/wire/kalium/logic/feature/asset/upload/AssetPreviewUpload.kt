@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.asset.upload
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
@@ -34,18 +33,10 @@ internal suspend fun AssetRepository.uploadPreviewIfNeeded(
     conversationId: ConversationId,
 ): AssetContent.Preview? {
     preview ?: return null
+    if (preview.sizeInBytes !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES) return null
     if (preview.remoteData.sha256.isNotEmpty()) return preview
     val remote = preview.remoteData
-    return fetchPrivateDecodedAsset(
-        assetId = remote.assetId,
-        assetDomain = remote.assetDomain,
-        assetName = "preview.jpg",
-        mimeType = preview.mimeType,
-        assetToken = remote.assetToken,
-        encryptionKey = AES256Key(remote.otrKey),
-        assetSHA256Key = SHA256Key(remote.sha256),
-        downloadIfNeeded = false,
-    ).flatMap { local ->
+    return fetchPreviewAsset(preview).flatMap { local ->
         uploadAndPersistPrivateAsset(
             mimeType = preview.mimeType,
             assetDataPath = local.path,

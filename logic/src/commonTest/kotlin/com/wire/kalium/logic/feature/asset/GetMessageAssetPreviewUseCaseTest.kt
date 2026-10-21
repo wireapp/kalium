@@ -58,9 +58,8 @@ class GetMessageAssetPreviewUseCaseTest {
         val assets = mock<AssetRepository>()
         val messages = mock<MessageRepository>()
         everySuspend { messages.getMessageById(message.conversationId, message.id) } returns Either.Right(message)
-        everySuspend { assets.fetchDecodedAsset(remote.assetId) } returns Either.Left(StorageFailure.DataNotFound)
         everySuspend {
-            assets.fetchPrivateDecodedAsset(remote.assetId, remote.assetDomain, "preview.jpg", "image/jpeg", null, any(), any(), true)
+            assets.fetchPreviewAsset(preview)
         } returns Either.Right(FetchedAssetData("preview.jpg".toPath(), true))
         val useCase = GetMessageAssetPreviewUseCaseImpl(
             assets, messages, this, StandardTestDispatcher(testScheduler).testKaliumDispatcher()
@@ -71,7 +70,7 @@ class GetMessageAssetPreviewUseCaseTest {
         assertEquals("preview.jpg".toPath(), result.decodedAssetPath)
         assertEquals(123L, result.assetSize)
         verifySuspend(VerifyMode.exactly(1)) {
-            assets.fetchPrivateDecodedAsset(remote.assetId, remote.assetDomain, "preview.jpg", "image/jpeg", null, any(), any(), true)
+            assets.fetchPreviewAsset(preview)
         }
         verifySuspend(VerifyMode.exactly(0)) { assets.fetchDecodedAsset(content.remoteData.assetId) }
     }
@@ -81,9 +80,8 @@ class GetMessageAssetPreviewUseCaseTest {
         val assets = mock<AssetRepository>()
         val messages = mock<MessageRepository>()
         everySuspend { messages.getMessageById(message.conversationId, message.id) } returns Either.Right(message)
-        everySuspend { assets.fetchDecodedAsset(remote.assetId) } returns Either.Left(StorageFailure.DataNotFound)
         everySuspend {
-            assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+            assets.fetchPreviewAsset(any())
         } throws CryptographyException("Invalid ciphertext")
         val useCase = GetMessageAssetPreviewUseCaseImpl(
             assets, messages, this, StandardTestDispatcher(testScheduler).testKaliumDispatcher()
@@ -97,9 +95,8 @@ class GetMessageAssetPreviewUseCaseTest {
         val assets = mock<AssetRepository>()
         val messages = mock<MessageRepository>()
         everySuspend { messages.getMessageById(message.conversationId, message.id) } returns Either.Right(message)
-        everySuspend { assets.fetchDecodedAsset(remote.assetId) } returns Either.Left(StorageFailure.DataNotFound)
         everySuspend {
-            assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+            assets.fetchPreviewAsset(any())
         } throws CancellationException("Session released")
         val useCase = GetMessageAssetPreviewUseCaseImpl(
             assets, messages, this, StandardTestDispatcher(testScheduler).testKaliumDispatcher()
@@ -119,7 +116,25 @@ class GetMessageAssetPreviewUseCaseTest {
         everySuspend { messages.getMessageById(message.conversationId, message.id) } returns
             Either.Right(message.copy(content = MessageContent.Asset(content.copy(preview = null))))
         assertIs<MessageAssetResult.Failure>(useCase(message.conversationId, message.id).await())
-        verifySuspend(VerifyMode.exactly(0)) { assets.fetchDecodedAsset(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { assets.fetchPreviewAsset(any()) }
+    }
+
+    @Test
+    fun oversizedMetadataIsRejectedBeforeRepositoryLookup() = runTest {
+        val assets = mock<AssetRepository>()
+        val messages = mock<MessageRepository>()
+        everySuspend { messages.getMessageById(message.conversationId, message.id) } returns Either.Right(
+            message.copy(content = MessageContent.Asset(content.copy(
+                preview = preview.copy(sizeInBytes = AssetContent.Preview.MAX_SIZE_IN_BYTES + 1)
+            )))
+        )
+        val useCase = GetMessageAssetPreviewUseCaseImpl(
+            assets, messages, this, StandardTestDispatcher(testScheduler).testKaliumDispatcher()
+        )
+
+        assertIs<MessageAssetResult.Failure>(useCase(message.conversationId, message.id).await())
+
+        verifySuspend(VerifyMode.exactly(0)) { assets.fetchPreviewAsset(any()) }
     }
 
     @Test
@@ -129,14 +144,14 @@ class GetMessageAssetPreviewUseCaseTest {
         val pending = content.copy(preview = preview.copy(remoteData = remote.copy(sha256 = byteArrayOf())))
         everySuspend { messages.getMessageById(message.conversationId, message.id) } returns
             Either.Right(message.copy(content = MessageContent.Asset(pending)))
-        everySuspend { assets.fetchDecodedAsset(remote.assetId) } returns Either.Right("local.jpg".toPath())
+        everySuspend { assets.fetchPreviewAsset(pending.preview!!) } returns Either.Right(FetchedAssetData("local.jpg".toPath(), false))
         val useCase = GetMessageAssetPreviewUseCaseImpl(
             assets, messages, this, StandardTestDispatcher(testScheduler).testKaliumDispatcher()
         )
         val result = assertIs<MessageAssetResult.Success>(useCase(message.conversationId, message.id).await())
         assertEquals("local.jpg".toPath(), result.decodedAssetPath)
-        verifySuspend(VerifyMode.exactly(0)) {
-            assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+        verifySuspend(VerifyMode.exactly(1)) {
+            assets.fetchPreviewAsset(pending.preview!!)
         }
     }
 }

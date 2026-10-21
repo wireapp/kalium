@@ -34,6 +34,7 @@ import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
+import com.wire.kalium.persistence.dao.message.AssetPreviewEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.CellAsset
@@ -44,7 +45,6 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import okio.Path
 import okio.Path.Companion.toPath
 import pbandk.ByteArr
-import pbandk.decodeFromByteArray
 
 interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest
@@ -111,9 +111,7 @@ class AssetMapperImpl(
                 sizeInBytes = assetSizeInBytes,
                 name = assetName,
                 metadata = getAssetContentMetadata(assetMimeType, assetContentEntity),
-                preview = assetPreview?.let {
-                    runCatching { Asset.Preview.decodeFromByteArray(it).toModel(allowPending = true) }.getOrNull()
-                },
+                preview = assetPreview?.toModel(),
                 remoteData = AssetContent.RemoteData(
                     otrKey = assetOtrKey,
                     sha256 = assetSha256Key,
@@ -342,7 +340,7 @@ fun CellAsset.InitialMetaData<*>.toModel(): AssetContent.AssetMetadata =
         )
     }
 
-/** The same preview envelope is used in local persistence and on the wire. */
+/** Wire representation; persistence uses independent typed metadata. */
 fun AssetContent.Preview.toProto(): Asset.Preview = Asset.Preview(
     mimeType = mimeType,
     size = sizeInBytes,
@@ -384,3 +382,41 @@ private fun Asset.Preview.toModel(allowPending: Boolean = false): AssetContent.P
 
 private const val AES256_KEY_SIZE_BYTES = 32
 private const val SHA256_SIZE_BYTES = 32
+
+internal fun AssetContent.Preview.toDao(): AssetPreviewEntity = AssetPreviewEntity(
+    mimeType = mimeType,
+    size = sizeInBytes,
+    width = width,
+    height = height,
+    id = remoteData.assetId,
+    domain = remoteData.assetDomain,
+    token = remoteData.assetToken,
+    otrKey = remoteData.otrKey,
+    sha256 = remoteData.sha256,
+    encryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
+)
+
+private fun AssetPreviewEntity.toModel(): AssetContent.Preview? {
+    val validImage = isDisplayableImageMimeType(mimeType) && size in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES &&
+        width in 1..AssetContent.Preview.MAX_DIMENSION && height in 1..AssetContent.Preview.MAX_DIMENSION
+    val validKeys = otrKey.size == AES256_KEY_SIZE_BYTES && (sha256.isEmpty() || sha256.size == SHA256_SIZE_BYTES)
+    if (!validImage || id.isEmpty() || !validKeys) return null
+    return AssetContent.Preview(
+        mimeType = mimeType,
+        sizeInBytes = size,
+        width = width,
+        height = height,
+        remoteData = AssetContent.RemoteData(
+            otrKey = otrKey,
+            sha256 = sha256,
+            assetId = id,
+            assetToken = token,
+            assetDomain = domain,
+            encryptionAlgorithm = when (encryptionAlgorithm) {
+                "AES_CBC" -> AES_CBC
+                "AES_GCM" -> AES_GCM
+                else -> null
+            },
+        ),
+    )
+}

@@ -56,7 +56,7 @@ class AssetPreviewUploadTest {
         val path = "local-preview.jpg".toPath()
         val uploaded = UploadedAssetId("uploaded-preview", "preview.domain", "preview-token")
         val hash = SHA256Key(ByteArray(32) { 4 })
-        everySuspend { assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), false) } returns
+        everySuspend { assets.fetchPreviewAsset(any()) } returns
             Either.Right(FetchedAssetData(path, false))
         everySuspend {
             assets.uploadAndPersistPrivateAsset(
@@ -81,7 +81,7 @@ class AssetPreviewUploadTest {
     @Test
     fun optionalUploadFailureDropsPreviewWithoutFailingOriginalFlow() = runTest {
         val assets = mock<AssetRepository>()
-        everySuspend { assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), false) } returns
+        everySuspend { assets.fetchPreviewAsset(any()) } returns
             Either.Right(FetchedAssetData("preview.jpg".toPath(), false))
         everySuspend { assets.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any()) } returns
             Either.Left(NetworkFailure.NoNetworkConnection(null))
@@ -99,10 +99,26 @@ class AssetPreviewUploadTest {
     }
 
     @Test
+    fun oversizedPreviewIsDroppedBeforeCacheLookupOrUpload() = runTest {
+        val assets = mock<AssetRepository>()
+        val oversized = preview.copy(sizeInBytes = AssetContent.Preview.MAX_SIZE_IN_BYTES + 1)
+
+        assertNull(assets.uploadPreviewIfNeeded(oversized, TestConversation.ID))
+        assertNull(assets.uploadPreviewIfNeeded(
+            oversized.copy(remoteData = oversized.remoteData.copy(sha256 = ByteArray(32) { 2 })), TestConversation.ID
+        ))
+
+        verifySuspend(VerifyMode.exactly(0)) {
+            assets.fetchPreviewAsset(any())
+            assets.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
     fun optionalUploadPreservesCancellation() = runTest {
         val assets = mock<AssetRepository>()
         everySuspend {
-            assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), false)
+            assets.fetchPreviewAsset(any())
         } throws CancellationException()
         assertFailsWith<CancellationException> { assets.uploadPreviewIfNeeded(preview, TestConversation.ID) }
     }

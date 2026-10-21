@@ -22,12 +22,10 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
@@ -60,37 +58,15 @@ internal class GetMessageAssetPreviewUseCaseImpl(
             { MessageAssetResult.Failure(it, false) },
             { message ->
                 val preview = (message.content as? MessageContent.Asset)?.value?.preview
-                if (preview == null || (
-                        expectedPreviewAssetId != null &&
-                            expectedPreviewAssetId != AssetId(preview.remoteData.assetId, preview.remoteData.assetDomain.orEmpty())
-                        )
-                ) {
+                val actualPreviewAssetId = preview?.remoteData?.let { AssetId(it.assetId, it.assetDomain.orEmpty()) }
+                val unexpectedPreview = expectedPreviewAssetId != null && expectedPreviewAssetId != actualPreviewAssetId
+                if (preview == null || preview.sizeInBytes !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES || unexpectedPreview) {
                     MessageAssetResult.Failure(CoreFailure.Unknown(IllegalStateException("Asset preview unavailable")), false)
                 } else {
-                    val remote = preview.remoteData
-                    // Pending previews have a managed local copy and no ciphertext hash yet.
-                    val local = assetRepository.fetchDecodedAsset(remote.assetId).getOrNull()
-                    if (local != null) {
-                        MessageAssetResult.Success(local, preview.sizeInBytes, "preview.jpg")
-                    } else if (remote.sha256.isEmpty()) {
-                        MessageAssetResult.Failure(CoreFailure.Unknown(IllegalStateException("Local preview unavailable")), false)
-                    } else {
-                        wrapStorageRequest {
-                            assetRepository.fetchPrivateDecodedAsset(
-                                assetId = remote.assetId,
-                                assetDomain = remote.assetDomain,
-                                assetName = "preview.jpg",
-                                mimeType = preview.mimeType,
-                                assetToken = remote.assetToken,
-                                encryptionKey = AES256Key(remote.otrKey),
-                                assetSHA256Key = SHA256Key(remote.sha256),
-                                downloadIfNeeded = true,
-                            )
-                        }.flatMap { it }.fold(
-                            { MessageAssetResult.Failure(it, true) },
-                            { MessageAssetResult.Success(it.path, preview.sizeInBytes, "preview.jpg") },
-                        )
-                    }
+                    wrapStorageRequest { assetRepository.fetchPreviewAsset(preview) }.flatMap { it }.fold(
+                        { MessageAssetResult.Failure(it, preview.remoteData.sha256.isNotEmpty()) },
+                        { MessageAssetResult.Success(it.path, preview.sizeInBytes, "preview.jpg") },
+                    )
                 }
             },
         )

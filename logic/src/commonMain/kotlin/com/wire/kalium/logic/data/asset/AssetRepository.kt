@@ -26,6 +26,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
@@ -34,6 +35,7 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.decryptFileWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.fileExtension
@@ -41,11 +43,17 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.util.getExtensionFromMimeType
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.firstOrNull
+import okio.Buffer
 import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
+import okio.use
 import kotlin.uuid.Uuid
 
 internal interface AssetRepository {
@@ -151,6 +159,9 @@ internal interface AssetRepository {
     /** Delete only the cached asset matching the normalized remote domain. */
     suspend fun deleteAssetLocally(assetId: String, assetDomain: String?): Either<CoreFailure, Unit>
     suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path>
+
+    /** Fetches an optional preview with independent transfer, decoded-file and cached-file size limits. */
+    suspend fun fetchPreviewAsset(preview: AssetContent.Preview): Either<CoreFailure, FetchedAssetData>
 }
 
 @Suppress("TooManyFunctions")
@@ -344,6 +355,39 @@ internal class AssetDataSource(
             assetSHA256 = assetSHA256Key
         )
 
+    override suspend fun fetchPreviewAsset(preview: AssetContent.Preview): Either<CoreFailure, FetchedAssetData> {
+        if (preview.sizeInBytes !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES) {
+            return Either.Left(StorageFailure.Generic(IOException("Asset preview exceeds size limit")))
+        }
+        val remote = preview.remoteData
+        return fetchDecodedAsset(remote.assetId).fold(
+            {
+                // Pending previews only have a managed local file and must never trigger a remote request.
+                if (remote.sha256.isEmpty()) Either.Left(it)
+                else downloadDecodedAsset(
+                    assetId = remote.assetId,
+                    assetDomain = remote.assetDomain,
+                    assetName = "preview.jpg",
+                    assetToken = remote.assetToken,
+                    mimeType = preview.mimeType,
+                    encryptionKey = AES256Key(remote.otrKey),
+                    assetSHA256 = SHA256Key(remote.sha256),
+                    maxDecodedSize = AssetContent.Preview.MAX_SIZE_IN_BYTES,
+                )
+            },
+            { path -> cachedPreviewData(path) },
+        )
+    }
+
+    private fun cachedPreviewData(path: Path): Either<CoreFailure, FetchedAssetData> = wrapStorageRequest {
+        val size = kaliumFileSystem.size(path)
+        if (size == null || size !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES) {
+            // The same remote ID may also be referenced as an original attachment.
+            throw IOException("Cached asset preview exceeds size limit")
+        }
+        FetchedAssetData(path, false)
+    }
+
     override suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path> =
         wrapStorageRequest { assetDao.getAssetByKey(assetId).firstOrNull() }
             .flatMap { asset ->
@@ -370,61 +414,109 @@ internal class AssetDataSource(
             FetchedAssetData(it, false) // Asset found locally, no need to download, return the local path with 'false' flag
         }
         .flatMapLeft {
-            val tempFile = kaliumFileSystem.tempFilePath("temp_${assetId}_${Uuid.random()}")
-            val tempFileSink = kaliumFileSystem.sink(tempFile)
+            downloadDecodedAsset(assetId, assetDomain, assetName, assetToken, mimeType, encryptionKey, assetSHA256)
+        }
+
+    @Suppress("LongParameterList")
+    private suspend fun downloadDecodedAsset(
+        assetId: String,
+        assetDomain: String?,
+        assetName: String,
+        assetToken: String?,
+        mimeType: String?,
+        encryptionKey: AES256Key?,
+        assetSHA256: SHA256Key?,
+        maxDecodedSize: Long? = null,
+    ): Either<CoreFailure, FetchedAssetData> {
+        val tempFile = kaliumFileSystem.tempFilePath("temp_${assetId}_${Uuid.random()}")
+        var decodedAssetPath: Path? = null
+        var persisted = false
+        return try {
+            val result = downloadEncryptedAsset(assetId, assetDomain, assetToken, tempFile, maxDecodedSize).flatMap {
+                val path = provideDecodedAssetPath(assetId, assetName, mimeType, maxDecodedSize)
+                decodedAssetPath = path
+                decodeAndPersistAsset(tempFile, path, assetId, assetDomain, encryptionKey, assetSHA256, maxDecodedSize)
+            }
+            persisted = result.getOrNull()?.path == decodedAssetPath
+            result
+        } catch (e: IOException) {
+            kaliumLogger.e("Something went wrong when handling the Asset paths on the file system", e)
+            Either.Left(StorageFailure.DataNotFound)
+        } finally {
+            // Covers failed downloads, decryption/size failures and coroutine cancellation.
+            cleanupDownloadedFiles(tempFile, decodedAssetPath, persisted)
+        }
+    }
+
+    private suspend fun downloadEncryptedAsset(
+        assetId: String,
+        assetDomain: String?,
+        assetToken: String?,
+        tempFile: Path,
+        maxDecodedSize: Long?,
+    ): Either<CoreFailure, Unit> {
+        // Asset encryption uses AES-CBC: a 16-byte IV plus one block of PKCS7 padding at most.
+        val maxEncryptedSize = maxDecodedSize?.let { (it / AES_BLOCK_SIZE + 1) * AES_BLOCK_SIZE + AES_BLOCK_SIZE }
+        return kaliumFileSystem.sink(tempFile).withSizeLimit(maxEncryptedSize).use { sink ->
             wrapApiRequest {
-                try {
-                    // Backend sends asset messages with empty asset tokens
-                    assetApi.downloadAsset(assetId, assetDomain, assetToken?.ifEmpty { null }, tempFileSink)
-                } finally {
-                    tempFileSink.close()
-                }
-            }.flatMap {
-                try {
-                    if (encryptionKey != null && assetSHA256 == null) return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
-                    val encryptionKeys = encryptionKey?.let { aes256Key ->
-                        assetSHA256?.let { assetSHA256 ->
-                            aes256Key to assetSHA256
-                        } ?: return@flatMap Either.Left(EncryptionFailure.WrongAssetHash)
-                    }
+                // Backend sends asset messages with empty asset tokens.
+                assetApi.downloadAsset(assetId, assetDomain, assetToken?.ifEmpty { null }, sink)
+            }
+        }
+    }
 
-                    // Decrypt and persist decoded asset onto a persistent asset path
-                    val decodedAssetPath =
-                        kaliumFileSystem.providePersistentAssetPath(
-                            buildFileName(
-                                assetId,
-                                assetName.fileExtension()
-                                    ?: getExtensionFromMimeType(mimeType)
-                            )
-                        )
+    private fun provideDecodedAssetPath(assetId: String, assetName: String, mimeType: String?, maxDecodedSize: Long?): Path {
+        val cacheName = if (maxDecodedSize == null) assetId else "${assetId}_${Uuid.random()}"
+        return kaliumFileSystem.providePersistentAssetPath(
+            buildFileName(cacheName, assetName.fileExtension() ?: getExtensionFromMimeType(mimeType))
+        )
+    }
 
-                    val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
-                    val (hashError, assetDataSize) = try {
-                        // Public assets are stored already decrypted on the backend, hence no decryption is needed
-                        decodeAssetIfNeeded(tempFile, encryptionKeys, decodedAssetSink)
-                    } finally {
-                        decodedAssetSink.close()
-                    }
-
-                    when {
-                        // Either a decryption error or a hash error occurred
-                        hashError != null -> Either.Left(hashError)
-                        assetDataSize <= 0L -> Either.Left(EncryptionFailure.GenericDecryptionError)
-
-                        // Everything went fine, we persist the asset to the DB
-                        else -> {
-                            saveAssetInDB(assetId, assetDomain, decodedAssetPath, assetDataSize)
-                            Either.Right(FetchedAssetData(decodedAssetPath, true))
-                        }
-                    }
-                } catch (e: IOException) {
-                    kaliumLogger.e("Something went wrong when handling the Asset paths on the file system", e)
-                    Either.Left(StorageFailure.DataNotFound)
-                } finally {
-                    kaliumFileSystem.delete(tempFile, mustExist = false)
+    @Suppress("LongParameterList")
+    private suspend fun decodeAndPersistAsset(
+        tempFile: Path,
+        path: Path,
+        assetId: String,
+        assetDomain: String?,
+        encryptionKey: AES256Key?,
+        assetSHA256: SHA256Key?,
+        maxDecodedSize: Long?,
+    ): Either<CoreFailure, FetchedAssetData> {
+        val encryptionKeys = when {
+            encryptionKey == null -> null
+            assetSHA256 == null -> return Either.Left(EncryptionFailure.WrongAssetHash)
+            else -> encryptionKey to assetSHA256
+        }
+        val decodedSink = kaliumFileSystem.sink(path).withSizeLimit(maxDecodedSize)
+        val (hashError, assetDataSize) = decodedSink.use { decodeAssetIfNeeded(tempFile, encryptionKeys, it) }
+        currentCoroutineContext().ensureActive()
+        return when {
+            hashError != null -> Either.Left(hashError)
+            assetDataSize <= 0L -> Either.Left(EncryptionFailure.GenericDecryptionError)
+            decodedSizeExceedsLimit(assetDataSize, decodedSink, maxDecodedSize) ->
+                Either.Left(StorageFailure.Generic(IOException("Decoded asset preview exceeds size limit")))
+            else -> saveAssetInDB(assetId, assetDomain, path, assetDataSize).flatMap {
+                if (maxDecodedSize == null) Either.Right(FetchedAssetData(path, true))
+                else fetchDecodedAsset(assetId).flatMap { cachedPreviewData(it) }.map {
+                    // INSERT OR IGNORE may retain a concurrent download. Return its managed path;
+                    // the outer cleanup removes our unused candidate when the paths differ.
+                    it.copy(justDownloaded = it.path == path)
                 }
             }
         }
+    }
+
+    private suspend fun cleanupDownloadedFiles(tempFile: Path, decodedAssetPath: Path?, persisted: Boolean) = withContext(NonCancellable) {
+        try {
+            kaliumFileSystem.delete(tempFile, mustExist = false)
+        } finally {
+            // Cancellation can arrive after the DAO commits but before returning its result.
+            // The database is authoritative even when the caller did not observe success.
+            if (!persisted && decodedAssetPath != null && !assetDao.isFileReferenced(decodedAssetPath.toString())) {
+                kaliumFileSystem.delete(decodedAssetPath, mustExist = false)
+            }
+        }
+    }
 
     private suspend fun decodeAssetIfNeeded(
         assetDataPath: Path,
@@ -507,3 +599,28 @@ private fun buildFileName(name: String, extension: String?): String =
 private const val PUBLIC_ASSET_CONVERSATION_ID = "00000000-0000-0000-0000-000000000000"
 
 internal data class FetchedAssetData(val path: Path, val justDownloaded: Boolean)
+
+/** A throwing sink stops the streaming HTTP reader before an oversized response reaches disk. */
+private class BoundedAssetSink(private val delegate: Sink, private val maxBytes: Long) : Sink by delegate {
+    private var bytesWritten = 0L
+    var limitExceeded: Boolean = false
+        private set
+
+    override fun write(source: Buffer, byteCount: Long) {
+        if (byteCount > maxBytes - bytesWritten) {
+            limitExceeded = true
+            throw IOException("Asset preview exceeds size limit")
+        }
+        delegate.write(source, byteCount)
+        bytesWritten += byteCount
+    }
+}
+
+private const val AES_BLOCK_SIZE = 16L
+
+private fun Sink.withSizeLimit(maxBytes: Long?): Sink = if (maxBytes == null) this else BoundedAssetSink(this, maxBytes)
+
+private fun decodedSizeExceedsLimit(size: Long, sink: Sink, maxBytes: Long?): Boolean {
+    if (maxBytes == null) return false
+    return size > maxBytes || (sink as BoundedAssetSink).limitExceeded
+}

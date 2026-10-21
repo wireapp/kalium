@@ -24,6 +24,7 @@ import app.cash.sqldelight.async.coroutines.awaitMigrate
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
+import com.wire.kalium.persistence.UserDatabase
 import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooGenericExceptionCaught")
@@ -36,7 +37,8 @@ internal suspend fun SqlDriver.migrateSchema(sqlSchema: SqlSchema<QueryResult.As
         }, 0).await()
         require(oldVersion <= sqlSchema.version) { "Database schema is newer than supported" }
         if (oldVersion != sqlSchema.version) {
-            sqlSchema.awaitMigrate(this@migrateSchema, oldVersion, sqlSchema.version)
+            val schema = if (sqlSchema === UserDatabase.Schema) UserDatabaseSchema else sqlSchema
+            schema.awaitMigrate(this@migrateSchema, oldVersion, schema.version)
             execute(null, "PRAGMA user_version = ${sqlSchema.version}", 0).await()
         }
     }

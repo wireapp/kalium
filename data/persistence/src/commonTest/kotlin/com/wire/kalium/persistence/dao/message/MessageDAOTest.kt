@@ -97,15 +97,21 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessages(listOf(message))
         val withPreview = original.copy(
             assetOtrKey = byteArrayOf(), assetSha256Key = byteArrayOf(),
-            assetPreview = byteArrayOf(5, 6, 7), assetPreviewId = "preview-id", assetPreviewDomain = "preview.domain",
+            assetPreview = typedPreview(),
         )
         messageDAO.insertOrIgnoreMessages(listOf(message.copy(content = withPreview)))
         val reloaded = messageDAO.getMessageById(message.id, message.conversationId)!!.content as MessageEntityContent.Asset
         assertContentEquals(original.assetOtrKey, reloaded.assetOtrKey)
         assertContentEquals(original.assetSha256Key, reloaded.assetSha256Key)
         assertEquals(original.assetSizeInBytes, reloaded.assetSizeInBytes)
-        assertContentEquals(withPreview.assetPreview, reloaded.assetPreview)
-        assertEquals("preview-id", reloaded.assetPreviewId)
+        assertEquals(withPreview.assetPreview, reloaded.assetPreview)
+        assertEquals("preview-id", reloaded.assetPreview?.id)
+        assertEquals("preview.domain", reloaded.assetPreview?.domain)
+        // Equal binary values from a second decode must compare by content and leave the original keys intact.
+        messageDAO.insertOrIgnoreMessages(listOf(message.copy(content = withPreview.copy(assetPreview = typedPreview()))))
+        val duplicate = messageDAO.getMessageById(message.id, message.conversationId)!!.content as MessageEntityContent.Asset
+        assertEquals(reloaded.assetPreview, duplicate.assetPreview)
+        assertContentEquals(original.assetOtrKey, duplicate.assetOtrKey)
         assetDao.insertAsset(AssetEntity("video-id", "domain", "/video.mp4", 100_000, downloadedDate = null))
         assetDao.insertAsset(AssetEntity("preview-id", "preview.domain", "/preview.jpg", 1024, downloadedDate = null))
         val files = mutableListOf<String>()
@@ -123,7 +129,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
         val message = newRegularMessageEntity(
             id = "preview-domain-test", conversationId = conversationEntity1.id, senderUserId = userEntity1.id,
-            content = original.copy(assetPreviewId = "same-key", assetPreviewDomain = "remote.domain"),
+            content = original.copy(assetPreview = typedPreview().copy(id = "same-key", domain = "remote.domain")),
         )
         messageDAO.insertOrIgnoreMessages(listOf(message))
         assetDao.insertAsset(AssetEntity("same-key", "local.domain", "/unrelated.jpg", 123, downloadedDate = null))
@@ -134,7 +140,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertTrue(files.isEmpty())
         assertNotNull(assetDao.getAssetByKey("same-key").first())
 
-        val local = message.copy(id = "local-preview", content = original.copy(assetPreviewId = "local-key", assetPreviewDomain = null))
+        val local = message.copy(id = "local-preview", content = original.copy(assetPreview = typedPreview().copy(id = "local-key", domain = null)))
         messageDAO.insertOrIgnoreMessages(listOf(local))
         assetDao.insertAsset(AssetEntity("local-key", null, "/local.jpg", 123, downloadedDate = null))
         assertEquals(listOf("local-key"), messageDAO.getAllMessageAssetIdsForConversationId(message.conversationId))
@@ -155,11 +161,17 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
         messageDAO.insertOrIgnoreMessages(listOf(message))
         messageDAO.insertOrIgnoreMessages(listOf(message.copy(senderClientId = "other-client", content = original.copy(
-            assetPreview = byteArrayOf(5), assetPreviewId = "spoofed-preview",
+            assetPreview = typedPreview().copy(id = "spoofed-preview"),
         ))))
         val reloaded = messageDAO.getMessageById(message.id, message.conversationId)!!.content as MessageEntityContent.Asset
         assertNull(reloaded.assetPreview)
     }
+
+    private fun typedPreview() = AssetPreviewEntity(
+        mimeType = "image/jpeg", size = 1024, width = 512, height = 288,
+        id = "preview-id", domain = "preview.domain", token = "preview-token",
+        otrKey = byteArrayOf(5, 6), sha256 = byteArrayOf(7, 8), encryptionAlgorithm = "AES_GCM",
+    )
 
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO

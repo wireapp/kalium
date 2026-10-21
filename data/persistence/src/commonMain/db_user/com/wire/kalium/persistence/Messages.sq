@@ -131,9 +131,16 @@ CREATE TABLE MessageAssetContent (
       asset_height INTEGER AS Int,
       asset_duration_ms INTEGER,
       asset_normalized_loudness BLOB,
-      asset_preview BLOB,
+      preview_asset_mime_type TEXT,
+      preview_asset_size INTEGER,
+      preview_asset_width INTEGER AS Int,
+      preview_asset_height INTEGER AS Int,
       preview_asset_id TEXT,
       preview_asset_domain TEXT,
+      preview_asset_token TEXT,
+      preview_asset_otr_key BLOB,
+      preview_asset_sha256 BLOB,
+      preview_asset_encryption_algorithm TEXT,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -418,8 +425,8 @@ insertMessageAssetContent:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey MessageAssetContent
-INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness, asset_preview, preview_asset_id, preview_asset_domain)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,  ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness, preview_asset_mime_type, preview_asset_size, preview_asset_width, preview_asset_height, preview_asset_id, preview_asset_domain, preview_asset_token, preview_asset_otr_key, preview_asset_sha256, preview_asset_encryption_algorithm)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessageUnknownContent:
 -- @NotifyCustomKey message_list_:conversation_id
@@ -580,7 +587,7 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
 
     UPDATE OR ROLLBACK MessageAssetContent
-    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm, asset_normalized_loudness = :assetNormalizedLoudness, asset_preview = :assetPreview, preview_asset_id = :assetPreviewId, preview_asset_domain = :assetPreviewDomain
+    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm, asset_normalized_loudness = :assetNormalizedLoudness, preview_asset_mime_type = :assetPreviewMimeType, preview_asset_size = :assetPreviewSize, preview_asset_width = :assetPreviewWidth, preview_asset_height = :assetPreviewHeight, preview_asset_id = :assetPreviewId, preview_asset_domain = :assetPreviewDomain, preview_asset_token = :assetPreviewToken, preview_asset_otr_key = :assetPreviewOtrKey, preview_asset_sha256 = :assetPreviewSha256, preview_asset_encryption_algorithm = :assetPreviewEncryptionAlgorithm
     WHERE message_id = :messageId AND conversation_id = :conversationId;
 }
 
@@ -811,5 +818,5 @@ updateAssetPreviewContent:
 -- @NotifyCustomKey message_list_:conversationId
 -- @NotifyCustomKey MessageAssetContent
 UPDATE MessageAssetContent
-SET asset_preview = :assetPreview, preview_asset_id = :assetPreviewId, preview_asset_domain = :assetPreviewDomain
+SET preview_asset_mime_type = :assetPreviewMimeType, preview_asset_size = :assetPreviewSize, preview_asset_width = :assetPreviewWidth, preview_asset_height = :assetPreviewHeight, preview_asset_id = :assetPreviewId, preview_asset_domain = :assetPreviewDomain, preview_asset_token = :assetPreviewToken, preview_asset_otr_key = :assetPreviewOtrKey, preview_asset_sha256 = :assetPreviewSha256, preview_asset_encryption_algorithm = :assetPreviewEncryptionAlgorithm
 WHERE message_id = :messageId AND conversation_id = :conversationId;

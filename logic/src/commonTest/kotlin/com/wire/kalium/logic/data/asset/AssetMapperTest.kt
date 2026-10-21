@@ -162,6 +162,37 @@ class AssetMapperTest {
     }
 
     @Test
+    fun previewAtDownloadLimitRoundTripsThroughWireAndTypedPersistence() {
+        val mapper = AssetMapperImpl()
+        val video = videoWithPreview()
+        val content = video.copy(preview = requireNotNull(video.preview).copy(sizeInBytes = 200_000))
+        val wire = mapper.fromAssetContentToProtoAssetMessage(MessageContent.Asset(content), false, LegalHoldStatus.DISABLED)
+        assertEquals(content, mapper.fromProtoAssetMessageToAssetContent(wire))
+        val entity = RegularMessageMapper(UserId("self", "domain")).toMessageEntityContent(MessageContent.Asset(content))
+            as com.wire.kalium.persistence.dao.message.MessageEntityContent.Asset
+        assertEquals(content, mapper.fromAssetEntityToAssetContent(entity))
+        assertEquals("image/jpeg", entity.assetPreview?.mimeType)
+        assertEquals(200_000L, entity.assetPreview?.size)
+        assertEquals("preview-token", entity.assetPreview?.token)
+    }
+
+    @Test
+    fun oversizedWireAndTypedPreviewsAreIgnoredWithoutChangingOriginal() {
+        val mapper = AssetMapperImpl()
+        val video = videoWithPreview()
+        val wire = mapper.fromAssetContentToProtoAssetMessage(MessageContent.Asset(video), false, LegalHoldStatus.DISABLED)
+        val fromWire = mapper.fromProtoAssetMessageToAssetContent(wire.copy(preview = requireNotNull(wire.preview).copy(size = 200_001)))
+        assertNull(fromWire.preview)
+        assertEquals(video.remoteData, fromWire.remoteData)
+        val content = video.copy(preview = requireNotNull(video.preview).copy(sizeInBytes = 200_001))
+        val entity = RegularMessageMapper(UserId("self", "domain")).toMessageEntityContent(MessageContent.Asset(content))
+            as com.wire.kalium.persistence.dao.message.MessageEntityContent.Asset
+        val fromPersistence = mapper.fromAssetEntityToAssetContent(entity)
+        assertNull(fromPersistence.preview)
+        assertEquals(video.remoteData, fromPersistence.remoteData)
+    }
+
+    @Test
     fun missingAndMalformedPreviewsDoNotChangeOriginal() {
         val mapper = AssetMapperImpl()
         val content = videoWithPreview()

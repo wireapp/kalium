@@ -333,7 +333,7 @@ class UploadAssetUseCaseTest {
     fun previewFailureStillPersistsAndSendsVideoWithoutPreview() = runTest(testDispatcher.default) {
         val (arrangement, uploadAsset) = Arrangement().arrange {
             withUploadSuccess()
-            everySuspend { assetDataSource.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), false) } returns
+            everySuspend { assetDataSource.fetchPreviewAsset(any()) } returns
                 Either.Left(StorageFailure.DataNotFound)
         }
         val preview = AssetContent.Preview(
@@ -358,7 +358,7 @@ class UploadAssetUseCaseTest {
         val previewHash = SHA256Key(ByteArray(32) { 4 })
         val (arrangement, uploadAsset) = Arrangement().arrange {
             withUploadSuccess()
-            everySuspend { assetDataSource.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), false) } returns
+            everySuspend { assetDataSource.fetchPreviewAsset(any()) } returns
                 Either.Right(FetchedAssetData("preview.jpg".toPath(), false))
             everySuspend {
                 assetDataSource.uploadAndPersistPrivateAsset(eq("image/jpeg"), any(), any(), any(), any(), any(), any())
