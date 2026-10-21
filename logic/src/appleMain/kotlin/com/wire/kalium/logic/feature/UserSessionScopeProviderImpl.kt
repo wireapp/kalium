@@ -416,33 +416,35 @@ internal actual open class UserSessionScopeProviderImpl(
     @Suppress("TooGenericExceptionCaught")
     actual override suspend fun deleteSession(userId: UserId, sessionRepository: SessionRepository): Either<StorageFailure, Unit> {
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return checkNotNull(withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, operation = action) }) {
-            try {
-                check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
-                acquire(account, userId)
-                markUnavailable(account, userId)
-                revokeReadiness(account, userId)
-                withContext(NonCancellable) { getRaw(userId)?.closeAccountResources() }
-                val result = sessionRepository.deleteSession(userId)
-                if (result is Either.Right) {
-                    withContext(NonCancellable) {
-                        super.delete(userId)
-                        account.lease?.release()
-                        account.lease = null
-                        account.unavailable = false
-                        account.needsCryptoReopen = false
-                        account.canRefreshReadiness = false
-                        account.crypto.clear()
-                        account.access = AccountResourceAccess()
+        return checkNotNull(
+            withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, operation = action) }) {
+                try {
+                    check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
+                    acquire(account, userId)
+                    markUnavailable(account, userId)
+                    revokeReadiness(account, userId)
+                    withContext(NonCancellable) { getRaw(userId)?.closeAccountResources() }
+                    val result = sessionRepository.deleteSession(userId)
+                    if (result is Either.Right) {
+                        withContext(NonCancellable) {
+                            super.delete(userId)
+                            account.lease?.release()
+                            account.lease = null
+                            account.unavailable = false
+                            account.needsCryptoReopen = false
+                            account.canRefreshReadiness = false
+                            account.crypto.clear()
+                            account.access = AccountResourceAccess()
+                        }
                     }
+                    result
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (failure: Throwable) {
+                    Either.Left(StorageFailure.Generic(failure))
                 }
-                result
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (failure: Throwable) {
-                Either.Left(StorageFailure.Generic(failure))
             }
-        })
+        )
     }
 
     /** The host must quiesce public operations and collectors before replacing a cached session. */
@@ -453,34 +455,36 @@ internal actual open class UserSessionScopeProviderImpl(
     ): Either<StorageFailure, Unit> {
         val userId = session.accountTokens.userId
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return checkNotNull(withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, operation = action) }) {
-            try {
-                check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
-                acquire(account, userId)
-                markUnavailable(account, userId)
-                revokeReadiness(account, userId)
-                // Drain old token refreshes before replacing credentials, retaining ownership throughout.
-                withContext(NonCancellable) {
-                    getRaw(userId)?.closeAccountResources()
-                    super.delete(userId)
-                    account.needsCryptoReopen = false
-                    account.canRefreshReadiness = false
-                    account.crypto.clear()
-                    account.access = AccountResourceAccess()
-                }
-                sessionRepository.storeSession(session).also {
-                    // A failed store may already have changed account metadata or credentials.
-                    if (it is Either.Right) {
-                        account.unavailable = false
-                        allowSessionObservation(userId)
+        return checkNotNull(
+            withClosedSession(userId, serialize = { action -> withOwnedAccount(account, userId, operation = action) }) {
+                try {
+                    check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
+                    acquire(account, userId)
+                    markUnavailable(account, userId)
+                    revokeReadiness(account, userId)
+                    // Drain old token refreshes before replacing credentials, retaining ownership throughout.
+                    withContext(NonCancellable) {
+                        getRaw(userId)?.closeAccountResources()
+                        super.delete(userId)
+                        account.needsCryptoReopen = false
+                        account.canRefreshReadiness = false
+                        account.crypto.clear()
+                        account.access = AccountResourceAccess()
                     }
+                    sessionRepository.storeSession(session).also {
+                        // A failed store may already have changed account metadata or credentials.
+                        if (it is Either.Right) {
+                            account.unavailable = false
+                            allowSessionObservation(userId)
+                        }
+                    }
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (failure: Throwable) {
+                    Either.Left(StorageFailure.Generic(failure))
                 }
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (failure: Throwable) {
-                Either.Left(StorageFailure.Generic(failure))
             }
-        })
+        )
     }
 
     @Suppress("TooGenericExceptionCaught")
