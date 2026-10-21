@@ -256,14 +256,7 @@ internal actual open class UserSessionScopeProviderImpl(
 
     @Suppress("TooGenericExceptionCaught")
     private fun openOwned(account: OwnedAccount, userId: UserId, observationRevision: Long? = null): UserSessionScope {
-        if (account.unavailable) throw OwnedAccountUnavailable()
-        super.get(userId)?.let {
-            if (!it.coroutineContext.job.isActive) {
-                markUnavailable(account, userId)
-                throw OwnedAccountUnavailable()
-            }
-            return it
-        }
+        availableOwnedSession(account, userId)?.let { return it }
         check(account.lease != null) { "Account construction requires ownership" }
         return try {
             val prepared = ApplePreparedAccountStore(rootPathsProvider.rootPath, userId).read(checkNotNull(account.lease))
@@ -279,6 +272,17 @@ internal actual open class UserSessionScopeProviderImpl(
         } catch (failure: Throwable) {
             markUnavailable(account, userId)
             throw failure
+        }
+    }
+
+    /** Reads only the already owned session; stopped workers retain the existing quarantine. */
+    private fun availableOwnedSession(account: OwnedAccount, userId: UserId): UserSessionScope? {
+        if (account.unavailable) throw OwnedAccountUnavailable()
+        return super.get(userId)?.also {
+            if (!it.coroutineContext.job.isActive) {
+                markUnavailable(account, userId)
+                throw OwnedAccountUnavailable()
+            }
         }
     }
 

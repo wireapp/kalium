@@ -64,11 +64,11 @@ internal class UserSessionRegistry<T : Any>(
 
         @Suppress("TooGenericExceptionCaught") // Failed startup retains ownership until explicit cleanup succeeds.
         fun getOrCreate(create: () -> T, start: (T) -> Unit, observationRevision: Long? = null): T {
-            state.withLock { if (!canOpen(observationRevision)) throw SessionGenerationClosed() }
+            state.withLock { requireOpen(observationRevision) }
             // Construction/startup serialize here; cleanup can still invalidate without blocking.
             return construction.withLock {
                 val cached = state.withLock {
-                    if (!canOpen(observationRevision)) throw SessionGenerationClosed()
+                    requireOpen(observationRevision)
                     generation?.let {
                         // A reentrant request from synchronous startup must not create another owner.
                         check(it.ready) { "The user session generation is still starting" }
@@ -79,7 +79,7 @@ internal class UserSessionRegistry<T : Any>(
                     cached
                 } else {
                     val pending = state.withLock {
-                        if (!canOpen(observationRevision)) throw SessionGenerationClosed()
+                        requireOpen(observationRevision)
                         Generation<T>().also { generation = it }
                     }
                     try {
@@ -136,6 +136,10 @@ internal class UserSessionRegistry<T : Any>(
         }
 
         // Call only under state: observers cannot turn a stale acquisition into a manual open.
+        private fun requireOpen(observationRevision: Long?) {
+            if (!canOpen(observationRevision)) throw SessionGenerationClosed()
+        }
+
         private fun canOpen(observationRevision: Long?): Boolean {
             if (closing) return false
             return observationRevision == null || (observationAllowed && changes.value == observationRevision)
@@ -146,7 +150,8 @@ internal class UserSessionRegistry<T : Any>(
         fun admit(revision: Long, value: T): Observation<T>? = state.withLock {
             val current = generation
             if (!observationAllowed) return@withLock null
-            if (closing || changes.value != revision || current?.ready != true || current.value !== value) return@withLock null
+            if (closing || changes.value != revision) return@withLock null
+            if (current?.ready != true || current.value !== value) return@withLock null
             val revoked = CancellationException("User session observation revoked")
             val work = ConsumerWork(
                 isGenerationActive = { isAvailable(revision) },
