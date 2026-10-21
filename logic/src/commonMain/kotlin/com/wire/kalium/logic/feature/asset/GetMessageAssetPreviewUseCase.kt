@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.asset
 
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
@@ -73,16 +75,18 @@ internal class GetMessageAssetPreviewUseCaseImpl(
                     } else if (remote.sha256.isEmpty()) {
                         MessageAssetResult.Failure(CoreFailure.Unknown(IllegalStateException("Local preview unavailable")), false)
                     } else {
-                        assetRepository.fetchPrivateDecodedAsset(
-                            assetId = remote.assetId,
-                            assetDomain = remote.assetDomain,
-                            assetName = "preview.jpg",
-                            mimeType = preview.mimeType,
-                            assetToken = remote.assetToken,
-                            encryptionKey = AES256Key(remote.otrKey),
-                            assetSHA256Key = SHA256Key(remote.sha256),
-                            downloadIfNeeded = true,
-                        ).fold(
+                        wrapStorageRequest {
+                            assetRepository.fetchPrivateDecodedAsset(
+                                assetId = remote.assetId,
+                                assetDomain = remote.assetDomain,
+                                assetName = "preview.jpg",
+                                mimeType = preview.mimeType,
+                                assetToken = remote.assetToken,
+                                encryptionKey = AES256Key(remote.otrKey),
+                                assetSHA256Key = SHA256Key(remote.sha256),
+                                downloadIfNeeded = true,
+                            )
+                        }.flatMap { it }.fold(
                             { MessageAssetResult.Failure(it, true) },
                             { MessageAssetResult.Success(it.path, preview.sizeInBytes, "preview.jpg") },
                         )

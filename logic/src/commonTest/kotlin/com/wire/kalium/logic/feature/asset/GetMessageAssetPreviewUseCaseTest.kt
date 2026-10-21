@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import kotlinx.coroutines.test.StandardTestDispatcher
+import dev.mokkery.answering.throws
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -40,6 +41,9 @@ import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertFailsWith
+import kotlinx.coroutines.CancellationException
+import com.wire.kalium.cryptography.exceptions.CryptographyException
 
 class GetMessageAssetPreviewUseCaseTest {
     private val remote = TestMessage.ASSET_CONTENT.value.remoteData.copy(
@@ -70,6 +74,37 @@ class GetMessageAssetPreviewUseCaseTest {
             assets.fetchPrivateDecodedAsset(remote.assetId, remote.assetDomain, "preview.jpg", "image/jpeg", null, any(), any(), true)
         }
         verifySuspend(VerifyMode.exactly(0)) { assets.fetchDecodedAsset(content.remoteData.assetId) }
+    }
+
+    @Test
+    fun decryptionExceptionReturnsFailure() = runTest {
+        val assets = mock<AssetRepository>()
+        val messages = mock<MessageRepository>()
+        everySuspend { messages.getMessageById(message.conversationId, message.id) } returns Either.Right(message)
+        everySuspend { assets.fetchDecodedAsset(remote.assetId) } returns Either.Left(StorageFailure.DataNotFound)
+        everySuspend {
+            assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+        } throws CryptographyException("Invalid ciphertext")
+        val useCase = GetMessageAssetPreviewUseCaseImpl(
+            assets, messages, this, StandardTestDispatcher(testScheduler).testKaliumDispatcher()
+        )
+        val result = assertIs<MessageAssetResult.Failure>(useCase(message.conversationId, message.id).await())
+        assertIs<StorageFailure.Generic>(result.coreFailure)
+    }
+
+    @Test
+    fun previewDownloadCancellationStillPropagates() = runTest {
+        val assets = mock<AssetRepository>()
+        val messages = mock<MessageRepository>()
+        everySuspend { messages.getMessageById(message.conversationId, message.id) } returns Either.Right(message)
+        everySuspend { assets.fetchDecodedAsset(remote.assetId) } returns Either.Left(StorageFailure.DataNotFound)
+        everySuspend {
+            assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+        } throws CancellationException("Session released")
+        val useCase = GetMessageAssetPreviewUseCaseImpl(
+            assets, messages, this, StandardTestDispatcher(testScheduler).testKaliumDispatcher()
+        )
+        assertFailsWith<CancellationException> { useCase(message.conversationId, message.id).await() }
     }
 
     @Test
