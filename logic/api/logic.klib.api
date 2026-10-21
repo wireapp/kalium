@@ -4243,6 +4243,43 @@ final class com.wire.kalium.logic.feature.call.usecase/RequestVideoStreamsUseCas
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin.collections/List<com.wire.kalium.logic.data.call/CallClient>) // com.wire.kalium.logic.feature.call.usecase/RequestVideoStreamsUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.collections.List<com.wire.kalium.logic.data.call.CallClient>){}[0]
 }
 
+final class com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase { // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase|null[0]
+    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Boolean, kotlin/String): com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Boolean;kotlin.String){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result { // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val error // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure.error|{}error[0]
+                final fun <get-error>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure.error.<get-error>|<get-error>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Busy : com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result { // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Busy|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Busy.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Busy.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Busy.toString|toString(){}[0]
+        }
+
+        final object NotJoined : com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result { // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.NotJoined|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.NotJoined.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.NotJoined.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.NotJoined.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result { // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 final class com.wire.kalium.logic.feature.call.usecase/SetCallQualityIntervalUseCaseImpl : com.wire.kalium.logic.feature.call.usecase/SetCallQualityIntervalUseCase { // com.wire.kalium.logic.feature.call.usecase/SetCallQualityIntervalUseCaseImpl|null[0]
     final suspend fun invoke(kotlin/Int) // com.wire.kalium.logic.feature.call.usecase/SetCallQualityIntervalUseCaseImpl.invoke|invoke(kotlin.Int){}[0]
 }
@@ -4364,6 +4401,8 @@ final class com.wire.kalium.logic.feature.call/CallsScope { // com.wire.kalium.l
         final fun <get-setBackground>(): com.wire.kalium.logic.feature.call.usecase/SetBackgroundUseCase // com.wire.kalium.logic.feature.call/CallsScope.setBackground.<get-setBackground>|<get-setBackground>(){}[0]
     final val setCallQualityInterval // com.wire.kalium.logic.feature.call/CallsScope.setCallQualityInterval|{}setCallQualityInterval[0]
         final fun <get-setCallQualityInterval>(): com.wire.kalium.logic.feature.call.usecase/SetCallQualityIntervalUseCase // com.wire.kalium.logic.feature.call/CallsScope.setCallQualityInterval.<get-setCallQualityInterval>|<get-setCallQualityInterval>(){}[0]
+    final val setHandRaised // com.wire.kalium.logic.feature.call/CallsScope.setHandRaised|{}setHandRaised[0]
+        final fun <get-setHandRaised>(): com.wire.kalium.logic.feature.call.usecase/SetCallHandRaisedUseCase // com.wire.kalium.logic.feature.call/CallsScope.setHandRaised.<get-setHandRaised>|<get-setHandRaised>(){}[0]
     final val setTestPreviewActive // com.wire.kalium.logic.feature.call/CallsScope.setTestPreviewActive|{}setTestPreviewActive[0]
         final fun <get-setTestPreviewActive>(): com.wire.kalium.logic.feature.call.usecase/SetTestPreviewActiveUseCase // com.wire.kalium.logic.feature.call/CallsScope.setTestPreviewActive.<get-setTestPreviewActive>|<get-setTestPreviewActive>(){}[0]
     final val setTestRemoteVideoStates // com.wire.kalium.logic.feature.call/CallsScope.setTestRemoteVideoStates|{}setTestRemoteVideoStates[0]
@@ -6209,6 +6248,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-service>(): com.wire.kalium.logic.feature.service/ServiceScope // com.wire.kalium.logic.feature/UserSessionScope.service.<get-service>|<get-service>(){}[0]
     final val setNewUserTrackingIdentifier // com.wire.kalium.logic.feature/UserSessionScope.setNewUserTrackingIdentifier|{}setNewUserTrackingIdentifier[0]
         final fun <get-setNewUserTrackingIdentifier>(): com.wire.kalium.logic.feature.analytics/SetNewUserTrackingIdentifierUseCase // com.wire.kalium.logic.feature/UserSessionScope.setNewUserTrackingIdentifier.<get-setNewUserTrackingIdentifier>|<get-setNewUserTrackingIdentifier>(){}[0]
+    final val slowSyncStatus // com.wire.kalium.logic.feature/UserSessionScope.slowSyncStatus|{}slowSyncStatus[0]
+        final fun <get-slowSyncStatus>(): kotlinx.coroutines.flow/StateFlow<com.wire.kalium.logic.data.sync/SlowSyncStatus> // com.wire.kalium.logic.feature/UserSessionScope.slowSyncStatus.<get-slowSyncStatus>|<get-slowSyncStatus>(){}[0]
     final val syncExecutor // com.wire.kalium.logic.feature/UserSessionScope.syncExecutor|{}syncExecutor[0]
         final fun <get-syncExecutor>(): com.wire.kalium.logic.sync/SyncExecutor // com.wire.kalium.logic.feature/UserSessionScope.syncExecutor.<get-syncExecutor>|<get-syncExecutor>(){}[0]
     final val syncManager // com.wire.kalium.logic.feature/UserSessionScope.syncManager|{}syncManager[0]

@@ -50,7 +50,7 @@ class RecoverMLSConversationsForUserUseCaseTest {
             arrangement.recoverEstablishedMLSConversations.invoke(eq(arrangement.transactionContext))
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinPendingMLSConversations.invoke(eq(true), eq(true))
+            arrangement.joinPendingMLSConversations.invoke(eq(true), eq(true), eq(false), any())
         }
     }
 
@@ -65,7 +65,7 @@ class RecoverMLSConversationsForUserUseCaseTest {
 
         assertEquals(RecoverMLSConversationsForUserResult.Failure(failure), result)
         verifySuspend(VerifyMode.not) {
-            arrangement.joinPendingMLSConversations.invoke(any(), any())
+            arrangement.joinPendingMLSConversations.invoke(any(), any(), any(), any())
         }
     }
 
@@ -91,7 +91,7 @@ class RecoverMLSConversationsForUserUseCaseTest {
         }
 
         fun withPendingRecovery(result: Either<StorageFailure, Unit>) = apply {
-            everySuspend { joinPendingMLSConversations.invoke(any(), any()) } returns result
+            everySuspend { joinPendingMLSConversations.invoke(any(), any(), any(), any()) } returns result
         }
 
         suspend fun arrange(): Pair<Arrangement, RecoverMLSConversationsForUserUseCase> {

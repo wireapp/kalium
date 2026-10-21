@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logic.feature.call.usecase.SetCallHandRaisedUseCase
 import com.wire.kalium.logic.data.client.guardedBy
 import com.wire.kalium.logic.network.guardedBy
 
@@ -213,6 +214,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
@@ -640,6 +642,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -1642,7 +1645,12 @@ public class UserSessionScope internal constructor(
                 logger = userScopedLogger
             ),
             syncMeetings = syncMeetingsUseCase,
-            optimizer = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
+            optimizer = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer),
+            onJoinProgress = { progress ->
+                slowSyncRepository.updateSlowSyncStatus(
+                    SlowSyncStatus.Ongoing(SlowSyncStep.JOINING_MLS_CONVERSATIONS, progress)
+                )
+            },
         )
     }
 
@@ -2155,6 +2163,7 @@ public class UserSessionScope internal constructor(
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
             inCallReactionsRepository,
+            callRepository,
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
             callingMessageHandler,
@@ -2645,6 +2654,10 @@ public class UserSessionScope internal constructor(
             reactionDAO = userStorage.database.reactionDAO,
         )
 
+    /** Read-only progress of the current slow-sync attempt. */
+    public val slowSyncStatus: StateFlow<SlowSyncStatus>
+        get() = slowSyncRepository.slowSyncStatus
+
     public val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCaseImpl(syncManager)
 
@@ -3094,8 +3107,19 @@ public class UserSessionScope internal constructor(
     public suspend fun callPresentations(): List<CallPresentationRecord> =
         CallSignalJournal(userStorage.database).presentations()
 
+    private val setCallHandRaised by lazy {
+        SetCallHandRaisedUseCase(
+            selfUserId = userId,
+            provideClientId = clientIdProvider,
+            messageSender = messages.messageSender,
+            calls = callRepository,
+            scope = this
+        )
+    }
+
     public val calls: CallsScope
         get() = CallsScope(
+            setHandRaised = setCallHandRaised,
             callManager = callManager,
             callBackgroundManager = callBackgroundManager,
             callRepository = callRepository,

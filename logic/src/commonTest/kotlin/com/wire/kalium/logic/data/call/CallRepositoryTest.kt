@@ -116,10 +116,12 @@ import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertNotEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -2324,6 +2326,56 @@ class CallRepositoryTest {
         conversationType = ConversationEntity.Type.GROUP,
         type = CallEntity.Type.CONFERENCE
     )
+
+    @Test
+    fun handStateSurvivesRepeatedEstablishedStatusAndRejectsOldGeneration() = runTest {
+        val device = CallHandIdentity(participant.userId, participant.clientId)
+        val initial = CallHandState.start("first", Instant.fromEpochSeconds(1), setOf(device))
+            .receive(device, true, Instant.fromEpochSeconds(2), "raise")
+        val (_, repository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(
+                Arrangement.conversationId to createCallMetadata().copy(participants = listOf(participant), handState = initial)
+            ))).arrange()
+        repository.updateCallStatusById(Arrangement.conversationId, CallStatus.ESTABLISHED)
+        assertEquals(initial, repository.getCallMetadata(Arrangement.conversationId)?.handState)
+        assertFalse(repository.updateHand(Arrangement.conversationId, device, false, Instant.fromEpochSeconds(3), "late", "old"))
+        assertTrue(repository.updateHand(Arrangement.conversationId, device, true, Instant.fromEpochSeconds(3), "confirmed", "first"))
+        assertEquals(listOf(device), repository.getCallMetadata(Arrangement.conversationId)?.handState?.raised)
+        assertEquals(listOf(device), repository.observeLastActiveCallByConversationId(Arrangement.conversationId).first()?.raisedHands)
+    }
+
+    @Test
+    fun leavingClearsHandsAndRejoiningStartsNewGeneration() = runTest {
+        val device = CallHandIdentity(participant.userId, participant.clientId)
+        val initial = CallHandState.start("first", Instant.fromEpochSeconds(1), setOf(device))
+            .receive(device, true, Instant.fromEpochSeconds(2), "raise")
+        val (_, repository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(
+                Arrangement.conversationId to createCallMetadata().copy(participants = listOf(participant), handState = initial)
+            ))).arrange()
+        repository.updateCallStatusById(Arrangement.conversationId, CallStatus.STILL_ONGOING)
+        assertNull(repository.getCallMetadata(Arrangement.conversationId)?.handState)
+        assertFalse(repository.updateHand(Arrangement.conversationId, device, true, Instant.fromEpochSeconds(3), "late", "first"))
+        repository.updateCallStatusById(Arrangement.conversationId, CallStatus.ESTABLISHED)
+        val rejoined = repository.getCallMetadata(Arrangement.conversationId)?.handState
+        assertNotEquals("first", rejoined?.generation)
+        assertEquals(emptyList(), rejoined?.raised)
+    }
+
+    @Test
+    fun mediaChangesKeepHandAndRosterRemovalClearsIt() = runTest {
+        val device = CallHandIdentity(participant.userId, participant.clientId)
+        val initial = CallHandState.start("first", Instant.fromEpochSeconds(1), setOf(device))
+            .receive(device, true, Instant.fromEpochSeconds(2), "raise")
+        val (_, repository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(
+                Arrangement.conversationId to createCallMetadata().copy(participants = listOf(participant), handState = initial)
+            ))).arrange()
+        repository.updateCallParticipants(Arrangement.conversationId, listOf(participant.copy(hasEstablishedAudio = false)))
+        assertEquals(listOf(device), repository.getCallMetadata(Arrangement.conversationId)?.handState?.raised)
+        repository.updateCallParticipants(Arrangement.conversationId, emptyList())
+        assertEquals(emptyList(), repository.getCallMetadata(Arrangement.conversationId)?.handState?.raised)
+    }
 
     private fun createCallMetadata() = CallMetadata(
         callerId = callerId,
