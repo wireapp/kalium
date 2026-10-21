@@ -68,6 +68,7 @@ class ObserveIsMeetingsEnabledUseCaseTest {
         val meetingsEnabledFlow = MutableStateFlow(false)
         val (_, useCase) = Arrangement()
             .withMeetingsEnabledFlow(meetingsEnabledFlow)
+            .withMeetingsSupported(true)
             .withGuestLinksSupported(true)
             .arrange()
 
@@ -83,6 +84,7 @@ class ObserveIsMeetingsEnabledUseCaseTest {
     fun guestLinkSharingRemainsDisabledWhenApiDoesNotSupportIt() = runTest {
         val (_, useCase) = Arrangement()
             .withMeetingsEnabledFlow(flowOf(true))
+            .withMeetingsSupported(true)
             .withGuestLinksSupported(false)
             .arrange()
         useCase.observeGuestLinkSharingEnabled().test {

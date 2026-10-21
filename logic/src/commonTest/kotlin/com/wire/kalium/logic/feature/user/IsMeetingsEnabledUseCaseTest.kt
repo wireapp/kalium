@@ -63,6 +63,7 @@ class IsMeetingsEnabledUseCaseTest {
             for (guestLinksSupported in listOf(false, true)) {
                 val (_, useCase) = Arrangement()
                     .withMeetingsEnabled(meetingsEnabled)
+                    .withMeetingsSupported(true)
                     .withGuestLinksSupported(guestLinksSupported)
                     .arrange()
                 assertEquals(meetingsEnabled && guestLinksSupported, useCase.isGuestLinkSharingEnabled())
