@@ -141,24 +141,52 @@ class MessageContentEncoderTest {
     }
 
     @Test
-    fun givenAPollMessage_whenEncoding_ThenResultHasTheHashOfItsQuestionAsText() = runTest {
-        val poll = MessageContent.Poll(
-            question = textWithEmoji.first.first,
-            options = listOf(MessageContent.Poll.Option("a", "Yes"), MessageContent.Poll.Option("b", "No")),
-            allowMultipleAnswers = false
-        )
-
+    fun givenAPollMessage_whenEncoding_ThenResultHasExpectedHexAndSHA256HashResult() = runTest {
         val result = messageContentEncoder.encodeMessageContent(
-            messageInstant = textWithEmoji.first.second,
+            messageInstant = Instant.parse("2018-10-22T15:09:29.000+02:00"),
             messageContent = poll
         )
 
         // then
         assertNotNull(result)
-        assertEquals(textWithEmoji.second.second, result.sha256Digest.toHexString())
+        assertEquals(
+            "feff0000000c004c0075006e00630068003f00000002" +
+                "0000000200610000000a00500069007a007a0061" +
+                "0000000200620000000a00530075007300680069" +
+                "00000000005bcdcc09",
+            result.asHexString
+        )
+        assertEquals("7b27e46361a27ccc949c96c0fd715314e068c79f76c4d738471dfe4e8922830a", result.sha256Digest.toHexString())
+    }
+
+    @Test
+    fun givenPollsThatDifferOnlyInOptionsOrAnswerMode_whenEncoding_ThenHashesDiffer() = runTest {
+        val instant = Instant.parse("2018-10-22T15:09:29.000+02:00")
+        fun hash(content: MessageContent.Poll) =
+            assertNotNull(messageContentEncoder.encodeMessageContent(instant, content)).sha256Digest.toHexString()
+        fun options(vararg texts: String) = texts.mapIndexed { index, text -> MessageContent.Poll.Option("$index", text) }
+
+        val hashes = listOf(
+            poll,
+            poll.copy(options = poll.options.reversed()),
+            poll.copy(options = poll.options.map { it.copy(id = it.id + "x") }),
+            poll.copy(options = poll.options.map { it.copy(text = it.text + "!") }),
+            poll.copy(allowMultipleAnswers = true),
+            // Option texts can contain any character, so a separator alone would make these two equal.
+            poll.copy(options = options("a, b", "c")),
+            poll.copy(options = options("a", "b, c")),
+        ).map(::hash)
+
+        assertEquals(hashes.size, hashes.toSet().size)
     }
 
     private companion object TestData {
+        val poll = MessageContent.Poll(
+            question = "Lunch?",
+            options = listOf(MessageContent.Poll.Option("a", "Pizza"), MessageContent.Poll.Option("b", "Sushi")),
+            allowMultipleAnswers = false
+        )
+
         val textWithEmoji =
             (
                     "Hello \uD83D\uDC69\u200D\uD83D\uDCBB\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67!" to

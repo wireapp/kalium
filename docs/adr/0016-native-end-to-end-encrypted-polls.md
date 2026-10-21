@@ -86,12 +86,24 @@ user.
 
 ### Replies
 
-A text message can quote a poll. A quote carries a hash of the quoted message,
-and the hash of a poll is the hash of a text message whose body is the poll
-question, at the poll's time. Options are left out, so the rule stays as simple
-as the text rule for other clients to adopt. `QuotedMessageDetails.Poll` gives
-the UI the question. Clients without poll support cannot verify the quote and
-show it as unavailable, like a quote of any message they cannot read.
+A text message can quote a poll. A quote carries the SHA-256 of the quoted
+message, so a reader can check that the person replying saw the same content.
+Proteus encrypts a copy for each recipient, so a sender could show recipients
+different options under one poll id. The poll hash therefore covers everything
+that is fixed at creation, in this order:
+
+- the bytes `FE FF`;
+- the question;
+- the number of options, as a 4-byte big-endian integer;
+- each option's id and text, in the poll's order;
+- `allow_multiple_answers`, as one byte, 1 or 0;
+- the poll's time in seconds, as an 8-byte big-endian integer, as for text.
+
+Each string is UTF-16BE, preceded by its length in bytes as a 4-byte big-endian
+integer, so two different polls never encode to the same bytes. Votes are not
+part of the hash. `QuotedMessageDetails.Poll` gives the UI the question. Clients
+without poll support cannot verify the quote and show it as unavailable, like a
+quote of any message they cannot read.
 
 ## Consequences
 

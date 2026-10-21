@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.uuid
+import com.wire.kalium.util.int.toByteArray
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
@@ -60,11 +61,10 @@ class MessageContentEncoder {
                 )
             }
 
-            // A poll is hashed like a text message whose body is the question.
             is MessageContent.Poll ->
-                encodeMessageTextBody(
+                encodePoll(
                     messageTimeStampInMillis = messageInstant.toEpochMilliseconds(),
-                    messageTextBody = messageContent.question
+                    poll = messageContent
                 )
 
             else -> {
@@ -116,6 +116,26 @@ class MessageContentEncoder {
             byteArray = byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + attachmentsBytes + messageTimeStampByteArray
         )
     }
+
+    /**
+     * Every string is length-prefixed and the options are counted, so no two polls share an encoding:
+     * FEFF, question, option count, each option's id and text in order, allowMultipleAnswers, time.
+     */
+    private fun encodePoll(messageTimeStampInMillis: Long, poll: MessageContent.Poll): EncodedMessageContent {
+        val options = poll.options.fold(poll.options.size.toByteArray()) { bytes, option ->
+            bytes + lengthPrefixedUTF16BE(option.id) + lengthPrefixedUTF16BE(option.text)
+        }
+        return EncodedMessageContent(
+            byteArray = byteArrayOf(0xFE.toByte(), 0xFF.toByte()) +
+                lengthPrefixedUTF16BE(poll.question) +
+                options +
+                byteArrayOf((if (poll.allowMultipleAnswers) 1 else 0).toByte()) +
+                encodeMessageTimeStampInMillis(messageTimeStampInMillis)
+        )
+    }
+
+    private fun lengthPrefixedUTF16BE(value: String): ByteArray =
+        value.toUTF16BEByteArray().let { it.size.toByteArray() + it }
 
     private fun wrapIntoResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): EncodedMessageContent {
         return EncodedMessageContent(

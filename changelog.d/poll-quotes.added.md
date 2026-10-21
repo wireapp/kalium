@@ -1,4 +1,4 @@
-Added replies to native polls: `MessageContent.QuotedMessageDetails.Poll` carries the quoted poll's question, and the quote hash of a poll is the text hash of its question.
+Added replies to native polls: `MessageContent.QuotedMessageDetails.Poll` carries the quoted poll's question, and the quote hash of a poll covers its question, options and answer mode (ADR 0016).
 
   - ABI: additive
   - Source: additive
