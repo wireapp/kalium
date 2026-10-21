@@ -59,9 +59,10 @@ SELECT COUNT(*) FROM Conversation c
 WHERE c.deleted_locally = 0
     AND c.type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE')
     -- Uncorrelated so User is scanned once; active_one_on_one_conversation_id has no index.
+    -- The conversation list hides one-to-ones until the peer's name is known.
     AND (c.type != 'ONE_ON_ONE' OR c.qualified_id IN (
         SELECT u.active_one_on_one_conversation_id FROM User u
-        WHERE u.connection_status IS NOT 'BLOCKED' AND u.deleted IS NOT 1
+        WHERE u.connection_status IS NOT 'BLOCKED' AND u.deleted IS NOT 1 AND u.name IS NOT NULL
     ))
     AND EXISTS (
         SELECT 1 FROM UnreadEvent ue WHERE ue.conversation_id = c.qualified_id
