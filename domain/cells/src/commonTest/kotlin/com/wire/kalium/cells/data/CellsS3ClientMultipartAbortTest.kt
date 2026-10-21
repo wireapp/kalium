@@ -264,11 +264,10 @@ class CellsS3ClientMultipartAbortTest {
             failPart = { partNumber -> SocketTimeoutException("simulated connection drop").takeIf { partNumber == 2 } },
         )
 
-        val exception = assertFailsWith<NoNetworkConnectionException> {
+        assertFailsWith<NoNetworkConnectionException> {
             client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
         }
 
-        assertTrue(exception is NoNetworkConnectionException)
         assertTrue(recorder.abortedUploadIds.isEmpty())
         assertEquals(listOf(1), recorder.partNumbers)
         assertEquals(0, recorder.completeCount)
@@ -288,11 +287,10 @@ class CellsS3ClientMultipartAbortTest {
             failPart = { partNumber -> KtorIOException("simulated network drop").takeIf { partNumber == 2 } },
         )
 
-        val exception = assertFailsWith<NoNetworkConnectionException> {
+        assertFailsWith<NoNetworkConnectionException> {
             client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
         }
 
-        assertTrue(exception is NoNetworkConnectionException)
         assertTrue(recorder.abortedUploadIds.isEmpty())
     }
 
