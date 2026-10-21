@@ -169,14 +169,14 @@ actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Ke
 
     return memScoped {
         val cryptor = alloc<CCCryptorRefVar>()
+        cryptor.value = null
+        val inputBuffer = source.buffer()
         val bytesCopied = alloc<ULongVar>()
         var bytesCopiedTotal: ULong = 0u
 
         try {
-            val iv = Buffer().use {
-                source.read(it, kCCBlockSizeAES128.toLong())
-                it.readByteArray()
-            }
+            // Read a full IV before passing its address to CommonCrypto, including from fragmented sources.
+            val iv = inputBuffer.readByteArray(kCCBlockSizeAES128.toLong())
 
             secretKey.data.usePinned { key ->
                 iv.usePinned { iv ->
@@ -196,7 +196,6 @@ actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Ke
                 }
             }
 
-            val inputBuffer = source.buffer()
             val encryptedBuffer = ByteArray(BUFFER_SIZE)
             var bytesRead: Int
 
@@ -242,8 +241,8 @@ actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Ke
             }
             bytesCopiedTotal += bytesCopied.value
         } finally {
-            CCCryptorRelease(cryptor.value)
-            source.close()
+            cryptor.value?.let { CCCryptorRelease(it) }
+            inputBuffer.close()
             sink.close()
         }
 
