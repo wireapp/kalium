@@ -11462,7 +11462,7 @@ class NotificationProcessorNativeTest {
                 }
             }
             val manager = ExistingAccountSessionManager(SELF, com.wire.kalium.logic.data.conversation.ClientId(CLIENT),
-                runtime.prepared.serverConfig, null, storage)
+                runtime.prepared.serverConfig, storage)
             val api = object : AccessTokenApi {
                 override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> {
                     assertEquals(CLIENT, clientId)
@@ -12515,7 +12515,7 @@ class NotificationProcessorNativeTest {
                         ?: ServerConfig.DUMMY,
                     ServerConfig.MetaData(false, CommonApiVersionType.Valid(apiVersion), SELF.domain)
                 ),
-                if (mlsEnabled) CIPHER else null, null,
+                if (mlsEnabled) CIPHER else null,
             ))
             lease?.release()
             lease = null

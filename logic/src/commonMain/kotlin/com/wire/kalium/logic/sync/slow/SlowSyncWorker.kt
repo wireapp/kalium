@@ -88,7 +88,6 @@ internal class SlowSyncWorkerImpl(
     private val oneOnOneResolver: OneOnOneResolver,
     private val transactionProvider: CryptoTransactionProvider,
     private val optimizer: OptimizeDatabaseUseCase,
-    private val syncNomadMessagesDuringSlowSync: SyncNomadMessagesDuringSlowSyncUseCase = NoOpSyncNomadMessagesDuringSlowSyncUseCase,
     private val syncMeetings: SyncMeetingsUseCase,
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
@@ -140,11 +139,6 @@ internal class SlowSyncWorkerImpl(
                 .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
                 .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
                 .continueWithOptionalStep(syncMeetings.isEnabled(), SlowSyncStep.MEETINGS) { syncMeetings().asEither() }
-                .continueWithOptionalStep(
-                    syncNomadMessagesDuringSlowSync.isEnabled(),
-                    SlowSyncStep.NOMAD_MESSAGES,
-                    syncNomadMessagesDuringSlowSync::invoke
-                )
                 .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS) {
                     // If a last saved event ID already exists, pending events may still contain the
                     // commit that establishes this MLS group, so slow sync must not force an

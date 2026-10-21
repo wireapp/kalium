@@ -129,7 +129,6 @@ public class AppleAccountRuntime private constructor(
             userId,
             ClientId(prepared.clientId),
             prepared.serverConfig,
-            prepared.nomadServiceUrl,
             preferences.authTokenStorage
         ).also { sessionManager = it }
         // Darwin currently rejects either proxy configuration or proxy credentials.
@@ -185,7 +184,7 @@ public class AppleAccountRuntime private constructor(
         }
         cleanupUncertain = true
         openedNetwork = AuthenticatedNetworkContainer.create(
-            session, prepared.nomadServiceUrl, QualifiedID(userId.value, userId.domain), userAgent,
+            session, QualifiedID(userId.value, userId.domain), userAgent,
             pins, null, null, kaliumLogger
         )
         cleanupUncertain = false

@@ -35,7 +35,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
 import dev.mokkery.MockMode
@@ -143,20 +142,6 @@ class UpdateConversationReadDateUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateConversationReadDate(eq(conversationId), eq(newLastRead))
         }
-    }
-
-    @Test
-    fun givenProvidedTimeIsNewerThanPersistedLastReadForConversation_whenWorking_thenShouldNotifyLastReadHook() = runTest {
-        val persistedLastRead = Clock.System.now()
-        val newLastRead = persistedLastRead + 1.seconds
-        val conversationId = TestConversation.CONVERSATION.id
-        val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withLastReadDateReturning(conversationId, persistedLastRead)
-        }
-
-        updateConversationReadDateUseCase(conversationId, newLastRead)
-
-        // Hook invocation is covered by integration tests; persistence notifier here is a no-op.
     }
 
     @Test
@@ -322,7 +307,6 @@ class UpdateConversationReadDateUseCaseTest {
         private val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
         private val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
         var sendConfirmation: SendConfirmationUseCase = mock<SendConfirmationUseCase>(mode = MockMode.autoUnit)
-        val persistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         var workQueue: ConversationWorkQueue = InstantConversationWorkQueue()
 
@@ -346,7 +330,6 @@ class UpdateConversationReadDateUseCaseTest {
                 selfConversationIdProvider,
                 sendConfirmation,
                 workQueue,
-                persistenceEventHookNotifier,
                 kaliumLogger
             )
         }

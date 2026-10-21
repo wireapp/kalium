@@ -27,8 +27,6 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.ConversationClearEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -61,7 +59,6 @@ internal class ClearConversationContentUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
 ) : ClearConversationContentUseCase {
 
     override suspend fun invoke(
@@ -93,11 +90,5 @@ internal class ClearConversationContentUseCaseImpl(
         }
             .flatMap { clearLocalConversationAssets(conversationId) }
             .flatMap { conversationRepository.clearContent(conversationId) }
-            .onSuccess {
-                persistenceEventHookNotifier.onConversationCleared(
-                    ConversationClearEventData(conversationId),
-                    selfUserId
-                )
-            }
             .fold({ ClearConversationContentUseCase.Result.Failure(it) }, { ClearConversationContentUseCase.Result.Success })
 }

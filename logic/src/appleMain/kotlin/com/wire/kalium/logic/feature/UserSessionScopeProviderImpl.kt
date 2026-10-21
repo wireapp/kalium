@@ -196,7 +196,7 @@ internal actual open class UserSessionScopeProviderImpl(
             val lease = checkNotNull(account.lease)
             ApplePreparedAccountStore(rootPathsProvider.rootPath, userId).publish(
                 lease,
-                PreparedAccount(userId, clientId.value, session.serverConfig, cipherSuite, session.nomadServiceUrl)
+                PreparedAccount(userId, clientId.value, session.serverConfig, cipherSuite)
             )
             Either.Right(Unit)
         } catch (cancellation: CancellationException) {

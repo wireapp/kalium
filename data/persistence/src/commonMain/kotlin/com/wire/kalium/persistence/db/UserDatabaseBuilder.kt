@@ -51,10 +51,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserPrefsDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
-import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
-import com.wire.kalium.persistence.dao.backup.NomadMessagesDAOImpl
-import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
-import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAOImpl
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.cellfile.CellFileDao
@@ -212,7 +208,6 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
         MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
-        RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter,
         AppAdapter = TableMapper.appAdapter,
         PendingDeliveryConfirmationsAdapter = TableMapper.pendingDeliveryConfirmationsAdapter,
         PendingActionsAdapter = TableMapper.pendingActionsAdapter,
@@ -484,20 +479,6 @@ class UserDatabaseBuilder internal constructor(
     val historyClientQueries: HistoryClientQueries
         get() = database.historyClientQueries
 
-    val nomadMessagesDAO: NomadMessagesDAO
-        get() = NomadMessagesDAOImpl(
-            usersQueries = database.usersQueries,
-            conversationsQueries = database.conversationsQueries,
-            messagesQueries = database.messagesQueries,
-            cellFilesQueries = database.cellFilesQueries,
-            messageAttachmentsQueries = database.messageAttachmentsQueries,
-            reactionsQueries = database.reactionsQueries,
-            receiptsQueries = database.receiptsQueries,
-            unreadEventsQueries = database.unreadEventsQueries,
-            selfUserId = userId,
-            writeDispatcher = writeDispatcher,
-        )
-
     val messageAttachments: MessageAttachmentsDao
         get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, database.cellFilesQueries, readDispatcher, writeDispatcher)
 
@@ -506,8 +487,6 @@ class UserDatabaseBuilder internal constructor(
 
     val cellFileDao: CellFileDao
         get() = CellFileDaoImpl(database.cellFilesQueries, readDispatcher, writeDispatcher)
-    val remoteBackupChangeLogDAO: RemoteBackupChangeLogDAO
-        get() = RemoteBackupChangeLogDAOImpl(database.remotebackupChangeLogQueries, readDispatcher, writeDispatcher)
 
     val meetingDao: MeetingDao
         get() = MeetingDaoImpl(database.meetingsQueries, readDispatcher, writeDispatcher)

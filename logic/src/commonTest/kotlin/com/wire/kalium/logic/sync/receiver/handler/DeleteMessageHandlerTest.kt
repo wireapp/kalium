@@ -28,10 +28,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.messaging.hooks.MessageDeleteEventData
-import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.common.error.StorageFailure
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -44,7 +40,6 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.time.Duration
 
 class DeleteMessageHandlerTest {
@@ -241,63 +236,6 @@ class DeleteMessageHandlerTest {
     }
 
     @Test
-    fun givenMessageDeletedSuccessfully_whenHandled_thenHookIsNotified() = runTest {
-        val originalMessageID = "originalMessageID"
-        val content = MessageContent.DeleteMessage(originalMessageID)
-        val conversationId = ConversationId("conversationId", "conversationDomain")
-
-        val originalMessage =
-            TestMessage.TEXT_MESSAGE.copy(
-                senderUserId = SELF_USER_ID,
-                id = originalMessageID,
-                conversationId = conversationId,
-                expirationData = Message.ExpirationData(expireAfter = Duration.parse("PT1H"))
-            )
-
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val (_, handler) = arrange(hookNotifier) {
-            withGetMessageById(Either.Right(originalMessage))
-            withDeleteMessage()
-        }
-
-        handler(
-            content = content,
-            senderUserId = UserId("requesterID", "requesterDomain"),
-            conversationId = conversationId
-        )
-
-        assertEquals(1, hookNotifier.deleteMessageCalls.size)
-        val (data, selfUserId) = hookNotifier.deleteMessageCalls.single()
-        assertEquals(conversationId, data.conversationId)
-        assertEquals(originalMessageID, data.messageId)
-        assertEquals(SELF_USER_ID, selfUserId)
-    }
-
-    @Test
-    fun givenGetMessageByIdFails_whenHandled_thenHookIsStillNotified() = runTest {
-        val originalMessageID = "originalMessageID"
-        val content = MessageContent.DeleteMessage(originalMessageID)
-        val conversationId = ConversationId("conversationId", "conversationDomain")
-
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val (_, handler) = arrange(hookNotifier) {
-            withGetMessageById(Either.Left(StorageFailure.DataNotFound))
-        }
-
-        handler(
-            content = content,
-            senderUserId = UserId("requesterID", "requesterDomain"),
-            conversationId = conversationId
-        )
-
-        assertEquals(1, hookNotifier.deleteMessageCalls.size)
-        val (data, selfUserId) = hookNotifier.deleteMessageCalls.single()
-        assertEquals(conversationId, data.conversationId)
-        assertEquals(originalMessageID, data.messageId)
-        assertEquals(SELF_USER_ID, selfUserId)
-    }
-
-    @Test
     fun givenDeletedMessageHasRemoteAsset_whenHandled_thenLocalAssetIsDeleted() = runTest {
         val conversationId = ConversationId("conversationId", "conversationDomain")
         val originalMessage = TestMessage.TEXT_MESSAGE.copy(
@@ -349,15 +287,9 @@ class DeleteMessageHandlerTest {
         val SELF_USER_ID = UserId("selfID", "selfDomain")
     }
 
-    private fun arrange(
-        hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,
-        block: suspend Arrangement.() -> Unit
-    ) = Arrangement(hookNotifier, block).arrange()
-
-    private fun arrange(block: suspend Arrangement.() -> Unit) = arrange(NoOpPersistenceEventHookNotifier, block)
+    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val hookNotifier: PersistenceEventHookNotifier,
         private val block: suspend Arrangement.() -> Unit
     ) {
         val messageRepository = mock<MessageRepository>()
@@ -375,8 +307,7 @@ class DeleteMessageHandlerTest {
                 messageDAO = messageDAO,
                 assetRepository = assetRepository,
                 notificationEventsManager = notificationEventsManager,
-                selfUserId = SELF_USER_ID,
-                persistenceEventHookNotifier = hookNotifier,
+                selfUserId = SELF_USER_ID
             )
         }
 
@@ -403,18 +334,5 @@ class DeleteMessageHandlerTest {
                 assetRepository.deleteAssetLocally(any())
             } returns result
         }
-    }
-
-    private class RecordingPersistenceEventHookNotifier : PersistenceEventHookNotifier {
-        val deleteMessageCalls = mutableListOf<Pair<MessageDeleteEventData, UserId>>()
-
-        override suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {
-            deleteMessageCalls += data to selfUserId
-        }
-
-        override suspend fun onConversationLastReadPersisted(
-            data: ConversationLastReadEventData,
-            selfUserId: UserId
-        ) = Unit
     }
 }

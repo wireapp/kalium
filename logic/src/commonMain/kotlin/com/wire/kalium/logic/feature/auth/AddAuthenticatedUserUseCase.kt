@@ -51,7 +51,6 @@ public class AddAuthenticatedUserUseCase internal constructor(
         public sealed class Failure : Result() {
             public data object UserAlreadyExists : Failure()
             public data object SsoIdentityChanged : Failure()
-            public data object NomadSingleUserViolation : Failure()
             public data class Generic(public val genericFailure: CoreFailure) : Failure()
         }
     }
@@ -59,22 +58,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
     public suspend operator fun invoke(
         session: StoreSessionParam,
         replace: Boolean = false,
-    ): Result = checkNomadViolation(session).fold(
-        { Result.Failure.Generic(it) },
-        { isViolation ->
-            if (isViolation) Result.Failure.NomadSingleUserViolation
-            else addSession(session, replace)
-        }
-    )
-
-    private suspend fun checkNomadViolation(session: StoreSessionParam): Either<StorageFailure, Boolean> {
-        val isNomadLogin = !session.nomadServiceUrl.isNullOrBlank()
-        return if (isNomadLogin) {
-            sessionRepository.allValidSessions().map { it.isNotEmpty() }
-        } else {
-            sessionRepository.doesValidNomadAccountExist()
-        }
-    }
+    ): Result = addSession(session, replace)
 
     private suspend fun addSession(session: StoreSessionParam, replace: Boolean): Result =
         sessionRepository.doesValidSessionExist(session.accountTokens.userId).fold(

@@ -40,7 +40,6 @@ import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
@@ -111,7 +110,6 @@ interface AuthenticatedNetworkContainer {
 
     val messageApi: MessageApi
 
-    val nomadDeviceSyncApi: NomadDeviceSyncApi
 
     val mlsMessageApi: MLSMessageApi
 
@@ -164,7 +162,6 @@ interface AuthenticatedNetworkContainer {
         @Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
         fun create(
             sessionManager: SessionManager,
-            nomadServiceUrl: String? = null,
             selfUserId: UserId,
             userAgent: String,
             certificatePinning: CertificatePinning,
@@ -189,7 +186,6 @@ interface AuthenticatedNetworkContainer {
             return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
                     sessionManager,
-                    nomadServiceUrl,
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
@@ -199,7 +195,6 @@ interface AuthenticatedNetworkContainer {
 
                 1 -> AuthenticatedNetworkContainerV0(
                     sessionManager,
-                    nomadServiceUrl,
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
@@ -209,7 +204,6 @@ interface AuthenticatedNetworkContainer {
 
                 2 -> AuthenticatedNetworkContainerV2(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -222,7 +216,6 @@ interface AuthenticatedNetworkContainer {
                 // and we default back to v2
                 3 -> AuthenticatedNetworkContainerV2(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -233,7 +226,6 @@ interface AuthenticatedNetworkContainer {
 
                 4 -> AuthenticatedNetworkContainerV4(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -244,7 +236,6 @@ interface AuthenticatedNetworkContainer {
 
                 5 -> AuthenticatedNetworkContainerV5(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -255,7 +246,6 @@ interface AuthenticatedNetworkContainer {
 
                 6 -> AuthenticatedNetworkContainerV6(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -266,7 +256,6 @@ interface AuthenticatedNetworkContainer {
 
                 7 -> AuthenticatedNetworkContainerV7(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -277,7 +266,6 @@ interface AuthenticatedNetworkContainer {
 
                 8 -> AuthenticatedNetworkContainerV8(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -288,7 +276,6 @@ interface AuthenticatedNetworkContainer {
 
                 9 -> AuthenticatedNetworkContainerV9(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -299,7 +286,6 @@ interface AuthenticatedNetworkContainer {
 
                 10 -> AuthenticatedNetworkContainerV10(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -310,7 +296,6 @@ interface AuthenticatedNetworkContainer {
 
                 11 -> AuthenticatedNetworkContainerV11(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -321,7 +306,6 @@ interface AuthenticatedNetworkContainer {
 
                 12 -> AuthenticatedNetworkContainerV12(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -332,7 +316,6 @@ interface AuthenticatedNetworkContainer {
 
                 13 -> AuthenticatedNetworkContainerV13(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -343,7 +326,6 @@ interface AuthenticatedNetworkContainer {
 
                 14 -> AuthenticatedNetworkContainerV14(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -354,7 +336,6 @@ interface AuthenticatedNetworkContainer {
 
                 15 -> AuthenticatedNetworkContainerV15(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -365,7 +346,6 @@ interface AuthenticatedNetworkContainer {
 
                 16 -> AuthenticatedNetworkContainerV16(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -376,7 +356,6 @@ interface AuthenticatedNetworkContainer {
 
                 17 -> AuthenticatedNetworkContainerV17(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -387,7 +366,6 @@ interface AuthenticatedNetworkContainer {
 
                 18 -> AuthenticatedNetworkContainerV18(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
@@ -410,7 +388,6 @@ internal interface AuthenticatedHttpClientProvider {
     val cellsHttpClient: HttpClient
         get() = networkClient.httpClient
     val backendConfig: ServerConfigDTO.Links
-    val nomadServiceUrl: String?
     val networkClient: AuthenticatedNetworkClient
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
@@ -424,7 +401,6 @@ internal interface AuthenticatedHttpClientProvider {
 @Suppress("LongParameterList")
 internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
-    override val nomadServiceUrl: String?,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine,
     private val ownsEngine: Boolean,
