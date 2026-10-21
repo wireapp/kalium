@@ -35,6 +35,7 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.isSuccessfullySent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -179,7 +180,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 
     private suspend fun markCancelled(conversationId: ConversationId, messageId: String) {
         val persisted = messageRepository.getMessageById(conversationId, messageId).getOrNull()
-        if (persisted?.status == Message.Status.Sent) {
+        if (persisted?.status?.isSuccessfullySent() == true) {
             currentCoroutineContext()[AssetMessageSendReceipt]?.succeeded = true
             return
         }
@@ -190,13 +191,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             conversationId,
             messageId
         )
-        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-            failure = CoreFailure.Unknown(CancellationException("Asset message sending was cancelled")),
-            conversationId = conversationId,
-            messageId = messageId,
-            messageType = TYPE,
-            scheduleResendIfNoNetwork = false
-        )
+        messageRepository.updateMessageStatusIfNotAcknowledged(MessageEntity.Status.FAILED, conversationId, messageId)
     }
 
     private suspend fun retryUpload(
@@ -209,7 +204,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             val content = message?.content as? MessageContent.Asset
             if (message == null || content == null) {
                 CoreFailure.Unknown(IllegalStateException("Asset message is unavailable for retry")).left()
-            } else if (message.status == Message.Status.Sent) {
+            } else if (message.status.isSuccessfullySent()) {
                 Unit.right()
             } else {
                 val remoteData = content.value.remoteData

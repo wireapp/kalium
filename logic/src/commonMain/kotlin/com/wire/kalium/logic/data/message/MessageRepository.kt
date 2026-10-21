@@ -89,6 +89,12 @@ internal interface MessageRepository : OutgoingMessages, MessageTransport {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
+    suspend fun updateMessageStatusIfNotAcknowledged(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Unit>
+
     suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -401,6 +407,14 @@ internal class MessageDataSource internal constructor(
                 conversationId = conversationId.toDao()
             )
         }
+
+    override suspend fun updateMessageStatusIfNotAcknowledged(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: String
+    ) = wrapStorageRequest {
+        messageDAO.updateMessageStatusIfNotAcknowledged(messageStatus, messageUuid, conversationId.toDao())
+    }
 
     override suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,

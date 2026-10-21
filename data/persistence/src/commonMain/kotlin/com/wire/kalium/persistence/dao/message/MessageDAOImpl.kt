@@ -363,6 +363,16 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateMessageStatusIfNotAcknowledged(
+        status: MessageEntity.Status,
+        id: String,
+        conversationId: QualifiedIDEntity
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.updateMessageStatusIfNotAcknowledged(status, id, conversationId)
+        }
+    }
+
     override suspend fun updateMessagesStatus(
         status: MessageEntity.Status,
         id: List<String>,

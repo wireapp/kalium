@@ -253,7 +253,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         assertEquals(AssetUploadCompletion.Cancelled, result.operation.awaitCompletion())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateTransferStatus(AssetTransferStatus.FAILED_UPLOAD, any(), any())
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+            arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(MessageEntity.Status.FAILED, any(), any())
         }
     }
 
@@ -307,7 +307,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         caller.join()
         assertTrue(uploadCleaned)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+            arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(MessageEntity.Status.FAILED, any(), any())
         }
     }
 
@@ -325,8 +325,8 @@ class ScheduleNewAssetMessageUseCaseTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.updateTransferStatus(AssetTransferStatus.FAILED_UPLOAD, conversationId, "persisted-message")
-                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                    any(), conversationId, "persisted-message", any(), eq(false)
+                arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(
+                    MessageEntity.Status.FAILED, conversationId, "persisted-message"
                 )
             }
             verifySuspend(VerifyMode.not) { arrangement.uploadAsset(any(), any()) }
@@ -373,7 +373,48 @@ class ScheduleNewAssetMessageUseCaseTest {
         assertSame(operation, operation.retry())
         verifySuspend(VerifyMode.not) {
             arrangement.updateTransferStatus(AssetTransferStatus.FAILED_UPLOAD, any(), any())
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+            arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun receiptArrivingDuringUploadBeforeCancellationCleanupIsNotDowngraded() = runTest(testDispatcher.default) {
+        for (status in listOf(Message.Status.Delivered, Message.Status.Read(1))) {
+            val (arrangement, scheduler) = Arrangement(this)
+                .withAssetMessagePersistSuccess()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+                .arrange()
+            everySuspend { arrangement.uploadAsset(any(), any()) } calls {
+                arrangement.withPersistedMessage(TestMessage.assetMessage().copy(status = status))
+                throw CancellationException("Receipt arrived before cancelled send result")
+            }
+            val operation = assertIs<StartTrackedAssetUploadResult.Started>(
+                scheduler.startTracked(assetUploadParams, "receipt-race")
+            ).operation
+            assertEquals(AssetUploadCompletion.Success, operation.awaitCompletion())
+            assertSame(operation, operation.retry())
+            verifySuspend(VerifyMode.not) {
+                arrangement.updateTransferStatus(any(), any(), any())
+                arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun receiptArrivingBeforeTrackedRetryPreventsAnotherSend() = runTest(testDispatcher.default) {
+        for (status in listOf(Message.Status.Delivered, Message.Status.Read(1))) {
+            val (arrangement, scheduler) = Arrangement(this)
+                .withAssetMessagePersistSuccess()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+                .arrange()
+            everySuspend { arrangement.uploadAsset(any(), any()) } calls { throw CancellationException("Send result lost") }
+            val operation = assertIs<StartTrackedAssetUploadResult.Started>(
+                scheduler.startTracked(assetUploadParams, "late-receipt")
+            ).operation
+            assertEquals(AssetUploadCompletion.Cancelled, operation.awaitCompletion())
+            arrangement.withPersistedMessage(TestMessage.assetMessage().copy(status = status))
+            assertEquals(AssetUploadCompletion.Success, operation.retry().awaitCompletion())
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(any(), any()) }
         }
     }
 
@@ -398,7 +439,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         assertEquals(AssetUploadCompletion.Cancelled, operation.awaitCompletion())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateTransferStatus(AssetTransferStatus.UPLOADED, any(), any())
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+            arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(MessageEntity.Status.FAILED, any(), any())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.updateTransferStatus(AssetTransferStatus.FAILED_UPLOAD, any(), any())
@@ -417,7 +458,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         val uploadAsset = mock<UploadAssetUseCase>(mode = MockMode.autoUnit)
         private val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
         val updateTransferStatus = mock<UpdateAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
-        private val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit)
+        val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit)
         val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase = mock(mode = MockMode.autoUnit)
         val observerFileSharingStatusUseCase: ObserveFileSharingStatusUseCase = mock(mode = MockMode.autoUnit)
         val messageSendFailureHandler: MessageSendFailureHandler = mock(mode = MockMode.autoUnit)
@@ -493,7 +534,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             dispatcher = testDispatcher,
         ).also {
             every { slowSyncRepository.slowSyncStatus } returns completeStateFlow
-            everySuspend { messageRepository.getMessageById(any(), any()) } returns persistedMessage.right()
+            everySuspend { messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any()) } returns Unit.right()
+            everySuspend { messageRepository.getMessageById(any(), any()) } calls { persistedMessage.right() }
             everySuspend { messageRepository.observeMessageVisibility(any(), any()) } returns
                 flowOf(MessageEntity.Visibility.VISIBLE.right())
             everySuspend { updateTransferStatus(any(), any(), any()) } returns UpdateTransferStatusResult.Success

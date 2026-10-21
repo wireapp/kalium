@@ -83,6 +83,9 @@ interface MessageDAO {
     suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
 
+    /** Conditional cleanup: a receipt committed since the caller's read must not be downgraded. */
+    suspend fun updateMessageStatusIfNotAcknowledged(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
+
     suspend fun updateMessagesStatus(status: MessageEntity.Status, id: List<String>, conversationId: QualifiedIDEntity)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
     suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity>

@@ -43,6 +43,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.isSuccessfullySent
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -172,18 +173,26 @@ public class RetryFailedMessageUseCase internal constructor(
     private suspend fun markFailed(message: Message, failure: CoreFailure? = null) {
         // Crypto transactions may finish delivery under NonCancellable and lose their result on return.
         // Never turn an acknowledged persisted send into a retryable failure during cleanup.
-        if (messageRepository.getMessageById(message.conversationId, message.id).getOrNull()?.status == Message.Status.Sent) return
+        val persisted = messageRepository.getMessageById(message.conversationId, message.id).getOrNull()
+        if (persisted?.status?.isSuccessfullySent() == true) return
         if (message.content is MessageContent.Asset &&
             getAssetMessageTransferStatusUseCase(message.conversationId, message.id) != AssetTransferStatus.UPLOADED
         ) {
-            updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
+            // Remote data is persisted before UPLOADED; cancellation can interrupt between those writes.
+            val content = persisted?.content as? MessageContent.Asset
+            val uploaded = content?.value?.remoteData?.sha256?.isNotEmpty() == true
+            updateAssetMessageTransferStatus(
+                if (uploaded) AssetTransferStatus.UPLOADED else AssetTransferStatus.FAILED_UPLOAD,
+                message.conversationId,
+                message.id
+            )
         }
         val status = if (failure is NetworkFailure.FederatedBackendFailure) {
             MessageEntity.Status.FAILED_REMOTELY
         } else {
             MessageEntity.Status.FAILED
         }
-        messageRepository.updateMessageStatus(status, message.conversationId, message.id)
+        messageRepository.updateMessageStatusIfNotAcknowledged(status, message.conversationId, message.id)
     }
 
     private suspend fun retrySendingMessage(message: Message.Sendable): Either<CoreFailure, Unit> =

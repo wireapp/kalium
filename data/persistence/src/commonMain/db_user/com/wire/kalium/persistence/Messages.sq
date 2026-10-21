@@ -533,6 +533,14 @@ UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
+updateMessageStatusIfNotAcknowledged:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey Message
+UPDATE Message
+SET status = ?
+WHERE id = ? AND conversation_id = ?
+AND status NOT IN ('SENT', 'DELIVERED', 'READ');
+
 updateMessagesStatusIfNotRead:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey Message
