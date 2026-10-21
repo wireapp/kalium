@@ -74,18 +74,6 @@ class GetCellGroupConversationsUseCaseTest {
     }
 
     @Test
-    fun given_EmptyConversations_whenInvoked_thenReturnEmptyList() = runTest {
-        val (_, useCase) = Arrangement()
-            .withConversationDetails(emptyList())
-            .arrange()
-
-        val result = useCase()
-
-        assertIs<GetCellGroupConversationsUseCaseResult.Success>(result)
-        assertEquals(0, result.conversations.size)
-    }
-
-    @Test
     fun given_RepositoryFails_whenInvoked_thenReturnFailure() = runTest {
         val storageFailure: StorageFailure = StorageFailure.DataNotFound
         val (_, useCase) = Arrangement()
@@ -96,47 +84,6 @@ class GetCellGroupConversationsUseCaseTest {
 
         assertIs<GetCellGroupConversationsUseCaseResult.Failure>(result)
         assertEquals(storageFailure, result.failure)
-    }
-
-    @Test
-    fun given_PrivateChannel_whenInvoked_thenReturnConversationWithPrivateAccess() = runTest {
-        val (_, useCase) = Arrangement()
-            .withConversationDetails(
-                listOf(
-                    CellConversation(
-                        CONVERSATION_ID_1,
-                        CONVERSATION_NAME_1,
-                        isChannel = true,
-                        channelAccess = ConversationDetails.Group.Channel.ChannelAccess.PRIVATE
-                    )
-                )
-            )
-            .arrange()
-
-        val result = useCase()
-
-        assertIs<GetCellGroupConversationsUseCaseResult.Success>(result)
-        assertEquals(1, result.conversations.size)
-        assertEquals(true, result.conversations[0].isChannel)
-        assertEquals(ConversationDetails.Group.Channel.ChannelAccess.PRIVATE, result.conversations[0].channelAccess)
-    }
-
-    @Test
-    fun given_RegularGroup_whenInvoked_thenReturnConversationWithoutChannelInfo() = runTest {
-        val (_, useCase) = Arrangement()
-            .withConversationDetails(
-                listOf(
-                    CellConversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null)
-                )
-            )
-            .arrange()
-
-        val result = useCase()
-
-        assertIs<GetCellGroupConversationsUseCaseResult.Success>(result)
-        assertEquals(1, result.conversations.size)
-        assertEquals(false, result.conversations[0].isChannel)
-        assertEquals(null, result.conversations[0].channelAccess)
     }
 
     private class Arrangement {

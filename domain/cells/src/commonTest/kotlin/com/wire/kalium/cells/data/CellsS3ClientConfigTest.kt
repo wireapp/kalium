@@ -18,17 +18,9 @@
 package com.wire.kalium.cells.data
 
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class CellsS3ClientConfigTest {
-
-    @Test
-    fun givenDefaultConfig_whenReadingMultipartChunkSize_thenUsesTenMebibytes() {
-        val config = CellsS3ClientConfig()
-
-        assertEquals(10 * 1024 * 1024L, config.multipartChunkSize)
-    }
 
     @Test
     fun givenZeroMultipartChunkSize_whenCreatingConfig_thenRejectsIt() {

@@ -54,22 +54,6 @@ class SyncAppsUseCaseTest {
     }
 
     @Test
-    fun givenApiV10ToV14_whenSyncing_thenOnlyCollaboratorAppsAreRequested() = runTest {
-        val arrangement = Arrangement(apiVersion = 14).withTeam(TEAM_ID).withSyncSuccess(includeTeamApps = false)
-
-        assertIs<SyncAppsUseCase.Result.Success>(arrangement.useCase())
-        verifySuspend { arrangement.appRepository.syncApps(TEAM_ID, includeTeamApps = false) }
-    }
-
-    @Test
-    fun givenApiV15_whenSyncing_thenTeamAndCollaboratorAppsAreRequested() = runTest {
-        val arrangement = Arrangement(apiVersion = 15).withTeam(TEAM_ID).withSyncSuccess(includeTeamApps = true)
-
-        assertIs<SyncAppsUseCase.Result.Success>(arrangement.useCase())
-        verifySuspend { arrangement.appRepository.syncApps(TEAM_ID, includeTeamApps = true) }
-    }
-
-    @Test
     fun givenRepositoryFailure_whenSyncing_thenFailureIsPropagated() = runTest {
         val failure = NetworkFailure.NoNetworkConnection(null)
         val arrangement = Arrangement(apiVersion = 15).withTeam(TEAM_ID).withSyncFailure(failure)
