@@ -830,6 +830,27 @@ internal class AssetRepositoryTest {
         }    }
 
     @Test
+    fun uploadingManagedAssetRetainsSourceUntilMessageCommits() = runTest {
+        val localId = UserAssetId("pending-video", "")
+        val source = fakeKaliumFileSystem.providePersistentAssetPath(localId.value)
+        val bytes = "video bytes needed for retry".encodeToByteArray()
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withRawStoredData(bytes, source)
+            .withMockedAssetDaoGetByKeyCall(localId, stubAssetEntity(localId.value, source, bytes.size.toLong()))
+            .withSuccessfulUpload(AssetResponse("uploaded-video", "domain", null, "token"))
+            .withAssetAuditLogEnabled(false)
+            .arrange()
+        everySuspend { arrangement.assetDAO.isFileReferenced(source.toString()) } returns true
+
+        repository.uploadAndPersistPrivateAsset("video/mp4", source, generateRandomAES256Key(), "mp4").shouldSucceed()
+
+        // Cancellation before the message update must leave its old ID readable for a retry.
+        assertTrue(fakeKaliumFileSystem.exists(source))
+        repository.fetchDecodedAsset(localId.value).shouldSucceed { assertEquals(source, it) }
+        assertContentEquals(bytes, fakeKaliumFileSystem.source(source).buffer().use { it.readByteArray() })
+    }
+
+    @Test
     fun givenAnError_whenPersistingAsset_thenShouldReturnFailure() = runTest {
         // Given
         val dataNamePath = "temp-data-path"
@@ -1106,6 +1127,10 @@ internal class AssetRepositoryTest {
 
         val assetApi = mock<AssetApi>()
         val assetDAO = mock<AssetDAO>()
+
+        init {
+            everySuspend { assetDAO.isFileReferenced(any()) } returns false
+        }
 
         private val assetAuditLog = mock<AssetAuditFeatureHandler>()
 

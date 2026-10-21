@@ -310,7 +310,8 @@ internal class AssetDataSource(
         return wrapStorageRequest {
             val persistentAssetDataPath = kaliumFileSystem.providePersistentAssetPath(assetName = buildFileName(assetId, extension))
             kaliumFileSystem.copy(decodedDataPath, persistentAssetDataPath)
-            if (!retainSource) kaliumFileSystem.delete(decodedDataPath)
+            // Keep explicitly retained and managed sources until the message update commits.
+            if (!retainSource && !assetDao.isFileReferenced(decodedDataPath.toString())) kaliumFileSystem.delete(decodedDataPath)
             val decodedAssetEntity = assetMapper.fromUserAssetToDaoModel(assetId, assetDomain, persistentAssetDataPath, assetDataSize)
             assetDao.insertAsset(decodedAssetEntity)
             return@wrapStorageRequest persistentAssetDataPath
