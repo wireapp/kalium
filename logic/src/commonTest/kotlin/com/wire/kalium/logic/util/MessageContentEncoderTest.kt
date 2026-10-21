@@ -160,6 +160,25 @@ class MessageContentEncoderTest {
     }
 
     @Test
+    fun givenAMultipleAnswerPoll_whenEncoding_ThenItsAnswerModeIsTheByte01() = runTest {
+        val result = messageContentEncoder.encodeMessageContent(
+            messageInstant = Instant.parse("2018-10-22T15:09:29.000+02:00"),
+            messageContent = poll.copy(allowMultipleAnswers = true)
+        )
+
+        // then
+        assertNotNull(result)
+        assertEquals(
+            "feff0000000c004c0075006e00630068003f00000002" +
+                "0000000200610000000a00500069007a007a0061" +
+                "0000000200620000000a00530075007300680069" +
+                "01000000005bcdcc09",
+            result.asHexString
+        )
+        assertEquals("68f3b3419f7167f277bff0db8b01d28fd0c2b1db556d44a1d316a2c20f7439be", result.sha256Digest.toHexString())
+    }
+
+    @Test
     fun givenPollsThatDifferOnlyInOptionsOrAnswerMode_whenEncoding_ThenHashesDiffer() = runTest {
         val instant = Instant.parse("2018-10-22T15:09:29.000+02:00")
         fun hash(content: MessageContent.Poll) =
