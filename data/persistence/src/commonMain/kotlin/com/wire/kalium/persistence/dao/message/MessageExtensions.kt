@@ -51,6 +51,12 @@ interface MessageExtensions {
         startingOffset: Long
     ): KaliumPager<MessageEntity>
 
+    fun getPagerForMediaMessages(
+        conversationId: ConversationIDEntity,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): KaliumPager<MessageEntity>
+
     fun getPagerForMessageAssetImage(
         conversationId: ConversationIDEntity,
         mimeTypes: Set<String>,
@@ -108,6 +114,27 @@ internal class MessageExtensionsImpl internal constructor(
             readDispatcher,
         )
     }
+
+    override fun getPagerForMediaMessages(
+        conversationId: ConversationIDEntity,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): KaliumPager<MessageEntity> = KaliumPager(
+        Pager(pagingConfig) { getMediaPagingSource(conversationId, startingOffset) },
+        getMediaPagingSource(conversationId, startingOffset),
+        readDispatcher,
+    )
+
+    private fun getMediaPagingSource(conversationId: ConversationIDEntity, initialOffset: Long) = AsyncQueryPagingSource(
+        countQuery = messageAssetViewQueries.countMediaMessagesByConversationId(conversationId),
+        context = readDispatcher.value,
+        initialOffset = initialOffset,
+        queryProvider = { limit, offset ->
+            messageAssetViewQueries.getMediaMessagesByConversationId(
+                conversationId, limit, offset, messageMapper::toEntityMessageFromView
+            )
+        }
+    )
 
     override fun getPagerForMessageAssetImage(
         conversationId: ConversationIDEntity,

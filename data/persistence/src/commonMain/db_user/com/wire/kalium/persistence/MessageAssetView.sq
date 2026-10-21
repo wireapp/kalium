@@ -95,3 +95,24 @@ FROM Message message
 JOIN MessageAssetContent preview ON preview.message_id = message.id AND preview.conversation_id = message.conversation_id
 JOIN Asset cache ON cache.key = preview.preview_asset_id AND cache.domain = COALESCE(preview.preview_asset_domain, '')
 WHERE message.conversation_id = :conversationId AND preview.preview_asset_id IS NOT NULL;
+
+-- Separate media pager: keep the existing image-only and file-list contracts unchanged.
+countMediaMessagesByConversationId:
+SELECT COUNT(*) FROM MessageAssetView
+WHERE conversationId = :conversationId
+AND visibility = 'VISIBLE'
+AND contentType = 'ASSET'
+AND isEphemeral = FALSE
+AND assetId IS NOT NULL
+AND (assetMimeType LIKE 'image/%' OR assetMimeType LIKE 'video/%');
+
+getMediaMessagesByConversationId:
+SELECT * FROM MessageDetailsView
+WHERE conversationId = :conversationId
+AND visibility = 'VISIBLE'
+AND contentType = 'ASSET'
+AND expireAfterMillis IS NULL
+AND assetId IS NOT NULL
+AND (assetMimeType LIKE 'image/%' OR assetMimeType LIKE 'video/%')
+ORDER BY date DESC, id DESC
+LIMIT :limit OFFSET :offset;

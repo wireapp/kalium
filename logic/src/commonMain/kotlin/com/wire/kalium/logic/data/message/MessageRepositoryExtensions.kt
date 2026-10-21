@@ -53,6 +53,12 @@ internal interface MessageRepositoryExtensions {
         startingOffset: Long
     ): Flow<PagingData<Message.Standalone>>
 
+    suspend fun observePaginatedMediaMessages(
+        conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>>
+
     suspend fun observePaginatedMessageAssetImageByConversationId(
         conversationId: ConversationId,
         pagingConfig: PagingConfig,
@@ -117,6 +123,14 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             it.map { messageEntity -> messageMapper.fromEntityToMessage(messageEntity) }
         }
     }
+
+    override suspend fun observePaginatedMediaMessages(
+        conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>> = messageDAO.platformExtensions.getPagerForMediaMessages(
+        conversationId.toDao(), pagingConfig, startingOffset
+    ).pagingDataFlow.map { page -> page.map { messageMapper.fromEntityToMessage(it) } }
 
     override suspend fun observePaginatedMessageAssetImageByConversationId(
         conversationId: ConversationId,

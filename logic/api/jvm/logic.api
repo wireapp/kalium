@@ -1557,6 +1557,10 @@ public final class com/wire/kalium/logic/feature/asset/ObservePaginatedAssetImag
 	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;JLandroidx/paging/PagingConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class com/wire/kalium/logic/feature/asset/ObservePaginatedMediaMessages {
+	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;JLandroidx/paging/PagingConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public abstract class com/wire/kalium/logic/feature/asset/PublicAssetResult {
 }
 
@@ -6098,6 +6102,7 @@ public final class com/wire/kalium/logic/feature/message/MessageScopeExtensionsK
 	public static final fun getGetPaginatedFlowOfMessagesByConversation (Lcom/wire/kalium/logic/feature/message/MessageScope;)Lcom/wire/kalium/logic/feature/message/GetPaginatedFlowOfMessagesByConversationUseCase;
 	public static final fun getGetPaginatedFlowOfMessagesBySearchQueryAndConversation (Lcom/wire/kalium/logic/feature/message/MessageScope;)Lcom/wire/kalium/logic/feature/message/GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase;
 	public static final fun getObservePaginatedImageAssetMessageByConversationId (Lcom/wire/kalium/logic/feature/message/MessageScope;)Lcom/wire/kalium/logic/feature/asset/ObservePaginatedAssetImageMessages;
+	public static final fun getObservePaginatedMediaMessages (Lcom/wire/kalium/logic/feature/message/MessageScope;)Lcom/wire/kalium/logic/feature/asset/ObservePaginatedMediaMessages;
 }
 
 public final class com/wire/kalium/logic/feature/message/ObserveMessageByIdUseCase {
