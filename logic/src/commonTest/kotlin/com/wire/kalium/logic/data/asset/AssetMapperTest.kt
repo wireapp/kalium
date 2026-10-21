@@ -107,7 +107,7 @@ class AssetMapperTest {
             "image/jpeg", 1024, 512, 288,
             original.copy(
                 assetId = "preview", assetDomain = "preview.domain", assetToken = "preview-token",
-                otrKey = byteArrayOf(3), sha256 = byteArrayOf(4),
+                otrKey = ByteArray(32) { 3 }, sha256 = ByteArray(32) { 4 },
             ),
         )
         return AssetContent(100_000, "video.mp4", "video/mp4", AssetContent.AssetMetadata.Video(1920, 1080, 1000), original, preview)
@@ -136,6 +136,29 @@ class AssetMapperTest {
         assertEquals(content, restored)
         val proto = AssetMapperImpl().fromAssetContentToProtoAssetMessage(MessageContent.Asset(content), false, LegalHoldStatus.DISABLED)
         assertNull(proto.preview)
+    }
+
+    @Test
+    fun invalidPreviewKeyAndHashLengthsAreRejectedOnWireAndPersistence() {
+        val mapper = AssetMapperImpl()
+        val video = videoWithPreview()
+        val preview = requireNotNull(video.preview)
+        val malformed = listOf(0, 1, 31, 33).map { length ->
+            preview.copy(remoteData = preview.remoteData.copy(otrKey = ByteArray(length)))
+        } + listOf(1, 31, 33).map { length ->
+            preview.copy(remoteData = preview.remoteData.copy(sha256 = ByteArray(length)))
+        }
+        for (invalid in malformed) {
+            val content = video.copy(preview = invalid)
+            val wire = mapper.fromAssetContentToProtoAssetMessage(MessageContent.Asset(content), false, LegalHoldStatus.DISABLED)
+            assertNull(mapper.fromProtoAssetMessageToAssetContent(wire).preview)
+            val entity = RegularMessageMapper(UserId("self", "domain")).toMessageEntityContent(MessageContent.Asset(content))
+            val restored = mapper.fromAssetEntityToAssetContent(
+                entity as com.wire.kalium.persistence.dao.message.MessageEntityContent.Asset,
+            )
+            assertNull(restored.preview)
+            assertEquals(video.remoteData, restored.remoteData)
+        }
     }
 
     @Test

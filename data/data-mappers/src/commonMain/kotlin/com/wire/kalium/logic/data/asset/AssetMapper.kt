@@ -363,7 +363,8 @@ private fun Asset.Preview.toModel(allowPending: Boolean = false): AssetContent.P
     val image = (metaData as? Asset.Preview.MetaData.Image)?.value ?: return null
     if (!isDisplayableImageMimeType(mimeType) || size !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES ||
         image.width !in 1..AssetContent.Preview.MAX_DIMENSION || image.height !in 1..AssetContent.Preview.MAX_DIMENSION ||
-        data.assetId.isNullOrEmpty() || data.otrKey.array.isEmpty() || (!allowPending && data.sha256.array.isEmpty())
+        data.assetId.isNullOrEmpty() || data.otrKey.array.size != AES256_KEY_SIZE_BYTES ||
+        (data.sha256.array.size != SHA256_SIZE_BYTES && !(allowPending && data.sha256.array.isEmpty()))
     ) return null
     return AssetContent.Preview(
         mimeType = mimeType,
@@ -380,3 +381,6 @@ private fun Asset.Preview.toModel(allowPending: Boolean = false): AssetContent.P
         ),
     )
 }
+
+private const val AES256_KEY_SIZE_BYTES = 32
+private const val SHA256_SIZE_BYTES = 32
