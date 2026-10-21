@@ -98,6 +98,19 @@ class UnreadConversationBadgeCountTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun oneToOneConversationStopsCountingWhenTheUserIsDeleted() = runTest(dispatcher) {
+        val conversation = conversation("one-on-one").copy(type = ConversationEntity.Type.ONE_ON_ONE)
+        val user = newUserEntity(sender).copy(team = null, activeOneOnOneConversationId = conversation.id)
+        val userWithoutOneOnOne = newUserEntity(UserIDEntity("badge-other", "wire.test")).copy(team = null)
+        db.conversationDAO.insertConversation(conversation)
+        db.userDAO.upsertUsers(listOf(user, userWithoutOneOnOne))
+        unread(conversation, "one-on-one")
+        assertEquals(1L, db.conversationDAO.observeUnreadConversationBadgeCount().first())
+        db.userDAO.markAsDeleted(listOf(sender))
+        assertEquals(0L, db.conversationDAO.observeUnreadConversationBadgeCount().first())
+    }
+
+    @Test
     fun excludesSelfPendingMeetingAndDeletedConversations() = runTest(dispatcher) {
         db.userDAO.upsertUser(newUserEntity(sender).copy(team = null))
         val conversations = listOf(
