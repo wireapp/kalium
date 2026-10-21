@@ -444,6 +444,9 @@ public class ConversationScope internal constructor(
     public val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
         get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
 
+    public val observeUnreadConversationBadgeCount: ObserveUnreadConversationBadgeCountUseCase
+        get() = ObserveUnreadConversationBadgeCountUseCaseImpl(conversationRepository)
+
     private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler =
         TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
 

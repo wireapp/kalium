@@ -2723,6 +2723,7 @@ public class UserSessionScope internal constructor(
             userSessionScopeProvider,
         )
     }
+
     public val conversations: ConversationScope by lazy {
         ConversationScope(
             conversationRepository,

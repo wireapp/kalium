@@ -53,6 +53,22 @@ SELECT COUNT(DISTINCT ue.conversation_id) FROM UnreadEvent ue
 INNER JOIN Conversation c ON ue.conversation_id = c.qualified_id
 WHERE c.archived = 1;
 
+-- Count conversations, including archived ones, without loading message previews or list pages.
+getUnreadConversationBadgeCount:
+SELECT COUNT(*) FROM Conversation c
+WHERE c.deleted_locally = 0
+    AND c.type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE')
+    AND (c.type != 'ONE_ON_ONE' OR EXISTS (
+        SELECT 1 FROM User u WHERE u.active_one_on_one_conversation_id = c.qualified_id
+            AND u.connection_status IS NOT 'BLOCKED' AND u.deleted IS NOT 1
+    ))
+    AND EXISTS (
+        SELECT 1 FROM UnreadEvent ue WHERE ue.conversation_id = c.qualified_id
+            AND (c.muted_status IN ('ALL_ALLOWED', 'MENTIONS_MUTED')
+                OR (c.muted_status = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED'
+                    AND ue.type IN ('MENTION', 'REPLY', 'MISSED_CALL')))
+    );
+
 CREATE VIEW IF NOT EXISTS UnreadEventCountsGrouped AS
 SELECT
     conversation_id AS conversationId,

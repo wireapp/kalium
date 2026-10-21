@@ -25,6 +25,7 @@
 package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CoreCryptoCentral
@@ -68,6 +69,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.job
 import kotlinx.coroutines.newSingleThreadContext
@@ -100,6 +102,11 @@ public class AppleAccountRuntime private constructor(
         database.userConfigDAO,
         lazy { BuildFileRestrictionState.NoRestriction },
     ).getMessageContentPreference()
+
+    /** Absolute badge count inside [use]; a storage failure must not replace the host's current badge. */
+    public suspend fun readUnreadConversationBadgeCount(): Either<StorageFailure, Long> = wrapStorageRequest {
+        database.conversationDAO.observeUnreadConversationBadgeCount().first()
+    }
 
     /** Canonical default for this attempt; changing it requires an already installed credential. */
     public var mlsCipherSuite: CipherSuite? = prepared.mlsCipherSuite

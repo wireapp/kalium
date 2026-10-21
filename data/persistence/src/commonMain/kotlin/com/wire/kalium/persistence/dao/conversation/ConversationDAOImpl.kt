@@ -43,6 +43,7 @@ import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -710,6 +711,13 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.updateMlsVerificationStatus(verificationStatus, conversationId)
         }
     }
+
+    override fun observeUnreadConversationBadgeCount(): Flow<Long> =
+        unreadEventsQueries.getUnreadConversationBadgeCount()
+            .asFlow()
+            .mapToOne()
+            .distinctUntilChanged()
+            .flowOn(readDispatcher.value)
 
     override fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         unreadEventsQueries.getUnreadArchivedConversationsCount()
