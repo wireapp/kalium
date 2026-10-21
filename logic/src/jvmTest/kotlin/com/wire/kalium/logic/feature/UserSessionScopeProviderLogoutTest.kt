@@ -543,7 +543,7 @@ class UserSessionScopeProviderLogoutTest {
                 val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
                 val drained = CompletableDeferred<Unit>()
                 val observation = launch {
-                    provider.observeValidSession(user, repository) {
+                    provider.observeValidSession<UserSessionScope>(user, repository) {
                         val captured = this
                         flow {
                             try {
@@ -622,7 +622,7 @@ class UserSessionScopeProviderLogoutTest {
                 val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
                 val attachedTokens = Channel<String?>(Channel.UNLIMITED)
                 val observation = launch {
-                    provider.observeValidSession(user, repository) {
+                    provider.observeValidSession<UserSessionScope>(user, repository) {
                         val captured = this
                         attachedTokens.send(tokens.getToken(user.toDao())?.accessToken)
                         flow { emit(captured); awaitCancellation() }
@@ -945,7 +945,7 @@ class UserSessionScopeProviderLogoutTest {
                 val account = (field.get(provider) as UserSessionRegistry<UserSessionScope>).account(user)
                 val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
                 val observer = launch {
-                    provider.observeValidSession(user, repository) {
+                    provider.observeValidSession<UserSessionScope>(user, repository) {
                         val captured = this
                         flow { emit(captured); awaitCancellation() }
                     }.collect { values.send(it) }
@@ -988,7 +988,7 @@ class UserSessionScopeProviderLogoutTest {
                 }, removeNetwork = { network.remove(it.toApi()) })
                 val values = Channel<UserSessionScope?>(Channel.UNLIMITED)
                 val observer = launch {
-                    provider.observeValidSession(user, repository) {
+                    provider.observeValidSession<UserSessionScope>(user, repository) {
                         val captured = this
                         flow { emit(captured); awaitCancellation() }
                     }.collect { values.send(it) }
