@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.allocArray
@@ -5896,6 +5897,7 @@ class NotificationProcessorNativeTest {
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event, tail), event.id)).value
                 if (interruption != Interruption.AFTER_COMMIT && interruption != Interruption.MARKER) {
                     assertEquals("last-image", result?.messageId)
+                    assertEquals(NotificationMessageKind.PICTURE, result?.messageKind)
                     assertNull(result?.text)
                     assertEquals(sender != SELF, result?.shouldNotify)
                 }
@@ -6456,6 +6458,8 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id)).value
                 assertEquals("poll", result?.messageId)
+                assertEquals("Lunch?", result?.text)
+                assertEquals(NotificationMessageKind.TEXT, result?.messageKind)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val stored = checkNotNull(runtime.database.messageDAO.getMessageById("poll", CONVERSATION_ID))
                     val content = assertIs<MessageEntityContent.Poll>(stored.content)

@@ -1,6 +1,7 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.nse
 
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.MessageContentPreference
@@ -22,6 +23,31 @@ class KaliumNSEPresentationTest {
     ))
     private val preferences: List<Either<StorageFailure, MessageContentPreference>> =
         MessageContentPreference.entries.map { Either.Right(it) } + Either.Left(StorageFailure.Generic(IllegalStateException("read failed")))
+
+    @Test
+    fun typedPreviewsFollowPrivacyForPrimaryAndAdditionalAlerts() {
+        for (kind in NotificationMessageKind.entries) {
+            for (showContent in listOf(false, true)) for (mayPreview in listOf(false, true))
+                for (shouldNotify in listOf(false, true)) for (preference in preferences) {
+                    val message = message(ReceivedNotificationType.MESSAGE).copy(
+                        text = null, messageKind = kind, mayPreview = mayPreview, shouldNotify = shouldNotify,
+                    )
+                    val expected = kind.takeIf {
+                        showContent && mayPreview && shouldNotify &&
+                            (preference == Either.Right(MessageContentPreference.Unset) ||
+                                preference == Either.Right(MessageContentPreference.Enabled))
+                    }
+                    val result = receiver.success(ReceivedNotificationResult(message), showContent, preference)
+                    val additional = receiver.alert(message, showContent, preference)
+                    assertEquals(expected, result.messageKind)
+                    assertEquals(expected, additional.messageKind)
+                    assertEquals(shouldNotify, result.shouldNotify)
+                    assertEquals("message", result.messageId)
+                    assertEquals(if (expected != null) "Sender" else null, result.senderName)
+                    assertEquals(result.senderName, additional.senderName)
+                }
+        }
+    }
 
     @Test
     fun savedChoiceNeverOverridesHostOrMessagePolicyAndPreservesRouting() {
