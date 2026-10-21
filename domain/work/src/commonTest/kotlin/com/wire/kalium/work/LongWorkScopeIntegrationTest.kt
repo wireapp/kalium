@@ -15,17 +15,68 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:OptIn(com.wire.kalium.util.InternalKaliumApi::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
 package com.wire.kalium.work
 
 import app.cash.turbine.test
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class LongWorkScopeIntegrationTest {
+
+    @Test
+    fun preparedOwnerDefersBothProvidersAndStartsOneMonitor() = runTest {
+        var scopeReads = 0
+        var flowReads = 0
+        var subscriptions = 0
+        val scope = LongWorkScope.prepareForRuntime(
+            userScopeProvider = { scopeReads++; backgroundScope },
+            isSlowSyncOngoingFlowProvider = {
+                flowReads++
+                flow { subscriptions++; emit(true); awaitCancellation() }
+            },
+        )
+        runCurrent()
+        assertEquals(0, scopeReads)
+        assertEquals(0, flowReads)
+        assertEquals(0, subscriptions)
+        scope.observeNewWorks().test {
+            expectNoEvents()
+            scope.startInitialSyncMonitoring()
+            scope.startInitialSyncMonitoring()
+            assertEquals(WorkId.INITIAL_SYNC, awaitItem().id)
+            scope.startInitialSyncMonitoring()
+            runCurrent()
+            assertEquals(1, scopeReads)
+            assertEquals(1, flowReads)
+            assertEquals(1, subscriptions)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun publicConstructorStillResolvesProvidersAndStartsImmediately() = runTest {
+        var scopeReads = 0
+        var flowReads = 0
+        val scope = LongWorkScope(
+            userScopeProvider = { scopeReads++; backgroundScope },
+            isSlowSyncOngoingFlowProvider = { flowReads++; flow { emit(true) } },
+        )
+        assertEquals(1, scopeReads)
+        assertEquals(1, flowReads)
+        scope.observeNewWorks().test {
+            assertEquals(WorkId.INITIAL_SYNC, awaitItem().id)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 
     @Test
     fun givenSlowSyncFlowEmittingTrue_whenObservingNewWorkUseCase_thenShouldEmitIt() = runTest {
