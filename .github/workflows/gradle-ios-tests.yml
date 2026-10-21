@@ -251,8 +251,8 @@ jobs:
     permissions:
       contents: read
     env:
-      # Serialize native links and leave room for the linker on the 7 GB runner.
-      GRADLE_OPTS: -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs="-Xmx3g -XX:+UseParallelGC"
+      # Native links use the Gradle JVM; serialize tasks with a verified 5 GiB heap.
+      GRADLE_OPTS: -Dorg.gradle.workers.max=1 -Dorg.gradle.jvmargs="-Xmx5g -XX:+UseParallelGC"
     defaults:
       run:
         shell: bash
@@ -271,10 +271,25 @@ jobs:
         timeout-minutes: 90
         run: |
           mkdir -p build/ci/swift-receiving
+          cat > build/ci/swift-receiving/heap.init.gradle <<'GROOVY'
+          import java.lang.management.ManagementFactory
+          import com.sun.management.HotSpotDiagnosticMXBean
+
+          gradle.taskGraph.whenReady {
+              def heap = ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean).getVMOption('MaxHeapSize').value.toLong()
+              def inProcess = gradle.startParameter.projectProperties['kotlin.native.disableCompilerDaemon'] == 'false'
+              println "SWIFT_NATIVE_COMPILER_JVM maxHeapBytes=${heap} inProcess=${inProcess}"
+              if (heap != 5368709120L || !inProcess) {
+                  throw new GradleException('Swift link requires an observed 5 GiB in-process compiler heap')
+              }
+          }
+          GROOVY
           # Stop even after a failed link; the verifier boots its own simulator later.
           trap './gradlew --stop >> build/ci/swift-receiving/link.log 2>&1 || true' EXIT
           ./gradlew --console=plain -Dorg.gradle.logging.level=lifecycle --profile \
-            --no-parallel --max-workers=2 \
+            --init-script build/ci/swift-receiving/heap.init.gradle \
+            --no-parallel --max-workers=1 \
+            -Pkotlin.native.disableCompilerDaemon=false \
             :nse:linkDebugFrameworkIosSimulatorArm64 \
             :nse:generateAvsXcodeConfig \
             :domain:messaging:receiving:linkSwiftFixtureDebugExecutableIosSimulatorArm64 \
