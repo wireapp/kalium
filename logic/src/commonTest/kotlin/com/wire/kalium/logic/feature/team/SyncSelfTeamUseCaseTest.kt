@@ -172,7 +172,7 @@ class SyncSelfTeamUseCaseTest {
             arrangement.teamRepository.fetchTeamById(TestUser.SELF.teamId!!)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.fetchMembersByTeamId(any(), any(), eq<Int?>(null), any())
+            arrangement.teamRepository.fetchMembersByTeamId(any(), any(), null, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {

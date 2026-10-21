@@ -81,7 +81,7 @@ class JoinConversationViaCodeUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), null, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -156,7 +156,7 @@ class JoinConversationViaCodeUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), null, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -193,7 +193,7 @@ class JoinConversationViaCodeUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), null, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -229,7 +229,7 @@ class JoinConversationViaCodeUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), null, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -329,7 +329,7 @@ class JoinConversationViaCodeUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), null, any())
         }
 
         verifySuspend(VerifyMode.not) {

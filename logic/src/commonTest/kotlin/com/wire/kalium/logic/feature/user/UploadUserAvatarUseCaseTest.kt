@@ -60,7 +60,7 @@ class UploadUserAvatarUseCaseTest {
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), eq(expected.key))
+                userRepository.updateSelfUser(null, null, expected.key)
             }
         }
     }
@@ -86,7 +86,7 @@ class UploadUserAvatarUseCaseTest {
             }
 
             verifySuspend(VerifyMode.not) {
-                userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), any())
+                userRepository.updateSelfUser(null, null, any())
             }
         }
     }
@@ -144,7 +144,7 @@ class UploadUserAvatarUseCaseTest {
             } returns Either.Right(expectedResponse)
 
             everySuspend {
-                userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), eq(expectedResponse.key))
+                userRepository.updateSelfUser(null, null, expectedResponse.key)
             } returns Either.Right(Unit)
             return this
         }
