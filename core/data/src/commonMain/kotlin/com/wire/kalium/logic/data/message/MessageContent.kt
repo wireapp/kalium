@@ -464,6 +464,8 @@ sealed interface MessageContent {
     data object CellEditorAccessMessage : System
     data object CellViewerAccessMessage : System
 
+    data class InCallHandRaise(val isRaised: Boolean) : Signaling
+
     data class InCallEmoji(
         val emojis: Map<String, Int>
     ) : Signaling
@@ -551,6 +553,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.LegalHold.ForMembers.Disabled -> "LegalHold.ForMembers.Disabled"
     is MessageContent.LegalHold.ForMembers.Enabled -> "LegalHold.ForMembers.Enabled"
     is MessageContent.DataTransfer -> "DataTransfer"
+    is MessageContent.InCallHandRaise -> "InCallHandRaise"
     is MessageContent.InCallEmoji -> "InCallEmoji"
     is MessageContent.Multipart -> "Multipart"
     is MessageContent.CompositeEdited -> "CompositeEdited"

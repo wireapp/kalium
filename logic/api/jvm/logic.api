@@ -1342,6 +1342,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getSendPendingMessages ()Lcom/wire/kalium/logic/sync/SendPendingMessagesUseCase;
 	public final fun getService ()Lcom/wire/kalium/logic/feature/service/ServiceScope;
 	public final fun getSetNewUserTrackingIdentifier ()Lcom/wire/kalium/logic/feature/analytics/SetNewUserTrackingIdentifierUseCase;
+	public final fun getSlowSyncStatus ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getSyncExecutor ()Lcom/wire/kalium/logic/sync/SyncExecutor;
 	public final fun getSyncManager ()Lcom/wire/kalium/logic/sync/SyncStateObserver;
 	public final fun getSyncMeetingsUseCase ()Lcom/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase;
@@ -2970,6 +2971,7 @@ public final class com/wire/kalium/logic/feature/call/CallsScope {
 	public final fun getRequestVideoStreams ()Lcom/wire/kalium/logic/feature/call/usecase/RequestVideoStreamsUseCase;
 	public final fun getSetBackground ()Lcom/wire/kalium/logic/feature/call/usecase/SetBackgroundUseCase;
 	public final fun getSetCallQualityInterval ()Lcom/wire/kalium/logic/feature/call/usecase/SetCallQualityIntervalUseCase;
+	public final fun getSetHandRaised ()Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase;
 	public final fun getSetTestPreviewActive ()Lcom/wire/kalium/logic/feature/call/usecase/SetTestPreviewActiveUseCase;
 	public final fun getSetTestRemoteVideoStates ()Lcom/wire/kalium/logic/feature/call/usecase/SetTestRemoteVideoStatesUseCase;
 	public final fun getSetTestVideoType ()Lcom/wire/kalium/logic/feature/call/usecase/SetTestVideoTypeUseCase;
@@ -3145,6 +3147,45 @@ public final class com/wire/kalium/logic/feature/call/usecase/RequestVideoStream
 
 public abstract interface class com/wire/kalium/logic/feature/call/usecase/SetBackgroundUseCase {
 	public abstract fun invoke (ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase {
+	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ZLjava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Busy : com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Busy;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Failure : com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$NotJoined : com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$NotJoined;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Success : com/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/call/usecase/SetCallHandRaisedUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/call/usecase/SetCallQualityIntervalUseCase {

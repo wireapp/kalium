@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.feature.call.usecase.SetCallHandRaisedUseCase
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.call.CallRepository
@@ -113,6 +114,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 
 @Suppress("LongParameterList")
 public class CallsScope internal constructor(
+    public val setHandRaised: SetCallHandRaisedUseCase,
     private val callManager: Lazy<CallManager>,
     private val callBackgroundManager: CallBackgroundManager,
     private val callRepository: CallRepository,

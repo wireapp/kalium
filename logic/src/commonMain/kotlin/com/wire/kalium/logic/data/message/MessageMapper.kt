@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
+import com.wire.kalium.logic.data.notification.classifyNotificationMessage
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.asset.toModel
@@ -176,91 +178,24 @@ internal class MessageMapperImpl(
                 )
             }
         }
-        return when (message.contentType) {
-            MessageEntity.ContentType.TEXT -> LocalNotificationMessage.Text(
+        return when (classifyNotificationMessage(message.contentType, message.assetMimeType)) {
+            NotificationMessageKind.TEXT -> LocalNotificationMessage.Text(
                 messageId = message.id,
                 author = sender,
                 text = message.text.orEmpty(),
                 time = message.date,
                 isQuotingSelfUser = message.isQuotingSelf
             )
-
-            MessageEntity.ContentType.ASSET -> {
-                val type = message.assetMimeType?.contains("image/")?.let {
-                    if (it) LocalNotificationCommentType.PICTURE else LocalNotificationCommentType.FILE
-                } ?: LocalNotificationCommentType.FILE
-
-                LocalNotificationMessage.Comment(message.id, sender, message.date, type)
-            }
-
-            MessageEntity.ContentType.KNOCK -> {
-                LocalNotificationMessage.Knock(
-                    message.id,
-                    sender,
-                    message.date
-                )
-            }
-
-            MessageEntity.ContentType.MISSED_CALL -> {
-                LocalNotificationMessage.Comment(
-                    message.id,
-                    sender,
-                    message.date,
-                    LocalNotificationCommentType.MISSED_CALL
-                )
-            }
-
-            MessageEntity.ContentType.LOCATION -> LocalNotificationMessage.Comment(
-                message.id,
-                sender,
-                message.date,
-                LocalNotificationCommentType.LOCATION
-            )
-
-            MessageEntity.ContentType.MEMBER_CHANGE -> null
-            MessageEntity.ContentType.RESTRICTED_ASSET -> null
-            MessageEntity.ContentType.CONVERSATION_RENAMED -> null
-            MessageEntity.ContentType.UNKNOWN -> null
-            MessageEntity.ContentType.FAILED_DECRYPTION -> null
-            MessageEntity.ContentType.REMOVED_FROM_TEAM -> null
-            MessageEntity.ContentType.CRYPTO_SESSION_RESET -> null
-            MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> null
-            MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
-            MessageEntity.ContentType.HISTORY_LOST -> null
-            MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> null
-            MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
-            MessageEntity.ContentType.CONVERSATION_CREATED -> null
-            MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
-            MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> null
-            MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS -> null
-            MessageEntity.ContentType.COMPOSITE -> null
-            MessageEntity.ContentType.POLL -> LocalNotificationMessage.Text(
-                messageId = message.id,
-                author = sender,
-                text = message.text.orEmpty(),
-                time = message.date,
-                isQuotingSelfUser = message.isQuotingSelf
-            )
-            MessageEntity.ContentType.FEDERATION -> null
-            MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> null
-            MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> null
-            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
-            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> null
-            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> null
-            MessageEntity.ContentType.LEGAL_HOLD -> null
-            MessageEntity.ContentType.CONVERSATION_WITH_CELL -> null
-            MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> null
-            MessageEntity.ContentType.CELL_EDITOR_ACCESS -> null
-            MessageEntity.ContentType.CELL_VIEWER_ACCESS -> null
-            MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> null
-
-            MessageEntity.ContentType.MULTIPART -> LocalNotificationMessage.Text(
-                messageId = message.id,
-                author = sender,
-                text = message.text.orEmpty(),
-                time = message.date,
-                isQuotingSelfUser = message.isQuotingSelf
-            )
+            NotificationMessageKind.PING -> LocalNotificationMessage.Knock(message.id, sender, message.date)
+            NotificationMessageKind.PICTURE ->
+                LocalNotificationMessage.Comment(message.id, sender, message.date, LocalNotificationCommentType.PICTURE)
+            NotificationMessageKind.FILE ->
+                LocalNotificationMessage.Comment(message.id, sender, message.date, LocalNotificationCommentType.FILE)
+            NotificationMessageKind.LOCATION ->
+                LocalNotificationMessage.Comment(message.id, sender, message.date, LocalNotificationCommentType.LOCATION)
+            NotificationMessageKind.MISSED_CALL ->
+                LocalNotificationMessage.Comment(message.id, sender, message.date, LocalNotificationCommentType.MISSED_CALL)
+            null -> null
         }
     }
 

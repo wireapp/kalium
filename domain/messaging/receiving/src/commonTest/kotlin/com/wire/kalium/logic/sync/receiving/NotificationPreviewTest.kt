@@ -1,6 +1,8 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import kotlin.test.Test
@@ -9,6 +11,28 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 class NotificationPreviewTest {
+    @Test
+    fun messageKindFollowsEveryPreviewRestriction() {
+        val preferences = MessageContentPreference.entries.map { Either.Right(it) } +
+            Either.Left(StorageFailure.Generic(IllegalStateException("unreadable preference")))
+        for (kind in NotificationMessageKind.entries) for (showContent in listOf(false, true)) {
+            for (eligible in listOf(false, true)) for (previewable in listOf(false, true)) {
+                for (preference in preferences) {
+                    val original = ReceivedMessageResult(
+                        "message", "conversation", "wire.com", null, eligible, previewable,
+                        messageKind = kind, senderName = "Sender", conversationName = "Team",
+                    )
+                    val result = original.notificationPreview(showContent, preference)
+                    val allowed = showContent && eligible && previewable && preference is Either.Right &&
+                        preference.value != MessageContentPreference.Disabled
+                    assertEquals(if (allowed) kind else null, result.messageKind)
+                    assertEquals("message", result.messageId)
+                    assertEquals(eligible, result.shouldNotify)
+                }
+            }
+        }
+    }
+
     @Test
     fun contentIsVisibleOnlyWhenEveryPolicyAllowsIt() {
         for (requested in listOf(false, true)) {

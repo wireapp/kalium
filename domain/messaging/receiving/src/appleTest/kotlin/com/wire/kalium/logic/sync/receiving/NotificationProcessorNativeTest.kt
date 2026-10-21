@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.allocArray
@@ -3018,6 +3019,33 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun ignoredHandRaiseDoesNotBlockFollowingMessages() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) for (isolated in listOf(false, true)) {
+                withFixture(mls) { fixture ->
+                    val event = fixture.batch("notification",
+                        fixture.event("raise", fixture.encrypt("raise", MessageContent.InCallHandRaise(true))),
+                        fixture.event("lower", fixture.encrypt("lower", MessageContent.InCallHandRaise(false))),
+                        fixture.event("first", fixture.encrypt("first")))
+                    val next = fixture.encrypt("next")
+                    fixture.releasePrepared()
+                    val result = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(
+                        fixture.receive(listOf(event), event.id, isolateConversations = isolated)).value)
+                    assertTrue(result.shouldNotify)
+                    assertNull(fixture.receivedAppWork)
+                    assertTrue(fixture.receivedCalls.isEmpty())
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        for (id in listOf("raise", "lower")) {
+                            assertNull(runtime.database.messageDAO.getMessageById(id, CONVERSATION_ID))
+                        }
+                    })
+                    fixture.verifyStoredAndNext(next, "first")
+                }
+            }
+        }
+    }
+
+    @Test
     fun ignoredRemoteMuteProteus() = ignoredRemoteMute(false)
 
     @Test
@@ -5869,6 +5897,7 @@ class NotificationProcessorNativeTest {
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event, tail), event.id)).value
                 if (interruption != Interruption.AFTER_COMMIT && interruption != Interruption.MARKER) {
                     assertEquals("last-image", result?.messageId)
+                    assertEquals(NotificationMessageKind.PICTURE, result?.messageKind)
                     assertNull(result?.text)
                     assertEquals(sender != SELF, result?.shouldNotify)
                 }
@@ -6429,6 +6458,8 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id)).value
                 assertEquals("poll", result?.messageId)
+                assertEquals("Lunch?", result?.text)
+                assertEquals(NotificationMessageKind.TEXT, result?.messageKind)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val stored = checkNotNull(runtime.database.messageDAO.getMessageById("poll", CONVERSATION_ID))
                     val content = assertIs<MessageEntityContent.Poll>(stored.content)
