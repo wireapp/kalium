@@ -122,20 +122,28 @@ class MessageContentEncoder {
      * FEFF, question, option count, each option's id and text in order, allowMultipleAnswers, time.
      */
     private fun encodePoll(messageTimeStampInMillis: Long, poll: MessageContent.Poll): EncodedMessageContent {
-        val options = poll.options.fold(poll.options.size.toByteArray()) { bytes, option ->
-            bytes + lengthPrefixedUTF16BE(option.id) + lengthPrefixedUTF16BE(option.text)
+        // Received polls are not limited to ten options, so each part is copied into the result only once.
+        val parts = buildList {
+            add(byteArrayOf(0xFE.toByte(), 0xFF.toByte()))
+            addLengthPrefixedUTF16BE(poll.question)
+            add(poll.options.size.toByteArray())
+            poll.options.forEach { option ->
+                addLengthPrefixedUTF16BE(option.id)
+                addLengthPrefixedUTF16BE(option.text)
+            }
+            add(byteArrayOf((if (poll.allowMultipleAnswers) 1 else 0).toByte()))
+            add(encodeMessageTimeStampInMillis(messageTimeStampInMillis))
         }
-        return EncodedMessageContent(
-            byteArray = byteArrayOf(0xFE.toByte(), 0xFF.toByte()) +
-                lengthPrefixedUTF16BE(poll.question) +
-                options +
-                byteArrayOf((if (poll.allowMultipleAnswers) 1 else 0).toByte()) +
-                encodeMessageTimeStampInMillis(messageTimeStampInMillis)
-        )
+        val byteArray = ByteArray(parts.sumOf { it.size })
+        parts.fold(0) { offset, part -> part.copyInto(byteArray, offset).let { offset + part.size } }
+        return EncodedMessageContent(byteArray)
     }
 
-    private fun lengthPrefixedUTF16BE(value: String): ByteArray =
-        value.toUTF16BEByteArray().let { it.size.toByteArray() + it }
+    private fun MutableList<ByteArray>.addLengthPrefixedUTF16BE(value: String) {
+        val bytes = value.toUTF16BEByteArray()
+        add(bytes.size.toByteArray())
+        add(bytes)
+    }
 
     private fun wrapIntoResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): EncodedMessageContent {
         return EncodedMessageContent(
