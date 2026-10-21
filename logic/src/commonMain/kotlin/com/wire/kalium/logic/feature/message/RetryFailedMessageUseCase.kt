@@ -53,10 +53,10 @@ import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.util.fileExtension
-import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
@@ -77,7 +77,6 @@ public class RetryFailedMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase,
     private val getAssetMessageTransferStatusUseCase: GetAssetMessageTransferStatusUseCase,
-    private val messageSendFailureHandler: MessageSendFailureHandler,
 ) {
 
     /**
@@ -95,13 +94,20 @@ public class RetryFailedMessageUseCase internal constructor(
      * in case the message could not be found, has invalid status, or has unsupported content, [MessageOperationResult.Success] otherwise.
      * Success confirms that resending is valid and has been started; it does not imply that the send will succeed.
      */
-    public suspend operator fun invoke(
-        messageId: String,
-        conversationId: ConversationId
-    ): MessageOperationResult =
-        prepareRetry(messageId, conversationId)
-            .onSuccess { message -> scope.launch(dispatcher.io) { retry(message) } }
-            .fold({ MessageOperationResult.Failure(it) }, { MessageOperationResult.Success })
+    public suspend operator fun invoke(messageId: String, conversationId: ConversationId): MessageOperationResult {
+        var owned: Message? = null
+        var scheduled = false
+        try {
+            return prepareRetry(messageId, conversationId) { owned = it }
+                .onSuccess { message ->
+                    scope.launch(dispatcher.io, start = CoroutineStart.UNDISPATCHED) { executeRetry(message) }
+                    scheduled = true
+                }
+                .fold({ MessageOperationResult.Failure(it) }, { MessageOperationResult.Success })
+        } finally {
+            if (!scheduled) withContext(NonCancellable + dispatcher.io) { owned?.let { markFailed(it) } }
+        }
+    }
 
     /**
      * Retries the existing persisted message and returns its actual upload/send result.
@@ -112,26 +118,34 @@ public class RetryFailedMessageUseCase internal constructor(
      */
     @Suppress("TooGenericExceptionCaught")
     internal suspend fun invokeAndAwait(messageId: String, conversationId: ConversationId): MessageOperationResult {
-        var retryingMessage: Message? = null
-        var completedSuccessfully = false
-        return try {
-            withContext(dispatcher.io) {
-                prepareRetry(messageId, conversationId) { retryingMessage = it }
-                    .flatMap { retry(it) }
-                    .onSuccess { completedSuccessfully = true }
-                    .onFailure { failure -> retryingMessage?.let { markFailed(it, failure) } }
-                    .fold({ MessageOperationResult.Failure(it) }, { MessageOperationResult.Success })
+        var owned: Message? = null
+        var enteredRetry = false
+        try {
+            return withContext(dispatcher.io) {
+                prepareRetry(messageId, conversationId) { owned = it }.flatMap { message ->
+                    enteredRetry = true
+                    executeRetry(message)
+                }.fold({ MessageOperationResult.Failure(it) }, { MessageOperationResult.Success })
             }
+        } finally {
+            // Ownership can commit before cancellation prevents entry into executeRetry.
+            if (!enteredRetry) withContext(NonCancellable + dispatcher.io) { owned?.let { markFailed(it) } }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun executeRetry(message: Message): Either<CoreFailure, Unit> {
+        var success = false
+        var failure: CoreFailure? = null
+        try {
+            return retry(message).onSuccess { success = true }.onFailure { failure = it }
         } catch (cancelled: CancellationException) {
-            // Cancellation can win while dispatching a successful IO result back to its owner.
-            // A confirmed successful send must retain its SENT status in that case.
-            if (!completedSuccessfully) {
-                withContext(NonCancellable + dispatcher.io) { retryingMessage?.let { markFailed(it) } }
-            }
             throw cancelled
-        } catch (failure: Exception) {
-            withContext(NonCancellable + dispatcher.io) { retryingMessage?.let { markFailed(it) } }
-            MessageOperationResult.Failure(CoreFailure.Unknown(failure))
+        } catch (exception: Exception) {
+            return CoreFailure.Unknown(exception).also { failure = it }.left()
+        } finally {
+            // The sole terminal write, after all transfer/send work has unwound.
+            if (!success) withContext(NonCancellable) { markFailed(message, failure) }
         }
     }
 
@@ -155,21 +169,26 @@ public class RetryFailedMessageUseCase internal constructor(
         withContext(NonCancellable) {
             messageRepository.claimFailedMessageForRetry(message.conversationId, message.id).flatMap { claimed ->
                 if (claimed) {
-                    val pending = when (message) {
-                        is Message.Regular -> message.copy(status = Message.Status.Pending)
-                        is Message.Signaling -> message.copy(status = Message.Status.Pending)
-                        is Message.System -> message.copy(status = Message.Status.Pending)
-                    }
-                    onValidated(pending)
-                    pending.right()
+                    onValidated(message)
+                    message.right()
                 } else {
                     handleError("Message is no longer available for retry")
+                }
+            }
+        }.flatMap {
+            messageRepository.getMessageById(conversationId, messageId).map { current ->
+                val status = if (current.status.isSuccessfullySent()) current.status else Message.Status.Pending
+                when (current) {
+                    is Message.Regular -> current.copy(status = status)
+                    is Message.Signaling -> current.copy(status = status)
+                    is Message.System -> current.copy(status = status)
                 }
             }
         }
     }
 
     private suspend fun retry(message: Message): Either<CoreFailure, Unit> {
+        if (message.status.isSuccessfullySent()) return Unit.right()
         val content = message.content
         return when {
             message is Message.Regular && content is MessageContent.Asset -> retrySendingAssetMessage(message, content.value)
@@ -205,19 +224,7 @@ public class RetryFailedMessageUseCase internal constructor(
         messageRepository.updateMessageStatusIfNotAcknowledged(status, message.conversationId, message.id)
     }
 
-    private suspend fun retrySendingMessage(message: Message.Sendable): Either<CoreFailure, Unit> =
-        messageSender.sendMessage(message)
-            .onFailure {
-                val type = message.content.getType()
-                kaliumLogger.e("Failed to retry sending message of type $type. Failure = $it")
-                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                    it,
-                    message.conversationId,
-                    message.id,
-                    type,
-                    scheduleResendIfNoNetwork = false
-                )
-            }
+    private suspend fun retrySendingMessage(message: Message.Sendable): Either<CoreFailure, Unit> = messageSender.sendMessage(message)
 
     private suspend fun retrySendingEditMessage(message: Message.Regular): Either<CoreFailure, Unit> =
         when (val content = message.content) {
@@ -239,23 +246,15 @@ public class RetryFailedMessageUseCase internal constructor(
                 retryUploadingAsset(message.conversationId, content)
                     .flatMap { uploadedAssetContent ->
                         message.copy(content = MessageContent.Asset(value = uploadedAssetContent)).let { updatedMessage ->
-                            persistMessage(updatedMessage)
-                                .map { updatedMessage } // we need to persist new asset remoteData and status
+                            withContext(NonCancellable) {
+                                persistMessage(updatedMessage).onSuccess {
+                                    assetRepository.deleteAssetLocally(content.remoteData.assetId)
+                                }
+                            }.map { updatedMessage } // we need to persist new asset remoteData and status
                         }
                     }
                     .onSuccess { updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id) }
-                    .onFailure {
-                        kaliumLogger.e("Failed to retry sending asset message. Failure = $it")
-                        updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
-                        val type = message.content.getType()
-                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                            failure = it,
-                            conversationId = message.conversationId,
-                            messageId = message.id,
-                            messageType = type,
-                            scheduleResendIfNoNetwork = false
-                        )
-                    }
+
             }
 
             AssetTransferStatus.UPLOADED -> Either.Right(message)
@@ -286,6 +285,7 @@ public class RetryFailedMessageUseCase internal constructor(
                         conversationId = conversationId.toApi(),
                         filename = name,
                         filetype = mimeType,
+                        retainSource = true,
                     )
                 }
                 .map { (uploadedAssetId, sha256key) ->

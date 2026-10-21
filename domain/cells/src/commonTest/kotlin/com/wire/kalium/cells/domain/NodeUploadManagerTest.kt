@@ -45,6 +45,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -296,6 +297,25 @@ class NodeUploadManagerTest {
         assertTrue(manager.isUploading(node.uuid))
         advanceTimeBy(100)
         assertEquals(CellUploadEvent.UploadCompleted, manager.consumeUploadOutcome(node.uuid))
+    }
+
+    @Test
+    fun immediateFailureIsRegisteredBeforeItRunsAndAllowsDraftRetry() = runTest {
+        val immediateScope = CoroutineScope(backgroundScope.coroutineContext + UnconfinedTestDispatcher(testScheduler))
+        val (arrangement, manager) = Arrangement(immediateScope).withPreCheckSuccess().withUploadFailed()
+            .withFileExists(assetPath).arrange()
+        val node = manager.upload(assetPath, assetSize, destNodePath).getOrFail { error("upload") }
+        assertEquals(true, manager.getUploadInfo(node.uuid)?.uploadFailed)
+        val draft = AttachmentDraft(
+            uuid = node.uuid, versionId = node.versionId, fileName = fileName, remoteFilePath = destNodePath,
+            localFilePath = assetPath.toString(), fileSize = assetSize, uploadStatus = AttachmentUploadStatus.FAILED,
+            mimeType = "text/plain", assetWidth = null, assetHeight = null, assetDuration = null,
+        )
+        arrangement.withUploadSuccess()
+        assertTrue(manager.retryDraftUpload(draft))
+        assertEquals(CellUploadEvent.UploadCompleted, manager.consumeUploadOutcome(node.uuid))
+        assertFalse(manager.isUploading(node.uuid))
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.repository.uploadFile(any(), any(), any()) }
     }
 
     private class Arrangement(val uploadScope: CoroutineScope) {

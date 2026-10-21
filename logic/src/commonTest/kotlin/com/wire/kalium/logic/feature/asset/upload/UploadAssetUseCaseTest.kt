@@ -50,6 +50,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -60,6 +61,25 @@ import kotlin.test.assertFalse
 import kotlin.test.assertSame
 
 class UploadAssetUseCaseTest {
+
+    @Test
+    fun trackedFailuresLeaveTerminalStatusToOperationOwner() = runTest(testDispatcher.default) {
+        for (failureStage in 0..2) {
+            val (arrangement, uploadAsset) = Arrangement().arrange {
+                if (failureStage == 0) withUploadFailure() else withUploadSuccess()
+                if (failureStage == 1) withPersistMessageFailure()
+                if (failureStage == 2) sendMessageResult = CoreFailure.Unknown(null).left()
+            }
+
+            val result = withContext(AssetMessageSendReceipt()) { uploadAsset(assetMessage(), uploadMetadata) }
+
+            assertEquals(CoreFailure.Unknown(null).left(), result)
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+                arrangement.updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, any(), any())
+            }
+        }
+    }
 
     @Test
     fun givenAValidMessage_whenUploadStarts_thenTransferStatusUpdatedCorrectly() = runTest(testDispatcher.default) {
@@ -263,7 +283,7 @@ class UploadAssetUseCaseTest {
 
         assertEquals(Unit.right(), result)
         verifySuspend(VerifyMode.not) {
-            arrangement.assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+            arrangement.assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any(), any())
             arrangement.persistMessage(any())
             arrangement.assetDataSource.deleteAssetLocally(any())
         }
@@ -316,13 +336,13 @@ class UploadAssetUseCaseTest {
             val assetId = UploadedAssetId("remote-asset-id", "some-domain")
             val sha256Key = SHA256Key(byteArrayOf())
             everySuspend {
-                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any(), any())
             } returns Pair(assetId, sha256Key).right()
         }
 
         suspend fun withUploadFailure() = apply {
             everySuspend {
-                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any(), any())
             } returns CoreFailure.Unknown(null).left()
         }
 

@@ -52,7 +52,6 @@ import com.wire.kalium.logic.framework.TestMessage.assetMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
-import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -370,7 +369,8 @@ class RetryFailedMessageUseCaseTest {
                     extension = name.fileExtension(),
                     conversationId = any(),
                     filename = any(),
-                    filetype = any()
+                    filetype = any(),
+                    retainSource = true
                 )
             }
             verifySuspend(VerifyMode.exactly(1)) {
@@ -415,7 +415,8 @@ class RetryFailedMessageUseCaseTest {
                     extension = any(),
                     conversationId = any(),
                     filename = any(),
-                    filetype = any()
+                    filetype = any(),
+                    retainSource = true
                 )
             }
             verifySuspend(VerifyMode.exactly(1)) {
@@ -551,12 +552,9 @@ class RetryFailedMessageUseCaseTest {
 
             assertEquals(failure, assertIs<MessageOperationResult.Failure>(retry.await()).error)
             verifySuspend(VerifyMode.exactly(0)) {
-                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any(), any())
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                    failure, message.conversationId, message.id, message.content.getType(), eq(false)
-                )
                 arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(MessageEntity.Status.FAILED, message.conversationId, message.id)
             }
         }
@@ -580,9 +578,7 @@ class RetryFailedMessageUseCaseTest {
         assertEquals(failure, assertIs<MessageOperationResult.Failure>(result).error)
         verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                failure, message.conversationId, message.id, message.content.getType(), eq(false)
-            )
+            arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(MessageEntity.Status.FAILED, message.conversationId, message.id)
         }
     }
 
@@ -602,7 +598,7 @@ class RetryFailedMessageUseCaseTest {
             val cleanupEntered = CompletableDeferred<Unit>()
             val cleanupGate = CompletableDeferred<Unit>()
             everySuspend {
-                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any(), any())
             } calls {
                 entered.complete(Unit)
                 try {
@@ -779,7 +775,7 @@ class RetryFailedMessageUseCaseTest {
         persisted = persisted.copy(status = Message.Status.Failed)
         assertIs<MessageOperationResult.Success>(RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId))
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any(), any())
             arrangement.messageSender.sendMessage(persisted.copy(status = Message.Status.Pending), any())
         }
     }
@@ -869,6 +865,89 @@ class RetryFailedMessageUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.sendMessage(any(), any()) }
     }
 
+    @Test
+    fun awaitedFailurePublishesOnceEvenWhenAnotherRetryClaimsBeforeFinalizerReturns() = runTest(testDispatcher.default) {
+        val message = TEXT_MESSAGE.copy(status = Message.Status.Failed)
+        val (arrangement, useCase) = Arrangement().withUpdateMessageStatus(Either.Right(Unit)).arrange()
+        var stored = message
+        var writes = 0
+        var sends = 0
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { Either.Right(stored) }
+        everySuspend { arrangement.messageRepository.claimFailedMessageForRetry(any(), any()) } calls {
+            val claimed = stored.status == Message.Status.Failed
+            if (claimed) stored = stored.copy(status = Message.Status.Pending)
+            Either.Right(claimed)
+        }
+        val firstFinalized = CompletableDeferred<Unit>()
+        val finishFinalizer = CompletableDeferred<Unit>()
+        val secondSending = CompletableDeferred<Unit>()
+        val finishSend = CompletableDeferred<Unit>()
+        everySuspend { arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any()) } calls {
+            writes++
+            stored = stored.copy(status = Message.Status.Failed)
+            firstFinalized.complete(Unit)
+            finishFinalizer.await()
+            Either.Right(Unit)
+        }
+        everySuspend { arrangement.messageSender.sendMessage(any(), any()) } calls {
+            sends++
+            if (sends == 1) Either.Left(NetworkFailure.NoNetworkConnection(null)) else {
+                secondSending.complete(Unit)
+                finishSend.await()
+                Either.Right(Unit)
+            }
+        }
+        val first = launch { RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId) }
+        firstFinalized.await()
+        val second = async { RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId) }
+        secondSending.await()
+        first.cancel()
+        finishFinalizer.complete(Unit)
+        first.join()
+        assertEquals(1, writes)
+        assertEquals(Message.Status.Pending, stored.status)
+        finishSend.complete(Unit)
+        assertIs<MessageOperationResult.Success>(second.await())
+    }
+
+    @Test
+    fun scheduledPublicationFailureLeavesMessageRetryableWithoutSending() = runTest(testDispatcher.default) {
+        val message = TEXT_MESSAGE.copy(content = MessageContent.Multipart("attachment"), status = Message.Status.Failed)
+        val (arrangement, useCase) = Arrangement().withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit)).arrange()
+        everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
+        everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
+        everySuspend { arrangement.publishAttachments(any()) } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
+        assertIs<MessageOperationResult.Success>(useCase(message.id, message.conversationId))
+        advanceUntilIdle()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(MessageEntity.Status.FAILED, message.conversationId, message.id)
+        }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun awaitedRetryReloadsRemoteAssetAfterDelayedClaim() = runTest(testDispatcher.default) {
+        val message = assetMessage().copy(status = Message.Status.Failed)
+        val content = message.content as MessageContent.Asset
+        val uploaded = message.copy(content = content.copy(value = content.value.copy(
+            remoteData = content.value.remoteData.copy(assetId = "uploaded-by-other-retry", sha256 = byteArrayOf(1))
+        )), status = Message.Status.Pending)
+        val (arrangement, useCase) = Arrangement().withUpdateMessageStatus(Either.Right(Unit))
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.UPLOADED).withSendMessage(Either.Right(Unit)).arrange()
+        var stored = message
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { Either.Right(stored) }
+        everySuspend { arrangement.messageRepository.claimFailedMessageForRetry(any(), any()) } calls {
+            stored = uploaded
+            Either.Right(true)
+        }
+        assertIs<MessageOperationResult.Success>(RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId))
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.sendMessage(uploaded, any()) }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
     private class Arrangement(
         val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit)
     ) {
@@ -879,7 +958,6 @@ class RetryFailedMessageUseCaseTest {
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
         val updateAssetMessageTransferStatus = mock<UpdateAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
         val getAssetMessageTransferStatus = mock<GetAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
-        val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
         val publishAttachments = mock<PublishAttachmentsUseCase>(mode = MockMode.autoUnit)
 
         private val testScope = TestScope(testDispatcher.default)
@@ -894,6 +972,7 @@ class RetryFailedMessageUseCaseTest {
             everySuspend {
                 messageRepository.updateMessageStatus(any(), any(), any())
             } returns result
+            everySuspend { assetRepository.deleteAssetLocally(any()) } returns Either.Right(Unit)
             everySuspend { messageRepository.claimFailedMessageForRetry(any(), any()) } returns result.map { true }
             everySuspend { messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any()) } returns result
         }
@@ -919,7 +998,8 @@ class RetryFailedMessageUseCaseTest {
                     extension = any(),
                     conversationId = any(),
                     filename = any(),
-                    filetype = any()
+                    filetype = any(),
+                    retainSource = true
                 )
             } returns result
         }
@@ -960,8 +1040,7 @@ class RetryFailedMessageUseCaseTest {
             testDispatcher,
             messageSender,
             updateAssetMessageTransferStatus,
-            getAssetMessageTransferStatus,
-            messageSendFailureHandler
+            getAssetMessageTransferStatus
         )
     }
 

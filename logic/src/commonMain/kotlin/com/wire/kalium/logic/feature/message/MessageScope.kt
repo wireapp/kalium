@@ -387,8 +387,7 @@ public class MessageScope internal constructor(
             dispatcher,
             messageSender,
             updateAssetMessageTransferStatus,
-            getAssetMessageTransferStatus,
-            messageSendFailureHandler
+            getAssetMessageTransferStatus
         )
 
     public val retryFailedMessageAndAwait: RetryFailedMessageAndAwaitUseCase

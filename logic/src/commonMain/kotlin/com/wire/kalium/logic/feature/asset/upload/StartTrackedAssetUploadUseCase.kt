@@ -81,6 +81,7 @@ internal class AssetMessageSendReceipt : AbstractCoroutineContextElement(Key) {
     var succeeded: Boolean = false
 }
 
+@Suppress("LongParameterList")
 internal class TrackedAssetUploadImpl(
     override val messageId: String,
     scope: CoroutineScope,
@@ -88,6 +89,7 @@ internal class TrackedAssetUploadImpl(
     monitor: suspend () -> Unit,
     upload: suspend () -> Either<CoreFailure, Unit>,
     onCancelled: suspend () -> Unit,
+    onFailed: suspend (CoreFailure) -> Unit = {},
 ) : TrackedAssetUpload {
     override val operationId: String = Uuid.random().toString()
     private val mutableProgress = MutableStateFlow(AssetUploadProgress.QUEUED)
@@ -122,23 +124,28 @@ internal class TrackedAssetUploadImpl(
                 }
             }
         } catch (_: CancellationException) {
-            withContext(NonCancellable) {
-                if (!sendReceipt.succeeded) runCatching { onCancelled() }
-                if (sendReceipt.succeeded) {
-                    AssetUploadCompletion.Success
-                } else {
-                    AssetUploadCompletion.Cancelled
-                }
-            }
+            AssetUploadCompletion.Cancelled
         } catch (exception: Exception) {
             AssetUploadCompletion.Failure(CoreFailure.Unknown(exception))
         }
-        mutableProgress.value = when (result) {
+        // Publish a retryable state only after upload/send and the visibility monitor have stopped.
+        // This is outside the catch boundary: cancellation cannot finalize this attempt a second time.
+        withContext(NonCancellable) {
+            if (!sendReceipt.succeeded) {
+                when (result) {
+                    AssetUploadCompletion.Cancelled -> runCatching { onCancelled() }
+                    is AssetUploadCompletion.Failure -> runCatching { onFailed(result.coreFailure) }
+                    AssetUploadCompletion.Success -> Unit
+                }
+            }
+        }
+        val completed = if (sendReceipt.succeeded) AssetUploadCompletion.Success else result
+        mutableProgress.value = when (completed) {
             AssetUploadCompletion.Success -> AssetUploadProgress.COMPLETED
             is AssetUploadCompletion.Failure -> AssetUploadProgress.FAILED
             AssetUploadCompletion.Cancelled -> AssetUploadProgress.CANCELLED
         }
-        completion.complete(result)
+        completion.complete(completed)
     }
 
     override suspend fun awaitCompletion(): AssetUploadCompletion = completion.await()

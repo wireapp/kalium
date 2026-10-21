@@ -132,6 +132,7 @@ internal class AddAttachmentDraftUseCaseImpl internal constructor(
         val operation = checkNotNull(draftUploads).launch {
             var node: CellNode? = null
             var attempt: CellUploadAttempt? = null
+            var nodeClaimed = false
             var statusRecorded = false
             var transferFinished = false
             try {
@@ -142,6 +143,8 @@ internal class AddAttachmentDraftUseCaseImpl internal constructor(
                 } else {
                     val createdNode = (created as Either.Right).value
                     node = createdNode
+                    nodeClaimed = draftUploads.claimNode(createdNode.uuid)
+                    check(nodeClaimed) { "Newly created draft node already has an owner" }
                     attempt = uploadManager.captureUploadAttempt(createdNode.uuid)
                     val persisted = persistDraftNode(conversationId, mimeType, assetPath, createdNode, metadata)
                     registered.complete(persisted)
@@ -160,8 +163,12 @@ internal class AddAttachmentDraftUseCaseImpl internal constructor(
                 withContext(NonCancellable) {
                     node?.let { created ->
                         // Also covers a node created after native cancellation began, before persistence returned.
-                        if (transferFinished) attempt?.awaitStopped() else attempt?.cancelAndAwait()
-                        if (!statusRecorded) repository.updateStatus(created.uuid, FAILED)
+                        try {
+                            if (transferFinished) attempt?.awaitStopped() else attempt?.cancelAndAwait()
+                            if (!statusRecorded) repository.updateStatus(created.uuid, FAILED)
+                        } finally {
+                            if (nodeClaimed) draftUploads.releaseNode(created.uuid)
+                        }
                     }
                 }
             }

@@ -533,8 +533,12 @@ UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
-selectMessageStatusForRetry:
-SELECT status FROM Message WHERE id = ? AND conversation_id = ?;
+claimFailedMessageForRetry:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey Message
+UPDATE Message SET status = 'PENDING'
+WHERE id = ? AND conversation_id = ? AND status IN ('FAILED', 'FAILED_REMOTELY')
+RETURNING id;
 
 updateMessageStatusIfNotAcknowledged:
 -- @NotifyCustomKey message_list_:conversation_id

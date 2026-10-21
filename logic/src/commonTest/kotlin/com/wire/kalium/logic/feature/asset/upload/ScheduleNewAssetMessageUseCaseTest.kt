@@ -511,7 +511,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         }
         assertIs<AssetUploadCompletion.Failure>(first.retry().awaitCompletion())
         verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(any(), any()) }
-        verifySuspend(VerifyMode.exactly(0)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any())
         }
     }
@@ -531,8 +531,54 @@ class ScheduleNewAssetMessageUseCaseTest {
         assertEquals(AssetUploadCompletion.Cancelled, first.retry().awaitCompletion())
         verifySuspend(VerifyMode.exactly(0)) {
             arrangement.messageRepository.claimFailedMessageForRetry(any(), any())
+        }
+        // Only the original failed attempt publishes a terminal failure.
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any())
         }
+    }
+
+    @Test
+    fun trackedRetryReloadsRemoteAssetCommittedBetweenReadAndClaim() = runTest(testDispatcher.default) {
+        val (arrangement, scheduler) = Arrangement(this).withAssetMessagePersistSuccess().withUploadFailure()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll).arrange()
+        val operation = assertIs<StartTrackedAssetUploadResult.Started>(scheduler.startTracked(assetUploadParams, "delayed")).operation
+        assertIs<AssetUploadCompletion.Failure>(operation.awaitCompletion())
+        val latestMetadata = uploadMetadata.copy(assetId = UploadedAssetId("uploaded-by-B", "domain"), sha256Key = SHA256Key(byteArrayOf(1)))
+        val stale = TestMessage.assetMessage().copy(status = Message.Status.Failed)
+        var stored = stale
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { stored.right() }
+        everySuspend { arrangement.messageRepository.claimFailedMessageForRetry(any(), any()) } calls {
+            // B uploads and fails sending before delayed A claims the failed row.
+            stored = stale.copy(content = MessageContent.Asset(latestMetadata.toAssetContent()), status = Message.Status.Pending)
+            true.right()
+        }
+        arrangement.withUploadSuccess()
+        assertEquals(AssetUploadCompletion.Success, operation.retry().awaitCompletion())
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(stored, latestMetadata) }
+    }
+
+    @Test
+    fun storageFailureBecomesRetryableBeforeTrackedHandleCompletes() = runTest(testDispatcher.default) {
+        val (arrangement, scheduler) = Arrangement(this).withAssetMessagePersistSuccess()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll).arrange()
+        var stored = TestMessage.assetMessage().copy(status = Message.Status.Pending)
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { stored.right() }
+        everySuspend { arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any()) } calls {
+            stored = stored.copy(status = Message.Status.Failed)
+            Unit.right()
+        }
+        everySuspend { arrangement.messageRepository.claimFailedMessageForRetry(any(), any()) } calls {
+            val claimed = stored.status == Message.Status.Failed
+            if (claimed) stored = stored.copy(status = Message.Status.Pending)
+            claimed.right()
+        }
+        everySuspend { arrangement.uploadAsset(any(), any()) } returns CoreFailure.Unknown(IllegalStateException("metadata storage failed")).left()
+        val operation = assertIs<StartTrackedAssetUploadResult.Started>(scheduler.startTracked(assetUploadParams, "storage")).operation
+        assertIs<AssetUploadCompletion.Failure>(operation.awaitCompletion())
+        assertEquals(Message.Status.Failed, stored.status)
+        arrangement.withUploadSuccess()
+        assertEquals(AssetUploadCompletion.Success, operation.retry().awaitCompletion())
     }
 
     private class Arrangement(val coroutineScope: CoroutineScope) {

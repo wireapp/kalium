@@ -376,13 +376,7 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun claimFailedMessageForRetry(id: String, conversationId: QualifiedIDEntity): Boolean =
         withContext(writeDispatcher.value) {
             queries.transactionWithResult {
-                val status = queries.selectMessageStatusForRetry(id, conversationId).executeAsOneOrNull()
-                if (status == MessageEntity.Status.FAILED || status == MessageEntity.Status.FAILED_REMOTELY) {
-                    queries.updateMessageStatus(MessageEntity.Status.PENDING, id, conversationId)
-                    true
-                } else {
-                    false
-                }
+                queries.claimFailedMessageForRetry(id, conversationId).awaitAsOneOrNull() != null
             }
         }
 

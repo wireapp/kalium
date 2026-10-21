@@ -31,6 +31,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -82,7 +83,7 @@ internal class CellUploadManagerImpl internal constructor(
 
         val uploadEventsFlow = MutableSharedFlow<CellUploadEvent>()
 
-        val uploadJob = uploadScope.launch {
+        val uploadJob = uploadScope.launch(start = CoroutineStart.LAZY) {
             repository.uploadFile(
                 path = localPath,
                 node = node,
@@ -108,6 +109,7 @@ internal class CellUploadManagerImpl internal constructor(
             localPath = localPath,
             events = uploadEventsFlow,
         )
+        uploadJob.start()
     }
 
     override fun retryUpload(nodeUuid: String) {

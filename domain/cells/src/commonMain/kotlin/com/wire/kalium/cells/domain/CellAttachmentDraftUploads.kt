@@ -80,23 +80,29 @@ internal class CellAttachmentDraftUploadsImpl(private val scope: CoroutineScope)
 
     private val claimedNodes = MutableStateFlow<Set<String>>(emptySet())
 
+    internal fun claimNode(nodeUuid: String): Boolean {
+        while (true) {
+            val current = claimedNodes.value
+            if (nodeUuid in current) return false
+            if (claimedNodes.compareAndSet(current, current + nodeUuid)) return true
+        }
+    }
+
+    internal fun releaseNode(nodeUuid: String) { claimedNodes.update { it - nodeUuid } }
+
     internal fun launchForNode(
         nodeUuid: String,
         work: suspend () -> CellAttachmentDraftUploadResult,
     ): CellAttachmentDraftUploadImpl? {
-        while (true) {
-            val current = claimedNodes.value
-            if (nodeUuid in current) return null
-            if (claimedNodes.compareAndSet(current, current + nodeUuid)) break
-        }
+        if (!claimNode(nodeUuid)) return null
         var launched = false
         return try {
             launch(work).also { operation ->
-                operation.job.invokeOnCompletion { claimedNodes.update { it - nodeUuid } }
+                operation.job.invokeOnCompletion { releaseNode(nodeUuid) }
                 launched = true
             }
         } finally {
-            if (!launched) claimedNodes.update { it - nodeUuid }
+            if (!launched) releaseNode(nodeUuid)
         }
     }
 

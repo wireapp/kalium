@@ -298,7 +298,7 @@ public class CellsScope(
     }
 
     public val observeAttachments: ObserveAttachmentDraftsUseCase by lazy {
-        ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager)
+        ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager, draftUploads = draftUploads)
     }
 
     public val publishAttachments: PublishAttachmentsUseCase by lazy {

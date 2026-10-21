@@ -19,6 +19,7 @@
 
 package com.wire.kalium.logic.feature.asset.upload
 
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -178,11 +179,26 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             },
             onCancelled = {
                 if (ownsMessage) markCancelled(originalMessage.conversationId, originalMessage.id)
+            },
+            onFailed = { failure ->
+                if (ownsMessage) {
+                    if (!isRetry && pendingMessagesEnabled && failure is NetworkFailure.NoNetworkConnection) {
+                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                            failure,
+                            originalMessage.conversationId,
+                            originalMessage.id,
+                            TYPE,
+                            scheduleResendIfNoNetwork = true
+                        )
+                    } else {
+                        markCancelled(originalMessage.conversationId, originalMessage.id, failure)
+                    }
+                }
             }
         )
     }
 
-    private suspend fun markCancelled(conversationId: ConversationId, messageId: String) {
+    private suspend fun markCancelled(conversationId: ConversationId, messageId: String, failure: CoreFailure? = null) {
         val persisted = messageRepository.getMessageById(conversationId, messageId).getOrNull()
         if (persisted?.status?.isSuccessfullySent() == true) {
             currentCoroutineContext()[AssetMessageSendReceipt]?.succeeded = true
@@ -195,7 +211,12 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             conversationId,
             messageId
         )
-        messageRepository.updateMessageStatusIfNotAcknowledged(MessageEntity.Status.FAILED, conversationId, messageId)
+        val status = if (failure is NetworkFailure.FederatedBackendFailure) {
+            MessageEntity.Status.FAILED_REMOTELY
+        } else {
+            MessageEntity.Status.FAILED
+        }
+        messageRepository.updateMessageStatusIfNotAcknowledged(status, conversationId, messageId)
     }
 
     private suspend fun retryUpload(
@@ -221,15 +242,26 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     if (!claimed) {
                         return@claimedResult CoreFailure.Unknown(IllegalStateException("Message is no longer available for retry")).left()
                     }
-                    val remoteData = content.value.remoteData
-                    uploadAsset(
-                        message.copy(status = Message.Status.Pending),
-                        metadata.copy(
-                            assetId = UploadedAssetId(remoteData.assetId, remoteData.assetDomain.orEmpty(), remoteData.assetToken),
-                            otrKey = AES256Key(remoteData.otrKey),
-                            sha256Key = SHA256Key(remoteData.sha256)
-                        )
-                    )
+                    // A different attempt may have uploaded between our first read and this claim.
+                    messageRepository.getMessageById(message.conversationId, message.id).flatMap { latest ->
+                        val current = latest as? Message.Regular
+                        val assetContent = current?.content as? MessageContent.Asset
+                        if (current == null || assetContent == null) {
+                            CoreFailure.Unknown(IllegalStateException("Claimed asset message is unavailable")).left()
+                        } else if (current.status.isSuccessfullySent()) {
+                            Unit.right()
+                        } else {
+                            val remoteData = assetContent.value.remoteData
+                            uploadAsset(
+                                current.copy(status = Message.Status.Pending),
+                                metadata.copy(
+                                    assetId = UploadedAssetId(remoteData.assetId, remoteData.assetDomain.orEmpty(), remoteData.assetToken),
+                                    otrKey = AES256Key(remoteData.otrKey),
+                                    sha256Key = SHA256Key(remoteData.sha256)
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }

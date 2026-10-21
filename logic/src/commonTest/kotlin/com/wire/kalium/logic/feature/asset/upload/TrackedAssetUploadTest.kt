@@ -38,6 +38,47 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class TrackedAssetUploadTest {
     @Test
+    fun terminalFailureIsPublishedAfterMonitorCleanupAndLateCancellationCannotOverwriteNewRetry() = runTest {
+        for (cancelDuringCleanup in listOf(false, true)) {
+            val cleanup = CompletableDeferred<Unit>()
+            val terminal = CompletableDeferred<Unit>()
+            val finishTerminal = CompletableDeferred<Unit>()
+            var status = "PENDING"
+            var writes = 0
+            suspend fun finalizeAttempt() {
+                writes++
+                status = "FAILED"
+                // Retry B claims immediately when A publishes its final status.
+                status = "PENDING"
+                terminal.complete(Unit)
+                finishTerminal.await()
+            }
+            val operation = TrackedAssetUploadImpl(
+                messageId = "owned",
+                scope = this,
+                retryOperation = { error("Unexpected retry") },
+                monitor = {
+                    try { awaitCancellation() } finally { withContext(NonCancellable) { cleanup.await() } }
+                },
+                upload = { CoreFailure.Unknown(null).left() },
+                onCancelled = { finalizeAttempt() },
+                onFailed = { finalizeAttempt() },
+            )
+            runCurrent()
+            assertEquals(0, writes)
+            assertEquals("PENDING", status)
+            if (cancelDuringCleanup) operation.cancel()
+            cleanup.complete(Unit)
+            terminal.await()
+            operation.cancel()
+            finishTerminal.complete(Unit)
+            operation.awaitCompletion()
+            assertEquals(1, writes)
+            assertEquals("PENDING", status)
+        }
+    }
+
+    @Test
     fun givenPendingSend_whenAwaitingCompletion_thenWaitForSendAndMonitorCleanup() = runTest {
         val send = CompletableDeferred<Unit>()
         val monitorCleanup = CompletableDeferred<Unit>()
