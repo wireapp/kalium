@@ -6192,6 +6192,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-migrateFromPersonalToTeam>(): com.wire.kalium.logic.feature.user.migration/MigrateFromPersonalToTeamUseCase // com.wire.kalium.logic.feature/UserSessionScope.migrateFromPersonalToTeam.<get-migrateFromPersonalToTeam>|<get-migrateFromPersonalToTeam>(){}[0]
     final val multiPlatformBackup // com.wire.kalium.logic.feature/UserSessionScope.multiPlatformBackup|{}multiPlatformBackup[0]
         final fun <get-multiPlatformBackup>(): com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope // com.wire.kalium.logic.feature/UserSessionScope.multiPlatformBackup.<get-multiPlatformBackup>|<get-multiPlatformBackup>(){}[0]
+    final val notificationAlerts // com.wire.kalium.logic.feature/UserSessionScope.notificationAlerts|{}notificationAlerts[0]
+        final fun <get-notificationAlerts>(): com.wire.kalium.logic.sync.receiving/UnnotifiedMessageAlerts // com.wire.kalium.logic.feature/UserSessionScope.notificationAlerts.<get-notificationAlerts>|<get-notificationAlerts>(){}[0]
     final val observeAnalyticsTrackingIdentifierStatus // com.wire.kalium.logic.feature/UserSessionScope.observeAnalyticsTrackingIdentifierStatus|{}observeAnalyticsTrackingIdentifierStatus[0]
         final fun <get-observeAnalyticsTrackingIdentifierStatus>(): com.wire.kalium.logic.feature.analytics/ObserveAnalyticsTrackingIdentifierStatusUseCase // com.wire.kalium.logic.feature/UserSessionScope.observeAnalyticsTrackingIdentifierStatus.<get-observeAnalyticsTrackingIdentifierStatus>|<get-observeAnalyticsTrackingIdentifierStatus>(){}[0]
     final val observeE2EIRequired // com.wire.kalium.logic.feature/UserSessionScope.observeE2EIRequired|{}observeE2EIRequired[0]

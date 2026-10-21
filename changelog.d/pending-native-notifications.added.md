@@ -1,0 +1,1 @@
+Added notification preparation and commitment through the existing account session. Pending notification identities are persisted until the native host accepts delivery, and replay rechecks privacy and eligibility after interruption. Native hosts can use `KaliumNSEReceiver.processAndDeliver` to acknowledge delivery before releasing account ownership.

@@ -71,6 +71,11 @@ INSERT OR IGNORE INTO MessageNotificationIdentity(notification_message_id, conve
 SELECT id, conversation_id, id FROM Message
 WHERE id = :message_id AND conversation_id = :conversation_id;
 
+resolveNotificationMessage:
+SELECT n.current_message_id FROM MessageNotificationIdentity n
+JOIN Message m ON m.id = n.current_message_id AND m.conversation_id = n.conversation_id
+WHERE n.notification_message_id = :message_id AND m.conversation_id = :conversation_id;
+
 -- Missing rows are not evidence of deletion: ephemeral expiry also removes rows.
 getNotificationRemovalCandidates:
 SELECT m.id, m.conversation_id
