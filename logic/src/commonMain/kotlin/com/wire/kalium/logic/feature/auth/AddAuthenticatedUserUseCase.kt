@@ -20,9 +20,7 @@
 
 package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map

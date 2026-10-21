@@ -110,7 +110,6 @@ interface AuthenticatedNetworkContainer {
 
     val messageApi: MessageApi
 
-
     val mlsMessageApi: MLSMessageApi
 
     val conversationApi: ConversationApi

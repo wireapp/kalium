@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.db.UserDatabaseBuilder

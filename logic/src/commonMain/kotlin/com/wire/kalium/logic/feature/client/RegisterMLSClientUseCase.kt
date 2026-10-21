@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CredentialType

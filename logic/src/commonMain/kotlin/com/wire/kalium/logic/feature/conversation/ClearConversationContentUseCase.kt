@@ -31,7 +31,6 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.util.DateTimeUtil
 import kotlin.time.Clock
 

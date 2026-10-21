@@ -21,7 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation

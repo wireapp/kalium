@@ -23,7 +23,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
