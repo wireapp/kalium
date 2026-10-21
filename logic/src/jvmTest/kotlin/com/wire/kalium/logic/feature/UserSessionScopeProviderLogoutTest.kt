@@ -550,9 +550,11 @@ class UserSessionScopeProviderLogoutTest {
                                 emit(captured)
                                 awaitCancellation()
                             } finally {
-                                // Raw metadata reads during unwind must not wait for provider admission.
-                                repository.currentSession()
-                                drained.complete(Unit)
+                                // The DB read suspends: cleanup must survive cancellation of its observation.
+                                withContext(NonCancellable) {
+                                    assertIs<Either.Right<AccountInfo>>(repository.currentSession())
+                                    drained.complete(Unit)
+                                }
                             }
                         }
                     }.collect { values.send(it) }
