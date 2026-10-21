@@ -69,7 +69,6 @@ public sealed class Node {
         val contentHash: String? = null,
         val contentUrl: String? = null,
         val previewUrl: String? = null,
-        val pdfPreviewUrl: String? = null,
         val metadata: AssetMetadata? = null,
         val publicLinkId: String? = null,
         override val tags: List<String> = emptyList(),

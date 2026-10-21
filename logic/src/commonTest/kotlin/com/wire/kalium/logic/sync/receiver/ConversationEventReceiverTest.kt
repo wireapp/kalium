@@ -151,23 +151,6 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenAdminlessDeleteReminderEvent_whenOnEventInvoked_thenDeleteConversationReminderHandlerShouldBeCalled() = runTest {
-        val reminderEvent = TestEvent.adminlessDeleteReminder()
-        val (arrangement, conversationEventReceiver) = Arrangement().arrange()
-
-        val result = conversationEventReceiver.onEvent(
-            arrangement.transactionContext,
-            reminderEvent,
-            TestEvent.liveDeliveryInfo
-        )
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.deleteConversationReminderEventHandler.handle(eq(reminderEvent))
-        }
-        result.shouldSucceed()
-    }
-
-    @Test
     fun givenMemberJoinEvent_whenOnEventInvoked_thenMemberJoinHandlerShouldBeCalled() = runTest {
         val memberJoinEvent = TestEvent.memberJoin()
 

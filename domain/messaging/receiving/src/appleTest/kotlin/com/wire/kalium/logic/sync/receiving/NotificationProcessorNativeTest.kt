@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.allocArray
@@ -5896,6 +5897,7 @@ class NotificationProcessorNativeTest {
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event, tail), event.id)).value
                 if (interruption != Interruption.AFTER_COMMIT && interruption != Interruption.MARKER) {
                     assertEquals("last-image", result?.messageId)
+                    assertEquals(NotificationMessageKind.PICTURE, result?.messageKind)
                     assertNull(result?.text)
                     assertEquals(sender != SELF, result?.shouldNotify)
                 }
@@ -6456,6 +6458,8 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id)).value
                 assertEquals("poll", result?.messageId)
+                assertEquals("Lunch?", result?.text)
+                assertEquals(NotificationMessageKind.TEXT, result?.messageKind)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val stored = checkNotNull(runtime.database.messageDAO.getMessageById("poll", CONVERSATION_ID))
                     val content = assertIs<MessageEntityContent.Poll>(stored.content)
@@ -10150,6 +10154,36 @@ class NotificationProcessorNativeTest {
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
                 assertTrue(offline.requests.isEmpty())
                 fixture.verifyStoredAndNext(next, "first", listOf("earlier", "first"))
+            }
+        }
+    }
+
+    @Test
+    fun pendingAlertSurvivesAccountCloseAndReopenForBothProtocols() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                val target = fixture.event("target", fixture.encrypt("pending"))
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.receive(listOf(target), target.id, isolateConversations = true))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val alerts = UnnotifiedMessageAlerts(runtime.database, SELF) { TIME }
+                    assertEquals(listOf("pending"), alerts.take().map { it.text })
+                })
+                // The first native database/crypto owner has closed, before any native enqueue acknowledgement.
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val alerts = UnnotifiedMessageAlerts(runtime.database, SELF) { TIME }
+                    assertEquals(listOf("pending"), alerts.pending.read().map { it.text })
+                    runtime.database.userPrefsDAO.persistMessageContentPreference(false)
+                    assertNull(alerts.pending.read().single().text)
+                    alerts.pending.acknowledge(alerts.pending.read().map {
+                        com.wire.kalium.persistence.dao.message.NotificationMessageKey(
+                            it.messageId, QualifiedIDEntity(it.conversationValue, it.conversationDomain),
+                        )
+                    })
+                })
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertEquals(emptyList(), UnnotifiedMessageAlerts(runtime.database, SELF) { TIME }.pending.read())
+                })
             }
         }
     }

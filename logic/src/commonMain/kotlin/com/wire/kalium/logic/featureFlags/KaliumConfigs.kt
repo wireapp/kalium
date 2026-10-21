@@ -48,9 +48,6 @@ public data class KaliumConfigs(
     val mockedRequests: List<TestRequestHandler>? = null,
     val mockNetworkStateObserver: NetworkStateObserver? = null,
     val mockedWebSocket: KaliumMockWebsocket? = null,
-    // Opt-in hook to observe real HTTP traffic (including bodies) for debugging purposes.
-    // See HttpTrafficObserver's documentation for how this differs from KaliumHttpLogger.
-    val httpTrafficObserver: HttpTrafficObserver? = null,
     // Interval between attempts to advance the proteus to MLS migration
     val mlsMigrationInterval: Duration = 24.hours,
     // limit for the number of team members to fetch during slow sync

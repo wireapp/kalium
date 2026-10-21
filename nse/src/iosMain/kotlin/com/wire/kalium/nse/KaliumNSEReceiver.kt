@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.nse
 
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.MessageContentPreference
@@ -32,6 +33,7 @@ import com.wire.kalium.logic.sync.receiving.ReceivedNotificationType
 import com.wire.kalium.logic.sync.receiving.ReceivingDiagnostics
 import com.wire.kalium.logic.sync.receiving.ReceivingOptions
 import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
+import com.wire.kalium.logic.sync.receiving.notificationPreview
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
@@ -121,6 +123,7 @@ public data class KaliumNSEResult(
     public val presentGenericAlert: Boolean = false,
     /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */
     public val stoppedReason: String? = null,
+    public val messageKind: NotificationMessageKind? = null,
 )
 
 /** A message alert beyond the request's own; text and names are present only when preview is allowed. */
@@ -132,6 +135,7 @@ public data class KaliumNSEAlert(
     public val conversationName: String?,
     public val senderName: String?,
     public val isGroupConversation: Boolean,
+    public val messageKind: NotificationMessageKind? = null,
 )
 
 public enum class KaliumNSEStatus { SUCCESS, FAILED }
@@ -162,10 +166,25 @@ public data class KaliumNSECall(
     public val isGroupConversation: Boolean = false,
 )
 
+/**
+ * Enqueue using only the supplied alert and native notification APIs, never account resources.
+ * Cancellation may release the account before this callback completes; late acceptance is replayed
+ * through stable notification identities rather than acknowledging against a closed database.
+ */
+public interface KaliumNSEMessageDelivery {
+    public suspend fun deliver(alert: KaliumNSEAlert): Boolean
+}
+
 /** Bounded prepared-account receiving. Unsupported earlier work stops the attempt and preserves its processed marker. */
 public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration) {
     @Throws(CancellationException::class)
-    public suspend fun process(request: KaliumNSERequest): KaliumNSEResult {
+    public suspend fun process(request: KaliumNSERequest): KaliumNSEResult = processOwned(request, null)
+
+    @Throws(CancellationException::class)
+    public suspend fun processAndDeliver(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery): KaliumNSEResult =
+        processOwned(request, delivery)
+
+    private suspend fun processOwned(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
         val diagnostics = ReceivingDiagnostics()
         if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) {
             return failure("INVALID_REQUEST").also { diagnostics.record("FAILED", it.failureReason, false) }
@@ -186,7 +205,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     configuration.userAgent,
                     configuration.certificatePins,
                     diagnostics = diagnostics,
-                ) { runtime -> receive(runtime, request, diagnostics, started).also { produced = it } }
+                ) { runtime -> receive(runtime, request, diagnostics, started, delivery).also { produced = it } }
                 when (result) {
                     is Either.Left -> failure(result.value.name)
                     is Either.Right -> result.value
@@ -207,6 +226,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         request: KaliumNSERequest,
         diagnostics: ReceivingDiagnostics,
         started: TimeSource.Monotonic.ValueTimeMark,
+        delivery: KaliumNSEMessageDelivery?,
     ): KaliumNSEResult {
         runtime.database.messageDAO.rememberNotificationMessages(request.deliveredNotifications.map { it.messageKey() })
         val processor = runtime.notificationProcessor(
@@ -229,9 +249,14 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             if (caughtUp == CatchUpOutcome.LIVE || it.stoppedReason != QUEUE_END) it
             else it.copy(stoppedReason = "CATCH_UP_${caughtUp.name}")
         }
-        val unnotified = if (!received.prefixComplete) emptyList()
-        else UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).take()
+        val claims = UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId)
+        claims.pending.acknowledge(request.deliveredNotifications.map { it.messageKey() })
+        if (received.prefixComplete) claims.take()
+        val unnotified = claims.pending.read(request.showMessageContent)
         val result = reconcileNotifications(runtime, received, unnotified, request)
+        if (delivery != null) deliverMessageAlerts(result.alerts, delivery) { key ->
+            claims.pending.acknowledge(listOf(key))
+        }
         return result.copy(
             stoppedReason = received.stoppedReason,
             presentGenericAlert = !result.shouldNotify && result.alerts.isEmpty() &&
@@ -263,7 +288,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         val (received, extras) = presentation(processed, unnotified)
         val preference = runtime.readMessageContentPreference()
         val result = success(received, request.showMessageContent, preference).copy(
-            alerts = extras.map { alert(it, request.showMessageContent, preference) }
+            alerts = unnotified.map { alert(it, request.showMessageContent, preference) }
         )
         val alerted = extras + listOfNotNull(received.messageAlert())
         runtime.database.messageDAO.rememberNotificationMessages(alerted.map { it.messageKey() })
@@ -320,6 +345,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             preview.conversationName,
             preview.senderName,
             preview.isGroupConversation,
+            preview.messageKind,
         )
     }
 
@@ -329,23 +355,18 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         showContent: Boolean,
         preference: Either<StorageFailure, MessageContentPreference>,
     ): KaliumNSEResult {
-        val savedAllowsPreview = when (preference) {
-            is Either.Left -> false
-            is Either.Right -> when (preference.value) {
-                MessageContentPreference.Unset, MessageContentPreference.Enabled -> true
-                MessageContentPreference.Disabled -> false
-            }
-        }
+        val savedAllowsPreview = preference is Either.Right && preference.value != MessageContentPreference.Disabled
         val message = result.message
-        val canPreview = showContent && savedAllowsPreview && message?.shouldNotify == true && message.mayPreview
-        val contentType = when (message?.type) {
+        val preview = message?.notificationPreview(showContent, preference)
+        val contentType = when (preview?.type) {
             ReceivedNotificationType.CONVERSATION_DELETED -> KaliumNSEContentType.CONVERSATION_DELETED
             ReceivedNotificationType.CONNECTION_REQUEST -> KaliumNSEContentType.CONNECTION_REQUEST
             ReceivedNotificationType.MESSAGE, null -> KaliumNSEContentType.MESSAGE
         }
         return KaliumNSEResult(
             KaliumNSEStatus.SUCCESS, message?.shouldNotify == true, message?.messageId,
-            message?.conversationValue, message?.conversationDomain, message?.text?.takeIf { canPreview },
+            message?.conversationValue, message?.conversationDomain, preview?.text,
+            messageKind = preview?.messageKind,
             callSignalsPending = result.callSignalsPending,
             appWorkPending = result.appWorkPending?.name,
             presentationReason = result.presentationReason ?: when {
@@ -353,14 +374,15 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 !message.shouldNotify -> message.suppressionReason ?: "NOT_ELIGIBLE"
                 !showContent || !savedAllowsPreview -> "MESSAGE_CONTENT_HIDDEN"
                 !message.mayPreview -> message.previewPolicyReason ?: "PREVIEW_POLICY"
+                message.messageKind != null && message.messageKind != NotificationMessageKind.TEXT -> "TYPED_MESSAGE"
                 message.text.isNullOrEmpty() -> "NO_TEXT"
                 else -> "TEXT"
             },
             // A typed system label is also preview content, even when its text is null.
-            contentType = contentType.takeIf { canPreview } ?: KaliumNSEContentType.MESSAGE,
-            conversationName = message?.conversationName?.takeIf { canPreview },
-            senderName = message?.senderName?.takeIf { canPreview },
-            isGroupConversation = canPreview && message?.isGroupConversation == true,
+            contentType = contentType,
+            conversationName = preview?.conversationName,
+            senderName = preview?.senderName,
+            isGroupConversation = preview?.isGroupConversation == true,
             calls = result.calls.map { call ->
                 KaliumNSECall(
                     type = when (call.type) {
@@ -389,14 +411,6 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         )
     }
 
-    private fun KaliumNSEKeychainAccessibility.toApple(): KeychainAccessibility = when (this) {
-        KaliumNSEKeychainAccessibility.WHEN_UNLOCKED -> KeychainAccessibility.WhenUnlocked
-        KaliumNSEKeychainAccessibility.WHEN_UNLOCKED_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenUnlockedThisDeviceOnly
-        KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK -> KeychainAccessibility.AfterFirstUnlock
-        KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY -> KeychainAccessibility.AfterFirstUnlockThisDeviceOnly
-        KaliumNSEKeychainAccessibility.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenPasscodeSetThisDeviceOnly
-    }
-
     private fun failure(reason: String) = KaliumNSEResult(
         KaliumNSEStatus.FAILED,
         false,
@@ -414,4 +428,12 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         const val QUEUE_END = "QUEUE_END"
         const val BUDGET = "BUDGET"
     }
+}
+
+private fun KaliumNSEKeychainAccessibility.toApple(): KeychainAccessibility = when (this) {
+    KaliumNSEKeychainAccessibility.WHEN_UNLOCKED -> KeychainAccessibility.WhenUnlocked
+    KaliumNSEKeychainAccessibility.WHEN_UNLOCKED_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenUnlockedThisDeviceOnly
+    KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK -> KeychainAccessibility.AfterFirstUnlock
+    KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY -> KeychainAccessibility.AfterFirstUnlockThisDeviceOnly
+    KaliumNSEKeychainAccessibility.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenPasscodeSetThisDeviceOnly
 }

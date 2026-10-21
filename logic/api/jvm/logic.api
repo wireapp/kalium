@@ -1316,6 +1316,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getMigrateConversationToMLS ()Lcom/wire/kalium/logic/feature/conversation/MigrateConversationToMLSUseCase;
 	public final fun getMigrateFromPersonalToTeam ()Lcom/wire/kalium/logic/feature/user/migration/MigrateFromPersonalToTeamUseCase;
 	public final fun getMultiPlatformBackup ()Lcom/wire/kalium/logic/feature/backup/MultiPlatformBackupScope;
+	public final fun getNotificationAlerts ()Lcom/wire/kalium/logic/sync/receiving/UnnotifiedMessageAlerts;
 	public final fun getObserveAnalyticsTrackingIdentifierStatus ()Lcom/wire/kalium/logic/feature/analytics/ObserveAnalyticsTrackingIdentifierStatusUseCase;
 	public final fun getObserveE2EIRequired ()Lcom/wire/kalium/logic/feature/user/ObserveE2EIRequiredUseCase;
 	public final fun getObserveFileSharingStatus ()Lcom/wire/kalium/logic/feature/user/ObserveFileSharingStatusUseCase;

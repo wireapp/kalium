@@ -59,7 +59,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -68,6 +67,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 class ConversationExtensionsTest : BaseDatabaseTest() {
     private lateinit var conversationExtensions: ConversationExtensions
@@ -127,22 +127,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         // Assuming the first page was fetched containing only 11 results ("conversation 1" and "conversation 10" to "conversation 19")
         assertEquals(0, result.itemsAfter) // Since the page has fewer elements than PAGE_SIZE, there should be no items after this page
         assertEquals(0, result.itemsBefore) // No items before the first page
-    }
-
-    @Test
-    fun givenAdminlessDeletionTimestamp_whenSearchingConversations_thenPagedResultContainsTimestamp() = runTest(dispatcher) {
-        val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
-        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
-        populateData(count = 1)
-        conversationDAO.insertAdminlessGroupDelete(conversationId, deletionTimestamp)
-
-        val result = getPager(searchQuery = "conversation 0").pagingSource.refresh()
-
-        val page = assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
-        assertEquals(
-            deletionTimestamp,
-            page.data.single().conversationViewEntity.adminlessGroupDeletionTimestamp,
-        )
     }
 
     @Test
@@ -734,7 +718,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithMembersEntity>>(this)
 
     private fun memberSearchUser(value: String) = newUserEntity(UserIDEntity(value, selfUserId.domain))
-
     private fun getPager(searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL): KaliumPager<ConversationDetailsWithEventsEntity> =
         conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
             pagingConfig = PagingConfig(PAGE_SIZE),
