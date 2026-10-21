@@ -63,7 +63,10 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
 
     @Test
     fun givenAssetMessage_whenDeleting_thenDeleteAssetLocally() = runTest {
-        val assetContent = ASSET_IMAGE_CONTENT
+        val preview = AssetContent.Preview(
+            "image/jpeg", 123, 64, 48, ASSET_CONTENT_REMOTE_DATA.copy(assetId = "preview-id")
+        )
+        val assetContent = ASSET_IMAGE_CONTENT.copy(preview = preview)
         val message = MESSAGE_REGULAR.copy(
             content = MessageContent.Asset(assetContent)
         )
@@ -79,6 +82,7 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId)
         }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally("preview-id") }
     }
 
     @Test

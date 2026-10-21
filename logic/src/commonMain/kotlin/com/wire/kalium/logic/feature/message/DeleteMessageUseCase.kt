@@ -214,17 +214,20 @@ public class DeleteMessageUseCase internal constructor(
     }
 
     private suspend fun deleteMessageAsset(message: Message, deleteForEveryone: Boolean) {
-        (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+        val assetContent = (message.content as? MessageContent.Asset)?.value
+        listOfNotNull(assetContent?.remoteData, assetContent?.preview?.remoteData)
+            .distinctBy { it.assetId }
+            .forEach { assetToRemove ->
 
-            assetRepository.deleteAsset(
-                assetToRemove.assetId,
-                assetToRemove.assetDomain,
-                assetToRemove.assetToken
-            )
-                .onFailure {
-                    kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
-                }
-        }
+                assetRepository.deleteAsset(
+                    assetToRemove.assetId,
+                    assetToRemove.assetDomain,
+                    assetToRemove.assetToken
+                )
+                    .onFailure {
+                        kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
+                    }
+            }
 
         // Delete attachments for multipart message
         if (deleteForEveryone && message.content is MessageContent.Multipart) {

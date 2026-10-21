@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
@@ -239,7 +240,9 @@ class DeleteMessageHandlerTest {
     fun givenDeletedMessageHasRemoteAsset_whenHandled_thenLocalAssetIsDeleted() = runTest {
         val conversationId = ConversationId("conversationId", "conversationDomain")
         val originalMessage = TestMessage.TEXT_MESSAGE.copy(
-            content = TestMessage.ASSET_CONTENT,
+            content = MessageContent.Asset(TestMessage.ASSET_CONTENT.value.copy(preview = AssetContent.Preview(
+                "image/jpeg", 123, 64, 48, TestMessage.ASSET_CONTENT.value.remoteData.copy(assetId = "preview-id")
+            ))),
             conversationId = conversationId,
             expirationData = null,
         )
@@ -258,6 +261,7 @@ class DeleteMessageHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.deleteAssetLocally(eq(TestMessage.ASSET_CONTENT.value.remoteData!!.assetId))
         }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally("preview-id") }
     }
 
     @Test
