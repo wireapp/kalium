@@ -154,8 +154,10 @@ internal interface AssetRepository {
     /**
      * Method used to delete asset only locally
      */
-    // TODO(federation): add the domain to delete asset locally
     suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit>
+
+    /** Delete only the cached asset matching the normalized remote domain. */
+    suspend fun deleteAssetLocally(assetId: String, assetDomain: String?): Either<CoreFailure, Unit>
     suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path>
 
     /** Fetches an optional preview with independent transfer, decoded-file and cached-file size limits. */
@@ -321,7 +323,8 @@ internal class AssetDataSource(
         return wrapStorageRequest {
             val persistentAssetDataPath = kaliumFileSystem.providePersistentAssetPath(assetName = buildFileName(assetId, extension))
             kaliumFileSystem.copy(decodedDataPath, persistentAssetDataPath)
-            if (!retainSource) kaliumFileSystem.delete(decodedDataPath)
+            // Keep explicitly retained and managed sources until the message update commits.
+            if (!retainSource && !assetDao.isFileReferenced(decodedDataPath.toString())) kaliumFileSystem.delete(decodedDataPath)
             val decodedAssetEntity = assetMapper.fromUserAssetToDaoModel(assetId, assetDomain, persistentAssetDataPath, assetDataSize)
             assetDao.insertAsset(decodedAssetEntity)
             return@wrapStorageRequest persistentAssetDataPath
@@ -569,7 +572,16 @@ internal class AssetDataSource(
 
     override suspend fun deleteAsset(assetId: String, assetDomain: String?, assetToken: String?): Either<CoreFailure, Unit> =
         wrapApiRequest { assetApi.deleteAsset(assetId, assetDomain, assetToken) }
-            .flatMap { deleteAssetLocally(assetId) }
+            .flatMap { deleteAssetLocally(assetId, assetDomain) }
+
+    override suspend fun deleteAssetLocally(assetId: String, assetDomain: String?): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            val asset = assetDao.getAssetByKey(assetId).firstOrNull()
+            if (asset != null && asset.domain.orEmpty() == assetDomain.orEmpty()) {
+                kaliumFileSystem.delete(asset.dataPath.toPath(), mustExist = false)
+                assetDao.deleteAsset(assetId)
+            }
+        }
 
     override suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit> =
         wrapStorageRequest {

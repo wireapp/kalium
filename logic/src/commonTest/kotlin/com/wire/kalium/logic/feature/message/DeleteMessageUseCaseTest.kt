@@ -257,7 +257,7 @@ class DeleteMessageUseCaseTest {
     }
 
     @Test
-    fun givenAMessageWithAsset_WhenDelete_TheDeleteAssetShouldBeInvoked() = runTest {
+    fun givenOriginalAndPreviewShareKeyWithDifferentDomains_whenDeleting_thenDeleteBothRemoteAssets() = runTest {
         val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
@@ -288,10 +288,49 @@ class DeleteMessageUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.deleteAsset(eq(ASSET_ID.value), eq(ASSET_ID.domain), eq(ASSET_TOKEN))
         }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.assetRepository.deleteAsset(ASSET_ID.value, "preview.domain", ASSET_TOKEN)
+        }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
         }
+    }
+
+    @Test
+    fun givenOriginalAndPreviewShareRemoteIdentity_whenDeleting_thenDeleteRemoteAssetOnce() = runTest {
+        verifyRemoteDeletionDeduplicates(ASSET_ID.domain, ASSET_ID.domain)
+    }
+
+    @Test
+    fun givenOriginalAndPreviewHaveMissingAndEmptyDomains_whenDeleting_thenDeleteRemoteAssetOnce() = runTest {
+        verifyRemoteDeletionDeduplicates(null, "")
+    }
+
+    private suspend fun kotlinx.coroutines.CoroutineScope.verifyRemoteDeletionDeduplicates(originalDomain: String?, previewDomain: String?) {
+        val content = MESSAGE_ASSET_CONTENT.value.copy(
+            remoteData = DUMMY_ASSET_REMOTE_DATA.copy(assetDomain = originalDomain),
+            preview = MESSAGE_ASSET_CONTENT.value.preview!!.copy(
+                remoteData = DUMMY_ASSET_REMOTE_DATA.copy(assetDomain = previewDomain, assetToken = "preview-token"),
+            ),
+        )
+        val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
+            .withSendMessageSucceed()
+            .withSelfUser(TestUser.SELF)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
+            .withCompletedSlowSync()
+            .withMessageRepositoryMarkMessageAsDeletedSucceed()
+            .withAssetMessage(MessageContent.Asset(content))
+            .withAssetRepositoryDeleteAssetSucceed()
+            .arrange()
+
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).toEither().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.assetRepository.deleteAsset(ASSET_ID.value, originalDomain, ASSET_TOKEN)
+        }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.assetRepository.deleteAsset(any(), any(), any()) }
     }
 
     @Test
@@ -409,10 +448,10 @@ class DeleteMessageUseCaseTest {
             } returns Either.Right(TestMessage.TEXT_MESSAGE.copy(status = status, expirationData = expirationData))
         }
 
-        suspend fun withAssetMessage() = apply {
+        suspend fun withAssetMessage(content: MessageContent.Asset = MESSAGE_ASSET_CONTENT) = apply {
             everySuspend {
                 messageRepository.getMessageById(any(), any())
-            } returns Either.Right(TestMessage.TEXT_MESSAGE.copy(content = MESSAGE_ASSET_CONTENT))
+            } returns Either.Right(TestMessage.TEXT_MESSAGE.copy(content = content))
         }
 
         suspend fun withAssetRepositoryDeleteAssetSucceed() = apply {
@@ -448,6 +487,9 @@ class DeleteMessageUseCaseTest {
         val MESSAGE_ASSET_CONTENT = MessageContent.Asset(
             AssetContent(
                 remoteData = DUMMY_ASSET_REMOTE_DATA,
+                preview = AssetContent.Preview(
+                    "image/jpeg", 123, 64, 48, DUMMY_ASSET_REMOTE_DATA.copy(assetDomain = "preview.domain")
+                ),
                 sizeInBytes = 0,
                 mimeType = "image/jpeg"
             ),

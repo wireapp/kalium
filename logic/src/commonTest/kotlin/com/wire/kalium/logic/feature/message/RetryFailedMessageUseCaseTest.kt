@@ -31,12 +31,14 @@ import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageMapperImpl
-import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
@@ -44,50 +46,53 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestMessage.ASSET_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import dev.mokkery.MockMode
-import dev.mokkery.matcher.any
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.matching
-import dev.mokkery.answering.returns
-import dev.mokkery.answering.calls
-import dev.mokkery.matcher.eq
-import dev.mokkery.mock
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.days
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import okio.Path
+import okio.Path.Companion.toPath
 import okio.buffer
 import okio.use
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertIs
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.days
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryFailedMessageUseCaseTest {
@@ -982,10 +987,125 @@ class RetryFailedMessageUseCaseTest {
         }
     }
 
+    @Test
+    fun givenPreviewUploadSuspended_whenRetryCancelled_thenDoesNotPersistDeleteCacheOrSend() = runTest(testDispatcher.default) {
+        val name = "video.mp4"
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+        val previewPath = "preview.jpg".toPath()
+        val preview = AssetContent.Preview(
+            "image/jpeg", 1024, 512, 288,
+            AssetContent.RemoteData(ByteArray(32) { 1 }, byteArrayOf(), "temp-preview", null, "", MessageEncryptionAlgorithm.AES_CBC),
+        )
+        val message = assetMessage().copy(
+            content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, preview = preview)),
+            status = Message.Status.Failed,
+        )
+        val previewUploadStarted = CompletableDeferred<Unit>()
+        val retryScope = TestScope(testDispatcher.default)
+        val (arrangement, useCase) = Arrangement(testScope = retryScope)
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+            .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+            .withFetchPrivateDecodedAsset(Either.Right(path))
+            .withUploadAndPersistPrivateAsset(
+                Either.Right(UploadedAssetId("remote_key", "remote_domain", "remote_token") to SHA256Key(byteArrayOf(1)))
+            )
+            .arrange()
+        everySuspend { arrangement.assetRepository.fetchPreviewAsset(preview) } returns Either.Right(FetchedAssetData(previewPath, false))
+        everySuspend {
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), previewPath, any(), any(), any(), any(), any())
+        } calls {
+            previewUploadStarted.complete(Unit)
+            awaitCancellation()
+        }
+
+        assertIs<MessageOperationResult.Success>(useCase(message.id, message.conversationId))
+        previewUploadStarted.await()
+        retryScope.cancel()
+        advanceUntilIdle()
+
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.persistMessage(any())
+            arrangement.assetRepository.deleteAssetLocally(any())
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenAssetUploadSucceeds_whenPersistenceFails_thenRetainsCacheAndDoesNotSend() = runTest(testDispatcher.default) {
+        val name = "photo.jpg"
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+        val message = assetMessage().copy(
+            content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name)),
+            status = Message.Status.Failed,
+        )
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+            .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+            .withFetchPrivateDecodedAsset(Either.Right(path))
+            .withUploadAndPersistPrivateAsset(
+                Either.Right(UploadedAssetId("remote_key", "remote_domain", "remote_token") to SHA256Key(byteArrayOf(1)))
+            )
+            .withPersistMessage(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        assertIs<MessageOperationResult.Success>(useCase(message.id, message.conversationId))
+        advanceUntilIdle()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage(any()) }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.assetRepository.deleteAssetLocally(any())
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
+        }
+    }
+
+    @Test
+    fun givenAssetUploadSucceeds_whenPersistenceSucceeds_thenDeletesOriginalCacheAfterPersistenceAndSends() =
+        runTest(testDispatcher.default) {
+            val name = "photo.jpg"
+            val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name))
+            val message = assetMessage().copy(content = content, status = Message.Status.Failed)
+            val uploadedAssetId = UploadedAssetId("remote_key", "remote_domain", "remote_token")
+            val (arrangement, useCase) = Arrangement()
+                .withGetMessageById(Either.Right(message))
+                .withUpdateMessageStatus(Either.Right(Unit))
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+                .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+                .withFetchPrivateDecodedAsset(Either.Right(path))
+                .withUploadAndPersistPrivateAsset(Either.Right(uploadedAssetId to SHA256Key(byteArrayOf(1))))
+                .withPersistMessage(Either.Right(Unit))
+                .withSendMessage(Either.Right(Unit))
+                .arrange()
+
+            assertIs<MessageOperationResult.Success>(useCase(message.id, message.conversationId))
+            advanceUntilIdle()
+
+            verifySuspend(VerifyMode.order) {
+                arrangement.persistMessage(matching {
+                    (it.content as? MessageContent.Asset)?.value?.remoteData?.assetId == uploadedAssetId.key
+                })
+                arrangement.assetRepository.deleteAssetLocally(content.value.remoteData.assetId)
+                arrangement.messageSender.sendMessage(any(), any())
+            }
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.assetRepository.deleteAssetLocally(uploadedAssetId.key) }
+        }
+
     private class Arrangement(
-        val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit)
+        val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit),
+        private val testScope: TestScope = TestScope(testDispatcher.default),
     ) {
         val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
+
+        init {
+            everySuspend { assetRepository.deleteAssetLocally(any()) } returns Either.Right(Unit)
+        }
         val attachmentsRepository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
@@ -994,6 +1114,7 @@ class RetryFailedMessageUseCaseTest {
         val getAssetMessageTransferStatus = mock<GetAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
         val publishAttachments = mock<PublishAttachmentsUseCase>(mode = MockMode.autoUnit)
 
+<<<<<<< HEAD
         private val testScope = TestScope(testDispatcher.default)
 
         // Reuse existing send gates/failures for acknowledged sends; skipped-send tests override the outcome explicitly.
@@ -1004,6 +1125,8 @@ class RetryFailedMessageUseCaseTest {
             }
         }
 
+=======
+>>>>>>> 281ae42b1c56 (fix(assets): protect video preview decryption and cleanup)
         suspend fun withGetMessageById(result: Either<StorageFailure, Message>): Arrangement = apply {
             everySuspend {
                 messageRepository.getMessageById(any(), any())

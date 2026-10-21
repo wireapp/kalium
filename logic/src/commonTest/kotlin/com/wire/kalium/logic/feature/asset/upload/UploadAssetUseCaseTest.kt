@@ -20,13 +20,9 @@ package com.wire.kalium.logic.feature.asset.upload
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
-import dev.mokkery.matcher.matches
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -34,6 +30,9 @@ import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
@@ -49,6 +48,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -66,6 +66,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 
 class UploadAssetUseCaseTest {
 
@@ -377,6 +379,35 @@ class UploadAssetUseCaseTest {
             } == true })
         }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.assetDataSource.deleteAssetLocally("temp-preview") }
+    }
+
+    @Test
+    fun cancellationDuringPreviewUploadKeepsPendingMessageAndItsCache() = runTest(testDispatcher.default) {
+        val previewUploadStarted = CompletableDeferred<Unit>()
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+            everySuspend { assetDataSource.fetchPreviewAsset(any()) } returns
+                Either.Right(FetchedAssetData("preview.jpg".toPath(), false))
+            everySuspend {
+                assetDataSource.uploadAndPersistPrivateAsset(eq("image/jpeg"), any(), any(), any(), any(), any(), any())
+            } calls {
+                previewUploadStarted.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        val preview = AssetContent.Preview(
+            "image/jpeg", 1024, 512, 288,
+            AssetContent.RemoteData(ByteArray(32) { 1 }, byteArrayOf(), "temp-preview", null, "", MessageEncryptionAlgorithm.AES_CBC),
+        )
+        val upload = launch { uploadAsset(assetMessage(), uploadMetadata.copy(mimeType = "video/mp4", preview = preview)) }
+        previewUploadStarted.await()
+        upload.cancelAndJoin()
+
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.persistMessage(any())
+            arrangement.assetDataSource.deleteAssetLocally(any())
+            arrangement.messageSender.sendMessage(any(), any())
+        }
     }
 
     private fun testGeneratingAudioNormalizedLoudness(
