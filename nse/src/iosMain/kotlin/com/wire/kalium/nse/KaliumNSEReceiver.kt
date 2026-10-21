@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.nse
 
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.MessageContentPreference
@@ -122,6 +123,7 @@ public data class KaliumNSEResult(
     public val presentGenericAlert: Boolean = false,
     /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */
     public val stoppedReason: String? = null,
+    public val messageKind: NotificationMessageKind? = null,
 )
 
 /** A message alert beyond the request's own; text and names are present only when preview is allowed. */
@@ -133,6 +135,7 @@ public data class KaliumNSEAlert(
     public val conversationName: String?,
     public val senderName: String?,
     public val isGroupConversation: Boolean,
+    public val messageKind: NotificationMessageKind? = null,
 )
 
 public enum class KaliumNSEStatus { SUCCESS, FAILED }
@@ -342,6 +345,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             preview.conversationName,
             preview.senderName,
             preview.isGroupConversation,
+            preview.messageKind,
         )
     }
 
@@ -351,13 +355,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         showContent: Boolean,
         preference: Either<StorageFailure, MessageContentPreference>,
     ): KaliumNSEResult {
-        val savedAllowsPreview = when (preference) {
-            is Either.Left -> false
-            is Either.Right -> when (preference.value) {
-                MessageContentPreference.Unset, MessageContentPreference.Enabled -> true
-                MessageContentPreference.Disabled -> false
-            }
-        }
+        val savedAllowsPreview = preference is Either.Right && preference.value != MessageContentPreference.Disabled
         val message = result.message
         val preview = message?.notificationPreview(showContent, preference)
         val contentType = when (preview?.type) {
@@ -368,6 +366,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         return KaliumNSEResult(
             KaliumNSEStatus.SUCCESS, message?.shouldNotify == true, message?.messageId,
             message?.conversationValue, message?.conversationDomain, preview?.text,
+            messageKind = preview?.messageKind,
             callSignalsPending = result.callSignalsPending,
             appWorkPending = result.appWorkPending?.name,
             presentationReason = result.presentationReason ?: when {
@@ -375,6 +374,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 !message.shouldNotify -> message.suppressionReason ?: "NOT_ELIGIBLE"
                 !showContent || !savedAllowsPreview -> "MESSAGE_CONTENT_HIDDEN"
                 !message.mayPreview -> message.previewPolicyReason ?: "PREVIEW_POLICY"
+                message.messageKind != null && message.messageKind != NotificationMessageKind.TEXT -> "TYPED_MESSAGE"
                 message.text.isNullOrEmpty() -> "NO_TEXT"
                 else -> "TEXT"
             },
