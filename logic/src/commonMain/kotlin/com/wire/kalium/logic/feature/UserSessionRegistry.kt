@@ -22,6 +22,10 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import co.touchlab.stately.concurrency.Lock
 import co.touchlab.stately.concurrency.withLock
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.ConsumerWork
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -35,6 +39,7 @@ internal class UserSessionRegistry<T : Any>(
 
     fun account(userId: UserId): Account<T> = accounts.computeIfAbsent(userId) { Account(invalidate, cancelFailedStartup) }
 
+    @Suppress("TooManyFunctions") // The existing account gate owns generation, observation and lifecycle admission together.
     internal class Account<T : Any>(
         private val invalidate: (T) -> Unit,
         private val cancelFailedStartup: (T) -> Unit,
@@ -42,7 +47,10 @@ internal class UserSessionRegistry<T : Any>(
         private val state = Lock()
         private val construction = Lock()
         private val lifecycle = Mutex()
+        private val changes = MutableStateFlow(0L)
+        val revision: StateFlow<Long> get() = changes
         private var closing = false
+        private var observationAllowed = true
         private var generation: Generation<T>? = null
 
         fun get(): T? = state.withLock { generation?.takeIf { !closing && it.ready }?.value }
@@ -55,12 +63,12 @@ internal class UserSessionRegistry<T : Any>(
         fun hasFailedStartup(): Boolean = state.withLock { generation?.failedStartup == true }
 
         @Suppress("TooGenericExceptionCaught") // Failed startup retains ownership until explicit cleanup succeeds.
-        fun getOrCreate(create: () -> T, start: (T) -> Unit): T {
-            state.withLock { check(!closing) { "The user session generation is closing" } }
+        fun getOrCreate(create: () -> T, start: (T) -> Unit, observationRevision: Long? = null): T {
+            state.withLock { if (!canOpen(observationRevision)) throw SessionGenerationClosed() }
             // Construction/startup serialize here; cleanup can still invalidate without blocking.
             return construction.withLock {
                 val cached = state.withLock {
-                    check(!closing) { "The user session generation is closing" }
+                    if (!canOpen(observationRevision)) throw SessionGenerationClosed()
                     generation?.let {
                         // A reentrant request from synchronous startup must not create another owner.
                         check(it.ready) { "The user session generation is still starting" }
@@ -71,7 +79,7 @@ internal class UserSessionRegistry<T : Any>(
                     cached
                 } else {
                     val pending = state.withLock {
-                        check(!closing) { "The user session generation is closing" }
+                        if (!canOpen(observationRevision)) throw SessionGenerationClosed()
                         Generation<T>().also { generation = it }
                     }
                     try {
@@ -80,19 +88,21 @@ internal class UserSessionRegistry<T : Any>(
                             // Workers may request logout/preparation as soon as start launches them.
                             // Keep their actual owner private until all synchronous startup succeeds.
                             pending.value = value
-                            closing
+                            !canOpen(observationRevision)
                         }
                         if (!outgoing) start(value)
                         val published = state.withLock {
-                            if (!closing) pending.ready = true
-                            !closing
+                            val allowed = canOpen(observationRevision)
+                            if (allowed) pending.ready = true
+                            allowed
                         }
-                        check(published) { "The user session generation was invalidated during creation" }
+                        if (!published) throw SessionGenerationClosed("The user session generation was invalidated during creation")
                         value
                     } catch (failure: Throwable) {
                         val owner = state.withLock {
                             closing = true
                             pending.failedStartup = true
+                            changes.value++
                             pending.value
                         }
                         owner?.let {
@@ -108,13 +118,78 @@ internal class UserSessionRegistry<T : Any>(
             }
         }
 
-        /** Stops admission immediately; does not resolve any lazy scope or resource. */
-        fun invalidate() {
-            val outgoing = state.withLock {
-                closing = true
-                generation?.value
+        /** Stops admission immediately; cancellation runs outside the state lock. */
+        fun invalidate() { invalidate(null) }
+
+        private fun invalidate(origin: Any?): Pair<Long, List<ConsumerWork>>? {
+            val snapshot = state.withLock {
+                if (origin != null && generation?.value !== origin) return@withLock null
+                if (!closing) {
+                    closing = true
+                    changes.value++
+                }
+                Triple(changes.value, generation?.value, generation?.observations.orEmpty().toList())
+            } ?: return null
+            snapshot.third.forEach { it.close() }
+            snapshot.second?.let(invalidate)
+            return snapshot.first to snapshot.third
+        }
+
+        // Call only under state: observers cannot turn a stale acquisition into a manual open.
+        private fun canOpen(observationRevision: Long?): Boolean {
+            if (closing) return false
+            return observationRevision == null || (observationAllowed && changes.value == observationRevision)
+        }
+
+        fun isAvailable(revision: Long): Boolean = state.withLock { canOpen(revision) }
+
+        fun admit(revision: Long, value: T): Observation<T>? = state.withLock {
+            val current = generation
+            if (!observationAllowed) return@withLock null
+            if (closing || changes.value != revision || current?.ready != true || current.value !== value) return@withLock null
+            val revoked = CancellationException("User session observation revoked")
+            val work = ConsumerWork(
+                isGenerationActive = { isAvailable(revision) },
+                onDrained = { drained -> state.withLock { current.observations.remove(drained) } },
+                revocation = revoked,
+            )
+            current.observations.add(work)
+            Observation(value, work, revoked) { isAvailable(revision) }
+        }
+
+        /**
+         * Revoke/drain observers BEFORE taking the lifecycle/Apple ownership mutex and BEFORE legacy
+         * shutdown snapshots its lazy resources. Another transition may have released/reopened while
+         * we waited: in that case close and drain the new revision before entering serialization again.
+         */
+        suspend fun <R : Any> withClosed(
+            origin: Any? = null,
+            serialize: suspend (suspend () -> R?) -> R? = { action -> withLifecycle { action() } },
+            block: suspend (T?) -> R,
+        ): R? {
+            while (true) {
+                val (ticket, observations) = invalidate(origin) ?: return null
+                observations.forEach { it.awaitClosed() }
+                val result = serialize {
+                    val matches = state.withLock {
+                        closing && changes.value == ticket && (origin == null || generation?.value === origin)
+                    }
+                    if (matches) block(close()) else null
+                }
+                if (result != null) return result
             }
-            outgoing?.let(invalidate)
+        }
+
+        /** Manual open enables only its ready owner; Apple store enables after its whole transition. */
+        fun allowObservation(origin: T? = null) {
+            state.withLock {
+                val current = generation
+                val ready = origin == null || (current?.ready == true && current.value === origin)
+                if (!closing && !observationAllowed && ready) {
+                    observationAllowed = true
+                    changes.value++
+                }
+            }
         }
 
         /** Call within [withLifecycle]; includes a constructor that was admitted before invalidation. */
@@ -125,11 +200,13 @@ internal class UserSessionRegistry<T : Any>(
             return getRaw()?.also(invalidate)
         }
 
-        /** Call only after ALL identity-keyed provider removals and session mutations succeed. */
-        fun release() {
+        /** Successful cleanup permits manual open; only successful store may opt observers back in. */
+        fun release(allowObservation: Boolean = false) {
             state.withLock {
                 generation = null
                 closing = false
+                observationAllowed = allowObservation
+                changes.value++
             }
         }
 
@@ -140,7 +217,32 @@ internal class UserSessionRegistry<T : Any>(
             var value: T? = null
             var ready = false
             var failedStartup = false
+            val observations = mutableSetOf<ConsumerWork>()
             val constructed = CompletableDeferred<Unit>()
         }
     }
+}
+
+/** Only registry-owned closure is recoverable during acquisition; startup/programming failures escape. */
+internal class SessionGenerationClosed(message: String = "The user session generation is closing") : IllegalStateException(message)
+
+internal class Observation<T : Any>(
+    val value: T,
+    val work: ConsumerWork,
+    val revocation: CancellationException,
+    val isCurrent: () -> Boolean,
+)
+
+/** Stack recovery can copy an exception while retaining the original in its cause chain. */
+internal fun Throwable.hasCauseIdentity(expected: Throwable): Boolean {
+    val seen = mutableListOf<Throwable>()
+    var next: Throwable? = this
+    while (next != null) {
+        val current = next
+        if (current === expected) return true
+        if (seen.any { it === current }) break
+        seen.add(current)
+        next = current.cause
+    }
+    return false
 }
