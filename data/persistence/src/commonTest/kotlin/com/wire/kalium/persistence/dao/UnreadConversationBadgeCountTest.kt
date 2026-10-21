@@ -111,6 +111,24 @@ class UnreadConversationBadgeCountTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun hardDeletingTheLastUnreadMessageUpdatesTheObservedCount() = runTest(dispatcher) {
+        val cleared = conversation("cleared")
+        val deletedForMe = conversation("deleted-for-me")
+        db.userDAO.upsertUser(newUserEntity(sender).copy(team = null))
+        db.conversationDAO.insertConversations(listOf(cleared, deletedForMe))
+        unread(cleared, "cleared")
+        unread(deletedForMe, "deleted-for-me")
+        db.conversationDAO.observeUnreadConversationBadgeCount().test {
+            assertEquals(2L, awaitItem())
+            db.conversationDAO.clearContent(cleared.id)
+            assertEquals(1L, awaitItem())
+            db.messageDAO.deleteMessage("deleted-for-me", deletedForMe.id)
+            assertEquals(0L, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun excludesSelfPendingMeetingAndDeletedConversations() = runTest(dispatcher) {
         db.userDAO.upsertUser(newUserEntity(sender).copy(team = null))
         val conversations = listOf(

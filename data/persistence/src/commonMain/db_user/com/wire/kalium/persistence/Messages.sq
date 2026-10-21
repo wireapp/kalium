@@ -258,6 +258,7 @@ deleteAllMessages:
 -- @NotifyCustomKey message_list
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey Message
+-- @NotifyCustomKey UnreadEvent
 DELETE FROM Message;
 
 selectMessageIdsThrough:
@@ -268,6 +269,7 @@ deleteClearedMessage {
 -- @NotifyCustomKey message_list_:conversationId
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey Message
+-- @NotifyCustomKey UnreadEvent
 -- @NotifyCustomKey PendingDeliveryConfirmations
 DELETE FROM PendingDeliveryConfirmations WHERE conversation_id = :conversationId AND message_id = :messageId;
 DELETE FROM Message WHERE conversation_id = :conversationId AND id = :messageId;
@@ -277,6 +279,7 @@ deleteMessage:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey Message
+-- @NotifyCustomKey UnreadEvent
 DELETE FROM Message WHERE id = ? AND conversation_id = ?;
 
 deleteMessageLinkPreviews:
@@ -302,6 +305,7 @@ deleteMessageById:
 -- @NotifyCustomKey message_list
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey Message
+-- @NotifyCustomKey UnreadEvent
 DELETE FROM Message WHERE id = ?;
 
 markMessageAsDeleted {
