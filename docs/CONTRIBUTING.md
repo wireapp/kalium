@@ -21,6 +21,10 @@ Always pass the native library path when running JVM tests or the CLI:
 ./gradlew jvmTest -Djava.library.path=./native/libs
 ```
 
+## Pull Requests
+
+For pull requests without a Jira ticket, append `[no-jira]` to the PR title to skip Jira linking and fix-version validation.
+
 ## Common Commands
 
 ```bash
