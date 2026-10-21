@@ -79,6 +79,11 @@ internal open class FakeMessageRepository : MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit> = Unit.right()
 
+    override suspend fun claimFailedMessageForRetry(
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Boolean> = true.right()
+
     override suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,

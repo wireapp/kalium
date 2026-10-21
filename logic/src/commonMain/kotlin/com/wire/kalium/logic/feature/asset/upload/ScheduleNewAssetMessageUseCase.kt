@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.FileSharingStatus
@@ -147,36 +148,39 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         metadata: UploadAssetMessageMetadata,
         asset: AssetUploadParams,
         isRetry: Boolean,
-    ): TrackedAssetUpload = TrackedAssetUploadImpl(
-        messageId = originalMessage.id,
-        scope = scope,
-        retryOperation = { createOperation(originalMessage, metadata, asset, isRetry = true) },
-        monitor = {
-            val deleted = messageRepository.observeMessageVisibility(originalMessage.id, originalMessage.conversationId)
-                .firstOrNull { visibility -> visibility.fold({ true }, { it == MessageEntity.Visibility.DELETED }) }
-            if (deleted == null) awaitCancellation()
-        },
-        upload = {
-            withContext(dispatcher.io) {
-                if (isRetry) {
-                    validateAsset(asset).fold(
-                        { failure ->
-                            when (failure) {
-                                is Failure.Generic -> failure.coreFailure
-                                else -> CoreFailure.Unknown(IllegalStateException("Asset retry blocked by policy: $failure"))
-                            }.left()
-                        },
-                        { Unit.right() }
-                    ).flatMap { retryUpload(originalMessage, metadata) }
-                } else {
-                    uploadAsset(originalMessage, metadata)
+    ): TrackedAssetUpload {
+        var ownsMessage = !isRetry
+        return TrackedAssetUploadImpl(
+            messageId = originalMessage.id,
+            scope = scope,
+            retryOperation = { createOperation(originalMessage, metadata, asset, isRetry = true) },
+            monitor = {
+                val deleted = messageRepository.observeMessageVisibility(originalMessage.id, originalMessage.conversationId)
+                    .firstOrNull { visibility -> visibility.fold({ true }, { it == MessageEntity.Visibility.DELETED }) }
+                if (deleted == null) awaitCancellation()
+            },
+            upload = {
+                withContext(dispatcher.io) {
+                    if (isRetry) {
+                        validateAsset(asset).fold(
+                            { failure ->
+                                when (failure) {
+                                    is Failure.Generic -> failure.coreFailure
+                                    else -> CoreFailure.Unknown(IllegalStateException("Asset retry blocked by policy: $failure"))
+                                }.left()
+                            },
+                            { Unit.right() }
+                        ).flatMap { retryUpload(originalMessage, metadata) { ownsMessage = true } }
+                    } else {
+                        uploadAsset(originalMessage, metadata)
+                    }
                 }
+            },
+            onCancelled = {
+                if (ownsMessage) markCancelled(originalMessage.conversationId, originalMessage.id)
             }
-        },
-        onCancelled = {
-            markCancelled(originalMessage.conversationId, originalMessage.id)
-        }
-    )
+        )
+    }
 
     private suspend fun markCancelled(conversationId: ConversationId, messageId: String) {
         val persisted = messageRepository.getMessageById(conversationId, messageId).getOrNull()
@@ -197,6 +201,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private suspend fun retryUpload(
         originalMessage: Message.Regular,
         metadata: UploadAssetMessageMetadata,
+        onClaimed: () -> Unit,
     ): Either<CoreFailure, Unit> =
         // The upload may have succeeded even when message sending failed. Reuse its persisted remote data.
         messageRepository.getMessageById(originalMessage.conversationId, originalMessage.id).flatMap { persisted ->
@@ -207,15 +212,25 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             } else if (message.status.isSuccessfullySent()) {
                 Unit.right()
             } else {
-                val remoteData = content.value.remoteData
-                uploadAsset(
-                    message,
-                    metadata.copy(
-                        assetId = UploadedAssetId(remoteData.assetId, remoteData.assetDomain.orEmpty(), remoteData.assetToken),
-                        otrKey = AES256Key(remoteData.otrKey),
-                        sha256Key = SHA256Key(remoteData.sha256)
+                val claim = withContext(NonCancellable) {
+                    messageRepository.claimFailedMessageForRetry(message.conversationId, message.id).onSuccess { claimed ->
+                        if (claimed) onClaimed()
+                    }
+                }
+                claim.flatMap claimedResult@{ claimed ->
+                    if (!claimed) {
+                        return@claimedResult CoreFailure.Unknown(IllegalStateException("Message is no longer available for retry")).left()
+                    }
+                    val remoteData = content.value.remoteData
+                    uploadAsset(
+                        message.copy(status = Message.Status.Pending),
+                        metadata.copy(
+                            assetId = UploadedAssetId(remoteData.assetId, remoteData.assetDomain.orEmpty(), remoteData.assetToken),
+                            otrKey = AES256Key(remoteData.otrKey),
+                            sha256Key = SHA256Key(remoteData.sha256)
+                        )
                     )
-                )
+                }
             }
         }
 

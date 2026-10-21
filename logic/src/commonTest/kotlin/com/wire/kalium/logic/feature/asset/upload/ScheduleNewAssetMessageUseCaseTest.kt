@@ -278,7 +278,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         assertEquals(first.messageId, retry.messageId)
         assertEquals(AssetUploadCompletion.Success, retry.awaitCompletion())
         verifySuspend(VerifyMode.exactly(1)) { arrangement.persistNewAssetMessage(any(), any(), any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(persistedMessage, remoteMetadata) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(persistedMessage.copy(status = Message.Status.Pending), remoteMetadata) }
     }
 
     @Test
@@ -449,8 +449,90 @@ class ScheduleNewAssetMessageUseCaseTest {
         val retry = operation.retry()
         assertEquals(AssetUploadCompletion.Success, retry.awaitCompletion())
         assertEquals(operation.messageId, retry.messageId)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(persistedMessage, remoteMetadata) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(persistedMessage.copy(status = Message.Status.Pending), remoteMetadata) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.persistNewAssetMessage(any(), any(), any()) }
+    }
+
+    @Test
+    fun concurrentTrackedRetriesClaimPendingOnceAndPassPendingMessageToUpload() = runTest(testDispatcher.default) {
+        for (failed in listOf(Message.Status.Failed, Message.Status.FailedRemotely)) {
+            val (arrangement, scheduler) = Arrangement(this)
+                .withAssetMessagePersistSuccess()
+                .withUploadFailure()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+                .arrange()
+            val attempts = List(2) {
+                assertIs<StartTrackedAssetUploadResult.Started>(scheduler.startTracked(assetUploadParams, "same-message")).operation
+            }
+            attempts.forEach { assertIs<AssetUploadCompletion.Failure>(it.awaitCompletion()) }
+            val stale = TestMessage.assetMessage().copy(status = failed)
+            var stored = stale
+            // Both reads deliberately return the pre-claim snapshot.
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns stale.right()
+            everySuspend { arrangement.messageRepository.claimFailedMessageForRetry(any(), any()) } calls {
+                val claimed = stored.status == failed
+                if (claimed) stored = stored.copy(status = Message.Status.Pending)
+                claimed.right()
+            }
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            everySuspend { arrangement.uploadAsset(any(), any()) } calls {
+                assertEquals(Message.Status.Pending, (it.args[0] as Message.Regular).status)
+                assertEquals(Message.Status.Pending, stored.status)
+                entered.complete(Unit)
+                finish.await()
+                Unit.right()
+            }
+            val first = attempts[0].retry()
+            entered.await()
+            val second = attempts[1].retry()
+            assertIs<AssetUploadCompletion.Failure>(second.awaitCompletion())
+            assertEquals(Message.Status.Pending, stored.status)
+            assertSame(first, attempts[0].retry())
+            finish.complete(Unit)
+            assertEquals(AssetUploadCompletion.Success, first.awaitCompletion())
+            verifySuspend(VerifyMode.exactly(3)) { arrangement.uploadAsset(any(), any()) }
+        }
+    }
+
+    @Test
+    fun receiptBetweenRetryReadAndClaimPreventsAnotherUpload() = runTest(testDispatcher.default) {
+        val (arrangement, scheduler) = Arrangement(this)
+            .withAssetMessagePersistSuccess()
+            .withUploadFailure()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+            .arrange()
+        val first = assertIs<StartTrackedAssetUploadResult.Started>(scheduler.startTracked(assetUploadParams, "receipt-race")).operation
+        assertIs<AssetUploadCompletion.Failure>(first.awaitCompletion())
+        arrangement.withPersistedMessage(TestMessage.assetMessage().copy(status = Message.Status.Failed))
+        everySuspend { arrangement.messageRepository.claimFailedMessageForRetry(any(), any()) } calls {
+            arrangement.withPersistedMessage(TestMessage.assetMessage().copy(status = Message.Status.Delivered))
+            false.right()
+        }
+        assertIs<AssetUploadCompletion.Failure>(first.retry().awaitCompletion())
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(any(), any()) }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun cancellingRetryBeforeClaimDoesNotCleanUpAnotherSend() = runTest(testDispatcher.default) {
+        val (arrangement, scheduler) = Arrangement(this)
+            .withAssetMessagePersistSuccess()
+            .withUploadFailure()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+            .arrange()
+        val first = assertIs<StartTrackedAssetUploadResult.Started>(scheduler.startTracked(assetUploadParams, "not-owned")).operation
+        assertIs<AssetUploadCompletion.Failure>(first.awaitCompletion())
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls {
+            throw CancellationException("Cancelled before acquiring ownership")
+        }
+        assertEquals(AssetUploadCompletion.Cancelled, first.retry().awaitCompletion())
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageRepository.claimFailedMessageForRetry(any(), any())
+            arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any())
+        }
     }
 
     private class Arrangement(val coroutineScope: CoroutineScope) {
@@ -534,6 +616,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             dispatcher = testDispatcher,
         ).also {
             every { slowSyncRepository.slowSyncStatus } returns completeStateFlow
+            everySuspend { messageRepository.claimFailedMessageForRetry(any(), any()) } returns true.right()
             everySuspend { messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any()) } returns Unit.right()
             everySuspend { messageRepository.getMessageById(any(), any()) } calls { persistedMessage.right() }
             everySuspend { messageRepository.observeMessageVisibility(any(), any()) } returns

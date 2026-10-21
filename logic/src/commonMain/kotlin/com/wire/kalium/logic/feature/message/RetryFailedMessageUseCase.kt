@@ -29,6 +29,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -150,13 +151,22 @@ public class RetryFailedMessageUseCase internal constructor(
             MessageContent.Ignored -> return@flatMap handleError("Message with ${message.content.getType()} content cannot be retried")
             else -> Unit
         }
-        // Record ownership before the status write: cancellation may arrive after it commits.
-        onValidated(message)
-        messageRepository.updateMessageStatus(
-            messageStatus = MessageEntity.Status.PENDING,
-            conversationId = message.conversationId,
-            messageUuid = message.id
-        ).map { message }
+        // Complete the short claim and record ownership before cancellation can discard its result.
+        withContext(NonCancellable) {
+            messageRepository.claimFailedMessageForRetry(message.conversationId, message.id).flatMap { claimed ->
+                if (claimed) {
+                    val pending = when (message) {
+                        is Message.Regular -> message.copy(status = Message.Status.Pending)
+                        is Message.Signaling -> message.copy(status = Message.Status.Pending)
+                        is Message.System -> message.copy(status = Message.Status.Pending)
+                    }
+                    onValidated(pending)
+                    pending.right()
+                } else {
+                    handleError("Message is no longer available for retry")
+                }
+            }
+        }
     }
 
     private suspend fun retry(message: Message): Either<CoreFailure, Unit> {

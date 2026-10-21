@@ -533,6 +533,9 @@ UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
+selectMessageStatusForRetry:
+SELECT status FROM Message WHERE id = ? AND conversation_id = ?;
+
 updateMessageStatusIfNotAcknowledged:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey Message
