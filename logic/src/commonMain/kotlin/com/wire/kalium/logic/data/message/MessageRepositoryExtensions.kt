@@ -129,7 +129,9 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<Message.Standalone>> = messageDAO.platformExtensions.getPagerForMediaMessages(
-        conversationId.toDao(), pagingConfig, startingOffset
+        conversationId.toDao(),
+        pagingConfig,
+        startingOffset
     ).pagingDataFlow.map { page -> page.map { messageMapper.fromEntityToMessage(it) } }
 
     override suspend fun observePaginatedMessageAssetImageByConversationId(

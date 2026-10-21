@@ -404,14 +404,21 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
         conversationDAO.insertConversation(newConversationEntity(id = OTHER_CONVERSATION_ID))
         val asset = MessageEntityContent.Asset(
-            assetSizeInBytes = 512, assetName = "clip.mp4", assetMimeType = "video/mp4",
-            assetOtrKey = byteArrayOf(1), assetSha256Key = byteArrayOf(2),
-            assetId = "remote-only", assetDomain = "domain", assetEncryptionAlgorithm = "AES_CBC",
+            assetSizeInBytes = 512,
+            assetName = "clip.mp4",
+            assetMimeType = "video/mp4",
+            assetOtrKey = byteArrayOf(1),
+            assetSha256Key = byteArrayOf(2),
+            assetId = "remote-only",
+            assetDomain = "domain",
+            assetEncryptionAlgorithm = "AES_CBC",
         )
         val media = (0 until 25).map { index ->
             newRegularMessageEntity(
-                id = "media-${index.toString().padStart(2, '0')}", conversationId = CONVERSATION_ID,
-                senderUserId = USER_ID, date = Instant.fromEpochSeconds(1),
+                id = "media-${index.toString().padStart(2, '0')}",
+                conversationId = CONVERSATION_ID,
+                senderUserId = USER_ID,
+                date = Instant.fromEpochSeconds(1),
                 content = asset.copy(assetMimeType = if (index % 2 == 0) "image/jpeg" else "video/mp4"),
             )
         }

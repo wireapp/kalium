@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 
 /**
- * This use case will observe and return a flow of paginated image and video messages (including undownloaded originals) for a given conversation.
+ * Observes paginated image and video messages for a conversation, including undownloaded originals.
  * @see PagingData
  * @see Message
  */

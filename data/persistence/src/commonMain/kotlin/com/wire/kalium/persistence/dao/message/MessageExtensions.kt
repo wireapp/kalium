@@ -131,7 +131,10 @@ internal class MessageExtensionsImpl internal constructor(
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
             messageAssetViewQueries.getMediaMessagesByConversationId(
-                conversationId, limit, offset, messageMapper::toEntityMessageFromView
+                conversationId,
+                limit,
+                offset,
+                messageMapper::toEntityMessageFromView
             )
         }
     )
