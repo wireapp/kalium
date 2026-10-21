@@ -215,7 +215,11 @@ internal abstract class UserSessionScopeProviderCommon(
     }
 
     protected fun getOrCreateObservedSession(userId: UserId, revision: Long): UserSessionScope =
-        sessions.account(userId).getOrCreate(create = { create(userId) }, start = ::startRuntime, observationRevision = revision)
+        sessions.account(userId).getOrCreate(
+            create = { create(userId) },
+            start = ::startRuntime,
+            observationRevision = revision
+        )
 
     protected fun hasFailedSessionStartup(userId: UserId): Boolean = sessions.account(userId).hasFailedStartup()
 
@@ -233,26 +237,30 @@ internal abstract class UserSessionScopeProviderCommon(
     override suspend fun storeSession(session: StoreSessionParam, sessionRepository: SessionRepository): Either<StorageFailure, Unit> {
         val userId = session.accountTokens.userId
         val account = sessions.account(userId)
-        return checkNotNull(account.withClosed { scope ->
-            stopAccountWork(scope, account.hasFailedStartup())
-            removeResources(userId)
-            sessionRepository.storeSession(session).also {
-                if (it is Either.Right) account.release(allowObservation = true)
+        return checkNotNull(
+            account.withClosed { scope ->
+                stopAccountWork(scope, account.hasFailedStartup())
+                removeResources(userId)
+                sessionRepository.storeSession(session).also {
+                    if (it is Either.Right) account.release(allowObservation = true)
+                }
             }
-        })
+        )
     }
 
     override suspend fun deleteSession(userId: UserId, sessionRepository: SessionRepository): Either<StorageFailure, Unit> {
         val account = sessions.account(userId)
-        return checkNotNull(account.withClosed { scope ->
-            stopAccountWork(scope, account.hasFailedStartup())
-            sessionRepository.deleteSession(userId).also {
-                if (it is Either.Right) {
-                    removeResources(userId)
-                    account.release()
+        return checkNotNull(
+            account.withClosed { scope ->
+                stopAccountWork(scope, account.hasFailedStartup())
+                sessionRepository.deleteSession(userId).also {
+                    if (it is Either.Right) {
+                        removeResources(userId)
+                        account.release()
+                    }
                 }
             }
-        })
+        )
     }
 
     override suspend fun logout(

@@ -48,7 +48,10 @@ internal interface ConversationReadBindings {
     val observeConversationDetails: ObserveConversationDetailsUseCase
 
     @Provides
-    fun provideObserveConversationDetails(repository: ConversationRepository, dispatchers: KaliumDispatcher): ObserveConversationDetailsUseCase =
+    fun provideObserveConversationDetails(
+        repository: ConversationRepository,
+        dispatchers: KaliumDispatcher,
+    ): ObserveConversationDetailsUseCase =
         ObserveConversationDetailsUseCase(repository, dispatchers)
 }
 
