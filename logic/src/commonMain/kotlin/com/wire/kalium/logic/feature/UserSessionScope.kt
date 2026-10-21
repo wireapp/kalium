@@ -2524,10 +2524,12 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    internal val meetingOccurrencesSyncWorker: MeetingOccurrencesSyncWorker = MeetingOccurrencesSyncWorkerImpl(
-        meetingRepository = meetingRepository,
-        featureSupport = featureSupport
-    )
+    internal val meetingOccurrencesSyncWorker: MeetingOccurrencesSyncWorker by lazy {
+        MeetingOccurrencesSyncWorkerImpl(
+            meetingRepository = meetingRepository,
+            featureSupport = featureSupport
+        )
+    }
 
     internal fun buildAudioNormalizedLoudnessWorker(
         conversationId: ConversationId,
@@ -3274,15 +3276,7 @@ public class UserSessionScope internal constructor(
      */
     private val runtimeStarted = kotlinx.coroutines.flow.MutableStateFlow(false)
 
-    /** Started by the provider after retaining this owner and before publishing it. */
-    internal fun startRuntime() {
-        if (!runtimeStarted.compareAndSet(false, true)) return
-        // Preserve constructor-started workers' order before the original init body.
-        keyPackageManager
-        pendingProposalScheduler
-        typingIndicatorSyncManager
-        longWork.startInitialSyncMonitoring()
-
+    private fun launchStartupMigrationsAndReset() {
         launch {
             @Suppress("TooGenericExceptionCaught")
             try {
@@ -3296,6 +3290,20 @@ public class UserSessionScope internal constructor(
                 callRepository.setStaleOpenCallsCleanupFinished()
             }
         }
+    }
+
+    /** Started by the provider after retaining this owner and before publishing it. */
+    internal fun startRuntime() {
+        if (!runtimeStarted.compareAndSet(false, true)) return
+        // Preserve constructor-started workers' order before the original init body.
+        keyPackageManager
+        pendingProposalScheduler
+        // Its user repository captures legal hold and starts the sync-state observer.
+        meetingOccurrencesSyncWorker
+        typingIndicatorSyncManager
+        longWork.startInitialSyncMonitoring()
+
+        launchStartupMigrationsAndReset()
 
         launch {
             val pushTokenUpdater = createPushTokenUpdater()

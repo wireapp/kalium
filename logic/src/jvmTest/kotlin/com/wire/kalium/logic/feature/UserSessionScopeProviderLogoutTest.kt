@@ -90,10 +90,14 @@ class UserSessionScopeProviderLogoutTest {
             lateinit var provider: UserSessionScopeProviderCommon
             provider = commonProvider(logic, startScope = { scope ->
                 assertNull(provider.get(userId))
+                assertFalse(scope.syncStateObserver.isInitialized(), "Construction started sync-state observation")
+                assertNull(initializedKeyPackageJob(scope), "Construction started detached key-package work")
                 assertTrue(scope.coroutineContext.job.children.none(), "Construction launched account workers")
                 assertFalse(scope.isCellsInitialized)
                 starts++
                 scope.startRuntime()
+                assertTrue(scope.syncStateObserver.isInitialized(), "Explicit startup skipped sync-state observation")
+                assertNotNull(initializedKeyPackageJob(scope), "Explicit startup skipped key-package work")
                 assertTrue(scope.coroutineContext.job.children.any(), "Explicit startup did not launch workers")
             }, removeNetwork = { network.remove(it.toApi()) })
             val owner = provider.getOrCreate(userId)
@@ -588,7 +592,9 @@ class UserSessionScopeProviderLogoutTest {
                 val providers = fixtureProviders.toList() + listOfNotNull(defaultProvider)
                 users.forEach { user -> providers.forEach { it.delete(user) } }
                 val scopes = fixtureScopes.toList().distinct()
-                val detachedJobs = scopes.mapNotNull { initializedKeyPackageJob(it) }
+                val detachedJobs = scopes.flatMap {
+                    listOfNotNull(initializedKeyPackageJob(it), initializedLegalHoldJob(it))
+                }
                 detachedJobs.forEach { it.cancel() }
                 detachedJobs.forEach { it.join() }
                 scopes.forEach { it.coroutineContext.job.cancel() }
@@ -626,6 +632,17 @@ class UserSessionScopeProviderLogoutTest {
         val scopeField = manager.javaClass.getDeclaredField("refillKeyPackagesScope")
         scopeField.isAccessible = true
         return (scopeField.get(manager) as CoroutineScope).coroutineContext.job
+    }
+
+    private fun initializedLegalHoldJob(scope: UserSessionScope): Job? {
+        val delegateField = UserSessionScope::class.java.getDeclaredField("legalHoldHandler\$delegate")
+        delegateField.isAccessible = true
+        val delegate = delegateField.get(scope) as Lazy<*>
+        if (!delegate.isInitialized()) return null
+        val handler = checkNotNull(delegate.value)
+        val scopeField = handler.javaClass.getDeclaredField("scope")
+        scopeField.isAccessible = true
+        return (scopeField.get(handler) as CoroutineScope).coroutineContext.job
     }
 
     private suspend fun storeAccount(root: File, userId: UserId) {
