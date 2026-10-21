@@ -203,6 +203,19 @@ abstract interface com.wire.kalium.logic.data.id/FederatedIdMapper { // com.wire
     abstract suspend fun parseToFederatedId(kotlin/String): kotlin/String // com.wire.kalium.logic.data.id/FederatedIdMapper.parseToFederatedId|parseToFederatedId(kotlin.String){}[0]
 }
 
+abstract interface com.wire.kalium.logic.di/KaliumConsumer : kotlin/AutoCloseable { // com.wire.kalium.logic.di/KaliumConsumer|null[0]
+    abstract val getMessageById // com.wire.kalium.logic.di/KaliumConsumer.getMessageById|{}getMessageById[0]
+        abstract fun <get-getMessageById>(): com.wire.kalium.logic.feature.message/GetMessageByIdUseCase // com.wire.kalium.logic.di/KaliumConsumer.getMessageById.<get-getMessageById>|<get-getMessageById>(){}[0]
+    abstract val observeConversationDetails // com.wire.kalium.logic.di/KaliumConsumer.observeConversationDetails|{}observeConversationDetails[0]
+        abstract fun <get-observeConversationDetails>(): com.wire.kalium.logic.feature.conversation/ObserveConversationDetailsUseCase // com.wire.kalium.logic.di/KaliumConsumer.observeConversationDetails.<get-observeConversationDetails>|<get-observeConversationDetails>(){}[0]
+    abstract val observeMessageById // com.wire.kalium.logic.di/KaliumConsumer.observeMessageById|{}observeMessageById[0]
+        abstract fun <get-observeMessageById>(): com.wire.kalium.logic.feature.message/ObserveMessageByIdUseCase // com.wire.kalium.logic.di/KaliumConsumer.observeMessageById.<get-observeMessageById>|<get-observeMessageById>(){}[0]
+
+    abstract fun <#A1: kotlin/Any?> assemble(kotlin/Function0<#A1>, kotlin/Function1<#A1, kotlin/Unit>, kotlin/Function1<#A1, kotlinx.coroutines/Job?> = ...): #A1 // com.wire.kalium.logic.di/KaliumConsumer.assemble|assemble(kotlin.Function0<0:0>;kotlin.Function1<0:0,kotlin.Unit>;kotlin.Function1<0:0,kotlinx.coroutines.Job?>){0§<kotlin.Any?>}[0]
+    abstract fun close() // com.wire.kalium.logic.di/KaliumConsumer.close|close(){}[0]
+    abstract suspend fun closeAndJoin() // com.wire.kalium.logic.di/KaliumConsumer.closeAndJoin|closeAndJoin(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.analytics/AnalyticsIdentifierManager { // com.wire.kalium.logic.feature.analytics/AnalyticsIdentifierManager|null[0]
     abstract suspend fun onMigrationComplete() // com.wire.kalium.logic.feature.analytics/AnalyticsIdentifierManager.onMigrationComplete|onMigrationComplete(){}[0]
     abstract suspend fun propagateTrackingIdentifier(kotlin/String) // com.wire.kalium.logic.feature.analytics/AnalyticsIdentifierManager.propagateTrackingIdentifier|propagateTrackingIdentifier(kotlin.String){}[0]
@@ -6214,6 +6227,7 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
     final val users // com.wire.kalium.logic.feature/UserSessionScope.users|{}users[0]
         final fun <get-users>(): com.wire.kalium.logic.feature.user/UserScope // com.wire.kalium.logic.feature/UserSessionScope.users.<get-users>|<get-users>(){}[0]
 
+    final fun createConsumer(): com.wire.kalium.logic.di/KaliumConsumer // com.wire.kalium.logic.feature/UserSessionScope.createConsumer|createConsumer(){}[0]
     final fun observeCallPresentations(): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.logic.sync.receiving/CallPresentationRecord>> // com.wire.kalium.logic.feature/UserSessionScope.observeCallPresentations|observeCallPresentations(){}[0]
     final fun observeNotificationRemovalCandidates(kotlin.collections/List<kotlin/String>): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.persistence.dao.message/NotificationMessageKey>> // com.wire.kalium.logic.feature/UserSessionScope.observeNotificationRemovalCandidates|observeNotificationRemovalCandidates(kotlin.collections.List<kotlin.String>){}[0]
     final fun setIncrementalSyncUnprocessedEventsBatchLimit(kotlin/Int?) // com.wire.kalium.logic.feature/UserSessionScope.setIncrementalSyncUnprocessedEventsBatchLimit|setIncrementalSyncUnprocessedEventsBatchLimit(kotlin.Int?){}[0]
