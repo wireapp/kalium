@@ -28,7 +28,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -53,7 +52,7 @@ class UpdateClientVerificationStatusUseCaseTest {
         useCase(userId, clientID, true)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.updateClientProteusVerificationStatus(eq(userId), eq(clientID), eq(true))
+            arrangement.clientRepository.updateClientProteusVerificationStatus(userId, clientID, true)
         }
     }
 
@@ -71,7 +70,7 @@ class UpdateClientVerificationStatusUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.updateClientProteusVerificationStatus(eq(userId), eq(clientID), eq(true))
+            arrangement.clientRepository.updateClientProteusVerificationStatus(userId, clientID, true)
         }
     }
 
@@ -92,7 +91,7 @@ class UpdateClientVerificationStatusUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.updateClientProteusVerificationStatus(eq(userId), eq(clientID), eq(true))
+            arrangement.clientRepository.updateClientProteusVerificationStatus(userId, clientID, true)
         }
     }
 

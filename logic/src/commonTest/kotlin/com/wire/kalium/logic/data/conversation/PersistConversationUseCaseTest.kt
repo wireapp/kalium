@@ -31,7 +31,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -76,7 +75,7 @@ class PersistConversationUseCaseTest {
 
         assertTrue(result.getOrNull() ?: false)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistConversations(any(), any(), eq(false), eq(ConversationSyncReason.Other))
+            arrangement.persistConversations(any(), any(), false, ConversationSyncReason.Other)
         }
     }
 
@@ -129,7 +128,7 @@ class PersistConversationUseCaseTest {
 
         suspend fun withPersistConversationsSuccess() = apply {
             everySuspend {
-                persistConversations(any(), listOf(TestConversation.CONVERSATION_RESPONSE), eq(false), eq(ConversationSyncReason.Other))
+                persistConversations(any(), listOf(TestConversation.CONVERSATION_RESPONSE), false, ConversationSyncReason.Other)
             } returns Either.Right(Unit)
         }
 

@@ -35,7 +35,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.matcher.ofType
 import dev.mokkery.mock
@@ -146,7 +145,7 @@ class SlowSyncManagerTest {
         }
 
         verify(VerifyMode.exactly(1)) {
-            arrangement.slowSyncRepository.updateSlowSyncStatus(eq(SlowSyncStatus.Complete))
+            arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         }
     }
 
@@ -248,7 +247,7 @@ class SlowSyncManagerTest {
             advanceUntilIdle()
 
             verify(VerifyMode.exactly(1)) {
-                arrangement.slowSyncRepository.updateSlowSyncStatus(eq(SlowSyncStatus.Ongoing(step)))
+                arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(step))
             }
 
             cancelAndIgnoreRemainingEvents()
@@ -334,7 +333,7 @@ class SlowSyncManagerTest {
 
             // Updated to Ongoing after clearing lastPerformed
             verify(VerifyMode.exactly(1)) {
-                arrangement.slowSyncRepository.updateSlowSyncStatus(eq(SlowSyncStatus.Ongoing(step)))
+                arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(step))
             }
             cancelAndIgnoreRemainingEvents()
         }

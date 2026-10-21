@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.right
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -48,7 +47,7 @@ class FederatedSearchParserTest {
         assertEquals(selfUserId.domain, result.domain)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.isFederated(eq(selfUserId))
+            arrangement.sessionRepository.isFederated(selfUserId)
         }
     }
 
@@ -65,7 +64,7 @@ class FederatedSearchParserTest {
         assertEquals(selfUserId.domain, result.domain)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.isFederated(eq(selfUserId))
+            arrangement.sessionRepository.isFederated(selfUserId)
         }
     }
 
@@ -82,7 +81,7 @@ class FederatedSearchParserTest {
         assertEquals("domain.co", result.domain)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.isFederated(eq(selfUserId))
+            arrangement.sessionRepository.isFederated(selfUserId)
         }
     }
 
@@ -98,7 +97,7 @@ class FederatedSearchParserTest {
         federatedSearchParser(searchQuery, true)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.isFederated(eq(selfUserId))
+            arrangement.sessionRepository.isFederated(selfUserId)
         }
     }
 
@@ -115,7 +114,7 @@ class FederatedSearchParserTest {
         assertEquals(selfUserId.domain, result.domain)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.isFederated(eq(selfUserId))
+            arrangement.sessionRepository.isFederated(selfUserId)
         }
     }
 
@@ -133,7 +132,7 @@ class FederatedSearchParserTest {
         }
 
         suspend fun withIsFederated(result: Either<StorageFailure, Boolean>) {
-            everySuspend { sessionRepository.isFederated(eq(selfUserId)) } returns result
+            everySuspend { sessionRepository.isFederated(selfUserId) } returns result
         }
     }
 }

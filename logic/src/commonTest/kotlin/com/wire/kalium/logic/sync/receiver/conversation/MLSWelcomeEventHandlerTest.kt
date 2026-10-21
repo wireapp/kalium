@@ -46,7 +46,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -117,7 +116,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID), any())
+            arrangement.fetchConversationIfUnknown(any(), CONVERSATION_ID, any())
         }
     }
 
@@ -135,8 +134,8 @@ class MLSWelcomeEventHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateConversationGroupState(
-                eq(GroupID(MLS_GROUP_ID)),
-                eq(Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
+                GroupID(MLS_GROUP_ID),
+                Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
             )
         }
     }
@@ -155,7 +154,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), eq(CONVERSATION_ONE_ONE.otherUser), any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), CONVERSATION_ONE_ONE.otherUser, any())
         }
     }
 
@@ -300,7 +299,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), eq(true))
+            arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), true)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -331,7 +330,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversation.invoke(any(), eq(CONVERSATION_ID), any(), eq(true))
+            arrangement.joinExistingMLSConversation.invoke(any(), CONVERSATION_ID, any(), true)
         }
     }
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
@@ -362,7 +361,7 @@ class MLSWelcomeEventHandlerTest {
 
         suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
-                joinExistingMLSConversation.invoke(any(), any(), any(), eq(true))
+                joinExistingMLSConversation.invoke(any(), any(), any(), true)
             } returns result
         }
         suspend fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {

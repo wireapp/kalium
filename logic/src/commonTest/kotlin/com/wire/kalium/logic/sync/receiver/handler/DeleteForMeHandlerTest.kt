@@ -34,7 +34,6 @@ import com.wire.kalium.logic.util.arrangement.usecase.IsMessageSentInSelfConvers
 import com.wire.kalium.logic.util.arrangement.usecase.IsMessageSentInSelfConversationUseCaseArrangementImpl
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
@@ -52,12 +51,12 @@ class DeleteForMeHandlerTest {
         handler.handle(MESSAGE, CONTENT)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.deleteMessage(eq(MESSAGE_ID), eq(CONVERSATION_ID.toDao()))
+            arrangement.messageDAO.deleteMessage(MESSAGE_ID, CONVERSATION_ID.toDao())
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistenceEventHookNotifier.onMessageDeleted(
-                eq(MessageDeleteEventData(CONVERSATION_ID, MESSAGE_ID)),
-                eq(SELF_USER_ID)
+                MessageDeleteEventData(CONVERSATION_ID, MESSAGE_ID),
+                SELF_USER_ID
             )
         }
     }

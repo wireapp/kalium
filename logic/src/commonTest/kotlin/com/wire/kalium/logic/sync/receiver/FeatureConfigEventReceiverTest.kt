@@ -61,7 +61,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -88,7 +87,7 @@ class FeatureConfigEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setFileSharingStatus(eq(true), eq(true))
+            arrangement.userConfigRepository.setFileSharingStatus(true, true)
         }
     }
 
@@ -106,7 +105,7 @@ class FeatureConfigEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setFileSharingStatus(eq(false), eq(true))
+            arrangement.userConfigRepository.setFileSharingStatus(false, true)
         }
     }
 
@@ -124,7 +123,7 @@ class FeatureConfigEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setFileSharingStatus(eq(false), eq(false))
+            arrangement.userConfigRepository.setFileSharingStatus(false, false)
         }
     }
 
@@ -142,11 +141,11 @@ class FeatureConfigEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setConferenceCallingEnabled(eq(true))
+            arrangement.userConfigRepository.setConferenceCallingEnabled(true)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(false))
+            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(false)
         }
     }
 
@@ -164,11 +163,11 @@ class FeatureConfigEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setConferenceCallingEnabled(eq(false))
+            arrangement.userConfigRepository.setConferenceCallingEnabled(false)
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(true))
+            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(true)
         }
     }
 
@@ -350,7 +349,7 @@ class FeatureConfigEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), any())
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(arrangement.transactionContext, any())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
@@ -377,7 +376,7 @@ class FeatureConfigEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), any())
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(arrangement.transactionContext, any())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())

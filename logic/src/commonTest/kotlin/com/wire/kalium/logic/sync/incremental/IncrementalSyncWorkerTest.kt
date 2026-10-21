@@ -32,7 +32,6 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -168,7 +167,7 @@ class IncrementalSyncWorkerTest {
 
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.batchProcessor.processBatch(eq(listOf(envelope)))
+            arrangement.batchProcessor.processBatch(listOf(envelope))
         }
     }
 

@@ -23,7 +23,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.MetadataDAO
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -122,7 +121,7 @@ class ApiMigrationManagerTest {
         apiUpgradeManager.performMigrations()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.metadataDAO.insertValue(eq("2"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
+            arrangement.metadataDAO.insertValue("2", ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY)
         }
     }
 
@@ -141,7 +140,7 @@ class ApiMigrationManagerTest {
         apiUpgradeManager.performMigrations()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.metadataDAO.insertValue(eq("1"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
+            arrangement.metadataDAO.insertValue("1", ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY)
         }
     }
 
@@ -157,7 +156,7 @@ class ApiMigrationManagerTest {
 
         suspend fun withPreviousApiVersion(apiVersion: Int) = apply {
             everySuspend {
-                metadataDAO.valueByKey(eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
+                metadataDAO.valueByKey(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY)
             } returns apiVersion.toString()
         }
 

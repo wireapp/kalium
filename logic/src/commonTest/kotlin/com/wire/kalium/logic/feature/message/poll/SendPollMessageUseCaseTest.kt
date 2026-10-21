@@ -38,7 +38,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -60,7 +60,7 @@ class SendPollMessageUseCaseTest {
         assertIs<MessageOperationResult.Success>(result)
         verifySuspend {
             arrangement.persistMessage(
-                matching {
+                matches {
                     val poll = (it as Message.Regular).content as MessageContent.Poll
                     poll.question == "Lunch?" && poll.options.map { option -> option.text } == listOf("Pizza", "Sushi") &&
                             poll.allowMultipleAnswers && it.expirationData == null

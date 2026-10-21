@@ -50,7 +50,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -129,7 +128,7 @@ internal class MLSMessageUnpackerTest {
         mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, messageEvent)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingProposalScheduler.scheduleCommit(eq(TestConversation.GROUP_ID), eq(eventTimestamp.plus(commitDelay.seconds)))
+            arrangement.pendingProposalScheduler.scheduleCommit(TestConversation.GROUP_ID, eventTimestamp.plus(commitDelay.seconds))
         }
     }
 
@@ -148,7 +147,7 @@ internal class MLSMessageUnpackerTest {
             arrangement.mlsConversationRepository.decryptMessage(
                 any(),
                 matches { it.contentEquals(Base64.decode(messageEvent.content)) },
-                eq(TestConversation.GROUP_ID)
+                TestConversation.GROUP_ID
             )
         }
     }
@@ -183,7 +182,7 @@ internal class MLSMessageUnpackerTest {
         mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.decryptMessage(any(), any(), eq(subConversationGroupId))
+            arrangement.mlsConversationRepository.decryptMessage(any(), any(), subConversationGroupId)
         }
         verifySuspend(VerifyMode.not) { arrangement.conversationRepository.getConversationProtocolInfo(any()) }
     }
@@ -236,7 +235,7 @@ internal class MLSMessageUnpackerTest {
 
             result.shouldFail { assertEquals(failure, it) }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsConversationRepository.getLocalGroupEpoch(any(), eq(TestConversation.GROUP_ID))
+                arrangement.mlsConversationRepository.getLocalGroupEpoch(any(), TestConversation.GROUP_ID)
             }
         }
     }

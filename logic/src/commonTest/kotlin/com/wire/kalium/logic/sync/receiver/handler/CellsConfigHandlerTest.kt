@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.featureConfig.CollaboraEdition
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import dev.mokkery.matcher.eq
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
@@ -82,7 +81,7 @@ class CellsConfigHandlerTest {
         val result = handler.handle(model)
 
         assertTrue(result.isRight())
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.setWireCellsConfig(eq(expected)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.setWireCellsConfig(expected) }
     }
 
     @Test
@@ -94,7 +93,7 @@ class CellsConfigHandlerTest {
         val result = handler.handle(null as CellsInternalModel?)
 
         assertTrue(result.isRight())
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.setWireCellsConfig(eq(null)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.setWireCellsConfig(null) }
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()

@@ -31,7 +31,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -264,7 +263,7 @@ class CheckConversationInviteCodeUseCaseTest {
             result: Either<NetworkFailure, ConversationCodeInfo>
         ) = apply {
             everySuspend {
-                conversationGroupRepository.fetchLimitedInfoViaInviteCode(eq(code), eq(key))
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key)
             } returns result
         }
 
@@ -274,7 +273,7 @@ class CheckConversationInviteCodeUseCaseTest {
             result: Either<CoreFailure, Boolean>
         ) = apply {
             everySuspend {
-                conversationRepository.observeIsUserMember(eq(conversationId), eq(userId))
+                conversationRepository.observeIsUserMember(conversationId, userId)
             } returns flowOf(result)
         }
 

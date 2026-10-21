@@ -51,7 +51,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -75,7 +74,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newMessageEventHandler.handleNewProteusMessage(any(), eq(newMessageEvent), any())
+            arrangement.newMessageEventHandler.handleNewProteusMessage(any(), newMessageEvent, any())
         }
 
         result.shouldSucceed()
@@ -94,7 +93,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newMessageEventHandler.handleNewMLSMessage(any(), eq(newMLSMessageEvent), any())
+            arrangement.newMessageEventHandler.handleNewMLSMessage(any(), newMLSMessageEvent, any())
         }
 
         result.shouldSucceed()
@@ -104,7 +103,7 @@ class ConversationEventReceiverTest {
     fun givenNewMLSMessageHandlerFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
         val event = TestEvent.newMLSMessageEvent(Instant.DISTANT_FUTURE)
         val (arrangement, receiver) = Arrangement().arrange {
-            everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), eq(event), any()) } returns Either.Left(failure)
+            everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), event, any()) } returns Either.Left(failure)
         }
 
         receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
@@ -125,7 +124,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newConversationEventHandler.handle(any(), eq(newConversationEvent))
+            arrangement.newConversationEventHandler.handle(any(), newConversationEvent)
         }
 
         result.shouldSucceed()
@@ -144,7 +143,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.deletedConversationEventHandler.handle(any(), eq(deletedConversationEvent))
+            arrangement.deletedConversationEventHandler.handle(any(), deletedConversationEvent)
         }
 
         result.shouldSucceed()
@@ -165,7 +164,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.memberJoinEventHandler.handle(any(), eq(memberJoinEvent))
+            arrangement.memberJoinEventHandler.handle(any(), memberJoinEvent)
         }
 
         result.shouldSucceed()
@@ -186,7 +185,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.memberLeaveEventHandler.handle(any(), eq(memberLeaveEvent))
+            arrangement.memberLeaveEventHandler.handle(any(), memberLeaveEvent)
         }
 
         result.shouldSucceed()
@@ -206,7 +205,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.memberChangeEventHandler.handle(any(), eq(memberChangeEvent))
+            arrangement.memberChangeEventHandler.handle(any(), memberChangeEvent)
         }
         result.shouldSucceed()
     }
@@ -226,7 +225,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsWelcomeEventHandler.handle(any(), eq(mlsWelcomeEvent))
+            arrangement.mlsWelcomeEventHandler.handle(any(), mlsWelcomeEvent)
         }
         result.shouldSucceed()
     }
@@ -235,7 +234,7 @@ class ConversationEventReceiverTest {
     fun givenMLSWelcomeHandlerFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
         val event = TestEvent.newMLSWelcomeEvent()
         val (arrangement, receiver) = Arrangement().arrange {
-            everySuspend { mlsWelcomeEventHandler.handle(any(), eq(event)) } returns Either.Left(failure)
+            everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(failure)
         }
 
         receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
@@ -256,7 +255,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.renamedConversationEventHandler.handle(eq(renamedConversationEvent))
+            arrangement.renamedConversationEventHandler.handle(renamedConversationEvent)
         }
         result.shouldSucceed()
     }
@@ -275,7 +274,7 @@ class ConversationEventReceiverTest {
             )
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.receiptModeUpdateEventHandler.handle(eq(receiptModeUpdateEvent))
+                arrangement.receiptModeUpdateEventHandler.handle(receiptModeUpdateEvent)
             }
             result.shouldSucceed()
         }
@@ -296,7 +295,7 @@ class ConversationEventReceiverTest {
             )
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationMessageTimerEventHandler.handle(eq(conversationMessageTimerEvent), eq(false))
+                arrangement.conversationMessageTimerEventHandler.handle(conversationMessageTimerEvent, false)
             }
 
             result.shouldFail { assertEquals(failure, it) }
@@ -318,7 +317,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.codeUpdatedHandler.handle(eq(codeUpdatedEvent))
+            arrangement.codeUpdatedHandler.handle(codeUpdatedEvent)
         }
 
         result.shouldSucceed()
@@ -340,7 +339,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.codeUpdatedHandler.handle(eq(codeUpdatedEvent))
+            arrangement.codeUpdatedHandler.handle(codeUpdatedEvent)
         }
 
         result.shouldFail()
@@ -362,7 +361,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.codeDeletedHandler.handle(eq(codeUpdatedEvent))
+            arrangement.codeDeletedHandler.handle(codeUpdatedEvent)
         }
 
         result.shouldSucceed()
@@ -384,7 +383,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.codeDeletedHandler.handle(eq(codeUpdatedEvent))
+            arrangement.codeDeletedHandler.handle(codeUpdatedEvent)
         }
 
         result.shouldFail()
@@ -404,7 +403,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.typingIndicatorHandler.handle(eq(typingStarted))
+            arrangement.typingIndicatorHandler.handle(typingStarted)
         }
         result.shouldSucceed()
     }
@@ -423,7 +422,7 @@ class ConversationEventReceiverTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.typingIndicatorHandler.handle(eq(typingStarted))
+            arrangement.typingIndicatorHandler.handle(typingStarted)
         }
         result.shouldFail()
     }
@@ -446,7 +445,7 @@ class ConversationEventReceiverTest {
         // then
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.accessUpdateEventHandler.handle(eq(accessUpdateEvent))
+            arrangement.accessUpdateEventHandler.handle(accessUpdateEvent)
         }
     }
 
@@ -468,7 +467,7 @@ class ConversationEventReceiverTest {
         // then
         result.shouldFail()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.accessUpdateEventHandler.handle(eq(accessUpdateEvent))
+            arrangement.accessUpdateEventHandler.handle(accessUpdateEvent)
         }
     }
 
@@ -481,7 +480,7 @@ class ConversationEventReceiverTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.protocolUpdateEventHandler.handle(any(), eq(event))
+            arrangement.protocolUpdateEventHandler.handle(any(), event)
         }
     }
 
@@ -494,7 +493,7 @@ class ConversationEventReceiverTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.channelAddPermissionUpdateEventHandler.handle(eq(event))
+            arrangement.channelAddPermissionUpdateEventHandler.handle(event)
         }
     }
 
@@ -513,7 +512,7 @@ class ConversationEventReceiverTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsResetConversationEventHandler.handle(any(), eq(event))
+            arrangement.mlsResetConversationEventHandler.handle(any(), event)
         }
     }
 
@@ -612,7 +611,7 @@ class ConversationEventReceiverTest {
 
         suspend fun withConversationMessageTimerFailed() = apply {
             everySuspend {
-                conversationMessageTimerEventHandler.handle(any(), eq(false))
+                conversationMessageTimerEventHandler.handle(any(), false)
             } returns Either.Left(failure)
         }
 

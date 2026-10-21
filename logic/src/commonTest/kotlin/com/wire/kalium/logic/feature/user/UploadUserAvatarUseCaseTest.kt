@@ -27,7 +27,6 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -107,12 +106,12 @@ class UploadUserAvatarUseCaseTest {
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
                 assetRepository.uploadAndPersistPublicAsset(
-                    mimeType = eq("image/jpg"),
+                    mimeType = "image/jpg",
                     assetDataPath = any(),
-                    assetDataSize = eq(avatarImage.size.toLong()),
-                    conversationId = eq(null),
-                    filename = eq("profile-picture"),
-                    filetype = eq("image/jpg")
+                    assetDataSize = avatarImage.size.toLong(),
+                    conversationId = null,
+                    filename = "profile-picture",
+                    filetype = "image/jpg"
                 )
             }
         }

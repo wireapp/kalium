@@ -33,7 +33,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
@@ -58,20 +57,20 @@ class EndCallUseCaseTest {
         endCall.invoke(conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(conversationId)
         }
 
         verify(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(conversationId, false)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+            arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
-                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+                ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100)
             )
         }
     }
@@ -91,20 +90,20 @@ class EndCallUseCaseTest {
         endCall.invoke(conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(conversationId)
         }
 
         verify(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(conversationId, false)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+            arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED_INTERNALLY)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
-                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+                ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100)
             )
         }
     }
@@ -124,20 +123,20 @@ class EndCallUseCaseTest {
         endCall.invoke(conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(conversationId)
         }
 
         verify(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(conversationId, false)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+            arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED_INTERNALLY)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
-                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+                ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100)
             )
         }
     }
@@ -157,20 +156,20 @@ class EndCallUseCaseTest {
         endCall.invoke(conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(conversationId)
         }
 
         verify(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(conversationId, false)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+            arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED_INTERNALLY)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
-                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+                ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100)
             )
         }
     }
@@ -189,11 +188,11 @@ class EndCallUseCaseTest {
         endCall.invoke(conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.endCall(eq(conversationId))
+            arrangement.callManager.endCall(conversationId)
         }
 
         verify(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(conversationId, false)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -202,7 +201,7 @@ class EndCallUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
-                eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
+                ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100)
             )
         }
     }

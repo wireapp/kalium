@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -51,7 +50,7 @@ internal class ObserveGuestRoomLinkUseCaseTest {
     fun givenRepositoryEmitsValues_whenObservingGuestRoomLink_thenPropagateTheLink() = runTest {
         val guestLink = ConversationGuestLink("link", false)
         everySuspend {
-            conversationGroupRepository.observeGuestRoomLink(eq(conversationId))
+            conversationGroupRepository.observeGuestRoomLink(conversationId)
         } returns flowOf(Either.Right(guestLink))
 
         val result = observeGuestRoomLink(conversationId).first()
@@ -59,7 +58,7 @@ internal class ObserveGuestRoomLinkUseCaseTest {
         assertEquals(guestLink, result.link)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            conversationGroupRepository.observeGuestRoomLink(eq(conversationId))
+            conversationGroupRepository.observeGuestRoomLink(conversationId)
         }
     }
 

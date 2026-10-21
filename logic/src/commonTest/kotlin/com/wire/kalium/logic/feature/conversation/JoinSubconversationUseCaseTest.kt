@@ -45,7 +45,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -69,7 +68,7 @@ class JoinSubconversationUseCaseTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSSubConversationGroup(
-                    any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId)), any()
+                    any(), GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId), any()
                 )
             }
         }
@@ -87,7 +86,7 @@ class JoinSubconversationUseCaseTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.joinGroupByExternalCommit(
-                    any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)), any()
+                    any(), GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId), any()
                 )
             }
         }
@@ -105,9 +104,9 @@ class JoinSubconversationUseCaseTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.subconversationRepository.insertSubconversation(
-                    eq(Arrangement.CONVERSATION_ID),
-                    eq(Arrangement.SUBCONVERSATION_ID),
-                    eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId))
+                    Arrangement.CONVERSATION_ID,
+                    Arrangement.SUBCONVERSATION_ID,
+                    GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)
                 )
             }
         }
@@ -125,13 +124,11 @@ class JoinSubconversationUseCaseTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.deleteSubconversation(
-                    eq(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.parentId),
-                    eq(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.id),
-                    eq(
-                        SubconversationDeleteRequest(
-                            Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.epoch,
-                            Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId
-                        )
+                    Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.parentId,
+                    Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.id,
+                    SubconversationDeleteRequest(
+                        Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.epoch,
+                        Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId
                     )
                 )
             }
@@ -139,7 +136,7 @@ class JoinSubconversationUseCaseTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSSubConversationGroup(
                     any(),
-                    eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId)),
+                    GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId),
                     any(),
                 )
             }
@@ -158,13 +155,13 @@ class JoinSubconversationUseCaseTest {
         verifySuspend(VerifyMode.exactly(2)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                 any(),
-                eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)),
+                GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId),
                 any()
             )
         }
 
         verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>(eq("JoinSubconversation"), any())
+            arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>("JoinSubconversation", any())
         }
     }
 

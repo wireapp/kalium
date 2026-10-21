@@ -20,6 +20,11 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logic.di.KaliumConsumer
+import com.wire.kalium.logic.di.KaliumConsumerRegistry
+import com.wire.kalium.logic.di.ReadRepositories
+import com.wire.kalium.logic.di.ReadRepositoryFactory
+import com.wire.kalium.logic.di.createKaliumReadGraph
 import com.wire.kalium.logic.data.client.guardedBy
 import com.wire.kalium.logic.network.guardedBy
 
@@ -88,7 +93,6 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationMetaDataDataSource
@@ -161,7 +165,6 @@ import com.wire.kalium.logic.data.message.CompositeMessageDataSource
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
-import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -867,6 +870,34 @@ public class UserSessionScope internal constructor(
             )
         }.container
 
+    private val readRepositoryFactory by lazy {
+        ReadRepositoryFactory(userId, userStorage, authenticatedNetworkContainer)
+    }
+
+    // Only the cached messages capture and consumer reads share this coordinator. The ordinary
+    // nomadMessagePagingCoordinator getter and other repository factory captures remain fresh.
+    private val legacyMessagePagingCoordinator by lazy { nomadMessagePagingCoordinator }
+    private val legacyMessageRepository by lazy {
+        readRepositoryFactory.message { legacyMessagePagingCoordinator }
+    }
+
+    private val readGraph by lazy {
+        createKaliumReadGraph(
+            ReadRepositories(
+                messages = { readRepositoryFactory.message { legacyMessagePagingCoordinator } },
+                conversations = { readRepositoryFactory.conversation() },
+            )
+        )
+    }
+    private val consumerRegistry = KaliumConsumerRegistry { work -> readGraph.consumerGraphFactory.create(work) }
+
+    /** Creates an explicitly owned read consumer for this prepared user generation. */
+    public fun createConsumer(): KaliumConsumer = consumerRegistry.createConsumer()
+
+    internal fun invalidateConsumers() = consumerRegistry.invalidateConsumers()
+
+    internal suspend fun drainConsumers() = consumerRegistry.drainConsumers()
+
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
@@ -950,6 +981,7 @@ public class UserSessionScope internal constructor(
 
     /** The host must first cancel/join public account operations and account/global observers. */
     internal suspend fun stopAccountWork() {
+        invalidateConsumers()
         withTimeout(LogoutUseCaseImpl.SCOPE_DRAIN_TIMEOUT_MS) {
             if (isCellsInitialized) {
                 val uploadCoordinator = cells.uploadCoordinator
@@ -961,6 +993,8 @@ public class UserSessionScope internal constructor(
             if (isCellsInitialized) cells.coroutineContext.job.join()
             if (callManager.isInitialized()) callManager.value.cancelJobs()
         }
+        // Consumer work may run in its caller's context; parent resources must wait for its unwind.
+        drainConsumers()
     }
 
     /**
@@ -1052,17 +1086,7 @@ public class UserSessionScope internal constructor(
         )
 
     private val conversationRepository: ConversationRepository
-        get() = ConversationDataSource(
-            userId,
-            userStorage.database.conversationDAO,
-            userStorage.database.memberDAO,
-            authenticatedNetworkContainer.conversationApi,
-            userStorage.database.messageDAO,
-            userStorage.database.messageDraftDAO,
-            userStorage.database.clientDAO,
-            authenticatedNetworkContainer.clientApi,
-            userStorage.database.conversationMetaDataDAO,
-        )
+        get() = readRepositoryFactory.conversation()
 
     private val conversationMetaDataRepository: ConversationMetaDataRepository
         get() = ConversationMetaDataDataSource(
@@ -1100,13 +1124,7 @@ public class UserSessionScope internal constructor(
         )
 
     private val messageRepository: MessageRepository
-        get() = MessageDataSource(
-            messageApi = authenticatedNetworkContainer.messageApi,
-            mlsMessageApi = authenticatedNetworkContainer.mlsMessageApi,
-            messageDAO = userStorage.database.messageDAO,
-            selfUserId = userId,
-            nomadMessagePagingCoordinator = nomadMessagePagingCoordinator,
-        )
+        get() = readRepositoryFactory.message { nomadMessagePagingCoordinator }
 
     private val nomadMessagePagingCoordinator: NomadMessagePagingCoordinator?
         get() = if (nomadServiceUrl.isNullOrBlank()) {
@@ -1878,15 +1896,17 @@ public class UserSessionScope internal constructor(
             cryptoTransactionProvider
         )
 
-    internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(
-        featureSupport,
-        incrementalSyncRepository,
-        lazy { clientRepository },
-        lazy { client.refillKeyPackages },
-        lazy { client.mlsKeyPackageCountUseCase },
-        lazy { users.timestampKeyRepository },
-        cryptoTransactionProvider
-    )
+    internal val keyPackageManager: KeyPackageManager by lazy {
+        KeyPackageManagerImpl(
+            featureSupport,
+            incrementalSyncRepository,
+            lazy { clientRepository },
+            lazy { client.refillKeyPackages },
+            lazy { client.mlsKeyPackageCountUseCase },
+            lazy { users.timestampKeyRepository },
+            cryptoTransactionProvider
+        )
+    }
 
     internal val keyingMaterialsManager: KeyingMaterialsManager
         get() = KeyingMaterialsManagerImpl(
@@ -1950,7 +1970,7 @@ public class UserSessionScope internal constructor(
         PendingSubconversationProposalsImpl(userStorage.database.pendingSubconversationProposalDAO)
     }
 
-    private val pendingProposalScheduler: PendingProposalScheduler =
+    private val pendingProposalScheduler: PendingProposalScheduler by lazy {
         PendingProposalSchedulerImpl(
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
@@ -1959,6 +1979,7 @@ public class UserSessionScope internal constructor(
             pendingSubconversationProposals,
             parentContext = coroutineContext,
         )
+    }
 
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
@@ -2809,7 +2830,7 @@ public class UserSessionScope internal constructor(
             userId,
             clientIdProvider,
             selfConversationIdProvider,
-            messageRepository,
+            legacyMessageRepository,
             conversationRepository,
             lazy { cells.messageAttachmentsDraftRepository },
             mlsConversationRepository,
@@ -3205,12 +3226,13 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    private val typingIndicatorSyncManager: TypingIndicatorSyncManager =
+    private val typingIndicatorSyncManager: TypingIndicatorSyncManager by lazy {
         TypingIndicatorSyncManager(
             typingIndicatorIncomingRepository = lazy { conversations.typingIndicatorIncomingRepository },
             observeSyncStateUseCase = observeSyncState,
             kaliumLogger = userScopedLogger,
         )
+    }
 
     private val analyticsRepository: AnalyticsRepository
         get() = AnalyticsDataSource(
@@ -3287,7 +3309,7 @@ public class UserSessionScope internal constructor(
             coreCryptoTransactionProvider = cryptoTransactionProvider
         )
 
-    public val longWork: LongWorkScope = LongWorkScope(
+    public val longWork: LongWorkScope = LongWorkScope.prepareForRuntime(
         { this },
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
     )
@@ -3347,7 +3369,16 @@ public class UserSessionScope internal constructor(
      * This will start subscribers of observable work per user session, as long as the user is logged in.
      * When the user logs out, this work will be canceled.
      */
-    init {
+    private val runtimeStarted = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    /** Started by the provider after retaining this owner and before publishing it. */
+    internal fun startRuntime() {
+        if (!runtimeStarted.compareAndSet(false, true)) return
+        // Preserve constructor-started workers' order before the original init body.
+        keyPackageManager
+        pendingProposalScheduler
+        typingIndicatorSyncManager
+        longWork.startInitialSyncMonitoring()
         registerNomadHooksIfConfigured()
 
         launch {

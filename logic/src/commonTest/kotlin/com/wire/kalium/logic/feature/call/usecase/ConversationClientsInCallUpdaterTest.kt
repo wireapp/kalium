@@ -33,7 +33,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -61,7 +60,7 @@ class ConversationClientsInCallUpdaterTest {
     fun givenConversationRepositoryReturnsFailure_whenGettingConversationRecipients_thenDoNothing() =
         runTest(TestKaliumDispatcher.main) {
             everySuspend {
-                conversationRepository.getConversationRecipientsForCalling(eq(conversationId))
+                conversationRepository.getConversationRecipientsForCalling(conversationId)
             } returns (Either.Left(CoreFailure.MissingClientRegistration))
 
             conversationClientsInCallUpdater(conversationId)
@@ -75,7 +74,7 @@ class ConversationClientsInCallUpdaterTest {
     fun givenConversationRepositoryReturnsValidValues_whenGettingConversationRecipients_thenUpdateConversationClients() =
         runTest(TestKaliumDispatcher.main) {
             everySuspend {
-                conversationRepository.getConversationRecipientsForCalling(eq(conversationId))
+                conversationRepository.getConversationRecipientsForCalling(conversationId)
             } returns (Either.Right(recipients))
 
             everySuspend {

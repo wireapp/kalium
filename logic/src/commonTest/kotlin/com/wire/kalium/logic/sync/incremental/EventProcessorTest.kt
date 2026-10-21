@@ -38,7 +38,6 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -86,7 +85,7 @@ class EventProcessorTest {
 
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationEventReceiver.onEvent(any(), eq(event), any())
+            arrangement.conversationEventReceiver.onEvent(any(), event, any())
         }
     }
 
@@ -119,7 +118,7 @@ class EventProcessorTest {
 
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userEventReceiver.onEvent(any(), eq(event), any())
+            arrangement.userEventReceiver.onEvent(any(), event, any())
         }
     }
 

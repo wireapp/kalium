@@ -25,7 +25,6 @@ import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -53,7 +52,7 @@ class SessionRefreshSuggestedEventHandlerTest {
 
         assertIs<Either.Right<Unit>>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionManager.updateToken(eq(arrangement.accessTokenApi), eq(TEST_SESSION.refreshToken))
+            arrangement.sessionManager.updateToken(arrangement.accessTokenApi, TEST_SESSION.refreshToken)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.authenticatedNetworkContainer.clearCachedToken()

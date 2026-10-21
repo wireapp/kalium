@@ -35,7 +35,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -211,11 +210,11 @@ class ObserveNewClientsUseCaseTest {
                 } returns flowOf(listOf())
 
                 everySuspend {
-                    userClientRepositoryProvider.provide(eq(TestUser.USER_ID))
+                    userClientRepositoryProvider.provide(TestUser.USER_ID)
                 } returns clientRepository1
 
                 everySuspend {
-                    userClientRepositoryProvider.provide(eq(TestUser.OTHER_USER_ID))
+                    userClientRepositoryProvider.provide(TestUser.OTHER_USER_ID)
                 } returns clientRepository2
             }
         }

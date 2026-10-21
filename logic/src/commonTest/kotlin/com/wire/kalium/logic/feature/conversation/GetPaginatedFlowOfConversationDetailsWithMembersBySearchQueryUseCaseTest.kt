@@ -34,7 +34,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verifySuspend
@@ -63,8 +62,8 @@ class GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCaseTest {
 
         verifySuspend {
             arrangement.extensions.getPaginatedConversationDetailsWithMembersBySearchQuery(
-                eq(ConversationMembersQueryConfig(searchQuery = "Alpha", onlyTeamId = "team", onlyDomain = TestUser.USER_ID.domain)),
-                eq(pagingConfig), eq(0L), eq(true),
+                ConversationMembersQueryConfig(searchQuery = "Alpha", onlyTeamId = "team", onlyDomain = TestUser.USER_ID.domain),
+                pagingConfig, 0L, true,
             )
         }
     }
@@ -82,7 +81,7 @@ class GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCaseTest {
 
         verifySuspend {
             arrangement.extensions.getPaginatedConversationDetailsWithMembersBySearchQuery(
-                eq(config), eq(pagingConfig), eq(0L), eq(true),
+                config, pagingConfig, 0L, true,
             )
         }
         verifySuspend(VerifyMode.not) { arrangement.selfTeamIdProvider() }

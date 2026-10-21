@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -58,7 +57,7 @@ class GetServiceByIdUseCaseTest {
             serviceId: ServiceId
         ) = apply {
             everySuspend {
-                serviceRepository.getServiceById(eq(serviceId))
+                serviceRepository.getServiceById(serviceId)
             } returns Either.Right(serviceDetails)
         }
 

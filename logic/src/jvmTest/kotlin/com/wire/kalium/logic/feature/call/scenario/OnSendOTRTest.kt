@@ -38,7 +38,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.ofType
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
@@ -76,7 +75,7 @@ class OnSendOTRTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.enqueueSendingOfCallingMessage(
                 any(),
-                eq(Arrangement.conversationId),
+                Arrangement.conversationId,
                 any(),
                 any(),
                 any(),
@@ -113,7 +112,7 @@ class OnSendOTRTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.enqueueSendingOfCallingMessage(
                 any(),
-                eq(Arrangement.conversationId),
+                Arrangement.conversationId,
                 any(),
                 any(),
                 any(),

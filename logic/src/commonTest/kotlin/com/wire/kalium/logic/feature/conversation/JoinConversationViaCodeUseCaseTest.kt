@@ -42,7 +42,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -128,7 +127,7 @@ class JoinConversationViaCodeUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), eq(listOf(selfUserId)), any())
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), listOf(selfUserId), any())
         }
     }
 

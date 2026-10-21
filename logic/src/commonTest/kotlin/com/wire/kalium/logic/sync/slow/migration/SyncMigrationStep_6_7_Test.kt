@@ -29,7 +29,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -50,7 +49,7 @@ class SyncMigrationStep_6_7_Test {
         migration.invoke().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.accountRepository.updateSelfUserAvailabilityStatus(eq(UserAvailabilityStatus.NONE))
+            arrangement.accountRepository.updateSelfUserAvailabilityStatus(UserAvailabilityStatus.NONE)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {

@@ -34,7 +34,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -58,9 +57,9 @@ class SearchMessagesGloballyUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByTextGlobally(
-                eq(SEARCH_QUERY),
-                eq(DEFAULT_LIMIT),
-                eq(DEFAULT_OFFSET)
+                SEARCH_QUERY,
+                DEFAULT_LIMIT,
+                DEFAULT_OFFSET
             )
         }
     }
@@ -77,9 +76,9 @@ class SearchMessagesGloballyUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByTextGlobally(
-                eq(SEARCH_QUERY),
-                eq(customLimit),
-                eq(customOffset)
+                SEARCH_QUERY,
+                customLimit,
+                customOffset
             )
         }
     }
@@ -175,9 +174,9 @@ class SearchMessagesGloballyUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByTextGlobally(
-                eq(SEARCH_QUERY),
-                eq(100),
-                eq(0)
+                SEARCH_QUERY,
+                100,
+                0
             )
         }
     }
@@ -195,7 +194,7 @@ class SearchMessagesGloballyUseCaseTest {
         ) = apply {
             everySuspend {
                 messageRepository.searchMessagesByTextGlobally(
-                    eq(searchQuery),
+                    searchQuery,
                     any(),
                     any()
                 )

@@ -60,9 +60,14 @@ internal fun Project.configureDefaultMultiplatform(
 
         applyDefaultHierarchyTemplate()
 
-        jvm { commonJvmConfig(includeNativeInterop, enableIntegrationTests) }
+        jvm {
+            // Kotlin 2.4 changes the default to group:name; preserve published JVM member mangling.
+            compilerOptions.moduleName.set(project.name)
+            commonJvmConfig(includeNativeInterop, enableIntegrationTests)
+        }
 
         targets.withType(KotlinMultiplatformAndroidLibraryTarget::class.java).configureEach {
+            compilerOptions.moduleName.set(project.name)
             commonAndroidLibConfig(this@configureDefaultMultiplatform, includeNativeInterop, androidNamespaceSuffix)
             // ⇣ DO NOT open a `dependencies {}` block here; add to the project instead:
             project.dependencies.add("coreLibraryDesugaring", library("desugarJdkLibs"))
