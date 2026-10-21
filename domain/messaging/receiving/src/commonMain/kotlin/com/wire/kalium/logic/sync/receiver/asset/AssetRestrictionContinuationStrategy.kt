@@ -55,7 +55,8 @@ fun prepareReceivedAssetMessage(
     restrictWithoutPreview: Boolean,
 ): Message.Regular? {
     val content = message.content as MessageContent.Asset
-    val previewFromDifferentClient = content.value.preview != null && existing?.senderClientId != message.senderClientId
+    val previousClient = (existing as? Message.Regular)?.senderClientId
+    val previewFromDifferentClient = content.value.preview != null && previousClient != message.senderClientId
     return if (existing == null) {
         if (restrictWithoutPreview) message.restrictedAssetMessage() else message.copy(
             visibility = if (content.value.isAssetDataComplete) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
