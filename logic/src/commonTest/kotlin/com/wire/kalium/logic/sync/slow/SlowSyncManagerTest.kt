@@ -22,6 +22,8 @@ import app.cash.turbine.test
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.data.sync.SyncRetryStatus
+import com.wire.kalium.logic.sync.SyncRetryController
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.fakes.network.FakeNetworkStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -42,6 +44,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -527,9 +530,74 @@ class SlowSyncManagerTest {
         }
     }
 
+    @Test
+    fun cancellationDuringAnyFailurePublicationRestoresPending() = runTest {
+        for (phase in listOf("initial", "scheduled", "attempting")) {
+            val entered = CompletableDeferred<Unit>()
+            lateinit var job: Job
+            val (arrangement, manager) = Arrangement().arrange {
+                withSatisfiedCriteria()
+                withSlowSyncWorkerReturning(flow { throw IOException("offline") })
+                withRecoveringFromFailure()
+                withReconnectWaitOverride { false }
+            }
+            every {
+                arrangement.slowSyncRepository.updateSlowSyncStatus(matches<SlowSyncStatus> {
+                    it is SlowSyncStatus.Failed && when (phase) {
+                        "initial" -> it.retryStatus == SyncRetryStatus.None
+                        "scheduled" -> it.retryStatus is SyncRetryStatus.Scheduled
+                        else -> it.retryStatus is SyncRetryStatus.Attempting
+                    }
+                })
+            } calls {
+                entered.complete(Unit)
+                job.cancel()
+            }
+            job = manager.performSyncFlow().launchIn(backgroundScope)
+            entered.await()
+            job.cancel()
+            job.join()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
+            }
+        }
+    }
+
+    @Test
+    fun refreshInterruptsGrownBackoffAndNextFailureUsesMinimum() = runTest {
+        val helper = ExponentialDurationHelper(1.seconds, 10.minutes)
+        val controller = SyncRetryController()
+        var attempts = 0
+        val (arrangement, manager) = Arrangement(
+            exponentialDurationHelper = helper, configureDefaultExponentialDuration = false, retryController = controller,
+        ).arrange {
+            withSatisfiedCriteria()
+            withRecoveringFromFailure()
+            withSlowSyncWorkerReturning(flow {
+                attempts++
+                if (attempts == 1) repeat(3) { helper.next() }
+                throw IOException("offline")
+            })
+        }
+        val job = manager.performSyncFlow().launchIn(backgroundScope)
+        runCurrent()
+        assertEquals(1, attempts)
+        controller.retryNow { manager.resetRetryBackoff() }
+        runCurrent()
+        assertEquals(2, attempts)
+        verifySuspend(VerifyMode.atLeast(1)) {
+            arrangement.slowSyncRepository.updateSlowSyncStatus(matches<SlowSyncStatus> {
+                it is SlowSyncStatus.Failed && it.retryDelay == 1.seconds
+            })
+        }
+        job.cancel()
+        job.join()
+    }
+
     private class Arrangement(
         val exponentialDurationHelper: ExponentialDurationHelper = mock(mode = MockMode.autoUnit),
         private val configureDefaultExponentialDuration: Boolean = true,
+        private val retryController: SyncRetryController = SyncRetryController(),
     ) {
         val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock()
         val slowSyncRepository: SlowSyncRepository = mock(mode = MockMode.autoUnit)
@@ -623,7 +691,8 @@ class SlowSyncManagerTest {
             exponentialDurationHelper = exponentialDurationHelper,
             syncMigrationStepsProvider = { syncMigrationStepsProvider },
             userScopedLogger = kaliumLogger,
-            apiVersion = 5
+            apiVersion = 5,
+            retryController = retryController,
         )
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = { }) = run {
