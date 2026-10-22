@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.asset.upload
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -37,6 +38,7 @@ import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
@@ -143,10 +145,20 @@ internal class UploadAssetUseCaseImpl(
         )
     }
 
-    private suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> =
-        messageSender.sendMessage(message).onSuccess {
-            currentCoroutineContext()[AssetMessageSendReceipt]?.succeeded = true
-        }.onFailure {
+    private suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> {
+        val receipt = currentCoroutineContext()[AssetMessageSendReceipt]
+        val result = if (receipt == null) {
+            messageSender.sendMessage(message)
+        } else {
+            messageSender.sendMessageWithOutcome(message).map { sent ->
+                if (!sent) {
+                    receipt.skipped = true
+                    throw CancellationException("Asset message is no longer eligible for sending")
+                }
+                receipt.succeeded = true
+            }
+        }
+        return result.onFailure {
             if (currentCoroutineContext()[AssetMessageSendReceipt] == null) messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                 failure = it,
                 conversationId = message.conversationId,
@@ -155,6 +167,7 @@ internal class UploadAssetUseCaseImpl(
                 scheduleResendIfNoNetwork = pendingMessagesEnabled
             )
         }
+    }
 
     private companion object {
         const val TYPE = "Asset"

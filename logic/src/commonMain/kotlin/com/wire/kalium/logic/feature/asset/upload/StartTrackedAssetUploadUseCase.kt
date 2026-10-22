@@ -79,6 +79,7 @@ public interface TrackedAssetUpload {
 internal class AssetMessageSendReceipt : AbstractCoroutineContextElement(Key) {
     companion object Key : CoroutineContext.Key<AssetMessageSendReceipt>
     var succeeded: Boolean = false
+    var skipped: Boolean = false
 }
 
 @Suppress("LongParameterList")
@@ -131,7 +132,7 @@ internal class TrackedAssetUploadImpl(
         // Publish a retryable state only after upload/send and the visibility monitor have stopped.
         // This is outside the catch boundary: cancellation cannot finalize this attempt a second time.
         withContext(NonCancellable) {
-            if (!sendReceipt.succeeded) {
+            if (!sendReceipt.succeeded && !sendReceipt.skipped) {
                 when (result) {
                     AssetUploadCompletion.Cancelled -> runCatching { onCancelled() }
                     is AssetUploadCompletion.Failure -> runCatching { onFailed(result.coreFailure) }

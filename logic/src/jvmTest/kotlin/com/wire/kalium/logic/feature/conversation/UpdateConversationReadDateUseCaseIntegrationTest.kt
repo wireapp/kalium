@@ -191,6 +191,11 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
     private fun stableNow(): Instant = Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds())
 
     private class FakeMessageSender : MessageSender {
+        override suspend fun sendMessageWithOutcome(
+            message: Message.Sendable,
+            messageTarget: com.wire.kalium.messaging.sending.MessageTarget
+        ): Either<CoreFailure, Boolean> = error("Not used by these tests")
+
         override suspend fun cancelPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean> =
             error("Not used by read-receipt tests")
 

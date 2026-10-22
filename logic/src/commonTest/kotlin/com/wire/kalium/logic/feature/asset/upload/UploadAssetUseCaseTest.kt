@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.asset.upload
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.functional.Either
@@ -61,6 +62,28 @@ import kotlin.test.assertFalse
 import kotlin.test.assertSame
 
 class UploadAssetUseCaseTest {
+
+    @Test
+    fun givenDeletionBeforeSenderCheck_whenMonitorHasNotReacted_thenTrackedUploadIsCancelled() = runTest(testDispatcher.default) {
+        val (arrangement, uploadAsset) = Arrangement().arrange { withUploadSuccess() }
+        everySuspend { arrangement.messageSender.sendMessageWithOutcome(any(), any()) } returns false.right()
+        var cleanupCalls = 0
+        val operation = TrackedAssetUploadImpl(
+            messageId = "deleted-message",
+            scope = backgroundScope,
+            retryOperation = { error("Deletion must not automatically retry") },
+            monitor = { awaitCancellation() },
+            upload = { uploadAsset(assetMessage(), uploadMetadata) },
+            onCancelled = { cleanupCalls++ },
+            onFailed = { cleanupCalls++ },
+        )
+        assertEquals(AssetUploadCompletion.Cancelled, operation.awaitCompletion())
+        assertEquals(AssetUploadProgress.CANCELLED, operation.progress.value)
+        assertEquals(0, cleanupCalls)
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }
+    }
 
     @Test
     fun trackedFailuresLeaveTerminalStatusToOperationOwner() = runTest(testDispatcher.default) {
@@ -251,9 +274,9 @@ class UploadAssetUseCaseTest {
     fun givenSendAcknowledged_whenCancellationWinsIoReturn_thenTrackedAttemptStaysSuccessful() = runTest(testDispatcher.default) {
         val (arrangement, uploadAsset) = Arrangement().arrange { withUploadSuccess() }
         lateinit var operation: TrackedAssetUpload
-        everySuspend { arrangement.messageSender.sendMessage(any(), any()) } calls {
+        everySuspend { arrangement.messageSender.sendMessageWithOutcome(any(), any()) } calls {
             operation.cancel()
-            Unit.right()
+            true.right()
         }
         var cancelledStatusUpdates = 0
         // Force the upload use case to dispatch back to another dispatcher after the sender acknowledges the message.
@@ -391,6 +414,11 @@ class UploadAssetUseCaseTest {
             } calls {
                 messageSendGate?.await()
                 sendMessageResult
+            }
+
+            everySuspend { messageSender.sendMessageWithOutcome(any(), any()) } calls {
+                messageSendGate?.await()
+                sendMessageResult.map { true }
             }
 
             return this to UploadAssetUseCaseImpl(
