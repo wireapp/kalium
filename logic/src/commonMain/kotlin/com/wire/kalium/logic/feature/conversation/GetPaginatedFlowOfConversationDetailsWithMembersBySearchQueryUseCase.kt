@@ -64,9 +64,11 @@ public class GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCas
         ).map { page ->
             if (onlySelfTeamAndDomain) {
                 page.map { details ->
-                    details.copy(members = details.members.filter { member ->
-                        onlyTeamId != null && member.user.teamId?.value == onlyTeamId && member.user.id.domain == selfUserId.domain
-                    })
+                    details.copy(
+                        members = details.members.filter { member ->
+                            onlyTeamId != null && member.user.teamId?.value == onlyTeamId && member.user.id.domain == selfUserId.domain
+                        }
+                    )
                 }
             } else page
         }.flowOn(dispatcher.io)
