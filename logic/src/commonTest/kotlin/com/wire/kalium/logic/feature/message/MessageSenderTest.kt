@@ -247,9 +247,71 @@ class MessageSenderTest {
         val (arrangement, sender) = arrange { withGetMessageById(failing = true) }
         arrangement.testScope.runTest {
             sender.sendMessage(TestMessage.TEXT_MESSAGE).shouldSucceed()
+            assertEquals(0, arrangement.preparationCalls)
             verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.messageRepository.sendEnvelope(any(), any(), any())
             }
+        }
+    }
+
+    @Test
+    fun givenAlreadySentPendingSnapshot_whenSending_thenSkipPreparationAndTransport() {
+        val (arrangement, sender) = arrange { }
+        arrangement.testScope.runTest {
+            val pending = TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending)
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns
+                Either.Right(pending.copy(status = Message.Status.Sent))
+
+            sender.sendMessage(pending).shouldSucceed()
+
+            assertEquals(0, arrangement.preparationCalls)
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun givenRecoveryListIsStale_whenRereadIsSent_thenDoNotSendAgain() {
+        val (arrangement, sender) = arrange { }
+        arrangement.testScope.runTest {
+            val sent = TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Sent)
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns Either.Right(sent)
+
+            sender.sendPendingMessage(sent.conversationId, sent.id).shouldSucceed()
+
+            assertEquals(0, arrangement.preparationCalls)
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun givenCompetingPendingRetry_whenFirstSendOwnsTransaction_thenOnlyWinningPolicyIsPrepared() {
+        val (arrangement, sender) = arrange { withSendProteusMessage() }
+        arrangement.testScope.runTest {
+            val pending = TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true)
+            var stored = pending
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { Either.Right(stored) }
+            val promoting = CompletableDeferred<Unit>()
+            val releaseSend = CompletableDeferred<Unit>()
+            everySuspend { arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any()) } calls {
+                promoting.complete(Unit)
+                releaseSend.await()
+                stored = pending.copy(status = Message.Status.Sent)
+                Either.Right(Unit)
+            }
+            arrangement.serializeTransactions()
+            val firstSend = async { sender.sendMessage(pending) }
+            promoting.await()
+            val competingRetry = async { sender.sendPendingMessage(pending.conversationId, pending.id) }
+            runCurrent()
+            assertFalse(competingRetry.isCompleted)
+            assertEquals(1, arrangement.preparationCalls)
+
+            releaseSend.complete(Unit)
+            firstSend.await().shouldSucceed()
+            competingRetry.await().shouldSucceed()
+
+            assertEquals(1, arrangement.preparationCalls)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
         }
     }
 
@@ -1102,6 +1164,26 @@ class MessageSenderTest {
     }
 
     @Test
+    fun refreshedTimerIsUsedForEncryptionAndLocalSelfDeletion() {
+        val original = TestMessage.TEXT_MESSAGE.copy(expirationData = null)
+        val refreshed = original.copy(expirationData = Message.ExpirationData(Duration.parse("60s")))
+        val (arrangement, sender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            preparedMessage = refreshed
+        }
+        arrangement.testScope.runTest {
+            sender.sendMessage(original).shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageEnvelopeCreator.createOutgoingEnvelope(any(), any(), eq(refreshed))
+            }
+            verify(VerifyMode.exactly(1)) {
+                arrangement.selfDeleteMessageSenderHandler.enqueueSelfDeletion(eq(refreshed), eq(refreshed.expirationData!!))
+            }
+        }
+    }
+
+    @Test
     fun givenAllStepsSucceed_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldStart() {
         val duration = Duration.parse("PT1M")
         val message = TestMessage.TEXT_MESSAGE.copy(
@@ -1293,9 +1375,12 @@ class MessageSenderTest {
 
         val testScope = TestScope()
 
+        var preparedMessage: Message.Sendable? = null
+        var preparationCalls = 0
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
             override suspend fun prepareMessage(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
-                return Either.Right(message)
+                preparationCalls += 1
+                return Either.Right(preparedMessage ?: message)
             }
         }
 

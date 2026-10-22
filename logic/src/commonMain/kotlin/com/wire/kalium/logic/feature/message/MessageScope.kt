@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.functional.flatMap
+
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSendFailureHandlerImpl
 import com.wire.kalium.messaging.sending.MessageSenderImpl
@@ -232,6 +234,9 @@ public class MessageScope internal constructor(
         get() = ValidateAssetFileTypeUseCaseImpl()
 
     private val messageContentEncoder = MessageContentEncoder()
+    private val refreshPendingTextPolicy: RefreshPendingTextPolicy
+        get() = RefreshPendingTextPolicy(messageRepository, userPropertyRepository, observeSelfDeletingMessages)
+
     private val messageSendingInterceptor: MessageSendingInterceptor
         get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
 
@@ -277,7 +282,9 @@ public class MessageScope internal constructor(
             sessionEstablisher = sessionEstablisher,
             messageEnvelopeCreator = messageEnvelopeCreator,
             mlsMessageCreator = mlsMessageCreator,
-            prepareMessage = messageSendingInterceptor::prepareMessage,
+            prepareMessage = { message ->
+                refreshPendingTextPolicy(message).flatMap { messageSendingInterceptor.prepareMessage(it) }
+            },
             legalHoldEnabledAfter = legalHoldHandler::handleMessageSendFailure,
             verifyEpoch = { context, conversationId -> staleEpochVerifier.verifyEpoch(context, conversationId) },
             handleGroupOutOfSync = mlsMissingUsersMessageRejectionHandlerProvider()::handle,

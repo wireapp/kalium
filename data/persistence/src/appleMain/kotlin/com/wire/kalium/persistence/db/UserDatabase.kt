@@ -85,7 +85,8 @@ actual fun userDatabaseBuilder(
         dispatcher = dispatcher,
         platformDatabaseData = platformDatabaseData,
         isEncrypted = passphrase != null,
-        dbInvalidationController = invalidationController
+        dbInvalidationController = invalidationController,
+        timelineReadDriver = (nativeDriver as? SnapshotSqlDriver)?.snapshotDriver ?: driver,
     )
 }
 
