@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.asset.upload
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -37,7 +38,10 @@ import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 
 internal interface UploadAssetUseCase {
@@ -65,6 +69,12 @@ internal class UploadAssetUseCaseImpl(
 
     override suspend fun invoke(message: Message.Regular, metadata: UploadAssetMessageMetadata) = withContext(dispatcher.io) {
 
+        // A retry after a successful upload reuses the persisted remote asset and message identity.
+        if (metadata.sha256Key.data.isNotEmpty()) {
+            updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
+            return@withContext sendMessage(message)
+        }
+
         updateAssetMessageTransferStatus(AssetTransferStatus.UPLOAD_IN_PROGRESS, message.conversationId, message.id)
 
         val audioNormalizedLoudnessDeferred = async { getOrBuildAudioNormalizedLoudnessIfNeeded(metadata) }
@@ -77,15 +87,9 @@ internal class UploadAssetUseCaseImpl(
             conversationId = message.conversationId.toApi(),
             filename = metadata.assetName,
             filetype = metadata.mimeType,
+            retainSource = true,
         ).onFailure {
-            updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
-            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                failure = it,
-                conversationId = message.conversationId,
-                messageId = message.id,
-                messageType = TYPE,
-                scheduleResendIfNoNetwork = pendingMessagesEnabled
-            )
+            recordUploadFailure(message, it)
 
             audioNormalizedLoudnessDeferred.await()?.let { normalizedLoudness ->
                 updateAudioNormalizedLoudness(
@@ -110,26 +114,58 @@ internal class UploadAssetUseCaseImpl(
                 ),
                 expectsReadConfirmation = message.expectsReadConfirmation
             )
-            persistMessage(updatedMessage)
+            withContext(NonCancellable) {
+                persistMessage(updatedMessage).onSuccess {
+                    // Commit the new reference before removing the only file the old reference can resolve.
+                    assetDataSource.deleteAssetLocally(metadata.assetId.key)
+                }
+            }
                 .onFailure {
                     kaliumLogger.e(
                         "There was an error when trying to persist the updated asset message with the information returned by the backend"
                     )
-                }.onSuccess {
+                }.flatMap {
                     updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
-                    // Keep the temporary asset around until the message points at the uploaded asset id.
-                    assetDataSource.deleteAssetLocally(metadata.assetId.key)
                     // Finally we try to send the Asset Message to the recipients of the given conversation
-                    messageSender.sendMessage(updatedMessage).onFailure {
-                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                            failure = it,
-                            conversationId = message.conversationId,
-                            messageId = message.id,
-                            messageType = TYPE,
-                            scheduleResendIfNoNetwork = pendingMessagesEnabled
-                        )
-                    }
+                    sendMessage(updatedMessage)
                 }
+        }
+    }
+
+    private suspend fun recordUploadFailure(message: Message.Regular, failure: CoreFailure) {
+        // Tracked operations publish failure once, after all work and monitor cleanup finishes.
+        if (currentCoroutineContext()[AssetMessageSendReceipt] != null) return
+        updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
+        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+            failure = failure,
+            conversationId = message.conversationId,
+            messageId = message.id,
+            messageType = TYPE,
+            scheduleResendIfNoNetwork = pendingMessagesEnabled
+        )
+    }
+
+    private suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> {
+        val receipt = currentCoroutineContext()[AssetMessageSendReceipt]
+        val result = if (receipt == null) {
+            messageSender.sendMessage(message)
+        } else {
+            messageSender.sendMessageWithOutcome(message).map { sent ->
+                if (!sent) {
+                    receipt.skipped = true
+                    throw CancellationException("Asset message is no longer eligible for sending")
+                }
+                receipt.succeeded = true
+            }
+        }
+        return result.onFailure {
+            if (currentCoroutineContext()[AssetMessageSendReceipt] == null) messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                failure = it,
+                conversationId = message.conversationId,
+                messageId = message.id,
+                messageType = TYPE,
+                scheduleResendIfNoNetwork = pendingMessagesEnabled
+            )
         }
     }
 

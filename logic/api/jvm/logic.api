@@ -1603,6 +1603,34 @@ public final class com/wire/kalium/logic/feature/asset/UpdateTransferStatusResul
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion {
+}
+
+public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion$Cancelled : com/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion$Cancelled;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion$Failure : com/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion$Success : com/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadCompletion$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadParams {
 	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lokio/Path;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;J[B)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
@@ -1628,6 +1656,17 @@ public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadParams 
 	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/asset/upload/AssetUploadProgress : java/lang/Enum {
+	public static final field CANCELLED Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadProgress;
+	public static final field COMPLETED Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadProgress;
+	public static final field FAILED Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadProgress;
+	public static final field QUEUED Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadProgress;
+	public static final field UPLOADING_AND_SENDING Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadProgress;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadProgress;
+	public static fun values ()[Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadProgress;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/asset/upload/ScheduleNewAssetMessageResult {
@@ -1674,6 +1713,44 @@ public final class com/wire/kalium/logic/feature/asset/upload/ScheduleNewAssetMe
 
 public abstract interface class com/wire/kalium/logic/feature/asset/upload/ScheduleNewAssetMessageUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult {
+}
+
+public final class com/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult$Failure : com/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult {
+	public fun <init> (Lcom/wire/kalium/logic/feature/asset/upload/ScheduleNewAssetMessageResult$Failure;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/feature/asset/upload/ScheduleNewAssetMessageResult$Failure;
+	public final fun copy (Lcom/wire/kalium/logic/feature/asset/upload/ScheduleNewAssetMessageResult$Failure;)Lcom/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult$Failure;Lcom/wire/kalium/logic/feature/asset/upload/ScheduleNewAssetMessageResult$Failure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getReason ()Lcom/wire/kalium/logic/feature/asset/upload/ScheduleNewAssetMessageResult$Failure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult$Started : com/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult {
+	public fun <init> (Lcom/wire/kalium/logic/feature/asset/upload/TrackedAssetUpload;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/feature/asset/upload/TrackedAssetUpload;
+	public final fun copy (Lcom/wire/kalium/logic/feature/asset/upload/TrackedAssetUpload;)Lcom/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult$Started;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult$Started;Lcom/wire/kalium/logic/feature/asset/upload/TrackedAssetUpload;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadResult$Started;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getOperation ()Lcom/wire/kalium/logic/feature/asset/upload/TrackedAssetUpload;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadUseCase {
+	public final fun invoke (Lcom/wire/kalium/logic/feature/asset/upload/AssetUploadParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/asset/upload/TrackedAssetUpload {
+	public abstract fun awaitCompletion (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun cancel ()V
+	public abstract fun getMessageId ()Ljava/lang/String;
+	public abstract fun getOperationId ()Ljava/lang/String;
+	public abstract fun getProgress ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun retry (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/auth/AddAuthenticatedUserUseCase {
@@ -5952,6 +6029,7 @@ public final class com/wire/kalium/logic/feature/message/MessageScope {
 	public final fun getRemoveMessageDraftUseCase ()Lcom/wire/kalium/logic/feature/message/draft/RemoveMessageDraftUseCase;
 	public final fun getResetSession ()Lcom/wire/kalium/logic/feature/sessionreset/ResetSessionUseCase;
 	public final fun getRetryFailedMessage ()Lcom/wire/kalium/logic/feature/message/RetryFailedMessageUseCase;
+	public final fun getRetryFailedMessageAndAwait ()Lcom/wire/kalium/logic/feature/message/RetryFailedMessageAndAwaitUseCase;
 	public final fun getSaveMessageDraftUseCase ()Lcom/wire/kalium/logic/feature/message/draft/SaveMessageDraftUseCase;
 	public final fun getSearchMessagesGlobally ()Lcom/wire/kalium/logic/feature/message/SearchMessagesGloballyUseCase;
 	public final fun getSearchMessagesInConversation ()Lcom/wire/kalium/logic/feature/message/SearchMessagesInConversationUseCase;
@@ -5968,6 +6046,7 @@ public final class com/wire/kalium/logic/feature/message/MessageScope {
 	public final fun getSendPollMessage ()Lcom/wire/kalium/logic/feature/message/poll/SendPollMessageUseCase;
 	public final fun getSendPollVote ()Lcom/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase;
 	public final fun getSendTextMessage ()Lcom/wire/kalium/logic/feature/message/SendTextMessageUseCase;
+	public final fun getStartTrackedAssetUpload ()Lcom/wire/kalium/logic/feature/asset/upload/StartTrackedAssetUploadUseCase;
 	public final fun getToggleReaction ()Lcom/wire/kalium/logic/feature/message/ToggleReactionUseCase;
 	public final fun getUpdateAssetMessageTransferStatus ()Lcom/wire/kalium/logic/feature/asset/UpdateAssetMessageTransferStatusUseCase;
 	public final fun getUpdateAudioMessageNormalizedLoudnessUseCase ()Lcom/wire/kalium/logic/feature/asset/UpdateAudioMessageNormalizedLoudnessUseCase;
@@ -6041,6 +6120,10 @@ public final class com/wire/kalium/logic/feature/message/Result$Success : com/wi
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/message/RetryFailedMessageAndAwaitUseCase {
+	public final fun invoke (Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/message/RetryFailedMessageUseCase {

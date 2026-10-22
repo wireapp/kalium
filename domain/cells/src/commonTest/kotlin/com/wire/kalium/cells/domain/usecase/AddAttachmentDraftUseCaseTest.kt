@@ -19,12 +19,19 @@ package com.wire.kalium.cells.domain.usecase
 
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import com.wire.kalium.cells.domain.CellAttachmentDraftUploadResult
+import com.wire.kalium.cells.domain.CellAttachmentDraftUploadsImpl
 import com.wire.kalium.cells.domain.CellConversationRepository
+import com.wire.kalium.cells.domain.CellUploadAttempt
+import com.wire.kalium.cells.domain.CellUploadInfo
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -39,12 +46,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -52,6 +63,8 @@ import okio.Path.Companion.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddAttachmentDraftUseCaseTest {
@@ -176,7 +189,73 @@ class AddAttachmentDraftUseCaseTest {
         }
     }
 
-    private class Arrangement(val useCaseScope: CoroutineScope) {
+    @Test
+    fun nativeOwnerClaimsBeforeUploadAndViewModelCancellationCannotOrphanAcceptedDraft() = testScope.runTest {
+        val drafts = CellAttachmentDraftUploadsImpl(backgroundScope).also { it.requireBackgroundOwner() }
+        val (arrangement, useCase) = Arrangement(backgroundScope, drafts)
+            .withSuccessAdd().withSuccessPreCheck().withSuccessUpdate().withUploadEvents().arrange()
+        val attempt = mock<CellUploadAttempt>(mode = MockMode.autoUnit)
+        every { arrangement.uploadManager.captureUploadAttempt(any()) }.returns(attempt)
+        every { arrangement.uploadManager.getUploadInfo(any()) }.returns(CellUploadInfo())
+        every { arrangement.uploadManager.consumeUploadOutcome(any()) }.returns(null)
+        val caller = launch { useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata) }
+        runCurrent()
+        val operation = drafts.uploads.value.single()
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.uploadManager.upload(any(), any(), any()) }
+        caller.cancelAndJoin()
+        operation.claim()
+        runCurrent()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadManager.upload(any(), any(), any()) }
+        launch { arrangement.uploadEventsFlow.emit(CellUploadEvent.UploadCompleted) }
+        runCurrent()
+        assertEquals(CellAttachmentDraftUploadResult.Completed, operation.awaitCompletion())
+        verifySuspend(VerifyMode.exactly(1)) { attempt.awaitStopped() }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.repository.updateStatus(testNode.uuid, AttachmentUploadStatus.UPLOADED)
+        }
+        assertTrue(drafts.uploads.value.isEmpty())
+    }
+
+    @Test
+    fun trackedPrecheckFailurePropagatesInsteadOfBeingDiscardedByEitherMap() = testScope.runTest {
+        val drafts = CellAttachmentDraftUploadsImpl(backgroundScope).also { it.requireBackgroundOwner() }
+        val (arrangement, useCase) = Arrangement(backgroundScope, drafts).arrange()
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        everySuspend { arrangement.uploadManager.upload(any(), any(), any()) }.returns(failure.left())
+        val caller = async { useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata) }
+        runCurrent()
+        val operation = drafts.uploads.value.single()
+        operation.claim()
+        runCurrent()
+        assertEquals(Either.Left(failure), caller.await())
+        assertEquals(CellAttachmentDraftUploadResult.Failed, operation.awaitCompletion())
+    }
+
+    @Test
+    fun missedCancellationOutcomeCannotBeReportedAsSuccessfulUpload() = testScope.runTest {
+        val drafts = CellAttachmentDraftUploadsImpl(backgroundScope).also { it.requireBackgroundOwner() }
+        val (arrangement, useCase) = Arrangement(backgroundScope, drafts)
+            .withSuccessAdd().withSuccessPreCheck().withSuccessUpdate().arrange()
+        every { arrangement.uploadManager.captureUploadAttempt(any()) }.returns(null)
+        every { arrangement.uploadManager.observeUpload(any()) }.returns(null)
+        every { arrangement.uploadManager.getUploadInfo(any()) }.returns(null)
+        every { arrangement.uploadManager.consumeUploadOutcome(any()) }.returns(CellUploadEvent.UploadCancelled)
+        val caller = async { useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata) }
+        runCurrent()
+        val operation = drafts.uploads.value.single()
+        operation.claim()
+        runCurrent()
+        caller.await()
+        assertEquals(CellAttachmentDraftUploadResult.Cancelled, operation.awaitCompletion())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.repository.updateStatus(testNode.uuid, AttachmentUploadStatus.FAILED)
+        }
+    }
+
+    private class Arrangement(
+        val useCaseScope: CoroutineScope,
+        val draftUploads: CellAttachmentDraftUploadsImpl? = null,
+    ) {
 
         val uploadManager = mock<CellUploadManager>(mode = MockMode.autoUnit)
         val conversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
@@ -243,6 +322,7 @@ class AddAttachmentDraftUseCaseTest {
                 conversationRepository = conversationRepository,
                 repository = repository,
                 scope = useCaseScope,
+                draftUploads = draftUploads,
             )
         }
     }

@@ -88,6 +88,7 @@ internal interface AssetRepository {
         conversationId: ConversationId? = null,
         filename: String? = null,
         filetype: String? = null,
+        retainSource: Boolean = false,
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>
 
     /**
@@ -187,6 +188,7 @@ internal class AssetDataSource(
         conversationId: ConversationId?,
         filename: String?,
         filetype: String?,
+        retainSource: Boolean,
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> =
         try {
             val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
@@ -207,7 +209,7 @@ internal class AssetDataSource(
 
             if (encryptionSucceeded) {
                 val uploadAssetData = buildAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, conversationId, filename, filetype)
-                uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256) }
+                uploadAndPersistAsset(uploadAssetData, assetDataPath, extension, retainSource).map { it to SHA256Key(sha256) }
             } else {
                 kaliumLogger.e("Something went wrong when encrypting the Asset Message")
                 Either.Left(EncryptionFailure.GenericEncryptionError)
@@ -268,7 +270,8 @@ internal class AssetDataSource(
     private suspend fun uploadAndPersistAsset(
         uploadAssetData: UploadAssetData,
         decodedDataPath: Path,
-        extension: String?
+        extension: String?,
+        retainSource: Boolean = false,
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
@@ -282,7 +285,7 @@ internal class AssetDataSource(
         }
             .flatMap { assetResponse ->
                 // After successful upload, we persist the asset to a persistent path
-                persistAsset(assetResponse.key, assetResponse.domain, decodedDataPath, uploadAssetData.dataSize, extension)
+                persistAsset(assetResponse.key, assetResponse.domain, decodedDataPath, uploadAssetData.dataSize, extension, retainSource)
                     .also { kaliumFileSystem.delete(uploadAssetData.tempEncryptedDataPath) }
                     .map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }
             }
@@ -293,11 +296,21 @@ internal class AssetDataSource(
         decodedDataPath: Path,
         assetDataSize: Long,
         extension: String?
+    ): Either<CoreFailure, Path> = persistAsset(assetId, assetDomain, decodedDataPath, assetDataSize, extension, retainSource = false)
+
+    @Suppress("LongParameterList")
+    private suspend fun persistAsset(
+        assetId: String,
+        assetDomain: String?,
+        decodedDataPath: Path,
+        assetDataSize: Long,
+        extension: String?,
+        retainSource: Boolean,
     ): Either<CoreFailure, Path> {
         return wrapStorageRequest {
             val persistentAssetDataPath = kaliumFileSystem.providePersistentAssetPath(assetName = buildFileName(assetId, extension))
             kaliumFileSystem.copy(decodedDataPath, persistentAssetDataPath)
-            kaliumFileSystem.delete(decodedDataPath)
+            if (!retainSource) kaliumFileSystem.delete(decodedDataPath)
             val decodedAssetEntity = assetMapper.fromUserAssetToDaoModel(assetId, assetDomain, persistentAssetDataPath, assetDataSize)
             assetDao.insertAsset(decodedAssetEntity)
             return@wrapStorageRequest persistentAssetDataPath

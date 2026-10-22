@@ -161,6 +161,9 @@ class MessageSenderImpl(
     }
 
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
+        sendMessageWithOutcome(message, messageTarget).map { Unit }
+
+    override suspend fun sendMessageWithOutcome(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Boolean> =
         prepareMessage(message)
             .flatMap { processedMessage ->
                 session.transaction("sendMessage") { transactionContext ->
@@ -204,7 +207,7 @@ class MessageSenderImpl(
                     }
                 }.onSuccess { sent ->
                     if (sent) startSelfDeletionIfNeeded(message)
-                }.map { Unit }
+                }
             }.onFailure {
                 logger.e("Failed to send message ${message::class.simpleName}. Failure = $it")
             }
