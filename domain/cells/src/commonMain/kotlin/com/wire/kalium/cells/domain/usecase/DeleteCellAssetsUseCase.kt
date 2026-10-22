@@ -31,17 +31,19 @@ import okio.SYSTEM
 
 public interface DeleteCellAssetsUseCase {
     /**
-     * Bulk version of [DeleteCellAssetUseCase]: deletes several nodes from the server in a single request, which moves
-     * them to the recycle bin, then cleans up their local data the same way.
+     * Bulk version of [DeleteCellAssetUseCase]: deletes several nodes from the server in a single request, then cleans up
+     * their local data the same way.
      *
      * There is no rollback: if the request fails midway, some of the nodes may still have been deleted. Their local data
      * is left untouched then, as there is no telling which ones; it's cleaned up when they are next refreshed and found
      * missing (see [RefreshCellAssetStateUseCase]).
      *
+     * @param permanentDelete false to move the nodes to the recycle bin, true to delete them for good, e.g. to clean up
+     * the recycle bin itself.
      * @return the result of the server request. Once it succeeded, local cleanup is best effort and doesn't fail the
      * operation: the nodes are deleted either way.
      */
-    public suspend operator fun invoke(nodes: List<NodeToDelete>): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(nodes: List<NodeToDelete>, permanentDelete: Boolean = false): Either<CoreFailure, Unit>
 }
 
 internal class DeleteCellAssetsUseCaseImpl(
@@ -53,9 +55,9 @@ internal class DeleteCellAssetsUseCaseImpl(
 
     private val localCleanup = CellAssetLocalCleanup(cellAttachmentsRepository, fileSystem, dispatchers)
 
-    override suspend fun invoke(nodes: List<NodeToDelete>): Either<CoreFailure, Unit> {
+    override suspend fun invoke(nodes: List<NodeToDelete>, permanentDelete: Boolean): Either<CoreFailure, Unit> {
         if (nodes.isEmpty()) return Unit.right()
-        return cellsRepository.deleteFiles(nodes.map { it.locator.path })
+        return cellsRepository.deleteFiles(nodes.map { it.locator.path }, permanentDelete)
             // Done for every node even if it fails for one of them, see the result contract above.
             .onSuccess { nodes.forEach { localCleanup(it.locator.uuid, it.localPath) } }
     }
