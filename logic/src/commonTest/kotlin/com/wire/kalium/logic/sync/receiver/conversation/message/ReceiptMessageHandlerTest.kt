@@ -26,16 +26,11 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.util.IgnoreIOS
-import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -62,7 +57,7 @@ class ReceiptMessageHandlerTest {
 
     private val receiptMessageHandler = ReceiptMessageHandlerImpl(
         SELF_USER_ID,
-        userDatabase.builder, NoOpPersistenceEventHookNotifier
+        userDatabase.builder
     )
 
     private suspend fun insertTestData() {
@@ -185,73 +180,6 @@ class ReceiptMessageHandlerTest {
     }
 
     @Test
-    fun givenReadReceipt_whenHandled_thenHookIsNotifiedForReadOnly() = runTest {
-        // given
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val handler = ReceiptMessageHandlerImpl(
-            SELF_USER_ID,
-            userDatabase.builder,
-            hookNotifier
-        )
-        insertTestData()
-        val date = DateTimeUtil.currentInstant()
-
-        val readContent = MessageContent.Receipt(type = ReceiptType.READ, messageIds = listOf(MESSAGE_ID))
-        handler.handle(
-            message = Message.Signaling(
-                id = "signalingId",
-                content = readContent,
-                conversationId = CONVERSATION_ID,
-                date = date,
-                senderUserId = OTHER_USER_ID,
-                senderClientId = ClientId("SomeClientId"),
-                status = Message.Status.Sent,
-                isSelfMessage = false,
-                expirationData = null
-            ),
-            messageContent = readContent
-        )
-
-        // then READ receipt should trigger hook
-        assertEquals(1, hookNotifier.readReceiptCalls.size)
-        val (data, selfUserId) = hookNotifier.readReceiptCalls.single()
-        assertEquals(CONVERSATION_ID, data.conversationId)
-        assertEquals(listOf(MESSAGE_ID), data.messageIds)
-        assertEquals(SELF_USER_ID, selfUserId)
-    }
-
-    @Test
-    fun givenDeliveredReceipt_whenHandled_thenHookIsNotNotified() = runTest {
-        // given
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val handler = ReceiptMessageHandlerImpl(
-            SELF_USER_ID,
-            userDatabase.builder,
-            hookNotifier
-        )
-        val date = DateTimeUtil.currentInstant()
-
-        val deliveredContent = MessageContent.Receipt(type = ReceiptType.DELIVERED, messageIds = listOf(MESSAGE_ID))
-        handler.handle(
-            message = Message.Signaling(
-                id = "signalingId",
-                content = deliveredContent,
-                conversationId = CONVERSATION_ID,
-                date = date,
-                senderUserId = OTHER_USER_ID,
-                senderClientId = ClientId("SomeClientId"),
-                status = Message.Status.Sent,
-                isSelfMessage = false,
-                expirationData = null
-            ),
-            messageContent = deliveredContent
-        )
-
-        // then DELIVERED receipt should NOT trigger hook
-        assertTrue(hookNotifier.readReceiptCalls.isEmpty())
-    }
-
-    @Test
     fun receiptReplayPreservesReadStatusAndOriginalReceiptDate() = runTest {
         insertTestData()
         val first = Instant.parse("2026-02-10T12:00:00Z")
@@ -289,19 +217,6 @@ class ReceiptMessageHandlerTest {
             ),
             messageContent = content
         )
-    }
-
-    private class RecordingPersistenceEventHookNotifier : PersistenceEventHookNotifier {
-        val readReceiptCalls = mutableListOf<Pair<ReadReceiptEventData, UserId>>()
-
-        override suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {
-            readReceiptCalls += data to selfUserId
-        }
-
-        override suspend fun onConversationLastReadPersisted(
-            data: ConversationLastReadEventData,
-            selfUserId: UserId
-        ) = Unit
     }
 
     private companion object {

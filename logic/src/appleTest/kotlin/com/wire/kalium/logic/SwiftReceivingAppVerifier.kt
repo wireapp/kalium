@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.GetMessageByIdUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.util.databaseSecurityHelper
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
@@ -49,6 +50,7 @@ import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlin.io.encoding.Base64
 import kotlin.test.assertNull
 import kotlin.test.assertEquals
@@ -83,32 +85,6 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
             val root = account.getValue("root").jsonPrimitive.content
             val user = UserId(account.getValue("userValue").jsonPrimitive.content, account.getValue("userDomain").jsonPrimitive.content)
             val keychain = ApplePersistenceConfig(account.getValue("service").jsonPrimitive.content, keychainAccessibility = null)
-            // Fixture app metadata is created here, under ownership, before app construction.
-            // This belongs to app fixture bootstrap; the NSE never opens this global database.
-            if (!afterProposal) {
-                val lease = assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(root).tryAcquire(user)).value
-                try {
-                    val prepared = checkNotNull(ApplePreparedAccountStore(root, user).read(lease))
-                    val configuration = prepared.serverConfig
-                    val links = configuration.links
-                    val database = globalDatabaseProvider(PlatformDatabaseData(StorageData.FileBacked("$root/global-storage")), Dispatchers.Default, null)
-                    try {
-                        database.serverConfigurationDAO.insert(ServerConfigurationDAO.InsertData(
-                            id = configuration.id, apiBaseUrl = links.api, accountBaseUrl = links.accounts,
-                            webSocketBaseUrl = links.webSocket, blackListUrl = links.blackList, teamsUrl = links.teams,
-                            websiteUrl = links.website, title = links.title, isOnPremises = links.isOnPremises,
-                            federation = configuration.metaData.federation, domain = user.domain, commonApiVersion = 8,
-                            apiProxyHost = null, apiProxyNeedsAuthentication = null, apiProxyPort = null,
-                        ))
-                        database.accountsDAO.insertOrReplace(user.toDao(), null, null, configuration.id, false, null, null)
-                        if (account["identityEvents"]?.jsonPrimitive?.boolean == true) database.accountsDAO.setCurrentAccount(user.toDao())
-                    } finally {
-                        database.close()
-                    }
-                } finally {
-                    lease.release()
-                }
-            }
             val logic = CoreLogic(
                 rootPath = root, keychainConfig = keychain, userAgent = "Swift-handoff-app-fixture",
                 kaliumConfigs = KaliumConfigs(
@@ -122,6 +98,34 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                 useInMemoryStorage = false,
             )
             try {
+                // Bootstrap account metadata under ownership using the app's encrypted global store.
+                // CoreLogic creates the key; close this bootstrap connection before opening the account.
+                if (!afterProposal) {
+                    val lease = assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(root).tryAcquire(user)).value
+                    try {
+                        val prepared = checkNotNull(ApplePreparedAccountStore(root, user).read(lease))
+                        val configuration = prepared.serverConfig
+                        val links = configuration.links
+                        val key = checkNotNull(databaseSecurityHelper(GlobalPrefProvider(keychain).passphraseStorage).globalDBSecretOrNull())
+                        val database = globalDatabaseProvider(
+                            PlatformDatabaseData(StorageData.FileBacked("$root/global-storage")), Dispatchers.Default, key, enableWAL = true)
+                        try {
+                            database.serverConfigurationDAO.insert(ServerConfigurationDAO.InsertData(
+                                id = configuration.id, apiBaseUrl = links.api, accountBaseUrl = links.accounts,
+                                webSocketBaseUrl = links.webSocket, blackListUrl = links.blackList, teamsUrl = links.teams,
+                                websiteUrl = links.website, title = links.title, isOnPremises = links.isOnPremises,
+                                federation = configuration.metaData.federation, domain = user.domain, commonApiVersion = 8,
+                                apiProxyHost = null, apiProxyNeedsAuthentication = null, apiProxyPort = null,
+                            ))
+                            database.accountsDAO.insertOrReplace(user.toDao(), null, null, configuration.id, false, null)
+                            if (account["identityEvents"]?.jsonPrimitive?.boolean == true) database.accountsDAO.setCurrentAccount(user.toDao())
+                        } finally {
+                            database.close()
+                        }
+                    } finally {
+                        lease.release()
+                    }
+                }
                 var session = logic.openSessionScope(user)
                 if (stress) {
                     val gate = args[2]

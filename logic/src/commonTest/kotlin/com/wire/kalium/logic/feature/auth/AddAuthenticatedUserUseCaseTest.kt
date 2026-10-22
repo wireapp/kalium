@@ -60,7 +60,6 @@ class AddAuthenticatedUserUseCaseTest {
         val tokens = TEST_AUTH_TOKENS
         val proxyCredentials = PROXY_CREDENTIALS
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(tokens.userId, Either.Right(false))
             .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, proxyCredentials, null, Either.Right(Unit))
             .withUpdateCurrentSessionResult(tokens.userId, Either.Right(Unit))
@@ -97,7 +96,6 @@ class AddAuthenticatedUserUseCaseTest {
         val proxyCredentials = PROXY_CREDENTIALS
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(tokens.userId, Either.Right(true))
             .arrange()
 
@@ -130,7 +128,6 @@ class AddAuthenticatedUserUseCaseTest {
     fun givenRetainedAccountWithMatchingIdpId_whenInvoked_thenSuccessIsReturned() = runTest {
         val retainedAccount = retainedAccount(ssoIdentityProviderId = TEST_IDP_ID)
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
             .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
             .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount))
@@ -163,7 +160,6 @@ class AddAuthenticatedUserUseCaseTest {
     fun givenRetainedAccountWithMatchingIdpIdAndChangedSsoIdentity_whenInvoked_thenSuccessIsReturned() = runTest {
         val retainedAccount = retainedAccount(ssoIdentityProviderId = TEST_IDP_ID)
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
             .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
             .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount))
@@ -196,7 +192,6 @@ class AddAuthenticatedUserUseCaseTest {
     fun givenRetainedAccountWithDifferentIdpId_whenInvoked_thenSsoIdentityChangedIsReturned() = runTest {
         val retainedAccount = retainedAccount(ssoIdentityProviderId = TEST_IDP_ID)
         val (_, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
             .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
             .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount))
@@ -212,7 +207,6 @@ class AddAuthenticatedUserUseCaseTest {
     @Test
     fun givenRetainedAccountWithoutIdpId_whenMultiIngressSsoUserLogsIn_thenSsoIdentityChangedIsReturned() = runTest {
         val (arrangement, addAuthenticatedUser) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
             .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
             .withFullAccountInfoResult(
@@ -235,7 +229,6 @@ class AddAuthenticatedUserUseCaseTest {
     @Test
     fun givenRetainedAccount_whenLoginHasNoIdpId_thenExistingFlowContinues() = runTest {
         val (arrangement, addAuthenticatedUser) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
             .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
             .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount(ssoIdentityProviderId = TEST_IDP_ID)))
@@ -262,7 +255,6 @@ class AddAuthenticatedUserUseCaseTest {
     @Test
     fun givenActiveAccountWithDifferentIdpId_whenInvoked_thenUserAlreadyExistsIsReturned() = runTest {
         val (_, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(TEST_USERID, Either.Right(true))
             .arrange()
 
@@ -289,7 +281,6 @@ class AddAuthenticatedUserUseCaseTest {
         val proxyCredentials = PROXY_CREDENTIALS
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
             .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, proxyCredentials, null, Either.Right(Unit))
             .withUpdateCurrentSessionResult(newSession.userId, Either.Right(Unit))
@@ -356,7 +347,6 @@ class AddAuthenticatedUserUseCaseTest {
         val proxyCredentials = PROXY_CREDENTIALS
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
             .withConfigForUserIdSuccess(oldSession.userId.toDao(), oldSessionServerEntity)
             .withConfigByIdSuccess(newSessionServer.id, newSessionServerEntity)
@@ -395,133 +385,6 @@ class AddAuthenticatedUserUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configById(any())
         }
-    }
-
-    @Test
-    fun givenNomadServiceUrl_whenInvoked_thenItIsPassedToSessionStorage() = runTest {
-        val tokens = TEST_AUTH_TOKENS
-        val proxyCredentials = PROXY_CREDENTIALS
-        val nomadServiceUrl = "https://nomad.example.com/service"
-
-        val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withAllValidSessionsResult(Either.Right(emptyList()))
-            .withDoesValidSessionExistResult(tokens.userId, Either.Right(false))
-            .withStoreSessionResult(
-                serverConfigId = TEST_SERVER_CONFIG.id,
-                ssoId = TEST_SSO_ID,
-                accountTokens = tokens,
-                proxyCredentials = proxyCredentials,
-                result = Either.Right(Unit),
-                nomadServiceUrl = nomadServiceUrl
-            )
-            .withUpdateCurrentSessionResult(tokens.userId, Either.Right(Unit))
-            .arrange()
-
-        val actual = addAuthenticatedUserUseCase(
-            session = StoreSessionParam(
-                serverConfigId = TEST_SERVER_CONFIG.id,
-                ssoId = TEST_SSO_ID,
-                accountTokens = tokens,
-                proxyCredentials = proxyCredentials,
-                managedBy = null,
-                isPersistentWebSocketEnabled = false,
-                nomadServiceUrl = nomadServiceUrl,
-            )
-        )
-
-        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.storeSession(
-                StoreSessionParam(
-                    serverConfigId = TEST_SERVER_CONFIG.id,
-                    ssoId = TEST_SSO_ID,
-                    accountTokens = tokens,
-                    proxyCredentials = proxyCredentials,
-                    managedBy = null,
-                    isPersistentWebSocketEnabled = false,
-                    nomadServiceUrl = nomadServiceUrl,
-                )
-            )
-        }
-    }
-
-    @Test
-    fun givenNomadSessionAndExistingValidSessions_whenInvoked_thenNomadSingleUserViolationIsReturned() = runTest {
-        val tokens = TEST_AUTH_TOKENS
-        val proxyCredentials = PROXY_CREDENTIALS
-
-        val (_, addAuthenticatedUserUseCase) = Arrangement()
-            .withAllValidSessionsResult(Either.Right(listOf(AccountInfo.Valid(UserId("other", "domain.de")))))
-            .arrange()
-
-        val actual = addAuthenticatedUserUseCase(
-            session = StoreSessionParam(
-                serverConfigId = TEST_SERVER_CONFIG.id,
-                ssoId = TEST_SSO_ID,
-                accountTokens = tokens,
-                proxyCredentials = proxyCredentials,
-                managedBy = null,
-                isPersistentWebSocketEnabled = false,
-                nomadServiceUrl = "https://nomad.example.com/service",
-            )
-        )
-
-        assertIs<AddAuthenticatedUserUseCase.Result.Failure.NomadSingleUserViolation>(actual)
-    }
-
-    @Test
-    fun givenNormalSessionAndNomadAccountExists_whenInvoked_thenNomadSingleUserViolationIsReturned() = runTest {
-        val tokens = TEST_AUTH_TOKENS
-        val proxyCredentials = PROXY_CREDENTIALS
-
-        val (_, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(true))
-            .arrange()
-
-        val actual = addAuthenticatedUserUseCase(
-            session = StoreSessionParam(
-                serverConfigId = TEST_SERVER_CONFIG.id,
-                ssoId = TEST_SSO_ID,
-                accountTokens = tokens,
-                proxyCredentials = proxyCredentials,
-                managedBy = null,
-                isPersistentWebSocketEnabled = false,
-            )
-        )
-
-        assertIs<AddAuthenticatedUserUseCase.Result.Failure.NomadSingleUserViolation>(actual)
-    }
-
-    @Test
-    fun givenNomadSessionAndNoExistingSessions_whenInvoked_thenSuccessIsReturned() = runTest {
-        val tokens = TEST_AUTH_TOKENS
-        val proxyCredentials = PROXY_CREDENTIALS
-        val nomadServiceUrl = "https://nomad.example.com/service"
-
-        val (_, addAuthenticatedUserUseCase) = Arrangement()
-            .withAllValidSessionsResult(Either.Right(emptyList()))
-            .withDoesValidSessionExistResult(tokens.userId, Either.Right(false))
-            .withStoreSessionResult(
-                TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, proxyCredentials, null, Either.Right(Unit),
-                nomadServiceUrl = nomadServiceUrl
-            )
-            .withUpdateCurrentSessionResult(tokens.userId, Either.Right(Unit))
-            .arrange()
-
-        val actual = addAuthenticatedUserUseCase(
-            session = StoreSessionParam(
-                serverConfigId = TEST_SERVER_CONFIG.id,
-                ssoId = TEST_SSO_ID,
-                accountTokens = tokens,
-                proxyCredentials = proxyCredentials,
-                managedBy = null,
-                isPersistentWebSocketEnabled = false,
-                nomadServiceUrl = nomadServiceUrl,
-            )
-        )
-
-        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
     }
 
     private companion object {
@@ -606,12 +469,6 @@ class AddAuthenticatedUserUseCaseTest {
             everySuspend { sessionRepository.allValidSessions() } returns (result)
         }
 
-        suspend fun withDoesValidNomadAccountExistResult(
-            result: Either<StorageFailure, Boolean>
-        ) = apply {
-            everySuspend { sessionRepository.doesValidNomadAccountExist() } returns (result)
-        }
-
         suspend fun withConfigForUserIdSuccess(
             userId: UserIDEntity,
             result: ServerConfigEntity
@@ -641,7 +498,6 @@ class AddAuthenticatedUserUseCaseTest {
             managedBy: SsoManagedBy? = null,
             result: Either<StorageFailure, Unit>,
             isPersistentWebSocketEnabled: Boolean = false,
-            nomadServiceUrl: String? = null,
             ssoIdentityProviderId: String? = null,
         ) = apply {
             everySuspend {
@@ -653,7 +509,6 @@ class AddAuthenticatedUserUseCaseTest {
                         proxyCredentials = proxyCredentials,
                         managedBy = managedBy,
                         isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
-                        nomadServiceUrl = nomadServiceUrl,
                         ssoIdentityProviderId = ssoIdentityProviderId,
                     )
                 )

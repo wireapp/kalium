@@ -24,9 +24,6 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import kotlin.time.Instant
 
 /**
@@ -59,8 +56,6 @@ public sealed class MarkConversationAsReadResult {
 
 internal class MarkConversationAsReadLocallyUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
-    private val selfUserId: UserId,
     private val logger: KaliumLogger = kaliumLogger,
 ) : MarkConversationAsReadLocallyUseCase {
 
@@ -72,10 +67,6 @@ internal class MarkConversationAsReadLocallyUseCaseImpl internal constructor(
             { failure -> MarkConversationAsReadResult.Failure(failure) },
             { hasUnreadEvents ->
                 logger.d("Persisted local last-read for '${conversationId.toLogString()}' at $time")
-                persistenceEventHookNotifier.onConversationLastReadPersisted(
-                    ConversationLastReadEventData(conversationId, time),
-                    selfUserId
-                )
                 MarkConversationAsReadResult.Success(hasUnreadEvents)
             }
         )

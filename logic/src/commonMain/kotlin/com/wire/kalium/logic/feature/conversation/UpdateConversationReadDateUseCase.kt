@@ -39,8 +39,6 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
@@ -65,7 +63,6 @@ public class UpdateConversationReadDateUseCase internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
     private val workQueue: ConversationWorkQueue,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val logger: KaliumLogger = kaliumLogger
 ) {
 
@@ -139,10 +136,6 @@ public class UpdateConversationReadDateUseCase internal constructor(
         withContext(NonCancellable) {
             conversationRepository.updateConversationReadDate(conversationId, time).onSuccess {
                 logger.d("Persisted last-read for '${conversationId.toLogString()}' at $time")
-                persistenceEventHookNotifier.onConversationLastReadPersisted(
-                    ConversationLastReadEventData(conversationId, time),
-                    selfUserId
-                )
             }
         }
     }

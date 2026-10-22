@@ -24,8 +24,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.ReactionEventData
 import kotlin.time.Instant
 
 internal interface PersistReactionUseCase {
@@ -39,8 +37,6 @@ internal interface PersistReactionUseCase {
 
 internal class PersistReactionUseCaseImpl(
     private val reactionRepository: ReactionRepository,
-    private val selfUserId: UserId,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
 ) : PersistReactionUseCase {
     override suspend operator fun invoke(
         reaction: MessageContent.Reaction,
@@ -55,11 +51,6 @@ internal class PersistReactionUseCaseImpl(
             senderUserId,
             date,
             emojiSet
-        ).also {
-            persistenceEventHookNotifier.onReactionPersisted(
-                ReactionEventData(conversationId, reaction.messageId, date),
-                selfUserId
-            )
-        }
+        )
     }
 }

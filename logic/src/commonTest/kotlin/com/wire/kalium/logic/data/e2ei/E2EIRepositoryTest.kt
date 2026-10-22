@@ -47,7 +47,6 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.utils.NetworkResponse
@@ -735,9 +734,7 @@ class E2EIRepositoryTest {
                 mlsClientProvider = mlsClientProvider,
                 currentClientIdProvider = currentClientIdProvider,
                 mlsConversationRepository = mlsConversationRepository,
-                userConfigRepository = userConfigRepository,
-                selfUserId = TestUser.SELF.id,
-                cryptoStateChangeHookNotifier = NoOpCryptoStateChangeHookNotifier
+                userConfigRepository = userConfigRepository
             )
         }
     }

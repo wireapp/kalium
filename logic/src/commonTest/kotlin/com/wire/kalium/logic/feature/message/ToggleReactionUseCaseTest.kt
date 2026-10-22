@@ -43,7 +43,6 @@ import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.matching
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -190,7 +189,6 @@ class ToggleReactionUseCaseTest {
         val currentClientIdProvider: CurrentClientIdProvider = CurrentClientIdProvider { Either.Right(TEST_CURRENT_CLIENT) }
         val slowSyncRepository: SlowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
         val messageSender: MessageSender = mock<MessageSender>(mode = MockMode.autoUnit)
-        val persistenceEventHookNotifier: PersistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         fun withSlowSyncCompleted() = apply {
             every {
@@ -210,7 +208,6 @@ class ToggleReactionUseCaseTest {
             slowSyncRepository,
             reactionRepository,
             messageSender,
-            persistenceEventHookNotifier,
             dispatcher
         ).also {
             withSlowSyncCompleted()

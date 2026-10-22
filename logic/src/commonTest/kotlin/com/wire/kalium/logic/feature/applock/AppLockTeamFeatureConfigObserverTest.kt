@@ -43,7 +43,6 @@ internal class AppLockTeamFeatureConfigObserverTest {
     fun givenRepositoryFailure_whenObservingAppLock_thenEmitNull() = runTest {
         val (arrangement, observer) = Arrangement()
             .withFailure()
-            .withNomadServiceUrl(null)
             .arrange()
 
         assertNull(observer.invoke().first())
@@ -62,7 +61,6 @@ internal class AppLockTeamFeatureConfigObserverTest {
         )
         val (arrangement, observer) = Arrangement()
             .withSuccess()
-            .withNomadServiceUrl(null)
             .arrange()
 
         assertEquals(expectedAppLockValue, observer.invoke().first())
@@ -72,24 +70,9 @@ internal class AppLockTeamFeatureConfigObserverTest {
         }
     }
 
-    @Test
-    fun givenSelfIsNomad_whenObservingAppLock_thenEmitNullRegardlessOfTeamConfig() = runTest {
-        val (arrangement, observer) = Arrangement()
-            .withSuccess()
-            .withNomadServiceUrl("https://nomad.service.url")
-            .arrange()
-
-        assertNull(observer.invoke().first())
-
-        verify(VerifyMode.exactly(0)) {
-            arrangement.userConfigRepository.observeAppLockConfig()
-        }
-    }
-
     private class Arrangement {
 
         val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
-        private var nomadServiceUrl: String? = null
 
         fun withFailure(): Arrangement = apply {
             every {
@@ -103,13 +86,8 @@ internal class AppLockTeamFeatureConfigObserverTest {
             } returns flowOf(Either.Right(appLockTeamConfig))
         }
 
-        fun withNomadServiceUrl(nomadServiceUrl: String?): Arrangement = apply {
-            this.nomadServiceUrl = nomadServiceUrl
-        }
-
         fun arrange() = this to AppLockTeamFeatureConfigObserverImpl(
-            userConfigRepository = userConfigRepository,
-            nomadServiceUrl = nomadServiceUrl,
+            userConfigRepository = userConfigRepository
         )
     }
 

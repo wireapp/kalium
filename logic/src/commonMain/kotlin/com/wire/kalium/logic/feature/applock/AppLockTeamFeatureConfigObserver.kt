@@ -21,14 +21,10 @@ import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /**
  * Observes the team app lock feature flag.
- *
- * Nomad accounts are not subject to team-enforced app lock, so when the self user is
- * a nomad account this observer emits `null` regardless of the team configuration.
  */
 public interface AppLockTeamFeatureConfigObserver {
     public operator fun invoke(): Flow<AppLockTeamConfig?>
@@ -36,14 +32,9 @@ public interface AppLockTeamFeatureConfigObserver {
 
 internal class AppLockTeamFeatureConfigObserverImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
-    private val nomadServiceUrl: String?,
 ) : AppLockTeamFeatureConfigObserver {
     override fun invoke(): Flow<AppLockTeamConfig?> =
-        if (!nomadServiceUrl.isNullOrBlank()) {
-            flowOf(null)
-        } else {
-            userConfigRepository.observeAppLockConfig().map {
-                it.nullableFold({ null }, { it })
-            }
+        userConfigRepository.observeAppLockConfig().map {
+            it.nullableFold({ null }, { it })
         }
 }
