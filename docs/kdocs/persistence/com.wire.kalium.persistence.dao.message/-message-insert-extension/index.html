@@ -38,7 +38,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">6181d30
+        <div class="library-version" id="library-version">c212b73
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
@@ -130,32 +130,17 @@
               </div>
             </div>
           </div>
-<a data-name="-2979216%2FFunctions%2F-1025503334" anchor-label="isValidAssetMessageUpdate" id="-2979216%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+<a data-name="148841181%2FFunctions%2F-1025503334" anchor-label="updateAssetMessageIfValid" id="148841181%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="is-valid-asset-message-update.html"><span>is</span><wbr><span>Valid</span><wbr><span>Asset</span><wbr><span>Message</span><wbr><span><span>Update</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2979216%2FFunctions%2F-1025503334"></span>
+                  <div><a href="update-asset-message-if-valid.html"><span>update</span><wbr><span>Asset</span><wbr><span>Message</span><wbr><span>If</span><wbr><span><span>Valid</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="148841181%2FFunctions%2F-1025503334"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="is-valid-asset-message-update.html"><span class="token function">isValidAssetMessageUpdate</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><a href="../-message-entity/index.html">MessageEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div><div class="brief "><p class="paragraph">Returns true if the <a href="is-valid-asset-message-update.html">message</a> is an asset message that is already in the DB and any of its decryption keys are null/empty. This means that this asset message that is in the DB was only a preview message with valid metadata but no valid keys (Web clients send 2 separated messages). Therefore, it still needs to be updated with the valid keys in order to be displayed.</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-1863784438%2FFunctions%2F-1025503334" anchor-label="updateAssetMessage" id="-1863784438%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
-          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="update-asset-message.html"><span>update</span><wbr><span>Asset</span><wbr><span><span>Message</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1863784438%2FFunctions%2F-1025503334"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="update-asset-message.html"><span class="token function">updateAssetMessage</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><a href="../-message-entity/index.html">MessageEntity</a></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="update-asset-message-if-valid.html"><span class="token function">updateAssetMessageIfValid</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><a href="../-message-entity/index.html">MessageEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div><div class="brief "><p class="paragraph">Updates an existing asset from the same sender, returning whether a valid follow-up was applied.</p></div></div></div>
                 </div>
               </div>
             </div>
