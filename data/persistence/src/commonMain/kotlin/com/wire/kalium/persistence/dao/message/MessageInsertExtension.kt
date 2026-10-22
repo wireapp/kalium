@@ -17,11 +17,9 @@
  */
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
-import app.cash.sqldelight.async.coroutines.await
-
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
@@ -38,19 +36,12 @@ import kotlin.time.Instant
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =
     assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
 
-internal fun ByteArray?.isNullOrEmpty() = this?.isEmpty() ?: true
-
 /**
  * Explaining that this is mainly used to share a bit of logic between MessageDAO and MigrationDAO
  */
 internal interface MessageInsertExtension {
-    /**
-     * Returns true if the [message] is an asset message that is already in the DB and any of its decryption keys are null/empty. This means
-     * that this asset message that is in the DB was only a preview message with valid metadata but no valid keys (Web clients send 2
-     * separated messages). Therefore, it still needs to be updated with the valid keys in order to be displayed.
-     */
-    suspend fun isValidAssetMessageUpdate(message: MessageEntity): Boolean
-    suspend fun updateAssetMessage(message: MessageEntity)
+    /** Updates an existing asset from the same sender, returning whether a valid follow-up was applied. */
+    suspend fun updateAssetMessageIfValid(message: MessageEntity): Boolean
     fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType
     suspend fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean = true)
 }
@@ -68,76 +59,64 @@ internal class MessageInsertExtensionImpl(
 ) : MessageInsertExtension {
 
     @Suppress("ReturnCount", "CyclomaticComplexMethod")
-    override suspend fun isValidAssetMessageUpdate(message: MessageEntity): Boolean {
+    override suspend fun updateAssetMessageIfValid(message: MessageEntity): Boolean {
         if (message !is MessageEntity.Regular) return false
         val content = message.content as? MessageEntityContent.Asset ?: return false
         if (!content.hasValidRemoteData() && content.assetPreview == null) return false
-        return messagesQueries.selectById(message.id, message.conversationId).awaitAsList().firstOrNull()?.let {
-            val sameSender = message.senderUserId == it.senderUserId && message.senderClientId == it.senderClientId
-            val missingOriginal = it.assetId.isNullOrEmpty() || it.assetOtrKey.isNullOrEmpty() || it.assetSha256.isNullOrEmpty()
-            sameSender && (
-                (content.hasValidRemoteData() && missingOriginal) ||
-                    (
-                        content.assetPreview != null && content.assetId == it.assetId &&
-                            content.assetPreview != it.toAssetPreviewEntity()
-                        )
-                )
-        } ?: false
-    }
-
-    override suspend fun updateAssetMessage(message: MessageEntity) {
-        if (message.content !is MessageEntityContent.Asset) {
-            return
-        }
-        val assetMessageContent = message.content as MessageEntityContent.Asset
-        val existingOriginalIsComplete = messagesQueries.selectById(message.id, message.conversationId).awaitAsList().firstOrNull()?.let {
-            !it.assetId.isNullOrEmpty() && !it.assetOtrKey.isNullOrEmpty() && !it.assetSha256.isNullOrEmpty()
-        } ?: false
-        with(assetMessageContent) {
-            if (!hasValidRemoteData() || existingOriginalIsComplete) {
-                messagesQueries.updateAssetPreviewContent(
+        // Read only the identity and asset fields, once, while the caller owns the write transaction.
+        val existing = messagesQueries.selectAssetMessageUpdateState(message.id, message.conversationId).awaitAsOneOrNull()
+            ?: return false
+        if (message.senderUserId != existing.sender_user_id || message.senderClientId != existing.sender_client_id) return false
+        val missingOriginal = existing.asset_id.isEmpty() || existing.asset_otr_key.isEmpty() || existing.asset_sha256.isEmpty()
+        val updateOriginal = content.hasValidRemoteData() && missingOriginal
+        val updatePreview = content.assetPreview != null && content.assetId == existing.asset_id &&
+            content.assetPreview != assetPreviewEntity(
+                existing.preview_asset_mime_type, existing.preview_asset_size,
+                existing.preview_asset_width, existing.preview_asset_height,
+                existing.preview_asset_id, existing.preview_asset_domain, existing.preview_asset_token,
+                existing.preview_asset_otr_key, existing.preview_asset_sha256, existing.preview_asset_encryption_algorithm,
+            )
+        if (!updateOriginal && !updatePreview) return false
+        with(content) {
+            if (updateOriginal) {
+                // Completed originals are immutable; only an incomplete original may be filled in.
+                messagesQueries.updateAssetContent(
                     messageId = message.id,
                     conversationId = message.conversationId,
-                    assetPreviewMimeType = assetPreview?.mimeType,
-                    assetPreviewSize = assetPreview?.size,
-                    assetPreviewWidth = assetPreview?.width,
-                    assetPreviewHeight = assetPreview?.height,
-                    assetPreviewId = assetPreview?.id,
-                    assetPreviewDomain = assetPreview?.domain,
-                    assetPreviewToken = assetPreview?.token,
-                    assetPreviewOtrKey = assetPreview?.otrKey,
-                    assetPreviewSha256 = assetPreview?.sha256,
-                    assetPreviewEncryptionAlgorithm = assetPreview?.encryptionAlgorithm,
-                )
-                return
+                    visibility = message.visibility,
+                    assetId = assetId,
+                    assetDomain = assetDomain,
+                    assetToken = assetToken,
+                    assetSize = assetSizeInBytes,
+                    assetMimeType = assetMimeType,
+                    assetName = assetName,
+                    assetOtrKey = assetOtrKey,
+                    assetSha256 = assetSha256Key,
+                    assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+                    assetNormalizedLoudness = assetNormalizedLoudness,
+                ).await()
             }
-            // This will ONLY update the VISIBILITY of the original base message and all the asset content related fields
-            messagesQueries.updateAssetContent(
-                messageId = message.id,
-                conversationId = message.conversationId,
-                visibility = message.visibility,
-                assetId = assetId,
-                assetDomain = assetDomain,
-                assetToken = assetToken,
-                assetSize = assetSizeInBytes,
-                assetMimeType = assetMimeType,
-                assetName = assetName,
-                assetOtrKey = assetOtrKey,
-                assetSha256 = assetSha256Key,
-                assetEncryptionAlgorithm = assetEncryptionAlgorithm,
-                assetNormalizedLoudness = assetNormalizedLoudness,
-                assetPreviewMimeType = assetPreview?.mimeType,
-                assetPreviewSize = assetPreview?.size,
-                assetPreviewWidth = assetPreview?.width,
-                assetPreviewHeight = assetPreview?.height,
-                assetPreviewId = assetPreview?.id,
-                assetPreviewDomain = assetPreview?.domain,
-                assetPreviewToken = assetPreview?.token,
-                assetPreviewOtrKey = assetPreview?.otrKey,
-                assetPreviewSha256 = assetPreview?.sha256,
-                assetPreviewEncryptionAlgorithm = assetPreview?.encryptionAlgorithm,
-            ).await()
+            // An original-only continuation must retain any preview that arrived first.
+            if (assetPreview != null) updateAssetPreview(message, assetPreview)
         }
+        return true
+    }
+
+    private suspend fun updateAssetPreview(message: MessageEntity, preview: AssetPreviewEntity) {
+        messagesQueries.updateAssetPreviewContent(
+            messageId = message.id,
+            conversationId = message.conversationId,
+            assetPreviewMimeType = preview.mimeType,
+            assetPreviewSize = preview.size,
+            assetPreviewWidth = preview.width,
+            assetPreviewHeight = preview.height,
+            assetPreviewId = preview.id,
+            assetPreviewDomain = preview.domain,
+            assetPreviewToken = preview.token,
+            assetPreviewOtrKey = preview.otrKey,
+            assetPreviewSha256 = preview.sha256,
+            assetPreviewEncryptionAlgorithm = preview.encryptionAlgorithm,
+        )
     }
 
     override suspend fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean) {

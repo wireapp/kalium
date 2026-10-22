@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.logic.data.asset.distinctRemoteAssets
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
@@ -55,8 +56,7 @@ internal class DeleteMessageHandlerImpl internal constructor(
                 if (notify) notificationEventsManager.scheduleDeleteMessageNotification(messageToRemove)
                 if (deletion != ReceivedMessageDeletion.NONE) {
                     val assetContent = (messageToRemove.content as? MessageContent.Asset)?.value
-                    listOfNotNull(assetContent?.remoteData, assetContent?.preview?.remoteData)
-                        .distinctBy { it.assetId to it.assetDomain.orEmpty() }
+                    assetContent.distinctRemoteAssets()
                         .forEach { asset ->
                             assetRepository.deleteAssetLocally(asset.assetId, asset.assetDomain).onFailure {
                                 kaliumLogger.w("Deleted message asset cleanup failed: $it")

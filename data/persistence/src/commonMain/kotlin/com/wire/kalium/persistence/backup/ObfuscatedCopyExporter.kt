@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.backup
 
+import app.cash.sqldelight.async.coroutines.await
+import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
@@ -168,19 +170,7 @@ class ObfuscatedCopyExporter internal constructor(
                 0
             )
 
-            plainDBDriver.execute(
-                null,
-                "UPDATE MessageAssetContent " +
-                        "SET " +
-                        "  asset_sha256 = CASE " +
-                        "                   WHEN asset_sha256 IS NOT NULL " +
-                        "                   THEN randomblob(length(asset_sha256)) " +
-                        "                   ELSE NULL " +
-                        "                 END " +
-                        "WHERE asset_otr_key IS NOT NULL " +
-                        "   OR asset_sha256 IS NOT NULL;",
-                0
-            )
+            obfuscateAssetContent(plainDBDriver)
 
             plainDBDriver.execute(
                 null,
@@ -207,4 +197,26 @@ class ObfuscatedCopyExporter internal constructor(
         // THIS MUST MATCH THE PLAIN DATABASE ALIAS IN DumpContent.sq DO NOT CHANGE
         const val OBFUSCATED_PLAIN_DB = "obfuscated_plain_db"
     }
+}
+
+/** Destroy preview download credentials and decryption material while retaining absent-column structure. */
+internal suspend fun obfuscateAssetContent(driver: SqlDriver) {
+    driver.execute(
+        null,
+        """
+        UPDATE MessageAssetContent SET
+            asset_sha256 = CASE WHEN asset_sha256 IS NOT NULL THEN randomblob(length(asset_sha256)) ELSE NULL END,
+            preview_asset_otr_key = CASE WHEN preview_asset_otr_key IS NOT NULL
+                THEN randomblob(length(preview_asset_otr_key)) ELSE NULL END,
+            preview_asset_sha256 = CASE WHEN preview_asset_sha256 IS NOT NULL
+                THEN randomblob(length(preview_asset_sha256)) ELSE NULL END,
+            preview_asset_id = CASE WHEN preview_asset_id IS NOT NULL
+                THEN substr(hex(randomblob(length(preview_asset_id))), 1, length(preview_asset_id)) ELSE NULL END,
+            preview_asset_token = CASE WHEN preview_asset_token IS NOT NULL
+                THEN substr(hex(randomblob(length(preview_asset_token))), 1, length(preview_asset_token)) ELSE NULL END,
+            preview_asset_domain = CASE WHEN preview_asset_domain IS NOT NULL
+                THEN substr(hex(randomblob(length(preview_asset_domain))), 1, length(preview_asset_domain)) ELSE NULL END
+        """.trimIndent(),
+        0,
+    ).await()
 }

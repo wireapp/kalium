@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.data.asset
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
@@ -27,11 +30,15 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import com.wire.kalium.util.getExtensionFromMimeType
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -40,23 +47,29 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
+import io.ktor.utils.io.ByteReadChannel
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
+import okio.IOException
 import okio.Path.Companion.toPath
 import okio.Sink
 import okio.buffer
 import okio.use
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
 
 class AssetPreviewRepositoryTest {
     @Test
@@ -64,6 +77,29 @@ class AssetPreviewRepositoryTest {
         val fixture = Fixture()
 
         fixture.repository.fetchPreviewAsset(fixture.preview.copy(sizeInBytes = MAX_SIZE + 1)).shouldFail()
+
+        verifySuspend(VerifyMode.exactly(0)) {
+            fixture.api.downloadAsset(any(), any(), any(), any())
+            fixture.dao.getAssetByKey(any())
+            fixture.dao.insertAsset(any())
+        }
+        fixture.assertNoDownloadFiles()
+    }
+
+    @Test
+    fun malformedPreviewIsRejectedBeforeTouchingCacheOrNetwork() = runTest {
+        val fixture = Fixture()
+        val preview = fixture.preview
+        val malformed = listOf(
+            preview.copy(mimeType = "video/mp4"),
+            preview.copy(width = 0),
+            preview.copy(height = AssetContent.Preview.MAX_DIMENSION + 1),
+            preview.copy(remoteData = preview.remoteData.copy(otrKey = ByteArray(31))),
+            preview.copy(remoteData = preview.remoteData.copy(sha256 = ByteArray(31))),
+            preview.copy(remoteData = preview.remoteData.copy(assetId = "")),
+        )
+
+        for (invalid in malformed) fixture.repository.fetchPreviewAsset(invalid).shouldFail()
 
         verifySuspend(VerifyMode.exactly(0)) {
             fixture.api.downloadAsset(any(), any(), any(), any())
@@ -91,6 +127,83 @@ class AssetPreviewRepositoryTest {
         assertTrue(bytesWritten in 1..MAX_ENCRYPTED_SIZE)
         assertTrue(bytesWritten < 1024 * 8192L)
         fixture.assertNothingPersisted()
+    }
+
+    @Test
+    fun productionApiWrappedSizeLimitReturnsStorageFailureInsteadOfNoNetwork() = runTest {
+        val engine = MockEngine {
+            respond(ByteReadChannel(ByteArray(MAX_ENCRYPTED_SIZE.toInt() + 8192)), HttpStatusCode.OK)
+        }
+        val session = mock<SessionManager>()
+        every { session.serverConfig() } returns newServerConfigDTO(1)
+        every { session.proxyCredentials() } returns null
+        everySuspend { session.session() } returns null
+        val container = AuthenticatedNetworkContainer.create(
+            session, com.wire.kalium.network.api.model.UserId("self", "domain"), "test", emptyMap(),
+            engine, null, kaliumLogger,
+        )
+        try {
+            val fixture = Fixture(container.assetApi)
+
+            fixture.repository.fetchPreviewAsset(fixture.preview.copy(sizeInBytes = 1)).shouldFail {
+                assertIs<StorageFailure.Generic>(it)
+            }
+
+            fixture.assertNothingPersisted()
+        } finally {
+            container.close()
+            engine.close()
+        }
+    }
+
+    @Test
+    fun failedConcurrentOriginalDownloadCannotDeleteSharedDecodedFileBeforeWinnerPersists() = runTest {
+        val fixture = Fixture()
+        val preview = fixture.withEncryptedDownload(1024)
+        val firstDecoded = CompletableDeferred<Unit>()
+        val persistFirst = CompletableDeferred<Unit>()
+        var inserts = 0
+        everySuspend { fixture.dao.insertAsset(any()) } calls { invocation ->
+            if (++inserts == 1) {
+                firstDecoded.complete(Unit)
+                persistFirst.await()
+                fixture.stored = invocation.args[0] as AssetEntity
+            } else throw IOException("second download failed before persistence")
+        }
+        suspend fun downloadOriginal() = fixture.repository.fetchPrivateDecodedAsset(
+            assetId = preview.remoteData.assetId,
+            assetDomain = preview.remoteData.assetDomain,
+            assetName = "video.mp4",
+            mimeType = "video/mp4",
+            assetToken = null,
+            encryptionKey = AES256Key(preview.remoteData.otrKey),
+            assetSHA256Key = SHA256Key(preview.remoteData.sha256),
+            downloadIfNeeded = true,
+        )
+        val first = async { downloadOriginal() }
+        firstDecoded.await()
+
+        downloadOriginal().shouldFail()
+        persistFirst.complete(Unit)
+
+        first.await().shouldSucceed {
+            assertTrue(fixture.files.exists(it.path))
+            assertEquals(1024L, fixture.files.size(it.path))
+        }
+        assertEquals(2, inserts)
+        assertTrue(fixture.files.listDirectories(fixture.files.rootCachePath).isEmpty())
+    }
+
+    @Test
+    fun downloadedPreviewExtensionMatchesMimeType() = runTest {
+        for (mimeType in listOf("image/jpeg", "image/png", "image/gif", "image/webp")) {
+            val fixture = Fixture()
+            val preview = fixture.withEncryptedDownload(1024).copy(mimeType = mimeType)
+
+            fixture.repository.fetchPreviewAsset(preview).shouldSucceed {
+                assertEquals(getExtensionFromMimeType(mimeType), it.path.name.substringAfterLast('.'))
+            }
+        }
     }
 
     @Test
@@ -349,9 +462,8 @@ class AssetPreviewRepositoryTest {
         }
     }
 
-    private class Fixture {
+    private class Fixture(val api: AssetApi = mock<AssetApi>()) {
         val files = FakeKaliumFileSystem()
-        val api = mock<AssetApi>()
         val dao = mock<AssetDAO>()
         private val key = generateRandomAES256Key()
         val preview = AssetContent.Preview(

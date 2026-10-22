@@ -587,7 +587,7 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
 
     UPDATE OR ROLLBACK MessageAssetContent
-    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm, asset_normalized_loudness = :assetNormalizedLoudness, preview_asset_mime_type = :assetPreviewMimeType, preview_asset_size = :assetPreviewSize, preview_asset_width = :assetPreviewWidth, preview_asset_height = :assetPreviewHeight, preview_asset_id = :assetPreviewId, preview_asset_domain = :assetPreviewDomain, preview_asset_token = :assetPreviewToken, preview_asset_otr_key = :assetPreviewOtrKey, preview_asset_sha256 = :assetPreviewSha256, preview_asset_encryption_algorithm = :assetPreviewEncryptionAlgorithm
+    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm, asset_normalized_loudness = :assetNormalizedLoudness
     WHERE message_id = :messageId AND conversation_id = :conversationId;
 }
 
@@ -612,6 +612,19 @@ SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
 selectConversationIdsByMessageId:
 SELECT conversation_id FROM Message WHERE id = :messageId;
+
+-- Indexed identity/asset lookup for a continuation; avoid MessageDetailsView's aggregated joins.
+selectAssetMessageUpdateState:
+SELECT Message.sender_user_id, Message.sender_client_id,
+       Asset.asset_id, Asset.asset_otr_key, Asset.asset_sha256,
+       Asset.preview_asset_mime_type, Asset.preview_asset_size,
+       Asset.preview_asset_width, Asset.preview_asset_height,
+       Asset.preview_asset_id, Asset.preview_asset_domain, Asset.preview_asset_token,
+       Asset.preview_asset_otr_key, Asset.preview_asset_sha256, Asset.preview_asset_encryption_algorithm
+FROM Message
+JOIN MessageAssetContent AS Asset ON Asset.message_id = Message.id AND Asset.conversation_id = Message.conversation_id
+WHERE Message.id = :messageId AND Message.conversation_id = :conversationId
+AND Message.visibility IS NOT 'DELETED';
 
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;

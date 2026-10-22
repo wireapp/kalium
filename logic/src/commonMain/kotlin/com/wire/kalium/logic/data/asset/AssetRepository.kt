@@ -26,8 +26,8 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.utils.AES256Key
@@ -36,6 +36,8 @@ import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.decryptFileWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.hasValidPendingData
+import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.fileExtension
@@ -43,18 +45,18 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.util.getExtensionFromMimeType
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withContext
 import okio.Buffer
 import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
 import okio.use
-import kotlin.uuid.Uuid
 
 internal interface AssetRepository {
     /**
@@ -114,6 +116,14 @@ internal interface AssetRepository {
         decodedDataPath: Path,
         assetDataSize: Long,
         extension: String?
+    ): Either<CoreFailure, Path>
+
+    /** Copies a caller-owned preview into the cache without ever deleting the source. */
+    suspend fun persistPreviewAsset(
+        assetId: String,
+        sourcePath: Path,
+        assetDataSize: Long,
+        extension: String?,
     ): Either<CoreFailure, Path>
 
     /**
@@ -331,6 +341,34 @@ internal class AssetDataSource(
         }
     }
 
+    override suspend fun persistPreviewAsset(
+        assetId: String,
+        sourcePath: Path,
+        assetDataSize: Long,
+        extension: String?,
+    ): Either<CoreFailure, Path> {
+        var ownedPath: Path? = null
+        var persisted = false
+        return try {
+            wrapStorageRequest {
+                val path = kaliumFileSystem.providePersistentAssetPath(buildFileName(assetId, extension))
+                ownedPath = path
+                kaliumFileSystem.copy(sourcePath, path)
+                assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetId, "", path, assetDataSize))
+                persisted = true
+                path
+            }
+        } finally {
+            if (!persisted) withContext(NonCancellable) {
+                ownedPath?.let { path ->
+                    wrapStorageRequest {
+                        if (path != sourcePath && !assetDao.isFileReferenced(path.toString())) kaliumFileSystem.delete(path)
+                    }
+                }
+            }
+        }
+    }
+
     override suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, FetchedAssetData> =
         fetchOrDownloadDecodedAsset(assetId = assetId, assetDomain = assetDomain, assetName = assetId, assetToken = null, mimeType = null)
 
@@ -356,8 +394,8 @@ internal class AssetDataSource(
         )
 
     override suspend fun fetchPreviewAsset(preview: AssetContent.Preview): Either<CoreFailure, FetchedAssetData> {
-        if (preview.sizeInBytes !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES) {
-            return Either.Left(StorageFailure.Generic(IOException("Asset preview exceeds size limit")))
+        if (!preview.hasValidRemoteData() && !preview.hasValidPendingData()) {
+            return Either.Left(StorageFailure.Generic(IOException("Invalid asset preview metadata or encryption data")))
         }
         val remote = preview.remoteData
         return fetchCachedPreview(remote.assetId, remote.assetDomain).flatMapLeft(
@@ -367,7 +405,7 @@ internal class AssetDataSource(
                 else downloadDecodedAsset(
                     assetId = remote.assetId,
                     assetDomain = remote.assetDomain,
-                    assetName = "preview.jpg",
+                    assetName = "preview",
                     assetToken = remote.assetToken,
                     mimeType = preview.mimeType,
                     encryptionKey = AES256Key(remote.otrKey),
@@ -458,7 +496,8 @@ internal class AssetDataSource(
             Either.Left(StorageFailure.DataNotFound)
         } finally {
             // Covers failed downloads, decryption/size failures and coroutine cancellation.
-            cleanupDownloadedFiles(tempFile, decodedAssetPath, persisted)
+            // Only previews own a unique candidate. Original downloads share assetId.ext with other callers.
+            cleanupDownloadedFiles(tempFile, decodedAssetPath.takeIf { maxDecodedSize != null }, persisted)
         }
     }
 
@@ -472,10 +511,14 @@ internal class AssetDataSource(
         // Asset encryption uses AES-CBC: a 16-byte IV plus one block of PKCS7 padding at most.
         val maxEncryptedSize = maxDecodedSize?.let { (it / AES_BLOCK_SIZE + 1) * AES_BLOCK_SIZE + AES_BLOCK_SIZE }
         return kaliumFileSystem.sink(tempFile).withSizeLimit(maxEncryptedSize).use { sink ->
-            wrapApiRequest {
+            val result = wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens.
                 assetApi.downloadAsset(assetId, assetDomain, assetToken?.ifEmpty { null }, sink)
             }
+            // The HTTP API wraps sink IOExceptions as network errors. Preserve the local size-limit failure.
+            if ((sink as? BoundedAssetSink)?.limitExceeded == true) {
+                Either.Left(StorageFailure.Generic(IOException("Encrypted asset preview exceeds size limit")))
+            } else result
         }
     }
 

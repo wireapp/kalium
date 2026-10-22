@@ -30,6 +30,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.asset.distinctRemoteAssets
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -215,8 +216,7 @@ public class DeleteMessageUseCase internal constructor(
 
     private suspend fun deleteMessageAsset(message: Message, deleteForEveryone: Boolean) {
         val assetContent = (message.content as? MessageContent.Asset)?.value
-        listOfNotNull(assetContent?.remoteData, assetContent?.preview?.remoteData)
-            .distinctBy { it.assetId to it.assetDomain.orEmpty() }
+        assetContent.distinctRemoteAssets()
             .forEach { assetToRemove ->
                 assetRepository.deleteAsset(
                     assetToRemove.assetId,

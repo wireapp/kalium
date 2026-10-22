@@ -18,8 +18,6 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.MessageDetailsView
-
 /** Independently addressable preview metadata. Binary columns contain only cryptographic material. */
 data class AssetPreviewEntity(
     val mimeType: String,
@@ -53,17 +51,29 @@ data class AssetPreviewEntity(
     }
 }
 
-internal fun MessageDetailsView.toAssetPreviewEntity(): AssetPreviewEntity? = assetPreviewMimeType?.let {
+@Suppress("LongParameterList")
+internal fun assetPreviewEntity(
+    mimeType: String?,
+    size: Long?,
+    width: Int?,
+    height: Int?,
+    id: String?,
+    domain: String?,
+    token: String?,
+    otrKey: ByteArray?,
+    sha256: ByteArray?,
+    encryptionAlgorithm: String?,
+): AssetPreviewEntity? = mimeType?.let {
     AssetPreviewEntity(
         mimeType = it,
-        size = requireNotNull(assetPreviewSize),
-        width = requireNotNull(assetPreviewWidth),
-        height = requireNotNull(assetPreviewHeight),
-        id = requireNotNull(assetPreviewId),
-        domain = assetPreviewDomain,
-        token = assetPreviewToken,
-        otrKey = requireNotNull(assetPreviewOtrKey),
-        sha256 = requireNotNull(assetPreviewSha256),
-        encryptionAlgorithm = assetPreviewEncryptionAlgorithm,
+        size = requireNotNull(size),
+        width = requireNotNull(width),
+        height = requireNotNull(height),
+        id = requireNotNull(id),
+        domain = domain,
+        token = token,
+        otrKey = requireNotNull(otrKey),
+        sha256 = requireNotNull(sha256),
+        encryptionAlgorithm = encryptionAlgorithm,
     )
 }

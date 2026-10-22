@@ -61,12 +61,13 @@ fun prepareReceivedAssetMessage(
         if (restrictWithoutPreview) message.restrictedAssetMessage() else message.copy(
             visibility = if (content.value.isAssetDataComplete) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
         )
-    } else if (existing.senderUserId != message.senderUserId || existing !is Message.Regular ||
-        previewFromDifferentClient
-    ) {
+    } else if (existing.senderUserId != message.senderUserId || existing !is Message.Regular) {
         kaliumLogger.e("The previously persisted message has a different sender id than the one we are trying to process")
         null
-    } else existing.withAssetDecryptionKeys(content.value)
+    } else {
+        val acceptedAsset = if (previewFromDifferentClient) content.value.copy(preview = null) else content.value
+        existing.withAssetDecryptionKeys(acceptedAsset)
+    }
 }
 
 private fun Message.Regular.withAssetDecryptionKeys(incoming: AssetContent): Message.Regular? {

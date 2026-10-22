@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
+import pbandk.ByteArr
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -179,6 +180,52 @@ class AssetMapperTest {
             assertNull(result.preview)
             assertEquals(content.remoteData, result.remoteData)
         }
+    }
+
+    @Test
+    fun supportedImagePreviewMimeTypesRoundTripThroughWireAndPersistence() {
+        val mapper = AssetMapperImpl()
+        val video = videoWithPreview()
+        for (mimeType in SUPPORTED_IMAGE_ASSET_MIME_TYPES) {
+            val content = video.copy(preview = requireNotNull(video.preview).copy(mimeType = mimeType))
+            val wire = mapper.fromAssetContentToProtoAssetMessage(MessageContent.Asset(content), false, LegalHoldStatus.DISABLED)
+            assertEquals(content, mapper.fromProtoAssetMessageToAssetContent(wire))
+            val entity = RegularMessageMapper(UserId("self", "domain")).toMessageEntityContent(MessageContent.Asset(content))
+                as com.wire.kalium.persistence.dao.message.MessageEntityContent.Asset
+            assertEquals(content, mapper.fromAssetEntityToAssetContent(entity))
+        }
+    }
+
+    @Test
+    fun malformedPreviewKeysAreRejectedConsistentlyOnWireAndPersistenceReadback() {
+        val mapper = AssetMapperImpl()
+        val video = videoWithPreview()
+        val wire = mapper.fromAssetContentToProtoAssetMessage(MessageContent.Asset(video), false, LegalHoldStatus.DISABLED)
+        val wirePreview = requireNotNull(wire.preview)
+        val wireRemote = requireNotNull(wirePreview.remote)
+        val preview = requireNotNull(video.preview)
+        val malformedKeys = listOf(0, 1, 31, 33).map { preview.remoteData.copy(otrKey = ByteArray(it)) } +
+            listOf(1, 31, 33).map { preview.remoteData.copy(sha256 = ByteArray(it)) }
+        for (remote in malformedKeys) {
+            val fromWire = mapper.fromProtoAssetMessageToAssetContent(wire.copy(preview = wirePreview.copy(
+                remote = wireRemote.copy(otrKey = ByteArr(remote.otrKey), sha256 = ByteArr(remote.sha256)),
+            )))
+            assertNull(fromWire.preview)
+            assertEquals(video.remoteData, fromWire.remoteData)
+            val malformedContent = video.copy(preview = preview.copy(remoteData = remote))
+            val entity = RegularMessageMapper(UserId("self", "domain")).toMessageEntityContent(MessageContent.Asset(malformedContent))
+                as com.wire.kalium.persistence.dao.message.MessageEntityContent.Asset
+            val fromPersistence = mapper.fromAssetEntityToAssetContent(entity)
+            assertNull(fromPersistence.preview)
+            assertEquals(video.remoteData, fromPersistence.remoteData)
+            assertNull(mapper.fromAssetContentToProtoAssetMessage(
+                MessageContent.Asset(malformedContent), false, LegalHoldStatus.DISABLED,
+            ).preview)
+        }
+        // Empty hashes identify local pending previews; received wire previews cannot use that state.
+        assertNull(mapper.fromProtoAssetMessageToAssetContent(wire.copy(preview = wirePreview.copy(
+            remote = wireRemote.copy(sha256 = ByteArr(byteArrayOf())),
+        ))).preview)
     }
 
     private class Arrangement(

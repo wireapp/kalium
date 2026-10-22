@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
+import com.wire.kalium.logic.data.asset.distinctRemoteAssets
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -63,8 +64,7 @@ internal class DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl internal con
 
     private suspend fun deleteMessageAssetLocallyIfExists(message: Message) {
         val assetContent = (message.content as? MessageContent.Asset)?.value
-        listOfNotNull(assetContent?.remoteData, assetContent?.preview?.remoteData)
-            .distinctBy { it.assetId to it.assetDomain.orEmpty() }
+        assetContent.distinctRemoteAssets()
             .forEach { assetToRemove ->
                 assetRepository.deleteAssetLocally(assetToRemove.assetId, assetToRemove.assetDomain).onFailure {
                     kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")

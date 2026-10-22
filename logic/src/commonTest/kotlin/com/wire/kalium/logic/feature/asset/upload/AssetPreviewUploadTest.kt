@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.util.getExtensionFromMimeType
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
@@ -54,14 +55,15 @@ class AssetPreviewUploadTest {
     fun successfulUploadUsesPreviewKeyAndReplacesAllRemoteFields() = runTest {
         val assets = mock<AssetRepository>()
         val path = "local-preview.jpg".toPath()
+        val extension = getExtensionFromMimeType(preview.mimeType)
         val uploaded = UploadedAssetId("uploaded-preview", "preview.domain", "preview-token")
         val hash = SHA256Key(ByteArray(32) { 4 })
         everySuspend { assets.fetchPreviewAsset(any()) } returns
             Either.Right(FetchedAssetData(path, false))
         everySuspend {
             assets.uploadAndPersistPrivateAsset(
-                "image/jpeg", path, AES256Key(preview.remoteData.otrKey), "jpg",
-                TestConversation.ID.toApi(), "preview.jpg", "image/jpeg",
+                "image/jpeg", path, AES256Key(preview.remoteData.otrKey), extension,
+                TestConversation.ID.toApi(), "preview.$extension", "image/jpeg",
             )
         } returns Either.Right(uploaded to hash)
 
@@ -72,8 +74,8 @@ class AssetPreviewUploadTest {
         )), result)
         verifySuspend(VerifyMode.exactly(1)) {
             assets.uploadAndPersistPrivateAsset(
-                "image/jpeg", path, AES256Key(preview.remoteData.otrKey), "jpg",
-                TestConversation.ID.toApi(), "preview.jpg", "image/jpeg",
+                "image/jpeg", path, AES256Key(preview.remoteData.otrKey), extension,
+                TestConversation.ID.toApi(), "preview.$extension", "image/jpeg",
             )
         }
     }
@@ -108,6 +110,24 @@ class AssetPreviewUploadTest {
             oversized.copy(remoteData = oversized.remoteData.copy(sha256 = ByteArray(32) { 2 })), TestConversation.ID
         ))
 
+        verifySuspend(VerifyMode.exactly(0)) {
+            assets.fetchPreviewAsset(any())
+            assets.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun malformedRemoteAndPendingPreviewsAreDroppedBeforeCacheLookupOrUpload() = runTest {
+        val assets = mock<AssetRepository>()
+        val invalid = listOf(
+            preview.copy(mimeType = "video/mp4"),
+            preview.copy(width = 0),
+            preview.copy(remoteData = preview.remoteData.copy(assetId = "")),
+            preview.copy(remoteData = preview.remoteData.copy(otrKey = ByteArray(31))),
+            preview.copy(remoteData = preview.remoteData.copy(sha256 = ByteArray(1))),
+            preview.copy(remoteData = preview.remoteData.copy(otrKey = ByteArray(33), sha256 = ByteArray(32))),
+        )
+        invalid.forEach { assertNull(assets.uploadPreviewIfNeeded(it, TestConversation.ID)) }
         verifySuspend(VerifyMode.exactly(0)) {
             assets.fetchPreviewAsset(any())
             assets.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())

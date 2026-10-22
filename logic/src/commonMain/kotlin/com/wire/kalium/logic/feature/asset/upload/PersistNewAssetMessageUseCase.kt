@@ -25,8 +25,8 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.data.asset.isVideoMimeType
-import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.hasValidPendingData
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.util.getExtensionFromMimeType
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -109,29 +110,28 @@ internal class PersistNewAssetMessageUseCaseImpl(
         }
     }
 
+    @Suppress("ReturnCount")
     private suspend fun persistPreview(asset: AssetUploadParams): AssetContent.Preview? {
-        val preview = asset.preview?.takeIf {
-            isVideoMimeType(asset.assetMimeType) && isDisplayableImageMimeType(it.mimeType) &&
-                it.assetDataSize in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES &&
-                it.width in 1..AssetContent.Preview.MAX_DIMENSION && it.height in 1..AssetContent.Preview.MAX_DIMENSION
-        } ?: return null
-        val id = Uuid.random().toString()
-        return assetDataSource.persistAsset(id, "", preview.assetDataPath, preview.assetDataSize, "jpg")
-            .getOrNull()?.let {
-                AssetContent.Preview(
-                    mimeType = preview.mimeType,
-                    sizeInBytes = preview.assetDataSize,
-                    width = preview.width,
-                    height = preview.height,
-                    remoteData = AssetContent.RemoteData(
-                        otrKey = generateRandomAES256Key().data,
-                        sha256 = byteArrayOf(),
-                        assetId = id,
-                        assetToken = null,
-                        assetDomain = "",
-                        encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
-                    ),
-                )
-            }
+        val source = asset.preview?.takeIf { isVideoMimeType(asset.assetMimeType) } ?: return null
+        val preview = AssetContent.Preview(
+            mimeType = source.mimeType,
+            sizeInBytes = source.assetDataSize,
+            width = source.width,
+            height = source.height,
+            remoteData = AssetContent.RemoteData(
+                otrKey = generateRandomAES256Key().data,
+                sha256 = byteArrayOf(),
+                assetId = Uuid.random().toString(),
+                assetToken = null,
+                assetDomain = "",
+                encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
+            ),
+        ).takeIf { it.hasValidPendingData() } ?: return null
+        return assetDataSource.persistPreviewAsset(
+            preview.remoteData.assetId,
+            source.assetDataPath,
+            source.assetDataSize,
+            getExtensionFromMimeType(source.mimeType),
+        ).getOrNull()?.let { preview }
     }
 }

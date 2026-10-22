@@ -25,6 +25,9 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.hasValidPendingData
+import com.wire.kalium.logic.data.message.hasValidRemoteData
+import com.wire.kalium.util.getExtensionFromMimeType
 
 /** Optional previews fail open; cancellation still propagates from repository calls. */
 @Suppress("ReturnCount")
@@ -33,17 +36,18 @@ internal suspend fun AssetRepository.uploadPreviewIfNeeded(
     conversationId: ConversationId,
 ): AssetContent.Preview? {
     preview ?: return null
-    if (preview.sizeInBytes !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES) return null
-    if (preview.remoteData.sha256.isNotEmpty()) return preview
+    if (preview.hasValidRemoteData()) return preview
+    if (!preview.hasValidPendingData()) return null
+    val extension = getExtensionFromMimeType(preview.mimeType)
     val remote = preview.remoteData
     return fetchPreviewAsset(preview).flatMap { local ->
         uploadAndPersistPrivateAsset(
             mimeType = preview.mimeType,
             assetDataPath = local.path,
             otrKey = AES256Key(remote.otrKey),
-            extension = "jpg",
+            extension = extension,
             conversationId = conversationId.toApi(),
-            filename = "preview.jpg",
+            filename = extension?.let { "preview.$it" } ?: "preview",
             filetype = preview.mimeType,
         )
     }.getOrNull()?.let { (id, sha) ->

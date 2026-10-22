@@ -17,8 +17,12 @@
  */
 package com.wire.kalium.logic.sync.receiver.asset
 
+import com.wire.kalium.logic.data.asset.AssetMapperImpl
+import com.wire.kalium.protobuf.messages.LegalHoldStatus
+import pbandk.ByteArr
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.framework.TestMessage
 import kotlin.test.Test
@@ -68,6 +72,46 @@ class AssetPreviewContinuationTest {
 
     @Test
     fun differentClientCannotAttachPreviewToExistingMessage() {
-        assertNull(prepareReceivedAssetMessage(existing.copy(senderClientId = ClientId("different-client")), existing, false))
+        val current = existing.copy(content = MessageContent.Asset(content.copy(preview = null)))
+        val result = prepareReceivedAssetMessage(existing.copy(senderClientId = ClientId("different-client")), current, false)
+        val resultAsset = (result?.content as MessageContent.Asset).value
+        assertNull(resultAsset.preview)
+        assertEquals(remote, resultAsset.remoteData)
     }
+
+    @Test
+    fun differentClientPreviewDoesNotBlockOriginalKeysOrReplaceExistingPreview() {
+        val current = existing.copy(
+            visibility = Message.Visibility.HIDDEN,
+            content = MessageContent.Asset(content.copy(remoteData = remote.copy(
+                assetId = "", otrKey = byteArrayOf(), sha256 = byteArrayOf(),
+            ))),
+        )
+        val incoming = existing.copy(
+            senderClientId = ClientId("different-client"),
+            content = MessageContent.Asset(content.copy(preview = preview.copy(remoteData = remote.copy(assetId = "untrusted")))),
+        )
+        val result = prepareReceivedAssetMessage(incoming, current, false)
+        assertEquals(content, (result?.content as MessageContent.Asset).value)
+        assertEquals(Message.Visibility.VISIBLE, result.visibility)
+        assertEquals(current.senderClientId, result.senderClientId)
+    }
+
+    @Test
+    fun malformedWirePreviewCannotReplaceExistingValidPreview() {
+        val mapper = AssetMapperImpl()
+        val wire = mapper.fromAssetContentToProtoAssetMessage(MessageContent.Asset(content), false, LegalHoldStatus.DISABLED)
+        val wirePreview = requireNotNull(wire.preview)
+        val credentials = requireNotNull(wirePreview.remote)
+        val invalidCredentials = listOf(0, 1, 31, 33).flatMap { size ->
+            listOf(credentials.copy(otrKey = ByteArr(ByteArray(size))), credentials.copy(sha256 = ByteArr(ByteArray(size))))
+        }
+        invalidCredentials.forEach { invalid ->
+            val decoded = mapper.fromProtoAssetMessageToAssetContent(wire.copy(preview = wirePreview.copy(remote = invalid)))
+            assertNull(decoded.preview)
+            val result = prepareReceivedAssetMessage(existing.copy(content = MessageContent.Asset(decoded)), existing, false)
+            assertEquals(content, (result?.content as MessageContent.Asset).value)
+        }
+    }
+
 }

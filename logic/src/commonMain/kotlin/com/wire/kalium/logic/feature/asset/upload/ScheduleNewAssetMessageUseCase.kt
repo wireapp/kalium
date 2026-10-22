@@ -404,7 +404,10 @@ public data class AssetUploadParams(
     }
 }
 
-/** Optional image generated from a video. Kalium copies this source into its managed cache when scheduling. */
+/**
+ * Optional image generated from a video. Kalium copies this source into its managed cache when scheduling.
+ * The caller owns [assetDataPath] and remains responsible for deleting it, including after success, rejection, failure or cancellation.
+ */
 public data class AssetPreviewUploadParams(
     val assetDataPath: Path,
     val assetDataSize: Long,

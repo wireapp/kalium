@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
+import com.wire.kalium.logic.data.message.hasValidPendingData
+import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
@@ -212,7 +214,7 @@ class AssetMapperImpl(
         legalHoldStatus: LegalHoldStatus
     ): Asset = with(messageContent.value) {
         Asset(
-            preview = preview?.takeIf { it.remoteData.sha256.isNotEmpty() }?.toProto(),
+            preview = preview?.takeIf { it.hasValidRemoteData() }?.toProto(),
             original = Asset.Original(
                 mimeType = mimeType,
                 size = sizeInBytes,
@@ -355,14 +357,10 @@ fun AssetContent.Preview.toProto(): Asset.Preview = Asset.Preview(
     metaData = Asset.Preview.MetaData.Image(Asset.ImageMetaData(width, height)),
 )
 
-@Suppress("ReturnCount", "ComplexCondition")
-private fun Asset.Preview.toModel(allowPending: Boolean = false): AssetContent.Preview? {
+@Suppress("ReturnCount")
+private fun Asset.Preview.toModel(): AssetContent.Preview? {
     val data = remote ?: return null
     val image = (metaData as? Asset.Preview.MetaData.Image)?.value ?: return null
-    if (!isDisplayableImageMimeType(mimeType) || size !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES ||
-        image.width !in 1..AssetContent.Preview.MAX_DIMENSION || image.height !in 1..AssetContent.Preview.MAX_DIMENSION ||
-        data.assetId.isNullOrEmpty() || data.otrKey.array.isEmpty() || (!allowPending && data.sha256.array.isEmpty())
-    ) return null
     return AssetContent.Preview(
         mimeType = mimeType,
         sizeInBytes = size,
@@ -376,11 +374,8 @@ private fun Asset.Preview.toModel(allowPending: Boolean = false): AssetContent.P
             assetDomain = data.assetDomain,
             encryptionAlgorithm = EncryptionAlgorithmMapper().fromProtobufModel(data.encryption),
         ),
-    )
+    ).takeIf { it.hasValidRemoteData() }
 }
-
-private const val AES256_KEY_SIZE_BYTES = 32
-private const val SHA256_SIZE_BYTES = 32
 
 internal fun AssetContent.Preview.toDao(): AssetPreviewEntity = AssetPreviewEntity(
     mimeType = mimeType,
@@ -396,10 +391,6 @@ internal fun AssetContent.Preview.toDao(): AssetPreviewEntity = AssetPreviewEnti
 )
 
 private fun AssetPreviewEntity.toModel(): AssetContent.Preview? {
-    val validImage = isDisplayableImageMimeType(mimeType) && size in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES &&
-        width in 1..AssetContent.Preview.MAX_DIMENSION && height in 1..AssetContent.Preview.MAX_DIMENSION
-    val validKeys = otrKey.size == AES256_KEY_SIZE_BYTES && (sha256.isEmpty() || sha256.size == SHA256_SIZE_BYTES)
-    if (!validImage || id.isEmpty() || !validKeys) return null
     return AssetContent.Preview(
         mimeType = mimeType,
         sizeInBytes = size,
@@ -417,5 +408,5 @@ private fun AssetPreviewEntity.toModel(): AssetContent.Preview? {
                 else -> null
             },
         ),
-    )
+    ).takeIf { it.hasValidRemoteData() || it.hasValidPendingData() }
 }

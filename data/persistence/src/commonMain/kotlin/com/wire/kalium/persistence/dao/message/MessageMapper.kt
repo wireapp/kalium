@@ -835,20 +835,18 @@ object MessageMapper {
                 assetHeight = assetHeight,
                 assetDurationMs = assetDuration,
                 assetNormalizedLoudness = assetNormalizedLoudness,
-                assetPreview = assetPreviewMimeType?.let {
-                    AssetPreviewEntity(
-                        mimeType = assetPreviewMimeType.requireField("preview_asset_mime_type"),
-                        size = assetPreviewSize.requireField("preview_asset_size"),
-                        width = assetPreviewWidth.requireField("preview_asset_width"),
-                        height = assetPreviewHeight.requireField("preview_asset_height"),
-                        id = assetPreviewId.requireField("preview_asset_id"),
-                        domain = assetPreviewDomain,
-                        token = assetPreviewToken,
-                        otrKey = assetPreviewOtrKey.requireField("preview_asset_otr_key"),
-                        sha256 = assetPreviewSha256.requireField("preview_asset_sha256"),
-                        encryptionAlgorithm = assetPreviewEncryptionAlgorithm,
-                    )
-                },
+                assetPreview = assetPreviewEntity(
+                    mimeType = assetPreviewMimeType,
+                    size = assetPreviewSize,
+                    width = assetPreviewWidth,
+                    height = assetPreviewHeight,
+                    id = assetPreviewId,
+                    domain = assetPreviewDomain,
+                    token = assetPreviewToken,
+                    otrKey = assetPreviewOtrKey,
+                    sha256 = assetPreviewSha256,
+                    encryptionAlgorithm = assetPreviewEncryptionAlgorithm,
+                ),
             )
 
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)

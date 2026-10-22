@@ -7,3 +7,5 @@ Preview metadata is stored in typed database columns. Existing databases receive
 Preview decryption rejects incomplete IVs and reports cryptography failures without swallowing cancellation. Managed uploads remain available for retry until the message is persisted. Message deletion and expiry remove previews using their asset key and domain.
 
 Preview cache lookups validate the normalized domain both before downloading and after concurrent cache insertion. Same-key entries from another domain are rejected without removing their file or cache entry.
+
+Preview credentials are removed from obfuscated support exports. Permanent preview errors do not request retries, and failed preview downloads clean only their own files. Preview sources stay caller-owned, filenames follow their MIME type, and received metadata uses the same validation as cached metadata. Asset continuations use a single indexed lookup and retain valid original keys when an optional preview is rejected.

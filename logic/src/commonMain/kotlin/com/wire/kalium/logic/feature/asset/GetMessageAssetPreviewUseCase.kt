@@ -19,16 +19,20 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.hasValidPendingData
+import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.AssetId
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.getExtensionFromMimeType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -60,15 +64,26 @@ internal class GetMessageAssetPreviewUseCaseImpl(
                 val preview = (message.content as? MessageContent.Asset)?.value?.preview
                 val actualPreviewAssetId = preview?.remoteData?.let { AssetId(it.assetId, it.assetDomain.orEmpty()) }
                 val unexpectedPreview = expectedPreviewAssetId != null && expectedPreviewAssetId != actualPreviewAssetId
-                if (preview == null || preview.sizeInBytes !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES || unexpectedPreview) {
+                val validPreview = preview?.let { it.hasValidRemoteData() || it.hasValidPendingData() } == true
+                if (preview == null || !validPreview || unexpectedPreview) {
                     MessageAssetResult.Failure(CoreFailure.Unknown(IllegalStateException("Asset preview unavailable")), false)
                 } else {
                     wrapStorageRequest { assetRepository.fetchPreviewAsset(preview) }.flatMap { it }.fold(
-                        { MessageAssetResult.Failure(it, preview.remoteData.sha256.isNotEmpty()) },
-                        { MessageAssetResult.Success(it.path, preview.sizeInBytes, "preview.jpg") },
+                        { MessageAssetResult.Failure(it, preview.remoteData.sha256.isNotEmpty() && it.isTransientPreviewFailure()) },
+                        {
+                            val extension = getExtensionFromMimeType(preview.mimeType)
+                            val assetName = extension?.let { "preview.$it" } ?: "preview"
+                            MessageAssetResult.Success(it.path, preview.sizeInBytes, assetName)
+                        },
                     )
                 }
             },
         )
     }
+}
+
+private fun CoreFailure.isTransientPreviewFailure(): Boolean = when (this) {
+    is NetworkFailure.NoNetworkConnection, is NetworkFailure.ProxyError -> true
+    is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
+    else -> false
 }
