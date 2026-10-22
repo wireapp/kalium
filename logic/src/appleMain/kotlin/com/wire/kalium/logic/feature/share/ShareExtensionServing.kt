@@ -64,7 +64,8 @@ internal class ComposerSending(
 ) : ShareOutboxSending {
 
     override suspend fun awaitSynced() {
-        syncStateObserver.waitUntilLive()
+        // A failed sync ends the wait: offline, the import uses the stored rules, as the composer does.
+        syncStateObserver.waitUntilLiveOrFailure()
     }
 
     override suspend fun file(conversationId: ConversationId, file: ShareOutboxFile, messageId: String): String? {

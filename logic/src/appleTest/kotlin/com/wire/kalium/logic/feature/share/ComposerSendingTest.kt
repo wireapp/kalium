@@ -6,7 +6,7 @@
 
 package com.wire.kalium.logic.feature.share
 
-import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -45,27 +45,20 @@ class ComposerSendingTest {
     }
 
     @Test
-    fun givenAccountWasLive_whenSyncRestarts_thenImportWaitsForTheNewCatchUp() = runTest {
+    fun givenAccountWasLive_whenTheNextCatchUpFails_thenImportStopsWaiting() = runTest {
         val arrangement = Arrangement(backgroundScope)
         arrangement.incremental.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         arrangement.sending.awaitSynced()
-        arrangement.incremental.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+        arrangement.incremental.updateIncrementalSyncState(IncrementalSyncStatus.FetchingPendingEvents)
 
         val waiting = async { arrangement.sending.awaitSynced() }
         runCurrent()
-        assertFalse(waiting.isCompleted)
+        assertFalse(waiting.isCompleted, "A previous live does not cover the next catch-up")
 
+        // Offline, the import stores with the rules it has, as the composer does.
         arrangement.incremental.updateIncrementalSyncState(
-            IncrementalSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO)
+            IncrementalSyncStatus.Failed(NetworkFailure.NoNetworkConnection(null), Duration.ZERO)
         )
-        runCurrent()
-        assertFalse(waiting.isCompleted, "A sync failure must not authorize importing against stale policy")
-
-        arrangement.incremental.updateIncrementalSyncState(IncrementalSyncStatus.FetchingPendingEvents)
-        runCurrent()
-        assertFalse(waiting.isCompleted)
-
-        arrangement.incremental.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         waiting.await()
     }
 
