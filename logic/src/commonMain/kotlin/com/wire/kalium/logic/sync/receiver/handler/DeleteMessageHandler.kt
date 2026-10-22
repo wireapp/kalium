@@ -28,8 +28,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.messaging.hooks.MessageDeleteEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 
 internal interface DeleteMessageHandler {
     suspend operator fun invoke(
@@ -45,7 +43,6 @@ internal class DeleteMessageHandlerImpl internal constructor(
     private val assetRepository: AssetRepository,
     private val notificationEventsManager: NotificationEventsManager,
     private val selfUserId: UserId,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
 ) : DeleteMessageHandler {
     override suspend fun invoke(
         content: MessageContent.DeleteMessage,
@@ -65,10 +62,6 @@ internal class DeleteMessageHandlerImpl internal constructor(
                 }
             }
         }
-        persistenceEventHookNotifier.onMessageDeleted(
-            MessageDeleteEventData(conversationId, content.messageId),
-            selfUserId
-        )
     }
 
 }

@@ -289,7 +289,7 @@ class AppleAccountRuntimeTest {
                 ApplePreparedAccountStore(root, userId).publish(lease, PreparedAccount(
                     userId, "abc123",
                     ServerConfig("test", ServerConfig.DUMMY, ServerConfig.MetaData(false, CommonApiVersionType.Valid(8), userId.domain)),
-                    null, null,
+                    null,
                 ))
             } finally {
                 lease.release()

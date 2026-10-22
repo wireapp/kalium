@@ -35,8 +35,6 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.settings.PendingLoginSystemSettingsRepositoryImpl
-import com.wire.kalium.logic.data.auth.settings.UnauthorizedSettingsRepository
-import com.wire.kalium.logic.data.auth.settings.UnauthorizedSettingsRepositoryImpl
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepositoryImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
@@ -136,8 +134,6 @@ public class AuthenticationScope internal constructor(
 
     private val appVersionRepository: AppVersionRepository
         get() = AppVersionRepositoryImpl(unauthenticatedNetworkContainer.appVersioningApi)
-    private val unauthorizedSettingsRepository: UnauthorizedSettingsRepository
-        get() = UnauthorizedSettingsRepositoryImpl(unauthenticatedNetworkContainer.unauthorizedSettingsApi)
 
     public val getLoginFlowForDomainUseCase: GetLoginFlowForDomainUseCase
         get() = GetLoginFlowForDomainUseCase(loginRepository, ssoLoginRepository, customServerConfigRepository)
@@ -182,8 +178,6 @@ public class AuthenticationScope internal constructor(
             customServerConfigRepository = customServerConfigRepository,
             ssoLoginRepository = ssoLoginRepository
         )
-    public val isNomadProfilesEnabled: IsNomadProfilesEnabledUseCase
-        get() = IsNomadProfilesEnabledUseCase(unauthorizedSettingsRepository)
 
     public val currentServerConfig: () -> ServerConfig = {
         serverConfig

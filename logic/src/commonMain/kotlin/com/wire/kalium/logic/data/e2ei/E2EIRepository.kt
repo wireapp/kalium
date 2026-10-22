@@ -49,8 +49,6 @@ import com.wire.kalium.logic.data.conversation.PreparedX509KeyPackages
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import io.ktor.client.HttpClient
@@ -133,8 +131,6 @@ internal class E2EIRepositoryImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
     private val userConfigRepository: UserConfigRepository,
-    private val selfUserId: UserId,
-    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
 ) : E2EIRepository {
 
     // Keep configure + its dependent operation atomic across periodic refresh and acquisition.
@@ -148,8 +144,6 @@ internal class E2EIRepositoryImpl(
         currentClientIdProvider = currentClientIdProvider,
         mlsConversationRepository = mlsConversationRepository,
         userConfigRepository = userConfigRepository,
-        selfUserId = selfUserId,
-        cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier
     )
     private val checkpointStore = E2EIRotationCheckpointStore(userConfigRepository)
     private val acquisitionWorkflow = E2EICredentialAcquisitionWorkflow(
@@ -186,7 +180,6 @@ internal class E2EIRepositoryImpl(
         { trustAnchors ->
             wrapCoreCryptoInterop {
                 coreCrypto.addPkiTrustAnchors(trustAnchors.decodeToString())
-                cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
             }
         }
     )
@@ -209,7 +202,6 @@ internal class E2EIRepositoryImpl(
             certificates.foldToEitherWhileRight(Unit) { certificate, _ ->
                 wrapCoreCryptoInterop {
                     coreCrypto.addPkiIntermediateCertificate(certificate)
-                    cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
                 }
             }
         }
@@ -218,7 +210,6 @@ internal class E2EIRepositoryImpl(
     override suspend fun checkCredentials(): Either<E2EIFailure, Unit> = withConfiguredCoreCrypto { coreCrypto ->
         wrapCoreCryptoInterop {
             coreCrypto.checkCredentials()
-            cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
         }
     }
 
@@ -252,8 +243,6 @@ private data class E2EIRepositoryDependencies(
     val currentClientIdProvider: CurrentClientIdProvider,
     val mlsConversationRepository: MLSConversationRepository,
     val userConfigRepository: UserConfigRepository,
-    val selfUserId: UserId,
-    val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier
 ) {
     suspend fun discoveryUrl(): Either<E2EIFailure, String> = userConfigRepository.getE2EISettings().fold(
         { E2EIFailure.MissingTeamSettings.left() },
@@ -462,7 +451,6 @@ private class E2EICredentialAcquisitionWorkflow(
                     phase = E2EIRotationPhase.CREDENTIAL_INSTALLED
                 )
                 checkpointStore.persist(installedCheckpoint).map {
-                    dependencies.cryptoStateChangeHookNotifier.onCryptoStateChanged(dependencies.selfUserId)
                     installedCheckpoint
                 }
             }
@@ -670,7 +658,6 @@ private class E2EICredentialRotationWorkflow(
         runRotationTransaction<Unit>(transactionProvider, "E2EICleanupPreviousCredential") { mlsContext ->
             credentialRefs.previous?.let {
                 mlsContext.removeCredential(it)
-                dependencies.cryptoStateChangeHookNotifier.onCryptoStateChanged(dependencies.selfUserId)
             }
         }.flatMap { checkpointStore.delete() }
     } else {

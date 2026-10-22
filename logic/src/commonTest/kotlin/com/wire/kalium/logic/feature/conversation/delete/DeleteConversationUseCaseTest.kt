@@ -26,8 +26,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.util.shouldFail
@@ -114,15 +112,11 @@ class DeleteConversationUseCaseTest {
         val transactionContext = mock<CryptoTransactionContext>(mode = MockMode.autoUnit)
         private val mlsContext = mock<MlsCoreCryptoContext>(mode = MockMode.autoUnit)
 
-        val persistenceEventHookNotifier: PersistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
-
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteConversationUseCase> = run {
             every { transactionContext.mls } returns mlsContext
             val useCase = DeleteConversationUseCaseImpl(
                 conversationRepository = conversationRepository,
-                mlsConversationRepository = mlsConversationRepository,
-                persistenceEventHookNotifier = persistenceEventHookNotifier,
-                selfUserId = SELF_USER_ID,
+                mlsConversationRepository = mlsConversationRepository
             )
             block()
             return this to useCase
@@ -152,7 +146,6 @@ class DeleteConversationUseCaseTest {
     }
 
     companion object {
-        val SELF_USER_ID = UserId("self-user", "self-domain")
         val GROUP_ID = GroupID("mls_group_id")
         val CONVERSATION_ID = ConversationId("conv_id", "conv_domain")
 

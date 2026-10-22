@@ -40,7 +40,6 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
-import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
@@ -263,7 +262,6 @@ internal class MessageDataSource internal constructor(
     messageApi: MessageApi,
     mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
-    nomadMessagePagingCoordinator: NomadMessagePagingCoordinator? = null,
     sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
@@ -283,7 +281,6 @@ internal class MessageDataSource internal constructor(
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(
         messageDAO,
         messageMapper,
-        nomadMessagePagingCoordinator,
     )
 
     override fun getMessagesByConversationIdAndVisibility(

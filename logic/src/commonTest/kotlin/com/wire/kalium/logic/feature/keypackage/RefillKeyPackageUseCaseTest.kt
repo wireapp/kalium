@@ -29,10 +29,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -175,8 +173,6 @@ class RefillKeyPackageUseCaseTest {
             keyPackageRepository,
             keyPackageLimitsProvider,
             currentClientIdProvider,
-            TestUser.SELF.id,
-            NoOpCryptoStateChangeHookNotifier,
             userConfigRepository,
         )
 

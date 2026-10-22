@@ -150,8 +150,6 @@ class CellsS3CredentialsProviderTest {
 
         override fun serverConfig(): ServerConfigDTO = error("Not used by the credentials provider")
 
-        override fun nomadServiceUrl(): String? = null
-
         override fun proxyCredentials(): ProxyCredentialsDTO? = null
     }
 

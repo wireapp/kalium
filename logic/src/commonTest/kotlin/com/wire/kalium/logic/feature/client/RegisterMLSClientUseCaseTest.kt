@@ -36,10 +36,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.E2EI_TEAM_SETTINGS
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.MLS_CIPHER_SUITE
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -333,9 +331,7 @@ class RegisterMLSClientUseCaseTest {
             clientRepository,
             keyPackageRepository,
             keyPackageLimitsProvider,
-            userConfigRepository,
-            TestUser.SELF.id,
-            NoOpCryptoStateChangeHookNotifier
+            userConfigRepository
         )
 
         companion object {

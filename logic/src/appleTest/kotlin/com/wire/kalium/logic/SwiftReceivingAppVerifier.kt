@@ -117,7 +117,7 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                                 federation = configuration.metaData.federation, domain = user.domain, commonApiVersion = 8,
                                 apiProxyHost = null, apiProxyNeedsAuthentication = null, apiProxyPort = null,
                             ))
-                            database.accountsDAO.insertOrReplace(user.toDao(), null, null, configuration.id, false, null, null)
+                            database.accountsDAO.insertOrReplace(user.toDao(), null, null, configuration.id, false, null)
                             if (account["identityEvents"]?.jsonPrimitive?.boolean == true) database.accountsDAO.setCurrentAccount(user.toDao())
                         } finally {
                             database.close()
