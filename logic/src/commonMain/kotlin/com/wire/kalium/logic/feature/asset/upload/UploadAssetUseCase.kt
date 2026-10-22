@@ -67,6 +67,7 @@ internal class UploadAssetUseCaseImpl(
         else -> audioNormalizedLoudnessBuilder(metadata.assetDataPath.toString())
     }
 
+    @Suppress("LongMethod")
     override suspend fun invoke(message: Message.Regular, metadata: UploadAssetMessageMetadata) = withContext(dispatcher.io) {
 
         // A retry after a successful upload reuses the persisted remote asset and message identity.
@@ -105,6 +106,7 @@ internal class UploadAssetUseCaseImpl(
             // and we persist and update the message on the DB layer to display the changes on the Conversation screen
             val updatedAssetMessageContent = metadata.copy(
                 sha256Key = sha256,
+                preview = assetDataSource.uploadPreviewIfNeeded(metadata.preview, message.conversationId),
                 assetId = assetId,
                 audioNormalizedLoudness = audioNormalizedLoudnessDeferred.await()
             )
@@ -118,6 +120,7 @@ internal class UploadAssetUseCaseImpl(
                 persistMessage(updatedMessage).onSuccess {
                     // Commit the new reference before removing the only file the old reference can resolve.
                     assetDataSource.deleteAssetLocally(metadata.assetId.key)
+                    assetDataSource.deleteTemporaryPreview(metadata.preview, updatedAssetMessageContent.preview)
                 }
             }
                 .onFailure {

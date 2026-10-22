@@ -88,4 +88,10 @@ WHERE conversationId = :conversationId
 AND contentType IN :contentTypes
 AND assetId IS NOT NULL
 AND dataPath IS NOT NULL
-ORDER BY date DESC;
+UNION
+-- Start from the indexed conversation, then look up each message's preview by its primary key.
+SELECT preview.preview_asset_id AS assetId
+FROM Message message
+JOIN MessageAssetContent preview ON preview.message_id = message.id AND preview.conversation_id = message.conversation_id
+JOIN Asset cache ON cache.key = preview.preview_asset_id AND cache.domain = COALESCE(preview.preview_asset_domain, '')
+WHERE message.conversation_id = :conversationId AND preview.preview_asset_id IS NOT NULL;

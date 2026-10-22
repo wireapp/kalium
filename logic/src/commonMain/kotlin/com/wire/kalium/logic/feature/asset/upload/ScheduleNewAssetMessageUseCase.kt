@@ -318,12 +318,66 @@ public data class AssetUploadParams(
     val assetWidth: Int?,
     val assetHeight: Int?,
     val audioLengthInMs: Long,
-    val audioNormalizedLoudness: ByteArray?
+    val audioNormalizedLoudness: ByteArray?,
+    val preview: AssetPreviewUploadParams? = null,
 ) {
+    /** Preserves the constructor used by previously compiled SDK consumers. */
+    @Suppress("LongParameterList")
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public constructor(
+        conversationId: ConversationId,
+        assetDataPath: Path,
+        assetDataSize: Long,
+        assetName: String,
+        assetMimeType: String,
+        assetWidth: Int?,
+        assetHeight: Int?,
+        audioLengthInMs: Long,
+        audioNormalizedLoudness: ByteArray?,
+    ) : this(
+        conversationId = conversationId,
+        assetDataPath = assetDataPath,
+        assetDataSize = assetDataSize,
+        assetName = assetName,
+        assetMimeType = assetMimeType,
+        assetWidth = assetWidth,
+        assetHeight = assetHeight,
+        audioLengthInMs = audioLengthInMs,
+        audioNormalizedLoudness = audioNormalizedLoudness,
+        preview = null,
+    )
+
+    /** Preserves legacy copy/default-argument descriptors while retaining the optional preview. */
+    @Suppress("LongParameterList")
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public fun copy(
+        conversationId: ConversationId = this.conversationId,
+        assetDataPath: Path = this.assetDataPath,
+        assetDataSize: Long = this.assetDataSize,
+        assetName: String = this.assetName,
+        assetMimeType: String = this.assetMimeType,
+        assetWidth: Int? = this.assetWidth,
+        assetHeight: Int? = this.assetHeight,
+        audioLengthInMs: Long = this.audioLengthInMs,
+        audioNormalizedLoudness: ByteArray? = this.audioNormalizedLoudness,
+    ): AssetUploadParams = copy(
+        conversationId = conversationId,
+        assetDataPath = assetDataPath,
+        assetDataSize = assetDataSize,
+        assetName = assetName,
+        assetMimeType = assetMimeType,
+        assetWidth = assetWidth,
+        assetHeight = assetHeight,
+        audioLengthInMs = audioLengthInMs,
+        audioNormalizedLoudness = audioNormalizedLoudness,
+        preview = this.preview,
+    )
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
         other as AssetUploadParams
+        if (preview != other.preview) return false
         if (assetDataSize != other.assetDataSize) return false
         if (assetWidth != other.assetWidth) return false
         if (assetHeight != other.assetHeight) return false
@@ -337,7 +391,7 @@ public data class AssetUploadParams(
     }
 
     override fun hashCode(): Int {
-        var result = assetDataSize.hashCode()
+        var result = 31 * assetDataSize.hashCode() + (preview?.hashCode() ?: 0)
         result = 31 * result + (assetWidth ?: 0)
         result = 31 * result + (assetHeight ?: 0)
         result = 31 * result + audioLengthInMs.hashCode()
@@ -349,3 +403,15 @@ public data class AssetUploadParams(
         return result
     }
 }
+
+/**
+ * Optional image generated from a video. Kalium copies this source into its managed cache when scheduling.
+ * The caller owns [assetDataPath] and remains responsible for deleting it, including after success, rejection, failure or cancellation.
+ */
+public data class AssetPreviewUploadParams(
+    val assetDataPath: Path,
+    val assetDataSize: Long,
+    val mimeType: String,
+    val width: Int,
+    val height: Int,
+)

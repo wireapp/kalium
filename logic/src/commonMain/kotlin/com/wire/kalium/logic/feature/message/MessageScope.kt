@@ -69,6 +69,8 @@ import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCaseI
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
+import com.wire.kalium.logic.feature.asset.GetMessageAssetPreviewUseCase
+import com.wire.kalium.logic.feature.asset.GetMessageAssetPreviewUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
@@ -442,6 +444,9 @@ public class MessageScope internal constructor(
             dispatcher = dispatcher,
             pendingMessagesEnabled = pendingMessagesEnabled,
         )
+
+    public val getAssetMessagePreview: GetMessageAssetPreviewUseCase
+        get() = GetMessageAssetPreviewUseCaseImpl(assetRepository, messageRepository, scope, dispatcher)
 
     public val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(

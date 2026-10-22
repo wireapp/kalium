@@ -30,6 +30,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.asset.distinctRemoteAssets
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -214,17 +215,18 @@ public class DeleteMessageUseCase internal constructor(
     }
 
     private suspend fun deleteMessageAsset(message: Message, deleteForEveryone: Boolean) {
-        (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-
-            assetRepository.deleteAsset(
-                assetToRemove.assetId,
-                assetToRemove.assetDomain,
-                assetToRemove.assetToken
-            )
-                .onFailure {
-                    kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
-                }
-        }
+        val assetContent = (message.content as? MessageContent.Asset)?.value
+        assetContent.distinctRemoteAssets()
+            .forEach { assetToRemove ->
+                assetRepository.deleteAsset(
+                    assetToRemove.assetId,
+                    assetToRemove.assetDomain,
+                    assetToRemove.assetToken
+                )
+                    .onFailure {
+                        kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
+                    }
+            }
 
         // Delete attachments for multipart message
         if (deleteForEveryone && message.content is MessageContent.Multipart) {

@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.Either
 import dev.mokkery.everySuspend
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.matcher.any
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 
@@ -48,6 +49,9 @@ internal open class AssetRepositoryArrangementImpl : AssetRepositoryArrangement 
             assetRepository.deleteAssetLocally(
                 matches { assetID(it) },
             )
+        }.returns(result)
+        everySuspend {
+            assetRepository.deleteAssetLocally(matches { assetID(it) }, any())
         }.returns(result)
     }
 }

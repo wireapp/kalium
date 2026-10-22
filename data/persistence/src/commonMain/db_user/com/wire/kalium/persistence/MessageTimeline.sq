@@ -57,6 +57,7 @@ SELECT
     m.id, m.conversation_id, m.creation_date, m.content_type, m.sender_user_id, m.sender_client_id,
     m.status, m.last_edit_date, m.visibility, m.expects_read_confirmation, m.expire_after_millis, m.self_deletion_end_date,
     t.text_body, t.quoted_message_id, t.is_quote_verified, t.is_quoting_self,
+    a.preview_asset_id, a.preview_asset_domain,
     a.asset_id, a.asset_domain, a.asset_name, a.asset_mime_type, a.asset_size, a.asset_width, a.asset_height, a.asset_duration_ms,
     (IFNULL(length(a.asset_id), 0) > 0 AND IFNULL(length(a.asset_otr_key), 0) > 0
         AND IFNULL(length(a.asset_sha256), 0) > 0) AS asset_complete,

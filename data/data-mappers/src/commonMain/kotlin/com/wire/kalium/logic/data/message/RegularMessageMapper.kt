@@ -152,6 +152,7 @@ class RegularMessageMapper(
                 else -> null
             }
             MessageEntityContent.Asset(
+                assetPreview = preview?.toDao(),
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,

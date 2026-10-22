@@ -82,8 +82,7 @@ class Migration143Test {
             }
             // Open the upstream version through the production driver's automatic migration path.
             JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", properties, UserDatabase.Schema.synchronous()).use { driver ->
-                assertEquals(161L, UserDatabase.Schema.version)
-                assertEquals(listOf(listOf("161")), driver.rows("PRAGMA user_version", 1))
+                assertEquals(listOf(listOf(UserDatabase.Schema.version.toString())), driver.rows("PRAGMA user_version", 1))
                 assertEquals(listOf(listOf("Europe/Berlin"), listOf("Europe/Berlin")), driver.rows("SELECT tzid FROM Meeting", 1))
                 assertEquals(listOf(listOf("one-occurrence", "one@wire.test", "2", "3")), driver.rows("SELECT * FROM MeetingOccurrence", 4))
                 assertEquals(emptyList(), driver.rows("PRAGMA foreign_key_check", 4))

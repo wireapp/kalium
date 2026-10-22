@@ -82,6 +82,107 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(1003L, messageDAO.countMessagesForBackup(MessageEntity.ContentType.entries))
     }
 
+    @Test
+    fun previewOnlyUpdateRetainsOriginalKeysAndSurvivesReloadAndFileCleanup() = runTest {
+        insertInitialData()
+        val original = MessageEntityContent.Asset(
+            assetSizeInBytes = 100_000, assetName = "video.mp4", assetMimeType = "video/mp4",
+            assetOtrKey = byteArrayOf(1, 2), assetSha256Key = byteArrayOf(3, 4), assetId = "video-id",
+            assetEncryptionAlgorithm = "AES_CBC", assetWidth = 1920, assetHeight = 1080,
+        )
+        val message = newRegularMessageEntity(
+            id = "video-preview-test", conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id, content = original,
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(message))
+        val withPreview = original.copy(
+            assetOtrKey = byteArrayOf(), assetSha256Key = byteArrayOf(),
+            assetPreview = typedPreview(),
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(message.copy(content = withPreview)))
+        val reloaded = messageDAO.getMessageById(message.id, message.conversationId)!!.content as MessageEntityContent.Asset
+        assertContentEquals(original.assetOtrKey, reloaded.assetOtrKey)
+        assertContentEquals(original.assetSha256Key, reloaded.assetSha256Key)
+        assertEquals(original.assetSizeInBytes, reloaded.assetSizeInBytes)
+        assertEquals(withPreview.assetPreview, reloaded.assetPreview)
+        assertEquals("preview-id", reloaded.assetPreview?.id)
+        assertEquals("preview.domain", reloaded.assetPreview?.domain)
+        // Equal binary values from a second decode must compare by content and leave the original keys intact.
+        messageDAO.insertOrIgnoreMessages(listOf(message.copy(content = withPreview.copy(assetPreview = typedPreview()))))
+        val duplicate = messageDAO.getMessageById(message.id, message.conversationId)!!.content as MessageEntityContent.Asset
+        assertEquals(reloaded.assetPreview, duplicate.assetPreview)
+        assertContentEquals(original.assetOtrKey, duplicate.assetOtrKey)
+        assetDao.insertAsset(AssetEntity("video-id", "domain", "/video.mp4", 100_000, downloadedDate = null))
+        assetDao.insertAsset(AssetEntity("preview-id", "preview.domain", "/preview.jpg", 1024, downloadedDate = null))
+        val files = mutableListOf<String>()
+        assetDao.deleteMessageFiles(message.conversationId, message.id) { files.add(it) }
+        assertEquals(setOf("/video.mp4", "/preview.jpg"), files.toSet())
+        assertNull(assetDao.getAssetByKey("preview-id").first())
+    }
+
+    @Test
+    fun previewCleanupMatchesNormalizedDomainAndPreservesSameKeyInOtherDomain() = runTest {
+        insertInitialData()
+        val original = MessageEntityContent.Asset(
+            assetSizeInBytes = 100_000, assetMimeType = "video/mp4", assetOtrKey = byteArrayOf(1),
+            assetSha256Key = byteArrayOf(2), assetId = "video-id", assetEncryptionAlgorithm = "AES_CBC",
+        )
+        val message = newRegularMessageEntity(
+            id = "preview-domain-test", conversationId = conversationEntity1.id, senderUserId = userEntity1.id,
+            content = original.copy(assetPreview = typedPreview().copy(id = "same-key", domain = "remote.domain")),
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(message))
+        assetDao.insertAsset(AssetEntity("same-key", "local.domain", "/unrelated.jpg", 123, downloadedDate = null))
+
+        assertEquals(emptyList(), messageDAO.getAllMessageAssetIdsForConversationId(message.conversationId))
+        val files = mutableListOf<String>()
+        assetDao.deleteMessageFiles(message.conversationId, message.id) { files.add(it) }
+        assertTrue(files.isEmpty())
+        assertNotNull(assetDao.getAssetByKey("same-key").first())
+
+        val local = message.copy(
+            id = "local-preview",
+            content = original.copy(assetPreview = typedPreview().copy(id = "same-key", domain = null)),
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(local))
+        assertEquals(emptyList(), messageDAO.getAllMessageAssetIdsForConversationId(message.conversationId))
+        assetDao.deleteMessageFiles(local.conversationId, local.id) { files.add(it) }
+        assertTrue(files.isEmpty())
+        assertNotNull(assetDao.getAssetByKey("same-key").first())
+
+        assetDao.deleteAsset("same-key")
+        assetDao.insertAsset(AssetEntity("same-key", null, "/local.jpg", 123, downloadedDate = null))
+        assertEquals(listOf("same-key"), messageDAO.getAllMessageAssetIdsForConversationId(message.conversationId))
+        assetDao.deleteMessageFiles(local.conversationId, local.id) { files.add(it) }
+        assertEquals(listOf("/local.jpg"), files)
+        assertNull(assetDao.getAssetByKey("same-key").first())
+    }
+
+    @Test
+    fun previewUpdateFromDifferentClientCannotChangeCompletedAsset() = runTest {
+        insertInitialData()
+        val original = MessageEntityContent.Asset(
+            assetSizeInBytes = 100_000, assetMimeType = "video/mp4", assetOtrKey = byteArrayOf(1),
+            assetSha256Key = byteArrayOf(2), assetId = "video-id", assetEncryptionAlgorithm = "AES_CBC",
+        )
+        val message = newRegularMessageEntity(
+            id = "video-preview-security", conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id, senderClientId = "sender-client", content = original,
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(message))
+        messageDAO.insertOrIgnoreMessages(listOf(message.copy(senderClientId = "other-client", content = original.copy(
+            assetPreview = typedPreview().copy(id = "spoofed-preview"),
+        ))))
+        val reloaded = messageDAO.getMessageById(message.id, message.conversationId)!!.content as MessageEntityContent.Asset
+        assertNull(reloaded.assetPreview)
+    }
+
+    private fun typedPreview() = AssetPreviewEntity(
+        mimeType = "image/jpeg", size = 1024, width = 512, height = 288,
+        id = "preview-id", domain = "preview.domain", token = "preview-token",
+        otrKey = byteArrayOf(5, 6), sha256 = byteArrayOf(7, 8), encryptionAlgorithm = "AES_GCM",
+    )
+
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
