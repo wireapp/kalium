@@ -125,7 +125,6 @@ com.wire.kalium.logic.data.meeting
 com.wire.kalium.logic.data.message
 com.wire.kalium.logic.data.message.draft
 com.wire.kalium.logic.data.message.linkpreview
-com.wire.kalium.logic.data.message.paging
 com.wire.kalium.logic.data.message.reaction
 com.wire.kalium.logic.data.message.receipt
 com.wire.kalium.logic.data.message.timeline
@@ -254,7 +253,6 @@ com.wire.kalium.network.api.base.authenticated.keypackage
 com.wire.kalium.network.api.base.authenticated.logout
 com.wire.kalium.network.api.base.authenticated.meeting
 com.wire.kalium.network.api.base.authenticated.message
-com.wire.kalium.network.api.base.authenticated.nomaddevice
 com.wire.kalium.network.api.base.authenticated.notification
 com.wire.kalium.network.api.base.authenticated.prekey
 com.wire.kalium.network.api.base.authenticated.properties
@@ -268,7 +266,6 @@ com.wire.kalium.network.api.base.unauthenticated.domainregistration
 com.wire.kalium.network.api.base.unauthenticated.login
 com.wire.kalium.network.api.base.unauthenticated.register
 com.wire.kalium.network.api.base.unauthenticated.sso
-com.wire.kalium.network.api.base.unauthenticated.systemsettings
 com.wire.kalium.network.api.base.unauthenticated.verification
 com.wire.kalium.network.api.base.unbound.acme
 com.wire.kalium.network.api.base.unbound.configuration
@@ -359,7 +356,6 @@ com.wire.kalium.persistence.client
 com.wire.kalium.persistence.config
 com.wire.kalium.persistence.dao
 com.wire.kalium.persistence.dao.asset
-com.wire.kalium.persistence.dao.backup
 com.wire.kalium.persistence.dao.call
 com.wire.kalium.persistence.dao.cellfile
 com.wire.kalium.persistence.dao.client
@@ -391,5 +387,4 @@ com.wire.kalium.protobuf
 com.wire.kalium.protobuf.backup
 com.wire.kalium.protobuf.messages
 com.wire.kalium.protobuf.mls
-com.wire.kalium.protobuf.nomaddevice
 com.wire.kalium.protobuf.otr
