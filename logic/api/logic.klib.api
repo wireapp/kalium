@@ -3931,6 +3931,10 @@ final class com.wire.kalium.logic.feature.asset/ObservePaginatedAssetImageMessag
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Long, androidx.paging/PagingConfig): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.asset/AssetMessage>> // com.wire.kalium.logic.feature.asset/ObservePaginatedAssetImageMessages.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Long;androidx.paging.PagingConfig){}[0]
 }
 
+final class com.wire.kalium.logic.feature.asset/ObservePaginatedMediaMessages { // com.wire.kalium.logic.feature.asset/ObservePaginatedMediaMessages|null[0]
+    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Long, androidx.paging/PagingConfig): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.message/Message.Standalone>> // com.wire.kalium.logic.feature.asset/ObservePaginatedMediaMessages.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Long;androidx.paging.PagingConfig){}[0]
+}
+
 final class com.wire.kalium.logic.feature.auth.autoVersioningAuth/AuthenticationScopeForConfigIdUseCase { // com.wire.kalium.logic.feature.auth.autoVersioningAuth/AuthenticationScopeForConfigIdUseCase|null[0]
     final suspend fun invoke(kotlin/String): com.wire.kalium.logic.feature.auth.autoVersioningAuth/AutoVersionAuthScopeUseCase.Result // com.wire.kalium.logic.feature.auth.autoVersioningAuth/AuthenticationScopeForConfigIdUseCase.invoke|invoke(kotlin.String){}[0]
 }
@@ -9004,6 +9008,8 @@ final val com.wire.kalium.logic.feature.message/getPaginatedFlowOfMessagesBySear
     final fun (com.wire.kalium.logic.feature.message/MessageScope).<get-getPaginatedFlowOfMessagesBySearchQueryAndConversation>(): com.wire.kalium.logic.feature.message/GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase // com.wire.kalium.logic.feature.message/getPaginatedFlowOfMessagesBySearchQueryAndConversation.<get-getPaginatedFlowOfMessagesBySearchQueryAndConversation>|<get-getPaginatedFlowOfMessagesBySearchQueryAndConversation>@com.wire.kalium.logic.feature.message.MessageScope(){}[0]
 final val com.wire.kalium.logic.feature.message/observePaginatedImageAssetMessageByConversationId // com.wire.kalium.logic.feature.message/observePaginatedImageAssetMessageByConversationId|@com.wire.kalium.logic.feature.message.MessageScope{}observePaginatedImageAssetMessageByConversationId[0]
     final fun (com.wire.kalium.logic.feature.message/MessageScope).<get-observePaginatedImageAssetMessageByConversationId>(): com.wire.kalium.logic.feature.asset/ObservePaginatedAssetImageMessages // com.wire.kalium.logic.feature.message/observePaginatedImageAssetMessageByConversationId.<get-observePaginatedImageAssetMessageByConversationId>|<get-observePaginatedImageAssetMessageByConversationId>@com.wire.kalium.logic.feature.message.MessageScope(){}[0]
+final val com.wire.kalium.logic.feature.message/observePaginatedMediaMessages // com.wire.kalium.logic.feature.message/observePaginatedMediaMessages|@com.wire.kalium.logic.feature.message.MessageScope{}observePaginatedMediaMessages[0]
+    final fun (com.wire.kalium.logic.feature.message/MessageScope).<get-observePaginatedMediaMessages>(): com.wire.kalium.logic.feature.asset/ObservePaginatedMediaMessages // com.wire.kalium.logic.feature.message/observePaginatedMediaMessages.<get-observePaginatedMediaMessages>|<get-observePaginatedMediaMessages>@com.wire.kalium.logic.feature.message.MessageScope(){}[0]
 final val com.wire.kalium.logic.util/inWholeWeeks // com.wire.kalium.logic.util/inWholeWeeks|@kotlin.time.Duration{}inWholeWeeks[0]
     final fun (kotlin.time/Duration).<get-inWholeWeeks>(): kotlin/Long // com.wire.kalium.logic.util/inWholeWeeks.<get-inWholeWeeks>|<get-inWholeWeeks>@kotlin.time.Duration(){}[0]
 
