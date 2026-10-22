@@ -2226,6 +2226,25 @@ including the pending-message retry.</p>
 update at once. If sending fails, it restores the previous vote, unless a newer
 vote replaced it in the meantime, and returns a failure so the UI can tell the
 user.</p>
+<h3>Replies</h3>
+<p>A text message can quote a poll. A quote carries the SHA-256 of the quoted
+message, so a reader can check that the person replying saw the same content.
+Proteus encrypts a copy for each recipient, so a sender could show recipients
+different options under one poll id. The poll hash therefore covers everything
+that is fixed at creation, in this order:</p>
+<ul>
+<li>the bytes <code>FE FF</code>;</li>
+<li>the question;</li>
+<li>the number of options, as a 4-byte big-endian integer;</li>
+<li>each option's id and text, in the poll's order;</li>
+<li><code>allow_multiple_answers</code>, as one byte, 1 or 0;</li>
+<li>the poll's time in seconds, as an 8-byte big-endian integer, as for text.</li>
+</ul>
+<p>Each string is UTF-16BE, preceded by its length in bytes as a 4-byte big-endian
+integer, so two different polls never encode to the same bytes. Votes are not
+part of the hash. <code>QuotedMessageDetails.Poll</code> gives the UI the question. Clients
+without poll support cannot verify the quote and show it as unavailable, like a
+quote of any message they cannot read.</p>
 <h2>Consequences</h2>
 <p>Poll creation and voting stay end-to-end encrypted and work without bots. Every
 client derives the same result from the votes it has received. A client that
