@@ -360,10 +360,10 @@ internal class AssetDataSource(
             return Either.Left(StorageFailure.Generic(IOException("Asset preview exceeds size limit")))
         }
         val remote = preview.remoteData
-        return fetchDecodedAsset(remote.assetId).fold(
+        return fetchCachedPreview(remote.assetId, remote.assetDomain).flatMapLeft(
             {
                 // Pending previews only have a managed local file and must never trigger a remote request.
-                if (remote.sha256.isEmpty()) Either.Left(it)
+                if (it != StorageFailure.DataNotFound || remote.sha256.isEmpty()) Either.Left(it)
                 else downloadDecodedAsset(
                     assetId = remote.assetId,
                     assetDomain = remote.assetDomain,
@@ -375,9 +375,23 @@ internal class AssetDataSource(
                     maxDecodedSize = AssetContent.Preview.MAX_SIZE_IN_BYTES,
                 )
             },
-            { path -> cachedPreviewData(path) },
         )
     }
+
+    private suspend fun fetchCachedPreview(assetId: String, assetDomain: String?): Either<CoreFailure, FetchedAssetData> =
+        wrapStorageRequest { assetDao.getAssetByKey(assetId).firstOrNull() }
+            .flatMap { asset ->
+                wrapStorageRequest {
+                    // Check identity before touching the file or evicting a missing-file cache entry.
+                    if (asset.domain.orEmpty() != assetDomain.orEmpty()) throw IOException("Asset preview cache domain mismatch")
+                    val path = asset.dataPath.toPath()
+                    if (kaliumFileSystem.exists(path)) path else {
+                        assetDao.deleteAsset(assetId)
+                        null
+                    }
+                }
+            }
+            .flatMap { cachedPreviewData(it) }
 
     private fun cachedPreviewData(path: Path): Either<CoreFailure, FetchedAssetData> = wrapStorageRequest {
         val size = kaliumFileSystem.size(path)
@@ -497,7 +511,7 @@ internal class AssetDataSource(
                 Either.Left(StorageFailure.Generic(IOException("Decoded asset preview exceeds size limit")))
             else -> saveAssetInDB(assetId, assetDomain, path, assetDataSize).flatMap {
                 if (maxDecodedSize == null) Either.Right(FetchedAssetData(path, true))
-                else fetchDecodedAsset(assetId).flatMap { cachedPreviewData(it) }.map {
+                else fetchCachedPreview(assetId, assetDomain).map {
                     // INSERT OR IGNORE may retain a concurrent download. Return its managed path;
                     // the outer cleanup removes our unused candidate when the paths differ.
                     it.copy(justDownloaded = it.path == path)

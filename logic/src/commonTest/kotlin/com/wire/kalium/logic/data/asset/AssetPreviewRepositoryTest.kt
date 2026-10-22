@@ -243,6 +243,112 @@ class AssetPreviewRepositoryTest {
         verifySuspend(VerifyMode.exactly(0)) { fixture.api.downloadAsset(any(), any(), any(), any()) }
     }
 
+    @Test
+    fun cachedPreviewFromAnotherDomainIsRejectedForRemoteAndPendingRequests() = runTest {
+        for (pending in listOf(false, true)) {
+            val fixture = Fixture()
+            val path = fixture.cachePreview("other.domain")
+            val remote = fixture.preview.remoteData
+            val preview = fixture.preview.copy(remoteData = remote.copy(sha256 = if (pending) byteArrayOf() else remote.sha256))
+
+            fixture.repository.fetchPreviewAsset(preview).shouldFail()
+
+            assertEquals("other.domain", fixture.stored?.domain)
+            assertEquals("cached image", fixture.files.source(path).buffer().use { it.readUtf8() })
+            verifySuspend(VerifyMode.exactly(0)) {
+                fixture.api.downloadAsset(any(), any(), any(), any())
+                fixture.dao.deleteAsset(any())
+                fixture.dao.insertAsset(any())
+            }
+        }
+    }
+
+    @Test
+    fun missingFileInAnotherDomainDoesNotEvictItsCacheEntry() = runTest {
+        val fixture = Fixture()
+        val path = fixture.cachePreview("other.domain")
+        fixture.files.delete(path)
+        val entry = fixture.stored
+
+        fixture.repository.fetchPreviewAsset(fixture.preview).shouldFail()
+
+        assertEquals(entry, fixture.stored)
+        verifySuspend(VerifyMode.exactly(0)) {
+            fixture.api.downloadAsset(any(), any(), any(), any())
+            fixture.dao.deleteAsset(any())
+            fixture.dao.insertAsset(any())
+        }
+    }
+
+    @Test
+    fun cachedPreviewNormalizesMissingAndEmptyDomains() = runTest {
+        for ((cachedDomain, requestedDomain) in listOf(null to "", "" to null)) {
+            val fixture = Fixture()
+            val path = fixture.cachePreview(cachedDomain)
+            val preview = fixture.preview.copy(remoteData = fixture.preview.remoteData.copy(assetDomain = requestedDomain))
+
+            fixture.repository.fetchPreviewAsset(preview).shouldSucceed {
+                assertEquals(path, it.path)
+                assertEquals(false, it.justDownloaded)
+            }
+
+            verifySuspend(VerifyMode.exactly(0)) { fixture.api.downloadAsset(any(), any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun concurrentWinnerFromAnotherDomainIsRejectedWithoutDeletingItsFile() = runTest {
+        val fixture = Fixture()
+        var winnerPath: okio.Path? = null
+        val preview = fixture.withEncryptedDownload(1024) {
+            winnerPath = fixture.cachePreview("other.domain")
+        }
+
+        fixture.repository.fetchPreviewAsset(preview).shouldFail()
+
+        val path = requireNotNull(winnerPath)
+        assertEquals("other.domain", fixture.stored?.domain)
+        assertEquals("cached image", fixture.files.source(path).buffer().use { it.readUtf8() })
+        assertEquals(listOf(path), fixture.files.listDirectories(path.parent!!))
+        assertTrue(fixture.files.listDirectories(fixture.files.rootCachePath).isEmpty())
+        verifySuspend(VerifyMode.exactly(0)) { fixture.dao.deleteAsset(any()) }
+    }
+
+    @Test
+    fun concurrentWinnerNormalizesMissingAndEmptyDomains() = runTest {
+        for ((cachedDomain, requestedDomain) in listOf(null to "", "" to null)) {
+            val fixture = Fixture()
+            var winnerPath: okio.Path? = null
+            val preview = fixture.withEncryptedDownload(1024) {
+                winnerPath = fixture.cachePreview(cachedDomain)
+            }.let { it.copy(remoteData = it.remoteData.copy(assetDomain = requestedDomain)) }
+
+            fixture.repository.fetchPreviewAsset(preview).shouldSucceed {
+                assertEquals(winnerPath, it.path)
+                assertEquals(false, it.justDownloaded)
+            }
+
+            val path = requireNotNull(winnerPath)
+            assertEquals(listOf(path), fixture.files.listDirectories(path.parent!!))
+            assertTrue(fixture.files.listDirectories(fixture.files.rootCachePath).isEmpty())
+            verifySuspend(VerifyMode.exactly(0)) { fixture.dao.deleteAsset(any()) }
+        }
+    }
+
+    @Test
+    fun missingFileInMatchingDomainCanBeDownloadedAgain() = runTest {
+        val fixture = Fixture()
+        val path = fixture.cachePreview("domain")
+        fixture.files.delete(path)
+        everySuspend { fixture.dao.deleteAsset(fixture.preview.remoteData.assetId) } calls { fixture.stored = null }
+        val preview = fixture.withEncryptedDownload(1024)
+
+        fixture.repository.fetchPreviewAsset(preview).shouldSucceed {
+            assertTrue(it.justDownloaded)
+            assertEquals(1024L, fixture.files.size(it.path))
+        }
+    }
+
     private class Fixture {
         val files = FakeKaliumFileSystem()
         val api = mock<AssetApi>()
@@ -268,6 +374,13 @@ class AssetPreviewRepositoryTest {
                 if (stored == null) stored = invocation.args[0] as AssetEntity
                 Unit
             }
+        }
+
+        fun cachePreview(domain: String?): okio.Path {
+            val path = files.providePersistentAssetPath("cached-preview.jpg")
+            files.sink(path).buffer().use { it.writeUtf8("cached image") }
+            stored = AssetEntity(preview.remoteData.assetId, domain, path.toString(), 12, null, 1)
+            return path
         }
 
         fun withEncryptedDownload(decodedSize: Int, beforeDownload: suspend () -> Unit = {}): AssetContent.Preview {
