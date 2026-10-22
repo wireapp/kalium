@@ -18,6 +18,15 @@
 package com.wire.kalium.logic.feature.asset.upload
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.logic.data.asset.FetchedAssetData
+import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
+import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.sync.SendPendingAssetMessageUseCaseImpl
+import com.wire.kalium.messaging.sending.MessageSendFailureHandlerImpl
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.utils.AES256Key
@@ -581,6 +590,113 @@ class ScheduleNewAssetMessageUseCaseTest {
         assertEquals(AssetUploadCompletion.Success, operation.retry().awaitCompletion())
     }
 
+    @Test
+    fun offlineLegacyUploadIsRetriedAfterReconnect() = runTest(testDispatcher.default) {
+        val arrangement = Arrangement(this).withAssetMessagePersistSuccess()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+        val assets = mock<AssetRepository>()
+        val sender = mock<MessageSender>()
+        val persist = mock<PersistMessageUseCase>()
+        val getStatus = mock<GetAssetMessageTransferStatusUseCase>()
+        var transfer = AssetTransferStatus.NOT_DOWNLOADED
+        var messageStatus = MessageEntity.Status.PENDING
+        var resendRequests = 0
+        val handler = MessageSendFailureHandlerImpl(
+            recipients = mock(),
+            updateMessageStatus = { status, _, _ -> messageStatus = status; Unit.right() },
+            scheduleResend = { resendRequests++ },
+        )
+        val audio = AudioNormalizedLoudnessBuilderMock()
+        val realUpload = UploadAssetUseCaseImpl(
+            assets, sender, handler, arrangement.updateTransferStatus, mock(), persist, audio,
+            pendingMessagesEnabled = true, dispatcher = testDispatcher,
+        )
+        val (_, scheduler) = arrangement.arrange(realUpload, handler)
+        val message = TestMessage.assetMessage()
+        val content = message.content as MessageContent.Asset
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns message.copy(
+            content = MessageContent.Asset(content.value.copy(remoteData = content.value.remoteData.copy(sha256 = byteArrayOf())))
+        ).right()
+        everySuspend { arrangement.updateTransferStatus(any(), any(), any()) } calls { (status: AssetTransferStatus) ->
+            transfer = status
+            UpdateTransferStatusResult.Success
+        }
+        everySuspend { assets.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            NetworkFailure.NoNetworkConnection(null).left()
+        everySuspend { getStatus(any(), any()) } calls { transfer }
+        assertIs<ScheduleNewAssetMessageResult.Success>(scheduler(assetUploadParams))
+        advanceUntilIdle()
+        assertEquals(1, resendRequests)
+        assertEquals(MessageEntity.Status.PENDING, messageStatus)
+
+        assertEquals(AssetTransferStatus.FAILED_UPLOAD, transfer)
+        // Reconnect runs the real pending-asset dispatcher through upload, persistence and send.
+        var retryEntered = false
+        everySuspend { assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any()) } calls {
+            retryEntered = true
+            FetchedAssetData("/local/asset".toPath(), false).right()
+        }
+        everySuspend { assets.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            (UploadedAssetId("remote", "wire.com") to SHA256Key(byteArrayOf(1))).right()
+        everySuspend { assets.deleteAssetLocally(any()) } returns Unit.right()
+        everySuspend { persist(any()) } returns Unit.right()
+        everySuspend { sender.sendMessage(any(), any()) } returns Unit.right()
+        val pending = SendPendingAssetMessageUseCaseImpl(
+            assets, persist, arrangement.updateTransferStatus, getStatus, sender, handler, audio,
+            dispatchers = testDispatcher,
+        )
+        assertEquals(Unit.right(), pending(TestMessage.assetMessage().copy(status = Message.Status.Pending)))
+        assertEquals(AssetTransferStatus.UPLOADED, transfer)
+        verifySuspend(VerifyMode.exactly(1)) { sender.sendMessage(any(), any()) }
+        assertTrue(retryEntered, "Reconnect must enter reupload; transfer=$transfer, message=$messageStatus")
+    }
+
+    @Test
+    fun offlineSendRestoresUploadedBeforeSchedulingResend() = runTest(testDispatcher.default) {
+        val message = TestMessage.assetMessage()
+        val content = message.content as MessageContent.Asset
+        val stored = message.copy(content = MessageContent.Asset(
+            content.value.copy(remoteData = content.value.remoteData.copy(sha256 = byteArrayOf(1)))
+        ))
+        val (arrangement, scheduler) = Arrangement(this).withAssetMessagePersistSuccess()
+            .withPersistedMessage(stored)
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll).arrange()
+        var transfer = AssetTransferStatus.UPLOAD_IN_PROGRESS
+        var scheduled = false
+        everySuspend { arrangement.uploadAsset(any(), any()) } returns NetworkFailure.NoNetworkConnection(null).left()
+        everySuspend { arrangement.updateTransferStatus(any(), any(), any()) } calls { (status: AssetTransferStatus) ->
+            transfer = status
+            UpdateTransferStatusResult.Success
+        }
+        everySuspend {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(true))
+        } calls {
+            assertEquals(AssetTransferStatus.UPLOADED, transfer)
+            scheduled = true
+        }
+        scheduler(assetUploadParams)
+        advanceUntilIdle()
+        assertTrue(scheduled)
+        verifySuspend(VerifyMode.not) { arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any()) }
+    }
+
+    @Test
+    fun offlineFinalizerPreservesAcknowledgedMessagesWithoutRescheduling() = runTest(testDispatcher.default) {
+        for (status in listOf(Message.Status.Sent, Message.Status.Delivered, Message.Status.Read(1))) {
+            val (arrangement, scheduler) = Arrangement(this).withAssetMessagePersistSuccess()
+                .withPersistedMessage(TestMessage.assetMessage().copy(status = status))
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll).arrange()
+            everySuspend { arrangement.uploadAsset(any(), any()) } returns NetworkFailure.NoNetworkConnection(null).left()
+            scheduler(assetUploadParams)
+            advanceUntilIdle()
+            verifySuspend(VerifyMode.not) {
+                arrangement.updateTransferStatus(any(), any(), any())
+                arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any())
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+            }
+        }
+    }
+
     private class Arrangement(val coroutineScope: CoroutineScope) {
         val persistNewAssetMessage = mock<PersistNewAssetMessageUseCase>(mode = MockMode.autoUnit)
         val uploadAsset = mock<UploadAssetUseCase>(mode = MockMode.autoUnit)
@@ -647,16 +763,19 @@ class ScheduleNewAssetMessageUseCaseTest {
             } returns flowOf(MessageEntity.Visibility.DELETED.right())
         }
 
-        fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
+        fun arrange(
+            actualUpload: UploadAssetUseCase = uploadAsset,
+            actualFailureHandler: MessageSendFailureHandler = messageSendFailureHandler,
+        ) = this to ScheduleNewAssetMessageUseCaseImpl(
             persistNewAssetMessage = persistNewAssetMessage,
-            uploadAsset = uploadAsset,
+            uploadAsset = actualUpload,
             updateAssetMessageTransferStatus = updateTransferStatus,
             userId = QualifiedID("some-id", "some-domain"),
             slowSyncRepository = slowSyncRepository,
             messageRepository = messageRepository,
             observeFileSharingStatus = observerFileSharingStatusUseCase,
             validateAssetFileUseCase = validateAssetMimeTypeUseCase,
-            messageSendFailureHandler = messageSendFailureHandler,
+            messageSendFailureHandler = actualFailureHandler,
             pendingMessagesEnabled = pendingMessages,
             scope = coroutineScope,
             dispatcher = testDispatcher,

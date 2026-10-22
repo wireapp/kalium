@@ -183,13 +183,15 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             onFailed = { failure ->
                 if (ownsMessage) {
                     if (!isRetry && pendingMessagesEnabled && failure is NetworkFailure.NoNetworkConnection) {
-                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                            failure,
-                            originalMessage.conversationId,
-                            originalMessage.id,
-                            TYPE,
-                            scheduleResendIfNoNetwork = true
-                        )
+                        if (restoreTransferStatus(originalMessage.conversationId, originalMessage.id)) {
+                            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                                failure,
+                                originalMessage.conversationId,
+                                originalMessage.id,
+                                TYPE,
+                                scheduleResendIfNoNetwork = true
+                            )
+                        }
                     } else {
                         markCancelled(originalMessage.conversationId, originalMessage.id, failure)
                     }
@@ -199,10 +201,21 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     }
 
     private suspend fun markCancelled(conversationId: ConversationId, messageId: String, failure: CoreFailure? = null) {
+        if (!restoreTransferStatus(conversationId, messageId)) return
+        val status = if (failure is NetworkFailure.FederatedBackendFailure) {
+            MessageEntity.Status.FAILED_REMOTELY
+        } else {
+            MessageEntity.Status.FAILED
+        }
+        messageRepository.updateMessageStatusIfNotAcknowledged(status, conversationId, messageId)
+    }
+
+    /** Restore transfer eligibility before exposing the message to a reconnect worker. */
+    private suspend fun restoreTransferStatus(conversationId: ConversationId, messageId: String): Boolean {
         val persisted = messageRepository.getMessageById(conversationId, messageId).getOrNull()
         if (persisted?.status?.isSuccessfullySent() == true) {
             currentCoroutineContext()[AssetMessageSendReceipt]?.succeeded = true
-            return
+            return false
         }
         val content = persisted?.content as? MessageContent.Asset
         val assetUploaded = content?.value?.remoteData?.sha256?.isNotEmpty() == true
@@ -211,12 +224,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             conversationId,
             messageId
         )
-        val status = if (failure is NetworkFailure.FederatedBackendFailure) {
-            MessageEntity.Status.FAILED_REMOTELY
-        } else {
-            MessageEntity.Status.FAILED
-        }
-        messageRepository.updateMessageStatusIfNotAcknowledged(status, conversationId, messageId)
+        return true
     }
 
     private suspend fun retryUpload(
