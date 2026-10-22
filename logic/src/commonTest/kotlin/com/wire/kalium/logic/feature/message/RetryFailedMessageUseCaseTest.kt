@@ -87,6 +87,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertIs
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.days
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryFailedMessageUseCaseTest {
@@ -251,10 +252,10 @@ class RetryFailedMessageUseCaseTest {
         testResendingWithGivenMessageStatus(Message.Status.Pending, false)
 
     @Test
-    fun givenAValidFailedMessage_whenRetryingFailedMessage_thenShouldSendAMessage() =
+    fun givenAnOldFailedMessage_whenRetryingFailedMessage_thenShouldSendAMessage() =
         runTest(testDispatcher.default) {
             // given
-            val message = TEXT_MESSAGE.copy(status = Message.Status.Failed)
+            val message = TEXT_MESSAGE.copy(status = Message.Status.Failed, date = TEST_DATE - 365.days)
             val (arrangement, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))

@@ -127,7 +127,6 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
@@ -182,7 +181,6 @@ public class MessageScope internal constructor(
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val linkPreviewEnabled: Boolean,
     private val scope: CoroutineScope,
     private val kaliumConfigs: KaliumConfigs,
@@ -296,7 +294,6 @@ public class MessageScope internal constructor(
             messageRepository = messageRepository,
             selfUserId = selfUserId,
             notificationEventsManager = notificationEventsManager,
-            persistMessageHookNotifier = persistenceEventHookNotifier
         )
 
     public val sendTextMessage: SendTextMessageUseCase by lazy {
@@ -479,7 +476,6 @@ public class MessageScope internal constructor(
             currentClientIdProvider,
             selfConversationIdProvider,
             deleteMessageAttachmentsUseCase.value,
-            persistenceEventHookNotifier,
         )
 
     public val toggleReaction: ToggleReactionUseCase
@@ -489,7 +485,6 @@ public class MessageScope internal constructor(
             slowSyncRepository,
             reactionRepository,
             messageSender,
-            persistenceEventHookNotifier
         )
 
     public val observeMessageReactions: ObserveMessageReactionsUseCase

@@ -23,7 +23,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -31,8 +30,6 @@ import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 
 internal sealed class RefillKeyPackagesResult {
 
@@ -59,8 +56,6 @@ internal class RefillKeyPackagesUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val selfUserId: UserId,
-    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
     private val userConfigRepository: UserConfigRepository,
 ) : RefillKeyPackagesUseCase {
     override suspend operator fun invoke(mlsContext: MlsCoreCryptoContext): RefillKeyPackagesResult {
@@ -76,7 +71,6 @@ internal class RefillKeyPackagesUseCaseImpl(
                         kaliumLogger.i("Key packages: Refilling key packages...")
                         val amount = keyPackageLimitsProvider.refillAmount()
                         keyPackageRepository.uploadNewKeyPackages(mlsContext, selfClientId, amount)
-                            .onSuccess { cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId) }
                             .flatMap { Either.Right(Unit) }
                     } else {
                         kaliumLogger.i("Key packages: Refill not needed")

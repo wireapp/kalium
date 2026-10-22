@@ -3300,6 +3300,27 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun incomingNamesUseOnlyTheirConversationProtocolsVerification() = runTest {
+        withContext(Dispatchers.Default) {
+            for (protocol in listOf("PROTEUS", "MLS", "MIXED")) {
+                for (mls in listOf("NOT_VERIFIED", "DEGRADED")) for (proteus in listOf("NOT_VERIFIED", "DEGRADED")) {
+                    withFixture(protocol != "PROTEUS") { fixture ->
+                        fixture.sql("UPDATE Conversation SET protocol = '$protocol', type = 'GROUP', name = 'Named group', " +
+                            "proteus_verification_status = '$proteus', verification_status = '$mls'")
+                        val event = fixture.event("incoming", fixture.encrypt("incoming", fixture.callContent()), time = Clock.System.now())
+                        fixture.releasePrepared()
+                        assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id))
+                        val hidden = (protocol != "PROTEUS" && mls == "DEGRADED") ||
+                            (protocol != "MLS" && proteus == "DEGRADED")
+                        assertEquals(if (hidden) null else "Named group", fixture.receivedCalls.single().callerName,
+                            "$protocol/$mls/$proteus")
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     fun expiredCallingDoesNotHideLaterIncomingCallAndDegradedNamesStayPrivate() = runTest {
         for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
@@ -11377,7 +11398,7 @@ class NotificationProcessorNativeTest {
                 }
             }
             val manager = ExistingAccountSessionManager(SELF, com.wire.kalium.logic.data.conversation.ClientId(CLIENT),
-                runtime.prepared.serverConfig, null, storage)
+                runtime.prepared.serverConfig, storage)
             val api = object : AccessTokenApi {
                 override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> {
                     assertEquals(CLIENT, clientId)
@@ -12430,7 +12451,7 @@ class NotificationProcessorNativeTest {
                         ?: ServerConfig.DUMMY,
                     ServerConfig.MetaData(false, CommonApiVersionType.Valid(apiVersion), SELF.domain)
                 ),
-                if (mlsEnabled) CIPHER else null, null,
+                if (mlsEnabled) CIPHER else null,
             ))
             lease?.release()
             lease = null

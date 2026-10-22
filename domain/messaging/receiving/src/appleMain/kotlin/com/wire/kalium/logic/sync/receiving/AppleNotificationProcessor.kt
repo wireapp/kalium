@@ -52,7 +52,6 @@ public suspend fun AppleAccountRuntime.notificationProcessor(
     options: ReceivingOptions = ReceivingOptions(),
     diagnostics: ReceivingDiagnostics? = null,
 ): NotificationProcessor {
-    check(prepared.nomadServiceUrl == null) { "Nomad receiving hooks are not implemented" }
     val rejoin = ReceivedMLSRejoin(network.mlsMessageApi, database.metadataDAO, diagnostics)
     val mls = mlsClient(rejoin)
     return NotificationProcessor(

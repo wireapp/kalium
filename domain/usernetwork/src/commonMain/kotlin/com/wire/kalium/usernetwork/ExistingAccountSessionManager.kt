@@ -44,7 +44,6 @@ public class ExistingAccountSessionManager(
     private val userId: UserId,
     private val clientId: ClientId,
     serverConfig: ServerConfig,
-    private val nomadUrl: String?,
     private val tokenStorage: AuthTokenStorage,
 ) : SessionManager {
     private val configuration = ServerConfigMapperImpl(ApiVersionMapperImpl()).toDTO(serverConfig)
@@ -57,7 +56,6 @@ public class ExistingAccountSessionManager(
 
     override suspend fun session(): SessionDTO = existingSession()
     override fun serverConfig(): ServerConfigDTO = configuration
-    override fun nomadServiceUrl(): String? = nomadUrl
     override fun proxyCredentials(): ProxyCredentialsDTO? = proxy
 
     override suspend fun updateToken(accessTokenApi: AccessTokenApi, oldRefreshToken: String?): SessionDTO = refreshMutex.withLock {

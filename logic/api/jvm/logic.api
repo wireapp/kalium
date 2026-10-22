@@ -32,7 +32,6 @@ public final class com/wire/kalium/logic/GlobalKaliumScope : kotlinx/coroutines/
 	public final fun getClearNewClientsForUser ()Lcom/wire/kalium/logic/feature/client/ClearNewClientsForUserUseCase;
 	public fun getCoroutineContext ()Lkotlin/coroutines/CoroutineContext;
 	public final fun getDeleteSession ()Lcom/wire/kalium/logic/feature/session/DeleteSessionUseCase;
-	public final fun getDoesValidNomadAccountExist ()Lcom/wire/kalium/logic/feature/session/DoesValidNomadAccountExistUseCase;
 	public final fun getDoesValidSessionExist ()Lcom/wire/kalium/logic/feature/session/DoesValidSessionExistUseCase;
 	public final fun getFetchServerConfigFromDeepLink ()Lcom/wire/kalium/logic/feature/server/GetServerConfigUseCase;
 	public final fun getGetAllSessions ()Lcom/wire/kalium/logic/feature/session/GetAllSessionsUseCase;
@@ -56,7 +55,6 @@ public final class com/wire/kalium/logic/GlobalKaliumScope : kotlinx/coroutines/
 	public final fun getValidateSSOCodeUseCase ()Lcom/wire/kalium/logic/feature/auth/sso/ValidateSSOCodeUseCase;
 	public final fun getValidateUserHandleUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidateUserHandleUseCase;
 	public final fun isCrossBackendLoginBlocked ()Lcom/wire/kalium/logic/feature/server/IsCrossBackendLoginBlockedUseCase;
-	public final fun isCurrentSessionNomadAccount ()Lcom/wire/kalium/logic/feature/session/IsCurrentSessionNomadAccountUseCase;
 }
 
 public final class com/wire/kalium/logic/data/asset/AssetsStorageFolder {
@@ -581,17 +579,6 @@ public final class com/wire/kalium/logic/data/event/EventExtentionKt {
 public abstract interface class com/wire/kalium/logic/data/id/FederatedIdMapper {
 	public abstract fun parseToFederatedId (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun parseToFederatedId (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public final class com/wire/kalium/logic/data/message/paging/NomadMessagePagingResult {
-	public fun <init> (Z)V
-	public final fun component1 ()Z
-	public final fun copy (Z)Lcom/wire/kalium/logic/data/message/paging/NomadMessagePagingResult;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/paging/NomadMessagePagingResult;ZILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/paging/NomadMessagePagingResult;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getHasMore ()Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/data/message/timeline/MessageListAsset {
@@ -1196,8 +1183,8 @@ public final class com/wire/kalium/logic/data/publicuser/model/UserSearchResult 
 }
 
 public final class com/wire/kalium/logic/data/session/StoreSessionParam {
-	public fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;ZLcom/wire/kalium/logic/data/user/SsoManagedBy;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;ZLcom/wire/kalium/logic/data/user/SsoManagedBy;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;ZLcom/wire/kalium/logic/data/user/SsoManagedBy;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;ZLcom/wire/kalium/logic/data/user/SsoManagedBy;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lcom/wire/kalium/logic/data/user/SsoId;
 	public final fun component3 ()Lcom/wire/kalium/logic/data/auth/AccountTokens;
@@ -1205,13 +1192,11 @@ public final class com/wire/kalium/logic/data/session/StoreSessionParam {
 	public final fun component5 ()Z
 	public final fun component6 ()Lcom/wire/kalium/logic/data/user/SsoManagedBy;
 	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;ZLcom/wire/kalium/logic/data/user/SsoManagedBy;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/data/session/StoreSessionParam;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/session/StoreSessionParam;Ljava/lang/String;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;ZLcom/wire/kalium/logic/data/user/SsoManagedBy;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/session/StoreSessionParam;
+	public final fun copy (Ljava/lang/String;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;ZLcom/wire/kalium/logic/data/user/SsoManagedBy;Ljava/lang/String;)Lcom/wire/kalium/logic/data/session/StoreSessionParam;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/session/StoreSessionParam;Ljava/lang/String;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;ZLcom/wire/kalium/logic/data/user/SsoManagedBy;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/session/StoreSessionParam;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccountTokens ()Lcom/wire/kalium/logic/data/auth/AccountTokens;
 	public final fun getManagedBy ()Lcom/wire/kalium/logic/data/user/SsoManagedBy;
-	public final fun getNomadServiceUrl ()Ljava/lang/String;
 	public final fun getProxyCredentials ()Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;
 	public final fun getServerConfigId ()Ljava/lang/String;
 	public final fun getSsoId ()Lcom/wire/kalium/logic/data/user/SsoId;
@@ -1790,13 +1775,6 @@ public final class com/wire/kalium/logic/feature/auth/AddAuthenticatedUserUseCas
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/feature/auth/AddAuthenticatedUserUseCase$Result$Failure$NomadSingleUserViolation : com/wire/kalium/logic/feature/auth/AddAuthenticatedUserUseCase$Result$Failure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/auth/AddAuthenticatedUserUseCase$Result$Failure$NomadSingleUserViolation;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class com/wire/kalium/logic/feature/auth/AddAuthenticatedUserUseCase$Result$Failure$SsoIdentityChanged : com/wire/kalium/logic/feature/auth/AddAuthenticatedUserUseCase$Result$Failure {
 	public static final field INSTANCE Lcom/wire/kalium/logic/feature/auth/AddAuthenticatedUserUseCase$Result$Failure$SsoIdentityChanged;
 	public fun equals (Ljava/lang/Object;)Z
@@ -1918,7 +1896,6 @@ public final class com/wire/kalium/logic/feature/auth/AuthenticationScope {
 	public final fun getRegisterScope ()Lcom/wire/kalium/logic/feature/register/RegisterScope;
 	public final fun getRequestSecondFactorVerificationCode ()Lcom/wire/kalium/logic/feature/auth/verification/RequestSecondFactorVerificationCodeUseCase;
 	public final fun getSsoLoginScope ()Lcom/wire/kalium/logic/feature/auth/sso/SSOLoginScope;
-	public final fun isNomadProfilesEnabled ()Lcom/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase;
 }
 
 public final class com/wire/kalium/logic/feature/auth/DomainLookupUseCase {
@@ -1990,35 +1967,6 @@ public final class com/wire/kalium/logic/feature/auth/EnterpriseLoginResult$Succ
 
 public abstract interface class com/wire/kalium/logic/feature/auth/GetLoginFlowForDomainUseCase {
 	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public final class com/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase {
-	public final fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public abstract interface class com/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result {
-}
-
-public final class com/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result$Failure : com/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result {
-	public fun <init> (Lcom/wire/kalium/common/error/NetworkFailure;)V
-	public final fun component1 ()Lcom/wire/kalium/common/error/NetworkFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/NetworkFailure;)Lcom/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result$Failure;Lcom/wire/kalium/common/error/NetworkFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result$Failure;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getError ()Lcom/wire/kalium/common/error/NetworkFailure;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result$Success : com/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result {
-	public fun <init> (Z)V
-	public final fun component1 ()Z
-	public final fun copy (Z)Lcom/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result$Success;ZILjava/lang/Object;)Lcom/wire/kalium/logic/feature/auth/IsNomadProfilesEnabledUseCase$Result$Success;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public final fun isEnabled ()Z
-	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/auth/LoginContext {
@@ -2512,83 +2460,6 @@ public final class com/wire/kalium/logic/feature/auth/verification/RequestSecond
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract class com/wire/kalium/logic/feature/backup/ApplyCryptoStateResult {
-}
-
-public final class com/wire/kalium/logic/feature/backup/ApplyCryptoStateResult$Failure : com/wire/kalium/logic/feature/backup/ApplyCryptoStateResult {
-	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
-	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/backup/ApplyCryptoStateResult$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/ApplyCryptoStateResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/ApplyCryptoStateResult$Failure;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/backup/ApplyCryptoStateResult$Success : com/wire/kalium/logic/feature/backup/ApplyCryptoStateResult {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/backup/ApplyCryptoStateResult$Success;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract class com/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateResult {
-}
-
-public final class com/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateResult$Failure : com/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateResult {
-	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
-	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateResult$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateResult$Failure;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateResult$Success : com/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateResult {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateResult$Success;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract interface class com/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateUseCase {
-	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public abstract interface class com/wire/kalium/logic/feature/backup/BackupCryptoDBResult {
-}
-
-public final class com/wire/kalium/logic/feature/backup/BackupCryptoDBResult$Failure : com/wire/kalium/logic/feature/backup/BackupCryptoDBResult {
-	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
-	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/backup/BackupCryptoDBResult$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/BackupCryptoDBResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/BackupCryptoDBResult$Failure;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/backup/BackupCryptoDBResult$Success : com/wire/kalium/logic/feature/backup/BackupCryptoDBResult {
-	public fun <init> (Lokio/Path;Ljava/lang/String;)V
-	public final fun component1 ()Lokio/Path;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Lokio/Path;Ljava/lang/String;)Lcom/wire/kalium/logic/feature/backup/BackupCryptoDBResult$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/BackupCryptoDBResult$Success;Lokio/Path;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/BackupCryptoDBResult$Success;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getBackupFilePath ()Lokio/Path;
-	public final fun getBackupName ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract interface class com/wire/kalium/logic/feature/backup/BackupCryptoDBUseCase {
-	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
 public final class com/wire/kalium/logic/feature/backup/BackupFileFormat : java/lang/Enum {
 	public static final field ANDROID Lcom/wire/kalium/logic/feature/backup/BackupFileFormat;
 	public static final field MULTIPLATFORM Lcom/wire/kalium/logic/feature/backup/BackupFileFormat;
@@ -2598,12 +2469,9 @@ public final class com/wire/kalium/logic/feature/backup/BackupFileFormat : java/
 }
 
 public final class com/wire/kalium/logic/feature/backup/BackupScope {
-	public final fun getBackupAndUploadCryptoState ()Lcom/wire/kalium/logic/feature/backup/BackupAndUploadCryptoStateUseCase;
 	public final fun getCreate ()Lcom/wire/kalium/logic/feature/backup/CreateBackupUseCase;
 	public final fun getCreateUnEncryptedCopy ()Lcom/wire/kalium/logic/feature/backup/CreateObfuscatedCopyUseCase;
 	public final fun getRestore ()Lcom/wire/kalium/logic/feature/backup/RestoreBackupUseCase;
-	public final fun getRestoreCryptoState ()Lcom/wire/kalium/logic/feature/backup/RestoreCryptoStateUseCase;
-	public final fun getSetLastDeviceId ()Lcom/wire/kalium/logic/feature/backup/SetLastDeviceIdUseCase;
 	public final fun getVerify ()Lcom/wire/kalium/logic/feature/backup/VerifyBackupUseCase;
 }
 
@@ -2648,102 +2516,6 @@ public final class com/wire/kalium/logic/feature/backup/CreateObfuscatedCopyUseC
 	public static final field COPY_METADATA_FILE_NAME Ljava/lang/String;
 	public static final field COPY_USER_DB_NAME Ljava/lang/String;
 	public final fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public final class com/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata {
-	public static final field CURRENT_VERSION Ljava/lang/String;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getClientId ()Ljava/lang/String;
-	public final fun getLastProcessedEventId ()Ljava/lang/String;
-	public final fun getMlsDbPassphrase ()Ljava/lang/String;
-	public final fun getProteusDbPassphrase ()Ljava/lang/String;
-	public final fun getVersion ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final synthetic class com/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata$$serializer;
-	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
-	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;
-	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
-	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
-	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;)V
-	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
-}
-
-public abstract class com/wire/kalium/logic/feature/backup/DownloadCryptoStateResult {
-}
-
-public final class com/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$Failure : com/wire/kalium/logic/feature/backup/DownloadCryptoStateResult {
-	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
-	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$Failure;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$NoBackupAvailable : com/wire/kalium/logic/feature/backup/DownloadCryptoStateResult {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$NoBackupAvailable;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$Success : com/wire/kalium/logic/feature/backup/DownloadCryptoStateResult {
-	public fun <init> (Lokio/Path;Ljava/lang/String;)V
-	public final fun component1 ()Lokio/Path;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Lokio/Path;Ljava/lang/String;)Lcom/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$Success;Lokio/Path;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/DownloadCryptoStateResult$Success;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getBackupFileName ()Ljava/lang/String;
-	public final fun getBackupFilePath ()Lokio/Path;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract class com/wire/kalium/logic/feature/backup/ExtractCryptoStateResult {
-}
-
-public final class com/wire/kalium/logic/feature/backup/ExtractCryptoStateResult$Failure : com/wire/kalium/logic/feature/backup/ExtractCryptoStateResult {
-	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
-	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/backup/ExtractCryptoStateResult$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/ExtractCryptoStateResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/ExtractCryptoStateResult$Failure;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/backup/ExtractCryptoStateResult$Success : com/wire/kalium/logic/feature/backup/ExtractCryptoStateResult {
-	public fun <init> (Lokio/Path;Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;Lokio/Path;Lokio/Path;)V
-	public final fun component1 ()Lokio/Path;
-	public final fun component2 ()Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;
-	public final fun component3 ()Lokio/Path;
-	public final fun component4 ()Lokio/Path;
-	public final fun copy (Lokio/Path;Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;Lokio/Path;Lokio/Path;)Lcom/wire/kalium/logic/feature/backup/ExtractCryptoStateResult$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/ExtractCryptoStateResult$Success;Lokio/Path;Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;Lokio/Path;Lokio/Path;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/ExtractCryptoStateResult$Success;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getExtractedDir ()Lokio/Path;
-	public final fun getMetadata ()Lcom/wire/kalium/logic/feature/backup/CryptoStateBackupMetadata;
-	public final fun getMlsKeystorePath ()Lokio/Path;
-	public final fun getProteusKeystorePath ()Lokio/Path;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/feature/backup/MultiPlatformBackupScope {
@@ -2829,52 +2601,8 @@ public abstract interface class com/wire/kalium/logic/feature/backup/RestoreBack
 	public abstract fun invoke (Lokio/Path;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/backup/RestoreCryptoStateResult {
-}
-
-public final class com/wire/kalium/logic/feature/backup/RestoreCryptoStateResult$Failure : com/wire/kalium/logic/feature/backup/RestoreCryptoStateResult {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/backup/RestoreCryptoStateResult$Failure;
-}
-
-public final class com/wire/kalium/logic/feature/backup/RestoreCryptoStateResult$NoBackupAvailable : com/wire/kalium/logic/feature/backup/RestoreCryptoStateResult {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/backup/RestoreCryptoStateResult$NoBackupAvailable;
-}
-
-public final class com/wire/kalium/logic/feature/backup/RestoreCryptoStateResult$Success : com/wire/kalium/logic/feature/backup/RestoreCryptoStateResult {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/backup/RestoreCryptoStateResult$Success;
-}
-
-public abstract interface class com/wire/kalium/logic/feature/backup/RestoreCryptoStateUseCase {
-	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
 public abstract interface class com/wire/kalium/logic/feature/backup/RestoreMPBackupUseCase {
 	public abstract fun invoke (Lokio/Path;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public abstract class com/wire/kalium/logic/feature/backup/SetLastDeviceIdResult {
-}
-
-public final class com/wire/kalium/logic/feature/backup/SetLastDeviceIdResult$Failure : com/wire/kalium/logic/feature/backup/SetLastDeviceIdResult {
-	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
-	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/backup/SetLastDeviceIdResult$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/backup/SetLastDeviceIdResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/backup/SetLastDeviceIdResult$Failure;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/backup/SetLastDeviceIdResult$Success : com/wire/kalium/logic/feature/backup/SetLastDeviceIdResult {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/backup/SetLastDeviceIdResult$Success;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract interface class com/wire/kalium/logic/feature/backup/SetLastDeviceIdUseCase {
-	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/backup/VerifyBackupResult {
@@ -6081,16 +5809,6 @@ public final class com/wire/kalium/logic/feature/message/DeleteMessageUseCase {
 	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/message/FetchOlderNomadMessagesByConversationUseCase {
-	public static final field DEFAULT_PAGE_SIZE I
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/message/FetchOlderNomadMessagesByConversationUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-}
-
-public final class com/wire/kalium/logic/feature/message/FetchOlderNomadMessagesByConversationUseCase$DefaultImpls {
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/message/FetchOlderNomadMessagesByConversationUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-}
-
 public final class com/wire/kalium/logic/feature/message/GetMessageByIdUseCase {
 	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -6335,7 +6053,6 @@ public final class com/wire/kalium/logic/feature/message/MessageScope {
 }
 
 public final class com/wire/kalium/logic/feature/message/MessageScopeExtensionsKt {
-	public static final fun getFetchOlderMessagesByConversationId (Lcom/wire/kalium/logic/feature/message/MessageScope;)Lcom/wire/kalium/logic/feature/message/FetchOlderNomadMessagesByConversationUseCase;
 	public static final fun getGetPaginatedFlowOfAssetMessageByConversationId (Lcom/wire/kalium/logic/feature/message/MessageScope;)Lcom/wire/kalium/logic/feature/asset/GetPaginatedFlowOfAssetMessageByConversationIdUseCase;
 	public static final fun getGetPaginatedFlowOfMessagesByConversation (Lcom/wire/kalium/logic/feature/message/MessageScope;)Lcom/wire/kalium/logic/feature/message/GetPaginatedFlowOfMessagesByConversationUseCase;
 	public static final fun getGetPaginatedFlowOfMessagesBySearchQueryAndConversation (Lcom/wire/kalium/logic/feature/message/MessageScope;)Lcom/wire/kalium/logic/feature/message/GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase;
@@ -7307,10 +7024,6 @@ public final class com/wire/kalium/logic/feature/session/DeleteSessionUseCase$Re
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/feature/session/DoesValidNomadAccountExistUseCase {
-	public final fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
 public abstract class com/wire/kalium/logic/feature/session/DoesValidSessionExistResult {
 }
 
@@ -7370,10 +7083,6 @@ public final class com/wire/kalium/logic/feature/session/GetAllSessionsUseCase {
 }
 
 public final class com/wire/kalium/logic/feature/session/GetSessionsUseCase {
-	public final fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public final class com/wire/kalium/logic/feature/session/IsCurrentSessionNomadAccountUseCase {
 	public final fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

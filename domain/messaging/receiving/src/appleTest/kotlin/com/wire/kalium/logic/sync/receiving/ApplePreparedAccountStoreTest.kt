@@ -190,7 +190,7 @@ class ApplePreparedAccountStoreTest {
     private fun prepared() = PreparedAccount(
         userId, "abc123",
         ServerConfig("test", ServerConfig.DUMMY, ServerConfig.MetaData(false, CommonApiVersionType.Valid(8), userId.domain)),
-        null, null,
+        null,
     )
 
     private suspend fun withStore(block: suspend (String, ApplePreparedAccountStore, AccountRuntimeLease) -> Unit) {
