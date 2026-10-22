@@ -89,12 +89,10 @@ import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.conversation.MessageEventData
-import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
@@ -195,7 +193,7 @@ class NotificationProcessorNativeTest {
                     ))
                 })
                 val result = fixture.receive(listOf(fixture.batch("combined", failure, selfAvailability), target), "target",
-                    isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })
+                    recoveryFactory = { fixture.unavailableRecovery(it) })
                 val received = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 assertEquals("target", received.messageId)
                 assertFalse(received.shouldNotify)
@@ -204,8 +202,7 @@ class NotificationProcessorNativeTest {
                 assertTrue(fixture.receivedCalls.isEmpty())
                 assertTrue(fixture.receivedCallEvents.isEmpty())
                 // A duplicate target must not evaluate queued calls while the earlier hole remains.
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "target",
-                    api = PageApi(emptyMap()), isolateConversations = true)).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "target")).value)
                 assertTrue(fixture.receivedCallEvents.isEmpty())
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("combined")).isProcessed)
@@ -230,7 +227,7 @@ class NotificationProcessorNativeTest {
                 val target = fixture.event("target", fixture.encrypt("target", protocolMLS = false),
                     protocolMLS = false, conversationId = DELETE_TARGET)
                 fixture.releasePrepared()
-                val result = fixture.receive(listOf(commit, following, target), "target", isolateConversations = true,
+                val result = fixture.receive(listOf(commit, following, target), "target",
                     nowEpochMillis = { 1_000L }, decorateMLSContext = { context ->
                         object : MlsCoreCryptoContext by context {
                             override suspend fun getGroupState(groupId: String): com.wire.kalium.cryptography.E2EIConversationState {
@@ -250,8 +247,7 @@ class NotificationProcessorNativeTest {
                     assertNull(runtime.database.messageDAO.getMessageById("following", CONVERSATION_ID))
                     assertEquals(31_000L, runtime.database.notificationEventStore.deferredUntil("commit"))
                 })
-                val resumed = fixture.receive(emptyList(), "following", api = PageApi(emptyMap()),
-                    isolateConversations = true, nowEpochMillis = { 32_000L })
+                val resumed = fixture.receive(emptyList(), "following", nowEpochMillis = { 32_000L })
                 assertEquals("following", assertIs<Either.Right<ReceivedMessageResult?>>(resumed).value?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("commit")).isProcessed)
@@ -269,22 +265,20 @@ class NotificationProcessorNativeTest {
                 val target = fixture.event("target", fixture.encrypt("target"))
                 fixture.releasePrepared()
                 assertFailsWith<CancellationException> {
-                    fixture.receive(listOf(first, target), "target", interruption = Interruption.CANCEL_BEFORE_COMMIT,
-                        isolateConversations = true)
+                    fixture.receive(listOf(first, target), "target", interruption = Interruption.CANCEL_BEFORE_COMMIT)
                 }
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("target")).isProcessed)
                     assertNull(runtime.database.notificationEventStore.deferredUntil("first"))
                     assertNull(runtime.database.messageDAO.getMessageById("target", CONVERSATION_ID))
                 })
-                assertEquals("target", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "target",
-                    api = PageApi(emptyMap()), isolateConversations = true)).value?.text)
+                assertEquals("target", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "target")).value?.text)
             }
         }
     }
 
     @Test
-    fun isolatedNSEDefersFederationAndReachesProteusAcrossPagesAndRestart() = runTest {
+    fun isolatedNSEDefersFederationAndDrainsIndependentMessagesAcrossRestart() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 fixture.seedProteusConversation()
@@ -297,34 +291,31 @@ class NotificationProcessorNativeTest {
                 val following = fixture.event("following", fixture.encrypt("following", protocolMLS = false),
                     protocolMLS = false, conversationId = DELETE_TARGET)
                 fixture.releasePrepared()
-                val api = PageApi(mapOf(null to pageResponse(listOf(failed, blockedLater), true),
-                    "blocked-later" to pageResponse(listOf(target, following))))
                 var fetches = 0
-                val result = fixture.receive(emptyList(), "target", api = api, recoveryFactory = { fixture.unavailableRecovery(it) { fetches++ } },
-                    isolateConversations = true, nowEpochMillis = { 1_000L })
+                val result = fixture.receive(listOf(failed, blockedLater, target, following), "target",
+                    recoveryFactory = { fixture.unavailableRecovery(it) { fetches++ } }, nowEpochMillis = { 1_000L })
                 val received = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 assertEquals("target", received.messageId)
                 assertFalse(received.shouldNotify)
                 assertNull(received.text)
-                assertEquals(listOf(null, "blocked-later"), api.requests)
                 assertEquals(1, fetches)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("blocked")).isProcessed)
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("blocked-later")).isProcessed)
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("target")).isProcessed)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("following")).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("following", DELETE_TARGET))
                     assertEquals(31_000L, runtime.database.notificationEventStore.deferredUntil("blocked"))
                     assertEquals("following", runtime.database.notificationEventStore.cursor())
                 })
                 // receive() reopens both native stores and SQL, rebuilding dependency state from pending rows.
-                val restarted = fixture.receive(emptyList(), "following", api = PageApi(emptyMap()),
-                    recoveryFactory = { fixture.unavailableRecovery(it) { fetches++ } }, isolateConversations = true, nowEpochMillis = { 2_000L })
-                val receivedAfterRestart = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(restarted).value)
-                assertEquals("following", receivedAfterRestart.messageId)
-                assertFalse(receivedAfterRestart.shouldNotify)
-                assertNull(receivedAfterRestart.text)
+                val restarted = fixture.receive(emptyList(), "following",
+                    recoveryFactory = { fixture.unavailableRecovery(it) { fetches++ } }, nowEpochMillis = { 2_000L })
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(restarted).value)
+                assertEquals("QUEUE_END", fixture.receivedStop)
                 assertEquals(1, fetches)
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "blocked", api = PageApi(emptyMap()),
-                    recoveryFactory = { fixture.unavailableRecovery(it) { fetches++ } }, isolateConversations = true, nowEpochMillis = { 32_000L })).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "blocked",
+                    recoveryFactory = { fixture.unavailableRecovery(it) { fetches++ } }, nowEpochMillis = { 32_000L })).value)
                 assertEquals(2, fetches)
             }
         }
@@ -347,7 +338,7 @@ class NotificationProcessorNativeTest {
                 val combined = fixture.batch("combined", failed, first)
                 fixture.seedPendingIsolatedRecovery("combined", QualifiedIDEntity("unavailable", "federated.example"))
                 fixture.releasePrepared()
-                val result = fixture.receive(listOf(combined, later, target), "target", isolateConversations = true,
+                val result = fixture.receive(listOf(combined, later, target), "target",
                     recoveryFactory = { fixture.unavailableRecovery(it) })
                 val received = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 assertEquals("target", received.messageId)
@@ -378,7 +369,7 @@ class NotificationProcessorNativeTest {
                 else fixture.newClient()
                 val target = fixture.event("target", fixture.encrypt("target"))
                 fixture.releasePrepared()
-                val result = fixture.receive(listOf(failed, barrier, target), "target", isolateConversations = true,
+                val result = fixture.receive(listOf(failed, barrier, target), "target",
                     recoveryFactory = { fixture.unavailableRecovery(it) })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
@@ -400,8 +391,7 @@ class NotificationProcessorNativeTest {
                     val first = fixture.event("first", fixture.encrypt("first"))
                     val target = fixture.event("target", fixture.encrypt("target"))
                     fixture.releasePrepared()
-                    assertIs<Either.Left<*>>(fixture.receive(listOf(first, target), "target", interruption = interruption,
-                        isolateConversations = true))
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(first, target), "target", interruption = interruption))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("first")).isProcessed)
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("target")).isProcessed)
@@ -500,7 +490,7 @@ class NotificationProcessorNativeTest {
 
     @Test
     fun nonHeadInvalidationPreemptsBlockedWorkOfflineWithoutAcknowledgingQueue() = runTest {
-        for (isolated in listOf(false, true)) for (deleted in listOf(false, true)) for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
+        for (deleted in listOf(false, true)) for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val blocked = fixture.plainEvent("blocked", """{"type":"user.legalhold-enable","id":"${SELF.value}"}""")
                 val terminal = if (deleted) fixture.userDelete(SELF) else fixture.clientRemove(CLIENT)
@@ -511,29 +501,7 @@ class NotificationProcessorNativeTest {
                         NewEventEntity(it.id, it.payload, it.transient, false)
                     })
                 })
-                // Any remote acquisition fails; the terminal decision must be entirely local.
-                val offline = object : NotificationApi by PageApi(emptyList()) {
-                    override suspend fun getAllNotifications(size: Int, client: String) = error("Network unavailable")
-                    override suspend fun notificationsByBatch(size: Int, client: String, since: String) = error("Auth unavailable")
-                }
-                assertIs<Either.Right<*>>(fixture.receive(emptyList(), text.id, api = offline, isolateConversations = isolated))
-                assertEquals(NotificationAppWork.ACCOUNT_INVALIDATION, fixture.receivedAppWork)
-                assertEquals("3", fixture.sqlValue("SELECT COUNT(*) FROM Events WHERE is_processed = 0"))
-                assertEquals("0", fixture.sqlValue("SELECT COUNT(*) FROM Message WHERE id = 'tail'"))
-                assertIs<Either.Left<*>>(fixture.open { error("Invalidated account reopened") })
-            }
-        }
-    }
-
-    @Test
-    fun isolatedNSEPreflightsFetchedTerminalEventsBeforeBlockedWork() = runTest {
-        for (deleted in listOf(false, true)) withContext(Dispatchers.Default) {
-            withFixture(false) { fixture ->
-                val blocked = fixture.plainEvent("blocked", """{"type":"user.legalhold-enable","id":"${SELF.value}"}""")
-                val terminal = if (deleted) fixture.userDelete(SELF) else fixture.clientRemove(CLIENT)
-                val text = fixture.event("tail", fixture.encrypt("tail"))
-                fixture.releasePrepared()
-                assertIs<Either.Right<*>>(fixture.receive(listOf(blocked, terminal, text), text.id, isolateConversations = true))
+                assertIs<Either.Right<*>>(fixture.receive(emptyList(), text.id))
                 assertEquals(NotificationAppWork.ACCOUNT_INVALIDATION, fixture.receivedAppWork)
                 assertEquals("3", fixture.sqlValue("SELECT COUNT(*) FROM Events WHERE is_processed = 0"))
                 assertEquals("0", fixture.sqlValue("SELECT COUNT(*) FROM Message WHERE id = 'tail'"))
@@ -929,13 +897,13 @@ class NotificationProcessorNativeTest {
                 })
                 val pending = fixture.connectionEvent("pending").copy(id = "pending-again")
                 assertEquals(true, assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(pending), pending.id,
-                    api = PageApi(mapOf("notification" to pageResponse(listOf(pending)))), fetchConnectionPeer = fixture::connectionProfile)).value?.shouldNotify)
+                    fetchConnectionPeer = fixture::connectionProfile)).value?.shouldNotify)
                 assertIs<Either.Right<*>>(fixture.open {
                     it.database.connectionDAO.updateNotificationFlag(false, UserId("peer-request", SELF.domain).toDao())
                 })
                 val repeat = pending.copy(id = "pending-repeat")
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(repeat), repeat.id,
-                    api = PageApi(mapOf(pending.id to pageResponse(listOf(repeat)))), fetchConnectionPeer = fixture::connectionProfile)).value)
+                    fetchConnectionPeer = fixture::connectionProfile)).value)
             }
         }
     }
@@ -1142,10 +1110,10 @@ class NotificationProcessorNativeTest {
                 val actual = fixture.verifyMeetingState(it)
                 if (stage != null) {
                     assertEquals(occurrence, actual)
-                    assertEquals(messages, it.database.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first())
+                    assertEquals(messages, it.database.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first()
+                        .filterNot { message -> message.id == "tail" })
                 }
             })
-            assertIs<Either.Right<*>>(fixture.receive(emptyList(), tail.id))
             fixture.verifyStoredAndNext(next, "first", listOf("first", "tail"))
         }
     }
@@ -1159,7 +1127,7 @@ class NotificationProcessorNativeTest {
                     fixture.event("first", fixture.encrypt("first")))
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(first, later), first.id)).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(first), first.id)).value)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val conversation = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
                     assertEquals(ConversationEntity.Type.MEETING, conversation.type)
@@ -1167,7 +1135,7 @@ class NotificationProcessorNativeTest {
                         assertIs<ConversationEntity.ProtocolInfo.MLS>(conversation.protocolInfo).groupState)
                     assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
                 })
-                assertIs<Either.Right<*>>(fixture.receive(emptyList(), later.id, fetchMeeting = fixture::meetingDTO))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(later), later.id, fetchMeeting = fixture::meetingDTO))
                 assertIs<Either.Right<*>>(fixture.open {
                     fixture.verifyCreation(it, expectedType = ConversationEntity.Type.MEETING)
                     fixture.verifyMeetingState(it)
@@ -1243,7 +1211,6 @@ class NotificationProcessorNativeTest {
                 if (stage != null) assertEquals(before, after)
                 if (clear) fixture.verifyPendingConversationCleanup(it, CONVERSATION_ID)
             })
-            assertIs<Either.Right<*>>(fixture.receive(emptyList(), tail.id))
             fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first", "tail"))
         }
     }
@@ -1371,7 +1338,6 @@ class NotificationProcessorNativeTest {
                     val occurrenceAfter = fixture.verifyMeetingState(it)
                     if (occurrenceBefore != null) assertEquals(occurrenceBefore, occurrenceAfter)
                 })
-                assertIs<Either.Right<*>>(fixture.receive(emptyList(), tail.id))
                 fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first", "tail"))
             }
         }
@@ -1477,7 +1443,6 @@ class NotificationProcessorNativeTest {
                 }
                 repeat(2) { assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), event.id)) }
                 assertIs<Either.Right<*>>(fixture.open { fixture.verifyIdentityState(it) })
-                assertIs<Either.Right<*>>(fixture.receive(emptyList(), tail.id))
                 fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first", "tail"))
             }
         }
@@ -1545,8 +1510,8 @@ class NotificationProcessorNativeTest {
                     assertNotNull(runtime.database.memberDAO.getMemberRole(SELF.toDao(), DELETE_TARGET))
                     assertNull(checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)).removedBy)
                 })
-                // Both SQL notification selection and receiving remain available after own team leave.
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.messageId)
+                // The queue is drained after own team leave, and replay does not select the tail again.
+                fixture.verifyProcessedText(tail, "tail")
                 fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first", "tail"))
             }
         }
@@ -2316,7 +2281,7 @@ class NotificationProcessorNativeTest {
                     if (failure != "credential") fixture.sql("DROP TRIGGER cipher_failure")
                     assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), event.id))
                     assertIs<Either.Right<*>>(fixture.open { fixture.verifyMLSCipher(it) })
-                    fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first"))
+                    fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first", "tail"))
                 } else assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -3021,7 +2986,7 @@ class NotificationProcessorNativeTest {
     @Test
     fun ignoredHandRaiseDoesNotBlockFollowingMessages() = runTest {
         withContext(Dispatchers.Default) {
-            for (mls in listOf(false, true)) for (isolated in listOf(false, true)) {
+            for (mls in listOf(false, true)) {
                 withFixture(mls) { fixture ->
                     val event = fixture.batch("notification",
                         fixture.event("raise", fixture.encrypt("raise", MessageContent.InCallHandRaise(true))),
@@ -3030,7 +2995,7 @@ class NotificationProcessorNativeTest {
                     val next = fixture.encrypt("next")
                     fixture.releasePrepared()
                     val result = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(
-                        fixture.receive(listOf(event), event.id, isolateConversations = isolated)).value)
+                        fixture.receive(listOf(event), event.id)).value)
                     assertTrue(result.shouldNotify)
                     assertNull(fixture.receivedAppWork)
                     assertTrue(fixture.receivedCalls.isEmpty())
@@ -3511,7 +3476,7 @@ class NotificationProcessorNativeTest {
                 }
                 if (failure == "sql") fixture.sql("DROP TRIGGER x509_failure")
                 assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), event.id))
-                fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first"))
+                fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first", "tail"))
             }
         }
     }
@@ -3743,12 +3708,12 @@ class NotificationProcessorNativeTest {
                     fixture.event("first", fixture.encrypt("first")))
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
-                assertIs<Either.Right<*>>(fixture.receive(listOf(first, second, third), first.id))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(first), first.id))
                 val before = assertIs<Either.Right<Pair<Long?, Long?>>>(fixture.open { fixture.verifyE2EISettings(it) }).value
-                assertIs<Either.Right<*>>(fixture.receive(listOf(first, second, third), second.id))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(second), second.id))
                 val disabled = assertIs<Either.Right<Pair<Long?, Long?>>>(fixture.open { fixture.verifyE2EISettings(it, required = false) }).value
                 assertEquals(before.second, disabled.second)
-                assertIs<Either.Right<*>>(fixture.receive(listOf(first, second, third), third.id))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(third), third.id))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val settings = checkNotNull(runtime.database.userPrefsDAO.getE2EISettings())
                     assertTrue(settings.status)
@@ -3939,7 +3904,7 @@ class NotificationProcessorNativeTest {
                 assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
             })
             assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), event.id)).value)
-            assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+            fixture.verifyProcessedText(tail, "tail")
             assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
         }
     }
@@ -4332,11 +4297,10 @@ class NotificationProcessorNativeTest {
                 if (interruption != null) {
                     if (interruption == Interruption.CANCEL_BEFORE_COMMIT) {
                         assertFailsWith<CancellationException> {
-                            fixture.receive(page, first.id, interruption, isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })
+                            fixture.receive(page, first.id, interruption, recoveryFactory = { fixture.unavailableRecovery(it) })
                         }
                     } else {
-                        assertIs<Either.Left<*>>(fixture.receive(page, first.id, interruption,
-                            isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) }))
+                        assertIs<Either.Left<*>>(fixture.receive(page, first.id, interruption, recoveryFactory = { fixture.unavailableRecovery(it) }))
                     }
                     // Each open closes its owner. This checks a fresh runtime, not an in-memory retry.
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
@@ -4348,14 +4312,11 @@ class NotificationProcessorNativeTest {
                     })
                     if (interruption == Interruption.MARKER) fixture.sql("DROP TRIGGER interrupt_receive")
                 }
-                val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, first.id,
-                    isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value
+                val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, first.id, recoveryFactory = { fixture.unavailableRecovery(it) })).value
                 assertEquals("first", result?.text)
                 assertEquals(true, result?.shouldNotify)
-                assertEquals("second", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), second.id,
-                    isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value?.text)
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), first.id,
-                    isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), second.id, recoveryFactory = { fixture.unavailableRecovery(it) })).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), first.id, recoveryFactory = { fixture.unavailableRecovery(it) })).value)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     fixture.verifyConversationCleanup(runtime, CONVERSATION_ID, deleted = true)
                     assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
@@ -4379,8 +4340,7 @@ class NotificationProcessorNativeTest {
                     if (missingNative) assertIs<Either.Right<*>>(fixture.open { runtime ->
                         checkNotNull(fixture.openMLS(runtime)).transaction { it.wipeConversation(GROUP_ID) }
                     })
-                    val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(deleted), deleted.id,
-                        isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value
+                    val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(deleted), deleted.id, recoveryFactory = { fixture.unavailableRecovery(it) })).value
                     assertEquals(ReceivedNotificationType.CONVERSATION_DELETED, result?.type)
                     assertEquals(!meeting, result?.shouldNotify)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
@@ -4388,8 +4348,7 @@ class NotificationProcessorNativeTest {
                         assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
                         assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(deleted.id)).isProcessed)
                     })
-                    assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), deleted.id,
-                        isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value)
+                    assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), deleted.id, recoveryFactory = { fixture.unavailableRecovery(it) })).value)
                 }
             }
         }
@@ -4460,7 +4419,7 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event, follow), event.id)).value
                 assertEquals(false, result?.shouldNotify)
-                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), follow.id)).value?.text)
+                fixture.verifyProcessedText(follow, "first")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -4731,7 +4690,7 @@ class NotificationProcessorNativeTest {
                 if (proteusRollback) assertEquals(2, proteusDecryptions, "Both attempts must decrypt after the outer rollback")
                 val following = fixture.event("following", fixture.encrypt("following"))
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(
-                    listOf(following), following.id, api = PageApi(mapOf(notification.id to pageResponse(listOf(following)))),
+                    listOf(following), following.id,
                     recoveryFactory = recoveryFactory, mlsTransport = transporter)).value
                 assertEquals("following", result?.text)
                 assertEquals(1, joins)
@@ -4963,7 +4922,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun mlsWrongEpochKeepsMetadataRecoveryAndLaterQueuePending() = runTest {
+    fun mlsWrongEpochDefersConversationAndKeepsLaterQueuePending() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 val prefix = fixture.encrypt("prefix")
@@ -4976,8 +4935,9 @@ class NotificationProcessorNativeTest {
                 val tail = fixture.event("tail", next)
                 fixture.releasePrepared()
                 repeat(2) {
-                    assertIs<Either.Left<*>>(fixture.receive(listOf(notification, tail), "tail",
-                        fetchConversation = { fixture.creationResponse().copy(epoch = 1uL) }))
+                    assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(notification, tail), "tail",
+                        fetchConversation = { fixture.creationResponse().copy(epoch = 1uL) })).value)
+                    assertEquals("QUEUE_END", fixture.receivedStop)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("tail")).isProcessed)
@@ -5066,9 +5026,9 @@ class NotificationProcessorNativeTest {
                 val notification = fixture.batch("notification", fixture.event("missing", missing),
                     fixture.event("first", first, protocolMLS = false, conversationId = DELETE_TARGET))
                 fixture.releasePrepared()
-                assertIs<Either.Right<*>>(fixture.receive(listOf(buffer, notification), "buffer"))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(buffer), "buffer"))
                 if (stage == Interruption.BEFORE_COMMIT) {
-                    assertIs<Either.Left<*>>(fixture.receive(emptyList(), "notification", decorateMLSContext = { real ->
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(notification), "notification", decorateMLSContext = { real ->
                         object : MlsCoreCryptoContext by real {
                             override suspend fun wipeConversation(groupId: MLSGroupId) { error("Required buffered removal wipe failed") }
                         }
@@ -5079,7 +5039,7 @@ class NotificationProcessorNativeTest {
                         assertNull(runtime.database.messageDAO.getMessageById("first", DELETE_TARGET))
                     })
                 }
-                assertIs<Either.Left<*>>(fixture.receive(emptyList(), "notification", stage, decorateMLSContext = { real ->
+                assertIs<Either.Left<*>>(fixture.receive(listOf(notification), "notification", stage, decorateMLSContext = { real ->
                     object : MlsCoreCryptoContext by real {
                         override suspend fun decryptMessage(groupId: MLSGroupId, message: ByteArray): MLSDecryptResult =
                             real.decryptMessage(groupId, message).also {
@@ -5087,7 +5047,7 @@ class NotificationProcessorNativeTest {
                             }
                     }
                 }))
-                assertIs<Either.Right<*>>(fixture.receive(emptyList(), "notification"))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(notification), "notification"))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val protocol = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)).protocolInfo
                         as ConversationEntity.ProtocolInfo.MLS
@@ -5147,13 +5107,13 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 // A separate notification makes native buffer durability observable before consumption.
                 if (stage != null && stage != Interruption.DELIVERY) {
-                    assertIs<Either.Left<*>>(fixture.receive(listOf(earlier, notification), "buffer", stage))
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(earlier), "buffer", stage))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("buffer")).isProcessed)
                         fixture.sql("DROP TRIGGER IF EXISTS interrupt_receive")
                     })
                 }
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(earlier, notification), "buffer")).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(earlier), "buffer")).value)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("buffer")).isProcessed)
                     assertNull(runtime.database.messageDAO.getMessageById("buffered", CONVERSATION_ID))
@@ -5336,7 +5296,7 @@ class NotificationProcessorNativeTest {
                     })
                 }
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), event.id)).value?.text)
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
             }
         }
     }
@@ -5360,7 +5320,7 @@ class NotificationProcessorNativeTest {
                     assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                     assertNull(runtime.database.messageDAO.getMessageById("recoverable", CONVERSATION_ID))
                 })
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
             }
         }
     }
@@ -5387,9 +5347,9 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val stored = assertIs<MessageEntity.Regular>(runtime.database.messageDAO.getMessageById(event.id, CONVERSATION_ID))
                     assertEquals(202, assertIs<MessageEntityContent.FailedDecryption>(stored.content).code)
-                    assertTrue(runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).isEmpty())
+                    assertEquals(listOf("prekey"), runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
                 })
-                assertEquals("prekey", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "prekey")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -5467,11 +5427,11 @@ class NotificationProcessorNativeTest {
                     assertEquals(MessageEntity.Visibility.VISIBLE, message.visibility)
                     // The app's current SQL insert stores unresolved even when the input model is resolved.
                     assertFalse(content.isDecryptionResolved)
-                    assertEquals(if (onlyFailure) emptyList() else listOf("first"),
+                    assertEquals(if (onlyFailure) listOf("tail") else listOf("first", "tail"),
                         runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
                 })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), event.id)).value)
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -5500,12 +5460,12 @@ class NotificationProcessorNativeTest {
                         sink.write(okio.Buffer().writeUtf8("invalid"), 7)
                     }))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    fixture.verifyPreviewMetadata(runtime, downloaded = false)
+                    fixture.verifyPreviewMetadata(runtime, downloaded = false, includeTail = true)
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
                     val directory = runtime.assetDirectory.toPath().resolve("nse-previews")
                     assertTrue(FileSystem.SYSTEM.list(directory).isEmpty())
                 })
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -5574,10 +5534,10 @@ class NotificationProcessorNativeTest {
                     linkPreviewEnabled = true, downloadPreview = download))
                 assertEquals(if (cached && !missing) 0 else if (sqlFailure) 2 else 1, downloads)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    fixture.verifyPreviewMetadata(runtime, downloaded = true)
+                    fixture.verifyPreviewMetadata(runtime, downloaded = true, includeTail = true)
                     assertEquals(1, FileSystem.SYSTEM.list(runtime.assetDirectory.toPath().resolve("nse-previews")).size)
                 })
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -5612,7 +5572,7 @@ class NotificationProcessorNativeTest {
                     val asset = checkNotNull(runtime.database.assetDAO.getAssetByKey("preview-image").first())
                     assertEquals(ASSET_TEXT, FileSystem.SYSTEM.read(asset.dataPath.toPath()) { readUtf8() })
                 })
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
             }
         }
     }
@@ -5641,8 +5601,8 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), event.id, linkPreviewEnabled = true, downloadPreview = { sink ->
                     sink.write(okio.Buffer().write(fixture.encryptedAsset), fixture.encryptedAsset.size.toLong())
                 }))
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifyPreviewMetadata(it, downloaded = true) })
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                assertIs<Either.Right<*>>(fixture.open { fixture.verifyPreviewMetadata(it, downloaded = true, includeTail = true) })
+                fixture.verifyProcessedText(tail, "tail")
             }
         }
     }
@@ -5700,9 +5660,9 @@ class NotificationProcessorNativeTest {
                     assertEquals("preview-quoted", received?.text)
                     assertEquals(true, received?.shouldNotify)
                 }
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifyPreviewMetadata(it, image, complete) })
+                assertIs<Either.Right<*>>(fixture.open { fixture.verifyPreviewMetadata(it, image, complete, includeTail = true) })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), event.id)).value)
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -5720,11 +5680,11 @@ class NotificationProcessorNativeTest {
                 assertEquals("preview-quoted", received?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
-                    fixture.verifyPreviewMetadata(runtime, downloaded = false)
+                    fixture.verifyPreviewMetadata(runtime, downloaded = false, includeTail = true)
                 })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(
                     listOf(event, tail), event.id, linkPreviewEnabled = true)).value)
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
             }
         }
     }
@@ -5832,7 +5792,7 @@ class NotificationProcessorNativeTest {
                 val received = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event, tail), event.id)).value
                 if (interruption != Interruption.AFTER_COMMIT && interruption != Interruption.MARKER) assertEquals("first", received?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    fixture.verifyMultipart(runtime, edited)
+                    fixture.verifyMultipart(runtime, edited, includeTail = true)
                     if (interruption == Interruption.BEFORE_COMMIT) {
                         val cached = runtime.database.messageAttachments.getAttachment("cell-two")
                         assertEquals("cached", cached.localPath)
@@ -5840,7 +5800,7 @@ class NotificationProcessorNativeTest {
                     }
                 })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), event.id)).value)
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -5902,11 +5862,11 @@ class NotificationProcessorNativeTest {
                     assertEquals(sender != SELF, result?.shouldNotify)
                 }
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    fixture.verifyAssets(runtime)
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
+                    fixture.verifyAssets(runtime, includeTail = true)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                 })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), event.id)).value)
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -5922,13 +5882,12 @@ class NotificationProcessorNativeTest {
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 val prefix = fixture.batch("preview-event", fixture.configEvent("fileSharing"), preview)
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(prefix, keys), prefix.id)).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(prefix), prefix.id)).value)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertEquals(MessageEntity.Visibility.HIDDEN, runtime.database.messageDAO.getMessageById("asset", CONVERSATION_ID)?.visibility)
                 })
-                assertEquals(true, assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), keys.id)).value?.shouldNotify)
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(duplicate), duplicate.id,
-                    api = PageApi(mapOf(keys.id to pageResponse(listOf(duplicate)))))).value)
+                assertEquals(true, assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(keys), keys.id)).value?.shouldNotify)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(duplicate), duplicate.id)).value)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val stored = checkNotNull(runtime.database.messageDAO.getMessageById("asset", CONVERSATION_ID))
                     assertEquals(MessageEntity.Visibility.VISIBLE, stored.visibility)
@@ -6024,7 +5983,7 @@ class NotificationProcessorNativeTest {
                     runtime.database.userPrefsDAO.persistFileSharingStatus(true, false)
                 })
                 assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id))
-                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "first")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -6044,9 +6003,9 @@ class NotificationProcessorNativeTest {
                     assertEquals(MessageEntity.Visibility.DELETED,
                         runtime.database.messageDAO.getMessageById("asset", CONVERSATION_ID)?.visibility)
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                 })
-                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "first")
             }
         }
     }
@@ -6109,7 +6068,7 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), event.id))
                 assertIs<Either.Right<*>>(fixture.open { fixture.verifyMessageFiles(it) })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), event.id)).value)
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -6286,11 +6245,11 @@ class NotificationProcessorNativeTest {
                     assertEquals(sender != SELF, result?.shouldNotify)
                 }
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    fixture.verifySignals(runtime)
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
+                    fixture.verifySignals(runtime, includeTail = true)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                 })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), event.id)).value)
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -6373,12 +6332,12 @@ class NotificationProcessorNativeTest {
                     assertEquals("replacement", content.text?.messageBody)
                     assertEquals(listOf("second", "third"), content.buttonList.map { it.id }.sorted())
                     assertEquals(listOf("second"), content.buttonList.filter { it.isSelected }.map { it.id })
-                    assertEquals(1L, messages.getConversationUnreadEventsCount(CONVERSATION_ID))
-                    assertEquals(listOf("composite"), runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
+                    assertEquals(2L, messages.getConversationUnreadEventsCount(CONVERSATION_ID))
+                    assertEquals(listOf("composite", "tail"), runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                 })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), event.id)).value)
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -6520,11 +6479,11 @@ class NotificationProcessorNativeTest {
                     val unknown = assertIs<MessageEntityContent.Unknown>(checkNotNull(messages.getMessageById("unknown", CONVERSATION_ID)).content)
                     assertNotNull(unknown.encodedData)
                     assertNull(messages.getMessageById("ignored", CONVERSATION_ID))
-                    assertEquals(setOf("knock", "location", "unknown", "first"),
+                    assertEquals(setOf("knock", "location", "unknown", "first", "tail"),
                         runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId }.toSet())
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                 })
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value?.text)
+                fixture.verifyProcessedText(tail, "tail")
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
             }
         }
@@ -6538,10 +6497,10 @@ class NotificationProcessorNativeTest {
                 val ignored = fixture.event("ignored", fixture.encryptUnknown("ignored", GenericMessage.UnknownStrategy.IGNORE))
                 val knock = fixture.event("knock", fixture.encrypt("knock", MessageContent.Knock(true)))
                 fixture.releasePrepared()
-                assertEquals(false, assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(unknown, ignored, knock), unknown.id)).value?.shouldNotify)
+                assertEquals(false, assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(unknown, ignored), unknown.id)).value?.shouldNotify)
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), ignored.id)).value)
                 fixture.sql("UPDATE Conversation SET muted_status = 'ALL_MUTED'")
-                assertEquals(false, assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), knock.id)).value?.shouldNotify)
+                assertEquals(false, assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(knock), knock.id)).value?.shouldNotify)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val unknownContent = assertIs<MessageEntityContent.Unknown>(
                         checkNotNull(runtime.database.messageDAO.getMessageById("unknown", CONVERSATION_ID)).content)
@@ -7191,7 +7150,7 @@ class NotificationProcessorNativeTest {
                     )
                 })
                 if (!together) {
-                    assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, beforeText.first().id)).value)
+                    assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(beforeText.first()), beforeText.first().id)).value)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         val stored = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
                         val protocol = assertIs<ConversationEntity.ProtocolInfo.MLS>(stored.protocolInfo)
@@ -7232,8 +7191,7 @@ class NotificationProcessorNativeTest {
                     assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
                 })
                 val duplicate = fixture.resetEvent("reset-again")
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(duplicate), duplicate.id,
-                    api = PageApi(mapOf("notification" to pageResponse(listOf(duplicate)))))).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(duplicate), duplicate.id)).value)
                 fixture.verifyStoredAndNext(next, "first", groupId = RESET_GROUP_ID)
             }
         }
@@ -7393,7 +7351,7 @@ class NotificationProcessorNativeTest {
                 )).toTypedArray())
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
-                assertIs<Either.Right<*>>(fixture.receive(prefix + target, prefix.last().id))
+                assertIs<Either.Right<*>>(fixture.receive(prefix, prefix.last().id))
                 var refreshes = 0
                 val refresh: suspend () -> ConversationResponse = {
                     refreshes++
@@ -7403,7 +7361,7 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
                     assertEquals(!selfLeave, runtime.database.memberDAO.getMemberRole(SELF.toDao(), CONVERSATION_ID) != null)
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
+                    assertNull(runtime.database.eventDAO.getEventById("notification"))
                     if (selfLeave) {
                         runtime.database.userDAO.upsertUser(user(THIRD))
                         runtime.database.memberDAO.insertMember(com.wire.kalium.persistence.dao.member.MemberEntity(
@@ -7412,7 +7370,7 @@ class NotificationProcessorNativeTest {
                     }
                 })
                 if (interruption != null) {
-                    assertIs<Either.Left<*>>(fixture.receive(emptyList(), "notification", interruption, fetchConversation = refresh))
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(target), "notification", interruption, fetchConversation = refresh))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
                         if (interruption == Interruption.DELIVERY) {
@@ -7424,7 +7382,7 @@ class NotificationProcessorNativeTest {
                     })
                 }
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(
-                    fixture.receive(emptyList(), "notification", fetchConversation = refresh)
+                    fixture.receive(listOf(target), "notification", fetchConversation = refresh)
                 ).value
                 assertEquals(if (interruption == Interruption.AFTER_COMMIT) null else "first", result?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
@@ -7454,8 +7412,8 @@ class NotificationProcessorNativeTest {
                 val page = listOf(inactive, fixture.memberLeave("leave", SELF), fixture.welcomeEvent(),
                     fixture.event("notification", fixture.encrypt("first")))
                 fixture.releasePrepared()
-                assertIs<Either.Right<*>>(fixture.receive(page, "leave"))
-                assertIs<Either.Left<*>>(fixture.receive(emptyList(), "notification"))
+                assertIs<Either.Right<*>>(fixture.receive(page.take(2), "leave"))
+                assertIs<Either.Left<*>>(fixture.receive(page.drop(2), "notification"))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertNull(runtime.database.memberDAO.getMemberRole(SELF.toDao(), CONVERSATION_ID))
                     assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
@@ -7557,9 +7515,9 @@ class NotificationProcessorNativeTest {
                     Interruption.MARKER -> null
                     else -> "mls-last"
                 }, result?.text)
-                assertEquals("mls-fresh", assertIs<Either.Right<ReceivedMessageResult?>>(
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(
                     fixture.receive(emptyList(), "following")
-                ).value?.text)
+                ).value)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     for (id in listOf("proteus-first", "proteus-last", "proteus-fresh")) {
                         assertEquals(id, (assertIs<MessageEntity.Regular>(runtime.database.messageDAO.getMessageById(
@@ -7668,7 +7626,7 @@ class NotificationProcessorNativeTest {
                     assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification",
                         refreshSession = refresh, fetchConnectionPeer = peer)).value?.text)
                     assertIs<Either.Right<*>>(fixture.open { fixture.verifyRefreshedSession(it, issued) })
-                    fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first"))
+                    fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first", "tail"))
                 }
             }
         }
@@ -7689,7 +7647,7 @@ class NotificationProcessorNativeTest {
                     val next = fixture.encrypt("next")
                     fixture.releasePrepared()
                     if (mode == "ordered") {
-                        assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, "creation")).value)
+                        assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page.filter { it.id == "creation" }, "creation")).value)
                         assertIs<Either.Right<*>>(fixture.open { runtime ->
                             assertEquals(CONVERSATION_ID, runtime.database.conversationDAO.getSelfConversationId(
                                 if (mls) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS))
@@ -7724,8 +7682,7 @@ class NotificationProcessorNativeTest {
                     assertIs<Either.Right<*>>(fixture.open { fixture.verifySelfConversation(it) })
                     val duplicates = listOfNotNull(fixture.creationEvent("duplicate-creation", fixture.selfConversationResponse()),
                         if (mls) fixture.welcomeEvent("duplicate-welcome") else null)
-                    assertIs<Either.Right<*>>(fixture.receive(duplicates, duplicates.last().id,
-                        api = PageApi(mapOf("notification" to pageResponse(duplicates)))))
+                    assertIs<Either.Right<*>>(fixture.receive(duplicates, duplicates.last().id))
                     assertIs<Either.Right<*>>(fixture.open { fixture.verifySelfConversation(it) })
                     fixture.verifyStoredAndNext(next, "first", deliveries = emptyList())
                 }
@@ -7809,7 +7766,7 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 // Exercise separate attempts as well as processing the full queue toward the target.
                 if (!together) {
-                    assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, "creation")).value)
+                    assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page.filter { it.id == "creation" }, "creation")).value)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         val protocol = runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)?.protocolInfo
                         if (mls) {
@@ -7857,8 +7814,7 @@ class NotificationProcessorNativeTest {
                         else com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member)
                 })
                 val duplicate = creation.copy(id = "duplicate-creation")
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(duplicate), duplicate.id,
-                    api = PageApi(mapOf(event.id to pageResponse(listOf(duplicate)))))).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(duplicate), duplicate.id)).value)
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), duplicate.id)).value)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     fixture.verifyPendingConnectionCreation(runtime, if (stage == null) "Pending connection" else "Newer name",
@@ -7972,8 +7928,7 @@ class NotificationProcessorNativeTest {
                     // A distinct server event with the same creation/welcome also preserves canonical state.
                     val duplicates = listOfNotNull(fixture.creationEvent("duplicate-creation"),
                         if (mls) fixture.welcomeEvent("duplicate-welcome") else null)
-                    assertIs<Either.Right<*>>(fixture.receive(duplicates, duplicates.last().id,
-                        api = PageApi(mapOf("notification" to pageResponse(duplicates)))))
+                    assertIs<Either.Right<*>>(fixture.receive(duplicates, duplicates.last().id))
                     fixture.verifyStoredAndNext(next, "first")
                 }
             }
@@ -7988,9 +7943,9 @@ class NotificationProcessorNativeTest {
                     fixture.event("notification", fixture.encrypt("first")))
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, "creation")).value)
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "creation-again")).value)
-                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification")).value?.text)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page.filter { it.id == "creation" }, "creation")).value)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page.filter { it.id == "creation-again" }, "creation-again")).value)
+                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, "notification")).value?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val messages = runtime.database.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first()
                     assertEquals(1, messages.count { it is MessageEntity.System && it.content == MessageEntityContent.ConversationCreated })
@@ -8027,12 +7982,11 @@ class NotificationProcessorNativeTest {
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(first, "notification")).value?.text)
-                assertEquals("second", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(second), second.id,
-                    api = PageApi(mapOf("notification" to pageResponse(listOf(second)))))).value?.text)
+                assertEquals("second", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(second), second.id)).value?.text)
                 fixture.sql("UPDATE Conversation SET incomplete_metadata = 1")
                 val repair = listOf(fixture.creationEvent("repair-metadata"))
                 assertIs<Either.Right<*>>(fixture.receive(repair, "repair-metadata",
-                    api = PageApi(mapOf(second.id to pageResponse(repair))), fetchConversation = { fixture.creationResponse() }))
+                    fetchConversation = { fixture.creationResponse() }))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val protocol = assertIs<ConversationEntity.ProtocolInfo.MLS>(
                         runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)?.protocolInfo)
@@ -8197,7 +8151,7 @@ class NotificationProcessorNativeTest {
                 var welcomeCalls = 0
                 var decryptCalls = 0
                 var fetches = 0
-                val result = fixture.receive(listOf(notification, next), notification.id, fetchConversation = {
+                val result = fixture.receive(listOf(notification), notification.id, fetchConversation = {
                     fetches++
                     throw KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(code = status, label = label, message = "private response")
@@ -8222,7 +8176,7 @@ class NotificationProcessorNativeTest {
                     assertNotNull(runtime.database.messageDAO.getMessageById("history", CONVERSATION_ID))
                 })
                 // Unavailability belongs to this decode, not a persisted conversation state.
-                assertEquals("next", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), next.id)).value?.text)
+                assertEquals("next", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(next), next.id)).value?.text)
             }
         }
     }
@@ -8674,7 +8628,7 @@ class NotificationProcessorNativeTest {
                 assertFalse(checkNotNull(result).shouldNotify)
                 assertIs<Either.Right<*>>(fixture.open { fixture.verifyReadState(it) })
                 assertIs<Either.Right<*>>(
-                    fixture.receive(listOf(older), "older-read", api = PageApi(mapOf("notification" to pageResponse(listOf(older)))))
+                    fixture.receive(listOf(older), "older-read")
                 )
                 assertIs<Either.Right<*>>(fixture.open { fixture.verifyReadState(it) })
                 fixture.verifyStoredAndNext(next, "first", emptyList())
@@ -9272,8 +9226,8 @@ class NotificationProcessorNativeTest {
                     fixture.event("notification", Base64.decode(REMOVE_THIRD_PROPOSAL))
                 )
                 fixture.releasePrepared()
-                // Target reached before catch-up: the NSE must not run the app's live scheduler.
-                assertIs<Either.Right<*>>(fixture.receive(page, "notification", api = PageApi(mapOf(null to pageResponse(page, true)))))
+                // Reaching the queue end must not run the app's live proposal scheduler.
+                assertIs<Either.Right<*>>(fixture.receive(page, "notification"))
                 var deadline: Instant? = null
                 assertIs<Either.Right<*>>(
                     fixture.open { runtime ->
@@ -9344,7 +9298,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun transientAppBacklogAndRESTTargetReplay() = runTest {
+    fun transientAppBacklogAndCaughtUpTargetReplay() = runTest {
         for (mls in listOf(false, true)) for (stage in listOf(null, Interruption.BEFORE_COMMIT,
             Interruption.AFTER_COMMIT, Interruption.MARKER, Interruption.DELIVERY)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
@@ -9361,17 +9315,15 @@ class NotificationProcessorNativeTest {
                         captured.id, captured.payload, true, true)))
                     runtime.database.metadataDAO.insertValue("anchor", com.wire.kalium.persistence.dao.event.NotificationEventStore.FETCH_CURSOR_KEY)
                 })
-                val api = PageApi(mapOf("anchor" to pageResponse(listOf(anchor, target))))
                 if (stage != null) {
-                    assertIs<Either.Left<*>>(fixture.receive(emptyList(), target.id, stage, api = api))
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(anchor, target), target.id, stage))
                     if (stage == Interruption.MARKER || stage == Interruption.DELIVERY) fixture.sql("DROP TRIGGER interrupt_receive")
-                    assertTrue(api.requests.isEmpty())
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         val stored = checkNotNull(runtime.database.eventDAO.getEventById(captured.id))
                         assertTrue(stored.transient)
                         assertFalse(stored.isLive)
                         assertFalse(stored.isProcessed)
-                        assertEquals("anchor", runtime.database.notificationEventStore.cursor())
+                        assertEquals(anchor.id, runtime.database.notificationEventStore.cursor())
                         assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                         if (stage == Interruption.DELIVERY) {
                             assertNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
@@ -9380,8 +9332,7 @@ class NotificationProcessorNativeTest {
                     })
                 }
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(
-                    fixture.receive(emptyList(), target.id, api = api)).value?.text)
-                assertEquals(listOf<String?>("anchor"), api.requests)
+                    fixture.receive(listOf(anchor, target), target.id)).value?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertEquals("rest-anchor", runtime.database.notificationEventStore.cursor())
                     for (id in listOf(captured.id, anchor.id, target.id)) assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(id)).isProcessed)
@@ -9408,9 +9359,7 @@ class NotificationProcessorNativeTest {
                     runtime.database.eventDAO.insertEvents(listOf(captured, tail).map {
                         com.wire.kalium.persistence.dao.event.NewEventEntity(it.id, it.payload, it.transient, true) })
                 })
-                val api = PageApi(emptyList())
-                assertIs<Either.Right<*>>(fixture.receive(emptyList(), tail.id, api = api))
-                assertTrue(api.requests.isEmpty())
+                assertIs<Either.Right<*>>(fixture.receive(emptyList(), tail.id))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                     assertNull(runtime.database.notificationEventStore.cursor())
@@ -9421,7 +9370,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun allTransientRESTPageReceivesWithoutAdvancingCursor() = runTest {
+    fun allTransientCatchUpReceivesWithoutAdvancingCursor() = runTest {
         for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val first = fixture.typingEvent("started", SELF).copy(id = "typing", transient = true)
@@ -9503,7 +9452,10 @@ class NotificationProcessorNativeTest {
                     object : MlsCoreCryptoContext by real {
                         override suspend fun decryptMessage(groupId: MLSGroupId, message: ByteArray): MLSDecryptResult =
                             real.decryptMessage(groupId, message).also { result ->
-                                delay = assertIs<DecryptedMessageBundle.Proposal>(assertIs<MLSDecryptResult.Success>(result).messages.single()).commitDelay
+                                if (message.contentEquals(Base64.decode(REMOVE_THIRD_PROPOSAL))) {
+                                    delay = assertIs<DecryptedMessageBundle.Proposal>(
+                                        assertIs<MLSDecryptResult.Success>(result).messages.single()).commitDelay
+                                }
                             }
                     }
                 })
@@ -9542,7 +9494,7 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 assertIs<Either.Right<*>>(fixture.receive(prefix, "addition"))
                 assertIs<Either.Left<*>>(fixture.receive(listOf(target), target.id, stage,
-                    api = PageApi(mapOf("addition" to pageResponse(listOf(target)))), commitApi = api))
+                    commitApi = api))
                 if (stage == Interruption.MARKER) fixture.sql("DROP TRIGGER interrupt_receive")
                 assertEquals(0, api.attempts)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
@@ -9650,8 +9602,7 @@ class NotificationProcessorNativeTest {
                 val after = fixture.encrypt("after-removal")
                 fixture.releasePrepared()
                 val page = listOf(fixture.memberLeave("leave-self", SELF), fixture.event("after", after))
-                assertIs<Either.Right<*>>(fixture.receive(page, "leave-self"))
-                val result = fixture.receive(emptyList(), "after")
+                val result = fixture.receive(page, "after")
                 if (mls) assertIs<Either.Left<*>>(result)
                 else assertEquals("after-removal", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.messageId)
                 assertIs<Either.Right<*>>(
@@ -9687,7 +9638,6 @@ class NotificationProcessorNativeTest {
                     interruption
                 )
                 )
-                assertIs<Either.Right<*>>(fixture.receive(emptyList(), "removal"))
                 assertIs<Either.Left<*>>(fixture.receive(emptyList(), "after"))
                 assertIs<Either.Right<*>>(
                     fixture.open { runtime ->
@@ -9702,6 +9652,7 @@ class NotificationProcessorNativeTest {
                             ).groupState
                         )
                         assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("removal")).isProcessed)
+                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("after")).isProcessed)
                         assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
                         assertEquals(
                             MessageEntityContent.MLSWrongEpochWarning,
@@ -9794,7 +9745,7 @@ class NotificationProcessorNativeTest {
     @Test
     fun legalHoldProfileHandoffPreservesRawEventAndCrypto() = runTest {
         withContext(Dispatchers.Default) {
-            for (mls in listOf(false, true)) for (isolated in listOf(false, true)) for (enabled in listOf(true, false)) {
+            for (mls in listOf(false, true)) for (enabled in listOf(true, false)) {
                 withFixture(mls) { fixture ->
                     val event = fixture.batch("notification", fixture.event("prefix", fixture.encrypt("prefix")),
                         fixture.connectionEvent("pending", peer = SENDER), fixture.event("text", fixture.encrypt("first")))
@@ -9813,7 +9764,7 @@ class NotificationProcessorNativeTest {
                     }
                     cache(!enabled)
                     assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id,
-                        fetchConnectionPeer = { profile }, isolateConversations = isolated))
+                        fetchConnectionPeer = { profile }))
                     assertEquals(NotificationAppWork.LEGAL_HOLD, fixture.receivedAppWork)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
@@ -9821,13 +9772,12 @@ class NotificationProcessorNativeTest {
                         assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                     })
                     assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id,
-                        fetchConnectionPeer = { profile }, isolateConversations = isolated))
+                        fetchConnectionPeer = { profile }))
                     assertEquals(NotificationAppWork.LEGAL_HOLD, fixture.receivedAppWork)
                     // Model app completion of the client refresh, then retry the same native ciphertext.
                     cache(enabled)
                     assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(
-                        fixture.receive(emptyList(), event.id, fetchConnectionPeer = { profile },
-                            isolateConversations = isolated)).value?.text)
+                        fixture.receive(emptyList(), event.id, fetchConnectionPeer = { profile })).value?.text)
                     assertNull(fixture.receivedAppWork)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
@@ -9863,7 +9813,7 @@ class NotificationProcessorNativeTest {
                             if (scenario == "pending-user") "legal-hold-user-transitions-v1" else "legal-hold-conversation-transitions-v1")
                     })
                     val result = assertIs<Either.Right<ReceivedMessageResult?>>(
-                        fixture.receive(listOf(membership, tail), "tail", isolateConversations = true))
+                        fixture.receive(listOf(membership, tail), "tail"))
                     val needsApp = scenario in listOf("self-leave", "degraded", "pending", "pending-user")
                     assertEquals(if (needsApp) NotificationAppWork.LEGAL_HOLD else null, fixture.receivedAppWork, scenario)
                     assertEquals(if (needsApp) null else "tail", result.value?.text, scenario)
@@ -9884,28 +9834,26 @@ class NotificationProcessorNativeTest {
 
     private fun legalHoldMembershipHandoff(mls: Boolean) = runTest {
         withContext(Dispatchers.Default) {
-          for (isolated in listOf(false, true)) {
             withFixture(mls) { fixture ->
                 fixture.sql("UPDATE Conversation SET legal_hold_status = 'ENABLED'")
                 val event = fixture.batch("notification", fixture.memberJoin(), fixture.event("text", fixture.encrypt("first")))
                 fixture.releasePrepared()
                 assertIs<Either.Right<*>>(fixture.open { runtime -> runtime.database.userDAO.upsertUser(user(THIRD)) })
-                assertIs<Either.Right<*>>(fixture.receive(listOf(event), "notification", isolateConversations = isolated))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(event), "notification"))
                 assertEquals(NotificationAppWork.LEGAL_HOLD, fixture.receivedAppWork)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
                     assertNull(runtime.database.memberDAO.getMemberRole(THIRD.toDao(), CONVERSATION_ID))
                     assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                 })
-                assertIs<Either.Right<*>>(fixture.receive(emptyList(), "notification", isolateConversations = isolated))
+                assertIs<Either.Right<*>>(fixture.receive(emptyList(), "notification"))
                 assertEquals(NotificationAppWork.LEGAL_HOLD, fixture.receivedAppWork)
                 // Model completion of the app's status work, then prove native rollback left ciphertext replayable.
                 fixture.sql("UPDATE Conversation SET legal_hold_status = 'DISABLED'")
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(
-                    fixture.receive(emptyList(), "notification", isolateConversations = isolated)).value?.text)
+                    fixture.receive(emptyList(), "notification")).value?.text)
                 assertNull(fixture.receivedAppWork)
             }
-          }
         }
     }
 
@@ -9961,10 +9909,10 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertEquals(epoch + 1u, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("commit")).isProcessed)
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
-                    assertTrue(runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).isEmpty())
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
+                    assertEquals(listOf("first"), runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
                 })
-                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification")).value?.text)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification")).value)
                 fixture.verifyStoredAndNext(next, "first")
             }
         }
@@ -9981,8 +9929,8 @@ class NotificationProcessorNativeTest {
                     val next = fixture.encrypt("next")
                     fixture.releasePrepared()
                     val page = listOf(fixture.event("before", before), fixture.event("commit", commit), fixture.event("notification", first))
-                    assertIs<Either.Right<*>>(fixture.receive(page, "before"))
-                    assertIs<Either.Left<*>>(fixture.receive(emptyList(), "commit", interruption))
+                    assertIs<Either.Right<*>>(fixture.receive(page.take(1), "before"))
+                    assertIs<Either.Left<*>>(fixture.receive(page.drop(1), "commit", interruption))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("commit")).isProcessed)
                         if (interruption == Interruption.MARKER) fixture.sql("DROP TRIGGER interrupt_receive")
@@ -10008,7 +9956,7 @@ class NotificationProcessorNativeTest {
                     fixture.batch("notification", fixture.event("duplicate", commit), fixture.event("text", first)),
                     fixture.event("second-commit", secondCommit),
                 )
-                assertIs<Either.Right<*>>(fixture.receive(page, "commit"))
+                assertIs<Either.Right<*>>(fixture.receive(page.take(1), "commit"))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     checkNotNull(fixture.openMLS(runtime)).transaction { context ->
                         assertEquals(MLSFailure.DuplicateMessage, assertIs<Either.Left<*>>(
@@ -10016,7 +9964,7 @@ class NotificationProcessorNativeTest {
                         ).value)
                     }
                 })
-                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification")).value?.text)
+                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page.drop(1), "notification")).value?.text)
                 assertIs<Either.Right<*>>(fixture.receive(emptyList(), "second-commit"))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     checkNotNull(fixture.openMLS(runtime)).transaction { context ->
@@ -10041,7 +9989,7 @@ class NotificationProcessorNativeTest {
                 val page = listOf(fixture.event("notification", first),
                     fixture.batch("tail", fixture.event("duplicate", first), fixture.event("later", later)))
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, "notification")).value?.text)
-                assertEquals("later", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "tail")).value?.text)
+                fixture.verifyProcessedText(page.last(), "later")
                 fixture.verifyStoredAndNext(next, "later", listOf("first", "later"))
             }
         }
@@ -10073,7 +10021,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun `MLS unsupported decrypted work rolls back earlier text and leaves the event pending`() = runTest {
+    fun `MLS deferred decrypted work rolls back earlier text and remains replayable`() = runTest {
         withContext(Dispatchers.Default) {
             val unsupported = listOf(MLSFailure.WrongEpoch, MLSFailure.UnmergedPendingGroup)
             for (unsupportedResult in unsupported) withFixture(true) { fixture ->
@@ -10082,7 +10030,7 @@ class NotificationProcessorNativeTest {
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 val event = fixture.batch("notification", fixture.event("text", first), fixture.event("unsupported", tail))
-                val result = fixture.receive(listOf(event), "notification", decorateMLSContext = { context ->
+                val result = fixture.receive(listOf(event), "notification", nowEpochMillis = { 1_000L }, decorateMLSContext = { context ->
                     object : MlsCoreCryptoContext by context {
                         override suspend fun decryptMessage(groupId: MLSGroupId, message: ByteArray): MLSDecryptResult {
                             val decrypted = context.decryptMessage(groupId, message)
@@ -10093,15 +10041,17 @@ class NotificationProcessorNativeTest {
                         }
                     }
                 })
-                assertIs<Either.Left<*>>(result)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
+                assertEquals("QUEUE_END", fixture.receivedStop)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
+                    assertEquals(31_000L, runtime.database.notificationEventStore.deferredUntil("notification"))
                     assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                     assertNull(runtime.database.messageDAO.getMessageById("tail", CONVERSATION_ID))
                     assertTrue(runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).isEmpty())
                 })
-                // The real decryptions above must have rolled back with the rejected result.
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification")).value?.text)
+                // The real decryptions must roll back before deferral and remain replayable after the cooldown.
+                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification", nowEpochMillis = { 32_000L })).value?.text)
                 fixture.verifyStoredAndNext(next, "tail", listOf("first", "tail"))
             }
         }
@@ -10132,12 +10082,6 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun `Proteus paginated target leaves the complete page available after reopen`() = paginatedReceiving(false)
-
-    @Test
-    fun `MLS paginated target leaves the complete page available after reopen`() = paginatedReceiving(true)
-
-    @Test
     fun `app stored backlog uses the shared event queue for both protocols`() = runTest {
         withContext(Dispatchers.Default) {
             for (mls in listOf(false, true)) withFixture(mls) { fixture ->
@@ -10149,10 +10093,8 @@ class NotificationProcessorNativeTest {
                     runtime.database.eventDAO.insertEvents(listOf(NewEventEntity(earlier.id, earlier.payload, false, true)))
                     runtime.database.eventDAO.storeFetchedPage(listOf(NewEventEntity(target.id, target.payload, false, false)))
                 })
-                val offline = PageApi(emptyMap())
-                val result = fixture.receive(emptyList(), target.id, api = offline)
+                val result = fixture.receive(emptyList(), target.id)
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
-                assertTrue(offline.requests.isEmpty())
                 fixture.verifyStoredAndNext(next, "first", listOf("earlier", "first"))
             }
         }
@@ -10164,7 +10106,7 @@ class NotificationProcessorNativeTest {
             for (mls in listOf(false, true)) withFixture(mls) { fixture ->
                 val target = fixture.event("target", fixture.encrypt("pending"))
                 fixture.releasePrepared()
-                assertIs<Either.Right<*>>(fixture.receive(listOf(target), target.id, isolateConversations = true))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(target), target.id))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val alerts = UnnotifiedMessageAlerts(runtime.database, SELF) { TIME }
                     assertEquals(listOf("pending"), alerts.take().map { it.text })
@@ -10197,7 +10139,7 @@ class NotificationProcessorNativeTest {
                 val target = fixture.event("target", fixture.encrypt("target"), time = TIME + 2.seconds)
                 fixture.releasePrepared()
 
-                assertIs<Either.Right<*>>(fixture.receive(listOf(old, earlier, target), target.id, isolateConversations = true))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(old, earlier, target), target.id))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val now = TIME + UnnotifiedMessageAlerts.MAX_AGE + 500.milliseconds
                     val alerts = UnnotifiedMessageAlerts(runtime.database, SELF) { now }
@@ -10223,13 +10165,11 @@ class NotificationProcessorNativeTest {
                     // The bounded catch-up stores the stream before the scan.
                     runtime.database.eventDAO.storeFetchedPage(events.map { NewEventEntity(it.id, it.payload, false, false) })
                 })
-                val offline = PageApi(emptyMap())
 
-                val result = fixture.receive(emptyList(), "target", api = offline, isolateConversations = true, toLive = { false })
+                val result = fixture.receive(emptyList(), "target", toLive = { false })
 
                 assertEquals("target", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
                 assertEquals("QUEUE_END", fixture.receivedStop)
-                assertTrue(offline.requests.isEmpty())
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(events.all { checkNotNull(runtime.database.eventDAO.getEventById(it.id)).isProcessed })
                     assertEquals(listOf("earlier", "target", "later"), UnnotifiedMessageAlerts(runtime.database, SELF) { TIME + 10.seconds }.take().map { it.text })
@@ -10251,7 +10191,7 @@ class NotificationProcessorNativeTest {
                 })
                 var checks = 0
 
-                val result = fixture.receive(emptyList(), "target", api = PageApi(emptyMap()), isolateConversations = true,
+                val result = fixture.receive(emptyList(), "target",
                     toLive = { checks++ >= 1 })
 
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
@@ -10276,31 +10216,13 @@ class NotificationProcessorNativeTest {
                     runtime.database.eventDAO.storeFetchedPage(events.map { NewEventEntity(it.id, it.payload, false, false) })
                 })
 
-                val result = fixture.receive(emptyList(), "absent", api = PageApi(emptyMap()), isolateConversations = true,
+                val result = fixture.receive(emptyList(), "absent",
                     toLive = { false })
 
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 assertEquals("QUEUE_END", fixture.receivedStop)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertEquals(listOf("first", "second"), UnnotifiedMessageAlerts(runtime.database, SELF) { TIME + 10.seconds }.take().map { it.text })
-                })
-            }
-        }
-    }
-
-    @Test
-    fun `unknown future event is silent and acknowledged for both protocols`() = runTest {
-        withContext(Dispatchers.Default) {
-            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
-                val unknown = fixture.unknownEvent("unknown", "conversation.future-event")
-                fixture.releasePrepared()
-
-                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(
-                    fixture.receive(listOf(unknown), unknown.id, isolateConversations = true)
-                ).value)
-                assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(unknown.id)).isProcessed)
-                    assertNull(runtime.database.messageDAO.getMessageById(unknown.id, CONVERSATION_ID))
                 })
             }
         }
@@ -10317,11 +10239,12 @@ class NotificationProcessorNativeTest {
                 assertEquals(
                     "target",
                     assertIs<Either.Right<ReceivedMessageResult?>>(
-                        fixture.receive(listOf(unknown, target), target.id, isolateConversations = true)
+                        fixture.receive(listOf(unknown, target), target.id)
                     ).value?.text
                 )
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(unknown.id)).isProcessed)
+                    assertNull(runtime.database.messageDAO.getMessageById(unknown.id, CONVERSATION_ID))
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(target.id)).isProcessed)
                     assertNotNull(runtime.database.messageDAO.getMessageById(target.id, CONVERSATION_ID))
                 })
@@ -10348,43 +10271,6 @@ class NotificationProcessorNativeTest {
             }
         }
     }
-
-    private fun paginatedReceiving(mls: Boolean) = runTest {
-        withContext(Dispatchers.Default) {
-            withFixture(mls) { fixture ->
-                val earlier = fixture.event("earlier", fixture.encrypt("earlier"))
-                val target = fixture.event("notification", fixture.encrypt("first"))
-                val later = fixture.event("later", fixture.encrypt("later"))
-                val next = fixture.encrypt("next")
-                fixture.releasePrepared()
-                val api = PageApi(mapOf(null to pageResponse(listOf(earlier), true), "earlier" to pageResponse(listOf(target, later))))
-                val result = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(
-                    fixture.receive(emptyList(), "notification", api = api)).value)
-                assertEquals("first", result.text)
-                assertFalse(result.isGroupConversation)
-                assertEquals("Fixture", result.senderName)
-                assertEquals("Fixture", result.conversationName)
-                assertEquals(listOf(null, "earlier"), api.requests)
-                assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertEquals("later", runtime.database.notificationEventStore.cursor())
-                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("earlier")).isProcessed)
-                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("later")).isProcessed)
-                    assertNull(runtime.database.messageDAO.getMessageById("later", CONVERSATION_ID))
-                })
-                val offline = PageApi(emptyMap())
-                assertEquals("later", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "later", api = offline)).value?.text)
-                assertTrue(offline.requests.isEmpty())
-                fixture.verifyStoredAndNext(next, "first", listOf("earlier", "first", "later"))
-            }
-        }
-    }
-
-    @Test
-    fun `Proteus timeout and invalid pages preserve the completed prefix for retry`() = interruptedPagination(false)
-
-    @Test
-    fun `MLS timeout and invalid pages preserve the completed prefix for retry`() = interruptedPagination(true)
 
     @Test
     fun `Proteus multiple payloads commit together and recover selection and quotes`() = multiplePayloads(false)
@@ -10505,38 +10391,6 @@ class NotificationProcessorNativeTest {
                         assertEquals(true, content.quotedMessage?.isVerified)
                     })
                 }
-            }
-        }
-    }
-
-    private fun interruptedPagination(mls: Boolean) = runTest {
-        withContext(Dispatchers.Default) {
-            withFixture(mls) { fixture ->
-                val earlier = fixture.event("earlier", fixture.encrypt("earlier"))
-                val target = fixture.event("notification", fixture.encrypt("first"))
-                val next = fixture.encrypt("next")
-                fixture.releasePrepared()
-                val slow = PageApi(mapOf(null to pageResponse(listOf(earlier), true), "earlier" to null))
-                assertFailsWith<TimeoutCancellationException> {
-                    withTimeout(5_000) { fixture.receive(emptyList(), "notification", api = slow) }
-                }
-                assertEquals(listOf(null, "earlier"), slow.requests)
-                val unavailable = NetworkResponse.Error(KaliumException.InvalidRequestError(GenericAPIErrorResponse(404, "not-found", "Expired")))
-                for (response in listOf(unavailable, pageResponse(emptyList(), true), pageResponse(emptyList()),
-                    pageResponse(listOf(earlier, target)))) {
-                    val api = PageApi(mapOf("earlier" to response))
-                    assertIs<Either.Left<*>>(fixture.receive(emptyList(), "notification", api = api))
-                    assertEquals(listOf<String?>("earlier"), api.requests)
-                    assertIs<Either.Right<*>>(fixture.open { runtime ->
-                        assertEquals("earlier", runtime.database.notificationEventStore.cursor())
-                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("earlier")).isProcessed)
-                        assertNull(runtime.database.eventDAO.getEventById("notification"))
-                    })
-                }
-                val retry = PageApi(mapOf("earlier" to pageResponse(listOf(target))))
-                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification", api = retry)).value?.text)
-                assertEquals(listOf<String?>("earlier"), retry.requests)
-                fixture.verifyStoredAndNext(next, "first", listOf("earlier", "first"))
             }
         }
     }
@@ -11667,7 +11521,7 @@ class NotificationProcessorNativeTest {
                 MessageContent.Text("preview-quoted", quotedMessageReference = MessageContent.QuoteReference("first", hash, false)))))
         }
 
-        suspend fun verifyPreviewMetadata(runtime: AppleAccountRuntime, image: Boolean = true, complete: Boolean = true, downloaded: Boolean = false) {
+        suspend fun verifyPreviewMetadata(runtime: AppleAccountRuntime, image: Boolean = true, complete: Boolean = true, downloaded: Boolean = false, includeTail: Boolean = false) {
             val database = runtime.database
             val content = assertIs<MessageEntityContent.Text>(
                 assertIs<MessageEntity.Regular>(database.messageDAO.getMessageById("first", CONVERSATION_ID)).content)
@@ -11695,7 +11549,7 @@ class NotificationProcessorNativeTest {
             val quote = assertIs<MessageEntityContent.Text>(
                 assertIs<MessageEntity.Regular>(database.messageDAO.getMessageById("preview-quoted", CONVERSATION_ID)).content)
             assertEquals(true, quote.quotedMessage?.isVerified)
-            assertEquals(listOf("first", "preview-quoted"), database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
+            assertEquals(listOf("first", "preview-quoted") + if (includeTail) listOf("tail") else emptyList(), database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
         }
 
         suspend fun multipartEvent(edited: Boolean = false): EventResponseToStore {
@@ -11729,7 +11583,7 @@ class NotificationProcessorNativeTest {
                 MessageContent.MultipartEdited("multipart", "multipart-edited", newAttachments = emptyList())), TIME + 5.seconds)) else original
         }
 
-        suspend fun verifyMultipart(runtime: AppleAccountRuntime, edited: Boolean = false) {
+        suspend fun verifyMultipart(runtime: AppleAccountRuntime, edited: Boolean = false, includeTail: Boolean = false) {
             val id = if (edited) "multipart-edited" else "multipart"
             val database = runtime.database
             val message = assertIs<MessageEntity.Regular>(database.messageDAO.getMessageById(id, CONVERSATION_ID))
@@ -11744,7 +11598,7 @@ class NotificationProcessorNativeTest {
             assertEquals(listOf("cell-two", "cell-one"), content.attachments.map { it.assetId })
             assertEquals(listOf("cell-two", "cell-one"), database.messageAttachments.getAttachments(id, CONVERSATION_ID).map { it.assetId })
             assertTrue(database.messageDAO.needsToBeNotified(id, CONVERSATION_ID))
-            assertEquals(listOf("first", "multipart", "multipart-empty"),
+            assertEquals(listOf("first", "multipart", "multipart-empty") + if (includeTail) listOf("tail") else emptyList(),
                 database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
             if (edited) {
                 assertNull(database.messageDAO.getMessageById("multipart", CONVERSATION_ID))
@@ -12456,7 +12310,7 @@ class NotificationProcessorNativeTest {
             event("last-image", encrypt("last-image", assetContent("last-image", mime = "image/png", metadata =
                 com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image(64, 48)))))
 
-        suspend fun verifyAssets(runtime: AppleAccountRuntime) {
+        suspend fun verifyAssets(runtime: AppleAccountRuntime, includeTail: Boolean = false) {
             val db = runtime.database
             for (id in listOf("asset", "image", "audio", "video", "last-image")) {
                 val stored = assertIs<MessageEntity.Regular>(db.messageDAO.getMessageById(id, CONVERSATION_ID))
@@ -12482,7 +12336,7 @@ class NotificationProcessorNativeTest {
             assertContentEquals(byteArrayOf(1, 2, 3), audio.assetNormalizedLoudness)
             assertEquals(MessageEntity.Visibility.HIDDEN, db.messageDAO.getMessageById("hidden", CONVERSATION_ID)?.visibility)
             assertEquals(MessageEntity.Visibility.VISIBLE, db.messageDAO.getMessageById("image-preview", CONVERSATION_ID)?.visibility)
-            assertEquals(if (senderId == SELF) emptySet() else ASSET_MESSAGE_IDS.toSet(),
+            assertEquals(if (senderId == SELF) emptySet() else ASSET_MESSAGE_IDS.toSet() + if (includeTail) setOf("tail") else emptySet(),
                 db.pendingDeliveryConfirmationDAO.getPendingAfter(0, 20).map { it.messageId }.toSet())
         }
 
@@ -12511,7 +12365,7 @@ class NotificationProcessorNativeTest {
                 event("text", encrypt("first"))).toTypedArray())
         }
 
-        suspend fun verifySignals(runtime: AppleAccountRuntime) {
+        suspend fun verifySignals(runtime: AppleAccountRuntime, includeTail: Boolean = false) {
             val db = runtime.database
             val reset = assertIs<MessageEntity.System>(db.messageDAO.getMessageById("session-reset", CONVERSATION_ID))
             assertEquals(MessageEntityContent.CryptoSessionReset, reset.content)
@@ -12522,9 +12376,9 @@ class NotificationProcessorNativeTest {
             assertEquals(if (senderId == SELF) "received" else "initial", db.userConfigDAO.getTrackingIdentifier())
             assertEquals(if (senderId == SELF) "middle" else "earlier", db.userConfigDAO.getPreviousTrackingIdentifier())
             for (index in 0..7) assertNull(db.messageDAO.getMessageById("signal-$index", CONVERSATION_ID))
-            assertEquals(if (senderId == SELF) 0L else 1L, db.messageDAO.getConversationUnreadEventsCount(CONVERSATION_ID))
-            assertEquals(TIME, checkNotNull(db.conversationDAO.getConversationById(CONVERSATION_ID)).lastModifiedDate)
-            assertEquals(if (senderId == SELF) emptyList() else listOf("first"),
+            assertEquals(if (senderId == SELF) 0L else if (includeTail) 2L else 1L, db.messageDAO.getConversationUnreadEventsCount(CONVERSATION_ID))
+            assertEquals(if (includeTail) TIME + 1.seconds else TIME, checkNotNull(db.conversationDAO.getConversationById(CONVERSATION_ID)).lastModifiedDate)
+            assertEquals(if (senderId == SELF) emptyList() else if (includeTail) listOf("first", "tail") else listOf("first"),
                 db.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
         }
 
@@ -12628,7 +12482,6 @@ class NotificationProcessorNativeTest {
             page: List<EventResponseToStore>,
             target: String,
             interruption: Interruption? = null,
-            api: NotificationApi = PageApi(page),
             commitApi: com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi? = null,
             decorateMLSContext: (MlsCoreCryptoContext) -> MlsCoreCryptoContext = { it },
             decorateProteusContext: (ProteusCoreCryptoContext) -> ProteusCoreCryptoContext = { it },
@@ -12651,11 +12504,17 @@ class NotificationProcessorNativeTest {
             transactionCheckpoint: suspend (String) -> Unit = {},
             diagnostics: ReceivingDiagnostics? = null,
             recoveryFactory: ((AppleAccountRuntime) -> MLSReceiveRecovery)? = null,
-            isolateConversations: Boolean = false,
             nowEpochMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
             mlsTransport: MLSTransporter? = null,
-            toLive: (() -> Boolean)? = null,
+            toLive: () -> Boolean = { false },
         ) = open { runtime ->
+            // Catch-up owns network fetching. These native tests start from the stored queue;
+            // NotificationCatchUpTest and the Swift harness exercise the socket/transport boundary.
+            val store = runtime.database.notificationEventStore
+            val unseen = page.filter { runtime.database.eventDAO.getEventById(it.id) == null }
+            if (unseen.isNotEmpty()) {
+                store.storePage(store.cursor(), unseen.map { NewEventEntity(it.id, it.payload, it.transient, false) })
+            }
             if (interruption in listOf(Interruption.DELIVERY, Interruption.MARKER, Interruption.SECOND_MESSAGE)) {
                 val trigger = when (interruption) {
                     Interruption.DELIVERY -> "INSERT ON PendingDeliveryConfirmations"
@@ -12671,12 +12530,16 @@ class NotificationProcessorNativeTest {
                         block(decorateProteusContext(context)).also { if (name == "nse-notification") interruption?.beforeCommit() }
                     }.also { if (name == "nse-notification") interruption?.afterCommit() }
             }
-            val commitTransport = commitApi?.let { api -> object : MLSTransporter {
-                override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
-                    com.wire.kalium.logic.data.conversation.sendMLSCommitBundle(api, commitBundle)
-                }
-            } }
-            val mls = openMLS(runtime, mlsTransport ?: commitTransport ?: transport)?.let { realMLS ->
+            val conversationApi = object : ConversationApi by runtime.network.conversationApi {
+                override suspend fun fetchConversationDetails(conversationId: com.wire.kalium.network.api.model.ConversationId) = try {
+                    if (fetchConversation == null) NetworkResponse.Error(KaliumException.NoNetwork())
+                    else NetworkResponse.Success(fetchConversation(), emptyMap(), 200)
+                } catch (failure: KaliumException) { NetworkResponse.Error(failure) }
+                override suspend fun fetchGroupInfo(conversationId: com.wire.kalium.network.api.model.ConversationId) =
+                    NetworkResponse.Error(KaliumException.NoNetwork())
+            }
+            val rejoin = ReceivedMLSRejoin(commitApi ?: CommitApi(), runtime.database.metadataDAO, diagnostics)
+            val mls = (mlsTransport?.let { openMLS(runtime, it) } ?: runtime.mlsClient(rejoin))?.let { realMLS ->
                 object : MLSClient by realMLS {
                     override suspend fun <R> transaction(name: String, block: suspend (MlsCoreCryptoContext) -> R): R =
                         realMLS.transaction(name) { context ->
@@ -12697,12 +12560,14 @@ class NotificationProcessorNativeTest {
                 }
             }
             NotificationProcessor(
-                runtime.database, api, CLIENT, SELF, proteus, mls,
+                runtime.database, CLIENT, SELF, proteus, mls,
                 diagnostics = diagnostics,
                 invalidateReceiving = { runtime.invalidateReceiving() },
-                isolateConversations = isolateConversations,
                 nowEpochMillis = nowEpochMillis,
-                recovery = recoveryFactory?.invoke(runtime),
+                recovery = if (mls == null) null else recoveryFactory?.invoke(runtime) ?: MLSReceiveRecovery(
+                    MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT),
+                    conversationApi, SELF, rejoin::join,
+                ),
                 evaluateCalls = { events ->
                     receivedCallEvents = events
                     evaluateCallingEvents(events, SELF, CLIENT, runtime.database)
@@ -12741,12 +12606,7 @@ class NotificationProcessorNativeTest {
                 options = ReceivingOptions(linkPreviewEnabled = linkPreviewEnabled, fileRestrictionState = allowedFileExtensions?.let {
                     com.wire.kalium.logic.featureFlags.BuildFileRestrictionState.AllowSome(it)
                 } ?: com.wire.kalium.logic.featureFlags.BuildFileRestrictionState.NoRestriction),
-                conversationApi = object : ConversationApi by runtime.network.conversationApi {
-                    override suspend fun fetchConversationDetails(conversationId: com.wire.kalium.network.api.model.ConversationId) = try {
-                        if (fetchConversation == null) NetworkResponse.Error(KaliumException.NoNetwork())
-                        else NetworkResponse.Success(fetchConversation(), emptyMap(), 200)
-                    } catch (failure: KaliumException) { NetworkResponse.Error(failure) }
-                },
+                conversationApi = conversationApi,
                 meetingApi = object : com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi by runtime.network.meetingApi {
                     override suspend fun fetchMeeting(meetingId: com.wire.kalium.network.api.model.MeetingId) = try {
                         if (fetchMeeting == null) NetworkResponse.Error(KaliumException.NoNetwork())
@@ -12772,7 +12632,7 @@ class NotificationProcessorNativeTest {
                     } catch (failure: KaliumException) { NetworkResponse.Error(failure) }
                 },
             ).let { processor ->
-                if (toLive == null) processor.process(target) else processor.processToLive(target, toLive)
+                processor.processToLive(target, toLive)
             }.also { receivedCalls = it.calls; receivedAppWork = it.appWorkPending; receivedStop = it.stoppedReason }.message
         }
 
@@ -13122,6 +12982,17 @@ class NotificationProcessorNativeTest {
                 assertTrue(client.getPublicKey().first.isNotEmpty())
                 client.transaction { assertTrue(it.generateKeyPackages(1).single().isNotEmpty()) }
             }
+        }
+
+        suspend fun verifyProcessedText(event: EventResponseToStore, messageId: String) {
+            assertIs<Either.Right<*>>(open { runtime ->
+                assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                val message = assertIs<MessageEntity.Regular>(runtime.database.messageDAO.getMessageById(messageId, CONVERSATION_ID))
+                assertEquals(messageId, assertIs<MessageEntityContent.Text>(message.content).messageBody)
+                assertEquals(if (senderId == SELF) 0 else 1,
+                    runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 20).count { it.messageId == messageId })
+            })
+            assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(receive(emptyList(), event.id)).value)
         }
 
         suspend fun verifyStoredAndNext(next: ByteArray, messageId: String, deliveries: List<String> = listOf(messageId),
@@ -13530,24 +13401,6 @@ class NotificationProcessorNativeTest {
 
     }
 
-    private class PageApi(private val pages: Map<String?, NetworkResponse<NotificationResponse>?>) : NotificationApi {
-        constructor(page: List<EventResponseToStore>) : this(mapOf(null to pageResponse(page)))
-        val requests = mutableListOf<String?>()
-        private suspend fun fetch(cursor: String?): NetworkResponse<NotificationResponse> {
-            requests += cursor
-            check(pages.containsKey(cursor)) { "Unexpected fetch" }
-            return pages[cursor] ?: awaitCancellation()
-        }
-        override suspend fun getAllNotifications(querySize: Int, queryClient: String) = fetch(null)
-        override suspend fun notificationsByBatch(querySize: Int, queryClient: String, querySince: String) = fetch(querySince)
-        override suspend fun mostRecentNotification(queryClient: String) = error("Unexpected fetch")
-        override suspend fun oldestNotification(queryClient: String) = error("Unexpected fetch")
-        override suspend fun listenToLiveEvents(clientId: String) = error("Unexpected socket")
-        override suspend fun consumeLiveEvents(clientId: String, markerId: String) = error("Unexpected socket")
-        override suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) =
-            error("Unexpected acknowledgement")
-    }
-
     private companion object {
         val SELF = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
         val SENDER = UserId("eef049aa-c081-4520-9e60-3fbe90809ee9", "example.com")
@@ -13571,9 +13424,6 @@ class NotificationProcessorNativeTest {
         val KEY = ByteArray(32) { it.toByte() }
         val TIME = Instant.parse("2026-09-05T12:00:00Z")
         val CIPHER = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-
-        fun pageResponse(events: List<EventResponseToStore>, hasMore: Boolean = false): NetworkResponse<NotificationResponse> =
-            NetworkResponse.Success(NotificationResponse(TIME.toString(), hasMore, events), emptyMap(), 200)
 
         fun user(id: UserId) = UserEntity(
             id.toDao(), "Fixture", null, null, null, 1, null, ConnectionEntity.State.ACCEPTED, null, null,
