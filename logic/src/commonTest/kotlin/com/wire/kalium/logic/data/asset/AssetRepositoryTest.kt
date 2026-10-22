@@ -138,7 +138,7 @@ internal class AssetRepositoryTest {
         val sender = mock<MessageSender>()
         val transfer = mock<UpdateAssetMessageTransferStatusUseCase>()
         everySuspend { transfer(any(), any(), any()) } returns UpdateTransferStatusResult.Success
-        everySuspend { sender.sendMessage(any(), any()) } returns Unit.right()
+        everySuspend { sender.sendMessageWithOutcome(any(), any()) } returns true.right()
         val message = TestMessage.assetMessage()
         val metadata = UploadAssetMessageMetadata(
             conversationId = message.conversationId, mimeType = "image/png", assetId = UploadedAssetId(key.value, key.domain),
@@ -170,7 +170,7 @@ internal class AssetRepositoryTest {
         }
         withContext(AssetMessageSendReceipt()) { useCase(message, metadata) }.shouldSucceed()
         assertEquals(false, fakeKaliumFileSystem.exists(path))
-        verifySuspend(VerifyMode.exactly(1)) { sender.sendMessage(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { sender.sendMessageWithOutcome(any(), any()) }
     }
 
     private suspend fun verifyRetriedUpload(privateAsset: Boolean) {
