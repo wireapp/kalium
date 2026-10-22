@@ -19,7 +19,7 @@ internal class SyncRetryController {
 
     suspend fun generation(): Long = mutex.withLock { generation }
 
-    suspend fun retryNow(resetBackoff: () -> Unit) = mutex.withLock {
+    suspend fun retryNow(resetBackoff: () -> Unit): Unit = mutex.withLock {
         resetBackoff()
         generation++
         waiters.forEach { it.complete(Unit) }
