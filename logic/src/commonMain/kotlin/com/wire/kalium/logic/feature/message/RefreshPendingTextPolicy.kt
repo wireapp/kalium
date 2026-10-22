@@ -22,12 +22,7 @@ internal class RefreshPendingTextPolicy(
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
 ) {
     suspend operator fun invoke(message: Message.Sendable): Either<CoreFailure, Message.Sendable> {
-        if (message !is Message.Regular || message.content !is MessageContent.Text ||
-            message.status != Message.Status.Pending || !message.isSelfMessage ||
-            message.editStatus != Message.EditStatus.NotEdited || message.visibility != Message.Visibility.VISIBLE ||
-            (message.expirationData?.selfDeletionStatus != null &&
-                message.expirationData?.selfDeletionStatus != Message.ExpirationData.SelfDeletionStatus.NotStarted)
-        ) return Either.Right(message)
+        if (message !is Message.Regular || !message.canRefreshPolicy()) return Either.Right(message)
 
         val timer = selfDeleteTimer(message.conversationId, true).first().duration
         val receipts = properties.getReadReceiptsStatus()
@@ -36,5 +31,13 @@ internal class RefreshPendingTextPolicy(
         return messages.updatePendingTextPolicy(message.conversationId, message.id, timer?.inWholeMilliseconds, receipts).map {
             message.copy(expirationData = timer?.let { Message.ExpirationData(it) }, expectsReadConfirmation = receipts)
         }
+    }
+
+    private fun Message.Regular.canRefreshPolicy(): Boolean {
+        val isPendingText = content is MessageContent.Text && status == Message.Status.Pending && isSelfMessage
+        val isVisibleUnedited = editStatus == Message.EditStatus.NotEdited && visibility == Message.Visibility.VISIBLE
+        val deletionStatus = expirationData?.selfDeletionStatus
+        val deletionNotStarted = deletionStatus == null || deletionStatus == Message.ExpirationData.SelfDeletionStatus.NotStarted
+        return isPendingText && isVisibleUnedited && deletionNotStarted
     }
 }

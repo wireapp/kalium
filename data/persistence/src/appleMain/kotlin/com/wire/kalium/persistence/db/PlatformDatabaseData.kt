@@ -116,6 +116,7 @@ internal fun nativeDatabaseDriver(configuration: DatabaseConfiguration, maxReade
             if (configuration.inMemory || configuration.journalMode != JournalMode.WAL) null
             else NativeSqliteDriver(ReadSnapshotDatabaseManager(trackedManager), maxReaderConnections = 1)
         }
+
         @Suppress("TooGenericExceptionCaught")
         override fun close() {
             try {
