@@ -60,6 +60,19 @@ class DeleteCellAssetsUseCaseTest {
     }
 
     @Test
+    fun givenPermanentDelete_whenInvoked_thenRequestPermanentDeleteOfAllNodes() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDeleteReturning(Unit.right())
+            .arrange()
+
+        useCase(NODES, permanentDelete = true)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.cellsRepository.deleteFiles(NODES.map { it.locator.path }, true)
+        }
+    }
+
+    @Test
     fun givenNodes_whenDeleteSucceeds_thenCleanUpLocalDataOfEveryNode() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withLocalFileAvailable()
