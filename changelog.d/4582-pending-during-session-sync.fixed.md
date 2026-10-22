@@ -1,0 +1,1 @@
+Keep stored iOS timeline reads independent of pending crypto work. Persist outgoing text as Pending before slow sync, refresh its self-deletion and receipt policy before sending, and prevent cancelled or completed messages from being recreated by stale retries.
