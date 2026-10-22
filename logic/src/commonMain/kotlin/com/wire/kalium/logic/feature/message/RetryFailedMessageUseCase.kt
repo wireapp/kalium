@@ -114,6 +114,7 @@ public class RetryFailedMessageUseCase internal constructor(
      * Work belongs to the calling coroutine, rather than the session's fire-and-forget scope.
      * Cancellation waits for upload/send unwinding and marks unfinished delivery failed before leaving;
      * confirmed successful sends remain sent. No automatic network resend is scheduled.
+     * A send skipped because the message is no longer eligible cancels the retry without failure-state cleanup.
      * The message ID and uploaded remote data are preserved.
      */
     @Suppress("TooGenericExceptionCaught")
@@ -124,7 +125,7 @@ public class RetryFailedMessageUseCase internal constructor(
             return withContext(dispatcher.io) {
                 prepareRetry(messageId, conversationId) { owned = it }.flatMap { message ->
                     enteredRetry = true
-                    executeRetry(message)
+                    executeRetry(message, awaitDelivery = true)
                 }.fold({ MessageOperationResult.Failure(it) }, { MessageOperationResult.Success })
             }
         } finally {
@@ -134,18 +135,28 @@ public class RetryFailedMessageUseCase internal constructor(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun executeRetry(message: Message): Either<CoreFailure, Unit> {
+    private suspend fun executeRetry(message: Message, awaitDelivery: Boolean = false): Either<CoreFailure, Unit> {
+        var skipped = false
         var success = false
         var failure: CoreFailure? = null
         try {
-            return retry(message).onSuccess { success = true }.onFailure { failure = it }
+            return retry(message) { sendable ->
+                if (!awaitDelivery) messageSender.sendMessage(sendable) else {
+                    messageSender.sendMessageWithOutcome(sendable).map { sent ->
+                        if (!sent) {
+                            skipped = true
+                            throw CancellationException("Retry message is no longer eligible for sending")
+                        }
+                    }
+                }
+            }.onSuccess { success = true }.onFailure { failure = it }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (exception: Exception) {
             return CoreFailure.Unknown(exception).also { failure = it }.left()
         } finally {
             // The sole terminal write, after all transfer/send work has unwound.
-            if (!success) withContext(NonCancellable) { markFailed(message, failure) }
+            if (!success && !skipped) withContext(NonCancellable) { markFailed(message, failure) }
         }
     }
 
@@ -187,14 +198,17 @@ public class RetryFailedMessageUseCase internal constructor(
         }
     }
 
-    private suspend fun retry(message: Message): Either<CoreFailure, Unit> {
+    private suspend fun retry(
+        message: Message,
+        send: suspend (Message.Sendable) -> Either<CoreFailure, Unit>,
+    ): Either<CoreFailure, Unit> {
         if (message.status.isSuccessfullySent()) return Unit.right()
         val content = message.content
         return when {
-            message is Message.Regular && content is MessageContent.Asset -> retrySendingAssetMessage(message, content.value)
-            message is Message.Regular && message.editStatus is Message.EditStatus.Edited -> retrySendingEditMessage(message)
-            message is Message.Regular && content is MessageContent.Multipart -> retrySendingMultipartMessage(message)
-            message is Message.Sendable -> retrySendingMessage(message)
+            message is Message.Regular && content is MessageContent.Asset -> retrySendingAssetMessage(message, content.value, send)
+            message is Message.Regular && message.editStatus is Message.EditStatus.Edited -> retrySendingEditMessage(message, send)
+            message is Message.Regular && content is MessageContent.Multipart -> retrySendingMultipartMessage(message, send)
+            message is Message.Sendable -> send(message)
             else -> handleError("Message of type ${message::class.simpleName} cannot be retried")
         }
     }
@@ -224,12 +238,13 @@ public class RetryFailedMessageUseCase internal constructor(
         messageRepository.updateMessageStatusIfNotAcknowledged(status, message.conversationId, message.id)
     }
 
-    private suspend fun retrySendingMessage(message: Message.Sendable): Either<CoreFailure, Unit> = messageSender.sendMessage(message)
-
-    private suspend fun retrySendingEditMessage(message: Message.Regular): Either<CoreFailure, Unit> =
+    private suspend fun retrySendingEditMessage(
+        message: Message.Regular,
+        send: suspend (Message.Sendable) -> Either<CoreFailure, Unit>,
+    ): Either<CoreFailure, Unit> =
         when (val content = message.content) {
             is MessageContent.Text ->
-                retrySendingMessage(EditMessageBuilder.buildTextEditSignaling(message, content))
+                send(EditMessageBuilder.buildTextEditSignaling(message, content))
 
             else -> handleError("Message edit with content of type ${content::class.simpleName} cannot be retried")
         }
@@ -237,6 +252,7 @@ public class RetryFailedMessageUseCase internal constructor(
     private suspend fun retrySendingAssetMessage(
         message: Message.Regular,
         content: AssetContent,
+        send: suspend (Message.Sendable) -> Either<CoreFailure, Unit>,
     ): Either<CoreFailure, Unit> {
         val assetTransferStatus = getAssetMessageTransferStatusUseCase(message.conversationId, message.id)
 
@@ -261,7 +277,7 @@ public class RetryFailedMessageUseCase internal constructor(
 
             else -> handleError("Asset message with transfer status $assetTransferStatus cannot be retried")
         }
-            .flatMap { retrySendingMessage(it) }
+            .flatMap { send(it) }
     }
 
     private suspend fun retryUploadingAsset(conversationId: ConversationId, assetContent: AssetContent): Either<CoreFailure, AssetContent> =
@@ -300,7 +316,10 @@ public class RetryFailedMessageUseCase internal constructor(
                 }
         }
 
-    private suspend fun retrySendingMultipartMessage(message: Message.Regular): Either<CoreFailure, Unit> {
+    private suspend fun retrySendingMultipartMessage(
+        message: Message.Regular,
+        send: suspend (Message.Sendable) -> Either<CoreFailure, Unit>,
+    ): Either<CoreFailure, Unit> {
 
         val isCellEnabled = conversationRepository.isCellEnabled(message.conversationId)
             .onFailure {
@@ -325,9 +344,9 @@ public class RetryFailedMessageUseCase internal constructor(
                     )
                 }
 
-            publishAttachments(attachments).flatMap { retrySendingMessage(message) }
+            publishAttachments(attachments).flatMap { send(message) }
         } else {
-            retrySendingMessage(message)
+            send(message)
         }
     }
 

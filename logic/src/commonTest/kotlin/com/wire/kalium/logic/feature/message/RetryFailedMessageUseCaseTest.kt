@@ -949,6 +949,39 @@ class RetryFailedMessageUseCaseTest {
         }
     }
 
+    @Test
+    fun deletionWinningAwaitedRetrySendCancelsWithoutFailureCleanup() = runTest(testDispatcher.default) {
+        for (asset in listOf(false, true)) {
+            val message = (if (asset) assetMessage() else TEXT_MESSAGE).copy(status = Message.Status.Failed)
+            val (arrangement, useCase) = Arrangement().withGetMessageById(Either.Right(message))
+                .withUpdateMessageStatus(Either.Right(Unit))
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.UPLOADED).arrange()
+            val entered = CompletableDeferred<Unit>()
+            val deleted = CompletableDeferred<Unit>()
+            everySuspend { arrangement.messageSender.sendMessageWithOutcome(any(), any()) } calls {
+                entered.complete(Unit)
+                deleted.await()
+                Either.Right(false)
+            }
+            everySuspend { arrangement.messageSender.sendMessage(any(), any()) } calls {
+                entered.complete(Unit)
+                deleted.await()
+                Either.Right(Unit)
+            }
+            val retry = async { RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId) }
+            entered.await()
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns Either.Left(StorageFailure.DataNotFound)
+            deleted.complete(Unit)
+            retry.join()
+            assertTrue(retry.isCancelled)
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.messageRepository.updateMessageStatusIfNotAcknowledged(any(), any(), any())
+            }
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.updateAssetMessageTransferStatus(any(), any(), any()) }
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+        }
+    }
+
     private class Arrangement(
         val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit)
     ) {
@@ -962,6 +995,14 @@ class RetryFailedMessageUseCaseTest {
         val publishAttachments = mock<PublishAttachmentsUseCase>(mode = MockMode.autoUnit)
 
         private val testScope = TestScope(testDispatcher.default)
+
+        // Reuse existing send gates/failures for acknowledged sends; skipped-send tests override the outcome explicitly.
+        private suspend fun configureSendOutcome() {
+            everySuspend { messageSender.sendMessageWithOutcome(any(), any()) } calls { call ->
+                messageSender.sendMessage(call.args[0] as Message.Sendable, call.args[1] as com.wire.kalium.messaging.sending.MessageTarget)
+                    .map { true }
+            }
+        }
 
         suspend fun withGetMessageById(result: Either<StorageFailure, Message>): Arrangement = apply {
             everySuspend {
@@ -1030,7 +1071,7 @@ class RetryFailedMessageUseCaseTest {
             } returns result
         }
 
-        fun arrange() = this to RetryFailedMessageUseCase(
+        suspend fun arrange() = apply { configureSendOutcome() } to RetryFailedMessageUseCase(
             messageRepository,
             assetRepository,
             conversationRepository,
