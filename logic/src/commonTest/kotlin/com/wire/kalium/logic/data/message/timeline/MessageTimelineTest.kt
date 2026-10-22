@@ -32,11 +32,13 @@ import com.wire.kalium.logic.feature.message.OpenMessageTimelineUseCase
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.PollOptionEntity
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -141,6 +143,28 @@ class MessageTimelineTest {
         val missing = assertIs<MessageListContent.Text>(open().page(limit = 1).items.single().content).text
         assertEquals("original", missing.quotedMessageId)
         assertNull(missing.quote)
+    }
+
+    @Test
+    fun quotedPollsShowTheirQuestionInTheTimelineAndInMessageDetails() = runTest(dispatcher) {
+        val poll = MessageEntityContent.Poll("Lunch?", listOf(PollOptionEntity("a", "Pizza"), PollOptionEntity("b", "Sushi")), false)
+        seed(listOf(
+            message("poll", poll).copy(date = Instant.fromEpochMilliseconds(0)),
+            message("reply", MessageEntityContent.Text("reply", quotedMessageId = "poll", isQuoteVerified = true)),
+        ))
+        // Another conversation may hold a text message with the poll's id; it must not become the quoted text.
+        val elsewhere = conversation.copy(id = QualifiedIDEntity("elsewhere", conversation.id.domain))
+        db.conversationDAO.insertConversations(listOf(elsewhere))
+        db.messageDAO.insertOrIgnoreMessages(
+            listOf(message("poll", MessageEntityContent.Text("Unrelated text")).copy(conversationId = elsewhere.id)),
+            withUnreadEvents = false,
+        )
+        val expected = MessageContent.QuotedMessageDetails.Poll("Lunch?")
+        val reply = open().page().items.first { it.id == "reply" }
+        assertEquals(expected, assertIs<MessageListContent.Text>(reply.content).text.quote?.quotedContent)
+        val stored = assertIs<MessageEntity.Regular>(db.messageDAO.getMessageById("reply", conversation.id))
+        val details = assertIs<MessageContent.Text>(stored.content.toMessageContent(hidden = false, selfUserId = self.id.toModel()))
+        assertEquals(expected, details.quotedMessageDetails?.quotedContent)
     }
 
     @Test

@@ -65,12 +65,13 @@ class ReceivedMessageTest {
     }
 
     @Test
-    fun textQuotesVerifyAgainstStoredTextAssetLocationAndMultipartContent() = runTest {
+    fun textQuotesVerifyAgainstStoredTextAssetLocationMultipartAndPollContent() = runTest {
         for (content in listOf(
             TestMessage.TEXT_CONTENT,
             TestMessage.ASSET_CONTENT,
             MessageContent.Location(1f, 2f, "location", 10),
             MessageContent.Multipart(value = "multipart"),
+            MessageContent.Poll("poll", listOf(MessageContent.Poll.Option("a", "Yes"), MessageContent.Poll.Option("b", "No")), false),
         )) {
             val original = TestMessage.TEXT_MESSAGE.copy(content = content)
             everySuspend { messageDAO.getMessageById(any(), any()) } returns mapper.toEntity(original)
