@@ -19,7 +19,6 @@ import io.ktor.websocket.WebSocketSession
 @Suppress("LongParameterList")
 internal class AuthenticatedNetworkContainerV19 internal constructor(
     sessionManager: SessionManager,
-    nomadServiceUrl: String? = null,
     selfUserId: UserId,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?,
@@ -32,7 +31,6 @@ internal class AuthenticatedNetworkContainerV19 internal constructor(
     )
 ) : AuthenticatedNetworkContainerV18(
     sessionManager = sessionManager,
-    nomadServiceUrl = nomadServiceUrl,
     selfUserId = selfUserId,
     certificatePinning = certificatePinning,
     mockEngine = mockEngine,

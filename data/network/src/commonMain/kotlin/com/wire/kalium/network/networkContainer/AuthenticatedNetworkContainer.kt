@@ -376,7 +376,6 @@ interface AuthenticatedNetworkContainer {
 
                 19 -> AuthenticatedNetworkContainerV19(
                     sessionManager,
-                    nomadServiceUrl,
                     selfUserId,
                     certificatePinning,
                     mockEngine,
