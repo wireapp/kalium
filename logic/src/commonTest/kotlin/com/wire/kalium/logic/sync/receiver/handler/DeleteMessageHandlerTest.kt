@@ -48,6 +48,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.time.Duration
 
 class DeleteMessageHandlerTest {
