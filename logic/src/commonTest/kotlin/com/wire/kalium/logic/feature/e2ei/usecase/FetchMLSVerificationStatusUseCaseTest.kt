@@ -45,7 +45,6 @@ import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -99,8 +98,8 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMlsVerificationStatus(
-                verificationStatus = eq(Conversation.VerificationStatus.DEGRADED),
-                conversationID = eq(conversationDetails.id)
+                verificationStatus = Conversation.VerificationStatus.DEGRADED,
+                conversationID = conversationDetails.id
             )
         }
 
@@ -109,7 +108,7 @@ class FetchMLSVerificationStatusUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), eq(false))
+            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), false)
         }
     }
 
@@ -173,8 +172,8 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMlsVerificationStatus(
-                eq(Conversation.VerificationStatus.VERIFIED),
-                eq(epochChangedData.conversationId)
+                Conversation.VerificationStatus.VERIFIED,
+                epochChangedData.conversationId
             )
         }
 
@@ -183,7 +182,7 @@ class FetchMLSVerificationStatusUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), eq(true))
+            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), true)
         }
     }
 
@@ -219,8 +218,8 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMlsVerificationStatus(
-                eq(Conversation.VerificationStatus.DEGRADED),
-                eq(epochChangedData.conversationId)
+                Conversation.VerificationStatus.DEGRADED,
+                epochChangedData.conversationId
             )
         }
 
@@ -229,7 +228,7 @@ class FetchMLSVerificationStatusUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), eq(false))
+            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), false)
         }
     }
 
@@ -258,7 +257,7 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         suspend fun withGetMembersIdentities(result: Map<UserId, List<WireIdentity>>) {
             everySuspend {
-                mlsConversationRepository.getMembersIdentities(eq(mlsClient), any(), any())
+                mlsConversationRepository.getMembersIdentities(mlsClient, any(), any())
             } returns Either.Right(result)
         }
 

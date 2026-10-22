@@ -30,7 +30,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -54,7 +53,7 @@ class CancelConnectionRequestUseCaseTest {
         // then
         assertEquals(CancelConnectionRequestUseCaseResult.Success, resultOk)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.updateConnectionStatus(any(), eq(userId), eq(ConnectionState.CANCELLED))
+            arrangement.connectionRepository.updateConnectionStatus(any(), userId, ConnectionState.CANCELLED)
         }
     }
 
@@ -71,7 +70,7 @@ class CancelConnectionRequestUseCaseTest {
         // then
         assertEquals(CancelConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.updateConnectionStatus(any(), eq(userId), eq(ConnectionState.CANCELLED))
+            arrangement.connectionRepository.updateConnectionStatus(any(), userId, ConnectionState.CANCELLED)
         }
     }
 
@@ -81,7 +80,7 @@ class CancelConnectionRequestUseCaseTest {
 
         suspend fun withCancelResult(result: Either<CoreFailure, Connection>) = apply {
             everySuspend {
-                connectionRepository.updateConnectionStatus(any(), eq(userId), eq(ConnectionState.CANCELLED))
+                connectionRepository.updateConnectionStatus(any(), userId, ConnectionState.CANCELLED)
             } returns result
         }
 

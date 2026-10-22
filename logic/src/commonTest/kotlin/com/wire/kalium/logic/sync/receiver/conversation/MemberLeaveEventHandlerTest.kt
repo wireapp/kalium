@@ -58,7 +58,6 @@ import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -189,7 +188,7 @@ internal class MemberLeaveEventHandlerTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId))
+            arrangement.updateConversationClientsForCurrentCall.invoke(event.conversationId)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -232,7 +231,7 @@ internal class MemberLeaveEventHandlerTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId))
+            arrangement.updateConversationClientsForCurrentCall.invoke(event.conversationId)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -257,7 +256,7 @@ internal class MemberLeaveEventHandlerTest {
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.legalHoldHandler.handleConversationMembersChanged(eq(event.conversationId))
+            arrangement.legalHoldHandler.handleConversationMembersChanged(event.conversationId)
         }
     }
 
@@ -280,7 +279,7 @@ internal class MemberLeaveEventHandlerTest {
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.leaveGroup(any(), eq(MLS_GROUP_ID))
+            arrangement.mlsConversationRepository.leaveGroup(any(), MLS_GROUP_ID)
         }
     }
 
@@ -303,7 +302,7 @@ internal class MemberLeaveEventHandlerTest {
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.leaveGroup(any(), eq(MLS_GROUP_ID))
+            arrangement.mlsConversationRepository.leaveGroup(any(), MLS_GROUP_ID)
         }
     }
 
@@ -328,7 +327,7 @@ internal class MemberLeaveEventHandlerTest {
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.leaveGroup(any(), eq(MLS_GROUP_ID))
+            arrangement.mlsConversationRepository.leaveGroup(any(), MLS_GROUP_ID)
         }
     }
 
@@ -555,7 +554,7 @@ internal class MemberLeaveEventHandlerTest {
         }
 
         suspend fun withSuccessfulLeaveGroup(groupId: GroupID) {
-            everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) } returns (Either.Right(Unit))
+            everySuspend { mlsConversationRepository.leaveGroup(any(), groupId) } returns (Either.Right(Unit))
         }
 
         suspend fun withGetMeetingsByConversationId(result: Either<StorageFailure, List<Meeting>>) {

@@ -33,7 +33,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
@@ -83,7 +82,7 @@ class SaveNotificationTokenUseCaseTest {
         val pending = accounts.map { user ->
             mock<PushTokenRepository>(mode = MockMode.autoUnit).also { repository ->
                 everySuspend {
-                    sessions.open(eq(user.id), any<UserSessionScope.() -> PushTokenRepository>())
+                    sessions.open(user.id, any<UserSessionScope.() -> PushTokenRepository>())
                 } returns repository
                 everySuspend { repository.setUpdateFirebaseTokenFlag(true) } returns Either.Right(Unit)
             }

@@ -48,7 +48,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -73,8 +72,8 @@ class LeaveSubconversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.leaveSubconversation(
-                eq(Arrangement.CONVERSATION_ID.toApi()),
-                eq(Arrangement.SUBCONVERSATION_ID.toApi())
+                Arrangement.CONVERSATION_ID.toApi(),
+                Arrangement.SUBCONVERSATION_ID.toApi()
             )
         }
     }
@@ -90,8 +89,8 @@ class LeaveSubconversationUseCaseTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.conversationApi.leaveSubconversation(
-                eq(Arrangement.CONVERSATION_ID.toApi()),
-                eq(Arrangement.SUBCONVERSATION_ID.toApi())
+                Arrangement.CONVERSATION_ID.toApi(),
+                Arrangement.SUBCONVERSATION_ID.toApi()
             )
         }
     }
@@ -107,8 +106,8 @@ class LeaveSubconversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.fetchSubconversationDetails(
-                eq(Arrangement.CONVERSATION_ID.toApi()),
-                eq(Arrangement.SUBCONVERSATION_ID.toApi())
+                Arrangement.CONVERSATION_ID.toApi(),
+                Arrangement.SUBCONVERSATION_ID.toApi()
             )
         }
     }
@@ -125,11 +124,11 @@ class LeaveSubconversationUseCaseTest {
         leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.wipeConversation(eq(Arrangement.SUBCONVERSATION_GROUP_ID.toCrypto()))
+            arrangement.mlsContext.wipeConversation(Arrangement.SUBCONVERSATION_GROUP_ID.toCrypto())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.subconversationRepository.deleteSubconversation(eq(Arrangement.CONVERSATION_ID), eq(Arrangement.SUBCONVERSATION_ID))
+            arrangement.subconversationRepository.deleteSubconversation(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -183,7 +182,7 @@ class LeaveSubconversationUseCaseTest {
             .shouldSucceed { assertEquals(pendingProposal.copy(leaveRequested = true), it) }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.subgroupProposals.current(eq(Arrangement.SUBCONVERSATION_GROUP_ID))
+            arrangement.subgroupProposals.current(Arrangement.SUBCONVERSATION_GROUP_ID)
         }
     }
 
@@ -280,7 +279,7 @@ class LeaveSubconversationUseCaseTest {
         ) = apply {
             withPendingProposalSnapshot(pendingProposal, onCurrent)
             everySuspend {
-                subgroupProposals.markForRetirement(eq(pendingProposal))
+                subgroupProposals.markForRetirement(pendingProposal)
             } calls {
                 onMark()
                 pendingProposal.copy(leaveRequested = true)
@@ -292,7 +291,7 @@ class LeaveSubconversationUseCaseTest {
             onCall: () -> Unit = {},
         ) = apply {
             everySuspend {
-                subgroupProposals.current(eq(SUBCONVERSATION_GROUP_ID))
+                subgroupProposals.current(SUBCONVERSATION_GROUP_ID)
             } calls {
                 onCall()
                 pendingProposal
@@ -301,7 +300,7 @@ class LeaveSubconversationUseCaseTest {
 
         suspend fun withRetirementMarkingFailure(pendingProposal: PendingSubconversationProposal) = apply {
             everySuspend {
-                subgroupProposals.markForRetirement(eq(pendingProposal))
+                subgroupProposals.markForRetirement(pendingProposal)
             } throws IllegalStateException("Metadata unavailable")
         }
 

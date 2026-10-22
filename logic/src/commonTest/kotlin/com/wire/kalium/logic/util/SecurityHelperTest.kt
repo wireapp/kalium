@@ -25,7 +25,6 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
@@ -122,7 +121,7 @@ class SecurityHelperTest {
         assertEquals(67, secret.value.size)
         assertEquals('x'.code.toByte(), secret.value.first())
         assertEquals('\''.code.toByte(), secret.value.last())
-        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphraseIfAbsent(eq(userV2Alias), any()) }
+        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphraseIfAbsent(userV2Alias, any()) }
         verify(VerifyMode.not) { passphraseStorage.getPassphrase(userV1Alias) }
     }
 
@@ -238,7 +237,7 @@ class SecurityHelperTest {
 
         assertEquals(67, keyMaterial.rawKey.value.size)
         assertEquals(null, keyMaterial.legacyKey)
-        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphraseIfAbsent(eq(globalV2Alias), any()) }
+        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphraseIfAbsent(globalV2Alias, any()) }
         verify(VerifyMode.not) { passphraseStorage.getPassphrase(globalV1Alias) }
     }
 
@@ -415,7 +414,7 @@ class SecurityHelperTest {
         val secret = securityHelper.mlsDBSecret(userId, rootPath)
 
         assertEquals(32, secret.passphrase.size)
-        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphraseIfAbsent(eq(mlsV2Alias), any()) }
+        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphraseIfAbsent(mlsV2Alias, any()) }
     }
 
     // PROTEUS DB SECRET TESTS
@@ -459,7 +458,7 @@ class SecurityHelperTest {
         val secret = securityHelper.proteusDBSecret(userId, rootPath)
 
         assertEquals(32, secret.passphrase.size)
-        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphraseIfAbsent(eq(proteusV2Alias), any()) }
+        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphraseIfAbsent(proteusV2Alias, any()) }
     }
 
     @Test

@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.user.e2ei
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -39,7 +38,7 @@ class MarkNotifyForRevokedCertificateAsNotifiedUseCaseTest {
             markNotifyForRevokedCertificateAsNotified.invoke()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.userConfigRepository.setShouldNotifyForRevokedCertificate(eq(false))
+                arrangement.userConfigRepository.setShouldNotifyForRevokedCertificate(false)
             }
         }
 
@@ -52,7 +51,7 @@ class MarkNotifyForRevokedCertificateAsNotifiedUseCaseTest {
 
         suspend fun withUserConfigRepository() = apply {
             everySuspend {
-                userConfigRepository.setShouldNotifyForRevokedCertificate(eq(false))
+                userConfigRepository.setShouldNotifyForRevokedCertificate(false)
             } returns Unit
         }
     }

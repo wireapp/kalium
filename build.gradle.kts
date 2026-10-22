@@ -159,9 +159,9 @@ kover {
 
 rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
     rootProject.the<YarnRootExtension>().apply {
-        yarnLockMismatchReport = YarnLockMismatchReport.FAIL
-        reportNewYarnLock = true
-        yarnLockAutoReplace = false
+        yarnLockMismatchReportProperty.set(YarnLockMismatchReport.FAIL)
+        reportNewYarnLockProperty.set(true)
+        yarnLockAutoReplaceProperty.set(false)
     }
 }
 

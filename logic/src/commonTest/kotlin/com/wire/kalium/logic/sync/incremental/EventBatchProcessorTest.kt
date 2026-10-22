@@ -42,7 +42,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -68,7 +67,7 @@ class EventBatchProcessorTest {
 
         processor.processBatches(arrangement.batches)
 
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(event)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), event) }
     }
 
     @Test
@@ -205,8 +204,8 @@ class EventBatchProcessorTest {
         val thrown = assertFailsWith<KaliumSyncException> { processor.processBatches(arrangement.batches) }
 
         assertEquals(failure, thrown.coreFailureCause)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(first)) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(later)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), first) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), later) }
         verifySuspend(VerifyMode.not) { arrangement.eventProcessor.flushPendingSideEffects() }
         verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
     }
@@ -226,8 +225,8 @@ class EventBatchProcessorTest {
         }
 
         assertEquals(failure, resultException.coreFailureCause)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(first)) }
-        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.processEvent(any(), eq(later)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), first) }
+        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.processEvent(any(), later) }
         verifySuspend(VerifyMode.not) { arrangement.eventProcessor.flushPendingSideEffects() }
         verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
     }
@@ -270,7 +269,7 @@ class EventBatchProcessorTest {
         processor.processBatches(arrangement.batches)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
+            arrangement.eventRepository.setEventsAsProcessed(listOf(eventId))
         }
     }
 
@@ -288,7 +287,7 @@ class EventBatchProcessorTest {
         processor.processBatches(arrangement.batches)
 
         verifySuspend(VerifyMode.exactly(2)) { arrangement.eventRepository.setEventsAsProcessed(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(later)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), later) }
     }
 
     @Test
@@ -312,7 +311,7 @@ class EventBatchProcessorTest {
 
         assertEquals(failure, thrown.coreFailureCause)
         assertEquals(listOf(first.event.id), acknowledgedIds)
-        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.processEvent(any(), eq(later)) }
+        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.processEvent(any(), later) }
         verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
     }
 
@@ -345,7 +344,7 @@ class EventBatchProcessorTest {
             .arrange()
 
         everySuspend {
-            arrangement.eventProcessor.processEvent(any(), eq(envelope))
+            arrangement.eventProcessor.processEvent(any(), envelope)
         } calls {
             processingStarted.complete(Unit)
             allowProcessingToFinish.await()
@@ -362,7 +361,7 @@ class EventBatchProcessorTest {
         job.join()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
+            arrangement.eventRepository.setEventsAsProcessed(listOf(eventId))
         }
     }
 
@@ -397,7 +396,7 @@ class EventBatchProcessorTest {
 
         processor.processBatch(listOf(envelope))
 
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventRepository.setEventsAsProcessed(eq(listOf(envelope.event.id))) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventRepository.setEventsAsProcessed(listOf(envelope.event.id)) }
         verifySuspend(VerifyMode.not) { arrangement.recovery.acknowledge(any()) }
     }
 
@@ -409,7 +408,7 @@ class EventBatchProcessorTest {
 
         processor.processBatch(listOf(envelope))
 
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(envelope)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), envelope) }
         verifySuspend(VerifyMode.not) { arrangement.recovery.wereEffectsProcessed(any(), any()) }
         verifySuspend(VerifyMode.not) { arrangement.recovery.acknowledge(any()) }
     }

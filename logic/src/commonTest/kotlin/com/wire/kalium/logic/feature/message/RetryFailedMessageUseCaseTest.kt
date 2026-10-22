@@ -62,7 +62,7 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -301,7 +301,7 @@ class RetryFailedMessageUseCaseTest {
             // then
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageSender.sendMessage(
-                    matching {
+                    matches {
                         it is Message.Signaling // message edits are sent as signaling messages
                                 && it.id != message.id // when editing we need to generate and set a new id
                                 && it.content is MessageContent.TextEdited
@@ -385,7 +385,7 @@ class RetryFailedMessageUseCaseTest {
             }
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageSender.sendMessage(
-                    matching {
+                    matches {
                     it.id == message.id && it.content is MessageContent.Asset
                             && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                             && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
@@ -529,7 +529,7 @@ class RetryFailedMessageUseCaseTest {
             // then
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.persistMessage.invoke(
-                    matching {
+                    matches {
                         it.id == message.id && it.content is MessageContent.Asset
                                 && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                                 && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
@@ -1141,7 +1141,7 @@ class RetryFailedMessageUseCaseTest {
 
             verifySuspend(VerifyMode.order) {
                 arrangement.persistMessage(
-                    matching {
+                    matches {
                     (it.content as? MessageContent.Asset)?.value?.remoteData?.assetId == uploadedAssetId.key
                 }
                 )

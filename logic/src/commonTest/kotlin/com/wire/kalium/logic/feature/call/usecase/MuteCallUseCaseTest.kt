@@ -30,7 +30,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.every
 import dev.mokkery.mock
 import dev.mokkery.verify
@@ -52,13 +51,13 @@ class MuteCallUseCaseTest {
         muteCall = MuteCallUseCaseImpl(lazy { callManager }, callRepository)
 
         everySuspend {
-            callManager.muteCall(eq(isMuted))
+            callManager.muteCall(isMuted)
         } returns (Unit)
 
         every {
             callRepository.updateIsMutedById(
-                eq(conversationId),
-                eq(isMuted)
+                conversationId,
+                isMuted
             )
         } returns (Unit)
     }
@@ -70,11 +69,11 @@ class MuteCallUseCaseTest {
         muteCall(conversationId, shouldApplyOnDeviceMicrophone)
 
         verify(VerifyMode.exactly(1)) {
-            callRepository.updateIsMutedById(eq(conversationId), eq(isMuted))
+            callRepository.updateIsMutedById(conversationId, isMuted)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            callManager.muteCall(eq(isMuted))
+            callManager.muteCall(isMuted)
         }
     }
 
@@ -85,11 +84,11 @@ class MuteCallUseCaseTest {
         muteCall(conversationId, shouldApplyOnDeviceMicrophone)
 
         verify(VerifyMode.exactly(1)) {
-            callRepository.updateIsMutedById(eq(conversationId), eq(isMuted))
+            callRepository.updateIsMutedById(conversationId, isMuted)
         }
 
         verifySuspend(VerifyMode.not) {
-            callManager.muteCall(eq(isMuted))
+            callManager.muteCall(isMuted)
         }
     }
 

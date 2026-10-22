@@ -50,7 +50,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
@@ -77,7 +76,7 @@ internal class MessageSendFailureHandlerTest {
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersByIds(eq(failureData.missingClientsOfUsers.keys))
+            arrangement.userRepository.fetchUsersByIds(failureData.missingClientsOfUsers.keys)
         }
     }
 
@@ -97,16 +96,16 @@ internal class MessageSendFailureHandlerTest {
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRemoteRepository.fetchOtherUserClients(eq(listOf(arrangement.userOne.first, arrangement.userTwo.first)))
+            arrangement.clientRemoteRepository.fetchOtherUserClients(listOf(arrangement.userOne.first, arrangement.userTwo.first))
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(
-                eq(arrangement.userOneInsertClientParams + arrangement.userTwoInsertClientParams)
+                arrangement.userOneInsertClientParams + arrangement.userTwoInsertClientParams
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.tryMarkClientsAsValid(
-                eq(mapOf(arrangement.userOne.first to arrangement.userOne.second, arrangement.userTwo.first to arrangement.userTwo.second))
+                mapOf(arrangement.userOne.first to arrangement.userOne.second, arrangement.userTwo.first to arrangement.userTwo.second)
             )
         }
     }
@@ -167,7 +166,7 @@ internal class MessageSendFailureHandlerTest {
             .arrange()
         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(failure, arrangement.conversationId, arrangement.messageId, "text")
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.FAILED_REMOTELY), any(), any())
+            arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, any(), any())
         }
     }
 
@@ -185,7 +184,7 @@ internal class MessageSendFailureHandlerTest {
             scheduleResendIfNoNetwork = false
         )
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.FAILED), any(), any())
+            arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, any(), any())
         }
         verify(VerifyMode.exactly(0)) {
             arrangement.messageSendingScheduler.scheduleSendingOfPendingMessages()
@@ -237,12 +236,12 @@ internal class MessageSendFailureHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(
-                eq(mapOf(arrangement.userOne.first to arrangement.userOne.second))
+                mapOf(arrangement.userOne.first to arrangement.userOne.second)
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersByIds(eq(setOf(arrangement.userOne.first)))
+            arrangement.userRepository.fetchUsersByIds(setOf(arrangement.userOne.first))
         }
     }
 
@@ -267,12 +266,12 @@ internal class MessageSendFailureHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(
-                eq(mapOf(arrangement.userOne.first to arrangement.userOne.second))
+                mapOf(arrangement.userOne.first to arrangement.userOne.second)
             )
         }
 
         verifySuspend(VerifyMode.exactly(0)) {
-            arrangement.userRepository.fetchUsersByIds(eq(setOf(arrangement.userOne.first)))
+            arrangement.userRepository.fetchUsersByIds(setOf(arrangement.userOne.first))
         }
     }
 
@@ -298,20 +297,20 @@ internal class MessageSendFailureHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(
-                eq(mapOf(arrangement.userTwo.first to arrangement.userTwo.second))
+                mapOf(arrangement.userTwo.first to arrangement.userTwo.second)
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRemoteRepository.fetchOtherUserClients(eq(listOf(arrangement.userOne.first)))
+            arrangement.clientRemoteRepository.fetchOtherUserClients(listOf(arrangement.userOne.first))
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(eq(arrangement.userOneInsertClientParams))
+            arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(arrangement.userOneInsertClientParams)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersByIds(eq(setOf(arrangement.userOne.first, arrangement.userTwo.first)))
+            arrangement.userRepository.fetchUsersByIds(setOf(arrangement.userOne.first, arrangement.userTwo.first))
         }
     }
 
@@ -330,11 +329,11 @@ internal class MessageSendFailureHandlerTest {
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, arrangement.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersByIds(eq(failureData.missingClientsOfUsers.keys))
+            arrangement.userRepository.fetchUsersByIds(failureData.missingClientsOfUsers.keys)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.fetchConversation(any(), any(), eq(ConversationSyncReason.Other))
+            arrangement.fetchConversation(any(), any(), ConversationSyncReason.Other)
         }
     }
 
@@ -352,7 +351,7 @@ internal class MessageSendFailureHandlerTest {
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersByIds(eq(failureData.missingClientsOfUsers.keys))
+            arrangement.userRepository.fetchUsersByIds(failureData.missingClientsOfUsers.keys)
         }
 
         verifySuspend(VerifyMode.not) {

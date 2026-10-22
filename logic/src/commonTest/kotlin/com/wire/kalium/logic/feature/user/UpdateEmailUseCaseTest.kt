@@ -25,7 +25,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -45,7 +44,7 @@ class UpdateEmailUseCaseTest {
         assertIs<UpdateEmailUseCase.Result.Success.VerificationEmailSent>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.accountRepository.updateSelfEmail(eq("email"))
+            arrange.accountRepository.updateSelfEmail("email")
         }
     }
 
@@ -58,7 +57,7 @@ class UpdateEmailUseCaseTest {
         assertIs<UpdateEmailUseCase.Result.Success.NoChange>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.accountRepository.updateSelfEmail(eq("email"))
+            arrange.accountRepository.updateSelfEmail("email")
         }
     }
 
@@ -71,7 +70,7 @@ class UpdateEmailUseCaseTest {
         assertIs<UpdateEmailUseCase.Result.Failure.GenericFailure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.accountRepository.updateSelfEmail(eq("email"))
+            arrange.accountRepository.updateSelfEmail("email")
         }
     }
 
@@ -94,7 +93,7 @@ class UpdateEmailUseCaseTest {
         assertIs<UpdateEmailUseCase.Result.Failure.EmailAlreadyInUse>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.accountRepository.updateSelfEmail(eq("email"))
+            arrange.accountRepository.updateSelfEmail("email")
         }
     }
 
@@ -117,7 +116,7 @@ class UpdateEmailUseCaseTest {
         assertIs<UpdateEmailUseCase.Result.Failure.InvalidEmail>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.accountRepository.updateSelfEmail(eq("email"))
+            arrange.accountRepository.updateSelfEmail("email")
         }
     }
 

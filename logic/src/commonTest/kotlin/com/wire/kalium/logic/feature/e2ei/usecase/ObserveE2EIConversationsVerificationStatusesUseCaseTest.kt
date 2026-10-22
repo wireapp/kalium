@@ -24,7 +24,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,7 +45,7 @@ class ObserveE2EIConversationsVerificationStatusesUseCaseTest {
         handler()
         advanceUntilIdle()
 
-        verifySuspend { arrangement.fetchMLSVerificationStatusUseCase(eq(TestConversation.GROUP_ID)) }
+        verifySuspend { arrangement.fetchMLSVerificationStatusUseCase(TestConversation.GROUP_ID) }
     }
 
     private suspend fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()

@@ -58,7 +58,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -89,7 +88,7 @@ class EventRepositoryTest {
             .arrange()
 
         eventRepository.liveEvents()
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.notificationApi.listenToLiveEvents(eq(TestClient.CLIENT_ID.value)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.notificationApi.listenToLiveEvents(TestClient.CLIENT_ID.value) }
     }
 
     @Test
@@ -101,7 +100,7 @@ class EventRepositoryTest {
             .arrange()
 
         eventRepository.liveEvents()
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.notificationApi.consumeLiveEvents(TestClient.CLIENT_ID.value, any()) }
     }
 
     @Test
@@ -127,7 +126,7 @@ class EventRepositoryTest {
         eventRepository.fetchOldestAvailableEventId()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.notificationApi.oldestNotification(eq(currentClientId.value))
+            arrangement.notificationApi.oldestNotification(currentClientId.value)
         }
     }
 
@@ -202,7 +201,7 @@ class EventRepositoryTest {
                 awaitComplete()
                 verifySuspend(VerifyMode.exactly(1)) {
                     arrangement.notificationApi.acknowledgeEvents(
-                        eq(TestClient.CLIENT_ID.value),
+                        TestClient.CLIENT_ID.value,
                         any(),
                         matches {
                             it.type == AcknowledgeType.ACK &&
@@ -332,7 +331,7 @@ class EventRepositoryTest {
                 awaitComplete()
                 verifySuspend(VerifyMode.exactly(1)) {
                     arrangement.notificationApi.acknowledgeEvents(
-                        eq(TestClient.CLIENT_ID.value),
+                        TestClient.CLIENT_ID.value,
                         any(),
                         matches {
                             it.type == AcknowledgeType.ACK &&
@@ -675,7 +674,7 @@ class EventRepositoryTest {
         }
 
         suspend fun withClearProcessedEvents(eventId: String, id: Long = 1L, transient: Boolean = false) = apply {
-            everySuspend { eventDAO.getEventById(eq(eventId)) }.returns(
+            everySuspend { eventDAO.getEventById(eventId) }.returns(
                 EventEntity(
                     id = id,
                     eventId = eventId,

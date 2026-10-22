@@ -31,7 +31,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -55,10 +54,10 @@ class SendConnectionRequestUseCaseTest {
         // then
         assertEquals(SendConnectionRequestResult.Success, resultOk)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUserInfo(eq(userId))
+            arrangement.userRepository.fetchUserInfo(userId)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), userId)
         }
     }
 
@@ -76,10 +75,10 @@ class SendConnectionRequestUseCaseTest {
         // then
         assertEquals(SendConnectionRequestResult.Failure.GenericFailure::class, resultFailure::class)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUserInfo(eq(userId))
+            arrangement.userRepository.fetchUserInfo(userId)
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), userId)
         }
     }
 
@@ -97,7 +96,7 @@ class SendConnectionRequestUseCaseTest {
         // then
         assertEquals(SendConnectionRequestResult.Failure.GenericFailure::class, resultFailure::class)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), userId)
         }
     }
 
@@ -116,7 +115,7 @@ class SendConnectionRequestUseCaseTest {
         // then
         assertEquals(SendConnectionRequestResult.Failure.FederationDenied::class, resultFailure::class)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), userId)
         }
     }
 
@@ -139,7 +138,7 @@ class SendConnectionRequestUseCaseTest {
         // then
         assertEquals(SendConnectionRequestResult.Failure.MissingLegalHoldConsent::class, resultFailure::class)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), userId)
         }
     }
 
@@ -149,7 +148,7 @@ class SendConnectionRequestUseCaseTest {
 
         suspend fun withCreateConnectionResult(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
-                connectionRepository.sendUserConnection(any(), eq(userId))
+                connectionRepository.sendUserConnection(any(), userId)
             } returns result
         }
 

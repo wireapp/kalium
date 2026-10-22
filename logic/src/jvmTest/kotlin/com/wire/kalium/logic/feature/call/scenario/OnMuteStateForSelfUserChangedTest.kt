@@ -30,7 +30,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify
 import kotlinx.coroutines.CoroutineScope
@@ -65,7 +64,7 @@ class OnMuteStateForSelfUserChangedTest {
         yield()
 
         verify(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateIsMutedById(eq(conversationId), eq(true))
+            arrangement.callRepository.updateIsMutedById(conversationId, true)
         }
     }
 

@@ -25,7 +25,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -46,7 +45,7 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
         useCase(2.days)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.snoozeE2EINotification(eq(1.days))
+            arrangement.userConfigRepository.snoozeE2EINotification(1.days)
         }
     }
 
@@ -57,7 +56,7 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
         useCase(5.hours)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.snoozeE2EINotification(eq(4.hours))
+            arrangement.userConfigRepository.snoozeE2EINotification(4.hours)
         }
     }
 
@@ -68,7 +67,7 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
         useCase(2.hours)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.snoozeE2EINotification(eq(1.hours))
+            arrangement.userConfigRepository.snoozeE2EINotification(1.hours)
         }
     }
 
@@ -79,7 +78,7 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
         useCase(16.minutes)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.snoozeE2EINotification(eq(15.minutes))
+            arrangement.userConfigRepository.snoozeE2EINotification(15.minutes)
         }
     }
 
@@ -90,7 +89,7 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
         useCase(14.minutes)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.snoozeE2EINotification(eq(5.minutes))
+            arrangement.userConfigRepository.snoozeE2EINotification(5.minutes)
         }
     }
 
