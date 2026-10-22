@@ -791,3 +791,13 @@ updateAudioMessageNormalizedLoudness:
 UPDATE MessageAssetContent
 SET asset_normalized_loudness = ?
 WHERE message_id = ? AND conversation_id = ?;
+
+-- Never insert or resurrect a cancelled message when refreshing policy after sync.
+updatePendingTextPolicy:
+UPDATE Message
+SET expire_after_millis = :expireAfterMillis,
+    expects_read_confirmation = :expectsReadConfirmation
+WHERE id = :messageId AND conversation_id = :conversationId
+  AND status = 'PENDING' AND visibility = 'VISIBLE'
+  AND content_type = 'TEXT' AND last_edit_date IS NULL
+  AND self_deletion_end_date IS NULL;

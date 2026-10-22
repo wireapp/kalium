@@ -89,6 +89,13 @@ internal interface MessageRepository : OutgoingMessages, MessageTransport {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
+    suspend fun updatePendingTextPolicy(
+        conversationId: ConversationId,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ): Either<CoreFailure, Unit>
+
     suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -401,6 +408,15 @@ internal class MessageDataSource internal constructor(
                 conversationId = conversationId.toDao()
             )
         }
+
+    override suspend fun updatePendingTextPolicy(
+        conversationId: ConversationId,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updatePendingTextPolicy(conversationId.toDao(), messageId, expireAfterMillis, expectsReadConfirmation)
+    }
 
     override suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,

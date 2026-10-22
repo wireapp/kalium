@@ -111,10 +111,15 @@ internal fun nativeDatabaseDriver(configuration: DatabaseConfiguration, maxReade
         }
     }
     val driver = NativeSqliteDriver(trackedManager, maxReaderConnections)
-    return object : SqlDriver by driver {
+    return object : SnapshotSqlDriver, SqlDriver by driver {
+        override val snapshotDriver: SqlDriver? by lazy {
+            if (configuration.inMemory || configuration.journalMode != JournalMode.WAL) null
+            else NativeSqliteDriver(ReadSnapshotDatabaseManager(trackedManager), maxReaderConnections = 1)
+        }
         @Suppress("TooGenericExceptionCaught")
         override fun close() {
             try {
+                snapshotDriver?.close()
                 driver.close()
                 check(connections.value.all { it.closed }) { "A native connection did not reach its pool for cleanup" }
             } catch (cause: Throwable) {

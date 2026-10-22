@@ -730,6 +730,16 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updatePendingTextPolicy(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ) = withContext(writeDispatcher.value) {
+        queries.updatePendingTextPolicy(expireAfterMillis, expectsReadConfirmation, messageId, conversationId)
+        Unit
+    }
+
     override suspend fun updateSelfDeletionEndDate(
         conversationId: QualifiedIDEntity,
         messageId: String,

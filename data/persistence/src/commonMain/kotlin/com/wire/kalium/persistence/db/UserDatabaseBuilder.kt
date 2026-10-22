@@ -175,6 +175,7 @@ class UserDatabaseBuilder internal constructor(
     private val isEncrypted: Boolean,
     val dbInvalidationController: DbInvalidationController,
     initializeSelfUser: Boolean = true,
+    private val timelineReadDriver: SqlDriver = sqlDriver,
 ) {
     private val messageEffectsMutex = Mutex()
 
@@ -185,8 +186,10 @@ class UserDatabaseBuilder internal constructor(
     private var closeFailure: Throwable? = null
     private var closed = false
 
-    internal val database: UserDatabase = UserDatabase(
-        driver = sqlDriver,
+    internal val database: UserDatabase = createDatabase(sqlDriver)
+
+    private fun createDatabase(driver: SqlDriver): UserDatabase = UserDatabase(
+        driver = driver,
         AdminlessGroupDeleteAdapter = TableMapper.adminlessGroupDeleteAdapter,
         CallAdapter = TableMapper.callAdapter,
         ClientAdapter = TableMapper.clientAdapter,
@@ -248,7 +251,10 @@ class UserDatabaseBuilder internal constructor(
         get() = UserDAOImpl(database.usersQueries, readDispatcher, writeDispatcher)
 
     val messageTimelineDAO: MessageTimelineDAO by lazy {
-        MessageTimelineDAO(database.messageTimelineQueries, sqlDriver, readDispatcher)
+        val queries = if (timelineReadDriver === sqlDriver) database.messageTimelineQueries
+        else createDatabase(timelineReadDriver).messageTimelineQueries
+        // Listen on the writer driver: invalidation and external-write refreshes originate there.
+        MessageTimelineDAO(queries, sqlDriver, readDispatcher)
     }
 
     val messageMetaDataDAO: MessageMetadataDAO
