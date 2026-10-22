@@ -2257,6 +2257,27 @@ anonymous.</p>
                 </div>
             </div>
             
+            <div class="panel panel-default">
+                <div class="panel-heading adr-unknown">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse17">Tracked asset message sends</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-question"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse17" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>Tracked asset message sends</h1>
+<p>An application may need to finish an asset message send after its conversation screen closes and keep its account available until sending or cancellation has finished. Kalium exposes a tracked upload handle with an identity for each attempt, the persisted message identity, terminal completion and cancellation for that attempt. Completion follows both the asset upload and the final message send, including removal of the message-visibility monitor and cancellation cleanup; the existing scheduler remains available for callers that only need confirmation of local persistence.</p>
+<p>A caller cancelled before receiving a handle waits for any started attempt to stop; cancellation marks the persisted message as failed so it remains retryable. Retries recheck the current file-sharing policy, retain the persisted message identity and reuse its remote asset when uploading already succeeded. Tracked attempts disable automatic pending-message resend so an application retry has one owner; the existing scheduler retains its configured resend behavior. Progress reports actual lifecycle phases because the current upload repository exposes no transferred-byte count.</p>
+<p>Persisted-message retries can use <code>RetryFailedMessageAndAwaitUseCase.invoke</code> to keep upload and final send in the caller's structured lifetime. Cancellation leaves unfinished messages retryable; an already successful send is not rewritten as failed.</p>
+<p>Cells uses its existing coordinator with a cancellation barrier that joins the selected worker and transfer cleanup. Attachment drafts opt into a session-owned registry: accepted operations wait for an application owner to claim them before preparation starts. Cancellation captures a particular transfer attempt, so delayed cleanup cannot cancel a later retry of the same node. Terminal outcomes are explicit; disappearance from the active upload map is not evidence of success. Android callers that do not opt in retain the existing scheduling path.</p>
+</div>
+                </div>
+            </div>
+            
         </div>
         <footer>
             Generated with &lt;3 using ADR Viewer
