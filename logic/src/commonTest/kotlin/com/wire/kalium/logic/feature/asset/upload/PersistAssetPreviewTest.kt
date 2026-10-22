@@ -71,7 +71,9 @@ class PersistAssetPreviewTest {
             )).shouldSucceed { (metadata, _) ->
                 val preview = assertNotNull(metadata.preview)
                 val stored = fixture.stored.first { it.key == preview.remoteData.assetId }
-                assertTrue(stored.dataPath.endsWith(".${getExtensionFromMimeType(mimeType)}"))
+                val extension = getExtensionFromMimeType(mimeType)
+                val expectedName = preview.remoteData.assetId + (extension?.let { ".$it" } ?: "")
+                assertEquals(expectedName, stored.dataPath.toPath().name, "Preview filename for $mimeType")
                 assertEquals("preview bytes", fixture.read(stored.dataPath.toPath()))
             }
             fixture.assertCallerSourceUnchanged()
