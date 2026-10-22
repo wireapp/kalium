@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
  * (e.g. DNS is still catching up), the next failure backs off from the minimum delay
  * instead of inheriting the stale pre-reconnect backoff.
  */
+@Suppress("LongParameterList")
 internal suspend fun NetworkStateObserver.delayBeforeSyncRetry(
     retryDelay: Duration,
     exponentialDurationHelper: ExponentialDurationHelper,

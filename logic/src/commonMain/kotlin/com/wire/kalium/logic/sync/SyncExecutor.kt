@@ -132,6 +132,7 @@ internal fun interface SyncSuspension {
     fun cancel()
 }
 
+@Suppress("LongParameterList")
 internal class SyncExecutorImpl(
     private val syncStateObserver: SyncStateObserver,
     private val slowSyncManager: SlowSyncManager,
