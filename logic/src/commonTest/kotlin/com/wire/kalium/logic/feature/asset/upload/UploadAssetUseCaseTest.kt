@@ -339,16 +339,33 @@ class UploadAssetUseCaseTest {
                 Either.Left(StorageFailure.DataNotFound)
         }
         val preview = AssetContent.Preview(
-            "image/jpeg", 1024, 512, 288,
-            AssetContent.RemoteData(ByteArray(32) { 1 }, byteArrayOf(), "temp-preview", null, "", MessageEncryptionAlgorithm.AES_CBC),
+            "image/jpeg",
+            1024,
+            512,
+            288,
+            AssetContent.RemoteData(
+                ByteArray(32) {
+                1
+            },
+                byteArrayOf(),
+                "temp-preview",
+                null,
+                "",
+                MessageEncryptionAlgorithm.AES_CBC
+            ),
         )
         uploadAsset(assetMessage(), uploadMetadata.copy(mimeType = "video/mp4", preview = preview))
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage(matches { (it.content as? MessageContent.Asset)?.value?.let { asset ->
+            arrangement.persistMessage(
+                matches {
+                    (it.content as? MessageContent.Asset)?.value?.let { asset ->
                 asset.mimeType == "video/mp4" && asset.preview == null && asset.remoteData.assetId == "remote-asset-id"
-            } == true })
+            } == true
+                }
+            )
             arrangement.messageSender.sendMessage(
-                matches { (it.content as? MessageContent.Asset)?.value?.preview == null }, any()
+                matches { (it.content as? MessageContent.Asset)?.value?.preview == null },
+                any()
             )
         }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.assetDataSource.deleteAssetLocally("temp-preview") }
@@ -368,15 +385,31 @@ class UploadAssetUseCaseTest {
                 Either.Right(uploadedPreview to previewHash)
         }
         val preview = AssetContent.Preview(
-            "image/jpeg", 1024, 512, 288,
-            AssetContent.RemoteData(ByteArray(32) { 1 }, byteArrayOf(), "temp-preview", null, "", MessageEncryptionAlgorithm.AES_CBC),
+            "image/jpeg",
+            1024,
+            512,
+            288,
+            AssetContent.RemoteData(
+                ByteArray(32) {
+                1
+            },
+                byteArrayOf(),
+                "temp-preview",
+                null,
+                "",
+                MessageEncryptionAlgorithm.AES_CBC
+            ),
         )
         uploadAsset(assetMessage(), uploadMetadata.copy(mimeType = "video/mp4", preview = preview))
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage(matches { (it.content as? MessageContent.Asset)?.value?.preview?.remoteData?.let { remote ->
+            arrangement.persistMessage(
+                matches {
+                    (it.content as? MessageContent.Asset)?.value?.preview?.remoteData?.let { remote ->
                 remote.assetId == uploadedPreview.key && remote.assetDomain == uploadedPreview.domain &&
                     remote.assetToken == uploadedPreview.assetToken && remote.sha256.contentEquals(previewHash.data)
-            } == true })
+            } == true
+                }
+            )
         }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.assetDataSource.deleteAssetLocally("temp-preview") }
     }
@@ -396,8 +429,20 @@ class UploadAssetUseCaseTest {
             }
         }
         val preview = AssetContent.Preview(
-            "image/jpeg", 1024, 512, 288,
-            AssetContent.RemoteData(ByteArray(32) { 1 }, byteArrayOf(), "temp-preview", null, "", MessageEncryptionAlgorithm.AES_CBC),
+            "image/jpeg",
+            1024,
+            512,
+            288,
+            AssetContent.RemoteData(
+                ByteArray(32) {
+                1
+            },
+                byteArrayOf(),
+                "temp-preview",
+                null,
+                "",
+                MessageEncryptionAlgorithm.AES_CBC
+            ),
         )
         val upload = launch { uploadAsset(assetMessage(), uploadMetadata.copy(mimeType = "video/mp4", preview = preview)) }
         previewUploadStarted.await()

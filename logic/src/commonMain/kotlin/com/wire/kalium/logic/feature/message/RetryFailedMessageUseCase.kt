@@ -267,18 +267,13 @@ public class RetryFailedMessageUseCase internal constructor(
                             withContext(NonCancellable) {
                                 persistMessage(updatedMessage).onSuccess {
                                     assetRepository.deleteAssetLocally(content.remoteData.assetId)
+                                    assetRepository.deleteTemporaryPreview(content.preview, uploadedAssetContent.preview)
                                 }
                             }.map { updatedMessage } // we need to persist new asset remoteData and status
                         }
                     }
-                    .onSuccess { updatedMessage ->
-                        updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
-                        assetRepository.deleteAssetLocally(content.remoteData.assetId)
-                        assetRepository.deleteTemporaryPreview(
-                            content.preview,
-                            (updatedMessage.content as MessageContent.Asset).value.preview
-                        )
-                    }
+                    .onSuccess { updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id) }
+
             }
 
             AssetTransferStatus.UPLOADED -> Either.Right(message)

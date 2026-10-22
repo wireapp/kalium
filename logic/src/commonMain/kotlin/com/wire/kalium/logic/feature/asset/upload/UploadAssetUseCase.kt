@@ -120,6 +120,7 @@ internal class UploadAssetUseCaseImpl(
                 persistMessage(updatedMessage).onSuccess {
                     // Commit the new reference before removing the only file the old reference can resolve.
                     assetDataSource.deleteAssetLocally(metadata.assetId.key)
+                    assetDataSource.deleteTemporaryPreview(metadata.preview, updatedAssetMessageContent.preview)
                 }
             }
                 .onFailure {
@@ -128,9 +129,6 @@ internal class UploadAssetUseCaseImpl(
                     )
                 }.flatMap {
                     updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
-                    // Keep the temporary asset around until the message points at the uploaded asset id.
-                    assetDataSource.deleteAssetLocally(metadata.assetId.key)
-                    assetDataSource.deleteTemporaryPreview(metadata.preview, updatedAssetMessageContent.preview)
                     // Finally we try to send the Asset Message to the recipients of the given conversation
                     sendMessage(updatedMessage)
                 }
