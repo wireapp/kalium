@@ -23,6 +23,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.isLeft
+import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
@@ -34,6 +35,7 @@ import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
+import okio.use
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -82,6 +84,20 @@ class DeleteNodeAssetUseCaseTest {
         useCase(assetId, localPath)
 
         assertFalse { arrangement.fileSystem.exists(localPath.toPath()) }
+    }
+
+    @Test
+    fun given_LocalFileThatCannotBeRemoved_when_DeleteSuccess_thenSuccessReturned() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withLocalFileAvailable()
+            .withSuccessDelete()
+            .arrange()
+        // FakeFileSystem refuses to delete an open file, with an IOException.
+        arrangement.fileSystem.source(localPath.toPath()).use {
+            val result = useCase(assetId, localPath)
+
+            assertTrue { result.isRight() }
+        }
     }
 
     @Test
