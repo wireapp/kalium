@@ -36,7 +36,7 @@ import kotlin.test.assertTrue
 class AssetPreviewMigrationTest {
     @Test
     fun developDatabaseUpgradesAndReopensWithoutChangingExistingAssets() = runTest {
-        withVersion160 { file, driver ->
+        withVersion161 { file, driver ->
             insertVideo(driver, "ready")
             assertFalse(driver.columns().contains("preview_asset_id"))
             driver.close()
@@ -72,13 +72,13 @@ class AssetPreviewMigrationTest {
         uri = "jdbc:sqlite:${file.absolutePath}", schema = UserDatabase.Schema.synchronous(),
     ) { areForeignKeyConstraintsEnforced = true }
 
-    private suspend fun withVersion160(block: suspend (File, SqlDriver) -> Unit) {
+    private suspend fun withVersion161(block: suspend (File, SqlDriver) -> Unit) {
         val file = File.createTempFile("asset-preview-upgrade-", ".db")
         File("src/commonMain/db_user/schemas/2.db").copyTo(file, overwrite = true)
         try {
             JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}").use { driver ->
-                object : SuspendingTransacterImpl(driver) {}.transaction { UserDatabase.Schema.awaitMigrate(driver, 2, 160) }
-                driver.execute(null, "PRAGMA user_version = 160", 0)
+                object : SuspendingTransacterImpl(driver) {}.transaction { UserDatabase.Schema.awaitMigrate(driver, 2, 161) }
+                driver.execute(null, "PRAGMA user_version = 161", 0)
                 driver.execute(null, "INSERT INTO User(qualified_id) VALUES ('sender@domain')", 0)
                 driver.execute(null, """
                     INSERT INTO Conversation(qualified_id, type, mls_group_state, protocol, creator_id,
