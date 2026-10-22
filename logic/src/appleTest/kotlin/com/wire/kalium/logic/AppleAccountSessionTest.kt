@@ -490,7 +490,7 @@ class AppleAccountSessionTest {
                     apiProxyHost = null, apiProxyNeedsAuthentication = null, apiProxyPort = null,
                 ))
                 database.accountsDAO.insertOrReplace(
-                    UserIDEntity(userId.value, userId.domain), null, null, "test-server", false, null, null,
+                    UserIDEntity(userId.value, userId.domain), null, null, "test-server", false, null,
                 )
             } finally {
                 database.close()

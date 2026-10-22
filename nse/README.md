@@ -145,7 +145,6 @@ Not supported; the attempt fails and the notification stays pending:
   default credential without a matching installed credential.
 - Undecodable payloads of known event types.
 
-Nomad-configured accounts are not supported.
 
 ## Preparing alerts with an existing app account
 

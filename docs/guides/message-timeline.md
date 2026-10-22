@@ -30,7 +30,7 @@ try {
 
 `Latest`, `Older`, and `Newer` return items in descending creation-date and ID order. Newer loads
 select the nearest newer messages first. Positive limits are capped at 100. A null continuation
-cursor means that direction is exhausted locally. It says nothing about remote Nomad history.
+cursor means that direction is exhausted locally.
 
 Use `AroundMessage(messageId)` for a reply or search jump. It includes the anchor once and fills
 unused space from the other side near either end. An existing but suppressed anchor opens its

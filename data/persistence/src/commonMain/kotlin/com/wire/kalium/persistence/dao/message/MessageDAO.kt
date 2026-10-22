@@ -87,7 +87,6 @@ interface MessageDAO {
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
     suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity>
     fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
-    suspend fun getOldestVisibleMessageTimestampByConversationId(conversationId: ConversationIDEntity): Long?
     fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,

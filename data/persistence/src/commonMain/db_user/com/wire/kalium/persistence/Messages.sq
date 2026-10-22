@@ -601,9 +601,6 @@ countPendingByConversationIdAndVisibility:
 -- @CustomKey message_list
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? AND status = 'PENDING';
 
-selectOldestVisibleMessageTimestampByConversationId:
-SELECT MIN(creation_date) FROM Message WHERE conversation_id = ? AND visibility = 'VISIBLE';
-
 selectByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list

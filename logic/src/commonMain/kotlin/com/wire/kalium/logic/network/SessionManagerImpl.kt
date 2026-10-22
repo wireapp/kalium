@@ -85,8 +85,6 @@ internal class SessionManagerImpl internal constructor(
     override fun serverConfig(): ServerConfigDTO =
         serverConfig ?: serverConfigMapper.toDTO(account().serverConfig).also { serverConfig = it }
 
-    override fun nomadServiceUrl(): String? = account().nomadServiceUrl
-
     override suspend fun updateToken(
         accessTokenApi: AccessTokenApi,
         oldRefreshToken: String?

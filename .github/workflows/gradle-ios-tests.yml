@@ -220,12 +220,11 @@ jobs:
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/macos@c950f6fb443cb5af20a377fd0dfaa78838901040
-        if: ${{ always() }}
+        if: ${{ always() && steps.build-tests.outputs.has-tests == 'true' }}
         with:
           check_name: iOS Test Results (${{ matrix.shard }})
-          files: |
-            **/build/test-results/testDebugUnitTest/**/*.xml
-            **/build/test-results/**/*.xml
+          action_fail_on_inconclusive: true
+          files: '**/build/test-results/iosSimulatorArm64Test/**/*.xml'
 
       - name: Stop Gradle and clean cache locks
         if: always()

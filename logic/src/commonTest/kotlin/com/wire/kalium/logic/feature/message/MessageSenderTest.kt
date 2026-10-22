@@ -231,7 +231,6 @@ class MessageSenderTest {
                 mock(mode = MockMode.autoUnit),
                 mock(mode = MockMode.autoUnit),
                 mock(mode = MockMode.autoUnit),
-                object : com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier {},
                 testKaliumDispatcher
             )
 
