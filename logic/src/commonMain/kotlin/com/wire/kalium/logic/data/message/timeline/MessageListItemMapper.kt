@@ -218,6 +218,7 @@ internal class MessageListItemMapper(private val selfUserId: UserId) {
         row.quote_content_type == MessageEntity.ContentType.LOCATION ->
             MessageContent.QuotedMessageDetails.Location(row.quote_location_name)
         row.quote_content_type == MessageEntity.ContentType.MULTIPART -> MessageContent.QuotedMessageDetails.Multipart(row.quote_text)
+        row.quote_content_type == MessageEntity.ContentType.POLL -> MessageContent.QuotedMessageDetails.Poll(row.quote_text.orEmpty())
         else -> MessageContent.QuotedMessageDetails.Invalid
     }
 

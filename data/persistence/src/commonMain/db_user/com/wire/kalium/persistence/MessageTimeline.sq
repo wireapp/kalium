@@ -67,7 +67,8 @@ SELECT
     l.latitude, l.longitude, l.name AS location_name, l.zoom AS location_zoom,
     q.sender_user_id AS quote_sender_id, q.creation_date AS quote_date, q.last_edit_date AS quote_edit_date,
     q.visibility AS quote_visibility, q.content_type AS quote_content_type,
-    qt.text_body AS quote_text, qa.asset_mime_type AS quote_asset_mime_type, qa.asset_name AS quote_asset_name,
+    -- A quoted poll has no text content; its question is the quoted text.
+    COALESCE(qt.text_body, qp.question) AS quote_text, qa.asset_mime_type AS quote_asset_mime_type, qa.asset_name AS quote_asset_name,
     ql.name AS quote_location_name
 FROM Message m
 LEFT JOIN MessageTextContent t ON t.message_id = m.id AND t.conversation_id = m.conversation_id
@@ -80,6 +81,7 @@ LEFT JOIN Message q ON q.id = t.quoted_message_id AND q.conversation_id = m.conv
 LEFT JOIN MessageTextContent qt ON qt.message_id = q.id AND qt.conversation_id = q.conversation_id
 LEFT JOIN MessageAssetContent qa ON qa.message_id = q.id AND qa.conversation_id = q.conversation_id
 LEFT JOIN MessageConversationLocationContent ql ON ql.message_id = q.id AND ql.conversation_id = q.conversation_id
+LEFT JOIN PollContent qp ON qp.message_id = q.id AND qp.conversation_id = q.conversation_id
 WHERE m.conversation_id = :conversationId AND m.id IN :ids;
 
 timelineMentions:

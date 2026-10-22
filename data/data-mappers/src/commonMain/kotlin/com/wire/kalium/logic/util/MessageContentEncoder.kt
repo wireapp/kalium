@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.uuid
+import com.wire.kalium.util.int.toByteArray
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
@@ -59,6 +60,12 @@ class MessageContentEncoder {
                     attachments = attachments,
                 )
             }
+
+            is MessageContent.Poll ->
+                encodePoll(
+                    messageTimeStampInMillis = messageInstant.toEpochMilliseconds(),
+                    poll = messageContent
+                )
 
             else -> {
                 kaliumLogger.w("Attempting to encode message with unsupported content type")
@@ -108,6 +115,34 @@ class MessageContentEncoder {
         return EncodedMessageContent(
             byteArray = byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + attachmentsBytes + messageTimeStampByteArray
         )
+    }
+
+    /**
+     * Every string is length-prefixed and the options are counted, so no two polls share an encoding:
+     * FEFF, question, option count, each option's id and text in order, allowMultipleAnswers, time.
+     */
+    private fun encodePoll(messageTimeStampInMillis: Long, poll: MessageContent.Poll): EncodedMessageContent {
+        // Received polls are not limited to ten options, so each part is copied into the result only once.
+        val parts = buildList {
+            add(byteArrayOf(0xFE.toByte(), 0xFF.toByte()))
+            addLengthPrefixedUTF16BE(poll.question)
+            add(poll.options.size.toByteArray())
+            poll.options.forEach { option ->
+                addLengthPrefixedUTF16BE(option.id)
+                addLengthPrefixedUTF16BE(option.text)
+            }
+            add(byteArrayOf((if (poll.allowMultipleAnswers) 1 else 0).toByte()))
+            add(encodeMessageTimeStampInMillis(messageTimeStampInMillis))
+        }
+        val byteArray = ByteArray(parts.sumOf { it.size })
+        parts.fold(0) { offset, part -> part.copyInto(byteArray, offset).let { offset + part.size } }
+        return EncodedMessageContent(byteArray)
+    }
+
+    private fun MutableList<ByteArray>.addLengthPrefixedUTF16BE(value: String) {
+        val bytes = value.toUTF16BEByteArray()
+        add(bytes.size.toByteArray())
+        add(bytes)
     }
 
     private fun wrapIntoResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): EncodedMessageContent {
