@@ -48,7 +48,7 @@ class Migration144Test {
 
     private fun reopenAndVerify(file: File, timestamp: String?) {
         JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", properties, UserDatabase.Schema.synchronous()).use { driver ->
-            assertEquals(listOf("161"), driver.values("PRAGMA user_version"))
+            assertEquals(listOf(UserDatabase.Schema.version.toString()), driver.values("PRAGMA user_version"))
             assertEquals(listOf(timestamp), driver.values("SELECT adminlessGroupDeletionTimestamp FROM ConversationDetails"))
             assertEquals(listOf("existing"), driver.values("SELECT id FROM MessageTimelineKey"))
             assertEquals(listOf("https://wire.com"), driver.values("""

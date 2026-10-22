@@ -22,7 +22,6 @@ import app.cash.sqldelight.async.coroutines.awaitMigrate
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
-import com.wire.kalium.persistence.db.UserDatabaseSchema
 import kotlinx.coroutines.test.runTest
 import java.io.File
 import kotlin.test.Test
@@ -45,7 +44,7 @@ class MessageTimelineListMigrationTest {
             }
             // Reopen an installation that has already applied migration 146.
             JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}").use { driver ->
-                UserDatabaseSchema.awaitMigrate(driver, 147, UserDatabase.Schema.version)
+                UserDatabase.Schema.awaitMigrate(driver, 147, UserDatabase.Schema.version)
                 val expected = mapOf(
                     "conversation_list_recency" to "index",
                     "idx_msg_conv_date_id_desc" to "index",

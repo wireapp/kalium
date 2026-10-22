@@ -25,7 +25,6 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
-import com.wire.kalium.persistence.db.UserDatabaseSchema
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageMapper
 import com.wire.kalium.persistence.dao.message.MessageTimelineLoadResultEntity
@@ -79,7 +78,7 @@ class MessageTimelineMigrationTest {
                     )
                 }
                 builder.messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = false)
-                if (upgrade) UserDatabaseSchema.awaitMigrate(driver, 147, UserDatabase.Schema.version)
+                if (upgrade) UserDatabase.Schema.awaitMigrate(driver, 147, UserDatabase.Schema.version)
 
                 definitions += driver.strings(
                     "SELECT sql FROM sqlite_master " +

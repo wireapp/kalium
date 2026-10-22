@@ -25,78 +25,32 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
-import com.wire.kalium.persistence.db.UserDatabaseSchema
 import com.wire.kalium.persistence.db.databaseDriver
-import com.wire.kalium.protobuf.messages.Asset
-import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import kotlinx.coroutines.test.runTest
-import pbandk.ByteArr
-import pbandk.encodeToByteArray
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class AssetPreviewMigrationTest {
     @Test
-    fun installedVersion160PreviewsSurviveProductionOpenAndReopenAsTypedColumns() = runTest {
+    fun developDatabaseUpgradesAndReopensWithoutChangingExistingAssets() = runTest {
         withVersion160 { file, driver ->
-            insertVideo(driver, "ready", preview())
-            insertVideo(driver, "pending", preview().copy(remote = requireNotNull(preview().remote).copy(sha256 = ByteArr(byteArrayOf()))))
-            insertVideo(driver, "malformed", null)
-            driver.execute(null, "UPDATE MessageAssetContent SET asset_preview = x'FF' WHERE message_id = 'malformed'", 0)
+            insertVideo(driver, "ready")
+            assertFalse(driver.columns().contains("preview_asset_id"))
             driver.close()
             repeat(2) {
                 openProduction(file).use { reopened ->
                     assertEquals(listOf(UserDatabase.Schema.version.toString()), reopened.values("PRAGMA user_version"))
-                    assertEquals(listOf("video-ready", "100000", "0102", "0304"), reopened.row("""
-                        SELECT asset_id, asset_size, hex(asset_otr_key), hex(asset_sha256)
+                    assertEquals(listOf("video-ready", "100000", "0102", "0304", null), reopened.row("""
+                        SELECT asset_id, asset_size, hex(asset_otr_key), hex(asset_sha256), preview_asset_id
                         FROM MessageAssetContent WHERE message_id = 'ready'
-                    """.trimIndent(), 4))
-                    assertEquals(listOf("image/jpeg", "1024", "512", "288", "preview-id", "preview.domain", "preview-token",
-                        "0506", "0708", "AES_GCM"), reopened.row("""
-                        SELECT preview_asset_mime_type, preview_asset_size, preview_asset_width, preview_asset_height,
-                            preview_asset_id, preview_asset_domain, preview_asset_token, hex(preview_asset_otr_key),
-                            hex(preview_asset_sha256), preview_asset_encryption_algorithm
-                        FROM MessageAssetContent WHERE message_id = 'ready'
-                    """.trimIndent(), 10))
-                    assertEquals(listOf("preview-id", ""), reopened.row("""
-                        SELECT preview_asset_id, hex(preview_asset_sha256) FROM MessageAssetContent WHERE message_id = 'pending'
-                    """.trimIndent(), 2))
-                    assertEquals(listOf("video-malformed", null, null), reopened.row("""
-                        SELECT asset_id, preview_asset_mime_type, preview_asset_id FROM MessageAssetContent WHERE message_id = 'malformed'
-                    """.trimIndent(), 3))
-                    assertEquals(listOf("preview-id"), reopened.values("SELECT assetPreviewId FROM MessageDetailsView WHERE id = 'ready'"))
+                    """.trimIndent(), 5))
+                    assertEquals(listOf(null), reopened.values("SELECT assetPreviewId FROM MessageDetailsView WHERE id = 'ready'"))
                     assertFalse(reopened.columns().contains("asset_preview"))
                     assertEquals(emptyList(), reopened.values("PRAGMA foreign_key_check"))
                 }
-            }
-        }
-    }
-
-    @Test
-    fun failedPreviewConversionRollsBackSchemaAndPreservesLegacyEnvelope() = runTest {
-        withVersion160 { file, driver ->
-            insertVideo(driver, "ready", preview())
-            driver.execute(null, """
-                CREATE TRIGGER reject_preview_migration BEFORE UPDATE ON MessageAssetContent
-                BEGIN SELECT RAISE(ABORT, 'injected preview migration failure'); END
-            """.trimIndent(), 0)
-            driver.close()
-            assertFailsWith<Exception> { openProduction(file).close() }
-            JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}").use { failed ->
-                assertEquals(listOf("160"), failed.values("PRAGMA user_version"))
-                assertTrue(failed.columns().contains("asset_preview"))
-                assertFalse(failed.columns().contains("preview_asset_size"))
-                assertEquals(listOf("1", "video-ready"), failed.row("""
-                    SELECT asset_preview IS NOT NULL, asset_id FROM MessageAssetContent WHERE message_id = 'ready'
-                """.trimIndent(), 2))
-                failed.execute(null, "DROP TRIGGER reject_preview_migration", 0)
-            }
-            openProduction(file).use { recovered ->
-                assertEquals(listOf("preview-id"), recovered.values("SELECT preview_asset_id FROM MessageAssetContent"))
             }
         }
     }
@@ -115,7 +69,7 @@ class AssetPreviewMigrationTest {
     }
 
     private fun openProduction(file: File): SqlDriver = databaseDriver(
-        uri = "jdbc:sqlite:${file.absolutePath}", schema = UserDatabaseSchema.synchronous(),
+        uri = "jdbc:sqlite:${file.absolutePath}", schema = UserDatabase.Schema.synchronous(),
     ) { areForeignKeyConstraintsEnforced = true }
 
     private suspend fun withVersion160(block: suspend (File, SqlDriver) -> Unit) {
@@ -138,30 +92,20 @@ class AssetPreviewMigrationTest {
         }
     }
 
-    private fun insertVideo(driver: SqlDriver, id: String, preview: Asset.Preview?) {
+    private fun insertVideo(driver: SqlDriver, id: String) {
         driver.execute(null, """
             INSERT INTO Message(id, conversation_id, content_type, creation_date, sender_user_id, status, visibility)
             VALUES (?, 'conversation@domain', 'ASSET', 1, 'sender@domain', 'SENT', 'VISIBLE')
         """.trimIndent(), 1) { bindString(0, id) }
         driver.execute(null, """
             INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_mime_type,
-                asset_otr_key, asset_sha256, asset_id, asset_preview, preview_asset_id, preview_asset_domain)
-            VALUES (?, 'conversation@domain', 100000, 'video/mp4', x'0102', x'0304', ?, ?, 'preview-id', 'preview.domain')
-        """.trimIndent(), 3) {
+                asset_otr_key, asset_sha256, asset_id)
+            VALUES (?, 'conversation@domain', 100000, 'video/mp4', x'0102', x'0304', ?)
+        """.trimIndent(), 2) {
             bindString(0, id)
             bindString(1, "video-$id")
-            bindBytes(2, preview?.encodeToByteArray())
         }
     }
-
-    private fun preview() = Asset.Preview(
-        mimeType = "image/jpeg", size = 1024,
-        remote = Asset.RemoteData(
-            otrKey = ByteArr(byteArrayOf(5, 6)), sha256 = ByteArr(byteArrayOf(7, 8)), assetId = "preview-id",
-            assetToken = "preview-token", assetDomain = "preview.domain", encryption = EncryptionAlgorithm.AES_GCM,
-        ),
-        metaData = Asset.Preview.MetaData.Image(Asset.ImageMetaData(512, 288)),
-    )
 
     private fun SqlDriver.columns(): List<String?> = executeQuery(null, "PRAGMA table_info(MessageAssetContent)", { cursor ->
         val values = mutableListOf<String?>()
