@@ -224,6 +224,8 @@ jobs:
         with:
           check_name: iOS Test Results (${{ matrix.shard }})
           action_fail_on_inconclusive: true
+          # Native test logs can exceed the XML parser's default CDATA limit.
+          large_files: true
           files: '**/build/test-results/iosSimulatorArm64Test/**/*.xml'
 
       - name: Stop Gradle and clean cache locks
