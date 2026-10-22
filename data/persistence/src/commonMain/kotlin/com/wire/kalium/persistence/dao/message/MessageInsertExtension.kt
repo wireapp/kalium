@@ -96,26 +96,29 @@ internal class MessageInsertExtensionImpl(
                     assetNormalizedLoudness = assetNormalizedLoudness,
                 ).await()
             }
-            // An original-only continuation must retain any preview that arrived first.
-            if (assetPreview != null) updateAssetPreview(message, assetPreview)
+            // A completed local upload can discard a failed, temporary preview. Remote previews
+            // must survive original-only continuations that arrive out of order.
+            val discardPendingPreview = updateOriginal && message.senderUserId == selfUserIDEntity &&
+                existing.preview_asset_id != null && existing.preview_asset_sha256?.isEmpty() == true
+            if (assetPreview != null || discardPendingPreview) updateAssetPreview(message, assetPreview)
         }
         return true
     }
 
-    private suspend fun updateAssetPreview(message: MessageEntity, preview: AssetPreviewEntity) {
+    private suspend fun updateAssetPreview(message: MessageEntity, preview: AssetPreviewEntity?) {
         messagesQueries.updateAssetPreviewContent(
             messageId = message.id,
             conversationId = message.conversationId,
-            assetPreviewMimeType = preview.mimeType,
-            assetPreviewSize = preview.size,
-            assetPreviewWidth = preview.width,
-            assetPreviewHeight = preview.height,
-            assetPreviewId = preview.id,
-            assetPreviewDomain = preview.domain,
-            assetPreviewToken = preview.token,
-            assetPreviewOtrKey = preview.otrKey,
-            assetPreviewSha256 = preview.sha256,
-            assetPreviewEncryptionAlgorithm = preview.encryptionAlgorithm,
+            assetPreviewMimeType = preview?.mimeType,
+            assetPreviewSize = preview?.size,
+            assetPreviewWidth = preview?.width,
+            assetPreviewHeight = preview?.height,
+            assetPreviewId = preview?.id,
+            assetPreviewDomain = preview?.domain,
+            assetPreviewToken = preview?.token,
+            assetPreviewOtrKey = preview?.otrKey,
+            assetPreviewSha256 = preview?.sha256,
+            assetPreviewEncryptionAlgorithm = preview?.encryptionAlgorithm,
         )
     }
 

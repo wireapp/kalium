@@ -44,7 +44,8 @@ class AssetMessageContinuationTest : BaseDatabaseTest() {
     private val sender = newUserEntity("continuation-sender")
     private val stranger = newUserEntity("continuation-stranger")
     private val conversation = newConversationEntity("continuation").copy(
-        lastReadDate = Instant.fromEpochMilliseconds(0), lastModifiedDate = Instant.fromEpochMilliseconds(0),
+        lastReadDate = Instant.fromEpochMilliseconds(0),
+        lastModifiedDate = Instant.fromEpochMilliseconds(0),
     )
     private val original = MessageEntityContent.Asset(
         assetSizeInBytes = 100_000, assetName = "video.mp4", assetMimeType = "video/mp4",
@@ -57,8 +58,12 @@ class AssetMessageContinuationTest : BaseDatabaseTest() {
         otrKey = ByteArray(32) { 3 }, sha256 = ByteArray(32) { 4 }, encryptionAlgorithm = "AES_GCM",
     )
     private fun message(content: MessageEntityContent.Asset = original) = newRegularMessageEntity(
-        id = "video", conversationId = conversation.id, senderUserId = sender.id,
-        senderClientId = "sender-client", date = Instant.fromEpochMilliseconds(1000), content = content,
+        id = "video",
+        conversationId = conversation.id,
+        senderUserId = sender.id,
+        senderClientId = "sender-client",
+        date = Instant.fromEpochMilliseconds(1000),
+        content = content,
     )
 
     @BeforeTest
@@ -89,10 +94,18 @@ class AssetMessageContinuationTest : BaseDatabaseTest() {
         val unreadBefore = db.messageDAO.observeUnreadEvents().first()
         assertEquals(emptyMap(), unreadBefore)
         driver.queries.clear()
-        db.messageDAO.insertReceivedMessage(initial.copy(content = original.copy(
-            assetName = "replacement.mp4", assetSizeInBytes = 1,
-            assetOtrKey = ByteArray(32) { 8 }, assetSha256Key = ByteArray(32) { 9 }, assetPreview = preview,
-        )), updateConversationOrder = true)
+        db.messageDAO.insertReceivedMessage(
+            initial.copy(
+                content = original.copy(
+            assetName = "replacement.mp4",
+            assetSizeInBytes = 1,
+            assetOtrKey = ByteArray(32) { 8 },
+            assetSha256Key = ByteArray(32) { 9 },
+            assetPreview = preview,
+        )
+            ),
+            updateConversationOrder = true
+        )
         assertSingleNarrowLookup()
         val reloaded = db.messageDAO.getMessageById(initial.id, initial.conversationId)!!
         assertAssetEquals(original.copy(assetPreview = preview), reloaded.content)
@@ -100,9 +113,13 @@ class AssetMessageContinuationTest : BaseDatabaseTest() {
 
         val conversationBeforeReplay = db.conversationDAO.getConversationById(conversation.id)
         driver.queries.clear()
-        db.messageDAO.insertReceivedMessage(initial.copy(
-            date = Instant.fromEpochMilliseconds(9999), content = original.copy(assetPreview = preview),
-        ), updateConversationOrder = true)
+        db.messageDAO.insertReceivedMessage(
+            initial.copy(
+            date = Instant.fromEpochMilliseconds(9999),
+            content = original.copy(assetPreview = preview),
+        ),
+            updateConversationOrder = true
+        )
         assertSingleNarrowLookup()
         assertEquals(conversationBeforeReplay, db.conversationDAO.getConversationById(conversation.id))
         assertEquals(unreadBefore, db.messageDAO.observeUnreadEvents().first())
@@ -116,12 +133,43 @@ class AssetMessageContinuationTest : BaseDatabaseTest() {
         db.messageDAO.insertReceivedMessage(initial, updateConversationOrder = true)
         driver.queries.clear()
         db.messageDAO.insertReceivedMessage(
-            initial.copy(visibility = MessageEntity.Visibility.VISIBLE, content = original), updateConversationOrder = true,
+            initial.copy(visibility = MessageEntity.Visibility.VISIBLE, content = original),
+            updateConversationOrder = true,
         )
         assertSingleNarrowLookup()
         val reloaded = db.messageDAO.getMessageById(initial.id, initial.conversationId)!!
         assertEquals(MessageEntity.Visibility.VISIBLE, reloaded.visibility)
         assertAssetEquals(original.copy(assetPreview = preview), reloaded.content)
+    }
+
+    @Test
+    fun completedLocalUploadWithoutPreviewClearsPendingPreviewOnReload() = runTest(dispatcher) {
+        seed()
+        val pending = original.copy(
+            assetId = "temporary-video",
+            assetSha256Key = byteArrayOf(),
+            assetPreview = preview.copy(id = "temporary-preview", sha256 = byteArrayOf()),
+        )
+        val initial = message(pending).copy(senderUserId = self.id)
+        db.messageDAO.insertOrIgnoreMessages(listOf(initial))
+        assertAssetEquals(pending, db.messageDAO.getMessageById(initial.id, initial.conversationId)!!.content)
+
+        // This is the content persisted by UploadAssetUseCase when only the preview upload fails.
+        db.messageDAO.insertOrIgnoreMessages(listOf(initial.copy(content = original)))
+
+        assertAssetEquals(original, db.messageDAO.getMessageById(initial.id, initial.conversationId)!!.content)
+    }
+
+    @Test
+    fun completedLocalUploadRetainsAlreadyRemotePreviewOnReload() = runTest(dispatcher) {
+        seed()
+        val initial = message(original.copy(assetSha256Key = byteArrayOf(), assetPreview = preview))
+            .copy(senderUserId = self.id)
+        db.messageDAO.insertOrIgnoreMessages(listOf(initial))
+
+        db.messageDAO.insertOrIgnoreMessages(listOf(initial.copy(content = original)))
+
+        assertAssetEquals(original.copy(assetPreview = preview), db.messageDAO.getMessageById(initial.id, initial.conversationId)!!.content)
     }
 
     @Test
@@ -161,7 +209,10 @@ class AssetMessageContinuationTest : BaseDatabaseTest() {
     private class RecordingDriver(private val delegate: SqlDriver) : SqlDriver by delegate {
         val queries = mutableListOf<String>()
         override fun <R> executeQuery(
-            identifier: Int?, sql: String, mapper: (SqlCursor) -> QueryResult<R>, parameters: Int,
+            identifier: Int?,
+            sql: String,
+            mapper: (SqlCursor) -> QueryResult<R>,
+            parameters: Int,
             binders: (SqlPreparedStatement.() -> Unit)?,
         ): QueryResult<R> {
             queries += sql
