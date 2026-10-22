@@ -406,6 +406,9 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
         )
     }
 
+    // MessageDetailsView returns the poll question as the quoted text.
+    it.contentType == MessageEntity.ContentType.POLL -> MessageContent.QuotedMessageDetails.Poll(it.textBody.orEmpty())
+
     // If a new content type can be replied to (Pings, for example), fallback to Invalid
     else -> MessageContent.QuotedMessageDetails.Invalid
 }
