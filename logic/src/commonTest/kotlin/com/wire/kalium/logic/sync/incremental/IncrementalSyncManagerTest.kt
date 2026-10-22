@@ -23,6 +23,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.data.sync.SyncRetryStatus
+import kotlinx.coroutines.awaitCancellation
 import com.wire.kalium.logic.fakes.network.FakeNetworkStateObserver
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.util.ExponentialDurationHelper
@@ -391,13 +393,44 @@ class IncrementalSyncManagerTest {
         syncJob.cancel()
     }
 
+    @Test
+    fun cancellationDuringAnyFailurePublicationRestoresPending() = runTest {
+        for (phase in listOf("initial", "scheduled", "attempting")) {
+            val entered = CompletableDeferred<Unit>()
+            val base = InMemoryIncrementalSyncRepository()
+            val blocking = object : IncrementalSyncRepository by base {
+                override suspend fun updateIncrementalSyncState(newState: IncrementalSyncStatus) {
+                    base.updateIncrementalSyncState(newState)
+                    if (newState is IncrementalSyncStatus.Failed && when (phase) {
+                        "initial" -> newState.retryStatus == SyncRetryStatus.None
+                        "scheduled" -> newState.retryStatus is SyncRetryStatus.Scheduled
+                        else -> newState.retryStatus is SyncRetryStatus.Attempting
+                    }) {
+                        entered.complete(Unit)
+                        awaitCancellation()
+                    }
+                }
+            }
+            val (arrangement, manager) = Arrangement(incrementalSyncRepository = blocking)
+                .withWorkerReturning(flow { throw IOException("offline") })
+                .withRecoveringFromFailure()
+                .arrange()
+            arrangement.networkStateObserver.reconnectWaitOverride = { false }
+            val job = manager.performSyncFlow().launchIn(backgroundScope)
+            entered.await()
+            job.cancel()
+            job.join()
+            assertEquals(IncrementalSyncStatus.Pending, base.incrementalSyncState.first())
+        }
+    }
+
     private class Arrangement(
         val exponentialDurationHelper: ExponentialDurationHelper = mock(mode = MockMode.autoUnit),
         private val configureDefaultExponentialDuration: Boolean = true,
+        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository(),
     ) {
 
         val incrementalSyncWorker = mock<IncrementalSyncWorker>()
-        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
         val incrementalSyncRecoveryHandler = mock<IncrementalSyncRecoveryHandler>()
         val networkStateObserver = FakeNetworkStateObserver()
         val userSessionWorkScheduler: UserSessionWorkScheduler = mock(mode = MockMode.autoUnit)

@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -50,6 +51,22 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class SyncExecutorTest {
+    @Test
+    fun refreshResetsBothBackoffsWithoutReplacingActiveExecution() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, executor) = Arrangement(backgroundScope).arrange()
+        executor.startAndStopSyncAsNeeded()
+        val owner = backgroundScope.launch { executor.request { awaitCancellation() } }
+        runCurrent()
+        val starts = arrangement.slowSyncManager.performSyncFlowCount
+        assertEquals(1, starts)
+        executor.retryNow()
+        runCurrent()
+        assertEquals(1, arrangement.slowSyncManager.resetRetryBackoffCount)
+        assertEquals(1, arrangement.incrementalSyncManager.resetRetryBackoffCount)
+        assertEquals(starts, arrangement.slowSyncManager.performSyncFlowCount)
+        assertEquals(0, arrangement.slowSyncManager.cancelledSyncFlowCount)
+        owner.cancel()
+    }
 
     @Test
     fun givenNoRequests_whenStartingAsNeeded_thenShouldNotStartAnySync() = runTest(TestKaliumDispatcher.default) {
