@@ -255,3 +255,17 @@ JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
 WHERE MeetingOccurrence.occurrence_start >= :startInclusive
     AND MeetingOccurrence.occurrence_start < :endExclusive
 ORDER BY MeetingOccurrence.occurrence_id ASC;
+
+selectHasOngoingMeeting:
+-- @CustomKey MeetingOccurrence
+-- @CustomKey Meeting
+-- @CustomKey conversation_list_membership
+SELECT EXISTS(
+    SELECT 1 FROM MeetingOccurrence
+    JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+    JOIN Conversation ON Conversation.qualified_id = Meeting.conversation_id
+    JOIN SelfUser
+    WHERE MeetingOccurrence.occurrence_start >= :fromDate
+        AND MeetingOccurrence.occurrence_start <= :now
+        AND MeetingOccurrence.occurrence_end >= :earliestEnd
+);

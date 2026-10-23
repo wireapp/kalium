@@ -127,6 +127,7 @@ internal interface MeetingRepository {
         from: Instant = currentInstant()
     ): Either<StorageFailure, MeetingOccurrence>
 
+    fun observeHasOngoingMeeting(from: Instant, now: Instant, earliestEnd: Instant): Flow<Boolean>
     fun observeMeetingReminderChanges(): Flow<Unit>
     suspend fun getNextMeetingReminder(from: Instant): MeetingReminder?
     suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminder>
@@ -445,6 +446,9 @@ internal class MeetingDataSource(
             }
         }
     }
+
+    override fun observeHasOngoingMeeting(from: Instant, now: Instant, earliestEnd: Instant): Flow<Boolean> =
+        meetingDAO.observeHasOngoingMeeting(from, now, earliestEnd)
 
     override fun observeMeetingReminderChanges(): Flow<Unit> = meetingDAO.observeMeetingReminderChanges()
 

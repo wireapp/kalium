@@ -64,6 +64,47 @@ class MeetingDaoTest : BaseDatabaseTest() {
 
 
     @Test
+    fun ongoingAggregateIgnoresPaginationAndObservesDeletion() = runTest(dispatcher) {
+        val now = Instant.parse("2026-10-23T12:00:00Z")
+        val day = Instant.parse("2026-10-23T00:00:00Z")
+        databaseBuilder.database.databasePropertiesQueries.insertSelfUserId(SELF_USER_ID)
+        val meetings = (0..44).map { index ->
+            newMeeting(
+                meetingId = QualifiedIDEntity("earlier-$index", "wire.com"),
+                startTime = day + index.minutes,
+                endTime = day + (index + 1).minutes,
+            )
+        } + newMeeting(startTime = now, endTime = now + 1.hours)
+        meetings.forEach { insertMeetingDependencies(it) }
+        meetingDao.upsertMeetings(meetings, GenerationLimit.Window(day, day + 1.days))
+
+        meetingDao.observeHasOngoingMeeting(day, now, now - 5.minutes).test {
+            assertEquals(true, awaitItem())
+            meetingDao.deleteMeeting(MEETING_ID)
+            assertEquals(false, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun ongoingAggregateUsesInclusiveStartAndGraceEndAndListDayCutoff() = runTest(dispatcher) {
+        val start = Instant.parse("2026-10-23T12:00:00Z")
+        val day = Instant.parse("2026-10-23T00:00:00Z")
+        val meeting = newMeeting(startTime = start, endTime = start + 1.hours)
+        databaseBuilder.database.databasePropertiesQueries.insertSelfUserId(SELF_USER_ID)
+        insertMeetingDependencies(meeting)
+        meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(day, day + 1.days))
+        suspend fun ongoing(now: Instant, from: Instant = day) =
+            meetingDao.observeHasOngoingMeeting(from, now, now - 5.minutes).first()
+
+        assertEquals(false, ongoing(start - 1.seconds))
+        assertEquals(true, ongoing(start))
+        assertEquals(true, ongoing(meeting.endTime + 5.minutes))
+        assertEquals(false, ongoing(meeting.endTime + 5.minutes + 1.seconds))
+        assertEquals(false, ongoing(start, start + 1.seconds))
+    }
+
+    @Test
     fun givenQualifiedConversations_whenSnapshottingThenDeleting_thenKeepOtherDomainsAndDeleteOccurrences() = runTest(dispatcher) {
         val start = Instant.parse("2026-10-01T09:00:00Z")
         val first = newMeeting(startTime = start).copy(updatedAt = start)
