@@ -2759,6 +2759,7 @@ public class UserSessionScope internal constructor(
             sendAssetMessage = messages.sendAssetMessage,
             observeFileSharingStatus = observeFileSharingStatus,
             validateAssetFileType = validateAssetMimeType,
+            scope = this,
         )
     }
 

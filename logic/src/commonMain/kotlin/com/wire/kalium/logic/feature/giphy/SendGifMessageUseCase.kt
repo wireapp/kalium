@@ -12,6 +12,8 @@ import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.upload.validateAssetSharing
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 
 /**
  * Sends a downloaded GIF the way web and the old iOS app do: an optional caption text message, then the GIF
@@ -38,21 +40,23 @@ internal class SendGifMessageUseCaseImpl(
     private val sendAssetMessage: ScheduleNewAssetMessageUseCase,
     private val observeFileSharingStatus: ObserveFileSharingStatusUseCase,
     private val validateAssetFileType: ValidateAssetFileTypeUseCase,
+    private val scope: CoroutineScope,
 ) : SendGifMessageUseCase {
 
+    // The session scope owns the send: if the caller goes away while the caption is sending, the GIF still follows it.
     override suspend fun invoke(
         conversationId: ConversationId,
         downloadedGif: DownloadedGif,
         caption: String?,
         quotedMessageId: String?,
-    ): SendGifMessageResult {
+    ): SendGifMessageResult = scope.async {
         val assetName = "giphy-${downloadedGif.gif.id}.gif"
         // Checked first so a team setting never leaves a caption without its GIF.
-        return validateAssetSharing(observeFileSharingStatus, validateAssetFileType, assetName, GIF_MIME_TYPE).fold(
+        validateAssetSharing(observeFileSharingStatus, validateAssetFileType, assetName, GIF_MIME_TYPE).fold(
             { it.toSendGifMessageResult() },
             { sendCaptionAndGif(conversationId, downloadedGif, assetName, caption, quotedMessageId) }
         )
-    }
+    }.await()
 
     private suspend fun sendCaptionAndGif(
         conversationId: ConversationId,

@@ -7,6 +7,7 @@ import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.message.SendTextMessageUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import kotlinx.coroutines.CoroutineScope
 
 /**
  * GIF search and sending through the backend's Giphy proxy.
@@ -18,6 +19,7 @@ public class GiphyScope internal constructor(
     private val sendAssetMessage: ScheduleNewAssetMessageUseCase,
     private val observeFileSharingStatus: ObserveFileSharingStatusUseCase,
     private val validateAssetFileType: ValidateAssetFileTypeUseCase,
+    private val scope: CoroutineScope,
 ) {
     public val searchGifs: SearchGifsUseCase get() = SearchGifsUseCaseImpl(giphyRepository)
 
@@ -35,5 +37,6 @@ public class GiphyScope internal constructor(
             sendAssetMessage = sendAssetMessage,
             observeFileSharingStatus = observeFileSharingStatus,
             validateAssetFileType = validateAssetFileType,
+            scope = scope,
         )
 }

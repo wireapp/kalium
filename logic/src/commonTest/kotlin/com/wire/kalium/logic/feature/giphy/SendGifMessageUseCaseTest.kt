@@ -24,7 +24,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 
@@ -103,7 +108,30 @@ class SendGifMessageUseCaseTest {
         assertIs<SendGifMessageResult.Failure>(arrangement.useCase(CONVERSATION_ID, DOWNLOADED_GIF, "caption", null))
     }
 
+    @Test
+    fun givenCallerCancelledWhileTheCaptionSends_whenSending_thenTheGifStillFollows() = runTest {
+        val captionSending = CompletableDeferred<Unit>()
+        val captionDelivered = CompletableDeferred<MessageOperationResult>()
+        val arrangement = Arrangement(
+            scope = backgroundScope,
+            sendCaption = {
+                captionSending.complete(Unit)
+                captionDelivered.await()
+            },
+        )
+        val caller = launch { arrangement.useCase(CONVERSATION_ID, DOWNLOADED_GIF, "caption", null) }
+        captionSending.await()
+
+        caller.cancelAndJoin()
+        captionDelivered.complete(MessageOperationResult.Success)
+        arrangement.gifScheduled.await()
+
+        assertEquals(listOf("text:caption:null", "gif"), arrangement.events)
+    }
+
     private class Arrangement(
+        scope: CoroutineScope? = null,
+        private val sendCaption: (suspend () -> MessageOperationResult)? = null,
         fileSharing: FileSharingStatus.Value = FileSharingStatus.Value.EnabledAll,
         gifAllowed: Boolean = true,
         private val captionResult: MessageOperationResult = MessageOperationResult.Success,
@@ -111,6 +139,7 @@ class SendGifMessageUseCaseTest {
     ) {
         val events = mutableListOf<String>()
         val sentAssets = mutableListOf<AssetUploadParams>()
+        val gifScheduled = CompletableDeferred<Unit>()
         private val sendAssetMessage = mock<ScheduleNewAssetMessageUseCase>()
         private val observeFileSharingStatus = mock<ObserveFileSharingStatusUseCase>()
         private val validateAssetFileType = mock<ValidateAssetFileTypeUseCase>()
@@ -121,6 +150,7 @@ class SendGifMessageUseCaseTest {
             everySuspend { sendAssetMessage(any()) } calls { invocation ->
                 events += "gif"
                 sentAssets += invocation.args[0] as AssetUploadParams
+                gifScheduled.complete(Unit)
                 gifResult
             }
         }
@@ -128,11 +158,12 @@ class SendGifMessageUseCaseTest {
         val useCase = SendGifMessageUseCaseImpl(
             sendText = { _, text, quotedMessageId ->
                 events += "text:$text:$quotedMessageId"
-                captionResult
+                sendCaption?.invoke() ?: captionResult
             },
             sendAssetMessage = sendAssetMessage,
             observeFileSharingStatus = observeFileSharingStatus,
             validateAssetFileType = validateAssetFileType,
+            scope = scope ?: CoroutineScope(UnconfinedTestDispatcher()),
         )
     }
 
