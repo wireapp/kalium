@@ -3,22 +3,31 @@
 package com.wire.kalium.api.common
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.authenticated.giphy.GiphyGifsResponseDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphySearchSuggestionsResponseDTO
 import com.wire.kalium.network.api.vcommon.GiphyApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFound
 import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.test.runTest
-import okio.Buffer
+import io.ktor.http.headersOf
+import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.cancel
+import io.ktor.utils.io.writeFully
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
+import okio.Buffer
 
 internal class GiphyApiTest : ApiTest() {
 
@@ -141,6 +150,55 @@ internal class GiphyApiTest : ApiTest() {
         val result = api.downloadGif("https://media2.giphy.com/media/abc123/giphy.gif", maxSizeInBytes = 4, sink = Buffer())
 
         assertIs<NetworkResponse.Error>(result)
+    }
+
+    @Test
+    fun givenNonGiphyOrPlainHttpUrl_whenDownloading_thenFailsWithoutARequest() = runTest {
+        var requests = 0
+        val api = GiphyApiImpl(
+            authenticatedNetworkClient = mockAuthenticatedNetworkClient("", HttpStatusCode.OK),
+            mediaNetworkClient = UnboundNetworkClient(MockEngine { requests++; respond(GIF_BODY) }),
+        )
+
+        assertIs<NetworkResponse.Error>(api.downloadGif("https://example.com/a.gif", maxSizeInBytes = 1024, sink = Buffer()))
+        assertIs<NetworkResponse.Error>(api.downloadGif("http://media.giphy.com/a.gif", maxSizeInBytes = 1024, sink = Buffer()))
+        assertIs<NetworkResponse.Error>(api.downloadGif("https://notgiphy.com/a.gif", maxSizeInBytes = 1024, sink = Buffer()))
+        assertEquals(0, requests)
+    }
+
+    @Test
+    fun givenRedirectAwayFromGiphy_whenDownloading_thenFailsWithoutWritingIt() = runTest {
+        val api = GiphyApiImpl(
+            authenticatedNetworkClient = mockAuthenticatedNetworkClient("", HttpStatusCode.OK),
+            mediaNetworkClient = UnboundNetworkClient(
+                MockEngine { request ->
+                    if (request.url.host == "media2.giphy.com") {
+                        respond("", HttpStatusCode.Found, headersOf(HttpHeaders.Location, "https://other.example/a.gif"))
+                    } else {
+                        respond(GIF_BODY)
+                    }
+                }
+            ),
+        )
+        val sink = Buffer()
+
+        assertIs<NetworkResponse.Error>(api.downloadGif("https://media2.giphy.com/media/abc123/giphy.gif", 1024, sink))
+        assertEquals(0L, sink.size)
+    }
+
+    @Test
+    fun givenConnectionDropsMidDownload_whenDownloading_thenFails() = runTest {
+        val body = ByteChannel(autoFlush = true)
+        val api = GiphyApiImpl(
+            authenticatedNetworkClient = mockAuthenticatedNetworkClient("", HttpStatusCode.OK),
+            mediaNetworkClient = UnboundNetworkClient(MockEngine { respond(body) }),
+        )
+        backgroundScope.launch {
+            body.writeFully("GIF89a".encodeToByteArray())
+            body.cancel(IOException("connection reset"))
+        }
+
+        assertIs<NetworkResponse.Error>(api.downloadGif("https://media2.giphy.com/media/abc123/giphy.gif", 1024, Buffer()))
     }
 
     private fun giphyApi(

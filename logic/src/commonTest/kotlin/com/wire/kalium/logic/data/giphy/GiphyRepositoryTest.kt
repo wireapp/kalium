@@ -2,6 +2,7 @@
 
 package com.wire.kalium.logic.data.giphy
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.network.api.authenticated.giphy.GiphyGifDTO
@@ -17,16 +18,20 @@ import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
-import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.test.runTest
-import okio.Buffer
-import okio.Sink
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import okio.Buffer
+import okio.Sink
+import okio.fakefilesystem.FakeFileSystem
 
 class GiphyRepositoryTest {
 
@@ -138,21 +143,33 @@ class GiphyRepositoryTest {
     }
 
     @Test
-    fun givenNonGiphyUrl_whenDownloading_thenFailsWithoutARequest() = runTest {
-        val (api, repository) = arrange()
-        val gif = gif().let { it.copy(original = it.original.copy(url = "https://example.com/a.gif")) }
+    fun givenDownloadCancelled_whenDownloading_thenDeletesThePartialFile() = runTest {
+        val fileSystem = FakeKaliumFileSystem()
+        val (api, repository) = arrange(fileSystem)
+        val started = CompletableDeferred<Unit>()
+        everySuspend { api.downloadGif(any(), any(), any()) } calls { invocation ->
+            (invocation.args[2] as Sink).write(Buffer().writeUtf8("GIF"), 3)
+            started.complete(Unit)
+            awaitCancellation()
+        }
 
-        assertIs<Either.Left<*>>(repository.download(gif))
+        val download = launch { repository.download(gif()) }
+        started.await()
+        download.cancelAndJoin()
 
-        verifySuspend(VerifyMode.not) { api.downloadGif(any(), any(), any()) }
+        assertFalse(fileSystem.listDirectories(fileSystem.rootCachePath).any { it.name.startsWith("giphy-") })
     }
 
     @Test
-    fun givenPlainHttpGiphyUrl_whenDownloading_thenFails() = runTest {
-        val (_, repository) = arrange()
-        val gif = gif().let { it.copy(original = it.original.copy(url = "http://media.giphy.com/a.gif")) }
+    fun givenCacheFolderMissing_whenDownloading_thenFailsWithAStorageFailure() = runTest {
+        val fakeFileSystem = FakeFileSystem()
+        val fileSystem = FakeKaliumFileSystem(fakeFileSystem)
+        fakeFileSystem.deleteRecursively(fileSystem.rootCachePath)
+        val (_, repository) = arrange(fileSystem)
 
-        assertIs<Either.Left<*>>(repository.download(gif))
+        val failure = assertIs<Either.Left<*>>(repository.download(gif())).value
+
+        assertIs<StorageFailure.Generic>(failure)
     }
 
     @Test

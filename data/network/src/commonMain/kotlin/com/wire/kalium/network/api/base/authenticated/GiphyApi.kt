@@ -26,7 +26,8 @@ interface GiphyApi {
 
     /**
      * Downloads a GIF from Giphy's CDN into [sink], without Wire credentials.
-     * Fails without reading further once the body exceeds [maxSizeInBytes].
+     * Fails unless [url], and any redirect, is an HTTPS `giphy.com` address,
+     * and stops reading once the body exceeds [maxSizeInBytes].
      * @return the number of bytes written
      */
     suspend fun downloadGif(url: String, maxSizeInBytes: Long, sink: Sink): NetworkResponse<Long>

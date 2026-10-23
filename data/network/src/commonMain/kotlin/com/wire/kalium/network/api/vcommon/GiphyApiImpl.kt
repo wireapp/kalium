@@ -16,6 +16,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.URLProtocol
+import io.ktor.http.Url
 import io.ktor.http.contentLength
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
@@ -69,7 +71,10 @@ internal class GiphyApiImpl(
         }
 
     override suspend fun downloadGif(url: String, maxSizeInBytes: Long, sink: Sink): NetworkResponse<Long> = try {
+        require(Url(url).isGiphyHttps()) { "Not a Giphy HTTPS URL" }
         mediaNetworkClient.httpClient.prepareGet(url).execute { response ->
+            // Checked again after redirects, so only bytes served by Giphy are accepted.
+            require(response.call.request.url.isGiphyHttps()) { "Redirected away from Giphy" }
             if (response.status.isSuccess()) {
                 writeLimited(response, maxSizeInBytes, sink)
             } else {
@@ -108,8 +113,13 @@ internal class GiphyApiImpl(
                 if (written <= maxSizeInBytes) bufferedSink.write(buffer, 0, read)
             }
         }
+        // A dropped connection also ends the loop; never report the partial file as a GIF.
+        channel.closedCause?.let { throw it }
         return written.takeIf { it <= maxSizeInBytes }
     }
+
+    private fun Url.isGiphyHttps(): Boolean =
+        protocol == URLProtocol.HTTPS && (host == GIPHY_HOST || host.endsWith(".$GIPHY_HOST"))
 
     private companion object {
         const val PATH_GIFS = "proxy/giphy/v1/gifs"
@@ -122,5 +132,6 @@ internal class GiphyApiImpl(
         const val QUERY_RATING = "rating"
         const val QUERY_LANG = "lang"
         const val BUFFER_SIZE = 8 * 1024
+        const val GIPHY_HOST = "giphy.com"
     }
 }

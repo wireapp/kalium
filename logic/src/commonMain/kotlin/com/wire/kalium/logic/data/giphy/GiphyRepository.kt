@@ -4,17 +4,18 @@ package com.wire.kalium.logic.data.giphy
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.network.api.authenticated.giphy.GiphyGifDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphyGifsResponseDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphyImageDTO
 import com.wire.kalium.network.api.base.authenticated.GiphyApi
-import io.ktor.http.URLProtocol
-import io.ktor.http.Url
+import okio.IOException
+import okio.Path
 import okio.use
 import kotlin.uuid.Uuid
 
@@ -40,14 +41,22 @@ internal class GiphyDataSource(
         wrapApiRequest { giphyApi.searchSuggestions(query) }.map { response -> response.data.map { it.name } }
 
     override suspend fun download(gif: Gif): Either<CoreFailure, DownloadedGif> {
-        if (!gif.original.url.isGiphyHttpsUrl()) {
-            return Either.Left(CoreFailure.Unknown(IllegalArgumentException("Not a Giphy HTTPS URL")))
-        }
         val path = kaliumFileSystem.tempFilePath("giphy-${Uuid.random()}.gif")
-        return wrapApiRequest {
-            kaliumFileSystem.sink(path).use { sink -> giphyApi.downloadGif(gif.original.url, MAX_GIF_SIZE_BYTES, sink) }
-        }.map { size -> DownloadedGif(gif, path, size) }
-            .onFailure { kaliumFileSystem.delete(path) }
+        var downloaded = false
+        try {
+            return writeGif(gif.original.url, path)
+                .map { size -> DownloadedGif(gif, path, size) }
+                .onSuccess { downloaded = true }
+        } finally {
+            // Also runs when the preview is abandoned mid-download, so no partial file is left behind.
+            if (!downloaded) runCatching { kaliumFileSystem.delete(path) }
+        }
+    }
+
+    private suspend fun writeGif(url: String, path: Path): Either<CoreFailure, Long> = try {
+        wrapApiRequest { kaliumFileSystem.sink(path).use { sink -> giphyApi.downloadGif(url, MAX_GIF_SIZE_BYTES, sink) } }
+    } catch (e: IOException) {
+        Either.Left(StorageFailure.Generic(e))
     }
 
     private fun GiphyGifsResponseDTO.toGifPage(): GifPage {
@@ -91,9 +100,5 @@ internal class GiphyDataSource(
 
         /** "Happy Friday Dance GIF by Studio" becomes "Happy Friday Dance". */
         fun cleanTitle(title: String): String = title.replace(TITLE_SUFFIX, "").trim()
-
-        fun String.isGiphyHttpsUrl(): Boolean = runCatching { Url(this) }.getOrNull()?.let { url ->
-            url.protocol == URLProtocol.HTTPS && (url.host == "giphy.com" || url.host.endsWith(".giphy.com"))
-        } ?: false
     }
 }
