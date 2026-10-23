@@ -256,6 +256,9 @@ private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
         recurrence_frequency = meeting.recurrence?.frequency,
         recurrence_interval = meeting.recurrence?.interval,
         recurrence_end_date = meeting.recurrence?.until,
+        type = meeting.type,
+        link = meeting.link,
+        has_password = meeting.hasPassword,
     )
 }
 

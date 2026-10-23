@@ -24,6 +24,7 @@ import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.data.model.editorUrl
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.CellsApi
+import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.domain.model.toTreeNodeType
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
@@ -354,11 +355,16 @@ internal class CellsApiImpl(
         uuid: String,
         path: String,
         targetPath: String,
+    ): NetworkResponse<Unit> = moveNodes(nodes = listOf(NodeLocator(uuid = uuid, path = path)), targetPath = targetPath)
+
+    override suspend fun moveNodes(
+        nodes: List<NodeLocator>,
+        targetPath: String,
     ): NetworkResponse<Unit> = wrapCellsResponse {
         getNodeServiceApi().performAction(
             name = NodeServiceApi.NamePerformAction.move,
             parameters = RestActionParameters(
-                nodes = listOf(RestNodeLocator(path, uuid)),
+                nodes = nodes.map { RestNodeLocator(path = it.path, uuid = it.uuid) },
                 awaitStatus = JobsTaskStatus.Finished,
                 awaitTimeout = AWAIT_TIMEOUT,
                 copyMoveOptions = RestActionOptionsCopyMove(

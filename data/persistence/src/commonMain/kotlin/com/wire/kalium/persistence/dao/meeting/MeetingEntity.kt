@@ -31,8 +31,12 @@ data class MeetingEntity(
     val startTime: Instant,
     val endTime: Instant,
     val tzid: String,
-    val recurrence: RecurrenceEntity?
+    val recurrence: RecurrenceEntity?,
+    val type: Type = Type.SCHEDULED,
+    val link: String? = null,
+    val hasPassword: Boolean = false,
 ) {
+    enum class Type { IMMEDIATE, SCHEDULED }
     data class RecurrenceEntity(
         val frequency: Frequency,
         val interval: Long?,

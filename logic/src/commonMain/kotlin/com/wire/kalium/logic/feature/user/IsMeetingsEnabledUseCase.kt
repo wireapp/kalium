@@ -27,6 +27,7 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
  */
 public interface IsMeetingsEnabledUseCase {
     public suspend operator fun invoke(): Boolean
+    public suspend fun isGuestLinkSharingEnabled(): Boolean
 }
 
 internal class IsMeetingsEnabledUseCaseImpl(
@@ -34,4 +35,6 @@ internal class IsMeetingsEnabledUseCaseImpl(
     private val featureSupport: FeatureSupport,
 ) : IsMeetingsEnabledUseCase {
     override suspend operator fun invoke(): Boolean = userConfigRepository.isMeetingsEnabled() && featureSupport.isMeetingsSupported
+
+    override suspend fun isGuestLinkSharingEnabled(): Boolean = invoke() && featureSupport.isMeetingsGuestLinksSupported
 }

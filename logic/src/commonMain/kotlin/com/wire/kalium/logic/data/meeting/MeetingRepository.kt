@@ -108,7 +108,7 @@ internal interface MeetingRepository {
     suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit>
 
     suspend fun createNewMeeting(
-        meeting: UpsertMeeting,
+        meeting: CreateMeeting,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil(),
         transactionContext: CryptoTransactionContext,
@@ -116,7 +116,7 @@ internal interface MeetingRepository {
 
     suspend fun updateMeeting(
         meetingId: MeetingId,
-        meeting: UpsertMeeting,
+        meeting: UpdateMeeting,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil(),
         transactionContext: CryptoTransactionContext,
@@ -267,13 +267,13 @@ internal class MeetingDataSource(
     }
 
     override suspend fun createNewMeeting(
-        meeting: UpsertMeeting,
+        meeting: CreateMeeting,
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant,
         transactionContext: CryptoTransactionContext,
     ): Either<CoreFailure, CreateNewMeetingResult> = withContext(NonCancellable) {
         wrapApiRequest {
-            meetingApi.createNewMeeting(request = meetingMapper.fromModelToApi(meeting))
+            meetingApi.createNewMeeting(request = meetingMapper.fromModelToCreateApi(meeting))
         }.flatMap { response ->
             response.persist(
                 transactionContext = transactionContext,
@@ -286,7 +286,7 @@ internal class MeetingDataSource(
 
     override suspend fun updateMeeting(
         meetingId: MeetingId,
-        meeting: UpsertMeeting,
+        meeting: UpdateMeeting,
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant,
         transactionContext: CryptoTransactionContext
@@ -302,7 +302,7 @@ internal class MeetingDataSource(
                 transactionContext = transactionContext
             ).flatMap { mlsAdditionResult ->
                 wrapApiRequest {
-                    meetingApi.updateMeeting(meetingId = meetingId.toApi(), request = meetingMapper.fromModelToApi(meeting))
+                    meetingApi.updateMeeting(meetingId = meetingId.toApi(), request = meetingMapper.fromModelToUpdateApi(meeting))
                 }.flatMap { response ->
                     response.updateConversationName(conversation = conversation, upsertMeeting = meeting) { response ->
                         response.persist(
@@ -320,7 +320,7 @@ internal class MeetingDataSource(
 
     private suspend fun updateMembers(
         conversation: Conversation,
-        upsertMeeting: UpsertMeeting,
+        upsertMeeting: UpdateMeeting,
         transactionContext: CryptoTransactionContext,
     ): Either<CoreFailure, MLSAdditionResult> {
         val mlsCapableProtocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
@@ -377,7 +377,7 @@ internal class MeetingDataSource(
 
     private suspend fun <T> UpsertMeetingResponse.updateConversationName(
         conversation: Conversation,
-        upsertMeeting: UpsertMeeting,
+        upsertMeeting: UpdateMeeting,
         action: suspend (UpsertMeetingResponse) -> Either<CoreFailure, T>,
     ): Either<CoreFailure, T> {
         val changeConversationNameResult = when {

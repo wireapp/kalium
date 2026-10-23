@@ -23,7 +23,9 @@ import com.wire.kalium.api.TestSessionManagerV0
 import com.wire.kalium.mocks.responses.conversation.ConversationResponseJson
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
-import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.MeetingTypeDTO
 import com.wire.kalium.network.api.authenticated.meeting.toMeetingDTO
 import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
@@ -144,14 +146,17 @@ class V17NetworkContainerTest {
         }
         val container = authenticated(engine)
         try {
-            val request = UpsertMeetingRequest(
+            val request = CreateMeetingRequest(
                 startTime = Instant.parse("2026-10-01T08:00:00Z"), endTime = Instant.parse("2026-10-01T09:00:00Z"),
-                title = "Meeting", recurrence = null, tzid = "Australia/Sydney"
+                title = "Meeting", recurrence = null, tzid = "Australia/Sydney", type = MeetingTypeDTO.SCHEDULED
             )
             val created = container.meetingApi.createNewMeeting(request)
             assertTrue(created.isSuccessful())
             assertEquals("Australia/Sydney", created.value.toMeetingDTO().tzid)
-            val updated = container.meetingApi.updateMeeting(MeetingId("meeting", "wire.com"), request)
+            val updated = container.meetingApi.updateMeeting(
+                MeetingId("meeting", "wire.com"),
+                UpdateMeetingRequest(request.startTime, request.endTime, request.tzid, request.title, request.recurrence, request.type)
+            )
             assertTrue(updated.isSuccessful())
             assertEquals("Australia/Sydney", updated.value.tzid)
             assertEquals(2, calls)

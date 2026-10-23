@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.map
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithMembers
 import com.wire.kalium.logic.data.conversation.ConversationMembersQueryConfig
@@ -28,15 +29,25 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
-/** Searches joined groups and channels, loading members in batches for each page. */
+/** Searches joined groups and channels, loading members in batches for each page.
+ * When restricted, all matching conversations remain visible but only eligible members are returned.
+ */
 public class GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val conversationRepository: ConversationRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val selfUserId: UserId,
 ) {
+    /**
+     * @param queryConfig Search and conversation filters used to find joined groups and channels.
+     * @param pagingConfig Page size and prefetch settings for the results.
+     * @param startingOffset Offset of the first conversation in the paginated results.
+     * @param strictMlsFilter Whether to exclude MLS conversations whose group state is not ready.
+     * @param onlySelfTeamAndDomain When true, keep all matching conversations but return only members
+     * from the current user's team and domain. If the current user has no team, member lists are empty.
+     */
     public suspend operator fun invoke(
         queryConfig: ConversationMembersQueryConfig,
         pagingConfig: PagingConfig,
@@ -44,18 +55,22 @@ public class GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCas
         strictMlsFilter: Boolean = true,
         onlySelfTeamAndDomain: Boolean = false,
     ): Flow<PagingData<ConversationDetailsWithMembers>> {
-        val onlyTeamId = if (onlySelfTeamAndDomain) {
-            // A missing team must not turn restricted search into unrestricted search.
-            selfTeamIdProvider().getOrNull()?.value ?: return flowOf(PagingData.empty())
-        } else null
+        val onlyTeamId = if (onlySelfTeamAndDomain) selfTeamIdProvider().getOrNull()?.value else null
         return conversationRepository.extensions.getPaginatedConversationDetailsWithMembersBySearchQuery(
-            queryConfig = if (onlySelfTeamAndDomain) queryConfig.copy(
-                onlyTeamId = onlyTeamId,
-                onlyDomain = selfUserId.domain,
-            ) else queryConfig,
+            queryConfig = queryConfig,
             pagingConfig = pagingConfig,
             startingOffset = startingOffset,
             strictMlsFilter = strictMlsFilter,
-        ).flowOn(dispatcher.io)
+        ).map { page ->
+            if (onlySelfTeamAndDomain) {
+                page.map { details ->
+                    details.copy(
+                        members = details.members.filter { member ->
+                            onlyTeamId != null && member.user.teamId?.value == onlyTeamId && member.user.id.domain == selfUserId.domain
+                        }
+                    )
+                }
+            } else page
+        }.flowOn(dispatcher.io)
     }
 }

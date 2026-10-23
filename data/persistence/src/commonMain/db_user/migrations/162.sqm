@@ -1,0 +1,6 @@
+import com.wire.kalium.persistence.dao.meeting.MeetingEntity;
+import kotlin.Boolean;
+
+ALTER TABLE Meeting ADD COLUMN type TEXT AS MeetingEntity.Type NOT NULL DEFAULT 'SCHEDULED';
+ALTER TABLE Meeting ADD COLUMN link TEXT;
+ALTER TABLE Meeting ADD COLUMN has_password INTEGER AS Boolean NOT NULL DEFAULT 0;

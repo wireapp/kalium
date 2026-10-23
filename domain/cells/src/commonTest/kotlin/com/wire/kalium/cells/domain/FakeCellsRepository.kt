@@ -21,6 +21,7 @@ import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
+import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
@@ -155,6 +156,10 @@ class FakeCellsRepository : CellsRepository {
         path: String,
         targetPath: String
     ): Either<NetworkFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun moveNodes(nodes: List<NodeLocator>, targetPath: String): Either<NetworkFailure, Unit> {
         TODO("Not yet implemented")
     }
 
