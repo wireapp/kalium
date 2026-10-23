@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
@@ -56,6 +57,31 @@ class IsMeetingsEnabledUseCaseTest {
     fun givenMeetingsNotEnabledAndNotSupported_whenInvoked_thenReturnsFalse() =
         testMeetings(enabled = false, supported = false, expected = false)
 
+    @Test
+    fun guestLinkSharingRequiresMeetingsEnabledAndApiSupport() = runTest {
+        for (meetingsEnabled in listOf(false, true)) {
+            for (guestLinksSupported in listOf(false, true)) {
+                val (_, useCase) = Arrangement()
+                    .withMeetingsEnabled(meetingsEnabled)
+                    .withMeetingsSupported(true)
+                    .withGuestLinksSupported(guestLinksSupported)
+                    .arrange()
+                assertEquals(meetingsEnabled && guestLinksSupported, useCase.isGuestLinkSharingEnabled())
+            }
+        }
+    }
+
+    @Test
+    fun guestLinkSharingRequiresApiV19WhileMeetingsRemainEnabledOnV17AndV18() = runTest {
+        val repository: UserConfigRepository = mock()
+        everySuspend { repository.isMeetingsEnabled() } returns true
+        for (apiVersion in listOf(17, 18, 19)) {
+            val useCase = IsMeetingsEnabledUseCaseImpl(repository, FeatureSupportImpl(apiVersion))
+            assertEquals(true, useCase.invoke())
+            assertEquals(apiVersion >= 19, useCase.isGuestLinkSharingEnabled())
+        }
+    }
+
     private class Arrangement {
         val userConfigRepository: UserConfigRepository = mock()
         val featureSupport: FeatureSupport = mock()
@@ -65,6 +91,9 @@ class IsMeetingsEnabledUseCaseTest {
         }
         fun withMeetingsSupported(supported: Boolean) = apply {
             everySuspend { featureSupport.isMeetingsSupported } returns supported
+        }
+        fun withGuestLinksSupported(supported: Boolean) = apply {
+            everySuspend { featureSupport.isMeetingsGuestLinksSupported } returns supported
         }
         fun arrange() = this to IsMeetingsEnabledUseCaseImpl(userConfigRepository, featureSupport)
     }

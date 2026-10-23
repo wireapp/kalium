@@ -1468,7 +1468,7 @@ abstract interface com.wire.kalium.logic.feature.legalhold/ObserveLegalHoldState
 }
 
 abstract interface com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.meeting/UpsertMeeting): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.meeting.UpsertMeeting){}[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.meeting/CreateMeeting): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.meeting.CreateMeeting){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result|null[0]
         final class Success : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success|null[0]
@@ -1616,7 +1616,7 @@ abstract interface com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase { /
 }
 
 abstract interface com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.meeting/UpsertMeeting): com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.meeting.UpsertMeeting){}[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.meeting/UpdateMeeting): com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.meeting.UpdateMeeting){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result|null[0]
         sealed interface Failure : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure|null[0]
@@ -2030,6 +2030,7 @@ abstract interface com.wire.kalium.logic.feature.user/IsMLSEnabledUseCase { // c
 
 abstract interface com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase { // com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase|null[0]
     abstract suspend fun invoke(): kotlin/Boolean // com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase.invoke|invoke(){}[0]
+    abstract suspend fun isGuestLinkSharingEnabled(): kotlin/Boolean // com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase.isGuestLinkSharingEnabled|isGuestLinkSharingEnabled(){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.user/IsPreventAdminlessGroupsEnabledUseCase { // com.wire.kalium.logic.feature.user/IsPreventAdminlessGroupsEnabledUseCase|null[0]
@@ -2063,6 +2064,7 @@ abstract interface com.wire.kalium.logic.feature.user/ObserveFileSharingStatusUs
 
 abstract interface com.wire.kalium.logic.feature.user/ObserveIsMeetingsEnabledUseCase { // com.wire.kalium.logic.feature.user/ObserveIsMeetingsEnabledUseCase|null[0]
     abstract suspend fun invoke(): kotlinx.coroutines.flow/Flow<kotlin/Boolean> // com.wire.kalium.logic.feature.user/ObserveIsMeetingsEnabledUseCase.invoke|invoke(){}[0]
+    abstract suspend fun observeGuestLinkSharingEnabled(): kotlinx.coroutines.flow/Flow<kotlin/Boolean> // com.wire.kalium.logic.feature.user/ObserveIsMeetingsEnabledUseCase.observeGuestLinkSharingEnabled|observeGuestLinkSharingEnabled(){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.user/ObserveSelfUserUseCase { // com.wire.kalium.logic.feature.user/ObserveSelfUserUseCase|null[0]

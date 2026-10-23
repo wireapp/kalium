@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 internal interface FeatureSupport {
     val isMLSSupported: Boolean
     val isMeetingsSupported: Boolean
+    val isMeetingsGuestLinksSupported: Boolean
 }
 
 internal class FeatureSupportImpl(
@@ -32,4 +33,5 @@ internal class FeatureSupportImpl(
 
     override val isMLSSupported: Boolean = isMLSApiSupported(apiVersion)
     override val isMeetingsSupported: Boolean = apiVersion >= MeetingApi.MIN_API_VERSION_MEETINGS
+    override val isMeetingsGuestLinksSupported: Boolean = apiVersion >= MeetingApi.MIN_API_VERSION_MEETINGS_GUESTS_LINKS
 }

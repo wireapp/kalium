@@ -21,10 +21,12 @@ package com.wire.kalium.logic.data.meeting
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO
+import com.wire.kalium.network.api.authenticated.meeting.MeetingTypeDTO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity.RecurrenceEntity
@@ -40,13 +42,35 @@ internal interface MeetingMapper {
     fun fromDaoToModel(meeting: MeetingOccurrenceDetailsEntity): MeetingOccurrence
     fun fromDaoToModel(recurrence: RecurrenceEntity): Meeting.Recurrence
     fun fromModelToDao(recurrence: Meeting.Recurrence): RecurrenceEntity
-    fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest
+    fun fromModelToCreateApi(meeting: CreateMeeting): CreateMeetingRequest
+    fun fromModelToUpdateApi(meeting: UpdateMeeting): UpdateMeetingRequest
     fun fromDaoToModel(reminder: MeetingReminderEntity): MeetingReminder
 }
 
 @Suppress("TooManyFunctions")
 internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : MeetingMapper {
-    override fun fromApiToDao(meeting: MeetingDTO): MeetingEntity? = meeting.toMeetingEntity()
+    override fun fromApiToDao(meeting: MeetingDTO): MeetingEntity? {
+        val recurrence = meeting.recurrence?.let { fromApiToDao(it) }
+        return if (meeting.recurrence != null && recurrence == null) {
+            null // it means the recurrence is not supported, so the meeting is ignored
+        } else {
+            MeetingEntity(
+                meetingId = idMapper.fromApiToDao(meeting.meetingId),
+                conversationId = idMapper.fromApiToDao(meeting.conversationId),
+                creatorId = idMapper.fromApiToDao(meeting.creatorId),
+                createdAt = meeting.createdAt,
+                updatedAt = meeting.updatedAt,
+                title = meeting.title,
+                startTime = meeting.startTime,
+                endTime = meeting.endTime,
+                tzid = meeting.tzid,
+                recurrence = recurrence,
+                type = MeetingEntity.Type.valueOf(meeting.type.name),
+                link = meeting.link,
+                hasPassword = meeting.hasPassword,
+            )
+        }
+    }
 
     override fun fromApiToDao(recurrence: MeetingRecurrenceDTO): RecurrenceEntity? = recurrence.toMeetingRecurrenceEntity()
 
@@ -62,6 +86,9 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         endTime = meeting.endTime,
         tzid = meeting.tzid,
         recurrence = meeting.recurrence?.let { fromDaoToModel(it) },
+        type = Meeting.Type.valueOf(meeting.type.name),
+        link = meeting.link,
+        hasPassword = meeting.hasPassword,
     )
 
     override fun fromDaoToModel(meeting: MeetingOccurrenceDetailsEntity): MeetingOccurrence = MeetingOccurrence(
@@ -108,18 +135,29 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         until = recurrence.until
     )
 
-    override fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest = UpsertMeetingRequest(
-        title = upsertMeeting.title,
-        startTime = upsertMeeting.startTime,
-        endTime = upsertMeeting.endTime,
-        tzid = upsertMeeting.tzid,
-        recurrence = upsertMeeting.recurrence?.let {
-            MeetingRecurrenceDTO(
-                frequency = it.frequency.toDaoFrequency().toApiFrequency(),
-                interval = it.interval,
-                until = it.until
-            )
-        }
+    override fun fromModelToCreateApi(meeting: CreateMeeting): CreateMeetingRequest = CreateMeetingRequest(
+        title = meeting.title,
+        startTime = meeting.startTime,
+        endTime = meeting.endTime,
+        tzid = meeting.tzid,
+        type = MeetingTypeDTO.valueOf(meeting.type.name),
+        password = meeting.password,
+        recurrence = meeting.recurrence?.toApi(),
+    )
+
+    override fun fromModelToUpdateApi(meeting: UpdateMeeting): UpdateMeetingRequest = UpdateMeetingRequest(
+        title = meeting.title,
+        startTime = meeting.startTime,
+        endTime = meeting.endTime,
+        tzid = meeting.tzid,
+        type = MeetingTypeDTO.valueOf(meeting.type.name),
+        recurrence = meeting.recurrence?.toApi(),
+    )
+
+    private fun Meeting.Recurrence.toApi(): MeetingRecurrenceDTO = MeetingRecurrenceDTO(
+        frequency = frequency.toDaoFrequency().toApiFrequency(),
+        interval = interval,
+        until = until,
     )
 
     override fun fromDaoToModel(reminder: MeetingReminderEntity): MeetingReminder = MeetingReminder(

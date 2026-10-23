@@ -36,8 +36,18 @@ data class MeetingDTO(
     @SerialName("start_time") val startTime: Instant,
     @SerialName("end_time") val endTime: Instant,
     @SerialName("tzid") val tzid: String = "Europe/Berlin",
-    @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?
+    @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
+    @SerialName("type") val type: MeetingTypeDTO = MeetingTypeDTO.SCHEDULED,
+    @SerialName("link") val link: String? = null,
+    @SerialName("has_password") val hasPassword: Boolean = false,
 )
+
+@Serializable
+enum class MeetingTypeDTO {
+    @SerialName("immediate") IMMEDIATE,
+
+    @SerialName("scheduled") SCHEDULED,
+}
 
 @Serializable
 data class MeetingRecurrenceDTO(
