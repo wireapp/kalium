@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -57,12 +58,25 @@ class RepairFaultyRemovalKeysUseCaseTest {
     fun givenRepairFaultRemovalKeysUseCase_whenInvokedAndNoConversationsFound_thenNoConversationsToRepair() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
+            .withGetExternalKeyForConversation(FAULTY_KEY.first())
             .arrange()
 
         val result = useCase.invoke(TargetedRepairParam("domain", listOf("somekey")))
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.getMLSConversationsByDomain(any()) }
         assertEquals(RepairResult.NoConversationsToRepair, result)
+    }
+
+    @Test
+    fun givenLoadingConversationsFails_whenInvoked_thenReturnError() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withMlsConversations(CoreFailure.MissingClientRegistration.left())
+            .arrange()
+
+        val result = useCase.invoke(TargetedRepairParam("domain", FAULTY_KEY))
+
+        verifySuspend(VerifyMode.not) { arrangement.resetMLSConversationUseCase(any(), any()) }
+        assertEquals(RepairResult.Error, result)
     }
 
     @Test
@@ -80,6 +94,20 @@ class RepairFaultyRemovalKeysUseCaseTest {
         assertIs<RepairResult.RepairPerformed>(result)
         assertEquals(1, result.successfullyRepairedConversations)
         assertEquals(0, result.failedRepairs.size)
+    }
+
+    @Test
+    fun givenConfiguredKeyUsesUppercase_whenInvoked_thenPerformRepair() = runTest {
+        val (_, useCase) = Arrangement()
+            .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
+            .withGetExternalKeyForConversation(FAULTY_KEY.first())
+            .withResetMLSConversationResult(ResetMLSConversationResult.Success)
+            .arrange()
+
+        val result = useCase.invoke(TargetedRepairParam("domain", listOf(FAULTY_KEY.first().uppercase())))
+
+        assertIs<RepairResult.RepairPerformed>(result)
+        assertEquals(1, result.successfullyRepairedConversations)
     }
 
     @Test
