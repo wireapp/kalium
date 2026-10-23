@@ -42,19 +42,23 @@ internal class RestoreNodeFromRecycleBinUseCaseImpl(
     override suspend fun invoke(uuid: String): Either<CoreFailure, Unit> =
         cellsRepository.restoreNode(uuid = uuid)
             .onSuccess {
-                refreshLocalAttachmentStatus(uuid)
+                attachmentsRepository.refreshRestoredAttachmentStatus(uuid)
             }
+}
 
-    private suspend fun refreshLocalAttachmentStatus(uuid: String) {
+/**
+ * Makes a restored node available again as a message attachment: deleting it set its status to NOT_FOUND.
+ * Shared by [RestoreNodeFromRecycleBinUseCase] and [RestoreNodesFromRecycleBinUseCase].
+ */
+internal suspend fun CellAttachmentsRepository.refreshRestoredAttachmentStatus(uuid: String) {
 
-        val attachment = attachmentsRepository.getAttachment(uuid).getOrNull() as? CellAssetContent ?: return
+    val attachment = getAttachment(uuid).getOrNull() as? CellAssetContent ?: return
 
-        val status = if (attachment.localPath.isNullOrEmpty()) {
-            AssetTransferStatus.NOT_DOWNLOADED
-        } else {
-            AssetTransferStatus.SAVED_INTERNALLY
-        }
-
-        attachmentsRepository.setAssetTransferStatus(uuid, status)
+    val status = if (attachment.localPath.isNullOrEmpty()) {
+        AssetTransferStatus.NOT_DOWNLOADED
+    } else {
+        AssetTransferStatus.SAVED_INTERNALLY
     }
+
+    setAssetTransferStatus(uuid, status)
 }

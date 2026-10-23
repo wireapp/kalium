@@ -79,6 +79,7 @@ internal interface CellsRepository {
     suspend fun moveNodes(nodes: List<NodeLocator>, targetPath: String): Either<NetworkFailure, Unit>
     suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit>
     suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit>
+    suspend fun restoreNodes(uuids: List<String>): Either<NetworkFailure, Unit>
     suspend fun getAllTags(): Either<NetworkFailure, List<String>>
     suspend fun updateNodeTags(uuid: String, tags: List<String>): Either<NetworkFailure, Unit>
     suspend fun removeNodeTags(uuid: String): Either<NetworkFailure, Unit>

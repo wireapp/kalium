@@ -90,6 +90,7 @@ internal interface CellsApi {
     ): NetworkResponse<Unit>
 
     suspend fun restoreNode(uuid: String): NetworkResponse<Unit>
+    suspend fun restoreNodes(uuids: List<String>): NetworkResponse<Unit>
     suspend fun restoreNodeVersion(
         uuid: String,
         versionId: String,
