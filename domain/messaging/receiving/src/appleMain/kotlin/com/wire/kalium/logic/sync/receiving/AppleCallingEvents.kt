@@ -149,9 +149,11 @@ internal suspend fun evaluateCallingEvents(
         } else null
         // AVS can mark our other device's start as ringing. Keep its signaling for host replay,
         // but never present it as an incoming call on this account.
+        // Lightweight AVS has no meeting flag; match the full engine's silent meeting policy here.
         val shouldRing = result.shouldRing &&
             QualifiedIDEntity(result.callerValue, result.callerDomain) != self.toDao() &&
             availability != UserAvailabilityStatusEntity.AWAY && conversation != null &&
+            conversation.type != ConversationEntity.Type.MEETING &&
             conversation.mutedStatus != ConversationEntity.MutedStatus.ALL_MUTED
         platform.Foundation.NSLog(
             "CALL_FLOW call=${source?.id ?: "none"} stage=nse_decision type=${result.type} " +
