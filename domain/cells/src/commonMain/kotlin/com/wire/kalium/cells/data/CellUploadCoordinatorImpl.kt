@@ -32,8 +32,12 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -46,6 +50,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import okio.FileSystem
 import okio.SYSTEM
@@ -81,10 +86,12 @@ internal class CellUploadCoordinatorImpl internal constructor(
     // and a worker blocked on send while the scheduler waits on that same worker would deadlock.
     private val commands = Channel<Command>(Channel.UNLIMITED)
 
-    private val workers = mutableMapOf<String, Job>()
+    private data class UploadWorker(val job: Job, val cancelTransfer: MutableStateFlow<Boolean>)
+    private val workers = mutableMapOf<String, UploadWorker>()
+    private val scheduler: Job
 
     init {
-        scope.launch {
+        scheduler = scope.launch {
             for (command in commands) {
                 handle(command)
                 startEligibleUploads()
@@ -107,6 +114,19 @@ internal class CellUploadCoordinatorImpl internal constructor(
 
     override fun cancel(id: String) {
         commands.trySend(Command.Cancel(id))
+    }
+
+    override suspend fun cancelAndAwait(id: String) {
+        val completed = CompletableDeferred<Unit>()
+        val shutdown = scheduler.invokeOnCompletion { failure ->
+            completed.completeExceptionally(failure ?: CancellationException("Upload scheduler stopped"))
+        }
+        try {
+            commands.send(Command.CancelAndAwait(id, completed))
+            completed.await()
+        } finally {
+            shutdown.dispose()
+        }
     }
 
     override fun cancelAll() {
@@ -160,6 +180,11 @@ internal class CellUploadCoordinatorImpl internal constructor(
         when (command) {
             is Command.Enqueue -> addItems(command.requests)
             is Command.Cancel -> cancelItem(command.id)
+            is Command.CancelAndAwait -> {
+                // Scheduler failure completes the caller through its invokeOnCompletion handler.
+                cancelItem(command.id)
+                command.completed.complete(Unit)
+            }
             is Command.CancelAll -> cancelAllItems(command.conversationId)
             is Command.Retry -> requeueFailed(command.id)
             is Command.RetryAllFailed -> requeueAllFailed(command.conversationId)
@@ -170,11 +195,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
             is Command.FailPreparing -> removePreparingItem(command.id)
             is Command.NodeCreated -> {
                 updateItem(command.id) { copy(nodeUuid = command.nodeUuid, versionId = command.versionId) }
-                // Cancellation can arrive while pre-checking, before the worker announces its draft.
-                // The manager owns the transfer separately, so cancelling the worker alone cannot stop it.
-                if (_uploads.value.firstOrNull { it.id == command.id }?.state !is CellUploadState.Uploading) {
-                    uploadManager.cancelUpload(command.nodeUuid)
-                }
+                // The worker owns cancellation of any draft created before this queued event.
             }
 
             is Command.Progress -> updateProgress(command.id, command.progress)
@@ -210,7 +231,8 @@ internal class CellUploadCoordinatorImpl internal constructor(
         while (next != null) {
             val item = next
             updateItem(item.id) { copy(state = CellUploadState.Uploading()) }
-            workers[item.id] = scope.launch { runUpload(item) }
+            val cancelTransfer = MutableStateFlow(false)
+            workers[item.id] = UploadWorker(scope.launch { runUpload(item, cancelTransfer) }, cancelTransfer)
             next = nextAdmissibleUpload()
         }
     }
@@ -234,15 +256,23 @@ internal class CellUploadCoordinatorImpl internal constructor(
         return next?.takeIf { hasSlot }
     }
 
-    private suspend fun runUpload(item: CellUploadItem) {
-        // A node uuid from an earlier attempt lets the manager resume that draft. If it no longer knows the
-        // node, retryUpload() would silently do nothing, so a fresh draft is created instead.
-        val knownNode = item.nodeUuid?.takeIf { uploadManager.isUploading(it) }
-        val nodeUuid = when {
-            knownNode != null -> knownNode.also { uploadManager.retryUpload(it) }
-            else -> createDraftNode(item) ?: return
+    private suspend fun runUpload(item: CellUploadItem, cancelTransfer: StateFlow<Boolean>) {
+        var nodeUuid: String? = null
+        try {
+            // Reuse a retained failed draft only while the manager still knows it.
+            val knownNode = item.nodeUuid?.takeIf { uploadManager.isUploading(it) }
+            nodeUuid = when {
+                knownNode != null -> knownNode.also { uploadManager.retryUpload(it) }
+                else -> createDraftNode(item) ?: return
+            }
+            observeUpload(item.id, nodeUuid)
+        } finally {
+            if (cancelTransfer.value) {
+                // observeUpload's structured collector has finished before this cleanup. No scheduler
+                // command is needed to discover a node created while cancelAndAwait was joining us.
+                withContext(NonCancellable) { nodeUuid?.let { uploadManager.cancelUpload(it) } }
+            }
         }
-        observeUpload(item.id, nodeUuid)
     }
 
     private suspend fun createDraftNode(item: CellUploadItem): String? {
@@ -275,9 +305,8 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     private suspend fun collectEvents(itemId: String, nodeUuid: String, events: Flow<CellUploadEvent>) {
-        // Collection deliberately continues past the terminal event: cancelUpload() emits into a flow with
-        // no buffer, so it would suspend forever if nothing were listening. The scheduler cancels this
-        // coroutine once it has recorded the outcome.
+        // Keep collecting until the scheduler records the outcome and cancels this worker.
+        // Explicit cancellation joins the collector before the worker aborts its manager transfer.
         events.collect { event ->
             when (event) {
                 is CellUploadEvent.UploadProgress -> commands.trySend(Command.Progress(itemId, event.progress))
@@ -327,14 +356,20 @@ internal class CellUploadCoordinatorImpl internal constructor(
     private suspend fun cancelItem(id: String) {
         val item = _uploads.value.firstOrNull { it.id == id } ?: return
         when (item.state) {
-            // Nothing live to abort: Queued never started a transfer, Paused already lost it.
             CellUploadState.Queued, CellUploadState.Paused -> Unit
-            // Aborts the real transfer. The worker is still draining events here, which is what lets the
-            // manager's cancellation event through; stopping it first would hang this call.
-            is CellUploadState.Uploading -> item.nodeUuid?.let { uploadManager.cancelUpload(it) }
+            is CellUploadState.Uploading -> {
+                val worker = workers.remove(id)
+                if (worker != null) {
+                    worker.cancelTransfer.value = true
+                    worker.job.cancelAndJoin()
+                } else {
+                    item.nodeUuid?.let { uploadManager.cancelUpload(it) }
+                }
+            }
             else -> return
         }
         stopWorker(id)
+        // This terminal state now follows worker cleanup and the manager's transfer join.
         updateItem(id) { copy(state = CellUploadState.Cancelled) }
     }
 
@@ -387,7 +422,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
         }
     }
 
-    private fun finishItem(id: String, outcome: CellUploadState) {
+    private suspend fun finishItem(id: String, outcome: CellUploadState) {
         stopWorker(id)
         // Only a running upload can finish. This drops outcomes that race a cancellation, and the duplicate
         // reports that the recovery check above can produce.
@@ -398,8 +433,8 @@ internal class CellUploadCoordinatorImpl internal constructor(
         }
     }
 
-    private fun stopWorker(id: String) {
-        workers.remove(id)?.cancel()
+    private suspend fun stopWorker(id: String) {
+        workers.remove(id)?.job?.cancelAndJoin()
     }
 
     private fun deleteLocalFile(item: CellUploadItem) {
@@ -417,6 +452,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
     private sealed interface Command {
         data class Enqueue(val requests: List<CellUploadRequest>) : Command
         data class Cancel(val id: String) : Command
+        data class CancelAndAwait(val id: String, val completed: CompletableDeferred<Unit>) : Command
         data class CancelAll(val conversationId: String?) : Command
         data class Retry(val id: String) : Command
         data class RetryAllFailed(val conversationId: String?) : Command

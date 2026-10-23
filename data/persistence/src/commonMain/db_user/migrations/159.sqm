@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS RemotebackupChangeLog_timestamp_idx;
+DROP TABLE IF EXISTS RemotebackupChangeLog;

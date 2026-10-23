@@ -42,13 +42,15 @@ internal data class UploadAssetMessageMetadata(
     val otrKey: AES256Key,
     val sha256Key: SHA256Key,
     val audioLengthInMs: Long,
-    val audioNormalizedLoudness: ByteArray?
+    val audioNormalizedLoudness: ByteArray?,
+    val preview: AssetContent.Preview? = null,
 ) {
     @Suppress("CyclomaticComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
         other as UploadAssetMessageMetadata
+        if (preview != other.preview) return false
         if (assetDataSize != other.assetDataSize) return false
         if (assetWidth != other.assetWidth) return false
         if (assetHeight != other.assetHeight) return false
@@ -65,7 +67,7 @@ internal data class UploadAssetMessageMetadata(
     }
 
     override fun hashCode(): Int {
-        var result = assetDataSize.hashCode()
+        var result = 31 * assetDataSize.hashCode() + (preview?.hashCode() ?: 0)
         result = 31 * result + (assetWidth ?: 0)
         result = 31 * result + (assetHeight ?: 0)
         result = 31 * result + audioLengthInMs.hashCode()
@@ -99,6 +101,7 @@ internal fun AssetUploadParams.createTempAssetMetadata(assetKey: String, path: P
 )
 
 internal fun UploadAssetMessageMetadata.toAssetContent() = AssetContent(
+    preview = preview,
     sizeInBytes = assetDataSize,
     name = assetName,
     mimeType = mimeType,

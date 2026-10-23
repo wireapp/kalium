@@ -152,6 +152,7 @@ class RegularMessageMapper(
                 else -> null
             }
             MessageEntityContent.Asset(
+                assetPreview = preview?.toDao(),
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,
@@ -405,6 +406,9 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
             text = it.textBody,
         )
     }
+
+    // MessageDetailsView returns the poll question as the quoted text.
+    it.contentType == MessageEntity.ContentType.POLL -> MessageContent.QuotedMessageDetails.Poll(it.textBody.orEmpty())
 
     // If a new content type can be replied to (Pings, for example), fallback to Invalid
     else -> MessageContent.QuotedMessageDetails.Invalid

@@ -78,7 +78,6 @@ internal interface SessionRepository {
     suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
     suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>>
-    suspend fun doesValidNomadAccountExist(): Either<StorageFailure, Boolean>
 }
 
 public data class StoreSessionParam(
@@ -88,7 +87,6 @@ public data class StoreSessionParam(
     val proxyCredentials: ProxyCredentials?,
     val isPersistentWebSocketEnabled: Boolean,
     val managedBy: SsoManagedBy? = null,
-    val nomadServiceUrl: String? = null,
     val ssoIdentityProviderId: String? = null,
 )
 
@@ -110,7 +108,6 @@ internal class SessionDataSource internal constructor(
                 managedByEntity = session.managedBy?.toDao(),
                 serverConfigId = session.serverConfigId,
                 isPersistentWebSocketEnabled = session.isPersistentWebSocketEnabled,
-                nomadServiceUrl = session.nomadServiceUrl,
                 ssoIdentityProviderId = session.ssoIdentityProviderId,
             )
         }.flatMap {
@@ -159,7 +156,6 @@ internal class SessionDataSource internal constructor(
                         info = accountInfo,
                         serverConfig = serverConfig,
                         ssoId = ssoId,
-                        nomadServiceUrl = it.nomadServiceUrl,
                         ssoIdentityProviderId = it.ssoIdentityProviderId,
                     )
                 )
@@ -269,9 +265,6 @@ internal class SessionDataSource internal constructor(
             userId.toModel() to serverConfigMapper.fromEntity(serverConfig)
         }.toMap()
     }
-
-    override suspend fun doesValidNomadAccountExist(): Either<StorageFailure, Boolean> =
-        wrapStorageRequest { accountsDAO.doesValidNomadAccountExist() }
 
     internal fun ManagedByDTO.toDao() = when (this) {
         ManagedByDTO.WIRE -> ManagedByEntity.WIRE

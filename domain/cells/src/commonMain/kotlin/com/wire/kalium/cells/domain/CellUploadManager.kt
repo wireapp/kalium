@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain
 
+import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
@@ -47,6 +48,13 @@ public interface CellUploadManager {
      */
     public fun retryUpload(nodeUuid: String)
 
+    /** Explicit user retry; reconstructs an expired/cancelled draft from its persisted identity when needed. */
+    public fun retryDraftUpload(draft: AttachmentDraft): Boolean {
+        val retained = getUploadInfo(draft.uuid)?.uploadFailed == true
+        if (retained) retryUpload(draft.uuid)
+        return retained
+    }
+
     /**
      * Cancel upload of the node with [nodeUuid].
      * @param nodeUuid UUID of the node to cancel
@@ -61,11 +69,29 @@ public interface CellUploadManager {
     public fun getUploadInfo(nodeUuid: String): CellUploadInfo?
 
     /**
+     * Consumes a recently recorded terminal event. Recorded before an upload disappears, so a missed
+     * cancellation cannot be interpreted as success. Unknown/evicted outcomes return null.
+     */
+    public fun consumeUploadOutcome(nodeUuid: String): CellUploadEvent? = null
+
+    /** Captures this attempt's transfer barrier; later retries with the same node ID are independent. */
+    public fun captureUploadAttempt(nodeUuid: String): CellUploadAttempt? = null
+
+    /**
      * Check if the node with [nodeUuid] is being uploaded.
      * @param nodeUuid UUID of the node to check
      * @return true if the node is being uploaded
      */
     public fun isUploading(nodeUuid: String): Boolean
+}
+
+/** An immutable transfer identity used by native account lifetime owners. */
+public interface CellUploadAttempt {
+    /** Joins this attempt without dropping failed metadata needed by an explicit retry. */
+    public suspend fun awaitStopped()
+
+    /** Cancels and joins only this attempt, even if its node ID is later reused by a retry. */
+    public suspend fun cancelAndAwait()
 }
 
 /**

@@ -18,6 +18,18 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.feature.asset.upload.AssetUploadCompletion
+import com.wire.kalium.logic.feature.asset.upload.TrackedAssetUploadImpl
+import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
+import com.wire.kalium.logic.feature.asset.upload.UploadAssetMessageMetadata
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
+import com.wire.kalium.logic.data.asset.UploadedAssetId
+import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
+import kotlinx.coroutines.awaitCancellation
+import okio.Path.Companion.toPath
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -119,7 +131,7 @@ class MessageSenderTest {
     fun givenCancellationQueuedFirst_whenStaleSendWaitsForTransaction_thenItDoesNotSend() {
         val (arrangement, sender) = arrange { }
         arrangement.testScope.runTest {
-            val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
+            val pending = TestMessage.assetMessage().copy(isSelfMessage = true)
             var stored: Message? = pending
             everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls {
                 stored?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
@@ -231,12 +243,42 @@ class MessageSenderTest {
                 mock(mode = MockMode.autoUnit),
                 mock(mode = MockMode.autoUnit),
                 mock(mode = MockMode.autoUnit),
-                object : com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier {},
                 testKaliumDispatcher
             )
 
             delete(pending.conversationId, pending.id, false).toEither().shouldSucceed()
+            assertEquals(Either.Right(false), sender.sendMessageWithOutcome(pending))
             sender.sendMessage(pending).shouldSucceed()
+            val updateTransfer = mock<UpdateAssetMessageTransferStatusUseCase>()
+            everySuspend { updateTransfer(any(), any(), any()) } returns UpdateTransferStatusResult.Success
+            val upload = UploadAssetUseCaseImpl(
+                mock(), sender, mock(), updateTransfer, mock(), mock(), AudioNormalizedLoudnessBuilderMock(),
+                dispatcher = testKaliumDispatcher,
+            )
+            val metadata = UploadAssetMessageMetadata(
+                conversationId = pending.conversationId,
+                mimeType = "image/jpeg",
+                assetId = UploadedAssetId("uploaded", "domain"),
+                assetDataPath = "/unused".toPath(),
+                assetDataSize = 1L,
+                assetName = "image.jpg",
+                assetWidth = null,
+                assetHeight = null,
+                otrKey = AES256Key(byteArrayOf()),
+                sha256Key = SHA256Key(byteArrayOf(1)),
+                audioLengthInMs = 0L,
+                audioNormalizedLoudness = null,
+            )
+            val operation = TrackedAssetUploadImpl(
+                pending.id,
+                backgroundScope,
+                retryOperation = { error("Deleted upload must not automatically retry") },
+                // Deliberately hold the visibility monitor: only the sender observes the committed deletion.
+                monitor = { awaitCancellation() },
+                upload = { upload(pending, metadata) },
+                onCancelled = { error("Deleted message must not be marked failed") },
+            )
+            assertEquals(AssetUploadCompletion.Cancelled, operation.awaitCompletion())
             verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.messageRepository.sendEnvelope(any(), any(), any())
             }

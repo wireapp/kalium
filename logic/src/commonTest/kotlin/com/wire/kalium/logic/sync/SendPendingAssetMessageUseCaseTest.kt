@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
@@ -31,6 +32,7 @@ import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
@@ -52,6 +54,10 @@ import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -360,6 +366,71 @@ class SendPendingAssetMessageUseCaseTest {
         }
         verifySuspend(VerifyMode.not) {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenPreviewUploadSuspended_whenCancelled_thenDoesNotPersistDeleteCacheOrSend() = runTest {
+        val name = "video.mp4"
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+        val previewPath = fakeKaliumFileSystem.providePersistentAssetPath("preview.jpg")
+        val preview = AssetContent.Preview(
+            "image/jpeg", 1024, 512, 288,
+            AssetContent.RemoteData(ByteArray(32) { 1 }, byteArrayOf(), "temp-preview", null, "", MessageEncryptionAlgorithm.AES_CBC),
+        )
+        val message = assetMessage().copy(content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, preview = preview)))
+        val previewUploadStarted = CompletableDeferred<Unit>()
+        val (arrangement, useCase) = Arrangement()
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+            .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+            .withFetchPrivateDecodedAsset(Either.Right(path))
+            .withUploadAndPersistPrivateAsset(
+                Either.Right(UploadedAssetId("remote_key", "remote_domain", "remote_token") to SHA256Key(byteArrayOf(1)))
+            )
+            .arrange()
+        everySuspend { arrangement.assetRepository.fetchPreviewAsset(preview) } returns Either.Right(FetchedAssetData(previewPath, false))
+        everySuspend {
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), previewPath, any(), any(), any(), any(), any())
+        } calls {
+            previewUploadStarted.complete(Unit)
+            awaitCancellation()
+        }
+
+        val retry = launch { useCase(message) }
+        previewUploadStarted.await()
+        retry.cancelAndJoin()
+
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.persistMessage(any())
+            arrangement.assetRepository.deleteAssetLocally(any())
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenUploadSucceeds_whenPersistenceFails_thenRetainsCacheAndDoesNotSend() = runTest {
+        val name = "photo.jpg"
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+        val message = assetMessage().copy(content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name)))
+        val (arrangement, useCase) = Arrangement()
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+            .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+            .withFetchPrivateDecodedAsset(Either.Right(path))
+            .withUploadAndPersistPrivateAsset(
+                Either.Right(UploadedAssetId("remote_key", "remote_domain", "remote_token") to SHA256Key(byteArrayOf(1)))
+            )
+            .withPersistMessage(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        useCase(message)
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage(any()) }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.assetRepository.deleteAssetLocally(any())
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
         }
     }
 

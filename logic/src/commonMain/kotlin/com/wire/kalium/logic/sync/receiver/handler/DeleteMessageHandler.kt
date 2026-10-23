@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.logic.data.asset.distinctRemoteAssets
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
@@ -28,8 +29,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.messaging.hooks.MessageDeleteEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 
 internal interface DeleteMessageHandler {
     suspend operator fun invoke(
@@ -45,7 +44,6 @@ internal class DeleteMessageHandlerImpl internal constructor(
     private val assetRepository: AssetRepository,
     private val notificationEventsManager: NotificationEventsManager,
     private val selfUserId: UserId,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
 ) : DeleteMessageHandler {
     override suspend fun invoke(
         content: MessageContent.DeleteMessage,
@@ -57,18 +55,16 @@ internal class DeleteMessageHandlerImpl internal constructor(
             messageDAO.applyReceivedDeletion(messageToRemove.id, conversationId.toDao(), deletion).onSuccess { notify ->
                 if (notify) notificationEventsManager.scheduleDeleteMessageNotification(messageToRemove)
                 if (deletion != ReceivedMessageDeletion.NONE) {
-                    (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { asset ->
-                        assetRepository.deleteAssetLocally(asset.assetId).onFailure {
-                            kaliumLogger.w("Deleted message asset cleanup failed: $it")
+                    val assetContent = (messageToRemove.content as? MessageContent.Asset)?.value
+                    assetContent.distinctRemoteAssets()
+                        .forEach { asset ->
+                            assetRepository.deleteAssetLocally(asset.assetId, asset.assetDomain).onFailure {
+                                kaliumLogger.w("Deleted message asset cleanup failed: $it")
+                            }
                         }
-                    }
                 }
             }
         }
-        persistenceEventHookNotifier.onMessageDeleted(
-            MessageDeleteEventData(conversationId, content.messageId),
-            selfUserId
-        )
     }
 
 }

@@ -21,11 +21,8 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
 internal interface ReceiptMessageHandler {
@@ -38,7 +35,6 @@ internal interface ReceiptMessageHandler {
 internal class ReceiptMessageHandlerImpl(
     private val selfUserId: UserId,
     private val database: UserDatabaseBuilder,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier
 ) : ReceiptMessageHandler {
 
     override suspend fun handle(
@@ -56,13 +52,6 @@ internal class ReceiptMessageHandlerImpl(
                     throw KaliumSyncException("Receipt persistence failed", result.value)
                 is Either.Right -> Unit
             }
-        }
-
-        if (messageContent.type == ReceiptType.READ) {
-            persistenceEventHookNotifier.onReadReceiptPersisted(
-                ReadReceiptEventData(message.conversationId, messageContent.messageIds, message.date),
-                selfUserId
-            )
         }
     }
 

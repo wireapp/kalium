@@ -111,9 +111,17 @@ internal suspend fun evaluateCallingEvents(
         val conversation = database.conversationDAO.getConversationById(
             QualifiedIDEntity(result.conversationValue, result.conversationDomain)
         )
-        val canPreview = conversation != null &&
-            conversation.mlsVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED &&
-            conversation.proteusVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED
+        // Match iOS runtime policy: only the conversation's protocols can suppress its name.
+        // Pure MLS rows can retain degraded Proteus state after member/client changes.
+        val canPreview = conversation != null && when (conversation.protocolInfo) {
+            is ConversationEntity.ProtocolInfo.MLS ->
+                conversation.mlsVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED
+            ConversationEntity.ProtocolInfo.Proteus ->
+                conversation.proteusVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED
+            is ConversationEntity.ProtocolInfo.Mixed ->
+                conversation.mlsVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED &&
+                    conversation.proteusVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED
+        }
         val name = if (!canPreview) null else if (conversation.type.isGroup) conversation.name else {
             database.userDAO.getNameAndHandle(QualifiedIDEntity(result.callerValue, result.callerDomain))?.name ?: conversation.name
         }

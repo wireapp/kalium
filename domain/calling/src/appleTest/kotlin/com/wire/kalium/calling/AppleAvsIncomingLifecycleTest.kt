@@ -20,7 +20,7 @@ import kotlin.uuid.Uuid
 
 class AppleAvsIncomingLifecycleTest {
     @Test
-    fun retainedFullEngineTermination() = runTest {
+    fun signalingEngineTermination() = runTest {
         val work = async(Dispatchers.Default) {
             withTimeout(90_000) {
                 assertTrue(AppleAvsFlowManager().startIfAvailable())
@@ -30,7 +30,8 @@ class AppleAvsIncomingLifecycleTest {
                     val peer = "${Uuid.random()}@example.com"
                     val conversation = "11111111-1111-4111-8111-111111111111@example.com"
                     val callbacks = RecordingCallbacks()
-                    val handle = assertNotNull(bridge.userHandle(self, "abcd", callbacks))
+                    // Exercise real signaling without unrelated asynchronous iOS audio teardown.
+                    val handle = assertNotNull(signalingUserHandle(self, "abcd", callbacks))
                     try {
                         withTimeout(5000) { callbacks.ready.await() }
                         val startType = when (type) { 0 -> "SETUP"; 1 -> "GROUPSTART"; else -> "CONFSTART" }

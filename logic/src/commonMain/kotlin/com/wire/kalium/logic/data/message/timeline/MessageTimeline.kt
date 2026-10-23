@@ -81,7 +81,7 @@ public sealed interface MessageTimelineResult {
 /**
  * A concrete page API for Kotlin and Swift. All pages belong to this generation.
  * Observe invalidated, discard its pages when true, and open another timeline around the visible item's ID and cursor.
- * Close this session when leaving the conversation. Local exhaustion is independent of remote Nomad history.
+ * Close this session when leaving the conversation.
  */
 public class MessageTimeline internal constructor(
     private val session: MessageTimelineSession,

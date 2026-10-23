@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CredentialType
@@ -36,8 +35,6 @@ import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 
 internal sealed class RegisterMLSClientResult {
     internal data object Success : RegisterMLSClientResult()
@@ -59,8 +56,6 @@ internal class RegisterMLSClientUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val userConfigRepository: UserConfigRepository,
-    private val selfUserId: UserId,
-    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier
 ) : RegisterMLSClientUseCase {
 
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> {
@@ -110,7 +105,6 @@ internal class RegisterMLSClientUseCaseImpl(
                     mlsClient.transaction("uploadNewKeyPackages") { context ->
                         keyPackageRepository.uploadNewKeyPackages(context, clientId, keyPackageLimitsProvider.refillAmount())
                     }
-                        .onSuccess { cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId) }
                         .map { RegisterMLSClientResult.Success }
                 }
         }

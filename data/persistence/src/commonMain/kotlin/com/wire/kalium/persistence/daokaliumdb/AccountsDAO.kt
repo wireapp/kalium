@@ -54,7 +54,6 @@ data class FullAccountEntity(
     val ssoId: SsoIdEntity?,
     val persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity,
     val managedBy: ManagedByEntity?,
-    val nomadServiceUrl: String? = null,
     val ssoIdentityProviderId: String? = null,
 )
 
@@ -85,7 +84,6 @@ internal object AccountMapper {
         logout_reason: LogoutReason?,
         isPersistentWebSocketEnabled: Boolean,
         managedBy: ManagedByEntity?,
-        nomadServiceUrl: String?,
         sso_identity_provider_id: String?,
     ): FullAccountEntity = FullAccountEntity(
         info = fromAccount(id, logout_reason),
@@ -94,7 +92,6 @@ internal object AccountMapper {
         ssoIdentityProviderId = sso_identity_provider_id,
         persistentWebSocketStatusEntity = fromPersistentWebSocketStatus(id, isPersistentWebSocketEnabled),
         managedBy = managedBy,
-        nomadServiceUrl = nomadServiceUrl
     )
 
     fun toSsoIdEntity(
@@ -168,7 +165,6 @@ interface AccountsDAO {
         managedByEntity: ManagedByEntity?,
         serverConfigId: String,
         isPersistentWebSocketEnabled: Boolean,
-        nomadServiceUrl: String? = null,
         ssoIdentityProviderId: String? = null,
     )
 
@@ -194,7 +190,6 @@ interface AccountsDAO {
     fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
     suspend fun getAccountManagedBy(userIDEntity: UserIDEntity): ManagedByEntity?
     suspend fun validAccountWithServerConfigId(): Map<UserIDEntity, ServerConfigEntity>
-    suspend fun doesValidNomadAccountExist(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -221,7 +216,6 @@ internal class AccountsDAOImpl internal constructor(
         managedByEntity: ManagedByEntity?,
         serverConfigId: String,
         isPersistentWebSocketEnabled: Boolean,
-        nomadServiceUrl: String?,
         ssoIdentityProviderId: String?,
     ) {
         withContext(queriesContext) {
@@ -234,7 +228,6 @@ internal class AccountsDAOImpl internal constructor(
                 logoutReason = null,
                 isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
                 managedBy = managedByEntity,
-                nomadServiceUrl = nomadServiceUrl,
                 ssoIdentityProviderId = ssoIdentityProviderId,
             )
         }
@@ -357,9 +350,5 @@ internal class AccountsDAOImpl internal constructor(
 
     override suspend fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? = withContext(queriesContext) {
         queries.fullAccountInfo(userIDEntity, mapper = mapper::fromFullAccountInfo).awaitAsOneOrNull()
-    }
-
-    override suspend fun doesValidNomadAccountExist(): Boolean = withContext(queriesContext) {
-        queries.doesValidNomadAccountExist().awaitAsOne()
     }
 }

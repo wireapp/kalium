@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logic.feature.asset.upload.uploadPreviewIfNeeded
+import com.wire.kalium.logic.feature.asset.upload.deleteTemporaryPreview
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -96,6 +98,7 @@ internal class SendPendingAssetMessageUseCaseImpl(
             .onSuccess { updatedMessage ->
                 updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
                 assetRepository.deleteAssetLocally(content.remoteData.assetId)
+                assetRepository.deleteTemporaryPreview(content.preview, (updatedMessage.content as MessageContent.Asset).value.preview)
                 messageSender.sendMessage(updatedMessage).onFailure {
                     messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                         failure = it,
@@ -155,6 +158,7 @@ internal class SendPendingAssetMessageUseCaseImpl(
 
                     assetContent.copy(
                         metadata = updatedMetadata,
+                        preview = assetRepository.uploadPreviewIfNeeded(preview, conversationId),
                         remoteData = remoteData.copy(
                             sha256 = sha256Key.data,
                             assetId = uploadedAssetId.key,

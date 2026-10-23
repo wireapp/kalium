@@ -29,9 +29,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.EditMessageBuilder
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 
 /**
- * Attempts to send all pending messages created by this user.
+ * Attempts to send pending regular messages created by this user.
+ * Messages pending for at least seven days are marked as failed instead, allowing manual retry.
+ * Age is measured from the last edit timestamp for edited messages, or creation time otherwise.
+ * Expiry is checked only when this automatic retry runs.
  */
 public interface SendPendingMessagesUseCase {
     public suspend operator fun invoke(): Result
@@ -48,6 +54,7 @@ internal class SendPendingMessagesUseCaseImpl(
     private val userId: UserId,
     private val sendPendingAssetMessage: SendPendingAssetMessageUseCase,
     private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val clock: Clock = Clock.System,
 ) : SendPendingMessagesUseCase {
 
     override suspend operator fun invoke(): SendPendingMessagesUseCase.Result {
@@ -58,6 +65,15 @@ internal class SendPendingMessagesUseCaseImpl(
                 pendingMessages
                     .filterIsInstance<Message.Regular>()
                     .forEach { message ->
+                        val pendingSince = (message.editStatus as? Message.EditStatus.Edited)?.lastEditInstant ?: message.date
+                        if (clock.now() - pendingSince >= PENDING_MESSAGE_EXPIRY) {
+                            messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, message.conversationId, message.id)
+                                .onFailure {
+                                    kaliumLogger.withFeatureId(SYNC).w("Failed to expire pending message ${message.id}: $it")
+                                    result = SendPendingMessagesUseCase.Result.Failure
+                                }
+                            return@forEach
+                        }
 
                         when (message.content) {
                             is MessageContent.Asset -> sendPendingAssetMessage(message)
@@ -104,6 +120,7 @@ internal class SendPendingMessagesUseCaseImpl(
     }
 
     companion object {
+        private val PENDING_MESSAGE_EXPIRY = 7.days
         private const val TEXT_EDITED_TYPE = "TextEdited"
     }
 }

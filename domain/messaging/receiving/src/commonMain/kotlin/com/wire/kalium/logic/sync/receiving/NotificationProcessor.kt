@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiving
 
-import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
@@ -62,9 +61,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUn
 import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
-import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.persistence.dao.event.EventEntity
-import com.wire.kalium.persistence.dao.event.NewEventEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -74,7 +71,6 @@ import kotlinx.coroutines.withContext
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 class NotificationProcessor(
     private val database: UserDatabaseBuilder,
-    private val notificationApi: NotificationApi,
     private val clientId: String,
     private val selfUserId: UserId,
     private val proteus: ProteusClient,
@@ -97,8 +93,6 @@ class NotificationProcessor(
     private val evaluateCalls: suspend (List<ReceivedCallEvent>) -> List<ReceivedCallResult>,
     private val diagnostics: ReceivingDiagnostics? = null,
     private val recovery: MLSReceiveRecovery? = null,
-    // The Apple NSE factory passes true. Prefix processing (false) remains only for the test-only [process] path.
-    private val isolateConversations: Boolean = false,
     private val nowEpochMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {
     private var accountInvalidated = false
@@ -107,85 +101,16 @@ class NotificationProcessor(
     private val previewImages = ReceivedLinkPreviewImages(options.linkPreviewEnabled, assetApi, assetDirectory)
 
     /**
-     * Pages REST up to [targetId] and processes through it. Only the target can return content; unsupported
-     * earlier events remain unprocessed. Test-only: the NSE catches up over the WebSocket and uses
-     * [processToLive]. Remove it once the native receiving tests catch up the same way.
-     */
-    @Suppress("TooGenericExceptionCaught")
-    internal suspend fun process(targetId: String): ReceivedNotificationResult = try {
-        if (isolateConversations) processIsolatedEvents(targetId) else processEvents(targetId)
-    } catch (failure: Throwable) {
-        if (failure !is kotlinx.coroutines.CancellationException) diagnostics?.failed(failure)
-        throw failure
-    }
-
-    /**
      * Sync-to-live scan after a bounded catch-up: processes every stored pending event without fetching,
      * until the queue ends, an ordering barrier or app handoff stops it, or [shouldStop] asks to stop
-     * before the next event. A reached target is presented as by [process]; later messages remain eligible for unnotified alerts.
+     * before the next event. The reached target supplies presentation; later messages remain eligible for unnotified alerts.
      */
     @Suppress("TooGenericExceptionCaught")
     suspend fun processToLive(targetId: String?, shouldStop: () -> Boolean): ReceivedNotificationResult = try {
-        check(isolateConversations) { "Sync to live requires the isolated scan" }
         processIsolatedEvents(targetId, QueueEnd(shouldStop))
     } catch (failure: Throwable) {
         if (failure !is kotlinx.coroutines.CancellationException) diagnostics?.failed(failure)
         throw failure
-    }
-
-    @Suppress("ReturnCount")
-    private suspend fun processEvents(targetId: String): ReceivedNotificationResult {
-        require(targetId.isNotBlank())
-        diagnostics?.stage = "LOAD_QUEUE"
-        terminalAccountResult()?.let { return it }
-        cleanupConversations()
-        previewImages.cleanupAbandoned(database.assetDAO)
-        if (database.eventDAO.getEventById(targetId)?.isProcessed == true) return withPendingCalls(null, "ALREADY_PROCESSED")
-        database.eventDAO.setAllUnprocessedEventsAsPending()
-        val targetMessage: ReceivedMessageResult?
-        var canFetch = true
-        while (true) {
-            currentCoroutineContext().ensureActive()
-            val next = events.nextPending()
-            if (next != null) {
-                if (database.metadataDAO.hasPendingLegalHoldTransitions()) {
-                    return withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = NotificationAppWork.LEGAL_HOLD)
-                }
-                diagnostics?.beginEvent(next.eventId == targetId, next.eventId)
-                val effects = try {
-                    withConfirmedNotificationRollback { processNotification(next, canDefer = false, crossesGap = false) }
-                } catch (handoff: NotificationAppHandoff) {
-                    return withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = handoff.work)
-                }
-                currentCoroutineContext().ensureActive()
-                diagnostics?.stage = "MARK_PROCESSED"
-                CallSignalJournal(database).committed(effects.calls)
-                cleanupConversations()
-                if (recovery == null) database.eventDAO.markEventAsProcessed(next.eventId)
-                else recovery.acknowledge(listOf(next.eventId))
-                if (next.eventId == targetId) {
-                    targetMessage = effects.message
-                    break
-                }
-            } else {
-                check(canFetch) { "Target notification was not found" }
-                diagnostics?.fetching()
-                val cursor = events.cursor()
-                val page = wrapApiRequest {
-                    if (cursor == null) notificationApi.getAllNotifications(PAGE_SIZE, clientId)
-                    else notificationApi.notificationsByBatch(PAGE_SIZE, clientId, cursor)
-                }.orThrow()
-                check(!page.hasMore || page.notifications.isNotEmpty()) { "Notification page did not advance" }
-                check(page.notifications.lastOrNull()?.id != cursor || page.notifications.isEmpty()) {
-                    "Notification cursor did not advance"
-                }
-                diagnostics?.stage = "STORE_PAGE"
-                events.storePage(cursor, page.notifications.map { NewEventEntity(it.id, it.payload, it.transient, false) })
-                terminalAccountResult()?.let { return it }
-                canFetch = page.hasMore
-            }
-        }
-        return withPendingCalls(targetMessage)
     }
 
     private suspend fun terminalAccountResult(): ReceivedNotificationResult? {
@@ -204,7 +129,7 @@ class NotificationProcessor(
 
     /**
      * NSE-only scan: a deferred row remains pending while unrelated messages may pass it.
-     * With [queueEnd] it continues past the target to the end of the stored queue instead of fetching.
+     * Continues past the target to the end of the stored queue; catch-up owns all network fetching.
      */
     @Suppress(
         "ReturnCount",
@@ -214,59 +139,34 @@ class NotificationProcessor(
         "ComplexCondition",
         "NestedBlockDepth",
     )
-    private suspend fun processIsolatedEvents(targetId: String?, queueEnd: QueueEnd? = null): ReceivedNotificationResult {
-        require(queueEnd != null || !targetId.isNullOrBlank())
+    private suspend fun processIsolatedEvents(targetId: String?, queueEnd: QueueEnd): ReceivedNotificationResult {
         diagnostics?.stage = "LOAD_QUEUE"
         terminalAccountResult()?.let { return it }
         cleanupConversations()
         previewImages.cleanupAbandoned(database.assetDAO)
-        if (queueEnd == null && database.eventDAO.getEventById(checkNotNull(targetId))?.isProcessed == true) {
-            return if (events.nextPending() != null) withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
-            else withPendingCalls(null, "ALREADY_PROCESSED")
-        }
         database.eventDAO.setAllUnprocessedEventsAsPending()
         var scannedId = 0L
-        var canFetch = queueEnd == null
         val deferred = mutableSetOf<NotificationDependency>()
         while (true) {
             currentCoroutineContext().ensureActive()
             val next = events.nextPendingAfter(scannedId)
-            if (next == null && queueEnd != null) return queueEnd.result("QUEUE_END", deferred.isEmpty())
-            if (next != null && queueEnd?.shouldStop?.invoke() == true) return queueEnd.result("BUDGET", deferred.isEmpty())
-            if (next == null) {
-                check(canFetch) { "Target notification was not found" }
-                diagnostics?.fetching()
-                val cursor = events.cursor()
-                val page = wrapApiRequest {
-                    if (cursor == null) notificationApi.getAllNotifications(PAGE_SIZE, clientId)
-                    else notificationApi.notificationsByBatch(PAGE_SIZE, clientId, cursor)
-                }.orThrow()
-                check(!page.hasMore || page.notifications.isNotEmpty()) { "Notification page did not advance" }
-                check(page.notifications.lastOrNull()?.id != cursor || page.notifications.isEmpty()) {
-                    "Notification cursor did not advance"
-                }
-                events.storePage(cursor, page.notifications.map { NewEventEntity(it.id, it.payload, it.transient, false) })
-                terminalAccountResult()?.let { return it }
-                canFetch = page.hasMore
-                continue
-            }
+            if (next == null) return queueEnd.result("QUEUE_END", deferred.isEmpty())
+            if (queueEnd.shouldStop()) return queueEnd.result("BUDGET", deferred.isEmpty())
             if (database.metadataDAO.hasPendingLegalHoldTransitions()) {
-                return queueEnd?.stopped("LEGAL_HOLD_REQUIRES_APP", NotificationAppWork.LEGAL_HOLD)
-                    ?: withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = NotificationAppWork.LEGAL_HOLD)
+                return queueEnd.stopped("LEGAL_HOLD_REQUIRES_APP", NotificationAppWork.LEGAL_HOLD)
             }
             scannedId = next.id
             val payload = EventResponseToStore(next.eventId, next.payload, next.transient).toEventResponse().payload
             check(!payload.isNullOrEmpty()) { "A payload is required" }
             val dependencies = dependencies(payload)
             if (deferred.isNotEmpty() && dependencies == null) {
-                return queueEnd?.stopped("DEFERRED_ORDERING_BARRIER") ?: withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
+                return queueEnd.stopped("DEFERRED_ORDERING_BARRIER")
             }
             val retryIn = (events.deferredUntil(next.eventId) ?: 0L) - nowEpochMillis()
             val coolingDown = retryIn in 1..DEFERRED_RETRY_MILLIS
             if (dependencies != null && (coolingDown || dependencies.any { it in deferred })) {
                 deferred += dependencies
                 if (next.eventId == targetId) {
-                    if (queueEnd == null) return withoutPresentation(null, "DEFERRED_CONVERSATION")
                     queueEnd.reached(null, "DEFERRED_CONVERSATION")
                 }
                 continue
@@ -281,15 +181,13 @@ class NotificationProcessor(
                 events.defer(next.eventId, nowEpochMillis() + DEFERRED_RETRY_MILLIS)
                 deferred += checkNotNull(dependencies)
                 if (next.eventId == targetId) {
-                    if (queueEnd == null) return withoutPresentation(null, "DEFERRED_CONVERSATION")
                     queueEnd.reached(null, "DEFERRED_CONVERSATION")
                 }
                 continue
             } catch (_: NotificationOrderingBarrier) {
-                return queueEnd?.stopped("DEFERRED_ORDERING_BARRIER") ?: withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
+                return queueEnd.stopped("DEFERRED_ORDERING_BARRIER")
             } catch (handoff: NotificationAppHandoff) {
-                return queueEnd?.stopped("LEGAL_HOLD_REQUIRES_APP", handoff.work)
-                    ?: withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = handoff.work)
+                return queueEnd.stopped("LEGAL_HOLD_REQUIRES_APP", handoff.work)
             }
             currentCoroutineContext().ensureActive()
             diagnostics?.stage = "MARK_PROCESSED"
@@ -298,12 +196,7 @@ class NotificationProcessor(
             if (recovery == null) events.markProcessed(listOf(next.eventId), emptyMap())
             else recovery.acknowledge(listOf(next.eventId))
             if (next.eventId == targetId) {
-                if (queueEnd != null) {
-                    queueEnd.reached(effects.message, "DEFERRED_PRESENTATION_POLICY".takeIf { deferred.isNotEmpty() })
-                    continue
-                }
-                return if (deferred.isEmpty()) withPendingCalls(effects.message)
-                else withoutPresentation(effects.message, "DEFERRED_PRESENTATION_POLICY")
+                queueEnd.reached(effects.message, "DEFERRED_PRESENTATION_POLICY".takeIf { deferred.isNotEmpty() })
             }
         }
     }
@@ -772,7 +665,6 @@ class NotificationProcessor(
     }
 
     private companion object {
-        const val PAGE_SIZE = 100
         private const val DEFERRED_RETRY_MILLIS = 30_000L
     }
 }

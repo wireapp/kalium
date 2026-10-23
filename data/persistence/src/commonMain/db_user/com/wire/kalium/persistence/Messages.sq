@@ -131,6 +131,16 @@ CREATE TABLE MessageAssetContent (
       asset_height INTEGER AS Int,
       asset_duration_ms INTEGER,
       asset_normalized_loudness BLOB,
+      preview_asset_mime_type TEXT,
+      preview_asset_size INTEGER,
+      preview_asset_width INTEGER AS Int,
+      preview_asset_height INTEGER AS Int,
+      preview_asset_id TEXT,
+      preview_asset_domain TEXT,
+      preview_asset_token TEXT,
+      preview_asset_otr_key BLOB,
+      preview_asset_sha256 BLOB,
+      preview_asset_encryption_algorithm TEXT,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -415,8 +425,8 @@ insertMessageAssetContent:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey MessageAssetContent
-INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,  ?, ?);
+INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness, preview_asset_mime_type, preview_asset_size, preview_asset_width, preview_asset_height, preview_asset_id, preview_asset_domain, preview_asset_token, preview_asset_otr_key, preview_asset_sha256, preview_asset_encryption_algorithm)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessageUnknownContent:
 -- @NotifyCustomKey message_list_:conversation_id
@@ -533,6 +543,21 @@ UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
+claimFailedMessageForRetry:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey Message
+UPDATE Message SET status = 'PENDING'
+WHERE id = ? AND conversation_id = ? AND status IN ('FAILED', 'FAILED_REMOTELY')
+RETURNING id;
+
+updateMessageStatusIfNotAcknowledged:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey Message
+UPDATE Message
+SET status = ?
+WHERE id = ? AND conversation_id = ?
+AND status NOT IN ('SENT', 'DELIVERED', 'READ');
+
 updateMessagesStatusIfNotRead:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey Message
@@ -588,6 +613,19 @@ SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 selectConversationIdsByMessageId:
 SELECT conversation_id FROM Message WHERE id = :messageId;
 
+-- Indexed identity/asset lookup for a continuation; avoid MessageDetailsView's aggregated joins.
+selectAssetMessageUpdateState:
+SELECT Message.sender_user_id, Message.sender_client_id,
+       Asset.asset_id, Asset.asset_otr_key, Asset.asset_sha256,
+       Asset.preview_asset_mime_type, Asset.preview_asset_size,
+       Asset.preview_asset_width, Asset.preview_asset_height,
+       Asset.preview_asset_id, Asset.preview_asset_domain, Asset.preview_asset_token,
+       Asset.preview_asset_otr_key, Asset.preview_asset_sha256, Asset.preview_asset_encryption_algorithm
+FROM Message
+JOIN MessageAssetContent AS Asset ON Asset.message_id = Message.id AND Asset.conversation_id = Message.conversation_id
+WHERE Message.id = :messageId AND Message.conversation_id = :conversationId
+AND Message.visibility IS NOT 'DELETED';
+
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
@@ -600,9 +638,6 @@ countPendingByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversation_id
 -- @CustomKey message_list
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? AND status = 'PENDING';
-
-selectOldestVisibleMessageTimestampByConversationId:
-SELECT MIN(creation_date) FROM Message WHERE conversation_id = ? AND visibility = 'VISIBLE';
 
 selectByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
@@ -791,3 +826,10 @@ updateAudioMessageNormalizedLoudness:
 UPDATE MessageAssetContent
 SET asset_normalized_loudness = ?
 WHERE message_id = ? AND conversation_id = ?;
+
+updateAssetPreviewContent:
+-- @NotifyCustomKey message_list_:conversationId
+-- @NotifyCustomKey MessageAssetContent
+UPDATE MessageAssetContent
+SET preview_asset_mime_type = :assetPreviewMimeType, preview_asset_size = :assetPreviewSize, preview_asset_width = :assetPreviewWidth, preview_asset_height = :assetPreviewHeight, preview_asset_id = :assetPreviewId, preview_asset_domain = :assetPreviewDomain, preview_asset_token = :assetPreviewToken, preview_asset_otr_key = :assetPreviewOtrKey, preview_asset_sha256 = :assetPreviewSha256, preview_asset_encryption_algorithm = :assetPreviewEncryptionAlgorithm
+WHERE message_id = :messageId AND conversation_id = :conversationId;
