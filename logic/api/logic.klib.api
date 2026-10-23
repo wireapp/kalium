@@ -1295,6 +1295,26 @@ abstract interface com.wire.kalium.logic.feature.featureConfig/ObserveIsAppsAllo
     abstract fun invoke(): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.feature.featureConfig/AppsAllowedResult> // com.wire.kalium.logic.feature.featureConfig/ObserveIsAppsAllowedForUsageUseCase.invoke|invoke(){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.giphy/DownloadGifUseCase { // com.wire.kalium.logic.feature.giphy/DownloadGifUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.giphy/Gif): com.wire.kalium.logic.feature.giphy/DownloadGifResult // com.wire.kalium.logic.feature.giphy/DownloadGifUseCase.invoke|invoke(com.wire.kalium.logic.data.giphy.Gif){}[0]
+}
+
+abstract interface com.wire.kalium.logic.feature.giphy/GetGifSuggestionsUseCase { // com.wire.kalium.logic.feature.giphy/GetGifSuggestionsUseCase|null[0]
+    abstract suspend fun invoke(kotlin/String): kotlin.collections/List<kotlin/String> // com.wire.kalium.logic.feature.giphy/GetGifSuggestionsUseCase.invoke|invoke(kotlin.String){}[0]
+}
+
+abstract interface com.wire.kalium.logic.feature.giphy/GetTrendingGifsUseCase { // com.wire.kalium.logic.feature.giphy/GetTrendingGifsUseCase|null[0]
+    abstract suspend fun invoke(kotlin/Int): com.wire.kalium.logic.feature.giphy/GetGifsResult // com.wire.kalium.logic.feature.giphy/GetTrendingGifsUseCase.invoke|invoke(kotlin.Int){}[0]
+}
+
+abstract interface com.wire.kalium.logic.feature.giphy/SearchGifsUseCase { // com.wire.kalium.logic.feature.giphy/SearchGifsUseCase|null[0]
+    abstract suspend fun invoke(kotlin/String, kotlin/Int, kotlin/String?): com.wire.kalium.logic.feature.giphy/GetGifsResult // com.wire.kalium.logic.feature.giphy/SearchGifsUseCase.invoke|invoke(kotlin.String;kotlin.Int;kotlin.String?){}[0]
+}
+
+abstract interface com.wire.kalium.logic.feature.giphy/SendGifMessageUseCase { // com.wire.kalium.logic.feature.giphy/SendGifMessageUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.giphy/DownloadedGif, kotlin/String?, kotlin/String?): com.wire.kalium.logic.feature.giphy/SendGifMessageResult // com.wire.kalium.logic.feature.giphy/SendGifMessageUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.giphy.DownloadedGif;kotlin.String?;kotlin.String?){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.keypackage/MLSKeyPackageCountUseCase { // com.wire.kalium.logic.feature.keypackage/MLSKeyPackageCountUseCase|null[0]
     abstract suspend fun invoke(kotlin/Boolean = ...): com.wire.kalium.logic.feature.keypackage/MLSKeyPackageCountResult // com.wire.kalium.logic.feature.keypackage/MLSKeyPackageCountUseCase.invoke|invoke(kotlin.Boolean){}[0]
 }
@@ -3113,6 +3133,101 @@ sealed interface com.wire.kalium.logic.feature.featureConfig/AppsAllowedResult {
     }
 }
 
+sealed interface com.wire.kalium.logic.feature.giphy/DownloadGifResult { // com.wire.kalium.logic.feature.giphy/DownloadGifResult|null[0]
+    final class Failure : com.wire.kalium.logic.feature.giphy/DownloadGifResult { // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val coreFailure // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure.coreFailure|{}coreFailure[0]
+            final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+        final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Failure.toString|toString(){}[0]
+    }
+
+    final class Success : com.wire.kalium.logic.feature.giphy/DownloadGifResult { // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success|null[0]
+        constructor <init>(com.wire.kalium.logic.data.giphy/DownloadedGif) // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success.<init>|<init>(com.wire.kalium.logic.data.giphy.DownloadedGif){}[0]
+
+        final val downloadedGif // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success.downloadedGif|{}downloadedGif[0]
+            final fun <get-downloadedGif>(): com.wire.kalium.logic.data.giphy/DownloadedGif // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success.downloadedGif.<get-downloadedGif>|<get-downloadedGif>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.giphy/DownloadedGif // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.giphy/DownloadedGif = ...): com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success.copy|copy(com.wire.kalium.logic.data.giphy.DownloadedGif){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/DownloadGifResult.Success.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.logic.feature.giphy/GetGifsResult { // com.wire.kalium.logic.feature.giphy/GetGifsResult|null[0]
+    final class Failure : com.wire.kalium.logic.feature.giphy/GetGifsResult { // com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val coreFailure // com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure.coreFailure|{}coreFailure[0]
+            final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+        final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure // com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/GetGifsResult.Failure.toString|toString(){}[0]
+    }
+
+    final class Success : com.wire.kalium.logic.feature.giphy/GetGifsResult { // com.wire.kalium.logic.feature.giphy/GetGifsResult.Success|null[0]
+        constructor <init>(com.wire.kalium.logic.data.giphy/GifPage) // com.wire.kalium.logic.feature.giphy/GetGifsResult.Success.<init>|<init>(com.wire.kalium.logic.data.giphy.GifPage){}[0]
+
+        final val page // com.wire.kalium.logic.feature.giphy/GetGifsResult.Success.page|{}page[0]
+            final fun <get-page>(): com.wire.kalium.logic.data.giphy/GifPage // com.wire.kalium.logic.feature.giphy/GetGifsResult.Success.page.<get-page>|<get-page>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.giphy/GifPage // com.wire.kalium.logic.feature.giphy/GetGifsResult.Success.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.giphy/GifPage = ...): com.wire.kalium.logic.feature.giphy/GetGifsResult.Success // com.wire.kalium.logic.feature.giphy/GetGifsResult.Success.copy|copy(com.wire.kalium.logic.data.giphy.GifPage){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/GetGifsResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/GetGifsResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/GetGifsResult.Success.toString|toString(){}[0]
+    }
+
+    final object Unavailable : com.wire.kalium.logic.feature.giphy/GetGifsResult { // com.wire.kalium.logic.feature.giphy/GetGifsResult.Unavailable|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/GetGifsResult.Unavailable.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/GetGifsResult.Unavailable.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/GetGifsResult.Unavailable.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.logic.feature.giphy/SendGifMessageResult { // com.wire.kalium.logic.feature.giphy/SendGifMessageResult|null[0]
+    final class Failure : com.wire.kalium.logic.feature.giphy/SendGifMessageResult { // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val coreFailure // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure.coreFailure|{}coreFailure[0]
+            final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+        final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Failure.toString|toString(){}[0]
+    }
+
+    final object DisabledByTeam : com.wire.kalium.logic.feature.giphy/SendGifMessageResult { // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.DisabledByTeam|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.DisabledByTeam.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.DisabledByTeam.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.DisabledByTeam.toString|toString(){}[0]
+    }
+
+    final object RestrictedFileType : com.wire.kalium.logic.feature.giphy/SendGifMessageResult { // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.RestrictedFileType|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.RestrictedFileType.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.RestrictedFileType.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.RestrictedFileType.toString|toString(){}[0]
+    }
+
+    final object Success : com.wire.kalium.logic.feature.giphy/SendGifMessageResult { // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Success|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Success.toString|toString(){}[0]
+    }
+}
+
 abstract class com.wire.kalium.logic.sync/SyncExecutor { // com.wire.kalium.logic.sync/SyncExecutor|null[0]
     constructor <init>() // com.wire.kalium.logic.sync/SyncExecutor.<init>|<init>(){}[0]
 
@@ -3408,6 +3523,85 @@ final class com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest { // com.w
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.giphy/DownloadedGif { // com.wire.kalium.logic.data.giphy/DownloadedGif|null[0]
+    constructor <init>(com.wire.kalium.logic.data.giphy/Gif, okio/Path, kotlin/Long) // com.wire.kalium.logic.data.giphy/DownloadedGif.<init>|<init>(com.wire.kalium.logic.data.giphy.Gif;okio.Path;kotlin.Long){}[0]
+
+    final val gif // com.wire.kalium.logic.data.giphy/DownloadedGif.gif|{}gif[0]
+        final fun <get-gif>(): com.wire.kalium.logic.data.giphy/Gif // com.wire.kalium.logic.data.giphy/DownloadedGif.gif.<get-gif>|<get-gif>(){}[0]
+    final val path // com.wire.kalium.logic.data.giphy/DownloadedGif.path|{}path[0]
+        final fun <get-path>(): okio/Path // com.wire.kalium.logic.data.giphy/DownloadedGif.path.<get-path>|<get-path>(){}[0]
+    final val sizeInBytes // com.wire.kalium.logic.data.giphy/DownloadedGif.sizeInBytes|{}sizeInBytes[0]
+        final fun <get-sizeInBytes>(): kotlin/Long // com.wire.kalium.logic.data.giphy/DownloadedGif.sizeInBytes.<get-sizeInBytes>|<get-sizeInBytes>(){}[0]
+
+    final fun component1(): com.wire.kalium.logic.data.giphy/Gif // com.wire.kalium.logic.data.giphy/DownloadedGif.component1|component1(){}[0]
+    final fun component2(): okio/Path // com.wire.kalium.logic.data.giphy/DownloadedGif.component2|component2(){}[0]
+    final fun component3(): kotlin/Long // com.wire.kalium.logic.data.giphy/DownloadedGif.component3|component3(){}[0]
+    final fun copy(com.wire.kalium.logic.data.giphy/Gif = ..., okio/Path = ..., kotlin/Long = ...): com.wire.kalium.logic.data.giphy/DownloadedGif // com.wire.kalium.logic.data.giphy/DownloadedGif.copy|copy(com.wire.kalium.logic.data.giphy.Gif;okio.Path;kotlin.Long){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.giphy/DownloadedGif.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.giphy/DownloadedGif.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.giphy/DownloadedGif.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.giphy/Gif { // com.wire.kalium.logic.data.giphy/Gif|null[0]
+    constructor <init>(kotlin/String, kotlin/String, com.wire.kalium.logic.data.giphy/GifRendition, com.wire.kalium.logic.data.giphy/GifRendition) // com.wire.kalium.logic.data.giphy/Gif.<init>|<init>(kotlin.String;kotlin.String;com.wire.kalium.logic.data.giphy.GifRendition;com.wire.kalium.logic.data.giphy.GifRendition){}[0]
+
+    final val id // com.wire.kalium.logic.data.giphy/Gif.id|{}id[0]
+        final fun <get-id>(): kotlin/String // com.wire.kalium.logic.data.giphy/Gif.id.<get-id>|<get-id>(){}[0]
+    final val original // com.wire.kalium.logic.data.giphy/Gif.original|{}original[0]
+        final fun <get-original>(): com.wire.kalium.logic.data.giphy/GifRendition // com.wire.kalium.logic.data.giphy/Gif.original.<get-original>|<get-original>(){}[0]
+    final val preview // com.wire.kalium.logic.data.giphy/Gif.preview|{}preview[0]
+        final fun <get-preview>(): com.wire.kalium.logic.data.giphy/GifRendition // com.wire.kalium.logic.data.giphy/Gif.preview.<get-preview>|<get-preview>(){}[0]
+    final val title // com.wire.kalium.logic.data.giphy/Gif.title|{}title[0]
+        final fun <get-title>(): kotlin/String // com.wire.kalium.logic.data.giphy/Gif.title.<get-title>|<get-title>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.giphy/Gif.component1|component1(){}[0]
+    final fun component2(): kotlin/String // com.wire.kalium.logic.data.giphy/Gif.component2|component2(){}[0]
+    final fun component3(): com.wire.kalium.logic.data.giphy/GifRendition // com.wire.kalium.logic.data.giphy/Gif.component3|component3(){}[0]
+    final fun component4(): com.wire.kalium.logic.data.giphy/GifRendition // com.wire.kalium.logic.data.giphy/Gif.component4|component4(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., com.wire.kalium.logic.data.giphy/GifRendition = ..., com.wire.kalium.logic.data.giphy/GifRendition = ...): com.wire.kalium.logic.data.giphy/Gif // com.wire.kalium.logic.data.giphy/Gif.copy|copy(kotlin.String;kotlin.String;com.wire.kalium.logic.data.giphy.GifRendition;com.wire.kalium.logic.data.giphy.GifRendition){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.giphy/Gif.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.giphy/Gif.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.giphy/Gif.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.giphy/GifPage { // com.wire.kalium.logic.data.giphy/GifPage|null[0]
+    constructor <init>(kotlin.collections/List<com.wire.kalium.logic.data.giphy/Gif>, kotlin/Int?) // com.wire.kalium.logic.data.giphy/GifPage.<init>|<init>(kotlin.collections.List<com.wire.kalium.logic.data.giphy.Gif>;kotlin.Int?){}[0]
+
+    final val gifs // com.wire.kalium.logic.data.giphy/GifPage.gifs|{}gifs[0]
+        final fun <get-gifs>(): kotlin.collections/List<com.wire.kalium.logic.data.giphy/Gif> // com.wire.kalium.logic.data.giphy/GifPage.gifs.<get-gifs>|<get-gifs>(){}[0]
+    final val nextOffset // com.wire.kalium.logic.data.giphy/GifPage.nextOffset|{}nextOffset[0]
+        final fun <get-nextOffset>(): kotlin/Int? // com.wire.kalium.logic.data.giphy/GifPage.nextOffset.<get-nextOffset>|<get-nextOffset>(){}[0]
+
+    final fun component1(): kotlin.collections/List<com.wire.kalium.logic.data.giphy/Gif> // com.wire.kalium.logic.data.giphy/GifPage.component1|component1(){}[0]
+    final fun component2(): kotlin/Int? // com.wire.kalium.logic.data.giphy/GifPage.component2|component2(){}[0]
+    final fun copy(kotlin.collections/List<com.wire.kalium.logic.data.giphy/Gif> = ..., kotlin/Int? = ...): com.wire.kalium.logic.data.giphy/GifPage // com.wire.kalium.logic.data.giphy/GifPage.copy|copy(kotlin.collections.List<com.wire.kalium.logic.data.giphy.Gif>;kotlin.Int?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.giphy/GifPage.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.giphy/GifPage.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.giphy/GifPage.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.giphy/GifRendition { // com.wire.kalium.logic.data.giphy/GifRendition|null[0]
+    constructor <init>(kotlin/String, kotlin/Int, kotlin/Int, kotlin/Long?) // com.wire.kalium.logic.data.giphy/GifRendition.<init>|<init>(kotlin.String;kotlin.Int;kotlin.Int;kotlin.Long?){}[0]
+
+    final val height // com.wire.kalium.logic.data.giphy/GifRendition.height|{}height[0]
+        final fun <get-height>(): kotlin/Int // com.wire.kalium.logic.data.giphy/GifRendition.height.<get-height>|<get-height>(){}[0]
+    final val sizeInBytes // com.wire.kalium.logic.data.giphy/GifRendition.sizeInBytes|{}sizeInBytes[0]
+        final fun <get-sizeInBytes>(): kotlin/Long? // com.wire.kalium.logic.data.giphy/GifRendition.sizeInBytes.<get-sizeInBytes>|<get-sizeInBytes>(){}[0]
+    final val url // com.wire.kalium.logic.data.giphy/GifRendition.url|{}url[0]
+        final fun <get-url>(): kotlin/String // com.wire.kalium.logic.data.giphy/GifRendition.url.<get-url>|<get-url>(){}[0]
+    final val width // com.wire.kalium.logic.data.giphy/GifRendition.width|{}width[0]
+        final fun <get-width>(): kotlin/Int // com.wire.kalium.logic.data.giphy/GifRendition.width.<get-width>|<get-width>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.giphy/GifRendition.component1|component1(){}[0]
+    final fun component2(): kotlin/Int // com.wire.kalium.logic.data.giphy/GifRendition.component2|component2(){}[0]
+    final fun component3(): kotlin/Int // com.wire.kalium.logic.data.giphy/GifRendition.component3|component3(){}[0]
+    final fun component4(): kotlin/Long? // com.wire.kalium.logic.data.giphy/GifRendition.component4|component4(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Long? = ...): com.wire.kalium.logic.data.giphy/GifRendition // com.wire.kalium.logic.data.giphy/GifRendition.copy|copy(kotlin.String;kotlin.Int;kotlin.Int;kotlin.Long?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.giphy/GifRendition.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.giphy/GifRendition.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.giphy/GifRendition.toString|toString(){}[0]
 }
 
 final class com.wire.kalium.logic.data.message.timeline/MessageListAsset { // com.wire.kalium.logic.data.message.timeline/MessageListAsset|null[0]
@@ -5118,6 +5312,19 @@ final class com.wire.kalium.logic.feature.e2ei/X509Identity { // com.wire.kalium
     }
 }
 
+final class com.wire.kalium.logic.feature.giphy/GiphyScope { // com.wire.kalium.logic.feature.giphy/GiphyScope|null[0]
+    final val downloadGif // com.wire.kalium.logic.feature.giphy/GiphyScope.downloadGif|{}downloadGif[0]
+        final fun <get-downloadGif>(): com.wire.kalium.logic.feature.giphy/DownloadGifUseCase // com.wire.kalium.logic.feature.giphy/GiphyScope.downloadGif.<get-downloadGif>|<get-downloadGif>(){}[0]
+    final val getGifSuggestions // com.wire.kalium.logic.feature.giphy/GiphyScope.getGifSuggestions|{}getGifSuggestions[0]
+        final fun <get-getGifSuggestions>(): com.wire.kalium.logic.feature.giphy/GetGifSuggestionsUseCase // com.wire.kalium.logic.feature.giphy/GiphyScope.getGifSuggestions.<get-getGifSuggestions>|<get-getGifSuggestions>(){}[0]
+    final val getTrendingGifs // com.wire.kalium.logic.feature.giphy/GiphyScope.getTrendingGifs|{}getTrendingGifs[0]
+        final fun <get-getTrendingGifs>(): com.wire.kalium.logic.feature.giphy/GetTrendingGifsUseCase // com.wire.kalium.logic.feature.giphy/GiphyScope.getTrendingGifs.<get-getTrendingGifs>|<get-getTrendingGifs>(){}[0]
+    final val searchGifs // com.wire.kalium.logic.feature.giphy/GiphyScope.searchGifs|{}searchGifs[0]
+        final fun <get-searchGifs>(): com.wire.kalium.logic.feature.giphy/SearchGifsUseCase // com.wire.kalium.logic.feature.giphy/GiphyScope.searchGifs.<get-searchGifs>|<get-searchGifs>(){}[0]
+    final val sendGifMessage // com.wire.kalium.logic.feature.giphy/GiphyScope.sendGifMessage|{}sendGifMessage[0]
+        final fun <get-sendGifMessage>(): com.wire.kalium.logic.feature.giphy/SendGifMessageUseCase // com.wire.kalium.logic.feature.giphy/GiphyScope.sendGifMessage.<get-sendGifMessage>|<get-sendGifMessage>(){}[0]
+}
+
 final class com.wire.kalium.logic.feature.incallreaction/SendInCallReactionUseCase { // com.wire.kalium.logic.feature.incallreaction/SendInCallReactionUseCase|null[0]
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.incallreaction/SendInCallReactionUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String){}[0]
 }
@@ -6126,6 +6333,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-getPersistentWebSocketStatus>(): com.wire.kalium.logic.feature.user.webSocketStatus/GetPersistentWebSocketStatus // com.wire.kalium.logic.feature/UserSessionScope.getPersistentWebSocketStatus.<get-getPersistentWebSocketStatus>|<get-getPersistentWebSocketStatus>(){}[0]
     final val getTeamUrlUseCase // com.wire.kalium.logic.feature/UserSessionScope.getTeamUrlUseCase|{}getTeamUrlUseCase[0]
         final fun <get-getTeamUrlUseCase>(): com.wire.kalium.logic.feature.server/GetTeamUrlUseCase // com.wire.kalium.logic.feature/UserSessionScope.getTeamUrlUseCase.<get-getTeamUrlUseCase>|<get-getTeamUrlUseCase>(){}[0]
+    final val giphy // com.wire.kalium.logic.feature/UserSessionScope.giphy|{}giphy[0]
+        final fun <get-giphy>(): com.wire.kalium.logic.feature.giphy/GiphyScope // com.wire.kalium.logic.feature/UserSessionScope.giphy.<get-giphy>|<get-giphy>(){}[0]
     final val isCellsInitialized // com.wire.kalium.logic.feature/UserSessionScope.isCellsInitialized|{}isCellsInitialized[0]
         final fun <get-isCellsInitialized>(): kotlin/Boolean // com.wire.kalium.logic.feature/UserSessionScope.isCellsInitialized.<get-isCellsInitialized>|<get-isCellsInitialized>(){}[0]
     final val isE2EIEnabled // com.wire.kalium.logic.feature/UserSessionScope.isE2EIEnabled|{}isE2EIEnabled[0]
