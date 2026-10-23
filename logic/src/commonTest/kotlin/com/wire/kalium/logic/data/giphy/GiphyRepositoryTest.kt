@@ -36,7 +36,7 @@ import okio.fakefilesystem.FakeFileSystem
 class GiphyRepositoryTest {
 
     @Test
-    fun givenQuery_whenSearching_thenAsksForPgThirteenWithThePageSize() = runTest {
+    fun givenQuery_whenSearching_thenAsksForPgWithThePageSize() = runTest {
         val (api, repository) = arrange()
         everySuspend { api.search(any(), any(), any(), any(), any()) } returns success(page(gifDto("a")))
 
