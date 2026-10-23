@@ -67,10 +67,14 @@ interface MessageSender {
      * or messages where retrying later is useless or would lead to unwanted behaviour.
      *
      * @param message that will be sent
-     * @param messageTarget recipients of the message. In MLS conversations, targeting specific users or clients
-     * sends targeted messages, which have weaker security guarantees than messages to the whole conversation.
+     * @param messageTarget recipients of the message. In MLS conversations, targeting specific users or clients, or
+     * ignoring some users, sends targeted messages, which have weaker security guarantees than messages to the whole
+     * conversation.
      * @param transient in MLS conversations, true if the backend shouldn't persist the message, so only clients
      * that are online receive it. Ignored in Proteus conversations, as Proteus has no transient messages.
+     *
+     * Targeted and transient MLS messages are only sent when enabled in the Kalium configs; otherwise the message is
+     * sent as a persistent application message to the whole conversation.
      * @see [sendPendingMessage]
      */
     suspend fun sendMessage(
