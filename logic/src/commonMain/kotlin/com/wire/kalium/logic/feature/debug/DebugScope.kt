@@ -124,6 +124,7 @@ public class DebugScope internal constructor(
     private val transactionProvider: CryptoTransactionProvider,
     private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
+    private val targetedAndTransientMLSMessagesEnabled: Boolean,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
@@ -236,7 +237,8 @@ public class DebugScope internal constructor(
             enqueueSelfDeletion = { message, expirationData ->
                 ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData)
             },
-            scope = scope
+            scope = scope,
+            targetedAndTransientMLSMessagesEnabled = targetedAndTransientMLSMessagesEnabled
         )
 
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
