@@ -39,10 +39,10 @@ class SendGifMessageUseCaseTest {
     fun givenCaptionAndReply_whenSending_thenSendsTheQuotingCaptionBeforeTheGif() = runTest {
         val arrangement = Arrangement()
 
-        val result = arrangement.useCase(CONVERSATION_ID, DOWNLOADED_GIF, "happy friday · via giphy.com", "quoted-id")
+        val result = arrangement.useCase(CONVERSATION_ID, DOWNLOADED_GIF, "via giphy.com", "quoted-id")
 
         assertEquals(SendGifMessageResult.Success, result)
-        assertEquals(listOf("text:happy friday · via giphy.com:quoted-id", "gif"), arrangement.events)
+        assertEquals(listOf("text:via giphy.com:quoted-id", "gif"), arrangement.events)
         val asset = arrangement.sentAssets.single()
         assertEquals(CONVERSATION_ID, asset.conversationId)
         assertEquals(DOWNLOADED_GIF.path, asset.assetDataPath)

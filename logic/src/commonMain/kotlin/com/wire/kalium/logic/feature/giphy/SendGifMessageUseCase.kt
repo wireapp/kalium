@@ -24,7 +24,7 @@ import kotlinx.coroutines.async
  */
 public interface SendGifMessageUseCase {
     /**
-     * @param caption the text sent before the GIF, for example "happy friday · via giphy.com", or null to send only the GIF
+     * @param caption the text sent before the GIF, for example "via giphy.com", or null to send only the GIF
      * @param quotedMessageId the message the caption replies to; ignored without a caption
      */
     public suspend operator fun invoke(

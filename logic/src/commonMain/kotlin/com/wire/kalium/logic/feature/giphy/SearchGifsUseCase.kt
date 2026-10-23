@@ -10,7 +10,7 @@ import com.wire.kalium.logic.data.giphy.GiphyRepository
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFound
 
-/** Searches Giphy for GIFs rated pg-13 or milder. */
+/** Searches Giphy for GIFs rated pg or milder. */
 public interface SearchGifsUseCase {
     /**
      * @param offset the [GifPage.nextOffset] of the previous page, or 0 for the first page

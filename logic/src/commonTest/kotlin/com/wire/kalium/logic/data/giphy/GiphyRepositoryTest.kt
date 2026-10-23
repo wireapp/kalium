@@ -42,7 +42,7 @@ class GiphyRepositoryTest {
 
         repository.search("cat", offset = 24, language = "de")
 
-        verifySuspend { api.search("cat", 24, 24, "pg-13", "de") }
+        verifySuspend { api.search("cat", 24, 24, "pg", "de") }
     }
 
     @Test

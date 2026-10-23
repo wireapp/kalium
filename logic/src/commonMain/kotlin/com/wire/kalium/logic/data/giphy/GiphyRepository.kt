@@ -90,7 +90,7 @@ internal class GiphyDataSource(
 
     internal companion object {
         const val PAGE_SIZE = 24
-        const val RATING = "pg-13"
+        const val RATING = "pg"
         const val MAX_GIF_SIZE_BYTES = 3L * 1024 * 1024
 
         /** Giphy rejects larger offsets. */

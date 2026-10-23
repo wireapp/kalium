@@ -41,13 +41,13 @@ internal class GiphyApiTest : ApiTest() {
                 assertQueryParameter("q", hasValue = "happy friday")
                 assertQueryParameter("limit", hasValue = "24")
                 assertQueryParameter("offset", hasValue = "48")
-                assertQueryParameter("rating", hasValue = "pg-13")
+                assertQueryParameter("rating", hasValue = "pg")
                 assertQueryParameter("lang", hasValue = "de")
                 assertAuthorizationHeaderExist()
             }
         )
 
-        val result = api.search(query = "happy friday", limit = 24, offset = 48, rating = "pg-13", language = "de")
+        val result = api.search(query = "happy friday", limit = 24, offset = 48, rating = "pg", language = "de")
 
         assertIs<NetworkResponse.Success<GiphyGifsResponseDTO>>(result)
         val gif = result.value.data.single()
@@ -66,7 +66,7 @@ internal class GiphyApiTest : ApiTest() {
     fun givenNoLanguage_whenSearching_thenOmitsTheLanguage() = runTest {
         val api = giphyApi(responseBody = SEARCH_RESPONSE, assertion = { assertQueryDoesNotExist("lang") })
 
-        assertIs<NetworkResponse.Success<*>>(api.search(query = "cat", limit = 24, offset = 0, rating = "pg-13", language = null))
+        assertIs<NetworkResponse.Success<*>>(api.search(query = "cat", limit = 24, offset = 0, rating = "pg", language = null))
     }
 
     @Test
@@ -77,12 +77,12 @@ internal class GiphyApiTest : ApiTest() {
                 assertGet()
                 assertPathEqual("/proxy/giphy/v1/gifs/trending")
                 assertQueryDoesNotExist("q")
-                assertQueryParameter("rating", hasValue = "pg-13")
+                assertQueryParameter("rating", hasValue = "pg")
                 assertQueryParameter("offset", hasValue = "0")
             }
         )
 
-        assertIs<NetworkResponse.Success<*>>(api.trending(limit = 24, offset = 0, rating = "pg-13"))
+        assertIs<NetworkResponse.Success<*>>(api.trending(limit = 24, offset = 0, rating = "pg"))
     }
 
     @Test
@@ -105,7 +105,7 @@ internal class GiphyApiTest : ApiTest() {
     fun givenBackendWithoutTheProxy_whenSearching_thenReturnsNotFound() = runTest {
         val api = giphyApi(responseBody = "<html>Not Found</html>", statusCode = HttpStatusCode.NotFound)
 
-        val result = api.search(query = "cat", limit = 24, offset = 0, rating = "pg-13", language = null)
+        val result = api.search(query = "cat", limit = 24, offset = 0, rating = "pg", language = null)
 
         assertIs<NetworkResponse.Error>(result)
         val exception = assertIs<KaliumException.InvalidRequestError>(result.kException)
