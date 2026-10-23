@@ -60,7 +60,6 @@ public class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
             strictMlsFilter = strictMlsFilter,
             ongoingCallConversationIds = initialJoinableCallConversationIds,
             ongoingCallConversationIdsFlow = joinableCallConversationIdsFlow
-        )
-            .flowOn(dispatcher.io)
+        ).flowOn(dispatcher.io)
     }
 }

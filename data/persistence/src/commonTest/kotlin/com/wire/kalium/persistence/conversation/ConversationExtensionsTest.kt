@@ -59,7 +59,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -68,6 +67,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 class ConversationExtensionsTest : BaseDatabaseTest() {
     private lateinit var conversationExtensions: ConversationExtensions
@@ -718,7 +718,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithMembersEntity>>(this)
 
     private fun memberSearchUser(value: String) = newUserEntity(UserIDEntity(value, selfUserId.domain))
-
     private fun getPager(searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL): KaliumPager<ConversationDetailsWithEventsEntity> =
         conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
             pagingConfig = PagingConfig(PAGE_SIZE),

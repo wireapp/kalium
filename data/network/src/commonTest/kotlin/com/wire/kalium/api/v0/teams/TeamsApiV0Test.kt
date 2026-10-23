@@ -22,8 +22,8 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.mocks.responses.ServiceDetailsResponseJson
 import com.wire.kalium.mocks.responses.TeamsResponsesJson
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.authenticated.teams.PasswordRequest
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.NonQualifiedUserId
 import com.wire.kalium.network.api.model.ServiceDetailResponse
