@@ -22,7 +22,6 @@ import com.wire.kalium.logic.feature.call.FlowManagerService
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
-import dev.mokkery.matcher.eq
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
 import dev.mokkery.mock
@@ -44,13 +43,13 @@ class FlipToBackCameraUseCaseTest {
     @Test
     fun givenFlowManagerService_whenUseCaseCaseIsInvoked_thenInvokeFlipToBackCameraOnce() = runTest {
         everySuspend {
-            flowManagerService.flipToBackCamera(eq(conversationId))
+            flowManagerService.flipToBackCamera(conversationId)
         } returns (Unit)
 
         flipToBackCamera(conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            flowManagerService.flipToBackCamera(eq(conversationId))
+            flowManagerService.flipToBackCamera(conversationId)
         }
     }
 

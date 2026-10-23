@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.everySuspend
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -51,7 +50,7 @@ internal class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
 
     override suspend fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
         everySuspend {
-            oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
+            oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), true)
         }.returns(result)
     }
 

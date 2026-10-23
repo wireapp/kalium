@@ -37,7 +37,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any as mokkeryAny
-import dev.mokkery.matcher.eq as mokkeryEq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -67,8 +66,8 @@ class AcceptConnectionRequestUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(
                 mokkeryAny(),
-                mokkeryEq(USER_ID),
-                mokkeryEq(ConnectionState.ACCEPTED)
+                USER_ID,
+                ConnectionState.ACCEPTED
             )
         }
     }
@@ -90,7 +89,7 @@ class AcceptConnectionRequestUseCaseTest {
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationModifiedDate(mokkeryEq(CONNECTION.qualifiedConversationId), mokkeryAny())
+            arrangement.conversationRepository.updateConversationModifiedDate(CONNECTION.qualifiedConversationId, mokkeryAny())
         }
     }
 
@@ -113,8 +112,8 @@ class AcceptConnectionRequestUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(
                 mokkeryAny(),
-                mokkeryEq(CONNECTION.qualifiedToId),
-                mokkeryEq(true)
+                CONNECTION.qualifiedToId,
+                true
             )
         }
     }
@@ -135,8 +134,8 @@ class AcceptConnectionRequestUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(
                 mokkeryAny(),
-                mokkeryEq(USER_ID),
-                mokkeryEq(ConnectionState.ACCEPTED)
+                USER_ID,
+                ConnectionState.ACCEPTED
             )
         }
     }

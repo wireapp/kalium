@@ -38,7 +38,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -207,7 +206,7 @@ class ClearConversationContentHandlerTest {
             MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, true))
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(CONVERSATION_ID) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.deleteConversation(any(), eq(CONVERSATION_ID)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.deleteConversation(any(), CONVERSATION_ID) }
     }
 
     @Test

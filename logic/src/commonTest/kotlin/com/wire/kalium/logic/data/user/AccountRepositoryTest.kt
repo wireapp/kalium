@@ -29,7 +29,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -81,7 +80,7 @@ class AccountRepositoryTest {
         userRepository.updateSelfEmail("newEmail").shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.selfApi.updateEmailAddress(eq("newEmail"))
+            arrangement.selfApi.updateEmailAddress("newEmail")
         }
     }
 
@@ -96,7 +95,7 @@ class AccountRepositoryTest {
         with(result) {
             shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.selfApi.updateEmailAddress(eq("newEmail"))
+                arrangement.selfApi.updateEmailAddress("newEmail")
             }
         }
     }
@@ -150,7 +149,7 @@ class AccountRepositoryTest {
         userRepository.updateSelfAccentColor(7).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.selfApi.updateSelf(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.userDAO.updateUserAccentColor(any(), eq(7)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userDAO.updateUserAccentColor(any(), 7) }
     }
 
     private class Arrangement {

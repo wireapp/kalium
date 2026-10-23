@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.arrangement.usecase.IsMessageSentInSelfConversationUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.IsMessageSentInSelfConversationUseCaseArrangementImpl
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
@@ -47,7 +46,7 @@ class DeleteForMeHandlerTest {
         handler.handle(MESSAGE, CONTENT)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.deleteMessage(eq(MESSAGE_ID), eq(CONVERSATION_ID.toDao()))
+            arrangement.messageDAO.deleteMessage(MESSAGE_ID, CONVERSATION_ID.toDao())
         }
     }
 

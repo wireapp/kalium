@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestUser.OTHER
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
@@ -51,11 +50,11 @@ class GetUserInfoUseCaseTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                userRepository.getKnownUser(eq(userId))
+                userRepository.getKnownUser(userId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                userRepository.userById(eq(userId))
+                userRepository.userById(userId)
             }
         }
     }
@@ -76,11 +75,11 @@ class GetUserInfoUseCaseTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                userRepository.getKnownUser(eq(userId))
+                userRepository.getKnownUser(userId)
             }
 
             verifySuspend(VerifyMode.not) {
-                userRepository.userById(eq(userId))
+                userRepository.userById(userId)
             }
         }
     }
@@ -101,11 +100,11 @@ class GetUserInfoUseCaseTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                userRepository.getKnownUser(eq(userId))
+                userRepository.getKnownUser(userId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                userRepository.userById(eq(userId))
+                userRepository.userById(userId)
             }
         }
     }
@@ -125,7 +124,7 @@ class GetUserInfoUseCaseTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                userRepository.getKnownUser(eq(userId))
+                userRepository.getKnownUser(userId)
             }
 
             verifySuspend(VerifyMode.not) {
@@ -150,7 +149,7 @@ class GetUserInfoUseCaseTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                userRepository.getKnownUser(eq(userId))
+                userRepository.getKnownUser(userId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -179,7 +178,7 @@ class GetUserInfoUseCaseTest {
 
             with(arrangement) {
                 verifySuspend(VerifyMode.exactly(1)) {
-                    userRepository.getKnownUser(eq(userId))
+                    userRepository.getKnownUser(userId)
                 }
 
                 verifySuspend(VerifyMode.exactly(1)) {
@@ -213,7 +212,7 @@ class GetUserInfoUseCaseTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                userRepository.getKnownUser(eq(userId))
+                userRepository.getKnownUser(userId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {

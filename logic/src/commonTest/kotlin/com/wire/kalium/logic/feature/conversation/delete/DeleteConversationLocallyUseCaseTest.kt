@@ -25,7 +25,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -49,7 +48,7 @@ class DeleteConversationLocallyUseCaseTest {
         val result = useCase(CONVERSATION_ID)
 
         assertIs<ClearConversationContentUseCase.Result.Success>(result)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), eq(true)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), true) }
     }
 
     @Test
@@ -61,7 +60,7 @@ class DeleteConversationLocallyUseCaseTest {
         val result = useCase(CONVERSATION_ID)
 
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), eq(true)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), true) }
     }
 
     private class Arrangement {

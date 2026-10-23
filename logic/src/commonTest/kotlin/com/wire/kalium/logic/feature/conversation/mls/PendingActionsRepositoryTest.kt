@@ -29,7 +29,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -47,8 +46,8 @@ class PendingActionsRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.upsert(
-                actionType = eq(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION),
-                qualifiedId = eq(TestUser.OTHER_USER_ID.toDao()),
+                actionType = PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION,
+                qualifiedId = TestUser.OTHER_USER_ID.toDao(),
                 createdAt = any()
             )
         }
@@ -69,7 +68,7 @@ class PendingActionsRepositoryTest {
 
         assertEquals(listOf(user1, user2), result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionDAO.getByActionType(eq(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION))
+            arrangement.pendingActionDAO.getByActionType(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION)
         }
         verifySuspend(VerifyMode.not) { arrangement.pendingActionDAO.deleteByActionTypeAndIds(any(), any()) }
     }
@@ -84,13 +83,11 @@ class PendingActionsRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.deleteByActionTypeAndIds(
-                actionType = eq(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION),
-                qualifiedIds = eq(
-                    listOf(
+                actionType = PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION,
+                qualifiedIds = listOf(
                         user1.toDao(),
                         user2.toDao()
                     )
-                )
             )
         }
     }
@@ -114,8 +111,8 @@ class PendingActionsRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.upsert(
-                actionType = eq(PendingActionType.JOIN_MLS_GROUP_CONVERSATION),
-                qualifiedId = eq(TestConversation.ID.toDao()),
+                actionType = PendingActionType.JOIN_MLS_GROUP_CONVERSATION,
+                qualifiedId = TestConversation.ID.toDao(),
                 createdAt = any()
             )
         }
@@ -136,7 +133,7 @@ class PendingActionsRepositoryTest {
 
         assertEquals(listOf(conversation1, conversation2), result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionDAO.getByActionType(eq(PendingActionType.JOIN_MLS_GROUP_CONVERSATION))
+            arrangement.pendingActionDAO.getByActionType(PendingActionType.JOIN_MLS_GROUP_CONVERSATION)
         }
         verifySuspend(VerifyMode.not) { arrangement.pendingActionDAO.deleteByActionTypeAndIds(any(), any()) }
     }
@@ -151,13 +148,11 @@ class PendingActionsRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.deleteByActionTypeAndIds(
-                actionType = eq(PendingActionType.JOIN_MLS_GROUP_CONVERSATION),
-                qualifiedIds = eq(
-                    listOf(
+                actionType = PendingActionType.JOIN_MLS_GROUP_CONVERSATION,
+                qualifiedIds = listOf(
                         conversation1.toDao(),
                         conversation2.toDao()
                     )
-                )
             )
         }
     }
@@ -168,13 +163,13 @@ class PendingActionsRepositoryTest {
 
         suspend fun withPendingRows(vararg rows: PendingActionEntity) = apply {
             everySuspend {
-                pendingActionDAO.getByActionType(eq(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION))
+                pendingActionDAO.getByActionType(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION)
             } returns rows.toList()
         }
 
         suspend fun withPendingGroupRows(vararg rows: PendingActionEntity) = apply {
             everySuspend {
-                pendingActionDAO.getByActionType(eq(PendingActionType.JOIN_MLS_GROUP_CONVERSATION))
+                pendingActionDAO.getByActionType(PendingActionType.JOIN_MLS_GROUP_CONVERSATION)
             } returns rows.toList()
         }
 

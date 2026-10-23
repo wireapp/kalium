@@ -46,7 +46,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -85,7 +84,7 @@ class ProteusMessageUnpackerTest {
 
         val decodedByteArray = Base64.decode(messageEvent.content)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.proteusContext.decryptMessage<Any>(eq(cryptoSessionId), matches { it.contentEquals(decodedByteArray) }, any())
+            arrangement.proteusContext.decryptMessage<Any>(cryptoSessionId, matches { it.contentEquals(decodedByteArray) }, any())
         }
     }
 

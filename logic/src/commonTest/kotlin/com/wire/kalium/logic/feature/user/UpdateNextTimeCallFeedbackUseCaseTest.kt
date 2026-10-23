@@ -20,8 +20,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
@@ -37,7 +36,7 @@ class UpdateNextTimeCallFeedbackUseCaseTest {
 
         useCase(true)
 
-        verifySuspend { arrangement.userConfigRepository.updateNextTimeForCallFeedback(eq(-1L)) }
+        verifySuspend { arrangement.userConfigRepository.updateNextTimeForCallFeedback(-1L) }
     }
 
     @Test
@@ -49,7 +48,7 @@ class UpdateNextTimeCallFeedbackUseCaseTest {
         useCase(false)
 
         verifySuspend {
-            arrangement.userConfigRepository.updateNextTimeForCallFeedback(matching { it in expectedMin..<expectedMax })
+            arrangement.userConfigRepository.updateNextTimeForCallFeedback(matches { it in expectedMin..<expectedMax })
         }
     }
 

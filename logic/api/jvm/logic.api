@@ -2,7 +2,7 @@ public final class com/wire/kalium/logic/CoreLogic : com/wire/kalium/logic/CoreL
 	public fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;Ljava/lang/String;ZLcom/wire/kalium/usernetwork/di/UserAuthenticatedNetworkProvider;)V
 	public synthetic fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;Ljava/lang/String;ZLcom/wire/kalium/usernetwork/di/UserAuthenticatedNetworkProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun getAudioNormalizedLoudnessBuilder ()Lcom/wire/kalium/logic/feature/asset/AudioNormalizedLoudnessBuilder;
-	public synthetic fun getAudioNormalizedLoudnessBuilder$logic ()Lcom/wire/kalium/logic/feature/asset/AudioNormalizedLoudnessBuilder;
+	public synthetic fun getAudioNormalizedLoudnessBuilder$com_wire_kalium_logic ()Lcom/wire/kalium/logic/feature/asset/AudioNormalizedLoudnessBuilder;
 	public fun getNetworkStateObserver ()Lcom/wire/kalium/network/NetworkStateObserver;
 	public fun getSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/UserSessionScope;
 }
@@ -2555,10 +2555,6 @@ public abstract interface class com/wire/kalium/logic/feature/backup/CreateMPBac
 }
 
 public final class com/wire/kalium/logic/feature/backup/CreateObfuscatedCopyUseCase {
-	public static final field COPY_ENCRYPTED_FILE_NAME Ljava/lang/String;
-	public static final field COPY_FILE_NAME_PREFIX Ljava/lang/String;
-	public static final field COPY_METADATA_FILE_NAME Ljava/lang/String;
-	public static final field COPY_USER_DB_NAME Ljava/lang/String;
 	public final fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -4992,7 +4988,6 @@ public final class com/wire/kalium/logic/feature/conversation/folder/RemoveConve
 }
 
 public final class com/wire/kalium/logic/feature/conversation/guestroomlink/CanCreatePasswordProtectedLinksUseCase {
-	public static final field MIN_API_TO_SUPPORT_PASSWORD_LINKS I
 	public final fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -6752,8 +6747,6 @@ public final class com/wire/kalium/logic/feature/register/RequestActivationCodeU
 }
 
 public final class com/wire/kalium/logic/feature/search/FederatedSearchParser {
-	public static final field DOMAIN_REGEX Ljava/lang/String;
-	public static final field DOMAIN_SEPARATOR Ljava/lang/String;
 	public final fun invoke (Ljava/lang/String;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -8067,6 +8060,7 @@ public abstract interface class com/wire/kalium/logic/feature/user/webSocketStat
 }
 
 public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
+	public fun <init> ()V
 	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Z

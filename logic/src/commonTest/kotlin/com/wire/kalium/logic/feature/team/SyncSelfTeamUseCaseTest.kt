@@ -33,7 +33,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.calls
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -95,24 +94,24 @@ class SyncSelfTeamUseCaseTest {
             syncSelfTeamUseCase.invoke()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.teamRepository.fetchTeamById(eq(TestUser.SELF.teamId!!))
+                arrangement.teamRepository.fetchTeamById(TestUser.SELF.teamId!!)
             }
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.teamRepository.fetchMembersByTeamId(
-                    eq(TestUser.SELF.teamId!!),
-                    eq(TestUser.SELF.id.domain),
+                    TestUser.SELF.teamId!!,
+                    TestUser.SELF.id.domain,
                     any(),
                     any()
                 )
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.teamRepository.syncServices(eq(TestUser.SELF.teamId!!))
+                arrangement.teamRepository.syncServices(TestUser.SELF.teamId!!)
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.teamRepository.fetchAppsByTeamId(eq(TestUser.SELF.teamId!!))
+                arrangement.teamRepository.fetchAppsByTeamId(TestUser.SELF.teamId!!)
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.teamRepository.fetchCollaboratorsByTeamId(eq(TestUser.SELF.teamId!!))
+                arrangement.teamRepository.fetchCollaboratorsByTeamId(TestUser.SELF.teamId!!)
             }
         }
 
@@ -129,7 +128,7 @@ class SyncSelfTeamUseCaseTest {
         syncSelfTeamUseCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.fetchTeamById(eq(TestUser.SELF.teamId!!))
+            arrangement.teamRepository.fetchTeamById(TestUser.SELF.teamId!!)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.fetchMembersByTeamId(any(), any(), any(), any())
@@ -145,8 +144,8 @@ class SyncSelfTeamUseCaseTest {
         }
         verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.fetchMembersByTeamId(
-                eq(TestUser.SELF.teamId!!),
-                eq(TestUser.SELF.id.domain),
+                TestUser.SELF.teamId!!,
+                TestUser.SELF.id.domain,
                 any(),
                 any()
             )
@@ -170,14 +169,14 @@ class SyncSelfTeamUseCaseTest {
         syncSelfTeamUseCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.fetchTeamById(eq(TestUser.SELF.teamId!!))
+            arrangement.teamRepository.fetchTeamById(TestUser.SELF.teamId!!)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.fetchMembersByTeamId(any(), any(), eq<Int?>(null), any())
+            arrangement.teamRepository.fetchMembersByTeamId(any(), any(), null, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.syncServices(eq(TestUser.SELF.teamId!!))
+            arrangement.teamRepository.syncServices(TestUser.SELF.teamId!!)
         }
     }
 

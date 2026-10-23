@@ -31,7 +31,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -59,7 +58,7 @@ internal class ApiMigrationV3Test {
         migration.invoke().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.upgradeCurrentSessionUseCase.invoke(eq(TestClient.CLIENT_ID))
+            arrangement.upgradeCurrentSessionUseCase.invoke(TestClient.CLIENT_ID)
         }
     }
 

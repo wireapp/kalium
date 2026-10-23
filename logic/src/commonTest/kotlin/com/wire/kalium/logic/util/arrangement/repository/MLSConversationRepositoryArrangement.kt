@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.every
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -55,11 +54,11 @@ internal open class MLSConversationRepositoryArrangementImpl :
     }
 
     override suspend fun withSuccessfulLeaveGroup(groupId: GroupID) {
-        everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) }.returns(Either.Right(Unit))
+        everySuspend { mlsConversationRepository.leaveGroup(any(), groupId) }.returns(Either.Right(Unit))
     }
 
     override suspend fun withFailedLeaveGroup(groupId: GroupID) {
-        everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) }.returns(Either.Left(CoreFailure.Unknown(null)))
+        everySuspend { mlsConversationRepository.leaveGroup(any(), groupId) }.returns(Either.Left(CoreFailure.Unknown(null)))
     }
 
 }

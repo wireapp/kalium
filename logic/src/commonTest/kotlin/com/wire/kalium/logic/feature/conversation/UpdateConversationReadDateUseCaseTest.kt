@@ -41,8 +41,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -100,7 +99,7 @@ class UpdateConversationReadDateUseCaseTest {
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matching { message ->
+                message = matches { message ->
                     val content = message.content
                     assertIs<MessageContent.LastRead>(content)
                     assertEquals(conversationId, content.conversationId)
@@ -124,7 +123,7 @@ class UpdateConversationReadDateUseCaseTest {
         updateConversationReadDateUseCase(conversationId, newLastRead)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sendConfirmation(eq(conversationId), eq(persistedLastRead), eq(newLastRead))
+            arrangement.sendConfirmation(conversationId, persistedLastRead, newLastRead)
         }
     }
 
@@ -140,7 +139,7 @@ class UpdateConversationReadDateUseCaseTest {
         updateConversationReadDateUseCase(conversationId, newLastRead)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationReadDate(eq(conversationId), eq(newLastRead))
+            arrangement.conversationRepository.updateConversationReadDate(conversationId, newLastRead)
         }
     }
 
@@ -157,7 +156,7 @@ class UpdateConversationReadDateUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matching { message ->
+                message = matches { message ->
                     val content = message.content
                     assertIs<MessageContent.LastRead>(content)
                     assertEquals(conversationId, content.conversationId)
@@ -165,7 +164,7 @@ class UpdateConversationReadDateUseCaseTest {
                     assertEquals(arrangement.selfConversationId, message.conversationId)
                     true
                 },
-                messageTarget = matching { target ->
+                messageTarget = matches { target ->
                     assertIs<MessageTarget.Conversation>(target)
                     true
                 }
@@ -189,17 +188,17 @@ class UpdateConversationReadDateUseCaseTest {
         updateConversationReadDateUseCase(conversation.id, newLastRead)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationReadDate(eq(conversation.id), eq(newLastRead))
+            arrangement.conversationRepository.updateConversationReadDate(conversation.id, newLastRead)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matching { it.content is MessageContent.LastRead },
+                message = matches { it.content is MessageContent.LastRead },
                 messageTarget = any()
             )
         }
         verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(
-                message = matching { it.content is MessageContent.Receipt },
+                message = matches { it.content is MessageContent.Receipt },
                 messageTarget = any()
             )
         }
@@ -225,7 +224,7 @@ class UpdateConversationReadDateUseCaseTest {
         updateConversationReadDateUseCase(conversationId, newLastRead, invokeImmediately = true)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sendConfirmation(eq(conversationId), eq(persistedLastRead), eq(newLastRead))
+            arrangement.sendConfirmation(conversationId, persistedLastRead, newLastRead)
         }
     }
 
@@ -289,7 +288,7 @@ class UpdateConversationReadDateUseCaseTest {
         runCurrent()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationReadDate(eq(conversationId), eq(newLastRead))
+            arrangement.conversationRepository.updateConversationReadDate(conversationId, newLastRead)
         }
     }
 
@@ -336,13 +335,13 @@ class UpdateConversationReadDateUseCaseTest {
 
         suspend fun withLastReadDateReturning(conversationId: ConversationId, lastReadDate: Instant) {
             everySuspend {
-                conversationRepository.getConversationLastReadDate(eq(conversationId))
+                conversationRepository.getConversationLastReadDate(conversationId)
             } returns Either.Right(lastReadDate)
         }
 
         suspend fun withRealSendConfirmation(conversation: Conversation) {
             everySuspend {
-                conversationRepository.getConversationById(eq(conversation.id))
+                conversationRepository.getConversationById(conversation.id)
             } returns Either.Right(conversation)
             sendConfirmation = SendConfirmationUseCase(
                 currentClientIdProvider = { Either.Right(currentClientId) },

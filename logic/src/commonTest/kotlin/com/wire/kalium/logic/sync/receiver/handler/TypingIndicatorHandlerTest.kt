@@ -27,7 +27,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -47,7 +46,7 @@ class TypingIndicatorHandlerTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.not) {
-            arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.SELF.id))
+            arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(TestConversation.ID, TestUser.SELF.id)
         }
     }
 
@@ -61,7 +60,7 @@ class TypingIndicatorHandlerTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))
+            arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(TestConversation.ID, TestUser.OTHER_USER_ID)
         }
     }
 
@@ -75,7 +74,7 @@ class TypingIndicatorHandlerTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))
+            arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(TestConversation.ID, TestUser.OTHER_USER_ID)
         }
     }
 
@@ -89,7 +88,7 @@ class TypingIndicatorHandlerTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.not) {
-            arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.SELF.id))
+            arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(TestConversation.ID, TestUser.SELF.id)
         }
     }
 
@@ -98,7 +97,7 @@ class TypingIndicatorHandlerTest {
 
         suspend fun withTypingIndicatorObserve(usersId: Set<UserId>) = apply {
             everySuspend {
-                typingIndicatorIncomingRepository.observeUsersTyping(eq(TestConversation.ID))
+                typingIndicatorIncomingRepository.observeUsersTyping(TestConversation.ID)
             } returns flowOf(usersId)
         }
 

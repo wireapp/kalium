@@ -90,7 +90,6 @@ import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -149,7 +148,7 @@ class MLSConversationRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.addMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.addMember(Arrangement.RAW_GROUP_ID, any())
         }
     }
 
@@ -176,15 +175,15 @@ class MLSConversationRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
+            arrangement.mlsContext.createConversation(Arrangement.RAW_GROUP_ID, Arrangement.CRYPTO_MLS_PUBLIC_KEY)
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.mlsContext.addMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.addMember(Arrangement.RAW_GROUP_ID, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.wipeConversation(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.wipeConversation(Arrangement.RAW_GROUP_ID)
         }
     }
 
@@ -215,18 +214,18 @@ class MLSConversationRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
+            arrangement.mlsContext.createConversation(Arrangement.RAW_GROUP_ID, Arrangement.CRYPTO_MLS_PUBLIC_KEY)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsContext.addMember(
-                eq(Arrangement.RAW_GROUP_ID),
+                Arrangement.RAW_GROUP_ID,
                 matches { it.size == usersWithKeyPackages.size }
             )
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.mlsContext.wipeConversation(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.wipeConversation(Arrangement.RAW_GROUP_ID)
         }
     }
 
@@ -251,14 +250,14 @@ class MLSConversationRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsContext.createConversation(
-                groupId = eq(Arrangement.RAW_GROUP_ID),
+                groupId = Arrangement.RAW_GROUP_ID,
                 externalSenders = any()
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsContext.addMember(
-                groupId = eq(Arrangement.RAW_GROUP_ID),
+                groupId = Arrangement.RAW_GROUP_ID,
                 membersKeyPackages = any()
             )
         }
@@ -288,11 +287,11 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.createConversation(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.createConversation(Arrangement.RAW_GROUP_ID, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.addMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.addMember(Arrangement.RAW_GROUP_ID, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -373,7 +372,7 @@ class MLSConversationRepositoryTest {
                 matches {
                     it.containsAll(listOf(TestConversation.USER_1))
                 },
-                eq(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+                CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
         }
     }
@@ -414,7 +413,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.addMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.addMember(Arrangement.RAW_GROUP_ID, any())
         }
     }
 
@@ -435,7 +434,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.commitPendingProposals(Arrangement.RAW_GROUP_ID)
         }
     }
 
@@ -578,9 +577,9 @@ class MLSConversationRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 any(),
-                eq(Arrangement.RAW_GROUP_ID),
-                eq(2L),
-                eq(ConversationEntity.GroupState.ESTABLISHED),
+                Arrangement.RAW_GROUP_ID,
+                2L,
+                ConversationEntity.GroupState.ESTABLISHED,
             )
         }
 
@@ -602,8 +601,8 @@ class MLSConversationRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.updateConversationGroupState(
-                eq(ConversationEntity.GroupState.ESTABLISHED),
-                eq(Arrangement.RAW_GROUP_ID)
+                ConversationEntity.GroupState.ESTABLISHED,
+                Arrangement.RAW_GROUP_ID
             )
         }
 
@@ -637,7 +636,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.commitPendingProposals(Arrangement.RAW_GROUP_ID)
         }
     }
 
@@ -652,7 +651,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationDAO.clearProposalTimer(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.conversationDAO.clearProposalTimer(Arrangement.RAW_GROUP_ID)
         }
     }
 
@@ -693,7 +692,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.removeMember(Arrangement.RAW_GROUP_ID, any())
         }
     }
 
@@ -710,7 +709,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.commitPendingProposals(Arrangement.RAW_GROUP_ID)
         }
     }
 
@@ -795,7 +794,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.removeMember(Arrangement.RAW_GROUP_ID, any())
         }
     }
 
@@ -814,7 +813,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.mlsContext.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.removeMember(Arrangement.RAW_GROUP_ID, any())
         }
     }
 
@@ -838,7 +837,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.commitPendingProposals(Arrangement.RAW_GROUP_ID)
         }
     }
 
@@ -917,7 +916,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationDAO.updateKeyingMaterial(eq(Arrangement.RAW_GROUP_ID), any<Instant>())
+            arrangement.conversationDAO.updateKeyingMaterial(Arrangement.RAW_GROUP_ID, any<Instant>())
         }
     }
 
@@ -1015,7 +1014,7 @@ class MLSConversationRepositoryTest {
         verifySuspend(VerifyMode.order) {
             arrangement.mlsContext.conversationExists(any())
             arrangement.mlsContext.getConversationCredentialRef(any())
-            arrangement.mlsContext.setConversationCredential(any(), eq(arrangement.newCredentialRef))
+            arrangement.mlsContext.setConversationCredential(any(), arrangement.newCredentialRef)
         }
     }
 
@@ -1055,8 +1054,8 @@ class MLSConversationRepositoryTest {
         assertEquals(keyPackages, result.keyPackages)
         assertEquals(Arrangement.CIPHER_SUITE, result.cipherSuite)
         verifySuspend(VerifyMode.order) {
-            arrangement.mlsContext.removeKeyPackages(eq(arrangement.newCredentialRef))
-            arrangement.mlsContext.generateKeyPackages(eq(10), eq(arrangement.newCredentialRef))
+            arrangement.mlsContext.removeKeyPackages(arrangement.newCredentialRef)
+            arrangement.mlsContext.generateKeyPackages(10, arrangement.newCredentialRef)
         }
     }
 
@@ -1151,7 +1150,7 @@ class MLSConversationRepositoryTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.getUserIdentities(eq(groupId), any())
+            arrangement.mlsContext.getUserIdentities(groupId, any())
         }
 
         verifySuspend(VerifyMode.not) {
@@ -1182,7 +1181,7 @@ class MLSConversationRepositoryTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.getUserIdentities(eq(groupId), any())
+            arrangement.mlsContext.getUserIdentities(groupId, any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.getMLSGroupIdByUserId(any())
@@ -1216,7 +1215,7 @@ class MLSConversationRepositoryTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsClient.getUserIdentities(eq(groupId), any())
+            arrangement.mlsClient.getUserIdentities(groupId, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -1247,7 +1246,7 @@ class MLSConversationRepositoryTest {
             result.shouldSucceed()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsContext.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.EXTERNAL_SENDER_KEY.value))
+                arrangement.mlsContext.createConversation(Arrangement.RAW_GROUP_ID, Arrangement.EXTERNAL_SENDER_KEY.value)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {

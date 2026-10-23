@@ -28,7 +28,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -52,21 +51,21 @@ class RejectCallUseCaseTest {
         val conversationId = ConversationId("someone", "wire.com")
 
         everySuspend {
-            callManager.rejectCall(eq(conversationId))
+            callManager.rejectCall(conversationId)
         } returns (Unit)
 
         everySuspend {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
+            callRepository.updateCallStatusById(conversationId, CallStatus.REJECTED)
         } returns (Unit)
 
         rejectCallUseCase.invoke(conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            callManager.rejectCall(eq(conversationId))
+            callManager.rejectCall(conversationId)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
+            callRepository.updateCallStatusById(conversationId, CallStatus.REJECTED)
         }
     }
 

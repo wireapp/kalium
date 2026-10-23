@@ -32,7 +32,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -108,10 +107,10 @@ class AccessUpdateHandlerTest {
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
-                eventId = eq(event.id),
-                conversationId = eq(event.conversationId),
-                senderUserId = eq(event.qualifiedFrom),
-                isAppsAccessEnabled = eq(true)
+                eventId = event.id,
+                conversationId = event.conversationId,
+                senderUserId = event.qualifiedFrom,
+                isAppsAccessEnabled = true
             )
         }
     }
@@ -143,10 +142,10 @@ class AccessUpdateHandlerTest {
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
-                eventId = eq(event.id),
-                conversationId = eq(event.conversationId),
-                senderUserId = eq(event.qualifiedFrom),
-                isAppsAccessEnabled = eq(false)
+                eventId = event.id,
+                conversationId = event.conversationId,
+                senderUserId = event.qualifiedFrom,
+                isAppsAccessEnabled = false
             )
         }
     }
