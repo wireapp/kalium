@@ -66,6 +66,20 @@ final enum class com.wire.kalium.logic.data.message.timeline/MessageTimelinePoli
     final fun values(): kotlin/Array<com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy> // com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy.values|values#static(){}[0]
 }
 
+final enum class com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress : kotlin/Enum<com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress> { // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress|null[0]
+    enum entry CANCELLED // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.CANCELLED|null[0]
+    enum entry COMPLETED // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.COMPLETED|null[0]
+    enum entry FAILED // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.FAILED|null[0]
+    enum entry QUEUED // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.QUEUED|null[0]
+    enum entry UPLOADING_AND_SENDING // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.UPLOADING_AND_SENDING|null[0]
+
+    final val entries // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress> // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress> // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.values|values#static(){}[0]
+}
+
 final enum class com.wire.kalium.logic.feature.backup/BackupFileFormat : kotlin/Enum<com.wire.kalium.logic.feature.backup/BackupFileFormat> { // com.wire.kalium.logic.feature.backup/BackupFileFormat|null[0]
     enum entry ANDROID // com.wire.kalium.logic.feature.backup/BackupFileFormat.ANDROID|null[0]
     enum entry MULTIPLATFORM // com.wire.kalium.logic.feature.backup/BackupFileFormat.MULTIPLATFORM|null[0]
@@ -277,6 +291,19 @@ abstract interface com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMe
     abstract suspend fun invoke(com.wire.kalium.logic.feature.asset.upload/AssetUploadParams): com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult // com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageUseCase.invoke|invoke(com.wire.kalium.logic.feature.asset.upload.AssetUploadParams){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload { // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload|null[0]
+    abstract val messageId // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload.messageId|{}messageId[0]
+        abstract fun <get-messageId>(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload.messageId.<get-messageId>|<get-messageId>(){}[0]
+    abstract val operationId // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload.operationId|{}operationId[0]
+        abstract fun <get-operationId>(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload.operationId.<get-operationId>|<get-operationId>(){}[0]
+    abstract val progress // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload.progress|{}progress[0]
+        abstract fun <get-progress>(): kotlinx.coroutines.flow/StateFlow<com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress> // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload.progress.<get-progress>|<get-progress>(){}[0]
+
+    abstract fun cancel() // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload.cancel|cancel(){}[0]
+    abstract suspend fun awaitCompletion(): com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload.awaitCompletion|awaitCompletion(){}[0]
+    abstract suspend fun retry(): com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload // com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload.retry|retry(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.asset/DeleteAssetUseCase { // com.wire.kalium.logic.feature.asset/DeleteAssetUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.feature.asset/DeleteAssetUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
@@ -300,6 +327,10 @@ abstract interface com.wire.kalium.logic.feature.asset/GetAvatarAssetUseCase { /
 
 abstract interface com.wire.kalium.logic.feature.asset/GetImageAssetMessagesForConversationUseCase { // com.wire.kalium.logic.feature.asset/GetImageAssetMessagesForConversationUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Int, kotlin/Int): kotlin.collections/List<com.wire.kalium.logic.data.asset/AssetMessage> // com.wire.kalium.logic.feature.asset/GetImageAssetMessagesForConversationUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Int;kotlin.Int){}[0]
+}
+
+abstract interface com.wire.kalium.logic.feature.asset/GetMessageAssetPreviewUseCase { // com.wire.kalium.logic.feature.asset/GetMessageAssetPreviewUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, com.wire.kalium.logic.data.id/QualifiedID? = ...): kotlinx.coroutines/Deferred<com.wire.kalium.logic.feature.asset/MessageAssetResult> // com.wire.kalium.logic.feature.asset/GetMessageAssetPreviewUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;com.wire.kalium.logic.data.id.QualifiedID?){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.asset/GetMessageAssetUseCase { // com.wire.kalium.logic.feature.asset/GetMessageAssetUseCase|null[0]
@@ -2678,6 +2709,33 @@ sealed interface com.wire.kalium.logic.data.mlspublickeys/MLSPublicKeyType { // 
     }
 }
 
+sealed interface com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion { // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion|null[0]
+    final class Failure : com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion { // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure|null[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val coreFailure // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure.coreFailure|{}coreFailure[0]
+            final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+        final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Failure.toString|toString(){}[0]
+    }
+
+    final object Cancelled : com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion { // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Cancelled|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Cancelled.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Cancelled.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Cancelled.toString|toString(){}[0]
+    }
+
+    final object Success : com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion { // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Success|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/AssetUploadCompletion.Success.toString|toString(){}[0]
+    }
+}
+
 sealed interface com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult { // com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult|null[0]
     sealed interface Failure : com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult { // com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Failure|null[0]
         final class Generic : com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Failure { // com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Failure.Generic|null[0]
@@ -2717,6 +2775,34 @@ sealed interface com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMess
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Success.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult { // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult|null[0]
+    final class Failure : com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult { // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Failure) // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult.Failure){}[0]
+
+        final val reason // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure.reason|{}reason[0]
+            final fun <get-reason>(): com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Failure // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure.reason.<get-reason>|<get-reason>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Failure // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.feature.asset.upload/ScheduleNewAssetMessageResult.Failure = ...): com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure.copy|copy(com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult.Failure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Failure.toString|toString(){}[0]
+    }
+
+    final class Started : com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult { // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started|null[0]
+        constructor <init>(com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload) // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started.<init>|<init>(com.wire.kalium.logic.feature.asset.upload.TrackedAssetUpload){}[0]
+
+        final val operation // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started.operation|{}operation[0]
+            final fun <get-operation>(): com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started.operation.<get-operation>|<get-operation>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.feature.asset.upload/TrackedAssetUpload = ...): com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started.copy|copy(com.wire.kalium.logic.feature.asset.upload.TrackedAssetUpload){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult.Started.toString|toString(){}[0]
     }
 }
 
@@ -3328,6 +3414,7 @@ final class com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest { // com.w
 
 final class com.wire.kalium.logic.data.message.timeline/MessageListAsset { // com.wire.kalium.logic.data.message.timeline/MessageListAsset|null[0]
     constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String?, kotlin/String, kotlin/Long, kotlin/Int?, kotlin/Int?, kotlin/Long?, kotlin/Boolean) // com.wire.kalium.logic.data.message.timeline/MessageListAsset.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.String;kotlin.Long;kotlin.Int?;kotlin.Int?;kotlin.Long?;kotlin.Boolean){}[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String?, kotlin/String, kotlin/Long, kotlin/Int?, kotlin/Int?, kotlin/Long?, kotlin/Boolean, com.wire.kalium.logic.data.id/QualifiedID? = ...) // com.wire.kalium.logic.data.message.timeline/MessageListAsset.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.String;kotlin.Long;kotlin.Int?;kotlin.Int?;kotlin.Long?;kotlin.Boolean;com.wire.kalium.logic.data.id.QualifiedID?){}[0]
 
     final val durationMs // com.wire.kalium.logic.data.message.timeline/MessageListAsset.durationMs|{}durationMs[0]
         final fun <get-durationMs>(): kotlin/Long? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.durationMs.<get-durationMs>|<get-durationMs>(){}[0]
@@ -3341,6 +3428,8 @@ final class com.wire.kalium.logic.data.message.timeline/MessageListAsset { // co
         final fun <get-mimeType>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAsset.mimeType.<get-mimeType>|<get-mimeType>(){}[0]
     final val name // com.wire.kalium.logic.data.message.timeline/MessageListAsset.name|{}name[0]
         final fun <get-name>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.name.<get-name>|<get-name>(){}[0]
+    final val previewAssetId // com.wire.kalium.logic.data.message.timeline/MessageListAsset.previewAssetId|{}previewAssetId[0]
+        final fun <get-previewAssetId>(): com.wire.kalium.logic.data.id/QualifiedID? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.previewAssetId.<get-previewAssetId>|<get-previewAssetId>(){}[0]
     final val sizeInBytes // com.wire.kalium.logic.data.message.timeline/MessageListAsset.sizeInBytes|{}sizeInBytes[0]
         final fun <get-sizeInBytes>(): kotlin/Long // com.wire.kalium.logic.data.message.timeline/MessageListAsset.sizeInBytes.<get-sizeInBytes>|<get-sizeInBytes>(){}[0]
     final val width // com.wire.kalium.logic.data.message.timeline/MessageListAsset.width|{}width[0]
@@ -3354,7 +3443,9 @@ final class com.wire.kalium.logic.data.message.timeline/MessageListAsset { // co
     final fun component6(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component6|component6(){}[0]
     final fun component7(): kotlin/Long? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component7|component7(){}[0]
     final fun component8(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component8|component8(){}[0]
+    final fun component9(): com.wire.kalium.logic.data.id/QualifiedID? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component9|component9(){}[0]
     final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String? = ..., kotlin/String = ..., kotlin/Long = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/Long? = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.message.timeline/MessageListAsset // com.wire.kalium.logic.data.message.timeline/MessageListAsset.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.String;kotlin.Long;kotlin.Int?;kotlin.Int?;kotlin.Long?;kotlin.Boolean){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String? = ..., kotlin/String = ..., kotlin/Long = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/Long? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.id/QualifiedID? = ...): com.wire.kalium.logic.data.message.timeline/MessageListAsset // com.wire.kalium.logic.data.message.timeline/MessageListAsset.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.String;kotlin.Long;kotlin.Int?;kotlin.Int?;kotlin.Long?;kotlin.Boolean;com.wire.kalium.logic.data.id.QualifiedID?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListAsset.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListAsset.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAsset.toString|toString(){}[0]
@@ -3763,8 +3854,34 @@ final class com.wire.kalium.logic.feature.app/AppScope { // com.wire.kalium.logi
         final fun <get-syncApps>(): com.wire.kalium.logic.feature.app/SyncAppsUseCase // com.wire.kalium.logic.feature.app/AppScope.syncApps.<get-syncApps>|<get-syncApps>(){}[0]
 }
 
+final class com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams { // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams|null[0]
+    constructor <init>(okio/Path, kotlin/Long, kotlin/String, kotlin/Int, kotlin/Int) // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.<init>|<init>(okio.Path;kotlin.Long;kotlin.String;kotlin.Int;kotlin.Int){}[0]
+
+    final val assetDataPath // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.assetDataPath|{}assetDataPath[0]
+        final fun <get-assetDataPath>(): okio/Path // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.assetDataPath.<get-assetDataPath>|<get-assetDataPath>(){}[0]
+    final val assetDataSize // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.assetDataSize|{}assetDataSize[0]
+        final fun <get-assetDataSize>(): kotlin/Long // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.assetDataSize.<get-assetDataSize>|<get-assetDataSize>(){}[0]
+    final val height // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.height|{}height[0]
+        final fun <get-height>(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.height.<get-height>|<get-height>(){}[0]
+    final val mimeType // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.mimeType|{}mimeType[0]
+        final fun <get-mimeType>(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.mimeType.<get-mimeType>|<get-mimeType>(){}[0]
+    final val width // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.width|{}width[0]
+        final fun <get-width>(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.width.<get-width>|<get-width>(){}[0]
+
+    final fun component1(): okio/Path // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.component1|component1(){}[0]
+    final fun component2(): kotlin/Long // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.component2|component2(){}[0]
+    final fun component3(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.component3|component3(){}[0]
+    final fun component4(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.component4|component4(){}[0]
+    final fun component5(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.component5|component5(){}[0]
+    final fun copy(okio/Path = ..., kotlin/Long = ..., kotlin/String = ..., kotlin/Int = ..., kotlin/Int = ...): com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.copy|copy(okio.Path;kotlin.Long;kotlin.String;kotlin.Int;kotlin.Int){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams.toString|toString(){}[0]
+}
+
 final class com.wire.kalium.logic.feature.asset.upload/AssetUploadParams { // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams|null[0]
     constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, okio/Path, kotlin/Long, kotlin/String, kotlin/String, kotlin/Int?, kotlin/Int?, kotlin/Long, kotlin/ByteArray?) // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;okio.Path;kotlin.Long;kotlin.String;kotlin.String;kotlin.Int?;kotlin.Int?;kotlin.Long;kotlin.ByteArray?){}[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, okio/Path, kotlin/Long, kotlin/String, kotlin/String, kotlin/Int?, kotlin/Int?, kotlin/Long, kotlin/ByteArray?, com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams? = ...) // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;okio.Path;kotlin.Long;kotlin.String;kotlin.String;kotlin.Int?;kotlin.Int?;kotlin.Long;kotlin.ByteArray?;com.wire.kalium.logic.feature.asset.upload.AssetPreviewUploadParams?){}[0]
 
     final val assetDataPath // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.assetDataPath|{}assetDataPath[0]
         final fun <get-assetDataPath>(): okio/Path // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.assetDataPath.<get-assetDataPath>|<get-assetDataPath>(){}[0]
@@ -3784,8 +3901,11 @@ final class com.wire.kalium.logic.feature.asset.upload/AssetUploadParams { // co
         final fun <get-audioNormalizedLoudness>(): kotlin/ByteArray? // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.audioNormalizedLoudness.<get-audioNormalizedLoudness>|<get-audioNormalizedLoudness>(){}[0]
     final val conversationId // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.conversationId|{}conversationId[0]
         final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+    final val preview // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.preview|{}preview[0]
+        final fun <get-preview>(): com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams? // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.preview.<get-preview>|<get-preview>(){}[0]
 
     final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.component1|component1(){}[0]
+    final fun component10(): com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams? // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.component10|component10(){}[0]
     final fun component2(): okio/Path // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.component2|component2(){}[0]
     final fun component3(): kotlin/Long // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.component3|component3(){}[0]
     final fun component4(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.component4|component4(){}[0]
@@ -3795,9 +3915,14 @@ final class com.wire.kalium.logic.feature.asset.upload/AssetUploadParams { // co
     final fun component8(): kotlin/Long // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.component8|component8(){}[0]
     final fun component9(): kotlin/ByteArray? // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.component9|component9(){}[0]
     final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., okio/Path = ..., kotlin/Long = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/Long = ..., kotlin/ByteArray? = ...): com.wire.kalium.logic.feature.asset.upload/AssetUploadParams // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;okio.Path;kotlin.Long;kotlin.String;kotlin.String;kotlin.Int?;kotlin.Int?;kotlin.Long;kotlin.ByteArray?){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., okio/Path = ..., kotlin/Long = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/Long = ..., kotlin/ByteArray? = ..., com.wire.kalium.logic.feature.asset.upload/AssetPreviewUploadParams? = ...): com.wire.kalium.logic.feature.asset.upload/AssetUploadParams // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;okio.Path;kotlin.Long;kotlin.String;kotlin.String;kotlin.Int?;kotlin.Int?;kotlin.Long;kotlin.ByteArray?;com.wire.kalium.logic.feature.asset.upload.AssetPreviewUploadParams?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadUseCase { // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadUseCase|null[0]
+    final suspend fun invoke(com.wire.kalium.logic.feature.asset.upload/AssetUploadParams): com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadResult // com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadUseCase.invoke|invoke(com.wire.kalium.logic.feature.asset.upload.AssetUploadParams){}[0]
 }
 
 final class com.wire.kalium.logic.feature.asset/GetPaginatedFlowOfAssetMessageByConversationIdUseCase { // com.wire.kalium.logic.feature.asset/GetPaginatedFlowOfAssetMessageByConversationIdUseCase|null[0]
@@ -3806,6 +3931,10 @@ final class com.wire.kalium.logic.feature.asset/GetPaginatedFlowOfAssetMessageBy
 
 final class com.wire.kalium.logic.feature.asset/ObservePaginatedAssetImageMessages { // com.wire.kalium.logic.feature.asset/ObservePaginatedAssetImageMessages|null[0]
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Long, androidx.paging/PagingConfig): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.asset/AssetMessage>> // com.wire.kalium.logic.feature.asset/ObservePaginatedAssetImageMessages.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Long;androidx.paging.PagingConfig){}[0]
+}
+
+final class com.wire.kalium.logic.feature.asset/ObservePaginatedMediaMessages { // com.wire.kalium.logic.feature.asset/ObservePaginatedMediaMessages|null[0]
+    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Long, androidx.paging/PagingConfig): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.message/Message.Standalone>> // com.wire.kalium.logic.feature.asset/ObservePaginatedMediaMessages.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Long;androidx.paging.PagingConfig){}[0]
 }
 
 final class com.wire.kalium.logic.feature.auth.autoVersioningAuth/AuthenticationScopeForConfigIdUseCase { // com.wire.kalium.logic.feature.auth.autoVersioningAuth/AuthenticationScopeForConfigIdUseCase|null[0]
@@ -5280,6 +5409,8 @@ final class com.wire.kalium.logic.feature.message/MessageScope { // com.wire.kal
         final fun <get-generateLinkPreview>(): com.wire.kalium.logic.feature.message.linkpreview/GenerateLinkPreviewUseCase // com.wire.kalium.logic.feature.message/MessageScope.generateLinkPreview.<get-generateLinkPreview>|<get-generateLinkPreview>(){}[0]
     final val getAssetMessage // com.wire.kalium.logic.feature.message/MessageScope.getAssetMessage|{}getAssetMessage[0]
         final fun <get-getAssetMessage>(): com.wire.kalium.logic.feature.asset/GetMessageAssetUseCase // com.wire.kalium.logic.feature.message/MessageScope.getAssetMessage.<get-getAssetMessage>|<get-getAssetMessage>(){}[0]
+    final val getAssetMessagePreview // com.wire.kalium.logic.feature.message/MessageScope.getAssetMessagePreview|{}getAssetMessagePreview[0]
+        final fun <get-getAssetMessagePreview>(): com.wire.kalium.logic.feature.asset/GetMessageAssetPreviewUseCase // com.wire.kalium.logic.feature.message/MessageScope.getAssetMessagePreview.<get-getAssetMessagePreview>|<get-getAssetMessagePreview>(){}[0]
     final val getImageAssetMessagesByConversation // com.wire.kalium.logic.feature.message/MessageScope.getImageAssetMessagesByConversation|{}getImageAssetMessagesByConversation[0]
         final fun <get-getImageAssetMessagesByConversation>(): com.wire.kalium.logic.feature.asset/GetImageAssetMessagesForConversationUseCase // com.wire.kalium.logic.feature.message/MessageScope.getImageAssetMessagesByConversation.<get-getImageAssetMessagesByConversation>|<get-getImageAssetMessagesByConversation>(){}[0]
     final val getMessageById // com.wire.kalium.logic.feature.message/MessageScope.getMessageById|{}getMessageById[0]
@@ -5318,6 +5449,8 @@ final class com.wire.kalium.logic.feature.message/MessageScope { // com.wire.kal
         final fun <get-resetSession>(): com.wire.kalium.logic.feature.sessionreset/ResetSessionUseCase // com.wire.kalium.logic.feature.message/MessageScope.resetSession.<get-resetSession>|<get-resetSession>(){}[0]
     final val retryFailedMessage // com.wire.kalium.logic.feature.message/MessageScope.retryFailedMessage|{}retryFailedMessage[0]
         final fun <get-retryFailedMessage>(): com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase // com.wire.kalium.logic.feature.message/MessageScope.retryFailedMessage.<get-retryFailedMessage>|<get-retryFailedMessage>(){}[0]
+    final val retryFailedMessageAndAwait // com.wire.kalium.logic.feature.message/MessageScope.retryFailedMessageAndAwait|{}retryFailedMessageAndAwait[0]
+        final fun <get-retryFailedMessageAndAwait>(): com.wire.kalium.logic.feature.message/RetryFailedMessageAndAwaitUseCase // com.wire.kalium.logic.feature.message/MessageScope.retryFailedMessageAndAwait.<get-retryFailedMessageAndAwait>|<get-retryFailedMessageAndAwait>(){}[0]
     final val saveMessageDraftUseCase // com.wire.kalium.logic.feature.message/MessageScope.saveMessageDraftUseCase|{}saveMessageDraftUseCase[0]
         final fun <get-saveMessageDraftUseCase>(): com.wire.kalium.logic.feature.message.draft/SaveMessageDraftUseCase // com.wire.kalium.logic.feature.message/MessageScope.saveMessageDraftUseCase.<get-saveMessageDraftUseCase>|<get-saveMessageDraftUseCase>(){}[0]
     final val searchMessagesGlobally // com.wire.kalium.logic.feature.message/MessageScope.searchMessagesGlobally|{}searchMessagesGlobally[0]
@@ -5350,6 +5483,8 @@ final class com.wire.kalium.logic.feature.message/MessageScope { // com.wire.kal
         final fun <get-sendPollVote>(): com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase // com.wire.kalium.logic.feature.message/MessageScope.sendPollVote.<get-sendPollVote>|<get-sendPollVote>(){}[0]
     final val sendTextMessage // com.wire.kalium.logic.feature.message/MessageScope.sendTextMessage|{}sendTextMessage[0]
         final fun <get-sendTextMessage>(): com.wire.kalium.logic.feature.message/SendTextMessageUseCase // com.wire.kalium.logic.feature.message/MessageScope.sendTextMessage.<get-sendTextMessage>|<get-sendTextMessage>(){}[0]
+    final val startTrackedAssetUpload // com.wire.kalium.logic.feature.message/MessageScope.startTrackedAssetUpload|{}startTrackedAssetUpload[0]
+        final fun <get-startTrackedAssetUpload>(): com.wire.kalium.logic.feature.asset.upload/StartTrackedAssetUploadUseCase // com.wire.kalium.logic.feature.message/MessageScope.startTrackedAssetUpload.<get-startTrackedAssetUpload>|<get-startTrackedAssetUpload>(){}[0]
     final val toggleReaction // com.wire.kalium.logic.feature.message/MessageScope.toggleReaction|{}toggleReaction[0]
         final fun <get-toggleReaction>(): com.wire.kalium.logic.feature.message/ToggleReactionUseCase // com.wire.kalium.logic.feature.message/MessageScope.toggleReaction.<get-toggleReaction>|<get-toggleReaction>(){}[0]
     final val updateAssetMessageTransferStatus // com.wire.kalium.logic.feature.message/MessageScope.updateAssetMessageTransferStatus|{}updateAssetMessageTransferStatus[0]
@@ -5392,6 +5527,10 @@ final class com.wire.kalium.logic.feature.message/ObserveMessageByIdUseCase { //
 
 final class com.wire.kalium.logic.feature.message/OpenMessageTimelineUseCase { // com.wire.kalium.logic.feature.message/OpenMessageTimelineUseCase|null[0]
     final fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy = ...): com.wire.kalium.logic.data.message.timeline/MessageTimeline // com.wire.kalium.logic.feature.message/OpenMessageTimelineUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.message.timeline.MessageTimelinePolicy){}[0]
+}
+
+final class com.wire.kalium.logic.feature.message/RetryFailedMessageAndAwaitUseCase { // com.wire.kalium.logic.feature.message/RetryFailedMessageAndAwaitUseCase|null[0]
+    final suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.message/RetryFailedMessageAndAwaitUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
 final class com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase { // com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase|null[0]
@@ -8871,6 +9010,8 @@ final val com.wire.kalium.logic.feature.message/getPaginatedFlowOfMessagesBySear
     final fun (com.wire.kalium.logic.feature.message/MessageScope).<get-getPaginatedFlowOfMessagesBySearchQueryAndConversation>(): com.wire.kalium.logic.feature.message/GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase // com.wire.kalium.logic.feature.message/getPaginatedFlowOfMessagesBySearchQueryAndConversation.<get-getPaginatedFlowOfMessagesBySearchQueryAndConversation>|<get-getPaginatedFlowOfMessagesBySearchQueryAndConversation>@com.wire.kalium.logic.feature.message.MessageScope(){}[0]
 final val com.wire.kalium.logic.feature.message/observePaginatedImageAssetMessageByConversationId // com.wire.kalium.logic.feature.message/observePaginatedImageAssetMessageByConversationId|@com.wire.kalium.logic.feature.message.MessageScope{}observePaginatedImageAssetMessageByConversationId[0]
     final fun (com.wire.kalium.logic.feature.message/MessageScope).<get-observePaginatedImageAssetMessageByConversationId>(): com.wire.kalium.logic.feature.asset/ObservePaginatedAssetImageMessages // com.wire.kalium.logic.feature.message/observePaginatedImageAssetMessageByConversationId.<get-observePaginatedImageAssetMessageByConversationId>|<get-observePaginatedImageAssetMessageByConversationId>@com.wire.kalium.logic.feature.message.MessageScope(){}[0]
+final val com.wire.kalium.logic.feature.message/observePaginatedMediaMessages // com.wire.kalium.logic.feature.message/observePaginatedMediaMessages|@com.wire.kalium.logic.feature.message.MessageScope{}observePaginatedMediaMessages[0]
+    final fun (com.wire.kalium.logic.feature.message/MessageScope).<get-observePaginatedMediaMessages>(): com.wire.kalium.logic.feature.asset/ObservePaginatedMediaMessages // com.wire.kalium.logic.feature.message/observePaginatedMediaMessages.<get-observePaginatedMediaMessages>|<get-observePaginatedMediaMessages>@com.wire.kalium.logic.feature.message.MessageScope(){}[0]
 final val com.wire.kalium.logic.util/inWholeWeeks // com.wire.kalium.logic.util/inWholeWeeks|@kotlin.time.Duration{}inWholeWeeks[0]
     final fun (kotlin.time/Duration).<get-inWholeWeeks>(): kotlin/Long // com.wire.kalium.logic.util/inWholeWeeks.<get-inWholeWeeks>|<get-inWholeWeeks>@kotlin.time.Duration(){}[0]
 

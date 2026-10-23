@@ -70,7 +70,8 @@ private fun createKaliumWorker(): Worker {
                     "function resultFor(db, sql, params) {",
                     "  const result = db.exec(sql, params)[0];",
                     "  if (result) return normalizeResult(sql, result);",
-                    "  if (isQuery(sql)) return { values: [] };",
+                    // RETURNING with no matching row is an empty result, not a row containing the update count.
+                    "  if (isQuery(sql) || /\\breturning\\b/i.test(sql)) return { values: [] };",
                     "  return { values: [[db.getRowsModified()]] };",
                     "}",
                     "parentPort.on('message', async (data) => {",

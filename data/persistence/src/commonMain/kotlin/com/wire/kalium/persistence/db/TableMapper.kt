@@ -143,6 +143,8 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         asset_widthAdapter = IntColumnAdapter,
         asset_heightAdapter = IntColumnAdapter,
+        preview_asset_widthAdapter = IntColumnAdapter,
+        preview_asset_heightAdapter = IntColumnAdapter,
     )
 
     val messageLinkPreviewAdapter = MessageLinkPreview.Adapter(

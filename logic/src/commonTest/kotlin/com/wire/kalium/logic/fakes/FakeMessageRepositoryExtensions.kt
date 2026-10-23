@@ -47,6 +47,12 @@ internal open class FakeMessageRepositoryExtensions : MessageRepositoryExtension
         startingOffset: Long
     ): Flow<PagingData<Message.Standalone>> = emptyFlow()
 
+    override suspend fun observePaginatedMediaMessages(
+        conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>> = emptyFlow()
+
     override suspend fun observePaginatedMessageAssetImageByConversationId(
         conversationId: ConversationId,
         pagingConfig: PagingConfig,

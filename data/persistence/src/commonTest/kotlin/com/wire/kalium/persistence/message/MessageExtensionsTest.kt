@@ -398,6 +398,47 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         assertFalse { pagingSource.invalid }
     }
 
+    @Test
+    fun mediaPagerIncludesUndownloadedMediaAndUsesStableOrderAcrossPages() = runTest {
+        userDAO.upsertUser(newUserEntity(qualifiedID = USER_ID))
+        conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
+        conversationDAO.insertConversation(newConversationEntity(id = OTHER_CONVERSATION_ID))
+        val asset = MessageEntityContent.Asset(
+            assetSizeInBytes = 512,
+            assetName = "clip.mp4",
+            assetMimeType = "video/mp4",
+            assetOtrKey = byteArrayOf(1),
+            assetSha256Key = byteArrayOf(2),
+            assetId = "remote-only",
+            assetDomain = "domain",
+            assetEncryptionAlgorithm = "AES_CBC",
+        )
+        val media = (0 until 25).map { index ->
+            newRegularMessageEntity(
+                id = "media-${index.toString().padStart(2, '0')}",
+                conversationId = CONVERSATION_ID,
+                senderUserId = USER_ID,
+                date = Instant.fromEpochSeconds(1),
+                content = asset.copy(assetMimeType = if (index % 2 == 0) "image/jpeg" else "video/mp4"),
+            )
+        }
+        val excluded = listOf(
+            media.first().copy(id = "file", content = asset.copy(assetMimeType = "application/pdf")),
+            media.first().copy(id = "audio", content = asset.copy(assetMimeType = "audio/mp4")),
+            media.first().copy(id = "ephemeral", expireAfterMs = 1000),
+            media.first().copy(id = "hidden", visibility = MessageEntity.Visibility.HIDDEN),
+            media.first().copy(id = "other", conversationId = OTHER_CONVERSATION_ID),
+            media.first().copy(id = "text", content = MessageEntityContent.Text("text")),
+        )
+        messageDAO.insertOrIgnoreMessages(media + excluded)
+        val source = messageExtensions.getPagerForMediaMessages(CONVERSATION_ID, PagingConfig(PAGE_SIZE), 0).pagingSource
+        val first = assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(source.refresh())
+        val second = assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(source.nextPageForOffset(first.nextKey!!))
+        assertEquals(media.map { it.id }.sortedDescending(), (first.data + second.data).map { it.id })
+        assertEquals(5, first.itemsAfter)
+        assertEquals(null, second.nextKey)
+    }
+
     private fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
         conversationId = CONVERSATION_ID,
         visibilities = MessageEntity.Visibility.entries.toList(),
