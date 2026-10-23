@@ -310,6 +310,8 @@ com.wire.kalium.network.api.v18.authenticated
 com.wire.kalium.network.api.v18.authenticated.networkContainer
 com.wire.kalium.network.api.v18.unauthenticated
 com.wire.kalium.network.api.v18.unauthenticated.networkContainer
+com.wire.kalium.network.api.v19.authenticated
+com.wire.kalium.network.api.v19.authenticated.networkContainer
 com.wire.kalium.network.api.v2.authenticated
 com.wire.kalium.network.api.v2.authenticated.networkContainer
 com.wire.kalium.network.api.v2.unauthenticated
