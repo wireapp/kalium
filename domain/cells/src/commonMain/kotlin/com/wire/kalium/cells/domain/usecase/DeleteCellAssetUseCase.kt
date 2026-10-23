@@ -22,13 +22,9 @@ import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.withContext
 import okio.FileSystem
-import okio.Path.Companion.toPath
 import okio.SYSTEM
 
 /**
@@ -44,30 +40,14 @@ public interface DeleteCellAssetUseCase {
 
 internal class DeleteCellAssetUseCaseImpl(
     private val cellsRepository: CellsRepository,
-    private val cellAttachmentsRepository: CellAttachmentsRepository,
-    private val fileSystem: FileSystem = FileSystem.SYSTEM,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    cellAttachmentsRepository: CellAttachmentsRepository,
+    fileSystem: FileSystem = FileSystem.SYSTEM,
+    dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : DeleteCellAssetUseCase {
+
+    private val localCleanup = CellAssetLocalCleanup(cellAttachmentsRepository, fileSystem, dispatchers)
 
     override suspend fun invoke(assetId: String, localPath: String?) =
         cellsRepository.deleteFile(assetId)
-            .flatMap {
-                // Keep asset data but set transfer status to NOT_FOUND to show attachment as not available
-                cellAttachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
-            }
-            .flatMap {
-                // Delete asset from the database if it was not received as message attachment
-                cellAttachmentsRepository.deleteStandaloneAsset(assetId)
-            }
-            .onSuccess {
-                deleteLocalFile(localPath)
-            }
-
-    private suspend fun deleteLocalFile(localPath: String?) {
-        localPath?.let {
-            withContext(dispatchers.io) {
-                fileSystem.delete(it.toPath())
-            }
-        }
-    }
+            .flatMap { localCleanup(assetId, localPath) }
 }

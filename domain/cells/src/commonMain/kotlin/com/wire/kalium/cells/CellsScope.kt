@@ -50,6 +50,8 @@ import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.DeleteCellAssetsUseCase
+import com.wire.kalium.cells.domain.usecase.DeleteCellAssetsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCase
@@ -342,6 +344,10 @@ public class CellsScope(
 
     public val deleteCellAssetUseCase: DeleteCellAssetUseCase by lazy {
         DeleteCellAssetUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+
+    public val deleteCellAssetsUseCase: DeleteCellAssetsUseCase by lazy {
+        DeleteCellAssetsUseCaseImpl(cellsRepository, cellAttachmentsRepository)
     }
 
     public val createPublicLinkUseCase: CreatePublicLinkUseCase by lazy {
