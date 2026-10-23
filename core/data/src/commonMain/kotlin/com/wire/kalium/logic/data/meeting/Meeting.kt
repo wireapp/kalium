@@ -97,7 +97,7 @@ data class UpdateMeeting(
     val tzid: String,
     val recurrence: Meeting.Recurrence?,
     val otherParticipants: List<UserId>,
-    val type: Meeting.Type = Meeting.Type.SCHEDULED,
+    val type: Meeting.Type,
 )
 
 data class MeetingReminder(

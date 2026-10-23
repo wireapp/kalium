@@ -180,7 +180,8 @@ class UpdateMeetingUseCaseTest {
                 interval = 1L,
                 until = Instant.parse("2026-12-01T00:00:00.000Z")
             ),
-            otherParticipants = listOf(UserId("participant", "domain"))
+            otherParticipants = listOf(UserId("participant", "domain")),
+            type = Meeting.Type.SCHEDULED,
         )
     }
 }

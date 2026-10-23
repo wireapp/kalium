@@ -1530,6 +1530,7 @@ class MeetingRepositoryTest {
         tzid = CREATE_MEETING.tzid,
         recurrence = CREATE_MEETING.recurrence,
         otherParticipants = CREATE_MEETING.otherParticipants,
+        type = Meeting.Type.SCHEDULED,
     )
 
     private val expectedMLSAdditionResult = MLSAdditionResult(setOf(TestUser.OTHER.id), emptySet(), emptySet())
