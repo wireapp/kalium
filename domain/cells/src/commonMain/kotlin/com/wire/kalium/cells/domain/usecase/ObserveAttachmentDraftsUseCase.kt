@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellAttachmentDraftUploadsImpl
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.model.AttachmentDraft
@@ -41,7 +42,8 @@ public interface ObserveAttachmentDraftsUseCase {
 internal class ObserveAttachmentDraftsUseCaseImpl internal constructor(
     private val repository: MessageAttachmentDraftRepository,
     private val uploadManager: CellUploadManager,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val draftUploads: CellAttachmentDraftUploadsImpl? = null,
 ) : ObserveAttachmentDraftsUseCase {
 
     override suspend fun invoke(conversationId: QualifiedID): Flow<List<AttachmentDraft>> {
@@ -58,7 +60,18 @@ internal class ObserveAttachmentDraftsUseCaseImpl internal constructor(
                 ?.filter { it.uploadStatus == AttachmentUploadStatus.UPLOADING }
                 ?.filterNot { uploadManager.isUploading(it.uuid) }
                 ?.onEach {
-                    repository.remove(it.uuid)
+                    val registry = draftUploads
+                    if (registry == null || registry.claimNode(it.uuid)) {
+                        try {
+                            // The list may predate cancellation cleanup or a retry. Recheck under node ownership.
+                            val current = repository.get(it.uuid).getOrNull()
+                            if (current?.uploadStatus == AttachmentUploadStatus.UPLOADING && !uploadManager.isUploading(it.uuid)) {
+                                repository.remove(it.uuid)
+                            }
+                        } finally {
+                            registry?.releaseNode(it.uuid)
+                        }
+                    }
                 }
         }
     }

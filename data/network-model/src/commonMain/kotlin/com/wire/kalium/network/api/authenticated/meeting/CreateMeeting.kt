@@ -26,7 +26,37 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UpsertMeetingRequest(
+data class CreateMeetingRequest(
+    @SerialName("start_time") val startTime: Instant,
+    @SerialName("end_time") val endTime: Instant,
+    @SerialName("tzid") val tzid: String,
+    @SerialName("title") val title: String,
+    @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
+    @SerialName("type") val type: MeetingTypeDTO,
+    @SerialName("password") val password: String? = null,
+)
+
+@Serializable
+data class CreateMeetingRequestV17(
+    @SerialName("start_time") val startTime: Instant,
+    @SerialName("end_time") val endTime: Instant,
+    @SerialName("tzid") val tzid: String,
+    @SerialName("title") val title: String,
+    @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
+)
+
+@Serializable
+data class UpdateMeetingRequest(
+    @SerialName("start_time") val startTime: Instant,
+    @SerialName("end_time") val endTime: Instant,
+    @SerialName("tzid") val tzid: String,
+    @SerialName("title") val title: String,
+    @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
+    @SerialName("type") val type: MeetingTypeDTO,
+)
+
+@Serializable
+data class UpdateMeetingRequestV17(
     @SerialName("start_time") val startTime: Instant,
     @SerialName("end_time") val endTime: Instant,
     @SerialName("tzid") val tzid: String,
@@ -47,6 +77,9 @@ data class UpsertMeetingResponse(
     @SerialName("tzid") val tzid: String = "Europe/Berlin",
     @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
     @SerialName("conversation") val conversation: ConversationResponse,
+    @SerialName("type") val type: MeetingTypeDTO = MeetingTypeDTO.SCHEDULED,
+    @SerialName("link") val link: String? = null,
+    @SerialName("has_password") val hasPassword: Boolean = false,
 )
 
 fun UpsertMeetingResponse.toMeetingDTO(): MeetingDTO = MeetingDTO(
@@ -59,5 +92,8 @@ fun UpsertMeetingResponse.toMeetingDTO(): MeetingDTO = MeetingDTO(
     startTime = startTime,
     endTime = endTime,
     tzid = tzid,
-    recurrence = recurrence
+    recurrence = recurrence,
+    type = type,
+    link = link,
+    hasPassword = hasPassword,
 )

@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellAttachmentDraftUploadResult
+import com.wire.kalium.cells.domain.CellAttachmentDraftUploadsImpl
+import com.wire.kalium.cells.domain.CellUploadAttempt
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
@@ -26,10 +29,14 @@ import com.wire.kalium.cells.domain.model.AttachmentUploadStatus.UPLOADING
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.left
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 public interface RetryAttachmentUploadUseCase {
     /**
@@ -46,9 +53,13 @@ internal class RetryAttachmentUploadUseCaseImpl internal constructor(
     private val uploadManager: CellUploadManager,
     private val repository: MessageAttachmentDraftRepository,
     private val scope: CoroutineScope,
+    private val draftUploads: CellAttachmentDraftUploadsImpl? = null,
 ) : RetryAttachmentUploadUseCase {
 
-    override suspend fun invoke(attachmentUuid: String) = repository.updateStatus(attachmentUuid, UPLOADING)
+    override suspend fun invoke(attachmentUuid: String): Either<CoreFailure, Unit> =
+        if (draftUploads?.enabled == true) retryTracked(attachmentUuid) else retryLegacy(attachmentUuid)
+
+    private suspend fun retryLegacy(attachmentUuid: String) = repository.updateStatus(attachmentUuid, UPLOADING)
         .onSuccess {
             uploadManager.retryUpload(attachmentUuid)
             scope.launch observer@{
@@ -62,4 +73,46 @@ internal class RetryAttachmentUploadUseCaseImpl internal constructor(
                 }
             }
         }
+
+    private suspend fun retryTracked(uuid: String): Either<CoreFailure, Unit> {
+        val registered = CompletableDeferred<Either<CoreFailure, Unit>>()
+        val operation = checkNotNull(draftUploads).launchForNode(uuid) {
+            var transferStarted = false
+            var transferFinished = false
+            var statusRecorded = false
+            var attempt: CellUploadAttempt? = null
+            try {
+                val stored = repository.get(uuid)
+                val draft = (stored as? Either.Right)?.value
+                if (draft?.uploadStatus != FAILED || !uploadManager.retryDraftUpload(draft)) {
+                    registered.complete(if (stored is Either.Left) stored else CoreFailure.Unknown(null).left())
+                    CellAttachmentDraftUploadResult.Failed
+                } else {
+                    transferStarted = true
+                    attempt = uploadManager.captureUploadAttempt(uuid)
+                    val started = repository.updateStatus(uuid, UPLOADING)
+                    registered.complete(started)
+                    if (started is Either.Left) {
+                        CellAttachmentDraftUploadResult.Failed
+                    } else {
+                        val result = uploadManager.awaitDraftTransfer(uuid)
+                        transferFinished = result != CellAttachmentDraftUploadResult.Cancelled
+                        val status = if (result == CellAttachmentDraftUploadResult.Completed) UPLOADED else FAILED
+                        val updated = repository.updateStatus(uuid, status)
+                        statusRecorded = updated is Either.Right
+                        if (statusRecorded) result else CellAttachmentDraftUploadResult.Failed
+                    }
+                }
+            } finally {
+                if (transferStarted) {
+                    withContext(NonCancellable) {
+                        if (transferFinished) attempt?.awaitStopped() else attempt?.cancelAndAwait()
+                        if (!statusRecorded) repository.updateStatus(uuid, FAILED)
+                    }
+                }
+            }
+        } ?: return CoreFailure.Unknown(null).left()
+        operation.job.invokeOnCompletion { registered.complete(CoreFailure.Unknown(null).left()) }
+        return registered.await()
+    }
 }

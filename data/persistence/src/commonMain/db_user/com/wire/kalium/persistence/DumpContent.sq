@@ -25,7 +25,17 @@ INSERT INTO MessageAssetContent
            local_db.MessageAssetContent.asset_width,
            local_db.MessageAssetContent.asset_height,
            local_db.MessageAssetContent.asset_duration_ms,
-           local_db.MessageAssetContent.asset_normalized_loudness
+           local_db.MessageAssetContent.asset_normalized_loudness,
+           local_db.MessageAssetContent.preview_asset_mime_type,
+           local_db.MessageAssetContent.preview_asset_size,
+           local_db.MessageAssetContent.preview_asset_width,
+           local_db.MessageAssetContent.preview_asset_height,
+           local_db.MessageAssetContent.preview_asset_id,
+           local_db.MessageAssetContent.preview_asset_domain,
+           local_db.MessageAssetContent.preview_asset_token,
+           local_db.MessageAssetContent.preview_asset_otr_key,
+           local_db.MessageAssetContent.preview_asset_sha256,
+           local_db.MessageAssetContent.preview_asset_encryption_algorithm
     FROM local_db.MessageAssetContent
     LEFT JOIN selfdelete_message_id
        ON local_db.MessageAssetContent.message_id = selfdelete_message_id.id

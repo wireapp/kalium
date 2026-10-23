@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 
 sealed interface MessageAttachment
@@ -29,7 +30,42 @@ data class AssetContent(
     val mimeType: String,
     val metadata: AssetMetadata? = null,
     val remoteData: RemoteData,
+    /** Independently encrypted image preview, with its own cache identity and remote credentials. */
+    val preview: Preview? = null,
 ) : MessageAttachment {
+    /** Preserves the constructor used by previously compiled SDK consumers. */
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public constructor(
+        sizeInBytes: Long,
+        name: String? = null,
+        mimeType: String,
+        metadata: AssetMetadata? = null,
+        remoteData: RemoteData,
+    ) : this(
+        sizeInBytes = sizeInBytes,
+        name = name,
+        mimeType = mimeType,
+        metadata = metadata,
+        remoteData = remoteData,
+        preview = null,
+    )
+
+    /** Preserves legacy copy/default-argument descriptors while retaining the optional preview. */
+    @Deprecated("Retained for binary compatibility", level = DeprecationLevel.WARNING)
+    public fun copy(
+        sizeInBytes: Long = this.sizeInBytes,
+        name: String? = this.name,
+        mimeType: String = this.mimeType,
+        metadata: AssetMetadata? = this.metadata,
+        remoteData: RemoteData = this.remoteData,
+    ): AssetContent = copy(
+        sizeInBytes = sizeInBytes,
+        name = name,
+        mimeType = mimeType,
+        metadata = metadata,
+        remoteData = remoteData,
+        preview = this.preview,
+    )
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
 
@@ -65,6 +101,20 @@ data class AssetContent(
                 result = 31 * result + (normalizedLoudness?.contentHashCode() ?: 0)
                 return result
             }
+        }
+    }
+
+    data class Preview(
+        val mimeType: String,
+        val sizeInBytes: Long,
+        val width: Int,
+        val height: Int,
+        val remoteData: RemoteData,
+    ) {
+        companion object {
+            /** Maximum decoded image size: 200 decimal KB, excluding encryption overhead. */
+            const val MAX_SIZE_IN_BYTES: Long = 200_000
+            const val MAX_DIMENSION: Int = 4096
         }
     }
 
@@ -124,6 +174,23 @@ data class CellAssetContent(
 fun AssetContent.hasValidRemoteData() = remoteData.hasValidData()
 
 fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()
+
+/** Image metadata shared by pending local previews and published remote previews. */
+fun AssetContent.Preview.hasValidMetadata(): Boolean =
+    isDisplayableImageMimeType(mimeType) && sizeInBytes in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES &&
+        width in 1..AssetContent.Preview.MAX_DIMENSION && height in 1..AssetContent.Preview.MAX_DIMENSION
+
+/** Published previews require a complete AES-256 key and SHA-256 hash. */
+fun AssetContent.Preview.hasValidRemoteData(): Boolean = hasValidMetadata() &&
+    remoteData.assetId.isNotEmpty() && remoteData.otrKey.size == PREVIEW_KEY_SIZE_BYTES &&
+    remoteData.sha256.size == PREVIEW_HASH_SIZE_BYTES
+
+/** Only locally pending previews may omit the hash until encryption and upload finish. */
+fun AssetContent.Preview.hasValidPendingData(): Boolean = hasValidMetadata() &&
+    remoteData.assetId.isNotEmpty() && remoteData.otrKey.size == PREVIEW_KEY_SIZE_BYTES && remoteData.sha256.isEmpty()
+
+private const val PREVIEW_KEY_SIZE_BYTES = 32
+private const val PREVIEW_HASH_SIZE_BYTES = 32
 
 fun AssetMetadata.width() = when (this) {
     is AssetMetadata.Image -> width

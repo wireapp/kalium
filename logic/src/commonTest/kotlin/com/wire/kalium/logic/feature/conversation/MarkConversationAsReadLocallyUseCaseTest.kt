@@ -17,13 +17,10 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.eq
@@ -31,38 +28,45 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Clock
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
 class MarkConversationAsReadLocallyUseCaseTest {
 
     @Test
-    fun givenNewerTimestamp_whenMarkingLocally_thenHookIsTriggered() = runTest {
-        val conversation = TestConversation.CONVERSATION.copy(
-            lastReadDate = Clock.System.now()
-        )
-        val newLastRead = conversation.lastReadDate + 1.seconds
+    fun givenRepositorySuccess_whenMarkingLocally_thenPersistReadDateAndReturnUnreadEventsState() = runTest {
+        val conversationId = TestConversation.CONVERSATION.id
+        val newLastRead = Clock.System.now() + 1.seconds
         val conversationRepository = mock<ConversationRepository>()
-        val hookNotifier = mock<PersistenceEventHookNotifier>(mode = MockMode.autoUnit)
-        val useCase = MarkConversationAsReadLocallyUseCaseImpl(
-            conversationRepository = conversationRepository,
-            persistenceEventHookNotifier = hookNotifier,
-            selfUserId = TestUser.SELF.id,
-        )
+        val useCase = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository = conversationRepository)
 
-        everySuspend { conversationRepository.getConversationById(eq(conversation.id)) } returns Either.Right(conversation)
         everySuspend {
-            conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(conversation.id), eq(newLastRead))
-        } returns Either.Right(false)
+            conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(conversationId), eq(newLastRead))
+        } returns Either.Right(true)
 
-        useCase(conversation.id, newLastRead)
+        val result = useCase(conversationId, newLastRead)
 
+        assertEquals(MarkConversationAsReadResult.Success(hasUnreadEvents = true), result)
         verifySuspend(VerifyMode.exactly(1)) {
-            hookNotifier.onConversationLastReadPersisted(
-                eq(ConversationLastReadEventData(conversation.id, newLastRead)),
-                eq(TestUser.SELF.id)
-            )
+            conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(conversationId), eq(newLastRead))
         }
+    }
+
+    @Test
+    fun givenRepositoryFailure_whenMarkingLocally_thenReturnFailure() = runTest {
+        val conversationId = TestConversation.CONVERSATION.id
+        val newLastRead = Clock.System.now()
+        val conversationRepository = mock<ConversationRepository>()
+        val useCase = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository = conversationRepository)
+
+        everySuspend {
+            conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(conversationId), eq(newLastRead))
+        } returns Either.Left(StorageFailure.DataNotFound)
+
+        val result = useCase(conversationId, newLastRead)
+
+        assertEquals(MarkConversationAsReadResult.Failure(StorageFailure.DataNotFound), result)
     }
 }

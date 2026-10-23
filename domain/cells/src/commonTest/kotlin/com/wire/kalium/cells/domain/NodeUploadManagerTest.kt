@@ -21,6 +21,8 @@ import app.cash.turbine.test
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.data.SortingSpec
+import com.wire.kalium.cells.domain.model.AttachmentDraft
+import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodeLocator
@@ -44,6 +46,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -152,6 +155,8 @@ class NodeUploadManagerTest {
         advanceTimeBy(1)
 
         assertFalse(uploadManager.isUploading(node.uuid))
+        assertEquals(CellUploadEvent.UploadCompleted, uploadManager.consumeUploadOutcome(node.uuid))
+        assertEquals(null, uploadManager.consumeUploadOutcome(node.uuid))
     }
 
     @Test
@@ -234,6 +239,84 @@ class NodeUploadManagerTest {
             uploadManager.retryUpload(node.uuid)
             assertTrue { awaitItem() is CellUploadEvent.UploadError }
         }
+    }
+
+    @Test
+    fun cancellationRecordsAnExplicitOutcomeBeforeRemovingManagerEntry() = runTest {
+        val (_, manager) = Arrangement().withPreCheckSuccess().withUploadFailed().arrange()
+        val node = manager.upload(assetPath, assetSize, destNodePath).getOrFail { error("precheck failed") }
+        manager.cancelUpload(node.uuid)
+        assertFalse(manager.isUploading(node.uuid))
+        assertEquals(CellUploadEvent.UploadCancelled, manager.consumeUploadOutcome(node.uuid))
+        assertEquals(null, manager.consumeUploadOutcome(node.uuid))
+    }
+
+    @Test
+    fun unusedTerminalOutcomesHaveBoundedSessionRetention() = runTest {
+        val (_, manager) = Arrangement().withPreCheckSuccess().withUploadSuccess().arrange()
+        val nodes = (0..128).map { index ->
+            manager.upload(assetPath, assetSize, "$destNodePath-$index").getOrFail { error("precheck failed") }
+        }
+        advanceTimeBy(1)
+        assertEquals(null, manager.consumeUploadOutcome(nodes.first().uuid))
+        assertEquals(CellUploadEvent.UploadCompleted, manager.consumeUploadOutcome(nodes.last().uuid))
+    }
+
+    @Test
+    fun explicitDraftRetryRestoresSameIdentityAfterExpiredTransferWasRemoved() = runTest {
+        val (_, manager) = Arrangement().withPreCheckSuccess().withUploadSuccess().withFileExists(assetPath).arrange()
+        val node = manager.upload(assetPath, assetSize, destNodePath).getOrFail { error("precheck failed") }
+        manager.cancelUpload(node.uuid)
+        val draft = AttachmentDraft(
+            uuid = node.uuid, versionId = node.versionId, fileName = "file", remoteFilePath = node.path,
+            localFilePath = assetPath.toString(), fileSize = assetSize, uploadStatus = AttachmentUploadStatus.FAILED,
+            mimeType = "application/octet-stream", assetWidth = null, assetHeight = null, assetDuration = null,
+        )
+        assertTrue(manager.retryDraftUpload(draft))
+        assertTrue(manager.isUploading(node.uuid))
+        advanceTimeBy(1)
+        assertEquals(CellUploadEvent.UploadCompleted, manager.consumeUploadOutcome(node.uuid))
+        assertFalse(manager.isUploading(node.uuid))
+    }
+
+    @Test
+    fun capturedBarrierCannotJoinOrCancelALaterRetryOfSameNode() = runTest {
+        val (_, manager) = Arrangement().withFileExists(assetPath).arrange(TestRepository())
+        val node = manager.upload(assetPath, assetSize, destNodePath).getOrFail { error("precheck failed") }
+        val original = requireNotNull(manager.captureUploadAttempt(node.uuid))
+        advanceTimeBy(101)
+        val draft = AttachmentDraft(
+            uuid = node.uuid, versionId = node.versionId, fileName = "file", remoteFilePath = node.path,
+            localFilePath = assetPath.toString(), fileSize = assetSize, uploadStatus = AttachmentUploadStatus.FAILED,
+            mimeType = "application/octet-stream", assetWidth = null, assetHeight = null, assetDuration = null,
+        )
+        assertTrue(manager.retryDraftUpload(draft))
+        original.awaitStopped()
+        original.cancelAndAwait()
+        assertTrue(manager.isUploading(node.uuid))
+        advanceTimeBy(1)
+        assertTrue(manager.isUploading(node.uuid))
+        advanceTimeBy(100)
+        assertEquals(CellUploadEvent.UploadCompleted, manager.consumeUploadOutcome(node.uuid))
+    }
+
+    @Test
+    fun immediateFailureIsRegisteredBeforeItRunsAndAllowsDraftRetry() = runTest {
+        val immediateScope = CoroutineScope(backgroundScope.coroutineContext + UnconfinedTestDispatcher(testScheduler))
+        val (arrangement, manager) = Arrangement(immediateScope).withPreCheckSuccess().withUploadFailed()
+            .withFileExists(assetPath).arrange()
+        val node = manager.upload(assetPath, assetSize, destNodePath).getOrFail { error("upload") }
+        assertEquals(true, manager.getUploadInfo(node.uuid)?.uploadFailed)
+        val draft = AttachmentDraft(
+            uuid = node.uuid, versionId = node.versionId, fileName = fileName, remoteFilePath = destNodePath,
+            localFilePath = assetPath.toString(), fileSize = assetSize, uploadStatus = AttachmentUploadStatus.FAILED,
+            mimeType = "text/plain", assetWidth = null, assetHeight = null, assetDuration = null,
+        )
+        arrangement.withUploadSuccess()
+        assertTrue(manager.retryDraftUpload(draft))
+        assertEquals(CellUploadEvent.UploadCompleted, manager.consumeUploadOutcome(node.uuid))
+        assertFalse(manager.isUploading(node.uuid))
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.repository.uploadFile(any(), any(), any()) }
     }
 
     private class Arrangement(val uploadScope: CoroutineScope) {

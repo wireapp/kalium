@@ -47,7 +47,6 @@ public data class PreparedAccount(
     @SerialName("client_id") val clientId: String,
     @SerialName("server_config") val serverConfig: ServerConfig,
     @SerialName("mls_cipher_suite") val mlsCipherSuite: CipherSuite?,
-    @SerialName("nomad_service_url") val nomadServiceUrl: String?,
     @Required @SerialName("format_version") val formatVersion: Int = PREPARED_ACCOUNT_FORMAT,
     @Required @SerialName("user_schema_version") val userSchemaVersion: Long = UserDatabase.Schema.version,
     @Required @SerialName("core_crypto_version") val coreCryptoVersion: String = PREPARED_CORE_CRYPTO_VERSION,

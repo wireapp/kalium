@@ -60,6 +60,16 @@ AssetContent.asset_width AS assetWidth,
 AssetContent.asset_height AS assetHeight,
 AssetContent.asset_duration_ms AS assetDuration,
 AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
+AssetContent.preview_asset_mime_type AS assetPreviewMimeType,
+AssetContent.preview_asset_size AS assetPreviewSize,
+AssetContent.preview_asset_width AS assetPreviewWidth,
+AssetContent.preview_asset_height AS assetPreviewHeight,
+AssetContent.preview_asset_id AS assetPreviewId,
+AssetContent.preview_asset_domain AS assetPreviewDomain,
+AssetContent.preview_asset_token AS assetPreviewToken,
+AssetContent.preview_asset_otr_key AS assetPreviewOtrKey,
+AssetContent.preview_asset_sha256 AS assetPreviewSha256,
+AssetContent.preview_asset_encryption_algorithm AS assetPreviewEncryptionAlgorithm,
 MissedCallContent.caller_id AS callerId,
 
 CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
@@ -143,7 +153,8 @@ QuotedMessage.creation_date AS quotedMessageDateTime,
 QuotedMessage.last_edit_date AS quotedMessageEditTimestamp,
 QuotedMessage.visibility AS quotedMessageVisibility,
 QuotedMessage.content_type AS quotedMessageContentType,
-QuotedTextContent.text_body AS quotedTextBody,
+-- A quoted poll has no text content; its question is the quoted text.
+COALESCE(QuotedTextContent.text_body, QuotedPollContent.question) AS quotedTextBody,
 QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
 QuotedLocationContent.name AS quotedLocationName,
@@ -209,9 +220,10 @@ LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.i
 -- joins for quoted messages
 LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
-LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
-LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
-LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedLocationContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedTextContent.conversation_id = QuotedMessage.conversation_id
+LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedAssetContent.conversation_id = QuotedMessage.conversation_id
+LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedLocationContent.message_id = QuotedMessage.id AND QuotedLocationContent.conversation_id = QuotedMessage.conversation_id
+LEFT JOIN PollContent AS QuotedPollContent ON QuotedPollContent.message_id = QuotedMessage.id AND QuotedPollContent.conversation_id = QuotedMessage.conversation_id
 -- end joins for quoted messages
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN SelfUser;

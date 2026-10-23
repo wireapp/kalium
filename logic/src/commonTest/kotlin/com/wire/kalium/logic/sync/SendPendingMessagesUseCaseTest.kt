@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.framework.TestMessage.MISSED_CALL_MESSAGE
 import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.framework.TestMessage.multipartMessage
 import com.wire.kalium.logic.framework.TestUser.USER_ID
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -44,8 +46,157 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.milliseconds
 
 class SendPendingMessagesUseCaseTest {
+
+    @Test
+    fun givenMessageJustUnderSevenDaysOld_whenInvoked_thenSendsIt() = runTest {
+        val message = TEXT_MESSAGE.copy(date = TEST_DATE - 7.days + 1.milliseconds)
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(message)))
+            .withPendingMessageResult(Either.Right(Unit))
+            .arrange()
+
+        assertIs<SendPendingMessagesUseCase.Result.Success>(useCase())
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendPendingMessage(message.conversationId, message.id)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.updateMessageStatus(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenMessageExactlySevenDaysOld_whenInvoked_thenFailsWithoutSending() =
+        assertExpiredWithoutSending(TEXT_MESSAGE.copy(date = TEST_DATE - 7.days))
+
+    @Test
+    fun givenMessageOverSevenDaysOld_whenInvoked_thenFailsWithoutSending() =
+        assertExpiredWithoutSending(TEXT_MESSAGE.copy(date = TEST_DATE - 7.days - 1.milliseconds))
+
+    @Test
+    fun givenVeryOldPendingMessage_whenFirstInvoked_thenFailsWithoutSending() =
+        assertExpiredWithoutSending(TEXT_MESSAGE.copy(date = TEST_DATE - 365.days))
+
+    @Test
+    fun givenExpiredAsset_whenInvoked_thenFailsWithoutUploadingOrSending() =
+        assertExpiredWithoutSending(assetMessage().copy(date = TEST_DATE - 7.days))
+
+    @Test
+    fun givenEditExactlySevenDaysOld_whenInvoked_thenFailsWithoutSendingSignaling() =
+        assertExpiredWithoutSending(
+            TEXT_MESSAGE.copy(date = TEST_DATE - 365.days, editStatus = Message.EditStatus.Edited(TEST_DATE - 7.days))
+        )
+
+    @Test
+    fun givenOlderEdit_whenInvoked_thenFailsWithoutSendingSignaling() =
+        assertExpiredWithoutSending(
+            TEXT_MESSAGE.copy(date = TEST_DATE - 365.days, editStatus = Message.EditStatus.Edited(TEST_DATE - 8.days))
+        )
+
+    @Test
+    fun givenRecentEditOfOldMessage_whenInvoked_thenSendsEdit() = runTest {
+        val message = TEXT_MESSAGE.copy(
+            date = TEST_DATE - 365.days,
+            editStatus = Message.EditStatus.Edited(TEST_DATE - 7.days + 1.milliseconds)
+        )
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(message)))
+            .withSendMessageResult(Either.Right(Unit))
+            .arrange()
+
+        assertIs<SendPendingMessagesUseCase.Result.Success>(useCase())
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(
+                matching { (it.content as? MessageContent.TextEdited)?.editMessageId == message.id },
+                any()
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.updateMessageStatus(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenMixedBacklog_whenInvoked_thenFailsExpiredMessagesAndSendsEligibleOnes() = runTest {
+        val expired = TEXT_MESSAGE.copy(id = "expired", date = TEST_DATE - 7.days)
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(expired, TEXT_MESSAGE)))
+            .withUpdateMessageStatusResult(Either.Right(Unit))
+            .withPendingMessageResult(Either.Right(Unit))
+            .arrange()
+
+        assertIs<SendPendingMessagesUseCase.Result.Success>(useCase())
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, expired.conversationId, expired.id)
+            arrangement.messageSender.sendPendingMessage(TEXT_MESSAGE.conversationId, TEXT_MESSAGE.id)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendPendingMessage(expired.conversationId, expired.id)
+        }
+    }
+
+    @Test
+    fun givenExpiryUpdateFails_whenInvoked_thenSkipsExpiredMessageAndContinuesWithFailureResult() = runTest {
+        val expired = TEXT_MESSAGE.copy(id = "expired", date = TEST_DATE - 7.days)
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(expired, TEXT_MESSAGE)))
+            .withUpdateMessageStatusResult(Either.Left(StorageFailure.Generic(RuntimeException("failure"))))
+            .withPendingMessageResult(Either.Right(Unit))
+            .arrange()
+
+        assertIs<SendPendingMessagesUseCase.Result.Failure>(useCase())
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, expired.conversationId, expired.id)
+            arrangement.messageSender.sendPendingMessage(TEXT_MESSAGE.conversationId, TEXT_MESSAGE.id)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendPendingMessage(expired.conversationId, expired.id)
+            arrangement.messageSender.sendMessage(any(), any())
+            arrangement.sendPendingAssetMessage(any())
+        }
+    }
+
+    @Test
+    fun givenOldNonRegularMessage_whenInvoked_thenLeavesItUnchanged() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(MISSED_CALL_MESSAGE.copy(date = TEST_DATE - 365.days))))
+            .arrange()
+
+        assertIs<SendPendingMessagesUseCase.Result.Success>(useCase())
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.updateMessageStatus(any(), any(), any())
+            arrangement.messageSender.sendPendingMessage(any(), any())
+            arrangement.messageSender.sendMessage(any(), any())
+            arrangement.sendPendingAssetMessage(any())
+        }
+    }
+
+    private fun assertExpiredWithoutSending(message: Message.Regular) = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(message)))
+            .withUpdateMessageStatusResult(Either.Right(Unit))
+            .arrange()
+
+        assertIs<SendPendingMessagesUseCase.Result.Success>(useCase())
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, message.conversationId, message.id)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendPendingMessage(any(), any())
+            arrangement.messageSender.sendMessage(any(), any())
+            arrangement.sendPendingAssetMessage(any())
+        }
+    }
 
     @Test
     fun givenNoPendingMessages_whenInvoked_thenReturnsSuccess() = runTest {
@@ -212,6 +363,10 @@ class SendPendingMessagesUseCaseTest {
             everySuspend { messageRepository.getAllPendingMessagesFromUser(USER_ID) } returns result
         }
 
+        suspend fun withUpdateMessageStatusResult(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend { messageRepository.updateMessageStatus(any(), any(), any()) } returns result
+        }
+
         suspend fun withPendingAssetMessageResult(result: Either<CoreFailure, Unit>) = apply {
             everySuspend { sendPendingAssetMessage(any()) } returns result
         }
@@ -230,6 +385,9 @@ class SendPendingMessagesUseCaseTest {
             userId = USER_ID,
             sendPendingAssetMessage = sendPendingAssetMessage,
             messageSendFailureHandler = messageSendFailureHandler,
+            clock = object : Clock {
+                override fun now() = TEST_DATE
+            },
         )
     }
 }

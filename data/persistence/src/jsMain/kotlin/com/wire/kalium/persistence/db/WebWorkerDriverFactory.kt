@@ -50,7 +50,7 @@ private fun createKaliumWorker(): Worker {
                     "const initSqlJs = require(workerData.sqlJsModulePath);",
                     "const sqlPromise = initSqlJs({ locateFile: () => workerData.sqlJsWasmPath });",
                     "let dbPromise = sqlPromise.then(SQL => new SQL.Database());",
-                    "const booleanColumnPattern = /^(deleted|incomplete_metadata|defederated|archived|deletedLocally|isFavorite|userDeleted|userDefederated|isUserDeleted|senderIsDeleted|senderDefederated|hasIncompleteMetadata|lastMessageIsSelfMessage|expects_read_confirmation|expectsReadConfirmation|isSelfMessage|isSelfDelete|isEphemeral|isMentioningSelfUser|isQuotingSelfUser|isQuotingSelf|isQuoteVerified|isUnread|isConversationAppsEnabled|newConversationReceiptMode|conversationReceiptModeChanged|isDecryptionResolved|is_selected|is_valid|is_verified|is_mls_capable|is_async_notifications_capable|legal_hold_status_change_notified|legalHoldStatusChangeNotified|degraded_conversation_notified|degradedConversationNotified|mls_degraded_notified|is_guest_password_protected|should_notify|read_receipt|enabled|notified|hasRegisteredMLSClient|isOnPremises|federation|apiProxyNeedsAuthentication|isNativePushSupportedByServer|isPersistentWebSocketEnabled)$/i;",
+                    "const booleanColumnPattern = /^(deleted|incomplete_metadata|defederated|archived|deletedLocally|isFavorite|userDeleted|userDefederated|isUserDeleted|senderIsDeleted|senderDefederated|hasIncompleteMetadata|lastMessageIsSelfMessage|expects_read_confirmation|expectsReadConfirmation|isSelfMessage|isSelfDelete|isEphemeral|isMentioningSelfUser|isQuotingSelfUser|isQuotingSelf|isQuoteVerified|isUnread|isConversationAppsEnabled|newConversationReceiptMode|conversationReceiptModeChanged|isDecryptionResolved|is_selected|is_valid|is_verified|is_mls_capable|is_async_notifications_capable|legal_hold_status_change_notified|legalHoldStatusChangeNotified|degraded_conversation_notified|degradedConversationNotified|mls_degraded_notified|is_guest_password_protected|should_notify|read_receipt|enabled|notified|hasRegisteredMLSClient|isOnPremises|federation|apiProxyNeedsAuthentication|isNativePushSupportedByServer|isPersistentWebSocketEnabled|has_password|meetingHasPassword)$/i;",
                     "function normalizeResult(sql, result) {",
                     "  if (!result || !Array.isArray(result.columns) || !Array.isArray(result.values)) return result;",
                     "  const booleanIndexes = result.columns",
@@ -70,7 +70,8 @@ private fun createKaliumWorker(): Worker {
                     "function resultFor(db, sql, params) {",
                     "  const result = db.exec(sql, params)[0];",
                     "  if (result) return normalizeResult(sql, result);",
-                    "  if (isQuery(sql)) return { values: [] };",
+                    // RETURNING with no matching row is an empty result, not a row containing the update count.
+                    "  if (isQuery(sql) || /\\breturning\\b/i.test(sql)) return { values: [] };",
                     "  return { values: [[db.getRowsModified()]] };",
                     "}",
                     "parentPort.on('message', async (data) => {",

@@ -40,7 +40,6 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
-import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
@@ -88,6 +87,14 @@ internal interface MessageRepository : OutgoingMessages, MessageTransport {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
+
+    suspend fun updateMessageStatusIfNotAcknowledged(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Unit>
+
+    suspend fun claimFailedMessageForRetry(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean>
 
     suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
@@ -263,7 +270,6 @@ internal class MessageDataSource internal constructor(
     messageApi: MessageApi,
     mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
-    nomadMessagePagingCoordinator: NomadMessagePagingCoordinator? = null,
     sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
@@ -283,7 +289,6 @@ internal class MessageDataSource internal constructor(
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(
         messageDAO,
         messageMapper,
-        nomadMessagePagingCoordinator,
     )
 
     override fun getMessagesByConversationIdAndVisibility(
@@ -401,6 +406,18 @@ internal class MessageDataSource internal constructor(
                 conversationId = conversationId.toDao()
             )
         }
+
+    override suspend fun updateMessageStatusIfNotAcknowledged(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: String
+    ) = wrapStorageRequest {
+        messageDAO.updateMessageStatusIfNotAcknowledged(messageStatus, messageUuid, conversationId.toDao())
+    }
+
+    override suspend fun claimFailedMessageForRetry(conversationId: ConversationId, messageUuid: String) = wrapStorageRequest {
+        messageDAO.claimFailedMessageForRetry(messageUuid, conversationId.toDao())
+    }
 
     override suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,

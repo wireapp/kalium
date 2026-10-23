@@ -30,6 +30,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.asset.distinctRemoteAssets
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -40,8 +41,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.MessageDeleteEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -64,7 +63,6 @@ public class DeleteMessageUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val deleteAttachments: DeleteMessageAttachmentsUseCase,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -121,7 +119,6 @@ public class DeleteMessageUseCase internal constructor(
     private suspend fun cancelPendingMessage(conversationId: ConversationId, messageId: String) =
         messageSender.cancelPendingMessage(conversationId, messageId).flatMap { cancelled ->
             if (cancelled) {
-                notifyMessageDeleted(conversationId, messageId)
                 Either.Right(Unit)
             } else {
                 // Sending won the race. Keep the normal Delete for Me signaling for the sent message.
@@ -134,9 +131,7 @@ public class DeleteMessageUseCase internal constructor(
     private suspend fun deleteFailedMessage(
         conversationId: ConversationId,
         messageId: String,
-    ) = messageRepository.deleteMessage(messageId, conversationId).onSuccess {
-        notifyMessageDeleted(conversationId, messageId)
-    }
+    ) = messageRepository.deleteMessage(messageId, conversationId)
 
     private suspend fun deletePersistedMessage(
         message: Message,
@@ -149,9 +144,6 @@ public class DeleteMessageUseCase internal constructor(
         }
         .flatMap {
             persistDeletedMessage(message, conversationId, messageId)
-        }
-        .onSuccess {
-            notifyMessageDeleted(conversationId, messageId)
         }
         .onFailure { failure ->
             logDeleteFailure(message, failure)
@@ -215,16 +207,6 @@ public class DeleteMessageUseCase internal constructor(
             messageRepository.markMessageAsDeleted(messageId, conversationId)
         }
 
-    private suspend fun notifyMessageDeleted(
-        conversationId: ConversationId,
-        messageId: String,
-    ) {
-        persistenceEventHookNotifier.onMessageDeleted(
-            MessageDeleteEventData(conversationId, messageId),
-            selfUserId
-        )
-    }
-
     private fun logDeleteFailure(message: Message, failure: CoreFailure) {
         kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
         if (failure is CoreFailure.Unknown) {
@@ -233,17 +215,18 @@ public class DeleteMessageUseCase internal constructor(
     }
 
     private suspend fun deleteMessageAsset(message: Message, deleteForEveryone: Boolean) {
-        (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-
-            assetRepository.deleteAsset(
-                assetToRemove.assetId,
-                assetToRemove.assetDomain,
-                assetToRemove.assetToken
-            )
-                .onFailure {
-                    kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
-                }
-        }
+        val assetContent = (message.content as? MessageContent.Asset)?.value
+        assetContent.distinctRemoteAssets()
+            .forEach { assetToRemove ->
+                assetRepository.deleteAsset(
+                    assetToRemove.assetId,
+                    assetToRemove.assetDomain,
+                    assetToRemove.assetToken
+                )
+                    .onFailure {
+                        kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
+                    }
+            }
 
         // Delete attachments for multipart message
         if (deleteForEveryone && message.content is MessageContent.Multipart) {

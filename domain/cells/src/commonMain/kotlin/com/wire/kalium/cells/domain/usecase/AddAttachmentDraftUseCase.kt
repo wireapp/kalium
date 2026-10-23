@@ -18,7 +18,10 @@
 package com.wire.kalium.cells.domain.usecase
 
 import kotlin.uuid.Uuid
+import com.wire.kalium.cells.domain.CellAttachmentDraftUploadResult
+import com.wire.kalium.cells.domain.CellAttachmentDraftUploadsImpl
 import com.wire.kalium.cells.domain.CellConversationRepository
+import com.wire.kalium.cells.domain.CellUploadAttempt
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
@@ -28,15 +31,19 @@ import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okio.Path
 
 public interface AddAttachmentDraftUseCase {
@@ -65,6 +72,7 @@ internal class AddAttachmentDraftUseCaseImpl internal constructor(
     private val conversationRepository: CellConversationRepository,
     private val repository: MessageAttachmentDraftRepository,
     private val scope: CoroutineScope,
+    private val draftUploads: CellAttachmentDraftUploadsImpl? = null,
 ) : AddAttachmentDraftUseCase {
 
     override suspend fun invoke(
@@ -75,9 +83,11 @@ internal class AddAttachmentDraftUseCaseImpl internal constructor(
         assetSize: Long,
         assetMetadata: AssetContent.AssetMetadata?,
     ): Either<CoreFailure, Unit> =
-        conversationRepository.getCellName(QualifiedIDEntity(conversationId.value, conversationId.domain)).map { cellName ->
-            if (cellName != null) {
-                uploadManager.upload(assetPath, assetSize, "$cellName/$fileName").map { node ->
+        conversationRepository.getCellName(QualifiedIDEntity(conversationId.value, conversationId.domain)).flatMap { cellName ->
+            if (cellName != null && draftUploads?.enabled == true) {
+                addTrackedDraft(conversationId, fileName, mimeType, assetPath, assetSize, assetMetadata, cellName)
+            } else if (cellName != null) {
+                uploadManager.upload(assetPath, assetSize, "$cellName/$fileName").flatMap { node ->
                     persistDraftNode(conversationId, mimeType, assetPath, node, assetMetadata).onSuccess {
                         scope.launch observer@{
                             uploadManager.observeUpload(node.uuid)?.collectLatest { event ->
@@ -107,6 +117,66 @@ internal class AddAttachmentDraftUseCaseImpl internal constructor(
                 )
             }
         }
+
+    @Suppress("LongParameterList")
+    private suspend fun addTrackedDraft(
+        conversationId: QualifiedID,
+        fileName: String,
+        mimeType: String,
+        assetPath: Path,
+        assetSize: Long,
+        metadata: AssetContent.AssetMetadata?,
+        cellName: String,
+    ): Either<CoreFailure, Unit> {
+        val registered = CompletableDeferred<Either<CoreFailure, Unit>>()
+        val operation = checkNotNull(draftUploads).launch {
+            var node: CellNode? = null
+            var attempt: CellUploadAttempt? = null
+            var nodeClaimed = false
+            var statusRecorded = false
+            var transferFinished = false
+            try {
+                val created = uploadManager.upload(assetPath, assetSize, "$cellName/$fileName")
+                if (created is Either.Left) {
+                    registered.complete(created)
+                    CellAttachmentDraftUploadResult.Failed
+                } else {
+                    val createdNode = (created as Either.Right).value
+                    node = createdNode
+                    nodeClaimed = draftUploads.claimNode(createdNode.uuid)
+                    check(nodeClaimed) { "Newly created draft node already has an owner" }
+                    attempt = uploadManager.captureUploadAttempt(createdNode.uuid)
+                    val persisted = persistDraftNode(conversationId, mimeType, assetPath, createdNode, metadata)
+                    registered.complete(persisted)
+                    if (persisted is Either.Left) {
+                        CellAttachmentDraftUploadResult.Failed
+                    } else {
+                        val result = uploadManager.awaitDraftTransfer(createdNode.uuid)
+                        transferFinished = result != CellAttachmentDraftUploadResult.Cancelled
+                        val status = if (result == CellAttachmentDraftUploadResult.Completed) UPLOADED else FAILED
+                        val updated = repository.updateStatus(createdNode.uuid, status)
+                        statusRecorded = updated is Either.Right
+                        if (statusRecorded) result else CellAttachmentDraftUploadResult.Failed
+                    }
+                }
+            } finally {
+                withContext(NonCancellable) {
+                    node?.let { created ->
+                        // Also covers a node created after native cancellation began, before persistence returned.
+                        try {
+                            if (transferFinished) attempt?.awaitStopped() else attempt?.cancelAndAwait()
+                            if (!statusRecorded) repository.updateStatus(created.uuid, FAILED)
+                        } finally {
+                            if (nodeClaimed) draftUploads.releaseNode(created.uuid)
+                        }
+                    }
+                }
+            }
+        }
+        // Cancellation of the originating ViewModel's await does not cancel this session-owned operation.
+        operation.job.invokeOnCompletion { registered.complete(CoreFailure.Unknown(null).left()) }
+        return registered.await()
+    }
 
     private suspend fun persistDraftNode(
         conversationId: QualifiedID,

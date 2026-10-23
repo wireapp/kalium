@@ -153,6 +153,8 @@ sealed interface MessageContent {
             val text: String?,
         ) : Content
 
+        data class Poll(val question: String) : Content
+
         data object Invalid : Content
     }
 

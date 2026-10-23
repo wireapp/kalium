@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
+import com.wire.kalium.logic.data.message.hasValidPendingData
+import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
@@ -34,6 +36,7 @@ import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
+import com.wire.kalium.persistence.dao.message.AssetPreviewEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.CellAsset
@@ -110,6 +113,7 @@ class AssetMapperImpl(
                 sizeInBytes = assetSizeInBytes,
                 name = assetName,
                 metadata = getAssetContentMetadata(assetMimeType, assetContentEntity),
+                preview = assetPreview?.toModel(),
                 remoteData = AssetContent.RemoteData(
                     otrKey = assetOtrKey,
                     sha256 = assetSha256Key,
@@ -164,6 +168,7 @@ class AssetMapperImpl(
         )
         with(protoAssetMessage) {
             return AssetContent(
+                preview = preview?.toModel(),
                 sizeInBytes = original?.size ?: 0,
                 name = original?.name,
                 mimeType = original?.mimeType ?: "*/*",
@@ -209,6 +214,7 @@ class AssetMapperImpl(
         legalHoldStatus: LegalHoldStatus
     ): Asset = with(messageContent.value) {
         Asset(
+            preview = preview?.takeIf { it.hasValidRemoteData() }?.toProto(),
             original = Asset.Original(
                 mimeType = mimeType,
                 size = sizeInBytes,
@@ -335,3 +341,72 @@ fun CellAsset.InitialMetaData<*>.toModel(): AssetContent.AssetMetadata =
             durationMs = value.durationInMillis
         )
     }
+
+/** Wire representation; persistence uses independent typed metadata. */
+fun AssetContent.Preview.toProto(): Asset.Preview = Asset.Preview(
+    mimeType = mimeType,
+    size = sizeInBytes,
+    remote = Asset.RemoteData(
+        otrKey = ByteArr(remoteData.otrKey),
+        sha256 = ByteArr(remoteData.sha256),
+        assetId = remoteData.assetId,
+        assetDomain = remoteData.assetDomain,
+        assetToken = remoteData.assetToken,
+        encryption = EncryptionAlgorithmMapper().toProtoBufModel(remoteData.encryptionAlgorithm),
+    ),
+    metaData = Asset.Preview.MetaData.Image(Asset.ImageMetaData(width, height)),
+)
+
+@Suppress("ReturnCount")
+private fun Asset.Preview.toModel(): AssetContent.Preview? {
+    val data = remote ?: return null
+    val image = (metaData as? Asset.Preview.MetaData.Image)?.value ?: return null
+    return AssetContent.Preview(
+        mimeType = mimeType,
+        sizeInBytes = size,
+        width = image.width,
+        height = image.height,
+        remoteData = AssetContent.RemoteData(
+            otrKey = data.otrKey.array,
+            sha256 = data.sha256.array,
+            assetId = data.assetId.orEmpty(),
+            assetToken = data.assetToken,
+            assetDomain = data.assetDomain,
+            encryptionAlgorithm = EncryptionAlgorithmMapper().fromProtobufModel(data.encryption),
+        ),
+    ).takeIf { it.hasValidRemoteData() }
+}
+
+internal fun AssetContent.Preview.toDao(): AssetPreviewEntity = AssetPreviewEntity(
+    mimeType = mimeType,
+    size = sizeInBytes,
+    width = width,
+    height = height,
+    id = remoteData.assetId,
+    domain = remoteData.assetDomain,
+    token = remoteData.assetToken,
+    otrKey = remoteData.otrKey,
+    sha256 = remoteData.sha256,
+    encryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
+)
+
+private fun AssetPreviewEntity.toModel(): AssetContent.Preview? {
+    return AssetContent.Preview(
+        mimeType = mimeType,
+        sizeInBytes = size,
+        width = width,
+        height = height,
+        remoteData = AssetContent.RemoteData(
+            otrKey = otrKey,
+            sha256 = sha256,
+            assetId = id,
+            assetToken = token,
+            assetDomain = domain,
+            encryptionAlgorithm = when (encryptionAlgorithm) {
+                "AES_CBC" -> AES_CBC
+                "AES_GCM" -> AES_GCM
+                else -> null
+            },
+        ),
+    ).takeIf { it.hasValidRemoteData() || it.hasValidPendingData() }
+}

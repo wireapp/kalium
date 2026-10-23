@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.map
  */
 public interface ObserveIsMeetingsEnabledUseCase {
     public suspend operator fun invoke(): Flow<Boolean>
+    public suspend fun observeGuestLinkSharingEnabled(): Flow<Boolean>
 }
 
 internal class ObserveIsMeetingsEnabledUseCaseImpl(
@@ -37,5 +38,9 @@ internal class ObserveIsMeetingsEnabledUseCaseImpl(
 ) : ObserveIsMeetingsEnabledUseCase {
     override suspend operator fun invoke(): Flow<Boolean> = userConfigRepository.observeIsMeetingsEnabled().map { featureFlagEnabled ->
         featureFlagEnabled && featureSupport.isMeetingsSupported
+    }
+
+    override suspend fun observeGuestLinkSharingEnabled(): Flow<Boolean> = invoke().map { isMeetingsEnabled ->
+        isMeetingsEnabled && featureSupport.isMeetingsGuestLinksSupported
     }
 }

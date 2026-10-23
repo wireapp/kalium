@@ -38,7 +38,6 @@ import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
@@ -59,7 +58,6 @@ import com.wire.kalium.network.api.v0.authenticated.LogoutApiV0
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
 import com.wire.kalium.network.api.v0.authenticated.MLSPublicKeyApiV0
 import com.wire.kalium.network.api.v0.authenticated.MessageApiV0
-import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0
 import com.wire.kalium.network.api.v0.authenticated.PreKeyApiV0
 import com.wire.kalium.network.api.v0.authenticated.PropertiesApiV0
@@ -85,7 +83,6 @@ import io.ktor.websocket.WebSocketSession
 internal class AuthenticatedNetworkContainerV0 @Suppress("LongParameterList")
 internal constructor(
     private val sessionManager: SessionManager,
-    nomadServiceUrl: String? = null,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?,
     mockWebSocketSession: WebSocketSession?,
@@ -98,7 +95,6 @@ internal constructor(
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager = sessionManager,
-        nomadServiceUrl = nomadServiceUrl,
         accessTokenApi = { httpClient -> AccessTokenApiV0(httpClient) },
         engine = engine,
         ownsEngine = mockEngine == null,
@@ -117,7 +113,6 @@ internal constructor(
     override val clientApi: ClientApi get() = ClientApiV0(networkClient)
 
     override val messageApi: MessageApi get() = MessageApiV0(networkClient, EnvelopeProtoMapperImpl())
-    override val nomadDeviceSyncApi: NomadDeviceSyncApi get() = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl)
 
     override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV0()
 

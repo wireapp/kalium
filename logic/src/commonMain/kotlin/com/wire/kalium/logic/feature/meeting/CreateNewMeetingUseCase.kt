@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.meeting.CreateNewMeetingResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
-import com.wire.kalium.logic.data.meeting.UpsertMeeting
+import com.wire.kalium.logic.data.meeting.CreateMeeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource.EstablishMLSFailure
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
@@ -35,7 +35,7 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
  * Use case for creating a new meeting.
  */
 public interface CreateNewMeetingUseCase {
-    public suspend operator fun invoke(createMeeting: UpsertMeeting): Result
+    public suspend operator fun invoke(createMeeting: CreateMeeting): Result
     public sealed interface Result {
         public data class Success(val conversationId: ConversationId) : Result
         public data object Failure : Result // TODO: Add more specific error types in the future
@@ -48,7 +48,7 @@ internal class CreateNewMeetingUseCaseImpl(
     private val transactionProvider: CryptoTransactionProvider,
 ) : CreateNewMeetingUseCase {
 
-    override suspend operator fun invoke(createMeeting: UpsertMeeting) = transactionProvider
+    override suspend operator fun invoke(createMeeting: CreateMeeting) = transactionProvider
         .transaction("CreateNewMeeting") { transactionContext ->
             meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = transactionContext)
         }

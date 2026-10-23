@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.feature.message.receipt.ParallelConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
@@ -37,21 +36,11 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.stubs.ClientApiStub
 import com.wire.kalium.logic.util.stubs.ConversationApiStub
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
 import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.nomaddevice.NomadAuthenticatedNetworkAccess
-import com.wire.kalium.nomaddevice.NomadRemoteBackupDebouncedSyncConfig
-import com.wire.kalium.nomaddevice.createUserScopedDebouncedNomadRemoteBackupChangeLogHookNotifier
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.dao.backup.ChangeLogEventType
-import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
-import com.wire.kalium.userstorage.di.DatabaseStorageType
-import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
-import com.wire.kalium.userstorage.di.UserStorage
-import com.wire.kalium.userstorage.di.UserStorageProvider
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -66,7 +55,6 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -99,11 +87,10 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
         advanceUntilIdle()
 
         assertPersisted(arrangement.database, persistedLastRead)
-        assertNomadChangeLogNotPersisted(arrangement.database)
     }
 
     @Test
-    fun givenQueuedLastRead_whenSessionScopeCancelledDuringDurablePersistence_thenLastReadAndNomadChangeLogArePersisted() = runTest {
+    fun givenQueuedLastRead_whenSessionScopeCancelledDuringDurablePersistence_thenLastReadIsPersisted() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val persistedLastRead = stableNow()
         val newLastRead = persistedLastRead + 1.seconds
@@ -132,7 +119,6 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
         advanceUntilIdle()
 
         assertPersisted(arrangement.database, newLastRead)
-        assertNomadChangeLogPersisted(arrangement.database)
     }
 
     private suspend fun arrange(
@@ -148,7 +134,6 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
 
         val sessionScope = TestScope(dispatcher)
         val repository = wrapRepository(createRepository(database, persistedLastRead), sessionScope)
-        val hookNotifier = createPersistenceHookNotifier(database, sessionScope)
         val queue = ParallelConversationWorkQueue(sessionScope, kaliumLogger, dispatcher)
 
         return Arrangement(
@@ -168,7 +153,6 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
                     ): MessageOperationResult = MessageOperationResult.Success
                 },
                 workQueue = queue,
-                persistenceEventHookNotifier = hookNotifier,
                 logger = kaliumLogger
             )
         )
@@ -192,42 +176,10 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
         }
     }
 
-    private fun createPersistenceHookNotifier(
-        database: TestUserDatabase,
-        sessionScope: TestScope
-    ): PersistenceEventHookNotifier {
-        val userStorageProvider = TestUserStorageProvider(selfUserId, database)
-        return createUserScopedDebouncedNomadRemoteBackupChangeLogHookNotifier(
-            selfUserId = selfUserId,
-            userStorageProvider = userStorageProvider,
-            nomadAuthenticatedNetworkAccess = NomadAuthenticatedNetworkAccess(PlatformUserAuthenticatedNetworkProvider()),
-            scope = sessionScope,
-            config = NomadRemoteBackupDebouncedSyncConfig(
-                debounceMs = 1_000L,
-                maxWaitMs = 3_000L,
-                maxAttemptsTotal = 1,
-                retryDelaysMs = emptyList()
-            )
-        )
-    }
-
     private suspend fun assertPersisted(database: TestUserDatabase, expectedLastRead: Instant) {
         val persistedConversation = database.builder.conversationDAO.getConversationById(TestConversation.ENTITY_GROUP.id)
         assertNotNull(persistedConversation)
         assertEquals(expectedLastRead, persistedConversation.lastReadDate)
-    }
-
-    private suspend fun assertNomadChangeLogPersisted(database: TestUserDatabase) {
-        val pendingChanges = database.builder.remoteBackupChangeLogDAO.getPendingChanges()
-        val metadataChange = pendingChanges.singleOrNull { it.eventType == ChangeLogEventType.CONVERSATION_METADATA_SYNC }
-        assertNotNull(metadataChange)
-        assertEquals(TestConversation.ENTITY_GROUP.id, metadataChange.conversationId)
-    }
-
-    private suspend fun assertNomadChangeLogNotPersisted(database: TestUserDatabase) {
-        val pendingChanges = database.builder.remoteBackupChangeLogDAO.getPendingChanges()
-        val metadataChange = pendingChanges.singleOrNull { it.eventType == ChangeLogEventType.CONVERSATION_METADATA_SYNC }
-        assertNull(metadataChange)
     }
 
     private data class Arrangement(
@@ -238,34 +190,12 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
 
     private fun stableNow(): Instant = Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds())
 
-    private class TestUserStorageProvider(
-        userId: UserId,
-        private val database: TestUserDatabase
-    ) : UserStorageProvider() {
-
-        init {
-            // Drop any stale shared-cache entry left by another test run for the same user id.
-            remove(userId)
-            getOrCreate(
-                userId = userId,
-                platformUserStorageProperties = PlatformUserStorageProperties(
-                    rootPath = "",
-                    databaseInfo = DatabaseStorageType.InMemory
-                ),
-                shouldEncryptData = false,
-                dbInvalidationControlEnabled = false
-            )
-        }
-
-        override fun create(
-            userId: UserId,
-            shouldEncryptData: Boolean,
-            platformProperties: PlatformUserStorageProperties,
-            dbInvalidationControlEnabled: Boolean
-        ): UserStorage = UserStorage(database.builder)
-    }
-
     private class FakeMessageSender : MessageSender {
+        override suspend fun sendMessageWithOutcome(
+            message: Message.Sendable,
+            messageTarget: com.wire.kalium.messaging.sending.MessageTarget
+        ): Either<CoreFailure, Boolean> = error("Not used by these tests")
+
         override suspend fun cancelPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean> =
             error("Not used by read-receipt tests")
 
