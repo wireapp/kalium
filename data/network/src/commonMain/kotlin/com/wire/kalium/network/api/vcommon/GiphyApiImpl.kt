@@ -73,7 +73,7 @@ internal class GiphyApiImpl(
     override suspend fun downloadGif(url: String, maxSizeInBytes: Long, sink: Sink): NetworkResponse<Long> = try {
         require(Url(url).isGiphyHttps()) { "Not a Giphy HTTPS URL" }
         mediaNetworkClient.httpClient.prepareGet(url).execute { response ->
-            // Checked again after redirects, so only bytes served by Giphy are accepted.
+            // Checked again after redirects, so only a response from a Giphy address is written.
             require(response.call.request.url.isGiphyHttps()) { "Redirected away from Giphy" }
             if (response.status.isSuccess()) {
                 writeLimited(response, maxSizeInBytes, sink)

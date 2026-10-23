@@ -26,7 +26,7 @@ interface GiphyApi {
 
     /**
      * Downloads a GIF from Giphy's CDN into [sink], without Wire credentials.
-     * Fails unless [url], and any redirect, is an HTTPS `giphy.com` address,
+     * Fails unless [url] and the final address after redirects are HTTPS `giphy.com` addresses,
      * and stops reading once the body exceeds [maxSizeInBytes].
      * @return the number of bytes written
      */
