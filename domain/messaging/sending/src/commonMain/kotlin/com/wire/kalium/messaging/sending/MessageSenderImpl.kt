@@ -95,7 +95,9 @@ class MessageSenderImpl(
     ) -> Either<CoreFailure, Unit>,
     private val broadcastRecipients: suspend () -> Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    /** When false, targeted and transient MLS messages are sent as persistent application messages to the whole group. */
+    private val targetedAndTransientMLSMessagesEnabled: Boolean = false
 ) : MessageSender {
 
     private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
@@ -417,8 +419,9 @@ class MessageSenderImpl(
 
     /**
      * Encrypts [message] for [messageTarget] and returns the request that sends it.
-     * A targeted message that selects no group member is not sent. A transient or targeted message the backend
-     * doesn't support is sent as a persistent application message to the whole group instead.
+     * A targeted message that selects no group member is not sent. A transient or targeted message is sent as a
+     * persistent application message to the whole group instead when [targetedAndTransientMLSMessagesEnabled] is
+     * false or the backend doesn't support it.
      */
     private suspend fun createOutgoingMLSMessage(
         transactionContext: CryptoTransactionContext,
@@ -427,9 +430,11 @@ class MessageSenderImpl(
         messageTarget: MessageTarget,
         transient: Boolean
     ): Either<CoreFailure, suspend () -> Either<CoreFailure, MessageSent>> {
-        val isTargeted = !(messageTarget is MessageTarget.Conversation && messageTarget.usersToIgnore.isEmpty())
+        val isTargeted = targetedAndTransientMLSMessagesEnabled &&
+            (messageTarget !is MessageTarget.Conversation || messageTarget.usersToIgnore.isNotEmpty())
+        val isTransient = targetedAndTransientMLSMessagesEnabled && transient
         val outgoingMessage = when {
-            !isTargeted && !transient ->
+            !isTargeted && !isTransient ->
                 return mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, groupId, message)
                     .map { mlsMessage -> { transport.sendMLSMessage(mlsMessage) } }
 
@@ -443,15 +448,15 @@ class MessageSenderImpl(
                     groupId,
                     message,
                     messageTarget,
-                    transient
-                ).map { batch -> sendTargetedBatch(batch, transient, message) }
+                    isTransient
+                ).map { batch -> sendTargetedBatch(batch, isTransient, message) }
         }
         return outgoingMessage.map { send ->
             {
                 send().flatMapLeft { failure ->
                     if (failure is NetworkFailure.FeatureNotSupported) {
                         logger.w(
-                            "MLS message (targeted = $isTargeted, transient = $transient) is not supported by the backend, " +
+                            "MLS message (targeted = $isTargeted, transient = $isTransient) is not supported by the backend, " +
                                 "sending a persistent message to the whole group"
                         )
                         mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, groupId, message)
