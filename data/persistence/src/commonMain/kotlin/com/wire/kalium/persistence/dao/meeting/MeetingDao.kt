@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
 
+@Suppress("TooManyFunctions")
 interface MeetingDao {
     suspend fun upsertMeetings(
         meetings: List<MeetingEntity>,
@@ -228,6 +229,7 @@ internal class MeetingDaoImpl(
         meetingsQueries.selectHasOngoingMeeting(from, now, earliestEnd)
             .asFlow()
             .mapToOne(readDispatcher.value)
+            .flowOn(readDispatcher.value)
 
     // Only SQLDelight's table invalidation matters here; the COUNT result is never read or compared.
     override fun observeMeetingReminderChanges(): Flow<Unit> =
