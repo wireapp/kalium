@@ -19,20 +19,25 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCaseTest.Arrangement.Companion.FAULTY_KEY
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -57,12 +62,25 @@ class RepairFaultyRemovalKeysUseCaseTest {
     fun givenRepairFaultRemovalKeysUseCase_whenInvokedAndNoConversationsFound_thenNoConversationsToRepair() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
+            .withGetExternalKeyForConversation(FAULTY_KEY.first())
             .arrange()
 
         val result = useCase.invoke(TargetedRepairParam("domain", listOf("somekey")))
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.getMLSConversationsByDomain(any()) }
         assertEquals(RepairResult.NoConversationsToRepair, result)
+    }
+
+    @Test
+    fun givenLoadingConversationsFails_whenInvoked_thenReturnError() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withMlsConversations(CoreFailure.MissingClientRegistration.left())
+            .arrange()
+
+        val result = useCase.invoke(TargetedRepairParam("domain", FAULTY_KEY))
+
+        verifySuspend(VerifyMode.not) { arrangement.resetMLSConversationUseCase(any(), any()) }
+        assertEquals(RepairResult.Error, result)
     }
 
     @Test
@@ -80,6 +98,41 @@ class RepairFaultyRemovalKeysUseCaseTest {
         assertIs<RepairResult.RepairPerformed>(result)
         assertEquals(1, result.successfullyRepairedConversations)
         assertEquals(0, result.failedRepairs.size)
+    }
+
+    @Test
+    fun givenConfiguredKeyUsesUppercase_whenInvoked_thenPerformRepair() = runTest {
+        val (_, useCase) = Arrangement()
+            .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
+            .withGetExternalKeyForConversation(FAULTY_KEY.first())
+            .withResetMLSConversationResult(ResetMLSConversationResult.Success)
+            .arrange()
+
+        val result = useCase.invoke(TargetedRepairParam("domain", listOf(FAULTY_KEY.first().uppercase())))
+
+        assertIs<RepairResult.RepairPerformed>(result)
+        assertEquals(1, result.successfullyRepairedConversations)
+    }
+
+    @Test
+    fun givenKeyInspectionFailsForOneConversation_whenInvoked_thenRepairOthersAndReturnError() = runTest {
+        val failingConversation = TestConversation.MLS_CONVERSATION
+        val matchingGroupId = GroupID("matching-group")
+        val matchingConversation = TestConversation.MLS_CONVERSATION.copy(
+            id = ConversationId("matching-conversation", "domain"),
+            protocol = TestConversation.MLS_PROTOCOL_INFO.copy(groupId = matchingGroupId)
+        )
+        val (arrangement, useCase) = Arrangement()
+            .withMlsConversations(listOf(failingConversation, matchingConversation).right())
+            .withGetExternalKeyFailureForConversation(TestConversation.GROUP_ID)
+            .withGetExternalKeyForConversation(matchingGroupId, FAULTY_KEY.first())
+            .withResetMLSConversationResult(ResetMLSConversationResult.Success)
+            .arrange()
+
+        val result = useCase.invoke(TargetedRepairParam("domain", FAULTY_KEY))
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.resetMLSConversationUseCase(matchingConversation.id, any()) }
+        assertEquals(RepairResult.Error, result)
     }
 
     @Test
@@ -111,6 +164,17 @@ class RepairFaultyRemovalKeysUseCaseTest {
         suspend fun withGetExternalKeyForConversation(key: String) = apply {
             everySuspend { mlsContext.getExternalSenders(any()) } returns
                     ExternalSenderKey(key.hexToByteArray())
+        }
+
+        @OptIn(ExperimentalStdlibApi::class)
+        suspend fun withGetExternalKeyForConversation(groupId: GroupID, key: String) = apply {
+            everySuspend { mlsContext.getExternalSenders(eq(groupId.value)) } returns
+                    ExternalSenderKey(key.hexToByteArray())
+        }
+
+        suspend fun withGetExternalKeyFailureForConversation(groupId: GroupID) = apply {
+            everySuspend { mlsContext.getExternalSenders(eq(groupId.value)) } throws
+                    IllegalStateException("Conversation not found")
         }
 
         suspend fun withResetMLSConversationResult(result: ResetMLSConversationResult) = apply {
