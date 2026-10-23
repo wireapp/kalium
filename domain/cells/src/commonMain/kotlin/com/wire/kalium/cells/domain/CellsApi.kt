@@ -23,6 +23,7 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
+import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
@@ -74,6 +75,11 @@ internal interface CellsApi {
     suspend fun moveNode(
         uuid: String,
         path: String,
+        targetPath: String,
+    ): NetworkResponse<Unit>
+
+    suspend fun moveNodes(
+        nodes: List<NodeLocator>,
         targetPath: String,
     ): NetworkResponse<Unit>
 
