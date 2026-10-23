@@ -2,6 +2,7 @@
 
 package com.wire.kalium.logic.data.giphy
 
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
@@ -139,6 +140,21 @@ class GiphyRepositoryTest {
 
         assertIs<Either.Left<*>>(repository.download(gif()))
 
+        assertFalse(fileSystem.listDirectories(fileSystem.rootCachePath).any { it.name.startsWith("giphy-") })
+    }
+
+    @Test
+    fun givenResponseIsNotAGif_whenDownloading_thenFailsAndDeletesTheFile() = runTest {
+        val fileSystem = FakeKaliumFileSystem()
+        val (api, repository) = arrange(fileSystem)
+        everySuspend { api.downloadGif(any(), any(), any()) } calls { invocation ->
+            (invocation.args[2] as Sink).write(Buffer().writeUtf8("<html>"), 6)
+            NetworkResponse.Success(6L, emptyMap(), 200)
+        }
+
+        val failure = assertIs<Either.Left<*>>(repository.download(gif())).value
+
+        assertIs<NetworkFailure.ServerMiscommunication>(failure)
         assertFalse(fileSystem.listDirectories(fileSystem.rootCachePath).any { it.name.startsWith("giphy-") })
     }
 

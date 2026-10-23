@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.giphy.GiphyRepository
 
 /**
  * Downloads a GIF's [Gif.original] rendition from Giphy's CDN to a temporary file.
+ * Fails if the response isn't a GIF file (`GIF87a` or `GIF89a` header), so nothing else is sent as `image/gif`.
  * Show that file as the preview and pass it to [SendGifMessageUseCase], so the GIF is downloaded only once.
  */
 public interface DownloadGifUseCase {

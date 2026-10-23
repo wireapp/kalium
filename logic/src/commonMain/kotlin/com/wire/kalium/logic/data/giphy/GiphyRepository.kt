@@ -7,6 +7,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
@@ -14,8 +15,10 @@ import com.wire.kalium.network.api.authenticated.giphy.GiphyGifDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphyGifsResponseDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphyImageDTO
 import com.wire.kalium.network.api.base.authenticated.GiphyApi
+import okio.ByteString.Companion.encodeUtf8
 import okio.IOException
 import okio.Path
+import okio.buffer
 import okio.use
 import kotlin.uuid.Uuid
 
@@ -55,8 +58,20 @@ internal class GiphyDataSource(
 
     private suspend fun writeGif(url: String, path: Path): Either<CoreFailure, Long> = try {
         wrapApiRequest { kaliumFileSystem.sink(path).use { sink -> giphyApi.downloadGif(url, MAX_GIF_SIZE_BYTES, sink) } }
+            .flatMap { size ->
+                // Whatever is written here is sent as image/gif, so it must at least be a GIF.
+                if (hasGifHeader(path)) {
+                    Either.Right(size)
+                } else {
+                    Either.Left(NetworkFailure.ServerMiscommunication(IllegalStateException("Giphy's response is not a GIF")))
+                }
+            }
     } catch (e: IOException) {
         Either.Left(StorageFailure.Generic(e))
+    }
+
+    private fun hasGifHeader(path: Path): Boolean = kaliumFileSystem.source(path).buffer().use { source ->
+        source.request(GIF_HEADER_LENGTH) && source.readByteString(GIF_HEADER_LENGTH) in GIF_HEADERS
     }
 
     private fun GiphyGifsResponseDTO.toGifPage(): GifPage {
@@ -92,6 +107,8 @@ internal class GiphyDataSource(
         const val PAGE_SIZE = 24
         const val RATING = "pg"
         const val MAX_GIF_SIZE_BYTES = 3L * 1024 * 1024
+        private const val GIF_HEADER_LENGTH = 6L
+        private val GIF_HEADERS = setOf("GIF87a".encodeUtf8(), "GIF89a".encodeUtf8())
 
         /** Giphy rejects larger offsets. */
         const val MAX_OFFSET = 4999
