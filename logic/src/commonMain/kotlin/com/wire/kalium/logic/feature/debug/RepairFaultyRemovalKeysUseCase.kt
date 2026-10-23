@@ -71,17 +71,18 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
                 is Either.Right -> result.value
             }
             val conversationsWithFaultyKeys = mutableListOf<Conversation>()
+            var hasInspectionFailures = false
             conversations.forEach { conversation ->
                 when (val result = checkConversationHasFaultyKey(conversation.protocol, param.faultyKeys, transactionContext)) {
-                    is Either.Left -> return@transaction result
+                    is Either.Left -> hasInspectionFailures = true
                     is Either.Right -> if (result.value) conversationsWithFaultyKeys += conversation
                 }
             }
-            when {
-                conversationsWithFaultyKeys.isEmpty() -> RepairResult.NoConversationsToRepair.right()
-                else ->
-                    repairConversations(conversationsWithFaultyKeys, conversations.size, transactionContext).right()
+            val repairResult = when {
+                conversationsWithFaultyKeys.isEmpty() -> RepairResult.NoConversationsToRepair
+                else -> repairConversations(conversationsWithFaultyKeys, conversations.size, transactionContext)
             }
+            if (hasInspectionFailures) RepairResult.Error.right() else repairResult.right()
         }.fold(
             fnL = {
                 logger.e("Error occurred during repair of faulty removal keys")
