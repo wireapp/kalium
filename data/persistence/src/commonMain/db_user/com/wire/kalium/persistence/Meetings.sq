@@ -1,6 +1,7 @@
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.time.Instant;
+import kotlin.Boolean;
 
 CREATE TABLE Meeting (
     meeting_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -15,6 +16,9 @@ CREATE TABLE Meeting (
     recurrence_frequency TEXT AS MeetingEntity.RecurrenceEntity.Frequency,
     recurrence_interval INTEGER,
     recurrence_end_date INTEGER AS Instant,
+    type TEXT AS MeetingEntity.Type NOT NULL DEFAULT 'SCHEDULED',
+    link TEXT,
+    has_password INTEGER AS Boolean NOT NULL DEFAULT 0,
 
     FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
     FOREIGN KEY (creator_id) REFERENCES User(qualified_id)
@@ -36,8 +40,8 @@ CREATE INDEX IF NOT EXISTS idx_occurrences_meeting ON MeetingOccurrence(meeting_
 CREATE INDEX IF NOT EXISTS idx_occurrences_start ON MeetingOccurrence(occurrence_start);
 
 upsertMeeting:
-INSERT INTO Meeting(meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, tzid, recurrence_frequency, recurrence_interval, recurrence_end_date)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Meeting(meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, tzid, recurrence_frequency, recurrence_interval, recurrence_end_date, type, link, has_password)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(meeting_id) DO UPDATE SET
     conversation_id = excluded.conversation_id,
     creator_id = excluded.creator_id,
@@ -49,7 +53,10 @@ ON CONFLICT(meeting_id) DO UPDATE SET
     tzid = excluded.tzid,
     recurrence_frequency = excluded.recurrence_frequency,
     recurrence_interval = excluded.recurrence_interval,
-    recurrence_end_date = excluded.recurrence_end_date;
+    recurrence_end_date = excluded.recurrence_end_date,
+    type = excluded.type,
+    link = excluded.link,
+    has_password = excluded.has_password;
 
 insertMeetingOccurrence:
 INSERT INTO MeetingOccurrence(occurrence_id, meeting_id, occurrence_start, occurrence_end) VALUES (?, ?, ?, ?);
@@ -140,6 +147,9 @@ SELECT
     Meeting.recurrence_frequency AS recurrenceFrequency,
     Meeting.recurrence_interval AS recurrenceInterval,
     Meeting.recurrence_end_date AS recurrenceEndDate,
+    Meeting.type AS meetingType,
+    Meeting.link AS meetingLink,
+    Meeting.has_password AS meetingHasPassword,
     CASE Conversation.type
         WHEN 'ONE_ON_ONE' THEN otherUser.name
         ELSE Conversation.name
@@ -178,6 +188,9 @@ SELECT
     Meeting.recurrence_frequency AS recurrenceFrequency,
     Meeting.recurrence_interval AS recurrenceInterval,
     Meeting.recurrence_end_date AS recurrenceEndDate,
+    Meeting.type AS meetingType,
+    Meeting.link AS meetingLink,
+    Meeting.has_password AS meetingHasPassword,
     CASE Conversation.type
         WHEN 'ONE_ON_ONE' THEN otherUser.name
         ELSE Conversation.name

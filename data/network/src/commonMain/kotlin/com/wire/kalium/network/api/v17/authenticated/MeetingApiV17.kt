@@ -19,8 +19,11 @@ package com.wire.kalium.network.api.v17.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
-import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
+import com.wire.kalium.network.api.model.ApiModelMapper
+import com.wire.kalium.network.api.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.api.v16.authenticated.MeetingApiV16
 import com.wire.kalium.network.utils.NetworkResponse
@@ -32,7 +35,8 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
 internal open class MeetingApiV17 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    protected val apiModelMapper: ApiModelMapper = ApiModelMapperImpl(),
 ) : MeetingApiV16() {
 
     protected val httpClient get() = authenticatedNetworkClient.httpClient
@@ -49,16 +53,16 @@ internal open class MeetingApiV17 internal constructor(
         httpClient.get("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}")
     }
 
-    override suspend fun createNewMeeting(request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse> = wrapRequest {
+    override suspend fun createNewMeeting(request: CreateMeetingRequest): NetworkResponse<UpsertMeetingResponse> = wrapRequest {
         httpClient.post(PATH_MEETINGS) {
-            setBody(request)
+            setBody(apiModelMapper.toApiV17(request))
         }
     }
 
-    override suspend fun updateMeeting(meetingId: MeetingId, request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse> =
+    override suspend fun updateMeeting(meetingId: MeetingId, request: UpdateMeetingRequest): NetworkResponse<UpsertMeetingResponse> =
         wrapRequest {
             httpClient.put("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}") {
-                setBody(request)
+                setBody(apiModelMapper.toApiV17(request))
             }
         }
 

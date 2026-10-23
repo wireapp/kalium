@@ -311,6 +311,24 @@ class MeetingDaoTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenMeetingPasswordProtection_whenUpserted_thenPreservesTrueAndFalse() = runTest(dispatcher) {
+        val now = Clock.System.now()
+        val meeting = newMeeting(startTime = now + 1.days).copy(link = "https://wire.example/meeting")
+        insertMeetingDependencies(meeting)
+
+        listOf(false, true, false).forEach { hasPassword ->
+            meetingDao.upsertMeetings(
+                listOf(meeting.copy(hasPassword = hasPassword)),
+                GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days)
+            )
+
+            val storedMeeting = meetingDao.getMeeting(meeting.meetingId)
+            assertEquals(hasPassword, storedMeeting?.hasPassword)
+            assertEquals(meeting.link, storedMeeting?.link)
+        }
+    }
+
+    @Test
     fun givenRecurringMeeting_whenUpserted_thenFutureOccurrencesAreGeneratedForThreeMonthsAhead() =
         runTest(dispatcher) {
             val now = Clock.System.now()
@@ -1006,7 +1024,10 @@ class MeetingDaoTest : BaseDatabaseTest() {
             tzid = meeting.tzid,
             recurrence_frequency = meeting.recurrence?.frequency,
             recurrence_interval = meeting.recurrence?.interval,
-            recurrence_end_date = meeting.recurrence?.until
+            recurrence_end_date = meeting.recurrence?.until,
+            type = meeting.type,
+            link = meeting.link,
+            has_password = meeting.hasPassword,
         )
     }
 

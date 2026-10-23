@@ -31,6 +31,10 @@ import com.wire.kalium.network.api.authenticated.conversation.CreateConversation
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV8
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequestV3
+import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequestV17
+import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequestV17
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTOV10
 
@@ -43,6 +47,8 @@ interface ApiModelMapper {
     fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8
     fun toApiV10(request: CreateConversationRequest): CreateConversationRequestV10
     fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
+    fun toApiV17(request: CreateMeetingRequest): CreateMeetingRequestV17
+    fun toApiV17(request: UpdateMeetingRequest): UpdateMeetingRequestV17
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
@@ -61,6 +67,22 @@ interface ApiModelMapper {
 }
 
 class ApiModelMapperImpl : ApiModelMapper {
+
+    override fun toApiV17(request: CreateMeetingRequest): CreateMeetingRequestV17 = CreateMeetingRequestV17(
+        startTime = request.startTime,
+        endTime = request.endTime,
+        tzid = request.tzid,
+        title = request.title,
+        recurrence = request.recurrence,
+    )
+
+    override fun toApiV17(request: UpdateMeetingRequest): UpdateMeetingRequestV17 = UpdateMeetingRequestV17(
+        startTime = request.startTime,
+        endTime = request.endTime,
+        tzid = request.tzid,
+        title = request.title,
+        recurrence = request.recurrence,
+    )
 
     override fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3 =
         CreateConversationRequestV3(
