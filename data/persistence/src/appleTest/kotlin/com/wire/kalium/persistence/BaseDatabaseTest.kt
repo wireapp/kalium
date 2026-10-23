@@ -66,7 +66,7 @@ actual open class BaseDatabaseTest actual constructor() {
 
     actual fun doesDatabaseExist(
         userId: UserIDEntity
-    ): Boolean = TODO("not implemented")
+    ): Boolean = NSFileManager.defaultManager.fileExistsAtPath(databasePath(userId))
 
     actual fun deleteDatabase(userId: UserIDEntity) {
         databases.remove(userId)?.forEach { it.close() }
