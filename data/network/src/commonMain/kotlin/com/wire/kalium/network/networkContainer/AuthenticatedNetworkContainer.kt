@@ -384,6 +384,17 @@ interface AuthenticatedNetworkContainer {
                     engine = engine,
                 )
 
+                19 -> AuthenticatedNetworkContainerV19(
+                    sessionManager,
+                    nomadServiceUrl,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger,
+                    engine = engine,
+                )
+
                 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
                 // bump API version and generate all needed classes
                 else -> error("Unsupported version: $version")

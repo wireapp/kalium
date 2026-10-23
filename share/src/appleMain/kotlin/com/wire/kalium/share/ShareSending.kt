@@ -132,6 +132,12 @@ internal class ShareSending(
             },
             joinConversation = { _, _ -> Either.Left(AppRequired("MLS_JOIN")) },
             encrypt = { mls, groupId, content -> wrapMLSRequest { mls.encryptMessage(groupId.toCrypto(), content) } },
+            encryptTransient = { mls, groupId, content ->
+                wrapMLSRequest { mls.encryptTransientMessage(groupId.toCrypto(), content) }
+            },
+            encryptTargeted = { mls, groupId, recipient, content, transient ->
+                wrapMLSRequest { mls.encryptTargetedMessage(groupId.toCrypto(), recipient, content, transient) }
+            },
             selfUserId = selfUserId,
         ),
         prepareMessage = { Either.Right(it) },

@@ -65,6 +65,75 @@ class EventMapperTest {
     }
 
     @Test
+    fun givenTargetedMLSMessageDTO_whenMapping_thenNewMLSMessageWithoutSubconversationIsReturned() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val timestamp = Instant.parse("2026-03-31T13:05:08.280Z")
+        val dto = EventContentDTO.Conversation.NewMLSTargetedMessageDTO(
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = timestamp,
+            message = "payload"
+        )
+
+        val event = assertIs<Event.Conversation.NewMLSMessage>(mapper.fromEventContentDTO("event-id", dto))
+
+        assertEquals("event-id", event.id)
+        assertEquals(ModelQualifiedID("conversation-id", "domain"), event.conversationId)
+        assertEquals(null, event.subconversationId)
+        assertEquals(ModelQualifiedID(TestUser.NETWORK_ID.value, TestUser.NETWORK_ID.domain), event.senderUserId)
+        assertEquals(timestamp, event.messageInstant)
+        assertEquals("payload", event.content)
+        assertEquals(true, event.targeted)
+        assertEquals(false, event.transient)
+    }
+
+    @Test
+    fun givenTransientMLSMessageDTO_whenMapping_thenTransientNewMLSMessageWithoutSubconversationIsReturned() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val timestamp = Instant.parse("2026-03-31T13:05:08.280Z")
+        val dto = EventContentDTO.Conversation.NewMLSTransientMessageDTO(
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = timestamp,
+            message = "payload"
+        )
+
+        val event = assertIs<Event.Conversation.NewMLSMessage>(mapper.fromEventContentDTO("event-id", dto))
+
+        assertEquals("event-id", event.id)
+        assertEquals(ModelQualifiedID("conversation-id", "domain"), event.conversationId)
+        assertEquals(null, event.subconversationId)
+        assertEquals(ModelQualifiedID(TestUser.NETWORK_ID.value, TestUser.NETWORK_ID.domain), event.senderUserId)
+        assertEquals(timestamp, event.messageInstant)
+        assertEquals("payload", event.content)
+        assertEquals(false, event.targeted)
+        assertEquals(true, event.transient)
+    }
+
+    @Test
+    fun givenTransientTargetedMLSMessageDTO_whenMapping_thenTransientTargetedNewMLSMessageIsReturned() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val timestamp = Instant.parse("2026-03-31T13:05:08.280Z")
+        val dto = EventContentDTO.Conversation.NewMLSTransientTargetedMessageDTO(
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = timestamp,
+            message = "payload"
+        )
+
+        val event = assertIs<Event.Conversation.NewMLSMessage>(mapper.fromEventContentDTO("event-id", dto))
+
+        assertEquals("event-id", event.id)
+        assertEquals(ModelQualifiedID("conversation-id", "domain"), event.conversationId)
+        assertEquals(null, event.subconversationId)
+        assertEquals(ModelQualifiedID(TestUser.NETWORK_ID.value, TestUser.NETWORK_ID.domain), event.senderUserId)
+        assertEquals(timestamp, event.messageInstant)
+        assertEquals("payload", event.content)
+        assertEquals(true, event.targeted)
+        assertEquals(true, event.transient)
+    }
+
+    @Test
     fun givenSessionRefreshSuggestedDTO_whenMapping_thenSessionRefreshSuggestedEventIsReturned() {
         val eventId = "event-id"
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)

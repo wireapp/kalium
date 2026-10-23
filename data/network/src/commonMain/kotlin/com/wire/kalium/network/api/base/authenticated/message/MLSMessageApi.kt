@@ -46,6 +46,20 @@ interface MLSMessageApi {
     value class CommitBundle(val value: ByteArray)
 
     /**
+     * TLS-serialized targeted MLS messages concatenated into one batch, each addressed to a single client of the
+     * same conversation. Persistent and transient targeted messages share this format.
+     */
+    @JvmInline
+    value class TargetedMessageBatch(val value: ByteArray)
+
+    /**
+     * A TLS-serialized transient MLS message, broadcast to every client of a conversation.
+     * Transient messages are not stored by the backend.
+     */
+    @JvmInline
+    value class TransientMessage(val value: ByteArray)
+
+    /**
      * Send an MLS message to a MLS group. The destination group is encoded into the message itself.
      *
      * @param message MLS Message
@@ -58,5 +72,28 @@ interface MLSMessageApi {
      * @param bundle
      */
     suspend fun sendCommitBundle(bundle: CommitBundle): NetworkResponse<SendMLSMessageResponse>
+
+    /**
+     * Send a batch of persistent targeted MLS messages. The destination group and recipients are
+     * encoded into the batch itself.
+     *
+     * @param batch
+     */
+    suspend fun sendTargetedMessage(batch: TargetedMessageBatch): NetworkResponse<SendMLSMessageResponse>
+
+    /**
+     * Send a transient MLS message to a MLS group. The destination group is encoded into the message itself.
+     *
+     * @param message
+     */
+    suspend fun sendTransientMessage(message: TransientMessage): NetworkResponse<SendMLSMessageResponse>
+
+    /**
+     * Send a batch of transient targeted MLS messages. The destination group and recipients are
+     * encoded into the batch itself.
+     *
+     * @param batch
+     */
+    suspend fun sendTransientTargetedMessage(batch: TargetedMessageBatch): NetworkResponse<SendMLSMessageResponse>
 
 }

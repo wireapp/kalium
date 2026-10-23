@@ -39,7 +39,7 @@ import com.wire.kalium.logic.data.event.conversationRenamed
 import com.wire.kalium.logic.data.event.deleteUserProperties
 import com.wire.kalium.logic.data.event.featureConfig
 import com.wire.kalium.logic.data.event.metadataSystemMessageId
-import com.wire.kalium.logic.data.event.newMLSMessage
+import com.wire.kalium.logic.data.event.newMLSMessageOrNull
 import com.wire.kalium.logic.data.event.newMeetingConversation
 import com.wire.kalium.logic.data.event.newConversation
 import com.wire.kalium.logic.data.event.newMessage
@@ -372,8 +372,7 @@ class NotificationProcessor(
                     }.forEach { recovery.resumeDeletion(mlsContext, ReceivedPayloadIdentity(eventId, it)) }
                     recovery.recordProcessed(
                         mlsContext,
-                        payload.filterIsInstance<EventContentDTO.Conversation.NewMLSMessageDTO>()
-                            .map { message -> newMLSMessage(eventId, message) },
+                        payload.mapNotNull { it.newMLSMessageOrNull(eventId) },
                         payload.map { ReceivedPayloadIdentity(eventId, it) },
                     )
                 }
@@ -475,12 +474,15 @@ class NotificationProcessor(
                     } else listOf(receivedProteusDecryptionFailure(event, result.value, selfUserId))
                 }
             }
-            is EventContentDTO.Conversation.NewMLSMessageDTO -> {
+            is EventContentDTO.Conversation.NewMLSMessageDTO,
+            is EventContentDTO.Conversation.NewMLSTargetedMessageDTO,
+            is EventContentDTO.Conversation.NewMLSTransientMessageDTO,
+            is EventContentDTO.Conversation.NewMLSTransientTargetedMessageDTO -> {
                 diagnostics?.stage = "MLS_FETCH_CONVERSATION"
                 val context = checkNotNull(mlsContext)
-                val event = newMLSMessage(eventId, content)
+                val event = checkNotNull(content.newMLSMessageOrNull(eventId))
                 mlsHandler.resume(context, event)?.let { return@flatMapIndexed it }
-                val metadata = conversations.fetchMissingConversation(content.qualifiedConversation.toModel(), context)
+                val metadata = conversations.fetchMissingConversation(event.conversationId, context)
                     ?: return@flatMapIndexed emptyList()
                 metadata + mlsHandler.decrypt(context, event, metadataSystemMessageId(eventId, index))
             }

@@ -620,6 +620,364 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenMLSConversationAndClientTarget_whenSendingMessage_thenSendTargetedBatchInsteadOfApplicationMessage() {
+        val messageTarget = MessageTarget.Client(listOf(Arrangement.TEST_RECIPIENT_1))
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingTargetedMlsMessage()
+            withSendOutgoingTargetedMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, messageTarget)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
+                    any(),
+                    eq(Arrangement.GROUP_ID),
+                    any(),
+                    eq(messageTarget),
+                    eq(false)
+                )
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSTargetedMessage(eq(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH))
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenMLSConversationAndConversationTargetIgnoringUsers_whenSendingMessage_thenSendTargetedBatch() {
+        val messageTarget = MessageTarget.Conversation(usersToIgnore = setOf(TEST_MEMBER_2))
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingTargetedMlsMessage()
+            withSendOutgoingTargetedMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, messageTarget)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
+                    any(),
+                    eq(Arrangement.GROUP_ID),
+                    any(),
+                    eq(messageTarget),
+                    eq(false)
+                )
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSTargetedMessage(eq(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH))
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenMLSConversationAndConversationTargetIgnoringNoUsers_whenSendingMessage_thenSendApplicationMessage() {
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, MessageTarget.Conversation())
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenTargetedAndTransientMLSMessagesDisabled_whenSendingTransientTargetedMessage_thenSendApplicationMessageToWholeGroup() {
+        val (arrangement, messageSender) = arrange {
+            targetedAndTransientMLSMessagesEnabled = false
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, MessageTarget.Users(TEST_MEMBER_2), transient = true)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTransientMLSMessage(any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenTargetedAndTransientMLSMessagesDisabled_whenSendingToConversationIgnoringUsers_thenSendApplicationMessageToWholeGroup() {
+        val (arrangement, messageSender) = arrange {
+            targetedAndTransientMLSMessagesEnabled = false
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(
+                Arrangement.TEST_SIGNALING_MESSAGE,
+                MessageTarget.Conversation(usersToIgnore = setOf(TEST_MEMBER_2))
+            )
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenTargetedAndTransientMLSMessagesDisabled_whenSendingTransientMessage_thenSendApplicationMessageToWholeGroup() {
+        val (arrangement, messageSender) = arrange {
+            targetedAndTransientMLSMessagesEnabled = false
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, transient = true)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSTransientMessage(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenMLSConversationAndTargetWithoutGroupMembers_whenSendingMessage_thenSucceedWithoutSending() {
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingTargetedMlsMessage(MLSMessageApi.TargetedMessageBatch(ByteArray(0)))
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, MessageTarget.Users(TEST_MEMBER_2))
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSTargetedMessage(any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenBackendWithoutTargetedMessages_whenSendingTargetedMLSMessage_thenFallBackToApplicationMessage() {
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingTargetedMlsMessage()
+            withSendOutgoingTargetedMlsMessage(Either.Left(NetworkFailure.FeatureNotSupported))
+            withCreateOutgoingMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, MessageTarget.Users(TEST_MEMBER_2))
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSTargetedMessage(eq(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH))
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+            }
+        }
+    }
+
+    @Test
+    fun givenReceivingStaleMessageError_whenSendingTargetedMLSMessage_thenRetryWithSameTarget() {
+        val messageTarget = MessageTarget.Users(TEST_MEMBER_2)
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingTargetedMlsMessage()
+            withSendOutgoingTargetedMlsMessage(
+                Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE),
+                Either.Right(MessageSent(MESSAGE_SENT_TIME))
+            )
+            withWaitUntilLiveOrFailure()
+            withVerifyEpoch(Either.Right(Unit))
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, messageTarget)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
+                    any(),
+                    any(),
+                    any(),
+                    eq(messageTarget),
+                    eq(false)
+                )
+            }
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.messageRepository.sendMLSTargetedMessage(any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenMLSConversation_whenSendingTransientMessage_thenSendTransientMessageInsteadOfApplicationMessage() {
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingTransientMlsMessage()
+            withSendOutgoingTransientMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, transient = true)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSTransientMessage(eq(Arrangement.TEST_MLS_TRANSIENT_MESSAGE))
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenReceivingStaleMessageError_whenSendingTransientTargetedMLSMessage_thenRetryAsTransientTargetedMessage() {
+        val messageTarget = MessageTarget.Users(TEST_MEMBER_2)
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingTransientTargetedMlsMessage()
+            withSendOutgoingTransientTargetedMlsMessage(
+                Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE),
+                Either.Right(MessageSent(MESSAGE_SENT_TIME))
+            )
+            withWaitUntilLiveOrFailure()
+            withVerifyEpoch(Either.Right(Unit))
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, messageTarget, transient = true)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
+                    any(),
+                    eq(Arrangement.GROUP_ID),
+                    any(),
+                    eq(messageTarget),
+                    eq(true)
+                )
+            }
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.messageRepository.sendMLSTransientTargetedMessage(eq(Arrangement.TEST_MLS_TRANSIENT_TARGETED_MESSAGE_BATCH))
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSTargetedMessage(any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSTransientMessage(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenBackendWithoutTransientMessages_whenSendingTransientMLSMessage_thenFallBackToApplicationMessage() {
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingTransientMlsMessage()
+            withSendOutgoingTransientMlsMessage(Either.Left(NetworkFailure.FeatureNotSupported))
+            withCreateOutgoingMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, transient = true)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSTransientMessage(any())
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+            }
+        }
+    }
+
+    @Test
+    fun givenProteusConversation_whenSendingTransientMessage_thenIgnoreTransientAndSendEnvelope() {
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, transient = true)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendEnvelope(any(), any(), any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTransientMLSMessage(any(), any(), any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSTransientMessage(any())
+            }
+        }
+    }
+
+    @Test
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenRetryAfterSyncIsLive() {
         // given
         val (arrangement, messageSender) = arrange {
@@ -1321,6 +1679,9 @@ class MessageSenderTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
+        // Most MLS tests exercise targeted/transient sending; the production default (disabled) is tested explicitly.
+        var targetedAndTransientMLSMessagesEnabled = true
+
         val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
         val messageSendFailureHandler: MessageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
         val conversationRepository: ConversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
@@ -1368,7 +1729,8 @@ class MessageSenderTest {
                         expirationData
                     )
                 },
-                scope = testScope
+                scope = testScope,
+                targetedAndTransientMLSMessagesEnabled = targetedAndTransientMLSMessagesEnabled
             )
         }
 
@@ -1449,6 +1811,50 @@ class MessageSenderTest {
             everySuspend {
                 mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
             } returns if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MLS_MESSAGE)
+        }
+
+        suspend fun withCreateOutgoingTargetedMlsMessage(
+            batch: MLSMessageApi.TargetedMessageBatch = TEST_MLS_TARGETED_MESSAGE_BATCH
+        ) = apply {
+            everySuspend {
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), eq(false))
+            } returns Either.Right(batch)
+        }
+
+        suspend fun withSendOutgoingTargetedMlsMessage(
+            vararg result: Either<CoreFailure, MessageSent> = arrayOf(Either.Right(MessageSent(MESSAGE_SENT_TIME)))
+        ) = apply {
+            everySuspend {
+                messageRepository.sendMLSTargetedMessage(any())
+            } sequentiallyReturns listOf(*result)
+        }
+
+        suspend fun withCreateOutgoingTransientMlsMessage() = apply {
+            everySuspend {
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTransientMLSMessage(any(), any(), any())
+            } returns Either.Right(TEST_MLS_TRANSIENT_MESSAGE)
+        }
+
+        suspend fun withSendOutgoingTransientMlsMessage(
+            vararg result: Either<CoreFailure, MessageSent> = arrayOf(Either.Right(MessageSent(MESSAGE_SENT_TIME)))
+        ) = apply {
+            everySuspend {
+                messageRepository.sendMLSTransientMessage(any())
+            } sequentiallyReturns listOf(*result)
+        }
+
+        suspend fun withCreateOutgoingTransientTargetedMlsMessage() = apply {
+            everySuspend {
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), eq(true))
+            } returns Either.Right(TEST_MLS_TRANSIENT_TARGETED_MESSAGE_BATCH)
+        }
+
+        suspend fun withSendOutgoingTransientTargetedMlsMessage(
+            vararg result: Either<CoreFailure, MessageSent> = arrayOf(Either.Right(MessageSent(MESSAGE_SENT_TIME)))
+        ) = apply {
+            everySuspend {
+                messageRepository.sendMLSTransientTargetedMessage(any())
+            } sequentiallyReturns listOf(*result)
         }
 
         suspend fun withSendEnvelope(result: Either<CoreFailure, MessageSent> = Either.Right(TestMessage.TEST_MESSAGE_SENT)) = apply {
@@ -1579,6 +1985,21 @@ class MessageSenderTest {
             const val TEST_MESSAGE_UUID = "messageUuid"
             val MESSAGE_SENT_TIME = Instant.UNIX_FIRST_DATE
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".encodeToByteArray())
+            val TEST_MLS_TARGETED_MESSAGE_BATCH = MLSMessageApi.TargetedMessageBatch("targeted".encodeToByteArray())
+            val TEST_MLS_TRANSIENT_MESSAGE = MLSMessageApi.TransientMessage("transient".encodeToByteArray())
+            val TEST_MLS_TRANSIENT_TARGETED_MESSAGE_BATCH =
+                MLSMessageApi.TargetedMessageBatch("transient-targeted".encodeToByteArray())
+            val TEST_SIGNALING_MESSAGE = Message.Signaling(
+                id = TEST_MESSAGE_UUID,
+                content = MessageContent.Calling("calling-message"),
+                conversationId = TEST_CONVERSATION_ID,
+                date = TestMessage.TEST_DATE,
+                senderUserId = TestUser.SELF.id,
+                senderClientId = ClientId("clientId"),
+                status = Message.Status.Pending,
+                isSelfMessage = true,
+                expirationData = null
+            )
             val TEST_CORE_FAILURE = CoreFailure.Unknown(Throwable("an error"))
             val TEST_PROTOCOL_INFO_FAILURE = StorageFailure.DataNotFound
             val GROUP_ID = GroupID("groupId")

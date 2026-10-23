@@ -42,6 +42,7 @@ buildscript {
 
 repositories {
     wireDetektRulesRepo()
+    mavenLocal()
     google()
     mavenCentral()
     maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
@@ -122,6 +123,7 @@ allprojects {
         the<NodeJsEnvSpec>().version = libs.versions.node.get()
     }
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
         maven(url = "https://maven.wire.com") {

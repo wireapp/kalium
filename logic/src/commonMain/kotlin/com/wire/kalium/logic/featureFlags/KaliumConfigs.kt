@@ -77,6 +77,9 @@ public data class KaliumConfigs(
      */
     val callConfigTransformer: ((String) -> String)? = null,
     val drivePermissionsEnabled: Boolean = false,
+    // When false, MLS messages addressed to specific users/clients or marked as transient are instead sent as
+    // persistent application messages to the whole conversation.
+    val targetedAndTransientMLSMessagesEnabled: Boolean = false,
     // Opt-in hook to observe real HTTP traffic (including bodies) for debugging purposes.
     // See HttpTrafficObserver's documentation for how this differs from KaliumHttpLogger.
     val httpTrafficObserver: HttpTrafficObserver? = null,

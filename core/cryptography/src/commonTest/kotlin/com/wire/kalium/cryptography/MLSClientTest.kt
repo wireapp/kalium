@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -167,7 +168,93 @@ class MLSClientTest : BaseMLSClientTest() {
         })
 
         assertEquals(PLAIN_TEXT, bundle.message.decodeToString())
+        assertFalse(bundle.targeted)
+        assertFalse(bundle.transient)
+    }
 
+    @Test
+    fun givenTwoClients_whenCallingEncryptTargetedMessage_theRecipientCanDecryptTheMessage() = runTest {
+        val aliceArrangement = create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+
+        val clientKeyPackageList = listOf(aliceClient.transaction { it.generateKeyPackages(1).first() })
+
+        bobClient.transaction {
+            it.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+            it.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
+        }
+        val welcome = bobArrangement.sendCommitBundleFlow.first().welcome!!
+        val groupId = aliceClient.transaction { it.processWelcomeMessage(welcome) }
+
+        val targetedMessage = bobClient.transaction {
+            it.encryptTargetedMessage(groupId, ALICE1.qualifiedClientId, PLAIN_TEXT.encodeToByteArray(), transient = false)
+        }
+        val bundle = assertIs<DecryptedMessageBundle.Text>(aliceClient.transaction {
+            (it.decryptMessage(groupId, targetedMessage) as MLSDecryptResult.Success).messages.first()
+        })
+
+        assertEquals(PLAIN_TEXT, bundle.message.decodeToString())
+        assertEquals(BOB1.qualifiedClientId, bundle.senderClientId)
+        assertEquals(true, bundle.targeted)
+        assertEquals(false, bundle.transient)
+    }
+
+    @Test
+    fun givenTwoClients_whenCallingEncryptTransientMessage_weCanDecryptTheMessage() = runTest {
+        val (aliceClient, bobClient, groupId) = createConversationOfAliceAndBob()
+
+        val transientMessage = bobClient.transaction { it.encryptTransientMessage(groupId, PLAIN_TEXT.encodeToByteArray()) }
+        val bundle = assertIs<DecryptedMessageBundle.Text>(aliceClient.transaction {
+            (it.decryptMessage(groupId, transientMessage) as MLSDecryptResult.Success).messages.first()
+        })
+
+        assertEquals(PLAIN_TEXT, bundle.message.decodeToString())
+        assertEquals(BOB1.qualifiedClientId, bundle.senderClientId)
+        assertEquals(false, bundle.targeted)
+        assertEquals(true, bundle.transient)
+    }
+
+    @Test
+    fun givenTwoClients_whenCallingEncryptTransientTargetedMessage_theRecipientCanDecryptTheMessage() = runTest {
+        val (aliceClient, bobClient, groupId) = createConversationOfAliceAndBob()
+
+        val targetedMessage = bobClient.transaction {
+            it.encryptTargetedMessage(groupId, ALICE1.qualifiedClientId, PLAIN_TEXT.encodeToByteArray(), transient = true)
+        }
+        val bundle = assertIs<DecryptedMessageBundle.Text>(aliceClient.transaction {
+            (it.decryptMessage(groupId, targetedMessage) as MLSDecryptResult.Success).messages.first()
+        })
+
+        assertEquals(PLAIN_TEXT, bundle.message.decodeToString())
+        assertEquals(BOB1.qualifiedClientId, bundle.senderClientId)
+        assertEquals(true, bundle.targeted)
+        assertEquals(true, bundle.transient)
+    }
+
+    /** Bob creates a conversation and adds Alice. */
+    private suspend fun CoroutineScope.createConversationOfAliceAndBob(): Triple<MLSClient, MLSClient, MLSGroupId> {
+        val aliceClient = create(ALICE1, ::createMLSClient).mlsClient
+        val bobArrangement = create(BOB1, ::createMLSClient)
+        val bobClient = bobArrangement.mlsClient
+
+        val clientKeyPackageList = listOf(aliceClient.transaction { it.generateKeyPackages(1).first() })
+        bobClient.transaction {
+            it.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+            it.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
+        }
+        val welcome = bobArrangement.sendCommitBundleFlow.first().welcome!!
+        val groupId = aliceClient.transaction { it.processWelcomeMessage(welcome) }
+        return Triple(aliceClient, bobClient, groupId)
     }
 
     @Test

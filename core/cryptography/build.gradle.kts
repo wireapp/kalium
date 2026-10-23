@@ -143,6 +143,16 @@ kotlin {
         val nonJsMain by creating {
             dependsOn(commonMain)
             kotlin.srcDir("src/coreCryptoMain/kotlin")
+            dependencies {
+                // Lets the IDE resolve CoreCrypto in shared code; see coreCryptoCommonMetadata above.
+                compileOnly(libs.coreCryptoKmp)
+            }
+        }
+        // Keep the KMP platform variants pulled in by nonJsMain away from the JVM/Android
+        // compilations, which use the standalone bindings with the same classes.
+        configurations.matching { it.name.endsWith("CompileClasspath") }.configureEach {
+            exclude(group = "com.wire", module = "core-crypto-kmp-jvm")
+            exclude(group = "com.wire", module = "core-crypto-kmp-android")
         }
         val jvmMain by getting {
             dependsOn(nonJsMain)
