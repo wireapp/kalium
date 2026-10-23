@@ -297,6 +297,7 @@ public class MessageScope internal constructor(
             },
             scope = scope,
             pendingMessagesEnabled = kaliumConfigs.pendingMessages,
+            targetedAndTransientMLSMessagesEnabled = kaliumConfigs.targetedAndTransientMLSMessagesEnabled
         )
 
     internal val persistMessage: PersistMessageUseCase

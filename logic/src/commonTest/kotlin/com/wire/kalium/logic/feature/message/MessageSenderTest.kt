@@ -737,6 +737,81 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenTargetedAndTransientMLSMessagesDisabled_whenSendingTransientTargetedMessage_thenSendApplicationMessageToWholeGroup() {
+        val (arrangement, messageSender) = arrange {
+            targetedAndTransientMLSMessagesEnabled = false
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, MessageTarget.Users(TEST_MEMBER_2), transient = true)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTransientMLSMessage(any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenTargetedAndTransientMLSMessagesDisabled_whenSendingToConversationIgnoringUsers_thenSendApplicationMessageToWholeGroup() {
+        val (arrangement, messageSender) = arrange {
+            targetedAndTransientMLSMessagesEnabled = false
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(
+                Arrangement.TEST_SIGNALING_MESSAGE,
+                MessageTarget.Conversation(usersToIgnore = setOf(TEST_MEMBER_2))
+            )
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenTargetedAndTransientMLSMessagesDisabled_whenSendingTransientMessage_thenSendApplicationMessageToWholeGroup() {
+        val (arrangement, messageSender) = arrange {
+            targetedAndTransientMLSMessagesEnabled = false
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, transient = true)
+
+            result.shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSTransientMessage(any())
+            }
+        }
+    }
+
+    @Test
     fun givenMLSConversationAndTargetWithoutGroupMembers_whenSendingMessage_thenSucceedWithoutSending() {
         val (arrangement, messageSender) = arrange {
             withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
@@ -1764,6 +1839,9 @@ class MessageSenderTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
+        // Most MLS tests exercise targeted/transient sending; the production default (disabled) is tested explicitly.
+        var targetedAndTransientMLSMessagesEnabled = true
+
         val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
         val messageSendFailureHandler: MessageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
         val conversationRepository: ConversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
@@ -1817,6 +1895,7 @@ class MessageSenderTest {
                 },
                 scope = testScope,
                 pendingMessagesEnabled = pendingMessagesEnabled,
+                targetedAndTransientMLSMessagesEnabled = targetedAndTransientMLSMessagesEnabled
             )
         }
 
