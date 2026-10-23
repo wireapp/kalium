@@ -275,30 +275,39 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         }
 
     private suspend fun validateAsset(asset: AssetUploadParams): Either<Failure, Unit> =
-        observeFileSharingStatus().firstOrNull()?.let { fileSharingStatus ->
-            when (val state = fileSharingStatus.state) {
-                FileSharingStatus.Value.EnabledAll -> Unit.right()
-                FileSharingStatus.Value.Disabled -> Failure.DisabledByTeam.left()
-
-                is FileSharingStatus.Value.EnabledSome ->
-                    if (!validateAssetFileUseCase(
-                            fileName = asset.assetName,
-                            mimeType = asset.assetMimeType,
-                            allowedExtension = state.allowedType
-                        )
-                    ) {
-                        kaliumLogger.e("The asset message trying to be processed has invalid content data")
-                        Failure.RestrictedFileType.left()
-                    } else {
-                        Unit.right()
-                    }
-            }
-        } ?: Failure.Generic(CoreFailure.Unknown(null)).left()
+        validateAssetSharing(observeFileSharingStatus, validateAssetFileUseCase, asset.assetName, asset.assetMimeType)
 
     private companion object {
         const val TYPE = "Asset"
     }
 }
+
+/** Checks the team's file sharing settings for an asset before anything is sent. */
+internal suspend fun validateAssetSharing(
+    observeFileSharingStatus: ObserveFileSharingStatusUseCase,
+    validateAssetFileType: ValidateAssetFileTypeUseCase,
+    assetName: String,
+    assetMimeType: String,
+): Either<Failure, Unit> =
+    observeFileSharingStatus().firstOrNull()?.let { fileSharingStatus ->
+        when (val state = fileSharingStatus.state) {
+            FileSharingStatus.Value.EnabledAll -> Unit.right()
+            FileSharingStatus.Value.Disabled -> Failure.DisabledByTeam.left()
+
+            is FileSharingStatus.Value.EnabledSome ->
+                if (!validateAssetFileType(
+                        fileName = assetName,
+                        mimeType = assetMimeType,
+                        allowedExtension = state.allowedType
+                    )
+                ) {
+                    kaliumLogger.e("The asset message trying to be processed has invalid content data")
+                    Failure.RestrictedFileType.left()
+                } else {
+                    Unit.right()
+                }
+        }
+    } ?: Failure.Generic(CoreFailure.Unknown(null)).left()
 
 public sealed interface ScheduleNewAssetMessageResult {
     public data class Success(val messageId: String) : ScheduleNewAssetMessageResult
