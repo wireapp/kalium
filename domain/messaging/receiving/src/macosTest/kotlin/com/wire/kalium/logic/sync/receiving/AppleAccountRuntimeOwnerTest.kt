@@ -49,6 +49,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
 class AppleAccountRuntimeOwnerTest {
@@ -212,6 +213,59 @@ class AppleAccountRuntimeOwnerTest {
         } finally {
             process.stop()
         }
+    }
+
+    @Test
+    fun tryAcquireWithRetryCompletesAfterTheOtherProcessReleases() = withLockRoot { rootPath ->
+        val accountId = UserId("handoff-account", "example.com")
+        val owner = AppleAccountRuntimeOwner(rootPath)
+        createLockFile(owner, accountId)
+        val process = AccountLockProcess.start(owner.lockFilePath(accountId))
+
+        try {
+            val retrying = async { owner.tryAcquire(accountId, retryFor = 3.seconds) }
+            runCurrent()
+            assertFalse(retrying.isCompleted)
+
+            process.stop()
+            advanceUntilIdle()
+            acquiredLease(retrying.await()).release()
+        } finally {
+            process.stop()
+        }
+    }
+
+    @Test
+    fun tryAcquireWithRetryGivesUpWhenTheOtherProcessKeepsTheAccount() = withLockRoot { rootPath ->
+        val accountId = UserId("retained-account", "example.com")
+        val owner = AppleAccountRuntimeOwner(rootPath)
+        createLockFile(owner, accountId)
+        val process = AccountLockProcess.start(owner.lockFilePath(accountId))
+
+        try {
+            val result = owner.tryAcquire(accountId, retryFor = 3.seconds)
+
+            assertEquals(Either.Left(AccountRuntimeFailure.BUSY), result)
+            assertTrue(testScheduler.currentTime >= 3.seconds.inWholeMilliseconds)
+            assertFalse(owner.isHeldByThisProcess(accountId))
+        } finally {
+            process.stop()
+        }
+    }
+
+    @Test
+    fun aLeaseOfThisProcessIsReportedUntilItIsReleased() = withLockRoot { rootPath ->
+        val accountId = UserId("in-process-account", "example.com")
+        val owner = AppleAccountRuntimeOwner(rootPath)
+        val lease = owner.acquireLease(accountId)
+
+        assertTrue(AppleAccountRuntimeOwner(rootPath).isHeldByThisProcess(accountId))
+        assertFalse(owner.isHeldByThisProcess(UserId("other-account", "example.com")))
+        // Another descriptor of this process is refused like another process.
+        assertEquals(Either.Left(AccountRuntimeFailure.BUSY), owner.tryAcquire(accountId))
+
+        lease.release()
+        assertFalse(owner.isHeldByThisProcess(accountId))
     }
 
     @Test

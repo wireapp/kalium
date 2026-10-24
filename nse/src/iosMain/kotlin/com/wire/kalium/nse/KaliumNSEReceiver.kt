@@ -24,7 +24,9 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
+import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
+import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
 import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
 import com.wire.kalium.logic.sync.receiving.catchUp
 import com.wire.kalium.logic.sync.receiving.ReceivedCallType
@@ -44,6 +46,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
 /** Shared configuration must exactly match app preparation, including the canonical App Group root. */
@@ -80,6 +83,8 @@ public data class KaliumNSERequest(
     public val budgetMilliseconds: Long,
     /** The host supplies only delivered message alerts belonging to this request's account. */
     public val deliveredNotifications: List<KaliumNSEDeliveredNotification> = emptyList(),
+    /** The app is in the foreground and presents alerts itself, so an account it holds needs no generic alert. */
+    public val appPresentsAlerts: Boolean = false,
 )
 
 public data class KaliumNSEDeliveredNotification(
@@ -119,7 +124,7 @@ public data class KaliumNSEResult(
     /**
      * Receiving ran out of time or failed to catch up before reaching the request's notification, and has
      * no alert to show. The host shows a generic alert instead of empty content. Also set on
-     * [KaliumNSEStatus.FAILED] timeouts.
+     * [KaliumNSEStatus.FAILED] timeouts, unreadable storage, and a busy account nobody else presents.
      */
     public val presentGenericAlert: Boolean = false,
     /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */
@@ -193,13 +198,14 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             return failure("INVALID_REQUEST").also { diagnostics.record("FAILED", it.failureReason, false) }
         }
         val started = TimeSource.Monotonic.markNow()
-        // A result produced before the budget ends survives a slow runtime close: its message alerts are marked notified.
+        val userId = UserId(request.userValue, request.userDomain)
+        // A result produced before the budget ends survives a slow or failed runtime close: its message alerts are marked notified.
         var produced: KaliumNSEResult? = null
         val outcome = try {
             withTimeoutOrNull(request.budgetMilliseconds) {
                 val result = AppleAccountRuntime.use(
                     configuration.rootPath,
-                    UserId(request.userValue, request.userDomain),
+                    userId,
                     ApplePersistenceConfig(
                         serviceName = configuration.keychainService,
                         keychainAccessibility = configuration.keychainAccessibility.toApple(),
@@ -208,6 +214,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     configuration.userAgent,
                     configuration.certificatePins,
                     diagnostics = diagnostics,
+                    // The app releases the account within moments of moving to the background.
+                    busyRetry = BUSY_RETRY,
                 ) { runtime ->
                     // The badge is auxiliary: a slow count read must not discard already-produced alerts.
                     val received = receive(runtime, request, diagnostics, started, delivery).also { produced = it }
@@ -216,7 +224,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     ).also { produced = it }
                 }
                 when (result) {
-                    is Either.Left -> failure(result.value.name)
+                    is Either.Left -> produced ?: ownershipFailure(result.value, request.appPresentsAlerts) {
+                        AppleAccountRuntimeOwner(configuration.rootPath).isHeldByThisProcess(userId)
+                    }
                     is Either.Right -> result.value
                 }
             } ?: produced ?: failure("TIMEOUT").copy(presentGenericAlert = true)
@@ -420,24 +430,38 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         )
     }
 
-    private fun failure(reason: String) = KaliumNSEResult(
-        KaliumNSEStatus.FAILED,
-        false,
-        null,
-        null,
-        null,
-        null,
-        failureReason = reason
-    )
+    /**
+     * Asks for a generic alert when nobody else presents what the push carries: storage cannot be read, or another
+     * owner holds the account without presenting. The foreground app and another attempt of this process present.
+     */
+    internal fun ownershipFailure(reason: AccountRuntimeFailure, appPresentsAlerts: Boolean, heldByThisProcess: () -> Boolean) =
+        failure(reason.name).copy(
+            presentGenericAlert = when (reason) {
+                AccountRuntimeFailure.BUSY -> !appPresentsAlerts && !heldByThisProcess()
+                AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
+                AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE, AccountRuntimeFailure.MISSING_STORAGE -> false
+            }
+        )
 
     private companion object {
         const val MAX_BUDGET_MS = 25_000L
+        val BUSY_RETRY = 3.seconds
         const val CATCH_UP_SHARE = 0.6
         const val PROCESS_SHARE = 0.85
         const val QUEUE_END = "QUEUE_END"
         const val BUDGET = "BUDGET"
     }
 }
+
+private fun failure(reason: String) = KaliumNSEResult(
+    KaliumNSEStatus.FAILED,
+    false,
+    null,
+    null,
+    null,
+    null,
+    failureReason = reason
+)
 
 private fun KaliumNSEKeychainAccessibility.toApple(): KeychainAccessibility = when (this) {
     KaliumNSEKeychainAccessibility.WHEN_UNLOCKED -> KeychainAccessibility.WhenUnlocked

@@ -27,7 +27,8 @@ struct ReceiveFixture {
                 notificationId: "notification",
                 showMessageContent: showContent,
                 budgetMilliseconds: 20_000,
-                deliveredNotifications: []
+                deliveredNotifications: [],
+                appPresentsAlerts: false
             )
             let result = try await receiver.process(request: request)
             precondition(result.status == .success, "Receive failed for \(account["route"]!)")
