@@ -97,6 +97,8 @@ public class ShareOutboxServer(
         val imports = Channel<Unit>(Channel.CONFLATED)
         launch { imports.receiveAsFlow().collect { importShares() } }
         doorbell.onStart { emit(Unit) }.conflate().collect {
+            // Claims at once, so a sheet learns the app has its share while an import waits. importShares claims
+            // again, which also lists what to import; both are needed.
             guarded("claim") { outbox.claim() }
             imports.send(Unit)
         }

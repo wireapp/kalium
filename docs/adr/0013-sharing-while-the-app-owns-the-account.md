@@ -68,11 +68,11 @@ Then the extension retries opening the account itself until its budget ends. If 
 busy between listing and sending, the extension retries sending for a moment, then hands the share off. It
 also hands the share off when the app wants the account while the extension uploads, or when uploading takes
 too long (ADR 12). The sheet waits a few seconds for the app to claim the share, and a few more for its result.
-If the app writes a refusal in time, the sheet shows the reason. Otherwise the sheet says Wire will send the share
-when Wire is opened, and marks the entry as unwatched: from then on, the app tells the user with a local notification
-if it refuses the share. The app writes its result before it looks for the mark, and the sheet marks before it looks
-one last time for the result, so at least one of them sees the result; only one takes it. The sheet offers no cancel
-while it waits.
+If the app writes a refusal in time, the sheet shows the reason. Otherwise the sheet says Wire is sending the share,
+or, if the app has not claimed it, that Wire will send it when Wire is opened. It also marks the entry as unwatched:
+from then on, the app tells the user with a local notification if it refuses the share. The app writes its result
+before it looks for the mark, and the sheet marks before it looks one last time for the result, so at least one of
+them sees the result; only one takes it. The sheet offers no cancel while it waits.
 
 **Not a second lock.** A lock that only the app holds would tell the extension that the app owns the
 account. It would not tell it that the app will take the share, and checking two locks one after the
