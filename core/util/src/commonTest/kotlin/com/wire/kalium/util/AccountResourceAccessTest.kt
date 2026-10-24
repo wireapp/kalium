@@ -210,7 +210,7 @@ class AccountResourceAccessTest {
         val finish = CompletableDeferred<Unit>()
         val events = mutableListOf<String>()
         val operation = launch {
-            access.withResumedAccess({ events += "open" }) {
+            access.withResumedAccess({ events += "own" }, { events += "open" }) {
                 events += "start"
                 finish.await()
                 events += "finish"
@@ -219,11 +219,40 @@ class AccountResourceAccessTest {
         runCurrent()
         val pause = launch { access.pause { events += "close" } }
         runCurrent()
-        assertEquals(listOf("open", "start"), events)
+        assertEquals(listOf("own", "open", "start"), events)
         finish.complete(Unit)
         operation.join()
         pause.join()
-        assertEquals(listOf("open", "start", "finish", "close"), events)
+        assertEquals(listOf("own", "open", "start", "finish", "close"), events)
+    }
+
+    @Test
+    fun cancellingTheOwnershipWaitLeavesAccessPausedAndResumable() = runTest {
+        val access = AccountResourceAccess()
+        access.pause {}
+        var opened = false
+        val waiting = launch {
+            access.withResumedAccess({ CompletableDeferred<Unit>().await() }, { opened = true }) { error("must not run") }
+        }
+        runCurrent()
+        waiting.cancelAndJoin()
+        assertFalse(opened)
+        assertEquals("resumed", access.withResumedAccess({}, { opened = true }) { "resumed" })
+        assertTrue(opened)
+    }
+
+    @Test
+    fun failedOwnershipLeavesAccessPausedInsteadOfUnavailable() = runTest {
+        val access = AccountResourceAccess()
+        access.pause {}
+        var opened = false
+        assertFailsWith<IllegalStateException> {
+            access.withResumedAccess({ error("held by another process") }, { opened = true }) { error("must not run") }
+        }
+        assertFalse(opened)
+        access.resume { opened = true }
+        assertEquals("open", access.withAccess { "open" })
+        assertTrue(opened)
     }
 
     @Test

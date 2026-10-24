@@ -19,6 +19,7 @@
 @file:OptIn(
     kotlin.concurrent.atomics.ExperimentalAtomicApi::class,
     com.wire.kalium.util.InternalKaliumApi::class,
+    kotlinx.cinterop.ExperimentalForeignApi::class,
 )
 
 package com.wire.kalium.logic.sync.receiving
@@ -30,14 +31,19 @@ import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.string.toHexString
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.coroutines.coroutineContext
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.convert
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
+import platform.Foundation.NSProcessInfo
 import platform.posix.EACCES
 import platform.posix.EAGAIN
 import platform.posix.EEXIST
@@ -48,6 +54,7 @@ import platform.posix.LOCK_EX
 import platform.posix.LOCK_NB
 import platform.posix.O_CLOEXEC
 import platform.posix.O_CREAT
+import platform.posix.O_RDONLY
 import platform.posix.O_RDWR
 import platform.posix.S_IRUSR
 import platform.posix.S_IRWXU
@@ -55,8 +62,12 @@ import platform.posix.S_IWUSR
 import platform.posix.close
 import platform.posix.errno
 import platform.posix.flock
+import platform.posix.ftruncate
+import platform.posix.getpid
 import platform.posix.mkdir
 import platform.posix.open
+import platform.posix.pread
+import platform.posix.pwrite
 
 /**
  * Exclusive account ownership shared by Apple app and extension processes.
@@ -82,13 +93,22 @@ public class AppleAccountRuntimeOwner internal constructor(
     public suspend fun tryAcquire(
         accountId: UserId,
         retryFor: Duration = Duration.ZERO,
-    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, retryFor)
+    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, retryFor, waitForThisProcess = true)
 
-    /** Wait cancellably for app ownership. Waiting for one account does not block other accounts. */
-    public suspend fun acquire(accountId: UserId): Either<AccountRuntimeFailure, AccountRuntimeLease> =
-        acquire(accountId, Duration.INFINITE)
+    /**
+     * Wait cancellably, at most [timeout], for app ownership; BUSY then means another owner kept the account.
+     * Waiting for one account does not block other accounts.
+     */
+    public suspend fun acquire(
+        accountId: UserId,
+        timeout: Duration = Duration.INFINITE,
+    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, timeout, waitForThisProcess = false)
 
-    private suspend fun acquire(accountId: UserId, waitFor: Duration): Either<AccountRuntimeFailure, AccountRuntimeLease> {
+    private suspend fun acquire(
+        accountId: UserId,
+        waitFor: Duration,
+        waitForThisProcess: Boolean,
+    ): Either<AccountRuntimeFailure, AccountRuntimeLease> {
         coroutineContext.ensureActive()
         val descriptor = when (val result = openLockFile(accountId)) {
             is Either.Left -> return result
@@ -98,8 +118,9 @@ public class AppleAccountRuntimeOwner internal constructor(
         val result = try {
             coroutineContext.ensureActive()
             val lockFile = paths.filePath(accountId)
-            val failure = lock(descriptor, lockFile, waitFor)
+            val failure = lock(descriptor, lockFile, waitFor, waitForThisProcess)
             if (failure == null) {
+                recordHolder(descriptor)
                 onLockAcquired()
                 val acquiredLease = AccountRuntimeLease(accountId, descriptor, rootPath, lockFile)
                 lease = acquiredLease
@@ -118,14 +139,21 @@ public class AppleAccountRuntimeOwner internal constructor(
         }
     }
 
-    private suspend fun lock(descriptor: Int, lockFile: String, waitFor: Duration): AccountRuntimeFailure? {
+    private suspend fun lock(
+        descriptor: Int,
+        lockFile: String,
+        waitFor: Duration,
+        waitForThisProcess: Boolean,
+    ): AccountRuntimeFailure? {
         var failure = tryLock(descriptor)
         // Elapsed time bounds the window, so slow wake-ups do not stretch it.
         withTimeoutOrNull(waitFor) {
             while (failure == AccountRuntimeFailure.BUSY) failure = retryLock(descriptor)
         }
         // flock refuses this process's other descriptors too. Unlike another owner, an attempt of this process ends.
-        while (failure == AccountRuntimeFailure.BUSY && waitFor > Duration.ZERO && lockFile in heldLockFiles.value) {
+        while (failure == AccountRuntimeFailure.BUSY && waitForThisProcess && waitFor > Duration.ZERO &&
+            lockFile in heldLockFiles.value
+        ) {
             failure = retryLock(descriptor)
         }
         return failure
@@ -134,6 +162,27 @@ public class AppleAccountRuntimeOwner internal constructor(
     private suspend fun retryLock(descriptor: Int): AccountRuntimeFailure? {
         delay(LOCK_RETRY_DELAY)
         return tryLock(descriptor)
+    }
+
+    /** Diagnostics only: which process took the account, and when. Locking never reads the file body. */
+    private fun recordHolder(descriptor: Int) {
+        val holder = "${NSProcessInfo.processInfo.processName} pid=${getpid()} since=${Clock.System.now()}".encodeToByteArray()
+        holder.usePinned { pwrite(descriptor, it.addressOf(0), holder.size.convert(), 0) }
+        ftruncate(descriptor, holder.size.convert())
+    }
+
+    /** What the process that last took [accountId] recorded, for logs; null if there is nothing to read. */
+    public fun holder(accountId: UserId): String? {
+        val descriptor = open(paths.filePath(accountId), O_RDONLY or O_CLOEXEC)
+        if (descriptor < 0) return null
+        return try {
+            val buffer = ByteArray(HOLDER_MAX_BYTES)
+            val length = buffer.usePinned { pread(descriptor, it.addressOf(0), buffer.size.convert(), 0) }
+            if (length > 0) buffer.decodeToString(0, length.toInt()) else null
+        } finally {
+            // Closing another descriptor of the file keeps this process's flock: it belongs to the lease's descriptor.
+            close(descriptor)
+        }
     }
 
     private fun tryLock(descriptor: Int): AccountRuntimeFailure? = if (flock(descriptor, LOCK_EX or LOCK_NB) == 0) {
@@ -157,6 +206,7 @@ public class AppleAccountRuntimeOwner internal constructor(
 
     private companion object {
         private val LOCK_RETRY_DELAY = 20.milliseconds
+        private const val HOLDER_MAX_BYTES = 256
     }
 }
 

@@ -27,6 +27,11 @@ versioned hash of the qualified account identity. Never unlink it during logout:
 other processes must keep locking the same inode. One blocked account must not
 prevent unrelated accounts from closing.
 
+An extension holding the lease can be suspended with its host, so the app's wait for
+it stays cancellable, also when reopening after a background release. The holder
+writes its process name, pid and time into the lock file body; locking never reads
+it, and the app logs it when it gives up waiting.
+
 The ownership primitive lives in `:domain:messaging:receiving`. Existing SQLite
 opening stays in persistence, app session construction stays in logic, and the
 Swift facade lives in the iOS-only `:nse` module. Shared mapping and business rules

@@ -435,6 +435,13 @@ internal actual open class UserSessionScopeProviderImpl(
             var completed = false
             var result: T? = null
             access.withResumedAccess(
+                // Another process may hold the lease for long: wait here, where cancellation still works and a
+                // failure keeps the account paused instead of unavailable.
+                acquireOwnership = {
+                    account.mutex.withLock {
+                        if (access === account.access && !account.unavailable) acquire(account, userId)
+                    }
+                },
                 openResources = {
                     account.mutex.withLock {
                         check(!account.unavailable) { "Account resources are unavailable until process exit" }
