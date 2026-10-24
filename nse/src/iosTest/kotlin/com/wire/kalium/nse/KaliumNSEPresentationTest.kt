@@ -154,8 +154,9 @@ class KaliumNSEPresentationTest {
                 val result = receiver.ownershipFailure(reason, appPresentsAlerts) { heldByThisProcess }
                 val expected = when (reason) {
                     AccountRuntimeFailure.BUSY -> !appPresentsAlerts && !heldByThisProcess
+                    AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE -> !appPresentsAlerts
                     AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
-                    else -> false
+                    AccountRuntimeFailure.MISSING_STORAGE -> false
                 }
                 assertEquals(KaliumNSEStatus.FAILED, result.status)
                 assertEquals(reason.name, result.failureReason)

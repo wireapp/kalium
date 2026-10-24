@@ -36,7 +36,8 @@ For each push, create `KaliumNSERequest` with the qualified user identity, targe
 notification ID, an additional host `showMessageContent` restriction and a budget
 between 1 and 25,000 milliseconds. Optionally pass this account's currently delivered
 message alerts in `deliveredNotifications`, and set `appPresentsAlerts` while the app is in
-the foreground and presents alerts itself: a busy account then asks for no generic alert.
+the foreground and presents alerts itself: a busy or unprepared account then asks for no
+generic alert.
 Call `process` from Swift async code. Like
 the app, the NSE first catches up over the WebSocket: it opens it, stores the REST pages
 fetched once it is open and closes it at live, then processes the stored queue to its

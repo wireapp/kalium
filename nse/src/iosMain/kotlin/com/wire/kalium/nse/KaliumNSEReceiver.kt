@@ -83,7 +83,7 @@ public data class KaliumNSERequest(
     public val budgetMilliseconds: Long,
     /** The host supplies only delivered message alerts belonging to this request's account. */
     public val deliveredNotifications: List<KaliumNSEDeliveredNotification> = emptyList(),
-    /** The app is in the foreground and presents alerts itself, so an account it holds needs no generic alert. */
+    /** The app is in the foreground and presents alerts itself, so a failed attempt needs no generic alert. */
     public val appPresentsAlerts: Boolean = false,
 )
 
@@ -124,7 +124,7 @@ public data class KaliumNSEResult(
     /**
      * Receiving ran out of time or failed to catch up before reaching the request's notification, and has
      * no alert to show. The host shows a generic alert instead of empty content. Also set on
-     * [KaliumNSEStatus.FAILED] timeouts, unreadable storage, and a busy account nobody else presents.
+     * [KaliumNSEStatus.FAILED] timeouts and, while nobody else presents, a busy, unprepared or unreadable account.
      */
     public val presentGenericAlert: Boolean = false,
     /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */
@@ -431,15 +431,17 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     }
 
     /**
-     * Asks for a generic alert when nobody else presents what the push carries: storage cannot be read, or another
-     * owner holds the account without presenting. The foreground app and another attempt of this process present.
+     * Asks for a generic alert when nobody else presents what the push carries: the account is busy, unprepared or
+     * unreadable, such as after an app update until the app opens. The foreground app and another attempt of this
+     * process present. Missing storage means the app has not run.
      */
     internal fun ownershipFailure(reason: AccountRuntimeFailure, appPresentsAlerts: Boolean, heldByThisProcess: () -> Boolean) =
         failure(reason.name).copy(
             presentGenericAlert = when (reason) {
                 AccountRuntimeFailure.BUSY -> !appPresentsAlerts && !heldByThisProcess()
+                AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE -> !appPresentsAlerts
                 AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
-                AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE, AccountRuntimeFailure.MISSING_STORAGE -> false
+                AccountRuntimeFailure.MISSING_STORAGE -> false
             }
         )
 
