@@ -199,9 +199,10 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
     private val accountWanted = Job()
 
     /**
-     * Another process needs the account (ADR 12): a [send] that is still uploading stops, releases the account and
-     * returns [KaliumShareStatus.OPEN_APP] with `ACCOUNT_WANTED`, for the host to hand the share to the app. A send
-     * that already sends finishes within its budget. Later sends return the same without taking the account.
+     * Another process needs the account (ADR 12): a [send] that has not stored a message yet stops uploading or
+     * catching up, releases the account and returns [KaliumShareStatus.OPEN_APP] with `ACCOUNT_WANTED`, for the host
+     * to hand the share to the app; its alerts are still owed. A send that stores messages finishes within its budget.
+     * Later sends return `ACCOUNT_WANTED` without taking the account.
      */
     public fun yieldAccount() {
         accountWanted.complete()
@@ -305,7 +306,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
                     // The text follows the files, as a caption does.
                     items = uploads.map { ShareItem.File(it) } +
                         request.text.takeIf { it.isNotBlank() }?.let { listOf(ShareItem.Text(it)) }.orEmpty(),
-                    shouldStopCatchingUp = { started.elapsedNow() > budget * SEND_BY_SHARE },
+                    shouldStopCatchingUp = { started.elapsedNow() > budget * SEND_BY_SHARE || accountWanted.isCompleted },
                     shouldStopSending = { started.elapsedNow() > budget * SENT_BY_SHARE },
                 )
                 // Recovering missed events needs slow sync, which only the app runs.
@@ -314,7 +315,9 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             }
         }
         // The backend sent no push for events delivered over the open socket, so present unnotified messages.
-        val processed = processor.processToLive(null) { started.elapsedNow() > budget * PROCESS_SHARE }
+        val processed = processor.processToLive(null) {
+            started.elapsedNow() > budget * PROCESS_SHARE || accountWanted.isCompleted
+        }
         val (outcome, unnotifiedBeforeSending) = held.value
         val unnotified = unnotifiedBeforeSending + runtime.takeUnnotifiedAlerts(processed)
         if (unnotified.isNotEmpty()) {
@@ -354,9 +357,13 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         // Storing the outgoing message marks earlier messages notified, so take their alerts first.
         val unnotified = runtime.takeUnnotifiedAlerts(processed)
         val unfinished = processed.appWorkPending?.name ?: processed.stoppedReason.takeIf { it != QUEUE_END }
-        // Unapplied events can carry consent or membership changes; sending would ignore them.
-        val outcome = if (unfinished != null) ShareOutcome(ShareStatus.OPEN_APP, "PROCESSING_$unfinished")
-        else sending.send(ConversationId(request.conversationValue, request.conversationDomain), items, shouldStopSending)
+        val outcome = when {
+            // Nothing is stored yet, so the app can take the share over.
+            accountWanted.isCompleted -> ShareOutcome(ShareStatus.OPEN_APP, ACCOUNT_WANTED)
+            // Unapplied events can carry consent or membership changes; sending would ignore them.
+            unfinished != null -> ShareOutcome(ShareStatus.OPEN_APP, "PROCESSING_$unfinished")
+            else -> sending.send(ConversationId(request.conversationValue, request.conversationDomain), items, shouldStopSending)
+        }
         return outcome to unnotified
     }
 

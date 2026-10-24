@@ -62,8 +62,9 @@ uploads. Holding the account keeps it from the app and the NSE, so uploads have 
 enough at about 1 Mbit/s and at most five minutes, and they stop when the app needs the account: the app
 posts a Darwin notification when it enters the foreground or a call arrives, and the extension stops when
 its host leaves the foreground, because iOS then suspends it with the account held. The extension then
-releases the account and hands the share to the app (ADR 13), which uploads the files again. Once the
-hold started, the send finishes within its budget: stopping it then could send a message twice.
+releases the account and hands the share to the app (ADR 13), which uploads the files again. The same
+applies while the hold connects and catches up. Once the extension stored a message, the send finishes
+within its budget: stopping it then could send the message twice.
 Nothing is stored until every upload succeeded; each file then becomes an uploaded asset
 message, so a message that fails to send is retried in the app without uploading again. The extension
 follows the app's file rules: file sharing, allowed types, size limits, and Cells conversations, whose
