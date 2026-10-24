@@ -460,6 +460,7 @@ import com.wire.kalium.logic.sync.SendPendingMessagesUseCase
 import com.wire.kalium.logic.sync.SendPendingMessagesUseCaseImpl
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
+import com.wire.kalium.logic.sync.SyncRetryController
 import com.wire.kalium.logic.sync.SyncSuspension
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncShutdownCoordinator
@@ -1343,6 +1344,8 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    private val syncRetryController = SyncRetryController()
+
     private val syncExecutorImpl: SyncExecutorImpl by lazy {
         SyncExecutorImpl(
             syncStateObserver.value,
@@ -1350,7 +1353,8 @@ public class UserSessionScope internal constructor(
             incrementalSyncManager,
             this,
             userScopedLogger = userScopedLogger,
-            shutdownCoordinator = syncShutdownCoordinator
+            shutdownCoordinator = syncShutdownCoordinator,
+            retryController = syncRetryController,
         )
     }
 
@@ -1575,6 +1579,7 @@ public class UserSessionScope internal constructor(
             syncMigrationStepsProvider = syncMigrationStepsProvider,
             userScopedLogger = userScopedLogger,
             apiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version,
+            retryController = syncRetryController,
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
@@ -1722,6 +1727,7 @@ public class UserSessionScope internal constructor(
             networkStateObserver,
             userScopedLogger,
             userSessionWorkScheduler,
+            retryController = syncRetryController,
         )
     }
 

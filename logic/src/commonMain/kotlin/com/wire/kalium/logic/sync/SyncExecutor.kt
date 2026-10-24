@@ -23,6 +23,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.sync.SyncRetryStatus
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import kotlinx.coroutines.CancellationException
@@ -52,6 +53,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 public abstract class SyncExecutor {
+    /** Reset backoff and wake any scheduled retry. Foreground ownership retains the running sync request. */
+    public abstract suspend fun retryNow()
 
     public abstract fun startAndStopSyncAsNeeded()
 
@@ -129,6 +132,7 @@ internal fun interface SyncSuspension {
     fun cancel()
 }
 
+@Suppress("LongParameterList")
 internal class SyncExecutorImpl(
     private val syncStateObserver: SyncStateObserver,
     private val slowSyncManager: SlowSyncManager,
@@ -136,7 +140,14 @@ internal class SyncExecutorImpl(
     private val scope: CoroutineScope,
     private val shutdownCoordinator: SyncShutdownCoordinator = SyncShutdownCoordinator(),
     userScopedLogger: KaliumLogger = kaliumLogger,
+    private val retryController: SyncRetryController = SyncRetryController(),
 ) : SyncExecutor() {
+    override suspend fun retryNow() {
+        retryController.retryNow {
+            slowSyncManager.resetRetryBackoff()
+            incrementalSyncManager.resetRetryBackoff()
+        }
+    }
 
     private enum class DemandAction(val startsExecution: Boolean = false) {
         /** First request arrived — start sync. */
@@ -295,7 +306,7 @@ internal class SyncExecutorImpl(
         val requestAdded = requesterCount > previousCount
         return when {
             requestAdded && previousCount == 0 -> DemandAction.START
-            requestAdded && syncState is SyncState.Failed -> DemandAction.RESTART
+            requestAdded && syncState is SyncState.Failed && syncState.retryStatus !is SyncRetryStatus.Attempting -> DemandAction.RESTART
 //             requestAdded && syncState != SyncState.Live -> DemandAction.RESET_BACKOFF // for now disabled need a bit more testing
             requesterCount == 0 && previousCount > 0 -> DemandAction.STOP
             requesterCount > 0 -> DemandAction.KEEP_RUNNING
