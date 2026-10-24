@@ -41,7 +41,8 @@ may import during a call while the device is locked, and are excluded from backu
 **Claiming.** The app claims an entry by renaming it from `ready/` to `claimed/`, which also tells the
 extension that the app has it. The app claims only while it owns the account, whether or not it is live
 yet: when notified, and when it takes an account. Within the app, one importer at a time serves an
-account.
+account. It claims on every notification, even while an earlier import waits for the account to catch up, and
+imports one share at a time.
 
 **Importing.** The app imports files first, then the text, as ADR 12 sends them. Each item keeps its
 message ID from the request, and the app skips an item whose message already exists. A crash or a
@@ -66,10 +67,12 @@ requests on their own, so a share being imported never keeps a sheet waiting for
 Then the extension retries opening the account itself until its budget ends. If the account becomes
 busy between listing and sending, the extension retries sending for a moment, then hands the share off. It
 also hands the share off when the app wants the account while the extension uploads, or when uploading takes
-too long (ADR 12). Once the app claims the
-share, the sheet closes: the app has it. If the app writes a refusal in time, the sheet shows the
-reason. If the app does not claim the entry within a few seconds, the entry stays in the outbox, and
-the sheet says Wire will send it when Wire is opened. The sheet offers no cancel while it waits.
+too long (ADR 12). The sheet waits a few seconds for the app to claim the share, and a few more for its result.
+If the app writes a refusal in time, the sheet shows the reason. Otherwise the sheet says Wire will send the share
+when Wire is opened, and marks the entry as unwatched: from then on, the app tells the user with a local notification
+if it refuses the share. The app writes its result before it looks for the mark, and the sheet marks before it looks
+one last time for the result, so at least one of them sees the result; only one takes it. The sheet offers no cancel
+while it waits.
 
 **Not a second lock.** A lock that only the app holds would tell the extension that the app owns the
 account. It would not tell it that the app will take the share, and checking two locks one after the
@@ -91,4 +94,4 @@ Only the app imports. A share left in the outbox waits for the app to own the ac
 extension and the NSE do not send other shares, which keeps their memory and time budgets unchanged.
 Entries and snapshots add plaintext copies in the App Group, protected like the account's own files
 and removed once imported or read. A share that a rule refuses at import was shown as allowed in the
-picker; the sheet reports it only if the app's answer arrives in time.
+picker; the sheet reports it if the app's answer arrives in time, and the app reports it otherwise.

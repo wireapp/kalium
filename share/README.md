@@ -79,10 +79,13 @@ App Group:
    `conversations`.
 2. `handOff` copies the files (as clones, where the file system allows) next to the request and publishes
    it, and the host rings the app again. `handOffStatus` follows it: `WAITING` until the app claims it,
-   `CLAIMED` while the app stores it, then `STORED` or `NOT_STORED` with a reason, reported once.
+   `CLAIMED` while the app stores it, then `STORED` or `NOT_STORED` with a reason, reported once. A host that
+   stops following it calls `stopWaiting`, which returns a result that arrived meanwhile; otherwise the app
+   reports a refusal itself.
 
 The app runs `serveShareExtension` while it owns an account, live or not. It answers requests for conversations,
 claims handed-off shares and stores them with its composer's use cases, files first, then the text. Each
 item keeps the message ID the extension gave it, so an import interrupted by a background handoff never
 stores a message twice. Once the account caught up, the app checks the conversation and file rules again before it
-stores anything. Requests for conversations are answered meanwhile, on their own.
+stores anything. Requests for conversations are answered meanwhile, on their own, and shares handed off meanwhile
+are claimed at once. A refusal the extension stopped waiting for goes to `refused`, for the app to tell the user.
