@@ -32,7 +32,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -79,7 +78,7 @@ class KeyingMaterialsManagerTests {
                 arrangement.updateKeyingMaterialsUseCase.invoke()
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.timestampKeyRepository.reset(eq(TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_CHECK))
+                arrangement.timestampKeyRepository.reset(TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_CHECK)
             }
         }
 

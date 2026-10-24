@@ -44,7 +44,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -69,7 +68,7 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.not) {
-                deleteConversation(any(), eq(TestConversation.ID))
+                deleteConversation(any(), TestConversation.ID)
             }
         }
     }
@@ -89,18 +88,16 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                deleteConversation(any(), eq(TestConversation.ID))
+                deleteConversation(any(), TestConversation.ID)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 notificationEventsManager.scheduleDeleteConversationNotification(
-                    eq(
-                        EphemeralConversationNotification(
+                    EphemeralConversationNotification(
                             event,
                             conversation,
                             otherUser
                         )
-                    )
                 )
             }
             verifySuspend(VerifyMode.not) { notificationEventsManager.scheduleMeetingNotification(any()) }
@@ -120,14 +117,14 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                deleteConversation(any(), eq(TestConversation.ID))
+                deleteConversation(any(), TestConversation.ID)
             }
             verifySuspend(VerifyMode.not) {
                 userRepository.observeUser(any())
             }
             verifySuspend(VerifyMode.exactly(1)) {
                 notificationEventsManager.scheduleDeleteConversationNotification(
-                    eq(EphemeralConversationNotification(event, conversation, null))
+                    EphemeralConversationNotification(event, conversation, null)
                 )
             }
         }
@@ -217,7 +214,7 @@ class DeletedConversationEventHandlerTest {
         }
 
         suspend fun withObserveUser(result: Flow<User?> = flowOf(TestUser.OTHER), userId: UserId = TestUser.OTHER_USER_ID) {
-            everySuspend { userRepository.observeUser(eq(userId)) } returns result
+            everySuspend { userRepository.observeUser(userId) } returns result
         }
 
         suspend fun withDeletingConversationSucceeding() {

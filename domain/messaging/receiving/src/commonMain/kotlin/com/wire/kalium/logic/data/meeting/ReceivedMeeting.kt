@@ -30,6 +30,9 @@ fun MeetingDTO.toMeetingEntity(): MeetingEntity? {
         endTime = endTime,
         tzid = tzid,
         recurrence = mappedRecurrence,
+        type = MeetingEntity.Type.valueOf(type.name),
+        link = link,
+        hasPassword = hasPassword,
     )
 }
 

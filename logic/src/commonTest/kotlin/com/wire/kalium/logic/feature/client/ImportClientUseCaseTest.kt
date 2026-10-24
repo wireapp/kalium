@@ -27,7 +27,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -49,11 +48,11 @@ class ImportClientUseCaseTest {
         assertIs<RegisterClientResult.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.persistRetainedClientId(eq(TestClient.CLIENT_ID))
+            arrangement.clientRepository.persistRetainedClientId(TestClient.CLIENT_ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.getOrRegisterClientUseCase.invoke(eq(Arrangement.REGISTER_CLIENT_PARAM))
+            arrangement.getOrRegisterClientUseCase.invoke(Arrangement.REGISTER_CLIENT_PARAM)
         }
     }
 

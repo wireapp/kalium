@@ -29,7 +29,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -78,7 +77,7 @@ class ObserveConversationMembersUseCaseTest {
         observeConversationMembers(conversationID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            conversationRepository.observeConversationMembers(eq(conversationID))
+            conversationRepository.observeConversationMembers(conversationID)
         }
     }
 
@@ -93,7 +92,7 @@ class ObserveConversationMembersUseCaseTest {
         )
 
         everySuspend {
-            userRepository.observeUser(eq(firstSelfUser.id))
+            userRepository.observeUser(firstSelfUser.id)
         } returns selfUserUpdates.asFlow()
 
         everySuspend {
@@ -117,7 +116,7 @@ class ObserveConversationMembersUseCaseTest {
         )
 
         everySuspend {
-            userRepository.observeUser(eq(firstOtherUser.id))
+            userRepository.observeUser(firstOtherUser.id)
         } returns
             flow {
                 emit(firstOtherUser)
@@ -143,15 +142,15 @@ class ObserveConversationMembersUseCaseTest {
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
 
         everySuspend {
-            userRepository.observeUser(eq(TestUser.SELF.id))
+            userRepository.observeUser(TestUser.SELF.id)
         } returns flowOf(selfUser)
 
         everySuspend {
-            userRepository.observeUser(eq(otherUser.id))
+            userRepository.observeUser(otherUser.id)
         } returns flowOf(otherUser)
 
         everySuspend {
-            conversationRepository.observeConversationMembers(eq(conversationID))
+            conversationRepository.observeConversationMembers(conversationID)
         } returns membersListChannel.consumeAsFlow()
 
         observeConversationMembers(conversationID).test {
@@ -179,15 +178,15 @@ class ObserveConversationMembersUseCaseTest {
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
 
         everySuspend {
-            userRepository.observeUser(eq(TestUser.SELF.id))
+            userRepository.observeUser(TestUser.SELF.id)
         } returns flowOf(selfUser)
 
         everySuspend {
-            userRepository.observeUser(eq(otherUser.id))
+            userRepository.observeUser(otherUser.id)
         } returns flowOf(otherUser)
 
         everySuspend {
-            conversationRepository.observeConversationMembers(eq(conversationID))
+            conversationRepository.observeConversationMembers(conversationID)
         } returns membersListChannel.consumeAsFlow()
 
         observeConversationMembers(conversationID).test {

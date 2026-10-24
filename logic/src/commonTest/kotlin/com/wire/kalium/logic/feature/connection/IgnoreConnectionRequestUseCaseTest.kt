@@ -30,7 +30,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -54,7 +53,7 @@ class IgnoreConnectionRequestUseCaseTest {
         // then
         assertEquals(IgnoreConnectionRequestUseCaseResult.Success, resultOk)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.ignoreConnectionRequest(any(), eq(userId))
+            arrangement.connectionRepository.ignoreConnectionRequest(any(), userId)
         }
     }
 
@@ -71,7 +70,7 @@ class IgnoreConnectionRequestUseCaseTest {
         // then
         assertEquals(IgnoreConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.ignoreConnectionRequest(any(), eq(userId))
+            arrangement.connectionRepository.ignoreConnectionRequest(any(), userId)
         }
     }
 
@@ -81,7 +80,7 @@ class IgnoreConnectionRequestUseCaseTest {
 
         suspend fun withIgnoreResult(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
-                connectionRepository.ignoreConnectionRequest(any(), eq(userId))
+                connectionRepository.ignoreConnectionRequest(any(), userId)
             } returns result
         }
 

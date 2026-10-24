@@ -40,7 +40,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -103,7 +103,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.PROTEUS) })
+            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.PROTEUS) })
         }
     }
 
@@ -123,7 +123,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.PROTEUS) })
+            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.PROTEUS) })
         }
     }
 
@@ -143,7 +143,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching { !it.contains(SupportedProtocol.PROTEUS) })
+            arrangement.userRepository.updateSupportedProtocols(matches { !it.contains(SupportedProtocol.PROTEUS) })
         }
     }
 
@@ -167,7 +167,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.MLS) })
+            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) })
         }
     }
 
@@ -192,7 +192,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.MLS) })
+            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) })
         }
     }
 
@@ -217,7 +217,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching { !it.contains(SupportedProtocol.MLS) })
+            arrangement.userRepository.updateSupportedProtocols(matches { !it.contains(SupportedProtocol.MLS) })
         }
     }
 
@@ -242,7 +242,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.MLS) })
+            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) })
         }
     }
 
@@ -266,7 +266,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.MLS) })
+            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) })
         }
     }
 
@@ -290,7 +290,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase.invoke()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching { !it.contains(SupportedProtocol.MLS) })
+            arrangement.userRepository.updateSupportedProtocols(matches { !it.contains(SupportedProtocol.MLS) })
         }
     }
 
@@ -336,7 +336,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateSupportedProtocols(matching {
+            arrangement.userRepository.updateSupportedProtocols(matches {
                 it.contains(SupportedProtocol.MLS) && it.contains(
                     SupportedProtocol.PROTEUS
                 )

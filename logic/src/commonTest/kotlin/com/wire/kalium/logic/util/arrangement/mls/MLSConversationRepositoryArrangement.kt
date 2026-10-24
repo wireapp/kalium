@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
@@ -66,7 +65,7 @@ internal class MLSConversationRepositoryArrangementImpl : MLSConversationReposit
 
     override suspend fun withJoinGroupByExternalCommit(groupId: GroupID, groupInfo: ByteArray, result: Either<CoreFailure, Unit>) = apply {
         everySuspend {
-            mlsConversationRepository.joinGroupByExternalCommit(any(), eq(groupId), eq(groupInfo))
+            mlsConversationRepository.joinGroupByExternalCommit(any(), groupId, groupInfo)
         }.returns(result)
     }
 }

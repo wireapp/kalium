@@ -50,7 +50,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -83,9 +82,9 @@ class MLSMigratorTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(
                 any(),
-                eq(conversation.id),
-                eq(Conversation.Protocol.MIXED),
-                eq(false)
+                conversation.id,
+                Conversation.Protocol.MIXED,
+                false
             )
         }
 
@@ -123,9 +122,9 @@ class MLSMigratorTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(
                 any(),
-                eq(conversation.id),
-                eq(Conversation.Protocol.MIXED),
-                eq(false)
+                conversation.id,
+                Conversation.Protocol.MIXED,
+                false
             )
         }
 
@@ -140,7 +139,7 @@ class MLSMigratorTest {
         }
 
         verifySuspend(VerifyMode.atLeast(1)) {
-            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), eq(Conversation.Protocol.MIXED))
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), Conversation.Protocol.MIXED)
         }
 
         verifySuspend(VerifyMode.atLeast(1)) {
@@ -190,7 +189,7 @@ class MLSMigratorTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateConversationProtocol(any(), eq(conversation.id), eq(Conversation.Protocol.MLS), eq(false))
+            arrangement.updateConversationProtocol(any(), conversation.id, Conversation.Protocol.MLS, false)
         }
     }
 

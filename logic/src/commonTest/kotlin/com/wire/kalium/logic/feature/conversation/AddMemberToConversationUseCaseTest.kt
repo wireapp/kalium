@@ -32,7 +32,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -54,7 +53,7 @@ class AddMemberToConversationUseCaseTest {
         assertIs<AddMemberToConversationUseCase.Result.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.addMembers(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+            arrangement.conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -77,7 +76,7 @@ class AddMemberToConversationUseCaseTest {
         assertIs<AddMemberToConversationUseCase.Result.Failure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.addMembers(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+            arrangement.conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {

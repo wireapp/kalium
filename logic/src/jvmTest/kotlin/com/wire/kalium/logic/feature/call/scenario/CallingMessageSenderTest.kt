@@ -38,7 +38,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.every
 import dev.mokkery.matcher.ofType
 import dev.mokkery.matcher.matches
@@ -109,10 +108,10 @@ class CallingMessageSenderTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_resp(
-                eq(arrangement.handle),
-                eq(400),
+                arrangement.handle,
+                400,
                 any(),
-                eq(contextPointer),
+                contextPointer,
             )
         }
         processingJob.cancel()
@@ -143,10 +142,10 @@ class CallingMessageSenderTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_resp(
-                eq(arrangement.handle),
-                eq(200),
+                arrangement.handle,
+                200,
                 any(),
-                eq(contextPointer),
+                contextPointer,
             )
         }
         processingJob.cancel()

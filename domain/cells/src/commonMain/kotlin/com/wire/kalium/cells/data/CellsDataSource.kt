@@ -23,6 +23,7 @@ import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
+import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
@@ -275,6 +276,13 @@ internal class CellsDataSource internal constructor(
         withContext(dispatchers.io) {
             wrapApiRequest {
                 cellsApi.moveNode(uuid = uuid, path = path, targetPath = targetPath)
+            }
+        }
+
+    override suspend fun moveNodes(nodes: List<NodeLocator>, targetPath: String): Either<NetworkFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                cellsApi.moveNodes(nodes = nodes, targetPath = targetPath)
             }
         }
 

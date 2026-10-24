@@ -22,6 +22,7 @@ import com.wire.kalium.cells.data.SortingCriteria
 import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
+import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
@@ -75,6 +76,7 @@ internal interface CellsRepository {
     suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>>
     suspend fun createFile(folderName: String, contentType: String, templateUuid: String): Either<NetworkFailure, List<CellNode>>
     suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit>
+    suspend fun moveNodes(nodes: List<NodeLocator>, targetPath: String): Either<NetworkFailure, Unit>
     suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit>
     suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit>
     suspend fun getAllTags(): Either<NetworkFailure, List<String>>

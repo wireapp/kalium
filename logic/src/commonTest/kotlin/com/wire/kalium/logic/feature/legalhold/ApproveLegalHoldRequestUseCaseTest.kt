@@ -31,7 +31,6 @@ import kotlinx.io.IOException
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -55,7 +54,7 @@ class ApproveLegalHoldRequestUseCaseTest {
         useCase.invoke(password)
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.approveLegalHoldRequest(eq(selfTeamId), eq(password))
+            arrangement.teamRepository.approveLegalHoldRequest(selfTeamId, password)
         }
     }
 

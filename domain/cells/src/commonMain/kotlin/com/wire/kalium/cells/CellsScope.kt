@@ -82,6 +82,8 @@ import com.wire.kalium.cells.domain.usecase.IsAtLeastOneCellAvailableUseCase
 import com.wire.kalium.cells.domain.usecase.IsAtLeastOneCellAvailableUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.MoveNodeUseCase
 import com.wire.kalium.cells.domain.usecase.MoveNodeUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.MoveNodesUseCase
+import com.wire.kalium.cells.domain.usecase.MoveNodesUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
@@ -372,6 +374,9 @@ public class CellsScope(
     }
     public val moveNodeUseCase: MoveNodeUseCase by lazy {
         MoveNodeUseCaseImpl(cellsRepository)
+    }
+    public val moveNodesUseCase: MoveNodesUseCase by lazy {
+        MoveNodesUseCaseImpl(cellsRepository)
     }
     public val getFoldersUseCase: GetFoldersUseCase by lazy {
         GetFoldersUseCaseImpl(cellsRepository)

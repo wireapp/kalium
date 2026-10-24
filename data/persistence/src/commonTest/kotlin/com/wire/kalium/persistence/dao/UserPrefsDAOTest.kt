@@ -27,7 +27,6 @@ import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.IsGuestRoomLinkEnabledEntity
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.every
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.first

@@ -43,8 +43,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -108,7 +107,7 @@ class SendLocationUseCaseTest {
             arrangement.messageSender.sendMessage(any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(true))
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), true)
         }
     }
 
@@ -132,7 +131,7 @@ class SendLocationUseCaseTest {
         // Then
         result.toEither().shouldFail()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), false)
         }
     }
 
@@ -157,7 +156,7 @@ class SendLocationUseCaseTest {
         result.toEither().shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matching {
+                message = matches {
                     assertIs<Message.Regular>(it)
                     it.expirationData?.expireAfter == expectedDuration
                 },

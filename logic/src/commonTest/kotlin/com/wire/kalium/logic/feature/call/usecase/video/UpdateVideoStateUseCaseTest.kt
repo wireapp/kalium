@@ -28,7 +28,6 @@ import com.wire.kalium.logic.framework.TestCall
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
-import dev.mokkery.matcher.eq
 import dev.mokkery.everySuspend
 import dev.mokkery.every
 import dev.mokkery.mock
@@ -47,7 +46,7 @@ class UpdateVideoStateUseCaseTest {
     @BeforeTest
     fun setup() {
         updateVideoStateUseCase = UpdateVideoStateUseCase(callRepository)
-        every { callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn)) } returns (Unit)
+        every { callRepository.updateIsCameraOnById(conversationId, isCameraOn) } returns (Unit)
     }
 
     @Test
@@ -72,7 +71,7 @@ class UpdateVideoStateUseCaseTest {
         updateVideoStateUseCase(conversationId, videoState)
 
         verify(VerifyMode.exactly(1)) {
-            callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn))
+            callRepository.updateIsCameraOnById(conversationId, isCameraOn)
         }
     }
 
@@ -85,7 +84,7 @@ class UpdateVideoStateUseCaseTest {
         updateVideoStateUseCase(conversationId, videoState)
 
         verify(VerifyMode.exactly(1)) {
-            callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn))
+            callRepository.updateIsCameraOnById(conversationId, isCameraOn)
         }
     }
 

@@ -44,7 +44,6 @@ import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArran
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -134,17 +133,17 @@ class FederationEventReceiverTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.memberDAO.deleteMembersByQualifiedID(eq(defederatedUserIdList.map { it.toDao() }), eq(selfConversation.toDao()))
+            arrangement.memberDAO.deleteMembersByQualifiedID(defederatedUserIdList.map { it.toDao() }, selfConversation.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.memberDAO.deleteMembersByQualifiedID(eq(selfUserIdList.map { it.toDao() }), eq(defederatedConversation.toDao()))
+            arrangement.memberDAO.deleteMembersByQualifiedID(selfUserIdList.map { it.toDao() }, defederatedConversation.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.deleteMembersByQualifiedID(
-                eq(userIdWithBothDomainsList.map { it.toDao() }),
-                eq(otherConversation.toDao())
+                userIdWithBothDomainsList.map { it.toDao() },
+                otherConversation.toDao()
             )
         }
 
@@ -189,22 +188,22 @@ class FederationEventReceiverTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
-                    eq(defederatedUserIdListTwo.map { it.toDao() }),
-                    eq(defederatedConversation.toDao())
+                    defederatedUserIdListTwo.map { it.toDao() },
+                    defederatedConversation.toDao()
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
-                    eq(defederatedUserIdList.map { it.toDao() }),
-                    eq(defederatedConversationTwo.toDao())
+                    defederatedUserIdList.map { it.toDao() },
+                    defederatedConversationTwo.toDao()
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
-                    eq(userIdWithBothDomainsList.map { it.toDao() }),
-                    eq(selfConversation.toDao())
+                    userIdWithBothDomainsList.map { it.toDao() },
+                    selfConversation.toDao()
                 )
             }
 

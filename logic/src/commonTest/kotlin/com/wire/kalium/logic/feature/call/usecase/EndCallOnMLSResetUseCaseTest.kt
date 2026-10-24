@@ -32,7 +32,6 @@ import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
@@ -53,13 +52,13 @@ class EndCallOnMLSResetUseCaseTest {
         useCase(call.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateCallStatusById(eq(call.conversationId), eq(CallStatus.CLOSED))
+            arrangement.callRepository.updateCallStatusById(call.conversationId, CallStatus.CLOSED)
         }
         verify(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateIsCameraOnById(eq(call.conversationId), eq(false))
+            arrangement.callRepository.updateIsCameraOnById(call.conversationId, false)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.endCall(eq(call.conversationId))
+            arrangement.callManager.endCall(call.conversationId)
         }
     }
 
@@ -74,10 +73,10 @@ class EndCallOnMLSResetUseCaseTest {
         useCase(call.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callRepository.updateCallStatusById(eq(call.conversationId), eq(CallStatus.CLOSED))
+            arrangement.callRepository.updateCallStatusById(call.conversationId, CallStatus.CLOSED)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.endCall(eq(call.conversationId))
+            arrangement.callManager.endCall(call.conversationId)
         }
     }
 
@@ -110,7 +109,7 @@ class EndCallOnMLSResetUseCaseTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.endCall(eq(call.conversationId))
+            arrangement.callManager.endCall(call.conversationId)
         }
     }
 

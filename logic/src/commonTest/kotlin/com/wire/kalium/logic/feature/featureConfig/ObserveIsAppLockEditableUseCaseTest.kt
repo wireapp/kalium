@@ -33,7 +33,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -113,7 +112,7 @@ internal class ObserveIsAppLockEditableUseCaseTest {
         fun withObserveAppLockConfig(userId: UserId, result: Flow<Either<StorageFailure, AppLockTeamConfig>>) = apply {
             val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
             everySuspend {
-                userSessionScopeProvider.open(eq(userId), any<UserSessionScope.() -> UserConfigRepository>())
+                userSessionScopeProvider.open(userId, any<UserSessionScope.() -> UserConfigRepository>())
             } returns userConfigRepository
             every {
                 userConfigRepository.observeAppLockConfig()

@@ -36,7 +36,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.every
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
@@ -74,10 +73,10 @@ class OnSFTRequestTest {
 
         verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_sft_resp(
-                inst = eq(arrangement.handle),
-                error = eq(AvsSFTError.NONE.value),
+                inst = arrangement.handle,
+                error = AvsSFTError.NONE.value,
                 data = matches { it.isNotEmpty() && it.contentEquals(result) },
-                length = eq(result.size),
+                length = result.size,
                 ctx = any()
             )
         }
@@ -101,10 +100,10 @@ class OnSFTRequestTest {
 
         verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_sft_resp(
-                inst = eq(arrangement.handle),
-                error = eq(AvsSFTError.NO_RESPONSE_DATA.value),
+                inst = arrangement.handle,
+                error = AvsSFTError.NO_RESPONSE_DATA.value,
                 data = matches { it.isEmpty() },
-                length = eq(0),
+                length = 0,
                 ctx = any()
             )
         }
@@ -135,10 +134,10 @@ class OnSFTRequestTest {
         }
         verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_sft_resp(
-                inst = eq(arrangement.handle),
-                error = eq(AvsSFTError.NONE.value),
+                inst = arrangement.handle,
+                error = AvsSFTError.NONE.value,
                 data = matches { it.isNotEmpty() && it.contentEquals(result) },
-                length = eq(result.size),
+                length = result.size,
                 ctx = any()
             )
         }
@@ -170,10 +169,10 @@ class OnSFTRequestTest {
         }
         verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_sft_resp(
-                inst = eq(arrangement.handle),
-                error = eq(AvsSFTError.NO_RESPONSE_DATA.value),
+                inst = arrangement.handle,
+                error = AvsSFTError.NO_RESPONSE_DATA.value,
                 data = matches { it.isEmpty() },
-                length = eq(0),
+                length = 0,
                 ctx = any()
             )
         }

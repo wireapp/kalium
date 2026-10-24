@@ -14,7 +14,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -41,7 +41,7 @@ class PersistConversationsUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.persistConversations(
-                matching { list -> list.any { it.id.value == CONVERSATION_RESPONSE.id.value } }
+                matches { list -> list.any { it.id.value == CONVERSATION_RESPONSE.id.value } }
             )
         }
     }
@@ -69,7 +69,7 @@ class PersistConversationsUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.persistConversations(
-                matching { list ->
+                matches { list ->
                     list.any {
                         it.id.value == mlsConversation.id.value &&
                                 it.protocolInfo is ConversationEntity.ProtocolInfo.MLS &&
@@ -126,7 +126,7 @@ class PersistConversationsUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.persistConversations(
-                matching { list ->
+                matches { list ->
                     list.any {
                         it.id.value == mlsConversation.id.value &&
                                 it.protocolInfo is ConversationEntity.ProtocolInfo.MLS &&

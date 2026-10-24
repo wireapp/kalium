@@ -54,9 +54,9 @@ class MeetingMapperTest {
     @Test
     fun creatorDeviceZoneAndUpdatedZoneReachTheApiRequest() {
         val start = Instant.parse("2026-10-24T08:00:00Z")
-        val created = UpsertMeeting("Meeting", start, start, null, emptyList(), TimeZone.currentSystemDefault().id)
-        assertEquals(TimeZone.currentSystemDefault().id, mapper.fromModelToApi(created).tzid)
-        assertEquals("Australia/Sydney", mapper.fromModelToApi(created.copy(tzid = "Australia/Sydney")).tzid)
+        val created = CreateMeeting("Meeting", start, start, null, emptyList(), TimeZone.currentSystemDefault().id)
+        assertEquals(TimeZone.currentSystemDefault().id, mapper.fromModelToCreateApi(created).tzid)
+        assertEquals("Australia/Sydney", mapper.fromModelToCreateApi(created.copy(tzid = "Australia/Sydney")).tzid)
     }
 
     @Test

@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.meeting.CreateNewMeetingResult
 import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.logic.data.meeting.UpsertMeeting
+import com.wire.kalium.logic.data.meeting.CreateMeeting
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -61,6 +61,22 @@ class CreateNewMeetingUseCaseTest {
             arrangement.cryptoTransactionProvider.transaction<CreateNewMeetingResult>("CreateNewMeeting", any())
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
             arrangement.refreshUsersWithoutMetadata()
+        }
+    }
+
+    @Test
+    fun givenPassword_whenCreatingMeeting_thenPassesPasswordToRepository() = runTest {
+        val createMeeting = CREATE_MEETING.copy(password = "secret")
+        val createResult = Either.Right(CreateNewMeetingResult(ConversationId("conversation", "domain"), MLSAdditionResult.Empty))
+        val (arrangement, useCase) = Arrangement()
+            .withCreateNewMeetingReturning(createMeeting, createResult)
+            .withTransactionReturning(createResult)
+            .arrange()
+
+        useCase(createMeeting)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
         }
     }
 
@@ -129,7 +145,7 @@ class CreateNewMeetingUseCaseTest {
         internal val refreshUsersWithoutMetadata = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
 
         internal fun withCreateNewMeetingReturning(
-            meeting: UpsertMeeting,
+            meeting: CreateMeeting,
             result: Either<CoreFailure, CreateNewMeetingResult>
         ) = apply {
             everySuspend { meetingRepository.createNewMeeting(meeting = meeting, transactionContext = transactionContext) } returns result
@@ -153,7 +169,7 @@ class CreateNewMeetingUseCaseTest {
     }
 }
 
-private val CREATE_MEETING = UpsertMeeting(
+private val CREATE_MEETING = CreateMeeting(
     title = "Meeting 1",
     startTime = Instant.parse("2026-06-01T10:00:00Z"),
     endTime = Instant.parse("2026-06-01T11:00:00Z"),

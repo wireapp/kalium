@@ -153,9 +153,8 @@ class MessageSenderImpl(
                 if (failure == StorageFailure.DataNotFound) Either.Right(false) else Either.Left(failure)
             },
             { current ->
-                val isEdit = message.content is MessageContent.TextEdited || message.content is MessageContent.MultipartEdited
                 val isVisible = current is Message.Regular && current.visibility == Message.Visibility.VISIBLE
-                Either.Right(isVisible && (current.status == Message.Status.Pending || isEdit))
+                Either.Right(isVisible && current.status == Message.Status.Pending)
             }
         )
     }

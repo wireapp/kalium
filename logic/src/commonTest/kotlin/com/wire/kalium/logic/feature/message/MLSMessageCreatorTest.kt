@@ -39,7 +39,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
@@ -69,11 +68,11 @@ class MLSMessageCreatorTest {
             .shouldSucceed {}
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.encryptMessage(eq(arrangement.mlsContext), eq(GROUP_ID), eq(plainData))
+            arrangement.mlsConversationRepository.encryptMessage(arrangement.mlsContext, GROUP_ID, plainData)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), GROUP_ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -98,11 +97,11 @@ class MLSMessageCreatorTest {
             .shouldSucceed {}
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingConversationUseCase(any(), eq(TestMessage.TEXT_MESSAGE.conversationId), any(), eq(true))
+            arrangement.joinExistingConversationUseCase(any(), TestMessage.TEXT_MESSAGE.conversationId, any(), true)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.encryptMessage(eq(arrangement.mlsContext), eq(GROUP_ID), eq(plainData))
+            arrangement.mlsConversationRepository.encryptMessage(arrangement.mlsContext, GROUP_ID, plainData)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -159,7 +158,7 @@ class MLSMessageCreatorTest {
 
         suspend fun withJoinExistingConversation(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             everySuspend {
-                joinExistingConversationUseCase(any(), any(), any(), eq(true))
+                joinExistingConversationUseCase(any(), any(), any(), true)
             } returns result
         }
 
