@@ -283,6 +283,9 @@ public class AppleAccountRuntime private constructor(
         private const val DRAIN_TIMEOUT_MS = 3_000L
         private val quarantined = MutableStateFlow<List<AppleAccountRuntime>>(emptyList())
 
+        /** A close failed in this process: that runtime keeps its account lease until the process exits. */
+        public val hasQuarantinedRuntime: Boolean get() = quarantined.value.isNotEmpty()
+
         /** Open, run owned work, drain and close before releasing ownership, including on cancellation. */
         @Suppress("LongParameterList", "TooGenericExceptionCaught", "ReturnCount")
         public suspend fun <T> use(

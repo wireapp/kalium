@@ -87,7 +87,9 @@ destroys the AVS handle and waits for its native shutdown callback before dispos
 the callback reference and releasing account ownership. A cancelled or incomplete
 shutdown retains the handle for a later close attempt. An exception during native
 creation leaves ownership uncertain and retains the account lease until process
-exit. The NSE event-only AVS API instead retains one account/client handle and
+exit. Extension processes are reused, so an extension that retained a lease this way
+ends its process once it has delivered its result, and the kernel releases the lease.
+The NSE event-only AVS API instead retains one account/client handle and
 callback context for the process lifetime. Its request callbacks are attached only
 for the serialized start/process/end batch; this retained context owns no database,
 crypto, network resource or account lease. These rules prevent simultaneous native
