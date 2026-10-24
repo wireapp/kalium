@@ -149,20 +149,19 @@ class KaliumNSEPresentationTest {
 
     @Test
     fun ownershipFailuresAskForAGenericAlertOnlyWhenNobodyElsePresents() {
-        for (reason in AccountRuntimeFailure.entries) for (appPresentsAlerts in listOf(false, true))
-            for (heldByThisProcess in listOf(false, true)) {
-                val result = receiver.ownershipFailure(reason, appPresentsAlerts) { heldByThisProcess }
-                val expected = when (reason) {
-                    AccountRuntimeFailure.BUSY -> !appPresentsAlerts && !heldByThisProcess
-                    AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE -> !appPresentsAlerts
-                    AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
-                    AccountRuntimeFailure.MISSING_STORAGE -> false
-                }
-                assertEquals(KaliumNSEStatus.FAILED, result.status)
-                assertEquals(reason.name, result.failureReason)
-                assertFalse(result.shouldNotify)
-                assertEquals(expected, result.presentGenericAlert, "$reason $appPresentsAlerts $heldByThisProcess")
+        for (reason in AccountRuntimeFailure.entries) for (appPresentsAlerts in listOf(false, true)) {
+            val result = receiver.ownershipFailure(reason, appPresentsAlerts)
+            val expected = when (reason) {
+                AccountRuntimeFailure.BUSY, AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE ->
+                    !appPresentsAlerts
+                AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
+                AccountRuntimeFailure.MISSING_STORAGE -> false
             }
+            assertEquals(KaliumNSEStatus.FAILED, result.status)
+            assertEquals(reason.name, result.failureReason)
+            assertFalse(result.shouldNotify)
+            assertEquals(expected, result.presentGenericAlert, "$reason $appPresentsAlerts")
+        }
     }
 
     private fun unnotified(id: String) = message(ReceivedNotificationType.MESSAGE).copy(messageId = id)

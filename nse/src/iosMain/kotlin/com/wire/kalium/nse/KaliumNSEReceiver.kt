@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
-import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
 import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
 import com.wire.kalium.logic.sync.receiving.catchUp
 import com.wire.kalium.logic.sync.receiving.ReceivedCallType
@@ -214,7 +213,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     configuration.userAgent,
                     configuration.certificatePins,
                     diagnostics = diagnostics,
-                    // The app releases the account within moments of moving to the background.
+                    // The app releases the account within moments of moving to the background. Another attempt of
+                    // this process presents only what it received, so this one waits for it too.
                     busyRetry = BUSY_RETRY,
                 ) { runtime ->
                     // The badge is auxiliary: a slow count read must not discard already-produced alerts.
@@ -224,9 +224,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     ).also { produced = it }
                 }
                 when (result) {
-                    is Either.Left -> produced ?: ownershipFailure(result.value, request.appPresentsAlerts) {
-                        AppleAccountRuntimeOwner(configuration.rootPath).isHeldByThisProcess(userId)
-                    }
+                    is Either.Left -> produced ?: ownershipFailure(result.value, request.appPresentsAlerts)
                     is Either.Right -> result.value
                 }
             } ?: produced ?: failure("TIMEOUT").copy(presentGenericAlert = true)
@@ -432,14 +430,14 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
 
     /**
      * Asks for a generic alert when nobody else presents what the push carries: the account is busy, unprepared or
-     * unreadable, such as after an app update until the app opens. The foreground app and another attempt of this
-     * process present. Missing storage means the app has not run.
+     * unreadable, such as after an app update until the app opens. The foreground app presents alerts itself.
+     * Missing storage means the app has not run.
      */
-    internal fun ownershipFailure(reason: AccountRuntimeFailure, appPresentsAlerts: Boolean, heldByThisProcess: () -> Boolean) =
+    internal fun ownershipFailure(reason: AccountRuntimeFailure, appPresentsAlerts: Boolean) =
         failure(reason.name).copy(
             presentGenericAlert = when (reason) {
-                AccountRuntimeFailure.BUSY -> !appPresentsAlerts && !heldByThisProcess()
-                AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE -> !appPresentsAlerts
+                AccountRuntimeFailure.BUSY, AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE ->
+                    !appPresentsAlerts
                 AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
                 AccountRuntimeFailure.MISSING_STORAGE -> false
             }

@@ -57,11 +57,11 @@ socket and the backend see the close asynchronously, so events in that short
 window may still reach the closing socket instead of APNs.
 
 NSE opening retries a busy lease for up to 3 seconds, which covers the app's background
-handoff. If the account stays busy, the NSE asks the host for a generic alert unless the host
-reports that the foreground app presents alerts or another attempt in the same process holds
-the account. Missing or incompatible readiness, such as after an app update until the app opens,
-also asks for one unless the app presents alerts, and so does storage it cannot read. Opening
-then reads compatible readiness,
+handoff, and waits for another attempt of the same process to finish: that attempt presents
+only what it received. If the account stays busy, the NSE asks the host for a generic alert
+unless the host reports that the foreground app presents alerts. Missing or incompatible
+readiness, such as after an app update until the app opens, also asks for one unless the app
+presents alerts, and so does storage it cannot read. Opening then reads compatible readiness,
 checks existing store files and credentials, and opens owned resources. It never
 logs in, registers a client or initializes missing stores to repair preparation.
 SQLite opens without creation or migration. For an encrypted account, the NSE

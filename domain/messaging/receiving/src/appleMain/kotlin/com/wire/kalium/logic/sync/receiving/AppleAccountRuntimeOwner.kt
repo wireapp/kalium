@@ -76,7 +76,8 @@ public class AppleAccountRuntimeOwner internal constructor(
 
     /**
      * For an extension with a limited execution budget: one attempt, or attempts until [retryFor] passes
-     * while another owner holds the account.
+     * while another owner holds the account. A retrying attempt also waits for another attempt of this process,
+     * which holds the account only within its own budget and presents only what it received.
      */
     public suspend fun tryAcquire(
         accountId: UserId,
@@ -87,9 +88,6 @@ public class AppleAccountRuntimeOwner internal constructor(
     public suspend fun acquire(accountId: UserId): Either<AccountRuntimeFailure, AccountRuntimeLease> =
         acquire(accountId, Duration.INFINITE)
 
-    /** Whether a lease of this process holds [accountId]. The lock refuses this process's other attempts too. */
-    public fun isHeldByThisProcess(accountId: UserId): Boolean = paths.filePath(accountId) in heldLockFiles.value
-
     private suspend fun acquire(accountId: UserId, waitFor: Duration): Either<AccountRuntimeFailure, AccountRuntimeLease> {
         coroutineContext.ensureActive()
         val descriptor = when (val result = openLockFile(accountId)) {
@@ -99,10 +97,11 @@ public class AppleAccountRuntimeOwner internal constructor(
         var lease: AccountRuntimeLease? = null
         val result = try {
             coroutineContext.ensureActive()
-            val failure = lock(descriptor, waitFor)
+            val lockFile = paths.filePath(accountId)
+            val failure = lock(descriptor, lockFile, waitFor)
             if (failure == null) {
                 onLockAcquired()
-                val acquiredLease = AccountRuntimeLease(accountId, descriptor, rootPath, paths.filePath(accountId))
+                val acquiredLease = AccountRuntimeLease(accountId, descriptor, rootPath, lockFile)
                 lease = acquiredLease
                 Either.Right(acquiredLease)
             } else {
@@ -119,16 +118,22 @@ public class AppleAccountRuntimeOwner internal constructor(
         }
     }
 
-    private suspend fun lock(descriptor: Int, waitFor: Duration): AccountRuntimeFailure? {
+    private suspend fun lock(descriptor: Int, lockFile: String, waitFor: Duration): AccountRuntimeFailure? {
         var failure = tryLock(descriptor)
         // Elapsed time bounds the window, so slow wake-ups do not stretch it.
         withTimeoutOrNull(waitFor) {
-            while (failure == AccountRuntimeFailure.BUSY) {
-                delay(LOCK_RETRY_DELAY)
-                failure = tryLock(descriptor)
-            }
+            while (failure == AccountRuntimeFailure.BUSY) failure = retryLock(descriptor)
+        }
+        // flock refuses this process's other descriptors too. Unlike another owner, an attempt of this process ends.
+        while (failure == AccountRuntimeFailure.BUSY && waitFor > Duration.ZERO && lockFile in heldLockFiles.value) {
+            failure = retryLock(descriptor)
         }
         return failure
+    }
+
+    private suspend fun retryLock(descriptor: Int): AccountRuntimeFailure? {
+        delay(LOCK_RETRY_DELAY)
+        return tryLock(descriptor)
     }
 
     private fun tryLock(descriptor: Int): AccountRuntimeFailure? = if (flock(descriptor, LOCK_EX or LOCK_NB) == 0) {

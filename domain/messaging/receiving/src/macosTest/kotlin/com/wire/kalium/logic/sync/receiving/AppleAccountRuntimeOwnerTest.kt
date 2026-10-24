@@ -35,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -247,25 +248,27 @@ class AppleAccountRuntimeOwnerTest {
 
             assertEquals(Either.Left(AccountRuntimeFailure.BUSY), result)
             assertTrue(testScheduler.currentTime >= 3.seconds.inWholeMilliseconds)
-            assertFalse(owner.isHeldByThisProcess(accountId))
         } finally {
             process.stop()
         }
     }
 
     @Test
-    fun aLeaseOfThisProcessIsReportedUntilItIsReleased() = withLockRoot { rootPath ->
+    fun tryAcquireWithRetryWaitsForAnotherAttemptOfThisProcess() = withLockRoot { rootPath ->
         val accountId = UserId("in-process-account", "example.com")
         val owner = AppleAccountRuntimeOwner(rootPath)
         val lease = owner.acquireLease(accountId)
 
-        assertTrue(AppleAccountRuntimeOwner(rootPath).isHeldByThisProcess(accountId))
-        assertFalse(owner.isHeldByThisProcess(UserId("other-account", "example.com")))
         // Another descriptor of this process is refused like another process.
         assertEquals(Either.Left(AccountRuntimeFailure.BUSY), owner.tryAcquire(accountId))
+        val retrying = async { owner.tryAcquire(accountId, retryFor = 1.seconds) }
+        advanceTimeBy(5.seconds)
+        runCurrent()
+        assertFalse(retrying.isCompleted)
 
         lease.release()
-        assertFalse(owner.isHeldByThisProcess(accountId))
+        advanceUntilIdle()
+        acquiredLease(retrying.await()).release()
     }
 
     @Test
