@@ -28,6 +28,7 @@ import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.native.HiddenFromObjC
 
@@ -114,7 +116,10 @@ public class ShareOutboxServer(
             // An import that fails unexpectedly would fail again, so it ends with what it stored.
             val result = if (request == null) UNREADABLE else guarded("import") { import(id, request) } ?: FAILED
             val unwatched = guarded("finish") { outbox.finish(id, result) } == true
-            if (unwatched && request != null && result != ShareOutbox.STORED) guarded("report") { report(request, result) }
+            if (unwatched && request != null && result != ShareOutbox.STORED) {
+                // The finished entry is gone, so a report cancelled now could not be retried.
+                withContext(NonCancellable) { guarded("report") { report(request, result) } }
+            }
         }
     }
 

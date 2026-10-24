@@ -237,6 +237,33 @@ class ShareOutboxTest {
     }
 
     @Test
+    fun aRefusalIsReportedEvenWhenTheAppStopsServingMeanwhile() = runTest {
+        withDatabase { database ->
+            seed(database)
+            val id = outbox.handOff(request(PHOTO, conversation = "left"), listOf(file("photo")))
+            assertNull(outbox.stopWaiting(id))
+            val reporting = CompletableDeferred<Unit>()
+            val goOn = CompletableDeferred<Unit>()
+            val reported = CompletableDeferred<Unit>()
+
+            val importing = launch {
+                server(database, RecordingSending(database)) { _, _, _ ->
+                    reporting.complete(Unit)
+                    goOn.await()
+                    reported.complete(Unit)
+                }.importShares()
+            }
+            withContext(Dispatchers.Default) { withTimeout(10.seconds) { reporting.await() } }
+            // The app goes to the background while it reports.
+            importing.cancel()
+            goOn.complete(Unit)
+            importing.join()
+
+            assertTrue(reported.isCompleted)
+        }
+    }
+
+    @Test
     fun aResultTheAppLeftBeforeTheSheetStoppedWaitingIsTheSheets() = runTest {
         withDatabase { database ->
             seed(database)
