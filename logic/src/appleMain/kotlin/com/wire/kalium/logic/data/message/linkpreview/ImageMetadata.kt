@@ -21,8 +21,10 @@ import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.usePinned
 import platform.CoreFoundation.CFDataCreate
+import platform.CoreFoundation.CFRelease
 import platform.CoreGraphics.CGImageGetHeight
 import platform.CoreGraphics.CGImageGetWidth
+import platform.CoreGraphics.CGImageRelease
 import platform.ImageIO.CGImageSourceCreateImageAtIndex
 import platform.ImageIO.CGImageSourceCreateWithData
 
@@ -30,15 +32,23 @@ import platform.ImageIO.CGImageSourceCreateWithData
 internal actual fun readImageMetadata(bytes: ByteArray, fallbackMimeType: String): ImageMetadata? {
     if (bytes.isEmpty()) return null
 
+    // The caller owns Core Foundation "Create" results; Kotlin/Native does not release them.
     val data = bytes.usePinned {
         CFDataCreate(null, it.addressOf(0).reinterpret(), bytes.size.toLong())
+    } ?: return null
+    val imageSource = CGImageSourceCreateWithData(data, null)
+    val image = imageSource?.let { CGImageSourceCreateImageAtIndex(it, 0u, null) }
+    return try {
+        image?.let {
+            ImageMetadata(
+                width = CGImageGetWidth(it).toInt(),
+                height = CGImageGetHeight(it).toInt(),
+                mimeType = fallbackMimeType
+            )
+        }
+    } finally {
+        CGImageRelease(image)
+        imageSource?.let { CFRelease(it) }
+        CFRelease(data)
     }
-    val imageSource = CGImageSourceCreateWithData(data, null) ?: return null
-    val image = CGImageSourceCreateImageAtIndex(imageSource, 0u, null) ?: return null
-
-    return ImageMetadata(
-        width = CGImageGetWidth(image).toInt(),
-        height = CGImageGetHeight(image).toInt(),
-        mimeType = fallbackMimeType
-    )
 }
