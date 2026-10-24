@@ -22,6 +22,7 @@ import androidx.paging.PagingConfig
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToOne
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.Meeting
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
 
+@Suppress("TooManyFunctions")
 interface MeetingDao {
     suspend fun upsertMeetings(
         meetings: List<MeetingEntity>,
@@ -60,6 +62,7 @@ interface MeetingDao {
     suspend fun deleteMeetingsByConversationId(conversationId: QualifiedIDEntity)
     suspend fun getNextUnfinishedMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String?
     suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity?
+    fun observeHasOngoingMeeting(from: Instant, now: Instant, earliestEnd: Instant): Flow<Boolean>
     fun observeMeetingReminderChanges(): Flow<Unit>
     suspend fun getNextMeetingReminder(from: Instant): MeetingReminderEntity?
     suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminderEntity>
@@ -221,6 +224,12 @@ internal class MeetingDaoImpl(
                 prefetchDistance = prefetchDistance,
             ),
         )
+
+    override fun observeHasOngoingMeeting(from: Instant, now: Instant, earliestEnd: Instant): Flow<Boolean> =
+        meetingsQueries.selectHasOngoingMeeting(from, now, earliestEnd)
+            .asFlow()
+            .mapToOne(readDispatcher.value)
+            .flowOn(readDispatcher.value)
 
     // Only SQLDelight's table invalidation matters here; the COUNT result is never read or compared.
     override fun observeMeetingReminderChanges(): Flow<Unit> =

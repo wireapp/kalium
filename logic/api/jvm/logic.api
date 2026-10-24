@@ -5775,8 +5775,13 @@ public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
 	public final fun getMaintainMeetingOccurrences ()Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase;
 	public final fun getMeetingReminders ()Lcom/wire/kalium/logic/feature/meeting/MeetingRemindersUseCase;
+	public final fun getObserveHasOngoingMeeting ()Lcom/wire/kalium/logic/feature/meeting/ObserveHasOngoingMeetingUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
 	public final fun getUpdateMeeting ()Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveHasOngoingMeetingUseCase {
+	public abstract fun invoke (Lkotlin/time/Instant;Lkotlin/time/Instant;Lkotlin/time/Instant;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase {

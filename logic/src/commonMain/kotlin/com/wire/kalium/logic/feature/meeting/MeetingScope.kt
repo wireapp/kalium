@@ -51,6 +51,9 @@ public class MeetingScope internal constructor(
             meetingRepository = meetingRepository,
         )
 
+    public val observeHasOngoingMeeting: ObserveHasOngoingMeetingUseCase
+        get() = ObserveHasOngoingMeetingUseCaseImpl(dispatcher, meetingRepository)
+
     public val observeMeetingOccurrence: ObserveMeetingOccurrenceUseCase
         get() = ObserveMeetingOccurrenceUseCaseImpl(
             dispatcher = dispatcher,
