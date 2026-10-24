@@ -37,6 +37,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import platform.posix.EACCES
 import platform.posix.EAGAIN
 import platform.posix.EEXIST
@@ -120,11 +121,12 @@ public class AppleAccountRuntimeOwner internal constructor(
 
     private suspend fun lock(descriptor: Int, waitFor: Duration): AccountRuntimeFailure? {
         var failure = tryLock(descriptor)
-        var waited = Duration.ZERO
-        while (failure == AccountRuntimeFailure.BUSY && waited < waitFor) {
-            delay(LOCK_RETRY_DELAY)
-            waited += LOCK_RETRY_DELAY
-            failure = tryLock(descriptor)
+        // Elapsed time bounds the window, so slow wake-ups do not stretch it.
+        withTimeoutOrNull(waitFor) {
+            while (failure == AccountRuntimeFailure.BUSY) {
+                delay(LOCK_RETRY_DELAY)
+                failure = tryLock(descriptor)
+            }
         }
         return failure
     }
