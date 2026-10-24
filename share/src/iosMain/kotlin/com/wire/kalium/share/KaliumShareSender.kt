@@ -40,6 +40,7 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import okio.FileSystem
@@ -137,7 +138,7 @@ public data class KaliumShareRequest(
     public val attachments: List<KaliumShareAttachment>,
     /** Additional host message-preview restriction for alerts; the saved account choice is read for each request. */
     public val showMessageContent: Boolean,
-    /** Bounds the live hold that sends; uploads run before it, as long as the host lets them. */
+    /** Bounds the live hold that sends; uploads run before it, with a budget of their own that grows with the files' size. */
     public val budgetMilliseconds: Long,
 )
 
@@ -194,6 +195,18 @@ public data class KaliumShareAlert(
  */
 public class KaliumShareSender(private val configuration: KaliumShareConfiguration) {
 
+    /** Completes once another process wants the account; see [yieldAccount]. */
+    private val accountWanted = Job()
+
+    /**
+     * Another process needs the account (ADR 12): a [send] that is still uploading stops, releases the account and
+     * returns [KaliumShareStatus.OPEN_APP] with `ACCOUNT_WANTED`, for the host to hand the share to the app. A send
+     * that already sends finishes within its budget. Later sends return the same without taking the account.
+     */
+    public fun yieldAccount() {
+        accountWanted.complete()
+    }
+
     /** `BUSY` as [KaliumShareConversations.failureReason] can mean the app owns the account: ask it instead. */
     @Throws(CancellationException::class)
     public suspend fun conversations(userValue: String, userDomain: String): KaliumShareConversations {
@@ -208,8 +221,10 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
 
     /**
      * Uploads the attachments, reporting [progress], then sends within [KaliumShareRequest.budgetMilliseconds].
-     * Uploads end only when they finish, fail or the host cancels; nothing is stored before every upload succeeded.
+     * Uploads end when they finish, fail or run out of their budget, or when the host cancels or calls [yieldAccount];
+     * nothing is stored before every upload succeeded.
      */
+    @Suppress("CyclomaticComplexMethod", "ReturnCount") // Keep the request and account guards before taking the account.
     @Throws(CancellationException::class)
     public suspend fun send(request: KaliumShareRequest, progress: KaliumShareProgress?): KaliumShareResult {
         val files = request.attachments.map { it.toShareFile() }
@@ -220,6 +235,8 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             else -> null
         }
         if (invalid != null) return failure(invalid)
+        // The account is another process's now; taking it again would keep that process waiting.
+        if (accountWanted.isCompleted) return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = ACCOUNT_WANTED)
         // A result produced before the budget ends survives a slow runtime close: its message alerts are marked notified.
         var produced: KaliumShareResult? = null
         return try {
@@ -238,7 +255,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         }
     }
 
-    /** Uploading needs no live socket, so it runs before the hold and outside its budget. */
+    /** Uploading needs no live socket, so it runs before the hold, with its own budget. */
     private suspend fun uploadAndShare(
         runtime: AppleAccountRuntime,
         request: KaliumShareRequest,
@@ -251,8 +268,10 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = APP_LOCK)
         }
         val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
-        val uploaded = runtime.uploadSharedFiles(conversationId, files, options().fileRestrictionState) { bytes, total ->
-            progress?.uploaded(bytes, total)
+        val uploaded = yieldingUploads(uploadBudget(files.sumOf { it.sizeInBytes }), accountWanted) {
+            runtime.uploadSharedFiles(conversationId, files, options().fileRestrictionState) { bytes, total ->
+                progress?.uploaded(bytes, total)
+            }
         }
         return uploaded.fold({ KaliumShareResult(it.status.toKalium(), failureReason = it.reason) }) { uploads ->
             val budget = request.budgetMilliseconds.milliseconds
