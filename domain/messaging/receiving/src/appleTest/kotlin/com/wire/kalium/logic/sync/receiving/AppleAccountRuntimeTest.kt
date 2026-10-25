@@ -323,9 +323,8 @@ class AppleAccountRuntimeTest {
             error("Unprepared runtime reached caller work")
         }
 
-        suspend fun refusedDatabase() = AppleAccountRuntime.useDatabase(root, userId, config) { _, _ ->
-            error("Unprepared runtime reached caller work")
-        }
+        // Caller work that throws maps to STORAGE too, so reaching the block returns Right instead.
+        suspend fun refusedDatabase() = AppleAccountRuntime.useDatabase(root, userId, config) { _, _ -> Unit }
 
         suspend fun prepareReadiness() {
             val lease = acquire()
