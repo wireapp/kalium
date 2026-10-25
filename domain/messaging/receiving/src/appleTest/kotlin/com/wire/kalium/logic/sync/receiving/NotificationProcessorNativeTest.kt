@@ -13391,6 +13391,15 @@ class NotificationProcessorNativeTest {
         com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi {
         var attempts = 0
         override suspend fun sendMessage(message: ByteArray) = error("Unexpected send")
+        override suspend fun sendTargetedMessage(
+            batch: com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi.TargetedMessageBatch
+        ) = error("Unexpected targeted send")
+        override suspend fun sendTransientMessage(
+            message: com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi.TransientMessage
+        ) = error("Unexpected transient send")
+        override suspend fun sendTransientTargetedMessage(
+            batch: com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi.TargetedMessageBatch
+        ) = error("Unexpected transient targeted send")
         override suspend fun sendCommitBundle(bundle: com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi.CommitBundle):
             NetworkResponse<com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse> {
             attempts++

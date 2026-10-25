@@ -28,6 +28,9 @@ internal fun notificationDependencies(payload: List<EventContentDTO>): Set<Notif
                 content.qualifiedConversation
             }
             is EventContentDTO.Conversation.NewMLSMessageDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.NewMLSTargetedMessageDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.NewMLSTransientMessageDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.NewMLSTransientTargetedMessageDTO -> content.qualifiedConversation
             else -> return null
         }
         dependencies += NotificationDependency.Conversation(conversation)

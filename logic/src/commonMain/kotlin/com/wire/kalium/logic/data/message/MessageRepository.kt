@@ -459,6 +459,17 @@ internal class MessageDataSource internal constructor(
     override suspend fun sendMLSMessage(message: MLSMessageApi.Message): Either<CoreFailure, MessageSent> =
         transport.sendMLSMessage(message)
 
+    override suspend fun sendMLSTargetedMessage(batch: MLSMessageApi.TargetedMessageBatch): Either<CoreFailure, MessageSent> =
+        transport.sendMLSTargetedMessage(batch)
+
+    override suspend fun sendMLSTransientMessage(message: MLSMessageApi.TransientMessage): Either<CoreFailure, MessageSent> =
+        transport.sendMLSTransientMessage(message)
+
+    override suspend fun sendMLSTransientTargetedMessage(
+        batch: MLSMessageApi.TargetedMessageBatch
+    ): Either<CoreFailure, MessageSent> =
+        transport.sendMLSTransientTargetedMessage(batch)
+
     override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> =
         wrapStorageRequest {
             messageDAO.getAllPendingMessagesFromUser(senderUserId.toDao())

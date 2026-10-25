@@ -141,6 +141,17 @@ internal open class FakeMessageRepository : MessageRepository {
     override suspend fun sendMLSMessage(message: MLSMessageApi.Message): Either<CoreFailure, MessageSent> =
         TestMessage.TEST_MESSAGE_SENT.right()
 
+    override suspend fun sendMLSTargetedMessage(batch: MLSMessageApi.TargetedMessageBatch): Either<CoreFailure, MessageSent> =
+        TestMessage.TEST_MESSAGE_SENT.right()
+
+    override suspend fun sendMLSTransientMessage(message: MLSMessageApi.TransientMessage): Either<CoreFailure, MessageSent> =
+        TestMessage.TEST_MESSAGE_SENT.right()
+
+    override suspend fun sendMLSTransientTargetedMessage(
+        batch: MLSMessageApi.TargetedMessageBatch
+    ): Either<CoreFailure, MessageSent> =
+        TestMessage.TEST_MESSAGE_SENT.right()
+
     override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> =
         emptyList<Message>().right()
 

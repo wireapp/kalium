@@ -54,7 +54,9 @@ private fun DecryptedMessageBundle.Text.unpackText(
             instant = messageInstant,
             senderUserId = applicationMessage.senderID,
             senderClientId = applicationMessage.senderClientID,
-            content = protoContent
+            content = protoContent,
+            targeted = targeted,
+            transient = transient
         )
     }
 }

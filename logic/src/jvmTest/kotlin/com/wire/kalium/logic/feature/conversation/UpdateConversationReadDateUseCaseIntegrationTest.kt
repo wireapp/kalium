@@ -204,7 +204,8 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
 
         override suspend fun sendMessage(
             message: Message.Sendable,
-            messageTarget: com.wire.kalium.messaging.sending.MessageTarget
+            messageTarget: com.wire.kalium.messaging.sending.MessageTarget,
+            transient: Boolean
         ): Either<CoreFailure, Unit> = Either.Right(Unit)
 
         override suspend fun broadcastMessage(

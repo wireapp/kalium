@@ -2694,6 +2694,7 @@ public class UserSessionScope internal constructor(
             cryptoTransactionProvider,
             client.refillKeyPackages,
             certificateRevocationListRepository,
+            kaliumConfigs.targetedAndTransientMLSMessagesEnabled,
             userScopedLogger,
         )
     }
