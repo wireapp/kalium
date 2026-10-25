@@ -151,9 +151,8 @@ public class AppleAccountRuntimeOwner internal constructor(
             while (failure == AccountRuntimeFailure.BUSY) failure = retryLock(descriptor)
         }
         // flock refuses this process's other descriptors too. Unlike another owner, an attempt of this process ends.
-        while (failure == AccountRuntimeFailure.BUSY && waitForThisProcess && waitFor > Duration.ZERO &&
-            lockFile in heldLockFiles.value
-        ) {
+        val waitsForThisProcess = waitForThisProcess && waitFor > Duration.ZERO
+        while (failure == AccountRuntimeFailure.BUSY && waitsForThisProcess && lockFile in heldLockFiles.value) {
             failure = retryLock(descriptor)
         }
         return failure
