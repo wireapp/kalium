@@ -24,12 +24,14 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenReposit
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.AccountBusyException
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -73,6 +75,18 @@ class SaveNotificationTokenUseCaseTest {
             fixture.useCase("00ab", "APNS", "com.wire.prism.ios")
         )
         verifySuspend(VerifyMode.not) { fixture.pending.single().setUpdateFirebaseTokenFlag(any()) }
+    }
+
+    @Test
+    fun accountAnotherProcessHoldsIsSkippedAndTheOthersAreMarked() = runTest {
+        val busy = TestUser.SELF.copy(id = UserId("busy", "wire.test"))
+        val fixture = Fixture(listOf(TestUser.SELF, busy))
+        everySuspend {
+            fixture.sessions.open(busy.id, any<UserSessionScope.() -> PushTokenRepository>())
+        } throws AccountBusyException("WireShareExt pid=1")
+
+        assertEquals(Result.Success, fixture.useCase("00ab", "APNS", "com.wire.prism.ios"))
+        verifySuspend { fixture.pending.first().setUpdateFirebaseTokenFlag(true) }
     }
 
     private class Fixture(accounts: List<SelfUser>) {
