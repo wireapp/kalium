@@ -38,6 +38,7 @@ import dev.mokkery.matcher.any
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.AccountBusyException
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
@@ -75,6 +76,7 @@ import kotlinx.coroutines.test.runTest
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSUUID
+import platform.posix.getpid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -185,6 +187,26 @@ class AppleAccountSessionTest {
                 assertFalse(reopening.isCompleted)
                 // The wait used to run inside the non-cancellable restore and outlived its caller.
                 withTimeout(5.seconds) { reopening.cancelAndJoin() }
+                lease.release()
+                kotlin.test.assertSame(first, logic.openSessionScope(userId))
+            } finally {
+                logic.releaseSessionScope(userId)
+            }
+        }
+    }
+
+    @Test
+    fun `reopening gives up on an account another process keeps and can reopen it later`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val first = logic.openSessionScope(userId)
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            try {
+                logic.suspendSessionScope(userId)
+                val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+                val busy = assertFailsWith<AccountBusyException> { logic.openSessionScope(userId) }
+                assertTrue(busy.holder.orEmpty().contains("pid=${getpid()}"), busy.holder)
                 lease.release()
                 kotlin.test.assertSame(first, logic.openSessionScope(userId))
             } finally {

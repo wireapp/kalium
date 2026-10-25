@@ -34,6 +34,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 
+/**
+ * Apple only: another process, such as an app extension, kept the account past the app's wait for it. Nothing changed,
+ * and opening can be retried. [holder] is what that process recorded when it took the account, for logs.
+ */
+public class AccountBusyException(public val holder: String?) :
+    IllegalStateException("Another process holds the account: ${holder ?: "unknown"}")
+
 internal interface UserSessionScopeProvider {
     suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean = false)
     suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit>

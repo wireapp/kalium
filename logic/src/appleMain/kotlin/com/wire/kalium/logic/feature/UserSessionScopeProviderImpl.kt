@@ -32,6 +32,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiving.PreparedAccount
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.persistence.dbPassphrase.existingCoreCryptoKey
@@ -49,6 +50,7 @@ import com.wire.kalium.logic.sync.SyncSuspension
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.job
+import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
 import kotlinx.coroutines.NonCancellable
@@ -56,6 +58,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.concurrent.Volatile
+import kotlin.time.Duration.Companion.seconds
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
@@ -471,8 +474,12 @@ internal actual open class UserSessionScopeProviderImpl(
 
     private suspend fun acquire(account: OwnedAccount, userId: UserId) {
         if (account.lease == null) {
-            account.lease = when (val acquired = owner.acquire(userId)) {
-                is Either.Left -> error("Cannot acquire account ownership: ${acquired.value}")
+            account.lease = when (val acquired = owner.acquire(userId, OWNERSHIP_TIMEOUT)) {
+                is Either.Left -> throw if (acquired.value == AccountRuntimeFailure.BUSY) {
+                    AccountBusyException(owner.holder(userId)).also { kaliumLogger.w("Account ownership wait ended: ${it.message}") }
+                } else {
+                    IllegalStateException("Cannot acquire account ownership: ${acquired.value}")
+                }
                 is Either.Right -> acquired.value
             }
         }
@@ -544,3 +551,9 @@ internal actual open class UserSessionScopeProviderImpl(
     }
 
 }
+
+/**
+ * An NSE attempt holds an account for a few seconds, within its 20 s budget. Waiting longer only keeps app lifecycle
+ * work behind an extension that iOS suspended with its host; callers fail or retry instead.
+ */
+private val OWNERSHIP_TIMEOUT = 15.seconds
