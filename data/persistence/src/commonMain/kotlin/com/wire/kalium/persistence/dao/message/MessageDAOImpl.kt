@@ -702,13 +702,16 @@ internal class MessageDAOImpl internal constructor(
         afterDate: Instant,
         untilDate: Instant,
         visibility: List<MessageEntity.Visibility>
-    ): List<String> = withContext(readDispatcher.value) {
+    ): Map<UserIDEntity, List<String>> = withContext(readDispatcher.value) {
         queries.selectMessageIdsThatExpectReadConfirmationWithinDates(
             conversation_id = conversationId,
             visibility = visibility,
             creation_date = afterDate,
             creation_date_ = untilDate
-        ).awaitAsList()
+        ).awaitAsList().groupBy(
+            keySelector = { it.sender_user_id },
+            valueTransform = { it.id }
+        )
     }
 
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode? =

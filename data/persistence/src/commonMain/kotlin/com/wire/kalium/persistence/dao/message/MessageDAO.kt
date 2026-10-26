@@ -149,12 +149,15 @@ interface MessageDAO {
         clientId: String,
     )
 
+    /**
+     * Returns the ids of messages expecting a read confirmation within the given dates, grouped by their sender.
+     */
     suspend fun getMessageIdsThatExpectReadConfirmationWithinDates(
         conversationId: QualifiedIDEntity,
         afterDate: Instant,
         untilDate: Instant,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
-    ): List<String>
+    ): Map<UserIDEntity, List<String>>
 
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
 

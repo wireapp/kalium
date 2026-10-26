@@ -700,7 +700,7 @@ selectByConversationIdAndSenderIdAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND contentType = ?;
 
 selectMessageIdsThatExpectReadConfirmationWithinDates:
-SELECT Message.id
+SELECT Message.id, Message.sender_user_id
 FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN Conversation ON Message.conversation_id = Conversation.qualified_id
