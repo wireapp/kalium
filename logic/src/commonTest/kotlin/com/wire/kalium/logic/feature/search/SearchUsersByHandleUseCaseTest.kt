@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ContactStatus
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -270,7 +271,7 @@ class SearchUsersByHandleUseCaseTest {
     @Test
     fun givenLocalAndRemoteResult_whenInvokingSearch_thenThereAreNoDuplicatedResult() = runTest {
         val remoteSearchResult = listOf(
-            newOtherUser("remoteAndLocalUser1").copy(name = "updatedNewName"),
+            newOtherUser("remoteAndLocalUser1").copy(name = "updatedNewName", contactStatus = ContactStatus.NON_CONTACTABLE),
             newOtherUser("remoteUser2").copy(
                 teamId = TeamId("otherTeamId"),
                 connectionStatus = ConnectionState.PENDING
@@ -284,11 +285,15 @@ class SearchUsersByHandleUseCaseTest {
 
         val expected = SearchUserResult(
             connected = listOf(
-                newUserSearchDetails("remoteAndLocalUser1").copy(name = "updatedNewName"),
+                newUserSearchDetails("remoteAndLocalUser1").copy(
+                    name = "updatedNewName", contactStatus = ContactStatus.NON_CONTACTABLE
+                ),
                 newUserSearchDetails("localUser2")
             ),
             notConnected = listOf(
-                newUserSearchDetails("remoteUser2").copy(connectionStatus = ConnectionState.PENDING),
+                newUserSearchDetails("remoteUser2").copy(
+                    connectionStatus = ConnectionState.PENDING, contactStatus = ContactStatus.CONTACTABLE
+                ),
             )
         )
 

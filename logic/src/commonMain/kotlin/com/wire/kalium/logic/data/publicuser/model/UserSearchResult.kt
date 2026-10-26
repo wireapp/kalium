@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.publicuser.model
 
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ContactStatus
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
@@ -35,5 +36,7 @@ public data class UserSearchDetails(
     val completeAssetId: AssetId?,
     val previewAssetId: AssetId?,
     val type: UserTypeInfo,
-    val connectionStatus: ConnectionState
+    val connectionStatus: ConnectionState,
+    // Null means not fetched; completed remote results default to CONTACTABLE when status is unavailable.
+    val contactStatus: ContactStatus? = null,
 )

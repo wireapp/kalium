@@ -35,6 +35,9 @@ public class SearchScope internal constructor(
     private val selfUserId: UserId,
     private val kaliumConfigs: KaliumConfigs
 ) {
+    public val refreshContactStatuses: RefreshContactStatusesUseCase
+        get() = RefreshContactStatusesUseCaseImpl(searchUserRepository, kaliumConfigs.pendingConnections)
+
     public val searchUsersByName: SearchUsersByNameUseCase
         get() = SearchUsersByNameUseCaseImpl(
             searchUserRepository,

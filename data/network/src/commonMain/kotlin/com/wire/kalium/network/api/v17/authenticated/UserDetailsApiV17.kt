@@ -19,8 +19,23 @@
 package com.wire.kalium.network.api.v17.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.v16.authenticated.UserDetailsApiV16
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapRequest
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 internal open class UserDetailsApiV17 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
-) : UserDetailsApiV16(authenticatedNetworkClient)
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val pendingConnectionsEnabled: Boolean = false,
+) : UserDetailsApiV16(authenticatedNetworkClient) {
+    override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<ListUsersDTO> = wrapRequest {
+        httpClient.post(PATH_LIST_USERS) {
+            if (pendingConnectionsEnabled) parameter("include-contact-status", true)
+            setBody(users)
+        }
+    }
+}
