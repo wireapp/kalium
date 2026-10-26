@@ -1142,6 +1142,10 @@ abstract interface com.wire.kalium.logic.feature.conversation/ObserveSecurityCla
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.feature.conversation/SecurityClassificationType> // com.wire.kalium.logic.feature.conversation/ObserveSecurityClassificationLabelUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.conversation/ObserveUnreadConversationBadgeCountUseCase { // com.wire.kalium.logic.feature.conversation/ObserveUnreadConversationBadgeCountUseCase|null[0]
+    abstract fun invoke(): kotlinx.coroutines.flow/Flow<kotlin/Long> // com.wire.kalium.logic.feature.conversation/ObserveUnreadConversationBadgeCountUseCase.invoke|invoke(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.conversation/ObserveUsersTypingUseCase { // com.wire.kalium.logic.feature.conversation/ObserveUsersTypingUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<kotlin.collections/Set<com.wire.kalium.logic.data.message/UserSummary>> // com.wire.kalium.logic.feature.conversation/ObserveUsersTypingUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
@@ -4772,6 +4776,8 @@ final class com.wire.kalium.logic.feature.conversation/ConversationScope { // co
         final fun <get-observeIsSelfUserMemberUseCase>(): com.wire.kalium.logic.feature.conversation/ObserveIsSelfUserMemberUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeIsSelfUserMemberUseCase.<get-observeIsSelfUserMemberUseCase>|<get-observeIsSelfUserMemberUseCase>(){}[0]
     final val observePendingConnectionRequests // com.wire.kalium.logic.feature.conversation/ConversationScope.observePendingConnectionRequests|{}observePendingConnectionRequests[0]
         final fun <get-observePendingConnectionRequests>(): com.wire.kalium.logic.feature.connection/ObservePendingConnectionRequestsUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observePendingConnectionRequests.<get-observePendingConnectionRequests>|<get-observePendingConnectionRequests>(){}[0]
+    final val observeUnreadConversationBadgeCount // com.wire.kalium.logic.feature.conversation/ConversationScope.observeUnreadConversationBadgeCount|{}observeUnreadConversationBadgeCount[0]
+        final fun <get-observeUnreadConversationBadgeCount>(): com.wire.kalium.logic.feature.conversation/ObserveUnreadConversationBadgeCountUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeUnreadConversationBadgeCount.<get-observeUnreadConversationBadgeCount>|<get-observeUnreadConversationBadgeCount>(){}[0]
     final val observeUserFolders // com.wire.kalium.logic.feature.conversation/ConversationScope.observeUserFolders|{}observeUserFolders[0]
         final fun <get-observeUserFolders>(): com.wire.kalium.logic.feature.conversation.folder/ObserveUserFoldersUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeUserFolders.<get-observeUserFolders>|<get-observeUserFolders>(){}[0]
     final val observeUserListById // com.wire.kalium.logic.feature.conversation/ConversationScope.observeUserListById|{}observeUserListById[0]
