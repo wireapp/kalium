@@ -49,9 +49,18 @@ internal interface CellAttachmentsRepository {
         size: Long,
         name: String? = null,
         ownerId: String? = null,
+        remotePath: String? = null,
     ): Either<StorageFailure, Unit>
     suspend fun setStandaloneAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
     suspend fun getStandaloneAssetPathsByIds(assetIds: List<String>): Either<StorageFailure, List<CellFileLocalPath>>
+    /** Deletes the asset's local record, kept (without its local copy) when a message refers to it as an attachment. */
     suspend fun deleteStandaloneAsset(assetId: String): Either<StorageFailure, Unit>
+
+    /**
+     * [deleteStandaloneAsset] for every asset stored under the folder at [folderPath], at any depth. The attachments
+     * among them are marked as not found.
+     * @return the local copies of those assets, for the caller to delete.
+     */
+    suspend fun deleteFolderContents(folderPath: String): Either<StorageFailure, List<String>>
     suspend fun updateAssetPath(assetId: String, remotePath: String): Either<StorageFailure, Unit>
 }

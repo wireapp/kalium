@@ -19,10 +19,14 @@ package com.wire.kalium.cells.domain.model
 
 /**
  * A node picked for a bulk delete.
- * @param locator where the node is on the server.
+ * @param uuid identifies the node, both on the server and locally. Unlike a path, it still holds if the node was renamed
+ * or moved meanwhile.
  * @param localPath the local copy of a file to remove along with it, null for folders and files never downloaded.
+ * @param folderPath for a folder, its remote path, to also clean up the local copies of the files stored under it: they
+ * are only known locally by the path they were saved with. Null for a file. Not used for the server request.
  */
 public data class NodeToDelete(
-    val locator: NodeLocator,
+    val uuid: String,
     val localPath: String?,
+    val folderPath: String? = null,
 )
