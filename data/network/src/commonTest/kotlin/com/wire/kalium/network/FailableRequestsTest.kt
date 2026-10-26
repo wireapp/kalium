@@ -20,6 +20,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -112,6 +113,20 @@ internal class FailableRequestsTest : ApiTest() {
         }
         entered.await()
         request.cancelAndJoin()
+        assertIs<CancellationException>(failure)
+        provider.close()
+    }
+
+    @Test
+    fun aCancelledCallerStaysCancelledWhileRequestsFail() = runTest {
+        val provider = provider(MockEngine { respondOk() })
+        var failure: Throwable? = null
+        provider.failRequests {
+            launch {
+                coroutineContext.job.cancel()
+                failure = runCatching { provider.networkClient.httpClient.get("self") }.exceptionOrNull()
+            }.join()
+        }
         assertIs<CancellationException>(failure)
         provider.close()
     }

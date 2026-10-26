@@ -29,9 +29,12 @@ internal class FailableRequests {
 
     fun install(client: HttpClient) {
         client.requestPipeline.intercept(HttpRequestPipeline.Before) {
-            // Fail before plugins can wait, for example for a token the account owner no longer admits.
-            if (failing.value > 0) throw IOException(FAILED_MESSAGE)
             val caller = currentCoroutineContext()
+            // Fail before plugins can wait, for example for a token the account owner no longer admits.
+            if (failing.value > 0) {
+                caller.ensureActive()
+                throw IOException(FAILED_MESSAGE)
+            }
             supervisorScope {
                 // A child, so failing also ends waits outside the engine, such as a token refresh, even when the
                 // caller is non-cancellable. Cancelling it cancels the engine call too.
