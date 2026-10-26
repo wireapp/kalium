@@ -31,7 +31,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -53,8 +52,8 @@ class UnblockUserUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(
                 any(),
-                eq(TestUser.USER_ID),
-                eq(ConnectionState.ACCEPTED)
+                TestUser.USER_ID,
+                ConnectionState.ACCEPTED
             )
         }
     }
@@ -71,8 +70,8 @@ class UnblockUserUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(
                 any(),
-                eq(TestUser.USER_ID),
-                eq(ConnectionState.ACCEPTED)
+                TestUser.USER_ID,
+                ConnectionState.ACCEPTED
             )
         }
     }

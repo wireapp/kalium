@@ -45,7 +45,6 @@ import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseAr
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -67,7 +66,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.fetchConversation(any(), eq(event.conversationId), eq(ConversationSyncReason.Other))
+            arrangement.fetchConversation(any(), event.conversationId, ConversationSyncReason.Other)
         }
     }
 
@@ -84,7 +83,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.persistMembers(eq(newMembers), eq(event.conversationId))
+            arrangement.conversationRepository.persistMembers(newMembers, event.conversationId)
         }
     }
 
@@ -102,7 +101,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.persistMembers(eq(newMembers), eq(event.conversationId))
+            arrangement.conversationRepository.persistMembers(newMembers, event.conversationId)
         }
     }
 
@@ -127,7 +126,7 @@ class MemberJoinEventHandlerTest {
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(conversation.id, any())
         }
     }
 
@@ -150,7 +149,7 @@ class MemberJoinEventHandlerTest {
             arrangement.persistMessageUseCase(any())
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(conversation.id, any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.updateActiveOneOnOneConversationIfNotSet(
@@ -209,7 +208,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(conversation.id, any())
         }
     }
 
@@ -226,7 +225,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(conversation.id, any())
         }
     }
 
@@ -244,7 +243,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(conversation.id, any())
         }
     }
 
@@ -262,7 +261,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(conversation.id, any())
         }
     }
 
@@ -323,7 +322,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(eq(event.conversationId), eq(false))
+            arrangement.conversationRepository.setConversationDeletedLocally(event.conversationId, false)
         }
     }
 
@@ -361,10 +360,10 @@ class MemberJoinEventHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
-                conversationId = eq(conversation.id),
-                conversationTeamId = eq(conversation.teamId?.value),
-                isCellEnabled = eq(true),
-                instant = eq(event.dateTime),
+                conversationId = conversation.id,
+                conversationTeamId = conversation.teamId?.value,
+                isCellEnabled = true,
+                instant = event.dateTime,
             )
         }
     }

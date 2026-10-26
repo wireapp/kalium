@@ -81,8 +81,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -646,7 +645,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
-                matching {
+                matches {
                     it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Disabled
                 }
             )
@@ -672,7 +671,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
-                matching {
+                matches {
                     it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
                 }
             )
@@ -698,7 +697,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
-                matching {
+                matches {
                     it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
                 }
             )
@@ -725,7 +724,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
-                matching {
+                matches {
                     it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enforced(
                         enforcedTimeoutInMs.toDuration(
                             DurationUnit.SECONDS
@@ -829,7 +828,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigDAO.setAsyncNotificationsEnabled(eq(true))
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(true)
         }
     }
 
@@ -846,7 +845,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigDAO.setAsyncNotificationsEnabled(eq(false))
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(false)
         }
     }
 
@@ -883,7 +882,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigDAO.setMlsConversationsResetEnabled(eq(true))
+            arrangement.userConfigDAO.setMlsConversationsResetEnabled(true)
         }
     }
 
@@ -904,7 +903,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigDAO.setMlsConversationsResetEnabled(eq(false))
+            arrangement.userConfigDAO.setMlsConversationsResetEnabled(false)
         }
     }
 
@@ -936,7 +935,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigDAO.setAppsEnabled(eq(true))
+            arrangement.userConfigDAO.setAppsEnabled(true)
         }
     }
 
@@ -952,7 +951,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigDAO.setAppsEnabled(eq(false))
+            arrangement.userConfigDAO.setAppsEnabled(false)
         }
     }
 

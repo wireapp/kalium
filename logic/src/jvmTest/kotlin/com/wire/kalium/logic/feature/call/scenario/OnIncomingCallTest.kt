@@ -32,7 +32,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -64,13 +63,13 @@ class OnIncomingCallTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.createCall(
-                eq(TestConversation.CONVERSATION.id),
-                eq(ConversationTypeForCall.Conference),
-                eq(CallStatus.INCOMING),
-                eq(TestUser.USER_ID),
-                eq(true),
-                eq(false),
-                eq(false)
+                TestConversation.CONVERSATION.id,
+                ConversationTypeForCall.Conference,
+                CallStatus.INCOMING,
+                TestUser.USER_ID,
+                true,
+                false,
+                false
             )
         }
     }
@@ -94,13 +93,13 @@ class OnIncomingCallTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.createCall(
-                eq(TestConversation.CONVERSATION.id),
-                eq(ConversationTypeForCall.Conference),
-                eq(CallStatus.STILL_ONGOING),
-                eq(TestUser.USER_ID),
-                eq(true),
-                eq(false),
-                eq(false)
+                TestConversation.CONVERSATION.id,
+                ConversationTypeForCall.Conference,
+                CallStatus.STILL_ONGOING,
+                TestUser.USER_ID,
+                true,
+                false,
+                false
             )
         }
     }

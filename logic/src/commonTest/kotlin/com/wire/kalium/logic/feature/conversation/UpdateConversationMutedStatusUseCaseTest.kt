@@ -26,7 +26,6 @@ import com.wire.kalium.common.functional.Either
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -50,22 +49,22 @@ class UpdateConversationMutedStatusUseCaseTest {
     fun givenAConversationId_whenInvokingAMutedStatusChange_thenShouldDelegateTheCallAndReturnASuccessResult() = runTest {
         val conversationId = TestConversation.ID
         everySuspend {
-            conversationRepository.updateMutedStatusRemotely(any(), eq(MutedConversationStatus.AllMuted), any())
+            conversationRepository.updateMutedStatusRemotely(any(), MutedConversationStatus.AllMuted, any())
         } returns Either.Right(Unit)
 
         everySuspend {
-            conversationRepository.updateMutedStatusLocally(any(), eq(MutedConversationStatus.AllMuted), any())
+            conversationRepository.updateMutedStatusLocally(any(), MutedConversationStatus.AllMuted, any())
         } returns Either.Right(Unit)
 
         val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.AllMuted)
         assertEquals(ConversationUpdateStatusResult.Success::class, result::class)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            conversationRepository.updateMutedStatusRemotely(any(), eq(MutedConversationStatus.AllMuted), any())
+            conversationRepository.updateMutedStatusRemotely(any(), MutedConversationStatus.AllMuted, any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            conversationRepository.updateMutedStatusLocally(any(), eq(MutedConversationStatus.AllMuted), any())
+            conversationRepository.updateMutedStatusLocally(any(), MutedConversationStatus.AllMuted, any())
         }
     }
 
@@ -74,18 +73,18 @@ class UpdateConversationMutedStatusUseCaseTest {
         val conversationId = TestConversation.ID
 
         everySuspend {
-            conversationRepository.updateMutedStatusRemotely(any(), eq(MutedConversationStatus.AllMuted), any())
+            conversationRepository.updateMutedStatusRemotely(any(), MutedConversationStatus.AllMuted, any())
         } returns Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException("some error")))
 
         val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.AllMuted)
         assertEquals(ConversationUpdateStatusResult.Failure::class, result::class)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            conversationRepository.updateMutedStatusRemotely(any(), eq(MutedConversationStatus.AllMuted), any())
+            conversationRepository.updateMutedStatusRemotely(any(), MutedConversationStatus.AllMuted, any())
         }
 
         verifySuspend(VerifyMode.not) {
-            conversationRepository.updateMutedStatusLocally(any(), eq(MutedConversationStatus.AllMuted), any())
+            conversationRepository.updateMutedStatusLocally(any(), MutedConversationStatus.AllMuted, any())
         }
 
     }

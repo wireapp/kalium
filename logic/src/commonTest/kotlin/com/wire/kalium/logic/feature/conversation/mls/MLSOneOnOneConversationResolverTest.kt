@@ -36,7 +36,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any as mokkeryAny
-import dev.mokkery.matcher.eq as mokkeryEq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -56,7 +55,7 @@ class MLSOneOnOneConversationResolverTest {
         getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.getConversationsByUserId(mokkeryEq(userId))
+            arrangement.conversationRepository.getConversationsByUserId(userId)
         }
     }
 
@@ -79,7 +78,7 @@ class MLSOneOnOneConversationResolverTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryEq(true))
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), true)
         }
     }
 
@@ -115,7 +114,7 @@ class MLSOneOnOneConversationResolverTest {
             assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryEq(true))
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), true)
         }
     }
 
@@ -175,7 +174,7 @@ class MLSOneOnOneConversationResolverTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryEq(true))
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), true)
         }
     }
 
@@ -198,7 +197,7 @@ class MLSOneOnOneConversationResolverTest {
         ).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryEq(false))
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), false)
         }
     }
 

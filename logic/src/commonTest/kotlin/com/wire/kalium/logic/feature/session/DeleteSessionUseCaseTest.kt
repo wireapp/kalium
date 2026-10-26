@@ -28,7 +28,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -52,7 +51,7 @@ class DeleteSessionUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.userSessionScopeProvider.deleteSession(eq(userId), eq(arrange.sessionRepository))
+            arrange.userSessionScopeProvider.deleteSession(userId, arrange.sessionRepository)
         }
     }
 
@@ -71,7 +70,7 @@ class DeleteSessionUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.userSessionScopeProvider.deleteSession(eq(userId), eq(arrange.sessionRepository))
+            arrange.userSessionScopeProvider.deleteSession(userId, arrange.sessionRepository)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -88,14 +87,14 @@ class DeleteSessionUseCaseTest {
 
         suspend fun withSessionDeleteSuccess(userId: UserId): Arrangement = apply {
             everySuspend {
-                userSessionScopeProvider.deleteSession(eq(userId), eq(sessionRepository))
+                userSessionScopeProvider.deleteSession(userId, sessionRepository)
             } returns Either.Right(Unit)
 
         }
 
         suspend fun withSessionDeleteFailure(userId: UserId, error: StorageFailure): Arrangement = apply {
             everySuspend {
-                userSessionScopeProvider.deleteSession(eq(userId), eq(sessionRepository))
+                userSessionScopeProvider.deleteSession(userId, sessionRepository)
             } returns Either.Left(error)
         }
 

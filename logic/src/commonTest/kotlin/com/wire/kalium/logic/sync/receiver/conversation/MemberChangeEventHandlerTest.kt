@@ -36,7 +36,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -63,7 +62,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.fetchConversationIfUnknown(any(), eq(event.conversationId), eq(ConversationSyncReason.Other))
+            arrangement.fetchConversationIfUnknown(any(), event.conversationId, ConversationSyncReason.Other)
         }
     }
 
@@ -81,9 +80,9 @@ class MemberChangeEventHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMutedStatusLocally(
-                eq(event.conversationId),
+                event.conversationId,
                 any(),
-                eq(event.mutedConversationChangedTime)
+                event.mutedConversationChangedTime
             )
         }
     }
@@ -103,9 +102,9 @@ class MemberChangeEventHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateArchivedStatusLocally(
-                eq(event.conversationId),
+                event.conversationId,
                 matches { it == isNewEventArchiving },
-                eq(event.archivedConversationChangedTime)
+                event.archivedConversationChangedTime
             )
         }
     }
@@ -138,7 +137,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
+            arrangement.conversationRepository.updateMemberFromEvent(updatedMember, event.conversationId)
         }
     }
 
@@ -157,7 +156,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
+            arrangement.conversationRepository.updateMemberFromEvent(updatedMember, event.conversationId)
         }
     }
 
@@ -174,7 +173,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
+            arrangement.conversationRepository.updateMemberFromEvent(updatedMember, event.conversationId)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -285,13 +284,13 @@ class MemberChangeEventHandlerTest {
 
         suspend fun withFetchConversationIfUnknownSucceeding() = apply {
             everySuspend {
-                fetchConversationIfUnknown(any(), any(), eq(ConversationSyncReason.Other))
+                fetchConversationIfUnknown(any(), any(), ConversationSyncReason.Other)
             } returns Either.Right(Unit)
         }
 
         suspend fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
             everySuspend {
-                fetchConversationIfUnknown(any(), any(), eq(ConversationSyncReason.Other))
+                fetchConversationIfUnknown(any(), any(), ConversationSyncReason.Other)
             } returns Either.Left(coreFailure)
         }
 

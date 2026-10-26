@@ -35,7 +35,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -54,7 +53,7 @@ class MLSResetConversationEventHandlerTest {
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.endCallOnMLSReset(eq(CONVERSATION_ID))
+            arrangement.endCallOnMLSReset(CONVERSATION_ID)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -82,19 +81,19 @@ class MLSResetConversationEventHandlerTest {
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
+            arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.hasEstablishedMLSGroup(any(), eq(NEW_GROUP_ID))
+            arrangement.mlsConversationRepository.hasEstablishedMLSGroup(any(), NEW_GROUP_ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
-                eq(CONVERSATION_ID),
-                eq(NEW_GROUP_ID),
-                eq(0),
-                eq(ConversationEntity.GroupState.PENDING_AFTER_RESET),
+                CONVERSATION_ID,
+                NEW_GROUP_ID,
+                0,
+                ConversationEntity.GroupState.PENDING_AFTER_RESET,
             )
         }
     }
@@ -113,22 +112,22 @@ class MLSResetConversationEventHandlerTest {
             handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
+                arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.hasEstablishedMLSGroup(
                     any(),
-                    eq(NEW_GROUP_ID)
+                    NEW_GROUP_ID
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
-                    eq(CONVERSATION_ID),
-                    eq(NEW_GROUP_ID),
-                    eq(newGroupEpoch),
-                    eq(ConversationEntity.GroupState.ESTABLISHED)
+                    CONVERSATION_ID,
+                    NEW_GROUP_ID,
+                    newGroupEpoch,
+                    ConversationEntity.GroupState.ESTABLISHED
                 )
             }
         }
@@ -145,22 +144,22 @@ class MLSResetConversationEventHandlerTest {
             handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
+                arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.hasEstablishedMLSGroup(
                     any(),
-                    eq(NEW_GROUP_ID)
+                    NEW_GROUP_ID
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
-                    eq(CONVERSATION_ID),
-                    eq(NEW_GROUP_ID),
-                    eq(0L),
-                    eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
+                    CONVERSATION_ID,
+                    NEW_GROUP_ID,
+                    0L,
+                    ConversationEntity.GroupState.PENDING_AFTER_RESET
                 )
             }
         }
@@ -179,14 +178,14 @@ class MLSResetConversationEventHandlerTest {
             handler.handle(arrangement.transactionContext, event)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsConversationRepository.leaveGroup(any(), eq(event.groupID))
+                arrangement.mlsConversationRepository.leaveGroup(any(), event.groupID)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
                     matches { it == event.conversationId },
                     matches { it == event.newGroupID },
-                    eq(0L),
+                    0L,
                     matches { it == ConversationEntity.GroupState.PENDING_AFTER_RESET }
                 )
             }
@@ -205,10 +204,10 @@ class MLSResetConversationEventHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
-                eq(CONVERSATION_ID),
-                eq(NEW_GROUP_ID),
-                eq(0L),
-                eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
+                CONVERSATION_ID,
+                NEW_GROUP_ID,
+                0L,
+                ConversationEntity.GroupState.PENDING_AFTER_RESET
             )
         }
     }
@@ -226,20 +225,20 @@ class MLSResetConversationEventHandlerTest {
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
         verifySuspend(VerifyMode.order) {
-            arrangement.endCallOnMLSReset(eq(CONVERSATION_ID))
-            arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
+            arrangement.endCallOnMLSReset(CONVERSATION_ID)
+            arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.hasEstablishedMLSGroup(any(), eq(NEW_GROUP_ID))
+            arrangement.mlsConversationRepository.hasEstablishedMLSGroup(any(), NEW_GROUP_ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
-                eq(CONVERSATION_ID),
-                eq(NEW_GROUP_ID),
-                eq(newGroupEpoch),
-                eq(ConversationEntity.GroupState.ESTABLISHED)
+                CONVERSATION_ID,
+                NEW_GROUP_ID,
+                newGroupEpoch,
+                ConversationEntity.GroupState.ESTABLISHED
             )
         }
     }

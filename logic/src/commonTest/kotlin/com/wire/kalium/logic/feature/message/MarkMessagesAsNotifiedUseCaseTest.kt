@@ -27,7 +27,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -65,7 +64,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
         val result = markMessagesAsNotified(UpdateTarget.SingleConversation(CONVERSATION_ID))
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationNotificationDate(eq(CONVERSATION_ID), any())
+            arrangement.conversationRepository.updateConversationNotificationDate(CONVERSATION_ID, any())
         }
 
         verifySuspend(VerifyMode.not) {

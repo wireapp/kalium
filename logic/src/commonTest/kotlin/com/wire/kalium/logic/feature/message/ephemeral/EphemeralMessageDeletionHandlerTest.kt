@@ -29,8 +29,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -84,14 +83,14 @@ class EphemeralMessageDeletionHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markSelfDeletionEndDate(
-                eq(oneSecondEphemeralMessage.conversationId),
-                eq(oneSecondEphemeralMessage.id),
+                oneSecondEphemeralMessage.conversationId,
+                oneSecondEphemeralMessage.id,
                 any()
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+            arrangement.messageRepository.getMessageById(oneSecondEphemeralMessage.conversationId, oneSecondEphemeralMessage.id)
         }
     }
 
@@ -122,14 +121,14 @@ class EphemeralMessageDeletionHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markSelfDeletionEndDate(
-                eq(oneSecondEphemeralMessage.conversationId),
-                eq(oneSecondEphemeralMessage.id),
+                oneSecondEphemeralMessage.conversationId,
+                oneSecondEphemeralMessage.id,
                 any()
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+            arrangement.messageRepository.getMessageById(oneSecondEphemeralMessage.conversationId, oneSecondEphemeralMessage.id)
         }
 
         ephemeralMessageDeletionHandler.startSelfDeletion(
@@ -140,13 +139,13 @@ class EphemeralMessageDeletionHandlerTest {
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+            arrangement.messageRepository.getMessageById(oneSecondEphemeralMessage.conversationId, oneSecondEphemeralMessage.id)
         }
 
         verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.markSelfDeletionEndDate(
-                eq(oneSecondEphemeralMessage.conversationId),
-                eq(oneSecondEphemeralMessage.id),
+                oneSecondEphemeralMessage.conversationId,
+                oneSecondEphemeralMessage.id,
                 any()
             )
         }
@@ -183,8 +182,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
-                    eq(oneSecondEphemeralMessage.conversationId),
-                    eq(oneSecondEphemeralMessage.id)
+                    oneSecondEphemeralMessage.conversationId,
+                    oneSecondEphemeralMessage.id
                 )
             }
         }
@@ -221,8 +220,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
-                    eq(oneSecondEphemeralMessage.conversationId),
-                    eq(oneSecondEphemeralMessage.id)
+                    oneSecondEphemeralMessage.conversationId,
+                    oneSecondEphemeralMessage.id
                 )
             }
         }
@@ -256,8 +255,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.not) {
                 arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
-                    eq(oneSecondEphemeralMessage.conversationId),
-                    eq(oneSecondEphemeralMessage.id),
+                    oneSecondEphemeralMessage.conversationId,
+                    oneSecondEphemeralMessage.id,
                 )
             }
         }
@@ -290,8 +289,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.not) {
                 arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
-                    eq(oneSecondEphemeralMessage.conversationId),
-                    eq(oneSecondEphemeralMessage.id)
+                    oneSecondEphemeralMessage.conversationId,
+                    oneSecondEphemeralMessage.id
                 )
             }
         }
@@ -336,8 +335,8 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(timeUntilExpiration + 1.milliseconds)
             verifySuspend(VerifyMode.exactly(4)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
-                    eq(oneSecondEphemeralMessage.conversationId),
-                    matching { it in listOf("1", "2", "3", "4") }
+                    oneSecondEphemeralMessage.conversationId,
+                    matches { it in listOf("1", "2", "3", "4") }
                 )
             }
         }
@@ -383,8 +382,8 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(timeUntilExpiration + 1.milliseconds)
             verifySuspend(VerifyMode.exactly(4)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
-                    eq(oneSecondEphemeralMessage.conversationId),
-                    matching { it in listOf("1", "2", "3", "4") }
+                    oneSecondEphemeralMessage.conversationId,
+                    matches { it in listOf("1", "2", "3", "4") }
                 )
             }
         }
@@ -453,8 +452,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
-                    eq(TestMessage.TEXT_MESSAGE.conversationId),
-                    eq(oneSecondEphemeralMessage.id)
+                    TestMessage.TEXT_MESSAGE.conversationId,
+                    oneSecondEphemeralMessage.id
                 )
             }
 
@@ -462,8 +461,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
-                    eq(TestMessage.TEXT_MESSAGE.conversationId),
-                    eq(twoSecondEphemeralMessage.id)
+                    TestMessage.TEXT_MESSAGE.conversationId,
+                    twoSecondEphemeralMessage.id
                 )
             }
 
@@ -471,8 +470,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
-                    eq(TestMessage.TEXT_MESSAGE.conversationId),
-                    (eq(threeSecondsEphemeralMessage.id))
+                    TestMessage.TEXT_MESSAGE.conversationId,
+                    (threeSecondsEphemeralMessage.id)
                 )
             }
 
@@ -480,8 +479,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
-                    eq(TestMessage.TEXT_MESSAGE.conversationId),
-                    eq(fourSecondsEphemeralMessage.id)
+                    TestMessage.TEXT_MESSAGE.conversationId,
+                    fourSecondsEphemeralMessage.id
                 )
             }
         }
@@ -554,8 +553,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
-                    eq(TestMessage.TEXT_MESSAGE.conversationId),
-                    eq(oneSecondEphemeralMessage.id)
+                    TestMessage.TEXT_MESSAGE.conversationId,
+                    oneSecondEphemeralMessage.id
                 )
             }
 
@@ -563,8 +562,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
-                    eq(TestMessage.TEXT_MESSAGE.conversationId),
-                    eq(twoSecondEphemeralMessage.id)
+                    TestMessage.TEXT_MESSAGE.conversationId,
+                    twoSecondEphemeralMessage.id
                 )
             }
 
@@ -572,8 +571,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
-                    eq(TestMessage.TEXT_MESSAGE.conversationId),
-                    eq(threeSecondsEphemeralMessage.id)
+                    TestMessage.TEXT_MESSAGE.conversationId,
+                    threeSecondsEphemeralMessage.id
                 )
             }
 
@@ -581,8 +580,8 @@ class EphemeralMessageDeletionHandlerTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
-                    eq(TestMessage.TEXT_MESSAGE.conversationId),
-                    eq(fourSecondsEphemeralMessage.id)
+                    TestMessage.TEXT_MESSAGE.conversationId,
+                    fourSecondsEphemeralMessage.id
                 )
             }
         }
@@ -629,7 +628,7 @@ class EphemeralMessageDeletionHandlerTest {
 
             advanceTimeBy(1.seconds + 500.milliseconds)
             verifySuspend(VerifyMode.exactly(pendingMessagesToDeletePastTheTime.size)) {
-                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), matching { it in listOf("1", "2") })
+                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(TestMessage.TEXT_MESSAGE.conversationId, matches { it in listOf("1", "2") })
             }
         }
 
@@ -676,7 +675,7 @@ class EphemeralMessageDeletionHandlerTest {
 
             advanceTimeBy(1.seconds + 500.milliseconds)
             verifySuspend(VerifyMode.exactly(pendingMessagesToDeletePastTheTime.size)) {
-                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), matching { it in listOf("1", "2") })
+                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(TestMessage.TEXT_MESSAGE.conversationId, matches { it in listOf("1", "2") })
             }
 
         }
@@ -712,14 +711,14 @@ class EphemeralMessageDeletionHandlerTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.markSelfDeletionEndDate(
-                eq(oneSecondEphemeralMessage.conversationId),
-                eq(oneSecondEphemeralMessage.id),
+                oneSecondEphemeralMessage.conversationId,
+                oneSecondEphemeralMessage.id,
                 any()
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+            arrangement.messageRepository.getMessageById(oneSecondEphemeralMessage.conversationId, oneSecondEphemeralMessage.id)
         }
     }
 

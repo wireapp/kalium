@@ -28,7 +28,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -64,7 +63,7 @@ class UpdateConversationClientsForCurrentCallUseCaseTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            conversationClientsInCallUpdater.invoke(eq(CONVERSATION_ID))
+            conversationClientsInCallUpdater.invoke(CONVERSATION_ID)
         }
     }
 
@@ -80,7 +79,7 @@ class UpdateConversationClientsForCurrentCallUseCaseTest {
             callRepository.establishedCallsFlow()
         }
         verifySuspend {
-            conversationClientsInCallUpdater.invoke(eq(CONVERSATION_ID))
+            conversationClientsInCallUpdater.invoke(CONVERSATION_ID)
         }
     }
 

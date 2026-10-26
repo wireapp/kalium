@@ -34,7 +34,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -58,10 +58,10 @@ class SendPollVoteUseCaseTest {
             arrangement.pollMessageRepository.recordVote(
                 TestConversation.ID,
                 POLL_ID,
-                matching { it.voterId == TestUser.SELF.id && it.selectedOptionIds == listOf(OPTION_A) }
+                matches { it.voterId == TestUser.SELF.id && it.selectedOptionIds == listOf(OPTION_A) }
             )
             arrangement.messageSender.sendMessage(
-                matching {
+                matches {
                     val content = (it as Message.Signaling).content as MessageContent.PollVote
                     content.referencedMessageId == POLL_ID && content.selectedOptionIds == listOf(OPTION_A)
                 },
@@ -94,7 +94,7 @@ class SendPollVoteUseCaseTest {
             arrangement.pollMessageRepository.revertVote(
                 TestConversation.ID,
                 POLL_ID,
-                matching { it.selectedOptionIds == listOf(OPTION_B) },
+                matches { it.selectedOptionIds == listOf(OPTION_B) },
                 PREVIOUS_VOTE
             )
         }

@@ -32,7 +32,6 @@ import dev.mokkery.answering.calls
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -50,7 +49,7 @@ class SessionRepositoryTest {
         sessionRepository.setNativePushSupportedByServer(TEST_USER_ID, false).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigurationDAO.setNativePushSupportedByServer(eq(TEST_USER_ID.toDao()), eq(false))
+            arrangement.serverConfigurationDAO.setNativePushSupportedByServer(TEST_USER_ID.toDao(), false)
         }
     }
 
@@ -65,7 +64,7 @@ class SessionRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigurationDAO.isNativePushSupportedByServer(eq(TEST_USER_ID.toDao()))
+            arrangement.serverConfigurationDAO.isNativePushSupportedByServer(TEST_USER_ID.toDao())
         }
     }
 
@@ -80,7 +79,7 @@ class SessionRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigurationDAO.isNativePushSupportedByServer(eq(TEST_USER_ID.toDao()))
+            arrangement.serverConfigurationDAO.isNativePushSupportedByServer(TEST_USER_ID.toDao())
         }
     }
 

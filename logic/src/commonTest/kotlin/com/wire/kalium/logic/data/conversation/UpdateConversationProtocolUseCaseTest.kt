@@ -33,7 +33,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -101,10 +100,10 @@ internal class UpdateConversationProtocolUseCaseTest {
             assertEquals(Either.Right(true), result)
             verifySuspend {
                 arrangement.conversationRepository.updateMLSGroupIdAndState(
-                    eq(MIXED_RESPONSE.id.toModel()),
-                    eq(GroupID(GROUP_ID)),
-                    eq(EPOCH),
-                    eq(GroupState.PENDING_WELCOME_MESSAGE)
+                    MIXED_RESPONSE.id.toModel(),
+                    GroupID(GROUP_ID),
+                    EPOCH,
+                    GroupState.PENDING_WELCOME_MESSAGE
                 )
             }
         }
@@ -120,7 +119,7 @@ internal class UpdateConversationProtocolUseCaseTest {
         useCase(arrangement.transactionContext, MIXED_RESPONSE.id.toModel(), Protocol.MIXED, localOnly = true)
 
         verifySuspend {
-            arrangement.conversationRepository.updateMLSGroupIdAndState(any(), any(), any(), eq(GroupState.ESTABLISHED))
+            arrangement.conversationRepository.updateMLSGroupIdAndState(any(), any(), any(), GroupState.ESTABLISHED)
         }
     }
 
@@ -135,7 +134,7 @@ internal class UpdateConversationProtocolUseCaseTest {
         useCase(arrangement.transactionContext, MIXED_RESPONSE.id.toModel(), Protocol.MIXED, localOnly = true)
 
         verifySuspend {
-            arrangement.conversationRepository.updateMLSGroupIdAndState(any(), any(), any(), eq(GroupState.PENDING_JOIN))
+            arrangement.conversationRepository.updateMLSGroupIdAndState(any(), any(), any(), GroupState.PENDING_JOIN)
         }
     }
 
@@ -198,7 +197,7 @@ internal class UpdateConversationProtocolUseCaseTest {
 
         suspend fun withPersistConversationsSuccess() = apply {
             everySuspend {
-                persistConversations(any(), eq(listOf(CONVERSATION_RESPONSE)),  eq(true), any())
+                persistConversations(any(), listOf(CONVERSATION_RESPONSE),  true, any())
             } returns Either.Right(Unit)
         }
 

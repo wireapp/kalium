@@ -21,7 +21,6 @@ import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
@@ -49,7 +48,7 @@ internal class ObserveLegalHoldStateForSelfUserUseCaseTest {
         // then
         assertEquals(expected, result.first())
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.observeLegalHoldStateForUser.invoke(eq(TestUser.SELF.id))
+            arrangement.observeLegalHoldStateForUser.invoke(TestUser.SELF.id)
         }
         verify(VerifyMode.exactly(1)) {
             arrangement.observeLegalHoldRequestUseCase.invoke()
@@ -95,7 +94,7 @@ internal class ObserveLegalHoldStateForSelfUserUseCaseTest {
 
         suspend fun withLegalHoldState(result: LegalHoldState) = apply {
             everySuspend {
-                observeLegalHoldStateForUser.invoke(eq(TestUser.SELF.id))
+                observeLegalHoldStateForUser.invoke(TestUser.SELF.id)
             } returns flowOf(result)
         }
 

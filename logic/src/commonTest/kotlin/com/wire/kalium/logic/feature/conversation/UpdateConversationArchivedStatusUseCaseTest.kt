@@ -26,8 +26,7 @@ import com.wire.kalium.common.functional.Either
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -56,16 +55,16 @@ class UpdateConversationArchivedStatusUseCaseTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.updateArchivedStatusRemotely(
                     conversationId = any(),
-                    isArchived = eq(isConversationArchived),
-                    archivedStatusTimestamp = matching { it == archivedStatusTimestamp }
+                    isArchived = isConversationArchived,
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.updateArchivedStatusLocally(
                     conversationId = any(),
-                    isArchived = eq(isConversationArchived),
-                    archivedStatusTimestamp = matching { it == archivedStatusTimestamp }
+                    isArchived = isConversationArchived,
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
                 )
             }
         }
@@ -94,8 +93,8 @@ class UpdateConversationArchivedStatusUseCaseTest {
                 verifySuspend(VerifyMode.exactly(1)) {
                     conversationRepository.updateArchivedStatusLocally(
                         conversationId = any(),
-                        isArchived = eq(isConversationArchived),
-                        archivedStatusTimestamp = matching { it == archivedStatusTimestamp }
+                        isArchived = isConversationArchived,
+                        archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
                     )
                 }
             }
@@ -119,16 +118,16 @@ class UpdateConversationArchivedStatusUseCaseTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.updateArchivedStatusRemotely(
                     conversationId = any(),
-                    isArchived = eq(isConversationArchived),
-                    archivedStatusTimestamp = matching { it == archivedStatusTimestamp }
+                    isArchived = isConversationArchived,
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
                 )
             }
 
             verifySuspend(VerifyMode.not) {
                 conversationRepository.updateArchivedStatusLocally(
                     conversationId = any(),
-                    isArchived = eq(isConversationArchived),
-                    archivedStatusTimestamp = matching { it == archivedStatusTimestamp }
+                    isArchived = isConversationArchived,
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
                 )
             }
         }
@@ -152,16 +151,16 @@ class UpdateConversationArchivedStatusUseCaseTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.updateArchivedStatusRemotely(
                     conversationId = any(),
-                    isArchived = eq(isConversationArchived),
-                    archivedStatusTimestamp = matching { it == archivedStatusTimestamp }
+                    isArchived = isConversationArchived,
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.updateArchivedStatusLocally(
                     conversationId = any(),
-                    isArchived = eq(isConversationArchived),
-                    archivedStatusTimestamp = matching { it == archivedStatusTimestamp }
+                    isArchived = isConversationArchived,
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
                 )
             }
         }
@@ -185,16 +184,16 @@ class UpdateConversationArchivedStatusUseCaseTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.updateArchivedStatusRemotely(
                     conversationId = any(),
-                    isArchived = eq(isConversationArchived),
-                    archivedStatusTimestamp = matching { it == archivedStatusTimestamp }
+                    isArchived = isConversationArchived,
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.updateArchivedStatusLocally(
                     conversationId = any(),
-                    isArchived = eq(isConversationArchived),
-                    archivedStatusTimestamp = matching { it == archivedStatusTimestamp }
+                    isArchived = isConversationArchived,
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
                 )
             }
         }

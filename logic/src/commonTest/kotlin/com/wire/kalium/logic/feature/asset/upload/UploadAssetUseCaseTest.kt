@@ -47,7 +47,6 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -218,7 +217,7 @@ class UploadAssetUseCaseTest {
         uploadAsset(assetMessage(), uploadMetadata)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), false)
         }
     }
 
@@ -380,7 +379,7 @@ class UploadAssetUseCaseTest {
             everySuspend { assetDataSource.fetchPreviewAsset(any()) } returns
                 Either.Right(FetchedAssetData("preview.jpg".toPath(), false))
             everySuspend {
-                assetDataSource.uploadAndPersistPrivateAsset(eq("image/jpeg"), any(), any(), any(), any(), any(), any())
+                assetDataSource.uploadAndPersistPrivateAsset("image/jpeg", any(), any(), any(), any(), any(), any())
             } returns
                 Either.Right(uploadedPreview to previewHash)
         }
@@ -422,7 +421,7 @@ class UploadAssetUseCaseTest {
             everySuspend { assetDataSource.fetchPreviewAsset(any()) } returns
                 Either.Right(FetchedAssetData("preview.jpg".toPath(), false))
             everySuspend {
-                assetDataSource.uploadAndPersistPrivateAsset(eq("image/jpeg"), any(), any(), any(), any(), any(), any())
+                assetDataSource.uploadAndPersistPrivateAsset("image/jpeg", any(), any(), any(), any(), any(), any())
             } calls {
                 previewUploadStarted.complete(Unit)
                 awaitCancellation()

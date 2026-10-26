@@ -34,9 +34,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
-import dev.mokkery.verify
 import dev.mokkery.verifySuspend
 import dev.mokkery.verify.VerifyMode
 import kotlinx.coroutines.flow.first
@@ -48,7 +46,7 @@ import kotlin.test.assertSame
 
 class GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCaseTest {
     @Test
-    fun restrictedSearchPassesSelfTeamAndDomainToRepository() = runTest {
+    fun restrictedSearchKeepsAllGroupsInRepositoryQuery() = runTest {
         val page = PagingData.empty<ConversationDetailsWithMembers>()
         val pagingConfig = PagingConfig(20)
         val (arrangement, useCase) = Arrangement(StandardTestDispatcher(testScheduler).testKaliumDispatcher()).arrange {
@@ -56,15 +54,14 @@ class GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCaseTest {
             withSearchResults(page)
         }
 
-        val result = useCase(
+        useCase(
             ConversationMembersQueryConfig(searchQuery = "Alpha"), pagingConfig, onlySelfTeamAndDomain = true,
         ).first()
-        assertSame(page, result)
 
         verifySuspend {
             arrangement.extensions.getPaginatedConversationDetailsWithMembersBySearchQuery(
-                eq(ConversationMembersQueryConfig(searchQuery = "Alpha", onlyTeamId = "team", onlyDomain = TestUser.USER_ID.domain)),
-                eq(pagingConfig), eq(0L), eq(true),
+                ConversationMembersQueryConfig(searchQuery = "Alpha"),
+                pagingConfig, 0L, true,
             )
         }
     }
@@ -82,21 +79,27 @@ class GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCaseTest {
 
         verifySuspend {
             arrangement.extensions.getPaginatedConversationDetailsWithMembersBySearchQuery(
-                eq(config), eq(pagingConfig), eq(0L), eq(true),
+                config, pagingConfig, 0L, true,
             )
         }
         verifySuspend(VerifyMode.not) { arrangement.selfTeamIdProvider() }
     }
 
     @Test
-    fun restrictedSearchWithoutSelfTeamDoesNotRunAnUnrestrictedQuery() = runTest {
+    fun restrictedSearchWithoutSelfTeamStillLoadsGroups() = runTest {
+        val pagingConfig = PagingConfig(20)
         val (arrangement, useCase) = Arrangement(StandardTestDispatcher(testScheduler).testKaliumDispatcher()).arrange {
             withTeamId(Either.Right(null))
+            withSearchResults(PagingData.empty())
         }
 
-        useCase(ConversationMembersQueryConfig(), PagingConfig(20), onlySelfTeamAndDomain = true).first()
+        useCase(ConversationMembersQueryConfig(), pagingConfig, onlySelfTeamAndDomain = true).first()
 
-        verify(VerifyMode.not) { arrangement.repository.extensions }
+        verifySuspend {
+            arrangement.extensions.getPaginatedConversationDetailsWithMembersBySearchQuery(
+                ConversationMembersQueryConfig(), pagingConfig, 0L, true,
+            )
+        }
     }
 
     private class Arrangement(private val dispatcher: KaliumDispatcher) :

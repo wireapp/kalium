@@ -36,8 +36,7 @@ import com.wire.kalium.persistence.db.ReadDispatcher
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
@@ -75,11 +74,11 @@ class MessageRepositoryExtensionsTest {
 
         verify(VerifyMode.exactly(1)) {
             arrangement.messageDaoExtensions.getPagerForConversation(
-                eq(CONVERSATION_ID_ENTITY), matching {
+                CONVERSATION_ID_ENTITY, matches {
                     val list = it.toList()
                     list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
-                }, eq(pagingConfig),
-                eq(startingOffset)
+                }, pagingConfig,
+                startingOffset
             )
         }
     }

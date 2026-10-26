@@ -34,7 +34,6 @@ import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -263,13 +262,13 @@ class ServiceRepositoryTest {
 
         suspend fun withServiceByIdSuccess(serviceId: BotIdEntity, result: ServiceEntity?) = apply {
             everySuspend {
-                serviceDAO.byId(eq(serviceId))
+                serviceDAO.byId(serviceId)
             }.returns(result)
         }
 
         suspend fun withServiceByIdFailure(serviceId: BotIdEntity, error: Throwable) = apply {
             everySuspend {
-                serviceDAO.byId(eq(serviceId))
+                serviceDAO.byId(serviceId)
             }.throws(error)
         }
 

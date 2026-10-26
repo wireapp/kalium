@@ -32,7 +32,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -91,7 +90,7 @@ class AccessTokenRefresherTest {
 
         accessTokenRefresher.refreshTokenAndPersistSession("egal")
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.repository.persistTokens(eq(TEST_REFRESH_RESULT.accessToken), eq(TEST_REFRESH_RESULT.refreshToken))
+            arrangement.repository.persistTokens(TEST_REFRESH_RESULT.accessToken, TEST_REFRESH_RESULT.refreshToken)
         }
     }
 

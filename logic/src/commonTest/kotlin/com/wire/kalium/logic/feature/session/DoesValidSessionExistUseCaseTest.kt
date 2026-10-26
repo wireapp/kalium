@@ -26,7 +26,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -89,7 +88,7 @@ internal class DoesValidSessionExistUseCaseTest {
 
         suspend fun withDoesValidSessionExist(userId: UserId, exists: Boolean) = apply {
             everySuspend {
-                sessionRepository.doesValidSessionExist(eq(userId))
+                sessionRepository.doesValidSessionExist(userId)
             } returns Either.Right(exists)
         }
 
