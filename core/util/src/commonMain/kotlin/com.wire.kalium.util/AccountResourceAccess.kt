@@ -9,10 +9,12 @@ package com.wire.kalium.util
 
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -46,8 +48,14 @@ class AccountResourceAccess {
      * Close all resources before releasing ownership; close failure makes access unavailable.
      * [quiesce] first stops work that must end before the pause while operations are still admitted;
      * no resume can interleave before [closeResources]. If it fails, access is unchanged.
+     * [whileDraining] runs while admitted operations drain and is cancelled once they have, so it can end
+     * operations that would hold the pause.
      */
-    suspend fun pause(quiesce: suspend () -> Unit = {}, closeResources: suspend () -> Unit) {
+    suspend fun pause(
+        quiesce: suspend () -> Unit = {},
+        whileDraining: suspend () -> Unit = {},
+        closeResources: suspend () -> Unit,
+    ) {
         checkOutsideOperation()
         transition.withLock {
             checkFailure()
@@ -55,13 +63,17 @@ class AccountResourceAccess {
             quiesce()
             state.update { it.copy(accepting = false) }
             try {
-                state.first { it.permits.isEmpty() }
-            } catch (cancelled: CancellationException) {
+                coroutineScope {
+                    val ending = launch { whileDraining() }
+                    state.first { it.permits.isEmpty() }
+                    ending.cancelAndJoin()
+                }
+            } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
                 // Closing has not started, so resources and ownership are still valid.
                 withContext(NonCancellable) {
                     state.update { it.copy(accepting = true) }
                 }
-                throw cancelled
+                throw failure
             }
             withContext(NonCancellable) {
                 try {

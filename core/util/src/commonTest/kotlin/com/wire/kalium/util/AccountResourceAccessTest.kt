@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -110,6 +111,40 @@ class AccountResourceAccessTest {
         assertEquals("open", access.withAccess { "open" })
         finish.complete(Unit)
         first.join()
+    }
+
+    @Test
+    fun whileDrainingCanEndHeldWorkAndStopsBeforeClosing() = runTest {
+        val access = AccountResourceAccess()
+        val finish = CompletableDeferred<Unit>()
+        val events = mutableListOf<String>()
+        val held = launch { access.withAccess { finish.await() } }
+        runCurrent()
+        access.pause(whileDraining = {
+            try {
+                events += "end held work"
+                finish.complete(Unit)
+                awaitCancellation()
+            } finally {
+                events += "stopped"
+            }
+        }) { events += "close" }
+        held.join()
+        assertEquals(listOf("end held work", "stopped", "close"), events)
+    }
+
+    @Test
+    fun failedWhileDrainingLeavesResourcesOpen() = runTest {
+        val access = AccountResourceAccess()
+        val finish = CompletableDeferred<Unit>()
+        var closed = false
+        val held = launch { access.withAccess { finish.await() } }
+        runCurrent()
+        assertFailsWith<IllegalStateException> { access.pause(whileDraining = { error("failed") }) { closed = true } }
+        assertFalse(closed)
+        assertEquals("open", access.withAccess { "open" })
+        finish.complete(Unit)
+        held.join()
     }
 
     @Test

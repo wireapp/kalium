@@ -60,7 +60,10 @@ WebSocket client, while no reopen can interleave; sync restarts only after the
 app owns the account again. Legacy push skips clients the backend serves over
 WebSocket, so an open socket would hide new events from the NSE. The native
 socket and the backend see the close asynchronously, so events in that short
-window may still reach the closing socket instead of APNs.
+window may still reach the closing socket instead of APNs. A message send keeps its
+crypto transaction until its request ends; on a bad network that can outlast the time
+iOS gives the app in the background. If the release still drains after 5 seconds, it
+fails the account's HTTP requests as offline until the drain ends.
 
 NSE opening retries a busy lease for up to 3 seconds, which covers the app's background
 handoff, and waits for another attempt of the same process to finish: that attempt presents
