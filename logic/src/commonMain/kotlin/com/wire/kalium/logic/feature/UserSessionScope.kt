@@ -139,6 +139,7 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.giphy.GiphyDataSource
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -331,6 +332,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
+import com.wire.kalium.logic.feature.giphy.GiphyScope
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.legalhold.ApproveLegalHoldRequestUseCase
@@ -2748,6 +2750,17 @@ public class UserSessionScope internal constructor(
             userScopedLogger,
             KaliumDispatcherImpl,
             userStorage.database.messageTimelineDAO,
+        )
+    }
+
+    public val giphy: GiphyScope by lazy {
+        GiphyScope(
+            giphyRepository = GiphyDataSource(authenticatedNetworkContainer.giphyApi, kaliumFileSystem),
+            sendTextMessage = messages.sendTextMessage,
+            sendAssetMessage = messages.sendAssetMessage,
+            observeFileSharingStatus = observeFileSharingStatus,
+            validateAssetFileType = validateAssetMimeType,
+            scope = this,
         )
     }
 
