@@ -9,12 +9,14 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestPipeline
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.io.IOException
 
 /**
@@ -27,9 +29,13 @@ internal class FailableRequests {
 
     fun install(client: HttpClient) {
         client.requestPipeline.intercept(HttpRequestPipeline.Before) {
-            // The execution context covers the whole call, including reading the response body.
-            val call = context.executionContext
-            coroutineScope {
+            // Fail before plugins can wait, for example for a token the account owner no longer admits.
+            if (failing.value > 0) throw IOException(FAILED_MESSAGE)
+            val caller = currentCoroutineContext()
+            supervisorScope {
+                // A child, so failing also ends waits outside the engine, such as a token refresh, even when the
+                // caller is non-cancellable. Cancelling it cancels the engine call too.
+                val call = async { proceed() }
                 var failed = false
                 val failer = launch(start = CoroutineStart.UNDISPATCHED) {
                     failing.first { it > 0 }
@@ -37,11 +43,10 @@ internal class FailableRequests {
                     call.cancel(CancellationException(FAILED_MESSAGE))
                 }
                 try {
-                    proceed()
+                    call.await()
                 } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
-                    ensureActive()
-                    if (failed) throw IOException(FAILED_MESSAGE, failure)
-                    throw failure
+                    caller.ensureActive()
+                    throw if (failed) IOException(FAILED_MESSAGE, failure) else failure
                 } finally {
                     failer.cancel()
                 }

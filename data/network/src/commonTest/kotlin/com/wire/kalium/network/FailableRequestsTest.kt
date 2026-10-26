@@ -11,6 +11,7 @@ import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderI
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respondOk
+import io.ktor.client.request.HttpSendPipeline
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CancellationException
@@ -45,6 +46,34 @@ internal class FailableRequestsTest : ApiTest() {
         val failing = launch { provider.failRequests { awaitCancellation() } }
         assertIs<IOException>(request.await().exceptionOrNull())
         failing.cancelAndJoin()
+        provider.close()
+    }
+
+    @Test
+    fun failingRequestsEndsAWaitOutsideTheEngine() = runTest {
+        val waiting = CompletableDeferred<Unit>()
+        val provider = provider(MockEngine { respondOk() })
+        val client = provider.networkClient.httpClient
+        // Stands in for a plugin wait, such as a token refresh that the account owner no longer admits.
+        client.sendPipeline.intercept(HttpSendPipeline.Before) {
+            waiting.complete(Unit)
+            awaitCancellation()
+        }
+        val request = async {
+            withContext(NonCancellable) { runCatching { client.get("self") } }
+        }
+        waiting.await()
+        val failing = launch { provider.failRequests { awaitCancellation() } }
+        assertIs<IOException>(request.await().exceptionOrNull())
+        failing.cancelAndJoin()
+        provider.close()
+    }
+
+    @Test
+    fun aBackendFailureStaysThatFailure() = runTest {
+        val provider = provider(MockEngine { throw IOException("connection lost") })
+        val failure = assertFailsWith<IOException> { provider.networkClient.httpClient.get("self") }
+        assertEquals("connection lost", failure.message)
         provider.close()
     }
 
