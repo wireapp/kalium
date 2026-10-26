@@ -211,7 +211,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 ) { runtime ->
                     // The badge is auxiliary: a slow count read must not discard already-produced alerts.
                     val received = receive(runtime, request, diagnostics, started, delivery).also { produced = it }
-                    received.withBadgeCount(runtime).also { produced = it }
+                    received.copy(
+                        unreadConversationBadgeCount = runtime.readUnreadConversationBadgeCount().getOrNull()
+                    ).also { produced = it }
                 }
                 when (result) {
                     is Either.Left -> failure(result.value.name)
@@ -227,9 +229,6 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         diagnostics.record(outcome.status.name, outcome.failureReason, outcome.shouldNotify)
         return outcome
     }
-
-    private suspend fun KaliumNSEResult.withBadgeCount(runtime: AppleAccountRuntime): KaliumNSEResult =
-        copy(unreadConversationBadgeCount = runtime.readUnreadConversationBadgeCount().getOrNull())
 
     private suspend fun receive(
         runtime: AppleAccountRuntime,
