@@ -642,6 +642,82 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenStaleMlsRejection_whenWaitingForLive_thenTheCryptoTransactionIsReleased() {
+        val (arrangement, messageSender) = arrange {
+            withSendMlsMessage()
+            withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
+            withPromoteMessageToSentUpdatingServerTime()
+            withVerifyEpoch(Either.Right(Unit))
+        }
+        arrangement.testScope.runTest {
+            arrangement.serializeTransactions()
+            // Catch-up needs the transaction queue to process the commits the send missed.
+            val queueHeldWhileWaiting = mutableListOf<Boolean>()
+            everySuspend { arrangement.syncManager.waitUntilLiveOrFailure() } calls {
+                queueHeldWhileWaiting += arrangement.transactionQueue.isLocked
+                Either.Right(Unit)
+            }
+
+            messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldSucceed()
+
+            assertEquals(listOf(false), queueHeldWhileWaiting)
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+            }
+        }
+    }
+
+    @Test
+    fun givenMlsStillStaleAfterLive_whenSending_thenRetryOnceAndReturnTheRejection() {
+        val (arrangement, messageSender) = arrange {
+            withSendMlsMessage(sendMlsMessageWithResult = Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE))
+            withWaitUntilLiveOrFailure()
+            withVerifyEpoch(Either.Right(Unit))
+        }
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(TestMessage.TEXT_MESSAGE)
+
+            assertEquals(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), result)
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenStaleMlsSendWaitingForLive_whenPendingMessageIsDeleted_thenCancelWithoutWaitingAndDoNotRetry() {
+        val live = CompletableDeferred<Either<CoreFailure, Unit>>()
+        val (arrangement, sender) = arrange {
+            withSendMlsMessage()
+            withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
+            withVerifyEpoch(Either.Right(Unit))
+            everySuspend { syncManager.waitUntilLiveOrFailure() } calls { live.await() }
+        }
+        arrangement.testScope.runTest {
+            val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
+            var stored: Message? = pending
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls {
+                stored?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+            }
+            everySuspend { arrangement.messageRepository.deleteMessage(any(), any()) } calls {
+                stored = null
+                Either.Right(Unit)
+            }
+            arrangement.serializeTransactions()
+            val send = async { sender.sendMessage(pending) }
+            runCurrent()
+            assertFalse(send.isCompleted)
+
+            assertEquals(Either.Right(true), sender.cancelPendingMessage(pending.conversationId, pending.id))
+            live.complete(Either.Right(Unit))
+            send.await().shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }
+        }
+    }
+
+    @Test
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenGiveUpIfSyncIsPending() {
         // given
         val (arrangement, messageSender) = arrange {
@@ -1367,13 +1443,14 @@ class MessageSenderTest {
             )
         }
 
+        // Models the existing CoreCrypto transaction queue, not a message-specific lock.
+        val transactionQueue = Mutex()
+
         @Suppress("UNCHECKED_CAST")
         suspend fun serializeTransactions() {
-            // Model the existing CoreCrypto transaction queue, not a message-specific lock.
-            val queue = Mutex()
             everySuspend { cryptoTransactionProvider.transaction<Any?>(any(), any()) } calls {
                 val operation = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, Any?>
-                queue.withLock { operation(transactionContext) }
+                transactionQueue.withLock { operation(transactionContext) }
             }
         }
 

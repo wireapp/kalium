@@ -331,7 +331,7 @@ internal class ShareSending(
     private class HeldSession(private val crypto: AppleCryptoTransactions) : SendingSession {
         override suspend fun waitUntilLive() = Unit
 
-        // Reached only after verifyEpoch, which declines; waiting inside the transaction would deadlock.
+        // Reached only after verifyEpoch, which declines.
         override suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = Either.Right(Unit)
 
         override suspend fun <R> transaction(

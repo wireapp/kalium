@@ -164,52 +164,71 @@ class MessageSenderImpl(
 
     override suspend fun sendMessageWithOutcome(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Boolean> =
         prepareMessage(message)
-            .flatMap { processedMessage ->
-                session.transaction("sendMessage") { transactionContext ->
-                    // Cancellation uses this same transaction queue. Recheck after entering it, not before waiting.
-                    shouldSend(message).flatMap { send ->
-                        if (!send) return@flatMap Either.Right(false)
-                        attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
-                            val localDate = message.date
-                            val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
-                            // If it was the "edit" message type, we need to update the id before we promote it to "sent"
-                            val isEditMessage = when (message.content) {
-                                is MessageContent.MultipartEdited -> {
-                                    messages.updateMultipartMessage(
-                                        conversationId = processedMessage.conversationId,
-                                        messageContent = processedMessage.content as MessageContent.MultipartEdited,
-                                        newMessageId = processedMessage.id,
-                                        editInstant = processedMessage.date
-                                    )
-                                    true
-                                }
-                                is MessageContent.TextEdited -> {
-                                    messages.updateTextMessage(
-                                        conversationId = processedMessage.conversationId,
-                                        messageContent = processedMessage.content as MessageContent.TextEdited,
-                                        newMessageId = processedMessage.id,
-                                        editInstant = processedMessage.date
-                                    )
-                                    true
-                                }
-                                else -> false
-                            }
-                            messages.promoteMessageToSentUpdatingServerTime(
-                                conversationId = processedMessage.conversationId,
-                                messageUuid = processedMessage.id,
-                                // if it's edit then we don't want to change the original message creation time, it's already a server date
-                                serverDate = if (!isEditMessage) serverDate else null,
-                                millis = millis
-                            )
-                            true
-                        }
-                    }
-                }.onSuccess { sent ->
-                    if (sent) startSelfDeletionIfNeeded(message)
-                }
+            .flatMap { processedMessage -> sendPreparedMessage(message, processedMessage, messageTarget, remainingAttempts = 1) }
+            .onSuccess { sent ->
+                if (sent) startSelfDeletionIfNeeded(message)
             }.onFailure {
                 logger.e("Failed to send message ${message::class.simpleName}. Failure = $it")
             }
+
+    /**
+     * Sends [processedMessage] in one crypto transaction and returns whether it was sent.
+     * A stale MLS send is retried after that transaction ends: catch-up processes the missed commits in its own transaction.
+     */
+    private suspend fun sendPreparedMessage(
+        message: Message.Sendable,
+        processedMessage: Message.Sendable,
+        messageTarget: MessageTarget,
+        remainingAttempts: Int
+    ): Either<CoreFailure, Boolean> =
+        session.transaction("sendMessage") { transactionContext ->
+            // Cancellation uses this same transaction queue. Recheck after entering it, not before waiting.
+            shouldSend(message).flatMap { send ->
+                if (!send) return@flatMap Either.Right(false)
+                attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
+                    val localDate = message.date
+                    val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                    // If it was the "edit" message type, we need to update the id before we promote it to "sent"
+                    val isEditMessage = when (message.content) {
+                        is MessageContent.MultipartEdited -> {
+                            messages.updateMultipartMessage(
+                                conversationId = processedMessage.conversationId,
+                                messageContent = processedMessage.content as MessageContent.MultipartEdited,
+                                newMessageId = processedMessage.id,
+                                editInstant = processedMessage.date
+                            )
+                            true
+                        }
+                        is MessageContent.TextEdited -> {
+                            messages.updateTextMessage(
+                                conversationId = processedMessage.conversationId,
+                                messageContent = processedMessage.content as MessageContent.TextEdited,
+                                newMessageId = processedMessage.id,
+                                editInstant = processedMessage.date
+                            )
+                            true
+                        }
+                        else -> false
+                    }
+                    messages.promoteMessageToSentUpdatingServerTime(
+                        conversationId = processedMessage.conversationId,
+                        messageUuid = processedMessage.id,
+                        // if it's edit then we don't want to change the original message creation time, it's already a server date
+                        serverDate = if (!isEditMessage) serverDate else null,
+                        millis = millis
+                    )
+                    true
+                }
+            }
+        }.fold({ failure ->
+            when {
+                failure !is StaleUntilLive -> Either.Left(failure)
+                remainingAttempts <= 0 -> Either.Left(failure.cause)
+                else -> session.waitUntilLiveOrFailure().flatMap {
+                    sendPreparedMessage(message, processedMessage, messageTarget, remainingAttempts - 1)
+                }
+            }
+        }, { sent -> Either.Right(sent) })
 
     override suspend fun broadcastMessage(
         message: BroadcastMessage,
@@ -339,7 +358,8 @@ class MessageSenderImpl(
     /**
      * Attempts to send a MLS application message
      *
-     * Will handle re-trying on "mls-stale-message" after we are live again or fail if we are not syncing.
+     * On "mls-stale-message" it verifies the epoch and returns [StaleUntilLive], so [sendPreparedMessage] can retry once the
+     * transaction ends and we are live again.
      */
     private suspend fun attemptToSendWithMLS(
         transactionContext: CryptoTransactionContext,
@@ -369,10 +389,8 @@ class MessageSenderImpl(
                                     "errorInfo" to "$it"
                                 )
                             )
-                            verifyEpoch(transactionContext, message.conversationId)
-                                .flatMap {
-                                    session.waitUntilLiveOrFailure().flatMap { attemptToSend(transactionContext, message) }
-                                }
+                            val stale = StaleUntilLive(it)
+                            verifyEpoch(transactionContext, message.conversationId).flatMap { Either.Left(stale) }
                         }
                         else -> Either.Left(it)
                     }
@@ -383,6 +401,7 @@ class MessageSenderImpl(
                 })
             }
             .onFailure {
+                if (it is StaleUntilLive) return@onFailure
                 logger.logStructuredJson(
                     level = KaliumLogLevel.ERROR,
                     leadingMessage = "Message Send Failure",
@@ -612,4 +631,7 @@ class MessageSenderImpl(
         else {
             messages.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
         }
+
+    /** A stale MLS send whose epoch was verified. It never leaves the sender: [sendPreparedMessage] retries it or returns [cause]. */
+    private class StaleUntilLive(val cause: CoreFailure) : CoreFailure.FeatureFailure()
 }
