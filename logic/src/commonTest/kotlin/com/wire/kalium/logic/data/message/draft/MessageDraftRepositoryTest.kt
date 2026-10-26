@@ -27,7 +27,6 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -79,7 +78,7 @@ class MessageDraftRepositoryTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                messageDraftDAO.getMessageDraft(eq(TEST_CONVERSATION_ID.toDao()))
+                messageDraftDAO.getMessageDraft(TEST_CONVERSATION_ID.toDao())
             }
         }
     }
@@ -115,7 +114,7 @@ class MessageDraftRepositoryTest {
         // Then
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                messageDraftDAO.removeMessageDraft(eq(TEST_CONVERSATION_ID.toDao()))
+                messageDraftDAO.removeMessageDraft(TEST_CONVERSATION_ID.toDao())
             }
         }
     }

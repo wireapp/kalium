@@ -27,7 +27,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -54,7 +53,7 @@ class SetTestRemoteVideoStatesUseCaseTest {
         setTestRemoteVideoStates(CONVERSATION_ID, listOf(DUMMY_PARTICIPANT))
 
         verifySuspend(VerifyMode.exactly(1)) {
-            callManager.setTestRemoteVideoStates(eq(CONVERSATION_ID), eq(listOf(DUMMY_PARTICIPANT)))
+            callManager.setTestRemoteVideoStates(CONVERSATION_ID, listOf(DUMMY_PARTICIPANT))
         }
     }
 

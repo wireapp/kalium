@@ -19,7 +19,6 @@ package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import dev.mokkery.MockMode
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -41,11 +40,11 @@ class RestartSlowSyncProcessForRecoveryUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(eq(true))
+            arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(true)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.slowSyncRepository.setNeedsToPersistHistoryLostMessage(eq(true))
+            arrangement.slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
         }
     }
 

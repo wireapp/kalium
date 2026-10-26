@@ -27,7 +27,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -146,7 +145,7 @@ class ResetMLSConversationUseCaseTest {
 
         verifySuspend(VerifyMode.order) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-            arrangement.endCallOnMLSReset(eq(TEST_CONVERSATION_ID))
+            arrangement.endCallOnMLSReset(TEST_CONVERSATION_ID)
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
         }
     }
@@ -175,7 +174,7 @@ class ResetMLSConversationUseCaseTest {
         useCase(TEST_CONVERSATION_ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.endCallOnMLSReset(eq(TEST_CONVERSATION_ID))
+            arrangement.endCallOnMLSReset(TEST_CONVERSATION_ID)
         }
     }
 
@@ -206,19 +205,19 @@ class ResetMLSConversationUseCaseTest {
         useCase(TEST_CONVERSATION_ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(15UL))
+            arrangement.conversationRepository.resetMlsConversation(TestConversation.GROUP_ID, 15UL)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.fetchConversation(eq(TEST_CONVERSATION_ID))
+            arrangement.conversationRepository.fetchConversation(TEST_CONVERSATION_ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(remoteEpoch))
+            arrangement.conversationRepository.resetMlsConversation(TestConversation.GROUP_ID, remoteEpoch)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.endCallOnMLSReset(eq(TEST_CONVERSATION_ID))
+            arrangement.endCallOnMLSReset(TEST_CONVERSATION_ID)
         }
     }
 
@@ -271,31 +270,31 @@ class ResetMLSConversationUseCaseTest {
         useCase(TEST_CONVERSATION_ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(15UL))
+            arrangement.conversationRepository.resetMlsConversation(TestConversation.GROUP_ID, 15UL)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(refreshedEpoch))
+            arrangement.conversationRepository.resetMlsConversation(TestConversation.GROUP_ID, refreshedEpoch)
         }
 
         verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.conversationRepository.fetchConversation(eq(TEST_CONVERSATION_ID))
+            arrangement.conversationRepository.fetchConversation(TEST_CONVERSATION_ID)
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.conversationRepository.resetMlsConversation(eq(GroupID(updatedGroupId)), any())
+            arrangement.conversationRepository.resetMlsConversation(GroupID(updatedGroupId), any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversationUseCase(
                 transactionContext = any(),
-                conversationId = eq(TEST_CONVERSATION_ID),
-                reason = eq(ConversationSyncReason.ConversationReset)
+                conversationId = TEST_CONVERSATION_ID,
+                reason = ConversationSyncReason.ConversationReset
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.establishMLSGroup(any(), eq(GroupID(updatedGroupId)), any(), any(), any())
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), GroupID(updatedGroupId), any(), any(), any())
         }
     }
 
@@ -326,7 +325,7 @@ class ResetMLSConversationUseCaseTest {
             arrangement.fetchConversationUseCase(
                 conversationId = any(),
                 transactionContext = any(),
-                reason = eq(ConversationSyncReason.ConversationReset)
+                reason = ConversationSyncReason.ConversationReset
             )
         }
     }
@@ -570,7 +569,7 @@ class ResetMLSConversationUseCaseTest {
             } returns MLSAdditionResult(emptySet(), emptySet(), emptySet()).right()
 
             everySuspend {
-                fetchConversationUseCase(any(), any(), reason = eq(ConversationSyncReason.ConversationReset))
+                fetchConversationUseCase(any(), any(), reason = ConversationSyncReason.ConversationReset)
             } returns fetchConversationResult
 
             everySuspend {

@@ -26,7 +26,6 @@ import com.wire.kalium.logic.util.stubs.newServerConfig
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -86,7 +85,7 @@ class StoreServerConfigUseCaseTest {
             versionInfo: ServerConfig.VersionInfo,
             result: Either<StorageFailure, ServerConfig>
         ) = apply {
-            everySuspend { customServerConfigRepository.storeConfig(eq(links), eq(versionInfo)) } returns result
+            everySuspend { customServerConfigRepository.storeConfig(links, versionInfo) } returns result
         }
 
         fun arrange() = this to useCase

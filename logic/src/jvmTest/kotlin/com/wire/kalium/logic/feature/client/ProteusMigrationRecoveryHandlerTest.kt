@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import dev.mokkery.MockMode
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -23,7 +22,7 @@ class ProteusMigrationRecoveryHandlerTest {
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.logoutUseCase(eq(LogoutReason.MIGRATION_TO_CC_FAILED), eq(true))
+            arrangement.logoutUseCase(LogoutReason.MIGRATION_TO_CC_FAILED, true)
         }
     }
 

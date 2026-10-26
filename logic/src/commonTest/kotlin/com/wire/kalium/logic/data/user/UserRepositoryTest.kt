@@ -79,7 +79,6 @@ import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify
@@ -187,10 +186,10 @@ class UserRepositoryTest {
         userRepository.fetchUsersByIds(requestedUserIds).shouldFail()
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+            arrangement.userDetailsApi.getMultipleUsers(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList()))
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(listOf(TestUser.OTHER_USER_ID.toApi()))))
+            arrangement.userDetailsApi.getMultipleUsers(QualifiedUserIdListRequest(listOf(TestUser.OTHER_USER_ID.toApi())))
         }
     }
 
@@ -297,7 +296,7 @@ class UserRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(knownUserIds.map { userId -> userId.toApi() })))
+            arrangement.userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(knownUserIds.map { userId -> userId.toApi() }))
         }
     }
 
@@ -335,10 +334,10 @@ class UserRepositoryTest {
 
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDAO.deleteUserByQualifiedID(eq(UserIDEntity(value = "id2", domain = "")))
+            arrangement.userDAO.deleteUserByQualifiedID(UserIDEntity(value = "id2", domain = ""))
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(expectedRequestIds)))
+            arrangement.userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(expectedRequestIds))
         }
     }
 
@@ -376,10 +375,10 @@ class UserRepositoryTest {
 
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDAO.deleteUserByQualifiedID(eq(UserIDEntity(value = "id2", domain = "")))
+            arrangement.userDAO.deleteUserByQualifiedID(UserIDEntity(value = "id2", domain = ""))
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(expectedRequestIds)))
+            arrangement.userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(expectedRequestIds))
         }
     }
 
@@ -544,7 +543,7 @@ class UserRepositoryTest {
 
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDAO.markUserAsDefederated(eq(TestUser.OTHER_FEDERATED_USER_ID.toDao()))
+            arrangement.userDAO.markUserAsDefederated(TestUser.OTHER_FEDERATED_USER_ID.toDao())
         }
     }
 
@@ -626,7 +625,7 @@ class UserRepositoryTest {
         ).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDAO.updateActiveOneOnOneConversation(eq(userId.toDao()), eq(conversationId.toDao()))
+            arrangement.userDAO.updateActiveOneOnOneConversation(userId.toDao(), conversationId.toDao())
         }
     }
 
@@ -750,7 +749,7 @@ class UserRepositoryTest {
             assertEquals(expectedResult, it)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+            arrangement.userDetailsApi.getMultipleUsers(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList()))
         }
     }
 
@@ -766,7 +765,7 @@ class UserRepositoryTest {
         // then
         result.shouldFail()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+            arrangement.userDetailsApi.getMultipleUsers(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList()))
         }
     }
 
@@ -811,7 +810,7 @@ class UserRepositoryTest {
         userRepository.insertSelfIncompleteUserWithOnlyEmail(email).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(eq(arrangement.selfUserId.toDao()), eq(email))
+            arrangement.userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(arrangement.selfUserId.toDao(), email)
         }
     }
 
@@ -842,7 +841,7 @@ class UserRepositoryTest {
         repository.fetchUserInfo(profile.id.toModel()).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.appDAO.upsertApps(eq(listOf(profile.toAppEntity())))
+            arrangement.appDAO.upsertApps(listOf(profile.toAppEntity()))
         }
         verifySuspend(VerifyMode.not) { arrangement.teamsApi.getTeamMembersByIds(any(), any()) }
     }

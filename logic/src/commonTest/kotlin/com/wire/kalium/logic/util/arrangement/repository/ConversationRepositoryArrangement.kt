@@ -36,7 +36,6 @@ import com.wire.kalium.util.ConversationPersistenceApi
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -88,7 +87,7 @@ internal interface ConversationRepositoryArrangement {
 
     suspend fun withObserveByIdReturning(conversation: Conversation) {
         everySuspend {
-            conversationRepository.observeConversationById(eq(conversation.id))
+            conversationRepository.observeConversationById(conversation.id)
         }.returns(flowOf(Either.Right(conversation)))
     }
 
@@ -309,6 +308,6 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     }
 
     override suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean) = apply {
-        every { conversationRepository.observeIsUserMember(any(), eq(userId)) }.returns(flowOf(Either.Right(isMember)))
+        every { conversationRepository.observeIsUserMember(any(), userId) }.returns(flowOf(Either.Right(isMember)))
     }
 }

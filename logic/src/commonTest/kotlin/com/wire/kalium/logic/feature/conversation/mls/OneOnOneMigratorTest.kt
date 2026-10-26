@@ -45,7 +45,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -231,7 +230,7 @@ class OneOnOneMigratorTest {
         ).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsOneOnOneConversationResolver.invoke(any(), eq(user.id), eq(false))
+            arrangement.mlsOneOnOneConversationResolver.invoke(any(), user.id, false)
         }
     }
 
@@ -389,7 +388,7 @@ class OneOnOneMigratorTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationModifiedDateToMaxOfSources(eq(resolvedConversationId), any())
+            arrangement.conversationRepository.updateConversationModifiedDateToMaxOfSources(resolvedConversationId, any())
         }
     }
 

@@ -40,7 +40,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -60,7 +59,7 @@ class EndCallOnConversationChangeUseCaseTest {
         endCallOnConversationChange()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.endCall.invoke(eq(conversationId))
+            arrangement.endCall.invoke(conversationId)
         }
     }
 
@@ -73,7 +72,7 @@ class EndCallOnConversationChangeUseCaseTest {
         endCallOnConversationChange()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.endCall.invoke(eq(conversationId))
+            arrangement.endCall.invoke(conversationId)
         }
     }
 
@@ -86,7 +85,7 @@ class EndCallOnConversationChangeUseCaseTest {
         endCallOnConversationChange()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.endCall.invoke(eq(conversationId))
+            arrangement.endCall.invoke(conversationId)
         }
     }
 
@@ -110,7 +109,7 @@ class EndCallOnConversationChangeUseCaseTest {
         endCallOnConversationChange()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.endCall.invoke(eq(conversationId))
+            arrangement.endCall.invoke(conversationId)
         }
     }
 
@@ -134,7 +133,7 @@ class EndCallOnConversationChangeUseCaseTest {
         endCallOnConversationChange()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.endCall.invoke(eq(conversationId))
+            arrangement.endCall.invoke(conversationId)
         }
     }
 
@@ -151,7 +150,7 @@ class EndCallOnConversationChangeUseCaseTest {
         endCallOnConversationChange()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.endCall.invoke(eq(conversationId))
+            arrangement.endCall.invoke(conversationId)
         }
     }
 
@@ -171,7 +170,7 @@ class EndCallOnConversationChangeUseCaseTest {
             )
         }.also {
             everySuspend {
-                endCall.invoke(eq(conversationId))
+                endCall.invoke(conversationId)
             } returns (Unit)
             everySuspend {
                 endCallDialogManager.onCallEndedBecauseOfVerificationDegraded()

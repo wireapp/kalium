@@ -24,7 +24,6 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import dev.mokkery.MockMode
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -48,12 +47,10 @@ class CodeDeletedHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversionDAO.deleteGuestRoomLink(
-                eq(
-                    ConversationIDEntity(
+                ConversationIDEntity(
                         value = event.conversationId.value,
                         domain = event.conversationId.domain
                     )
-                )
             )
         }
     }

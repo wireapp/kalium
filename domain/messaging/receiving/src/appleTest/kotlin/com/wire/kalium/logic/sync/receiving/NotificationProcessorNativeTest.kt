@@ -3151,6 +3151,35 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun meetingCallPresentationIsSilentAndPreservesSignaling() = runTest {
+        val types = listOf(ConversationEntity.Type.MEETING, ConversationEntity.Type.GROUP, ConversationEntity.Type.CHANNEL)
+        for (type in types) withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    runtime.database.conversationDAO.updateConversationType(CONVERSATION_ID, type)
+                    val event = ReceivedCallEvent(
+                        """{"type":"CONFSTART","version":"3.0","sessid":"6572f49303d3df266ecfac1d82c74b7c",
+                            "resp":false,"sft_url":"https://sft.invalid","secret":"YWJjZA==","timestamp":"1","seqno":"1"}""",
+                        CONVERSATION_ID, SENDER.toDao(), SENDER_CLIENT,
+                        Clock.System.now(), true, true, "meeting-start"
+                    )
+                    val journal = CallSignalJournal(runtime.database)
+                    val signal = journal.append(event)
+                    repeat(2) {
+                        val result = evaluateCallingEvents(listOf(event), SELF, CLIENT, runtime.database).single()
+                        assertEquals(ReceivedCallType.INCOMING, result.type)
+                        assertEquals(type != ConversationEntity.Type.MEETING, result.shouldRing, "type=$type")
+                        assertEquals(signal.id, result.handoffId)
+                        assertEquals(listOf(signal), journal.signals())
+                        assertTrue(journal.presentations().isEmpty())
+                    }
+                })
+            }
+        }
+    }
+
+    @Test
     fun incomingCallPresentationHonorsMutedConversationAndAwayStatus() = runTest {
         for (mls in listOf(false, true)) for (away in listOf(false, true)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->

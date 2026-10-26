@@ -31,8 +31,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -144,10 +143,10 @@ class UpdateKeyingMaterialsUseCaseTests {
 
         suspend fun withUpdateKeyingMaterialsFailsFor(failedGroupId: GroupID, error: CoreFailure) = apply {
             everySuspend {
-                mlsConversationRepository.updateKeyingMaterial(any(), eq(failedGroupId))
+                mlsConversationRepository.updateKeyingMaterial(any(), failedGroupId)
             } returns Either.Left(error)
             everySuspend {
-                mlsConversationRepository.updateKeyingMaterial(any(), matching { it != failedGroupId })
+                mlsConversationRepository.updateKeyingMaterial(any(), matches { it != failedGroupId })
             } returns Either.Right(Unit)
         }
 

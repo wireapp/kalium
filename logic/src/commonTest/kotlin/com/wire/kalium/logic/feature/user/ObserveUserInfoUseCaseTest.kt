@@ -31,7 +31,6 @@ import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -128,7 +127,7 @@ class ObserveUserInfoUseCaseTest {
 
             with(arrangement) {
                 verifySuspend(VerifyMode.exactly(1)) {
-                    userRepository.getKnownUser(eq(userId))
+                    userRepository.getKnownUser(userId)
                 }
 
                 verifySuspend(VerifyMode.not) {
@@ -159,7 +158,7 @@ class ObserveUserInfoUseCaseTest {
 
             with(arrangement) {
                 verifySuspend(VerifyMode.exactly(1)) {
-                    userRepository.getKnownUser(eq(userId))
+                    userRepository.getKnownUser(userId)
                 }
 
                 verifySuspend(VerifyMode.exactly(1)) {
@@ -187,7 +186,7 @@ class ObserveUserInfoUseCaseTest {
             useCase(userId).test {
                 with(arrangement) {
                     verifySuspend(VerifyMode.exactly(1)) {
-                        userRepository.getKnownUser(eq(userId))
+                        userRepository.getKnownUser(userId)
                     }
 
                     verifySuspend(VerifyMode.not) {
@@ -220,7 +219,7 @@ class ObserveUserInfoUseCaseTest {
 
             with(arrangement) {
                 verifySuspend(VerifyMode.exactly(1)) {
-                    userRepository.getKnownUser(eq(userId))
+                    userRepository.getKnownUser(userId)
                 }
 
                 verifySuspend(VerifyMode.exactly(1)) {

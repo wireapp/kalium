@@ -33,7 +33,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -191,9 +190,9 @@ class ObserveConversationListDetailsWithEventsUseCaseImplTest {
         ) = apply {
             every {
                 conversationRepository.observeConversationListDetailsWithEvents(
-                    eq(fromArchive),
-                    eq(conversationFilter),
-                    eq(true)
+                    fromArchive,
+                    conversationFilter,
+                    true
                 )
             } returns flowOf(conversations)
         }
@@ -203,7 +202,7 @@ class ObserveConversationListDetailsWithEventsUseCaseImplTest {
             conversations: List<ConversationDetailsWithEvents>
         ) = apply {
             every {
-                conversationFolderRepository.observeConversationsFromFolder(eq(folderId))
+                conversationFolderRepository.observeConversationsFromFolder(folderId)
             } returns flowOf(conversations)
         }
 

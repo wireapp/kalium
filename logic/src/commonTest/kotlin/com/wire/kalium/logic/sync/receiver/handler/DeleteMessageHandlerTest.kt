@@ -41,7 +41,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -79,7 +78,7 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
     }
 
@@ -108,15 +107,15 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.markMessageAsDeleted(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+            arrangement.messageRepository.getMessageById(conversationId, originalMessageID)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -150,19 +149,19 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.markMessageAsDeleted(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+            arrangement.messageRepository.getMessageById(conversationId, originalMessageID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.notificationEventsManager.scheduleDeleteMessageNotification(eq(originalMessage))
+            arrangement.notificationEventsManager.scheduleDeleteMessageNotification(originalMessage)
         }
     }
 
@@ -188,15 +187,15 @@ class DeleteMessageHandlerTest {
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.markMessageAsDeleted(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+            arrangement.messageRepository.getMessageById(conversationId, originalMessageID)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -228,15 +227,15 @@ class DeleteMessageHandlerTest {
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.markMessageAsDeleted(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+            arrangement.messageRepository.getMessageById(conversationId, originalMessageID)
         }
 
         verifySuspend(VerifyMode.not) {

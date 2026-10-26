@@ -42,7 +42,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -102,12 +101,10 @@ class SessionEstablisherTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusContext.doesSessionExist(
-                eq(
-                    CryptoSessionId(
+                CryptoSessionId(
                         CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain),
                         CryptoClientId(TEST_CLIENT_ID_1.value)
                     )
-                )
             )
         }
     }

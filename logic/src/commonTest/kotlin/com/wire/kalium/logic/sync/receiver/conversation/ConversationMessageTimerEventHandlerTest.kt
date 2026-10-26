@@ -33,7 +33,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -60,7 +59,7 @@ class ConversationMessageTimerEventHandlerTest {
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
                 persistMessageUseCase.invoke(
-                    eq(Message.System(
+                    Message.System(
                     event.systemMessageId,
                     MessageContent.ConversationMessageTimerChanged(
                         messageTimer = event.messageTimer
@@ -71,7 +70,7 @@ class ConversationMessageTimerEventHandlerTest {
                     Message.Status.Sent,
                     Message.Visibility.VISIBLE,
                     expirationData = null
-                )))
+                ))
             }
         }
     }

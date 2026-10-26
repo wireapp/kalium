@@ -27,7 +27,6 @@ import com.wire.kalium.logic.framework.TestTeam
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -88,7 +87,7 @@ class SyncSelfTeamInfoUseCaseTest {
         // then
         assertNull(result)
         verifySuspend {
-            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
+            arrangement.teamRepository.syncTeam(TestTeam.TEAM_ID)
         }
     }
 
@@ -106,7 +105,7 @@ class SyncSelfTeamInfoUseCaseTest {
         // then
         assertEquals(TestTeam.TEAM, result)
         verifySuspend {
-            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
+            arrangement.teamRepository.syncTeam(TestTeam.TEAM_ID)
         }
     }
 

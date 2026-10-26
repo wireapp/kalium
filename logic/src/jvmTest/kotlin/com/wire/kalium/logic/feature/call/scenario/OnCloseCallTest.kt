@@ -37,7 +37,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.every
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,15 +67,15 @@ class OnCloseCallTest {
             yield()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.persistMissedCall(eq(conversationId))
+                arrangement.callRepository.persistMissedCall(conversationId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.MISSED))
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.MISSED)
             }
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+                arrangement.callRepository.leaveMlsConference(conversationId)
             }
         }
 
@@ -97,15 +96,15 @@ class OnCloseCallTest {
             yield()
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.persistMissedCall(eq(conversationId))
+                arrangement.callRepository.persistMissedCall(conversationId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.REJECTED)
             }
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+                arrangement.callRepository.leaveMlsConference(conversationId)
             }
         }
 
@@ -188,15 +187,15 @@ class OnCloseCallTest {
             yield()
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.persistMissedCall(eq(conversationId))
+                arrangement.callRepository.persistMissedCall(conversationId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
             }
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+                arrangement.callRepository.leaveMlsConference(conversationId)
             }
         }
 
@@ -223,15 +222,15 @@ class OnCloseCallTest {
             yield()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.persistMissedCall(eq(conversationId))
+                arrangement.callRepository.persistMissedCall(conversationId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
             }
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+                arrangement.callRepository.leaveMlsConference(conversationId)
             }
         }
 
@@ -258,15 +257,15 @@ class OnCloseCallTest {
             yield()
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.persistMissedCall(eq(conversationId))
+                arrangement.callRepository.persistMissedCall(conversationId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
             }
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+                arrangement.callRepository.leaveMlsConference(conversationId)
             }
         }
 
@@ -294,15 +293,15 @@ class OnCloseCallTest {
             yield()
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.persistMissedCall(eq(conversationId))
+                arrangement.callRepository.persistMissedCall(conversationId)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
             }
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+                arrangement.callRepository.leaveMlsConference(conversationId)
             }
         }
 
@@ -334,11 +333,11 @@ class OnCloseCallTest {
             yield()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+                arrangement.callRepository.leaveMlsConference(conversationId)
             }
         }
 
@@ -405,7 +404,7 @@ class OnCloseCallTest {
             yield()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.callRepository.leaveStaleMlsConferenceIfNeeded(eq(conversationId))
+                arrangement.callRepository.leaveStaleMlsConferenceIfNeeded(conversationId)
             }
         }
 

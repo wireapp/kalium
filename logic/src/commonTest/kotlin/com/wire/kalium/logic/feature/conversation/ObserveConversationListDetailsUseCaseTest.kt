@@ -32,7 +32,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -154,7 +153,7 @@ class ObserveConversationListDetailsUseCaseTest {
         with(arrangement) {
             conversations.forEach { conversation ->
                 verifySuspend(VerifyMode.exactly(1)) {
-                    conversationRepository.observeConversationDetailsById(eq(conversation.id))
+                    conversationRepository.observeConversationDetailsById(conversation.id)
                 }
             }
         }
@@ -275,7 +274,7 @@ class ObserveConversationListDetailsUseCaseTest {
             expectedConversationDetails: Channel<ConversationDetails.OneOne>
         ) = apply {
             everySuspend {
-                conversationRepository.observeConversationDetailsById(eq(conversation.id))
+                conversationRepository.observeConversationDetailsById(conversation.id)
             } returns expectedConversationDetails.consumeAsFlow().map { Either.Right(it) }
         }
 
@@ -284,13 +283,13 @@ class ObserveConversationListDetailsUseCaseTest {
             expectedConversationDetailsList: List<ConversationDetails>
         ) = apply {
             everySuspend {
-                conversationRepository.observeConversationDetailsById(eq(conversation.id))
+                conversationRepository.observeConversationDetailsById(conversation.id)
             } returns expectedConversationDetailsList.asFlow().map { Either.Right(it) }
         }
 
         suspend fun withErrorConversationsDetailsListUpdates(conversation: Conversation) = apply {
             everySuspend {
-                conversationRepository.observeConversationDetailsById(eq(conversation.id))
+                conversationRepository.observeConversationDetailsById(conversation.id)
             } returns flowOf(Either.Left(StorageFailure.DataNotFound))
         }
 

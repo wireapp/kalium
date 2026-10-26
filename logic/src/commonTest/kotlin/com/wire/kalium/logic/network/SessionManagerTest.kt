@@ -46,7 +46,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -118,7 +117,7 @@ class SessionManagerTest {
         sessionManager.updateToken(arrangement.accessTokenApi, refreshToken)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(eq(refreshToken), any())
+            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(refreshToken, any())
         }
     }
 
@@ -134,7 +133,7 @@ class SessionManagerTest {
         sessionManager.updateToken(arrangement.accessTokenApi, refreshToken)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(any(), eq(currentClientId))
+            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(any(), currentClientId)
         }
     }
 
@@ -149,7 +148,7 @@ class SessionManagerTest {
         sessionManager.updateToken(arrangement.accessTokenApi, refreshToken)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(eq(refreshToken), eq(null))
+            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(refreshToken, null)
         }
     }
 
@@ -254,7 +253,7 @@ class SessionManagerTest {
 
         fun withServerConfigDTO(serverConfig: ServerConfig) = apply {
             every {
-                serverConfigMapper.toDTO(eq(serverConfig))
+                serverConfigMapper.toDTO(serverConfig)
             }.returns(MapperProvider.serverConfigMapper().toDTO(serverConfig))
         }
     }

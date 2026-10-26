@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -88,7 +87,7 @@ class SearchServiceByNameUseCaseTest {
 
         suspend fun withSearchServiceByName(query: String, result: Flow<Either<StorageFailure, List<ServiceDetails>>>) = apply {
             everySuspend {
-                serviceRepository.searchServicesByName(eq(query))
+                serviceRepository.searchServicesByName(query)
             } returns result
         }
 

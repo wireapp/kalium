@@ -33,7 +33,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -63,7 +62,7 @@ class AnswerCallUseCaseTest {
         } returns (flowOf(listOf(call.copy(isCameraOn = true))))
 
         everySuspend {
-            callManager.answerCall(eq(conversationId), eq(configs.forceConstantBitrateCalls), any())
+            callManager.answerCall(conversationId, configs.forceConstantBitrateCalls, any())
         } returns (Unit)
 
         val answerCallWithCBR = AnswerCallUseCaseImpl(
@@ -79,7 +78,7 @@ class AnswerCallUseCaseTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            callManager.answerCall(eq(conversationId), eq(isCbrEnabled), eq(true))
+            callManager.answerCall(conversationId, isCbrEnabled, true)
         }
     }
 
@@ -94,7 +93,7 @@ class AnswerCallUseCaseTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            callManager.answerCall(eq(conversationId), eq(false), eq(false))
+            callManager.answerCall(conversationId, false, false)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {

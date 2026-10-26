@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -43,14 +42,14 @@ class MarkConversationAsReadLocallyUseCaseTest {
         val useCase = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository = conversationRepository)
 
         everySuspend {
-            conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(conversationId), eq(newLastRead))
+            conversationRepository.updateReadDateAndGetHasUnreadEvents(conversationId, newLastRead)
         } returns Either.Right(true)
 
         val result = useCase(conversationId, newLastRead)
 
         assertEquals(MarkConversationAsReadResult.Success(hasUnreadEvents = true), result)
         verifySuspend(VerifyMode.exactly(1)) {
-            conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(conversationId), eq(newLastRead))
+            conversationRepository.updateReadDateAndGetHasUnreadEvents(conversationId, newLastRead)
         }
     }
 
@@ -62,7 +61,7 @@ class MarkConversationAsReadLocallyUseCaseTest {
         val useCase = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository = conversationRepository)
 
         everySuspend {
-            conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(conversationId), eq(newLastRead))
+            conversationRepository.updateReadDateAndGetHasUnreadEvents(conversationId, newLastRead)
         } returns Either.Left(StorageFailure.DataNotFound)
 
         val result = useCase(conversationId, newLastRead)
