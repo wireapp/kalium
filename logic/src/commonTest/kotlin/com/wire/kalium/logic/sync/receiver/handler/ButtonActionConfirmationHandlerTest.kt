@@ -29,7 +29,6 @@ import com.wire.kalium.logic.util.shouldFail
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -54,7 +53,7 @@ class ButtonActionConfirmationHandlerTest {
         handler.handle(convId, senderId, content)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.compositeMessageRepository.markSelected(eq("messageId"), eq(convId), eq("buttonId"))
+            arrangement.compositeMessageRepository.markSelected("messageId", convId, "buttonId")
         }
 
         verifySuspend(VerifyMode.not) {
@@ -83,7 +82,7 @@ class ButtonActionConfirmationHandlerTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.compositeMessageRepository.resetSelection(eq("messageId"), eq(convId))
+            arrangement.compositeMessageRepository.resetSelection("messageId", convId)
         }
     }
 

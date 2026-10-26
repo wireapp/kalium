@@ -57,7 +57,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -87,9 +86,9 @@ class ClientRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRemoteRepository.registerMLSClient(
-                eq(CLIENT_ID),
-                eq(Base64.encode(MLS_PUBLIC_KEY)),
-                eq(MLS_CIPHER_SUITE)
+                CLIENT_ID,
+                Base64.encode(MLS_PUBLIC_KEY),
+                MLS_CIPHER_SUITE
             )
         }
 
@@ -108,7 +107,7 @@ class ClientRepositoryTest {
         clientRepository.registerClient(REGISTER_CLIENT_PARAMS)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRemoteRepository.registerClient(eq(REGISTER_CLIENT_PARAMS))
+            arrangement.clientRemoteRepository.registerClient(REGISTER_CLIENT_PARAMS)
         }
     }
 
@@ -416,7 +415,7 @@ class ClientRepositoryTest {
         repository.saveNewClientEvent(newClientEvent)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newClientDAO.insertNewClient(eq(insertClientParam))
+            arrangement.newClientDAO.insertNewClient(insertClientParam)
         }
     }
 
@@ -477,7 +476,7 @@ class ClientRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientDAO.tryMarkValid(
-                eq(listOf(userId.toDao() to clients.map { it.value }))
+                listOf(userId.toDao() to clients.map { it.value })
             )
         }
     }

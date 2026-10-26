@@ -81,7 +81,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -274,8 +273,8 @@ class ConversationGroupRepositoryTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     any(),
-                    eq(listOf(unreachableUserId)),
-                    eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
+                    listOf(unreachableUserId),
+                    MessageContent.MemberChange.FailedToAdd.Type.Federation
                 )
             }
         }
@@ -418,8 +417,8 @@ class ConversationGroupRepositoryTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     any(),
-                    userIdList = eq(usersWithConsentFromOtherTeams.ids() + usersWithoutConsent + usersFailed),
-                    eq(MessageContent.MemberChange.FailedToAdd.Type.LegalHold)
+                    userIdList = usersWithConsentFromOtherTeams.ids() + usersWithoutConsent + usersFailed,
+                    MessageContent.MemberChange.FailedToAdd.Type.LegalHold
                 )
             }
         }
@@ -502,7 +501,7 @@ class ConversationGroupRepositoryTest {
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), eq(true))
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), true)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -543,7 +542,7 @@ class ConversationGroupRepositoryTest {
             arrangement.newConversationMembersRepository.persistMembersAdditionToTheConversation(
                 any(),
                 any(),
-                eq(requestedMembers),
+                requestedMembers,
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
@@ -620,7 +619,7 @@ class ConversationGroupRepositoryTest {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         matches { it.containsAll(usersWithNoKeyPackages) },
-                        eq(MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages)
+                        MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages
                     )
                 }
 
@@ -628,7 +627,7 @@ class ConversationGroupRepositoryTest {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         any(),
-                        eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
+                        MessageContent.MemberChange.FailedToAdd.Type.Federation
                     )
                 }
             }
@@ -677,7 +676,7 @@ class ConversationGroupRepositoryTest {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         matches { it.containsAll(usersOnUnreachableBackend) },
-                        eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
+                        MessageContent.MemberChange.FailedToAdd.Type.Federation
                     )
                 }
 
@@ -685,7 +684,7 @@ class ConversationGroupRepositoryTest {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         any(),
-                        eq(MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages)
+                        MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages
                     )
                 }
             }
@@ -705,7 +704,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.addMember(any(), eq(TestConversation.ID.toApi()))
+            arrangement.conversationApi.addMember(any(), TestConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -730,7 +729,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.addService(eq(addServiceRequest), eq(TestConversation.ID.toApi()))
+            arrangement.conversationApi.addService(addServiceRequest, TestConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -860,9 +859,9 @@ class ConversationGroupRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
-                eq(GROUP_ID),
-                eq(listOf(TestConversation.USER_1)),
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+                GROUP_ID,
+                listOf(TestConversation.USER_1),
+                CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
     }
@@ -881,7 +880,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.addMember(any(), eq(TestConversation.ID.toApi()))
+            arrangement.conversationApi.addMember(any(), TestConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -891,9 +890,9 @@ class ConversationGroupRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
-                eq(GROUP_ID),
-                eq(listOf(TestConversation.USER_1)),
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+                GROUP_ID,
+                listOf(TestConversation.USER_1),
+                CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
     }
@@ -911,7 +910,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.removeMember(eq(TestConversation.USER_1.toApi()), eq(TestConversation.ID.toApi()))
+            arrangement.conversationApi.removeMember(TestConversation.USER_1.toApi(), TestConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -968,7 +967,7 @@ class ConversationGroupRepositoryTest {
             arrangement.localEventRepository.emitLocalEvent(any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
+            arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID)
         }
         verifySuspend(VerifyMode.exactly(0)) {
             arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any())
@@ -988,7 +987,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), GROUP_ID, listOf(TestConversation.USER_1))
         }
         verifySuspend(VerifyMode.exactly(0)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
@@ -1009,7 +1008,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.removeMember(eq(TestConversation.USER_1.toApi()), eq(TestConversation.ID.toApi()))
+            arrangement.conversationApi.removeMember(TestConversation.USER_1.toApi(), TestConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -1017,7 +1016,7 @@ class ConversationGroupRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), GROUP_ID, listOf(TestConversation.USER_1))
         }
     }
 
@@ -1041,7 +1040,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
+            arrangement.conversationApi.joinConversation(code, key, uri, password)
         }
     }
 
@@ -1065,7 +1064,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
+            arrangement.conversationApi.joinConversation(code, key, uri, password)
         }
     }
 
@@ -1085,7 +1084,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.fetchLimitedInformationViaCode(eq(code), eq(key))
+            arrangement.conversationApi.fetchLimitedInformationViaCode(code, key)
         }
     }
 
@@ -1167,7 +1166,7 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.generateGuestRoomLink(any(), eq(expectedPassword))
+            arrangement.conversationApi.generateGuestRoomLink(any(), expectedPassword)
         }
 
         verifySuspend(VerifyMode.exactly(0)) {
@@ -1497,7 +1496,7 @@ class ConversationGroupRepositoryTest {
                     userIdList = matches {
                         it.containsAll(expectedInitialUsersNotFromUnreachableInformed)
                     },
-                    type = eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
+                    type = MessageContent.MemberChange.FailedToAdd.Type.Federation
                 )
             }
         }
@@ -1564,7 +1563,7 @@ class ConversationGroupRepositoryTest {
                 matches {
                     it.size == expectedFullUserIdsForRequestCount
                 },
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+                CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
 
@@ -1575,7 +1574,7 @@ class ConversationGroupRepositoryTest {
                 matches {
                     it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
                 },
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+                CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
 
@@ -1617,7 +1616,7 @@ class ConversationGroupRepositoryTest {
                 matches {
                     it.size == expectedFullUserIdsForRequestCount
                 },
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+                CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
 
@@ -1628,7 +1627,7 @@ class ConversationGroupRepositoryTest {
                 matches {
                     it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
                 },
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+                CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
 
@@ -1668,7 +1667,7 @@ class ConversationGroupRepositoryTest {
                 matches {
                     it.size == initialCountUsers
                 },
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+                CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
 
@@ -1679,7 +1678,7 @@ class ConversationGroupRepositoryTest {
                 matches {
                     it.size == initialCountUsers - 1 // removed 1 failed users with key packages
                 },
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+                CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
 
@@ -1690,7 +1689,7 @@ class ConversationGroupRepositoryTest {
                 matches {
                     it.size == initialCountUsers - 2  // removed 1 failed user with commit bundle federated error
                 },
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+                CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
 
@@ -1724,7 +1723,7 @@ class ConversationGroupRepositoryTest {
             arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                 conversationId = any(),
                 userIdList = any(),
-                type = eq(MessageContent.MemberChange.FailedToAdd.Type.Unknown)
+                type = MessageContent.MemberChange.FailedToAdd.Type.Unknown
             )
         }
 
@@ -1732,7 +1731,7 @@ class ConversationGroupRepositoryTest {
             arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                 conversationId = any(),
                 userIdList = any(),
-                type = eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
+                type = MessageContent.MemberChange.FailedToAdd.Type.Federation
             )
         }
     }
@@ -1778,7 +1777,7 @@ class ConversationGroupRepositoryTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     conversationId = any(),
-                    userIdList = eq(usersWithConsentFromOtherTeams.ids() + usersWithoutConsent + usersFailed),
+                    userIdList = usersWithConsentFromOtherTeams.ids() + usersWithoutConsent + usersFailed,
                     type = any()
                 )
             }
@@ -1821,7 +1820,7 @@ class ConversationGroupRepositoryTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     conversationId = any(),
-                    userIdList = eq(expectedInitialUsers),
+                    userIdList = expectedInitialUsers,
                     type = any()
                 )
             }
@@ -1852,11 +1851,11 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.updateGuestRoomLink(conversationId, accountUrl)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.guestLinkInfo(eq(conversationId.toApi()))
+            arrangement.conversationApi.guestLinkInfo(conversationId.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationDAO.updateGuestRoomLink(eq(conversationId.toDao()), eq("uri"), eq(expected.value.hasPassword))
+            arrangement.conversationDAO.updateGuestRoomLink(conversationId.toDao(), "uri", expected.value.hasPassword)
         }
     }
 
@@ -1963,7 +1962,7 @@ class ConversationGroupRepositoryTest {
             result: NetworkResponse<ConversationCodeInfo>
         ): Arrangement = apply {
             everySuspend {
-                conversationApi.fetchLimitedInformationViaCode(eq(code), eq(key))
+                conversationApi.fetchLimitedInformationViaCode(code, key)
             }.returns(result)
         }
 
@@ -1974,7 +1973,7 @@ class ConversationGroupRepositoryTest {
             result: NetworkResponse<ConversationMemberAddedResponse>
         ): Arrangement = apply {
             everySuspend {
-                conversationApi.joinConversation(eq(code), eq(key), eq(uri), any())
+                conversationApi.joinConversation(code, key, uri, any())
             }.returns(result)
         }
 

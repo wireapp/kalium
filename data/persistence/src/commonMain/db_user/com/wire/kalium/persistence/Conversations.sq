@@ -580,6 +580,7 @@ clearContent {
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey Asset
 -- @NotifyCustomKey Message
+-- @NotifyCustomKey UnreadEvent
 -- The caller removes unshared files and their cache rows before content. Shared
 -- assets must keep their rows for messages/previews in other conversations.
 -- @NotifyCustomKey PendingDeliveryConfirmations

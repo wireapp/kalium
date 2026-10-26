@@ -33,7 +33,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -96,7 +95,7 @@ class ClientFingerprintUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.preKeyRepository.establishSessions(any(), eq(mapOf(userId to listOf(clientId))))
+            arrange.preKeyRepository.establishSessions(any(), mapOf(userId to listOf(clientId)))
         }
     }
 

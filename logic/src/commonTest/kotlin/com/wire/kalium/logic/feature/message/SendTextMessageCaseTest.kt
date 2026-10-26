@@ -47,12 +47,11 @@ import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import dev.mokkery.MockMode
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.everySuspend
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import dev.mokkery.every
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
@@ -93,11 +92,11 @@ class SendTextMessageCaseTest {
             arrangement.userPropertyRepository.getReadReceiptsStatus()
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { message -> message.content is MessageContent.Text })
+            arrangement.persistMessage.invoke(matches { message -> message.content is MessageContent.Text })
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matching { message -> message.content is MessageContent.Text },
+                matches { message -> message.content is MessageContent.Text },
                 any()
             )
         }
@@ -126,7 +125,7 @@ class SendTextMessageCaseTest {
         val failedMessageId = kotlin.test.assertIs<MessageOperationResult.Failure>(result).messageId
         kotlin.test.assertNotNull(failedMessageId)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { it.id == failedMessageId })
+            arrangement.persistMessage.invoke(matches { it.id == failedMessageId })
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -136,7 +135,7 @@ class SendTextMessageCaseTest {
             arrangement.messageSender.sendMessage(any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(true))
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), true)
         }
     }
 
@@ -159,7 +158,7 @@ class SendTextMessageCaseTest {
         // Then
         result.toEither().shouldFail()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), false)
         }
     }
 
@@ -195,7 +194,7 @@ class SendTextMessageCaseTest {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { message ->
+            arrangement.persistMessage.invoke(matches { message ->
                 (message.content as MessageContent.Text).linkPreviews.get(0).image == null
             })
         }
@@ -235,7 +234,7 @@ class SendTextMessageCaseTest {
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching { message ->
+                matches { message ->
                     (message.content as MessageContent.Text).linkPreviews[0].image != null
                             && !(message.content as MessageContent.Text).linkPreviews[0].image?.otrKey.contentEquals(ByteArray(0))
                             && (message.content as MessageContent.Text).linkPreviews[0].image?.assetDataPath == PERSISTED_LINK_PREVIEW_PATH
@@ -277,7 +276,7 @@ class SendTextMessageCaseTest {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { message ->
+            arrangement.persistMessage.invoke(matches { message ->
                 (message.content as MessageContent.Text).linkPreviews.get(0).image != null
             })
         }
@@ -316,7 +315,7 @@ class SendTextMessageCaseTest {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { message ->
+            arrangement.persistMessage.invoke(matches { message ->
                 assertIs<MessageContent.Text>(message.content)
                 (message.content as MessageContent.Text).linkPreviews.get(0).image == null
             })
@@ -474,12 +473,12 @@ class SendTextMessageCaseTest {
         kotlin.test.assertTrue(sendTextMessage.store("shared-id", TestConversation.ID, "some-text"))
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { it.id == "shared-id" })
+            arrangement.persistMessage.invoke(matches { it.id == "shared-id" })
         }
         sent.complete(Unit)
         runCurrent()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSender.sendMessage(matching { it.id == "shared-id" }, any())
+            arrangement.messageSender.sendMessage(matches { it.id == "shared-id" }, any())
         }
     }
 

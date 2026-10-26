@@ -49,8 +49,7 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any as mokkeryAny
-import dev.mokkery.matcher.eq as mokkeryEq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -111,7 +110,7 @@ class OneOnOneResolverTest {
         resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.oneOnOneProtocolSelector.getProtocolForUser(matching { it in oneOnOneUsers.map(OtherUser::id) })
+            arrangement.oneOnOneProtocolSelector.getProtocolForUser(matches { it in oneOnOneUsers.map(OtherUser::id) })
         }
     }
 
@@ -163,7 +162,7 @@ class OneOnOneResolverTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersByIds(mokkeryEq(setOf(oneOnOneUser.id)))
+            arrangement.userRepository.fetchUsersByIds(setOf(oneOnOneUser.id))
         }
     }
 
@@ -180,7 +179,7 @@ class OneOnOneResolverTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersByIds(mokkeryEq(setOf(oneOnOneUser.id)))
+            arrangement.userRepository.fetchUsersByIds(setOf(oneOnOneUser.id))
         }
     }
 
@@ -205,7 +204,7 @@ class OneOnOneResolverTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersByIds(mokkeryEq(setOf(oneOnOneUser.id)))
+            arrangement.userRepository.fetchUsersByIds(setOf(oneOnOneUser.id))
         }
     }
 
@@ -223,7 +222,7 @@ class OneOnOneResolverTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.fetchUsersByIds(mokkeryEq(setOf(oneOnOneUser.id)))
+            arrangement.userRepository.fetchUsersByIds(setOf(oneOnOneUser.id))
         }
     }
 
@@ -237,7 +236,7 @@ class OneOnOneResolverTest {
         }
 
         everySuspend {
-            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryEq(oneOnOneUsers.last()), mokkeryAny())
+            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), oneOnOneUsers.last(), mokkeryAny())
         } returns Either.Left(CoreFailure.Unknown(null))
 
         resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldFail()
@@ -253,7 +252,7 @@ class OneOnOneResolverTest {
         resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, OTHER_USER, false).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryEq(OTHER_USER), mokkeryEq(true))
+            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), OTHER_USER, true)
         }
     }
 
@@ -272,7 +271,7 @@ class OneOnOneResolverTest {
         ).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryEq(oneOnOneUsers.first()), mokkeryEq(false))
+            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), oneOnOneUsers.first(), false)
         }
     }
 
@@ -286,7 +285,7 @@ class OneOnOneResolverTest {
         resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, OTHER_USER, false).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneMigrator.migrateToProteus(mokkeryEq(OTHER_USER))
+            arrangement.oneOnOneMigrator.migrateToProteus(OTHER_USER)
         }
     }
 
@@ -300,7 +299,7 @@ class OneOnOneResolverTest {
         resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, OTHER_USER, false).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneMigrator.migrateExistingProteus(mokkeryEq(OTHER_USER))
+            arrangement.oneOnOneMigrator.migrateExistingProteus(OTHER_USER)
         }
     }
 
@@ -322,7 +321,7 @@ class OneOnOneResolverTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryEq(OTHER_USER), mokkeryEq(true))
+            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), OTHER_USER, true)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.oneOnOneMigrator.migrateExistingProteus(mokkeryAny())
@@ -399,7 +398,7 @@ class OneOnOneResolverTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.leaveGroup(mokkeryAny(), mokkeryEq(TestConversation.MLS_PROTOCOL_INFO.groupId))
+            arrangement.mlsConversationRepository.leaveGroup(mokkeryAny(), TestConversation.MLS_PROTOCOL_INFO.groupId)
         }
         verifySuspend(VerifyMode.not) { arrangement.conversationRepository.deleteConversationLocally(mokkeryAny()) }
         verifySuspend(VerifyMode.not) { arrangement.oneOnOneProtocolSelector.getProtocolForUser(mokkeryAny()) }

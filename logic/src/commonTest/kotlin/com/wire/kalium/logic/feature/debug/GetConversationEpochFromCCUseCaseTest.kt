@@ -29,7 +29,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -50,7 +49,7 @@ class GetConversationEpochFromCCUseCaseTest {
         val result = useCase(TestConversation.ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.conversationEpoch(eq(TestConversation.GROUP_ID.value))
+            arrangement.mlsContext.conversationEpoch(TestConversation.GROUP_ID.value)
         }
         assertEquals(GetConversationEpochFromCCResult.Success(EXPECTED_EPOCH), result)
     }

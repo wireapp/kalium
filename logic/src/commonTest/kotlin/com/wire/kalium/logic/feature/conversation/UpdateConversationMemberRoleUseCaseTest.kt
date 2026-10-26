@@ -27,7 +27,6 @@ import com.wire.kalium.common.functional.Either
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -53,14 +52,14 @@ class UpdateConversationMemberRoleUseCaseTest {
         val userId = TestUser.USER_ID
         val newRole = Member.Role.Admin
         everySuspend {
-            conversationRepository.updateConversationMemberRole(any(), any(), eq(newRole))
+            conversationRepository.updateConversationMemberRole(any(), any(), newRole)
         } returns Either.Right(Unit)
 
         val result = updateConversationMemberRoleUseCase(conversationId, userId, newRole)
         assertIs<UpdateConversationMemberRoleResult.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            conversationRepository.updateConversationMemberRole(any(), any(), eq(newRole))
+            conversationRepository.updateConversationMemberRole(any(), any(), newRole)
         }
 
     }
@@ -71,14 +70,14 @@ class UpdateConversationMemberRoleUseCaseTest {
         val userId = TestUser.USER_ID
         val newRole = Member.Role.Admin
         everySuspend {
-            conversationRepository.updateConversationMemberRole(any(), any(), eq(newRole))
+            conversationRepository.updateConversationMemberRole(any(), any(), newRole)
         } returns Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
 
         val result = updateConversationMemberRoleUseCase(conversationId, userId, newRole)
         assertIs<UpdateConversationMemberRoleResult.Failure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            conversationRepository.updateConversationMemberRole(any(), any(), eq(newRole))
+            conversationRepository.updateConversationMemberRole(any(), any(), newRole)
         }
 
     }

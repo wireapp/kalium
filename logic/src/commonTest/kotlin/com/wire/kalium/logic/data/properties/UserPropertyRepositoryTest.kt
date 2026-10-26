@@ -32,7 +32,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -61,7 +60,7 @@ class UserPropertyRepositoryTest {
         }
 
         verifySuspend {
-            arrangement.userConfigRepository.setReadReceiptsStatus(eq(true))
+            arrangement.userConfigRepository.setReadReceiptsStatus(true)
         }
     }
 
@@ -80,7 +79,7 @@ class UserPropertyRepositoryTest {
         }
 
         verifySuspend {
-            arrangement.userConfigRepository.setReadReceiptsStatus(eq(false))
+            arrangement.userConfigRepository.setReadReceiptsStatus(false)
         }
     }
 
@@ -121,10 +120,10 @@ class UserPropertyRepositoryTest {
 
         result.shouldSucceed()
         verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
-        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(false) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(true) }
     }
 
     @Test
@@ -142,10 +141,10 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false)) }
-        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(false) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(false) }
     }
 
     @Test
@@ -162,10 +161,10 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false)) }
-        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(false) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(false) }
     }
 
     @Test
@@ -183,10 +182,10 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
-        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false)) }
-        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(false) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(false) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(false) }
     }
 
     @Test
@@ -204,10 +203,10 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false)) }
-        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(false) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(true) }
     }
 
     @Test
@@ -230,7 +229,7 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(true) }
     }
 
     @Test
@@ -252,7 +251,7 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(false) }
     }
 
     @Test
@@ -278,10 +277,10 @@ class UserPropertyRepositoryTest {
 
         result.shouldSucceed()
         verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
-        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(true)) }
-        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(false) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(true) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(true) }
     }
 
     @Test
@@ -327,10 +326,10 @@ class UserPropertyRepositoryTest {
 
         result.shouldSucceed()
         verifySuspend {
-            arrangement.propertiesApi.setProperty(eq(PropertyKey.WIRE_LINK_PREVIEWS), eq(1))
+            arrangement.propertiesApi.setProperty(PropertyKey.WIRE_LINK_PREVIEWS, 1)
         }
         verifySuspend {
-            arrangement.userConfigRepository.setLinkPreviewsStatus(eq(true))
+            arrangement.userConfigRepository.setLinkPreviewsStatus(true)
         }
     }
 
@@ -345,10 +344,10 @@ class UserPropertyRepositoryTest {
 
         result.shouldSucceed()
         verifySuspend {
-            arrangement.propertiesApi.deleteProperty(eq(PropertyKey.WIRE_LINK_PREVIEWS))
+            arrangement.propertiesApi.deleteProperty(PropertyKey.WIRE_LINK_PREVIEWS)
         }
         verifySuspend {
-            arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false))
+            arrangement.userConfigRepository.setLinkPreviewsStatus(false)
         }
     }
 
@@ -363,10 +362,10 @@ class UserPropertyRepositoryTest {
 
         result.shouldSucceed()
         verifySuspend {
-            arrangement.propertiesApi.setProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE), eq(1))
+            arrangement.propertiesApi.setProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE, 1)
         }
         verifySuspend {
-            arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true))
+            arrangement.userConfigRepository.setScreenshotCensoringConfig(true)
         }
     }
 
@@ -381,10 +380,10 @@ class UserPropertyRepositoryTest {
 
         result.shouldSucceed()
         verifySuspend {
-            arrangement.propertiesApi.deleteProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE))
+            arrangement.propertiesApi.deleteProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)
         }
         verifySuspend {
-            arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false))
+            arrangement.userConfigRepository.setScreenshotCensoringConfig(false)
         }
     }
 
@@ -403,7 +402,7 @@ class UserPropertyRepositoryTest {
 
         suspend fun withUpdateReadReceiptsSuccess() = apply {
             everySuspend {
-                propertiesApi.setProperty(eq(PropertyKey.WIRE_RECEIPT_MODE), eq(1))
+                propertiesApi.setProperty(PropertyKey.WIRE_RECEIPT_MODE, 1)
             } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
@@ -427,31 +426,31 @@ class UserPropertyRepositoryTest {
 
         suspend fun withDeleteReadReceiptsSuccess() = apply {
             everySuspend {
-                propertiesApi.deleteProperty(eq(PropertyKey.WIRE_RECEIPT_MODE))
+                propertiesApi.deleteProperty(PropertyKey.WIRE_RECEIPT_MODE)
             } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
         suspend fun withSetLinkPreviewsEnabledSuccess() = apply {
             everySuspend {
-                propertiesApi.setProperty(eq(PropertyKey.WIRE_LINK_PREVIEWS), eq(1))
+                propertiesApi.setProperty(PropertyKey.WIRE_LINK_PREVIEWS, 1)
             } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
         suspend fun withDeleteLinkPreviewsSuccess() = apply {
             everySuspend {
-                propertiesApi.deleteProperty(eq(PropertyKey.WIRE_LINK_PREVIEWS))
+                propertiesApi.deleteProperty(PropertyKey.WIRE_LINK_PREVIEWS)
             } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
         suspend fun withSetScreenshotCensoringEnabledSuccess() = apply {
             everySuspend {
-                propertiesApi.setProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE), eq(1))
+                propertiesApi.setProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE, 1)
             } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
         suspend fun withDeleteScreenshotCensoringSuccess() = apply {
             everySuspend {
-                propertiesApi.deleteProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE))
+                propertiesApi.deleteProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)
             } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 

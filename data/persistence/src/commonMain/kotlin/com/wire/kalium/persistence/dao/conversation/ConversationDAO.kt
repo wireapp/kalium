@@ -169,6 +169,10 @@ interface ConversationDAO {
     suspend fun clearContent(conversationId: QualifiedIDEntity)
     suspend fun updateMlsVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
     suspend fun getConversationByGroupID(groupID: String): ConversationEntity?
+
+    /** Unread conversations eligible under their mute settings, including the archive. */
+    fun observeUnreadConversationBadgeCount(): Flow<Long>
+
     fun observeUnreadArchivedConversationsCount(): Flow<Long>
     fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean)

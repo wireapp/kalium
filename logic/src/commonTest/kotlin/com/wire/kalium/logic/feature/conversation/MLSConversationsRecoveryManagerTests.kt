@@ -33,7 +33,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -57,7 +56,7 @@ class MLSConversationsRecoveryManagerTests {
                 arrangement.recoverMLSConversationsUseCase.invoke(any())
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(eq(false))
+                arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(false)
             }
         }
 

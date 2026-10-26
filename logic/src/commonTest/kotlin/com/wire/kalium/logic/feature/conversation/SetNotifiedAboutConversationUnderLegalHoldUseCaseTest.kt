@@ -24,7 +24,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -44,7 +43,7 @@ class SetNotifiedAboutConversationUnderLegalHoldUseCaseTest {
         useCase.invoke(conversationId)
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setLegalHoldStatusChangeNotified(eq(conversationId))
+            arrangement.conversationRepository.setLegalHoldStatusChangeNotified(conversationId)
         }
     }
 

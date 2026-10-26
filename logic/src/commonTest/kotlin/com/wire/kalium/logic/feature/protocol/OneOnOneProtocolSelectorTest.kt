@@ -33,7 +33,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -86,7 +85,7 @@ class OneOnOneProtocolSelectorTest {
         oneOnOneProtocolSelector.getProtocolForUser(TestUser.USER_ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.userById(eq(otherUserId))
+            arrangement.userRepository.userById(otherUserId)
         }
     }
 
@@ -196,7 +195,7 @@ class OneOnOneProtocolSelectorTest {
         }
 
         suspend fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>) {
-            everySuspend { userRepository.userById(eq(TestUser.USER_ID)) } returns result
+            everySuspend { userRepository.userById(TestUser.USER_ID) } returns result
         }
 
         suspend fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>) {

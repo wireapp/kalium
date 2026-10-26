@@ -27,8 +27,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -63,18 +62,18 @@ class ChangeAccessForAppsInConversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationAccessRole(
-                conversationId = eq(MockConversation.ID),
-                accessRoles = eq(accessRoles),
-                access = eq(access)
+                conversationId = MockConversation.ID,
+                accessRoles = accessRoles,
+                access = access
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
-                conversationId = eq(MockConversation.ID),
-                senderUserId = eq(arrangement.selfUserId),
-                isAppsAccessEnabled = eq(true)
+                conversationId = MockConversation.ID,
+                senderUserId = arrangement.selfUserId,
+                isAppsAccessEnabled = true
             )
         }
     }
@@ -102,9 +101,9 @@ class ChangeAccessForAppsInConversationUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
-                conversationId = eq(MockConversation.ID),
-                senderUserId = eq(arrangement.selfUserId),
-                isAppsAccessEnabled = eq(false)
+                conversationId = MockConversation.ID,
+                senderUserId = arrangement.selfUserId,
+                isAppsAccessEnabled = false
             )
         }
     }
@@ -171,9 +170,9 @@ class ChangeAccessForAppsInConversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationAccessRole(
-                conversationId = eq(MockConversation.ID),
-                accessRoles = matching { it == expectedAccessRoles },
-                access = matching { it == expectedAccess }
+                conversationId = MockConversation.ID,
+                accessRoles = matches { it == expectedAccessRoles },
+                access = matches { it == expectedAccess }
             )
         }
     }
@@ -197,7 +196,7 @@ class ChangeAccessForAppsInConversationUseCaseTest {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
                 conversationId = any(),
-                senderUserId = matching { it == arrangement.selfUserId },
+                senderUserId = matches { it == arrangement.selfUserId },
                 isAppsAccessEnabled = any()
             )
         }
@@ -221,7 +220,7 @@ class ChangeAccessForAppsInConversationUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
-                conversationId = matching { it == MockConversation.ID },
+                conversationId = matches { it == MockConversation.ID },
                 senderUserId = any(),
                 isAppsAccessEnabled = any()
             )

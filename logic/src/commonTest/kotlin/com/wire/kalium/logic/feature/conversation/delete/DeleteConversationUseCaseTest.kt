@@ -36,7 +36,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -57,8 +56,8 @@ class DeleteConversationUseCaseTest {
         val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
         result.shouldSucceed()
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(CONVERSATION_ID) }
     }
 
     @Test
@@ -72,8 +71,8 @@ class DeleteConversationUseCaseTest {
         val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
         result.shouldFail()
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }
-        verifySuspend(VerifyMode.not) { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID) }
     }
 
     @Test
@@ -88,8 +87,8 @@ class DeleteConversationUseCaseTest {
         val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
         result.shouldFail()
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID) }
     }
 
     @Test
@@ -137,11 +136,11 @@ class DeleteConversationUseCaseTest {
         }
 
         suspend fun withSuccessfulLeaveGroup(groupId: GroupID) {
-            everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) } returns Either.Right(Unit)
+            everySuspend { mlsConversationRepository.leaveGroup(any(), groupId) } returns Either.Right(Unit)
         }
 
         suspend fun withFailedLeaveGroup(groupId: GroupID) {
-            everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) } returns Either.Left(CoreFailure.Unknown(null))
+            everySuspend { mlsConversationRepository.leaveGroup(any(), groupId) } returns Either.Left(CoreFailure.Unknown(null))
         }
     }
 

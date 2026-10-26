@@ -50,7 +50,7 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -124,7 +124,7 @@ class SendPendingAssetMessageUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching {
+                matches {
                     it.id == message.id && it.content is MessageContent.Asset
                             && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                             && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
@@ -133,7 +133,7 @@ class SendPendingAssetMessageUseCaseTest {
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matching { m ->
+                matches { m ->
                     m.id == message.id && m.content is MessageContent.Asset
                             && (m.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                 },
@@ -174,7 +174,7 @@ class SendPendingAssetMessageUseCaseTest {
         arrangement.audioNormalizedLoudnessBuilder.assertInvoked(path.toString())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching {
+                matches {
                     val assetContent = (it.content as? MessageContent.Asset)?.value
                     val metadata = assetContent?.metadata as? AssetContent.AssetMetadata.Audio
                     it.id == message.id &&
@@ -218,7 +218,7 @@ class SendPendingAssetMessageUseCaseTest {
         arrangement.audioNormalizedLoudnessBuilder.assertInvoked(path.toString(), 0)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching {
+                matches {
                     val metadata = ((it.content as? MessageContent.Asset)?.value?.metadata as? AssetContent.AssetMetadata.Audio)
                     metadata != null &&
                             metadata.durationMs == 2_000L &&
@@ -258,7 +258,7 @@ class SendPendingAssetMessageUseCaseTest {
         arrangement.audioNormalizedLoudnessBuilder.assertInvoked(path.toString(), 0)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching {
+                matches {
                     val metadata = ((it.content as? MessageContent.Asset)?.value?.metadata as? AssetContent.AssetMetadata.Image)
                     metadata != null && metadata.width == 100 && metadata.height == 100
                 }

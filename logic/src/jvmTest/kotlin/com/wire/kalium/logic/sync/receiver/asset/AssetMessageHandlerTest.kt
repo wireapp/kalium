@@ -38,7 +38,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -78,7 +77,7 @@ class AssetMessageHandlerTest {
 
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
+            arrangement.messageRepository.getMessageById(assetMessage.conversationId, assetMessage.id)
 
         }
     }
@@ -107,7 +106,7 @@ class AssetMessageHandlerTest {
 
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
+            arrangement.messageRepository.getMessageById(assetMessage.conversationId, assetMessage.id)
 
         }
     }
@@ -144,7 +143,7 @@ class AssetMessageHandlerTest {
 
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
+            arrangement.messageRepository.getMessageById(assetMessage.conversationId, assetMessage.id)
 
         }
     }
@@ -177,7 +176,7 @@ class AssetMessageHandlerTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+            arrangement.messageRepository.getMessageById(previewAssetMessage.conversationId, previewAssetMessage.id)
 
         }
     }
@@ -216,7 +215,7 @@ class AssetMessageHandlerTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+            arrangement.messageRepository.getMessageById(previewAssetMessage.conversationId, previewAssetMessage.id)
 
         }
     }
@@ -251,7 +250,7 @@ class AssetMessageHandlerTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+            arrangement.messageRepository.getMessageById(previewAssetMessage.conversationId, previewAssetMessage.id)
 
         }
     }
@@ -276,8 +275,8 @@ class AssetMessageHandlerTest {
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(
-                eq(updateAssetMessage.conversationId),
-                eq(updateAssetMessage.id)
+                updateAssetMessage.conversationId,
+                updateAssetMessage.id
             )
 
         }
@@ -317,17 +316,17 @@ class AssetMessageHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(
-                eq(previewAssetMessage.conversationId),
-                eq(previewAssetMessage.id)
+                previewAssetMessage.conversationId,
+                previewAssetMessage.id
             )
 
         }
 
         verify(VerifyMode.exactly(1)) {
             arrangement.validateAssetFileTypeUseCase(
-                fileName = eq(COMPLETE_ASSET_CONTENT.value.name),
-                mimeType = eq("application/zip"),
-                allowedExtension = eq(isFileSharingEnabled.allowedType)
+                fileName = COMPLETE_ASSET_CONTENT.value.name,
+                mimeType = "application/zip",
+                allowedExtension = isFileSharingEnabled.allowedType
             )
 
         }
@@ -363,17 +362,17 @@ class AssetMessageHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(
-                conversationId = eq(previewAssetMessage.conversationId),
-                messageUuid = eq(previewAssetMessage.id)
+                conversationId = previewAssetMessage.conversationId,
+                messageUuid = previewAssetMessage.id
             )
 
         }
 
         verify(VerifyMode.exactly(1)) {
             arrangement.validateAssetFileTypeUseCase(
-                fileName = eq(COMPLETE_ASSET_CONTENT.value.name),
-                mimeType = eq("application/zip"),
-                allowedExtension = eq(isFileSharingEnabled.allowedType)
+                fileName = COMPLETE_ASSET_CONTENT.value.name,
+                mimeType = "application/zip",
+                allowedExtension = isFileSharingEnabled.allowedType
             )
 
         }
@@ -407,7 +406,7 @@ class AssetMessageHandlerTest {
 
         }
 
-        verifySuspend(VerifyMode.not) { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+        verifySuspend(VerifyMode.not) { arrangement.messageRepository.getMessageById(previewAssetMessage.conversationId, previewAssetMessage.id)
         }
 
         verify(VerifyMode.not) { arrangement.validateAssetFileTypeUseCase(any<String>(), any<String>(), any<List<String>>())
@@ -457,7 +456,7 @@ class AssetMessageHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(
-                eq(assetMessage.conversationId), eq(assetMessage.id)
+                assetMessage.conversationId, assetMessage.id
             )
 
         }
@@ -501,7 +500,7 @@ class AssetMessageHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage(any())
         }
 
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.getMessageById(assetMessage.conversationId, assetMessage.id)
         }
     }
 

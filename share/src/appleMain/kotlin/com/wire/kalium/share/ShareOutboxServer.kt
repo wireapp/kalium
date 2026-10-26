@@ -44,7 +44,7 @@ import kotlin.native.HiddenFromObjC
 // The app uses these from Kotlin; the extension's Swift never does.
 @HiddenFromObjC
 public interface ShareOutboxSending {
-    /** Returns once the account caught up, so the rules an import checks are current. */
+    /** Returns once incremental sync has processed pending events and reached live, or failed, before checking import rules. */
     public suspend fun awaitSynced()
     public suspend fun file(conversationId: ConversationId, file: ShareOutboxFile, messageId: String): String?
     public suspend fun text(conversationId: ConversationId, text: String, messageId: String): String?
