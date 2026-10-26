@@ -1,0 +1,384 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>com.wire.kalium.logic.feature.giphy</title>
+<link href="../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../styles/style.css" rel="Stylesheet">
+<link href="../../styles/main.css" rel="Stylesheet">
+<link href="../../styles/prism.css" rel="Stylesheet">
+<link href="../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../index.html" tabindex="1">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">ccd02e5
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":logic/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic/commonMain" data-filter=":logic/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.feature.giphy////PointingToDeclaration//-642582577">
+  <div class="breadcrumbs"><a href="../index.html">logic</a><span class="delimiter">/</span><span class="current">com.wire.kalium.logic.feature.giphy</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button><button class="section-tab" data-togglable="FUNCTION,EXTENSION_FUNCTION">Functions</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="tableheader">Types</h2>
+        <div class="table"><a data-name="2051765591%2FClasslikes%2F-642582577" anchor-label="DownloadGifResult" id="2051765591%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-download-gif-result/index.html"><span>Download</span><wbr><span>Gif</span><wbr><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2051765591%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">interface </span><a href="-download-gif-result/index.html">DownloadGifResult</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1067568009%2FClasslikes%2F-642582577" anchor-label="DownloadGifUseCase" id="-1067568009%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-download-gif-use-case/index.html"><span>Download</span><wbr><span>Gif</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1067568009%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-download-gif-use-case/index.html">DownloadGifUseCase</a></div><div class="brief "><p class="paragraph">Downloads a GIF's <a href="../com.wire.kalium.logic.data.giphy/-gif/original.html">Gif.original</a> rendition from Giphy's CDN to a temporary file. Fails if the response isn't a GIF file (<code class="lang-kotlin">GIF87a</code> or <code class="lang-kotlin">GIF89a</code> header), so nothing else is sent as <code class="lang-kotlin">image/gif</code>. Show that file as the preview and pass it to <a href="-send-gif-message-use-case/index.html">SendGifMessageUseCase</a>, so the GIF is downloaded only once.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1224191177%2FClasslikes%2F-642582577" anchor-label="DownloadGifUseCaseImpl" id="-1224191177%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-download-gif-use-case-impl/index.html"><span>Download</span><wbr><span>Gif</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1224191177%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-download-gif-use-case-impl/index.html">DownloadGifUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">giphyRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.giphy/-giphy-repository/index.html">GiphyRepository</a></span></span><span class="token punctuation">)</span> : <a href="-download-gif-use-case/index.html">DownloadGifUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="212933678%2FClasslikes%2F-642582577" anchor-label="GetGifsResult" id="212933678%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-gifs-result/index.html"><span>Get</span><wbr><span>Gifs</span><wbr><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="212933678%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">interface </span><a href="-get-gifs-result/index.html">GetGifsResult</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1096807196%2FClasslikes%2F-642582577" anchor-label="GetGifSuggestionsUseCase" id="1096807196%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-gif-suggestions-use-case/index.html"><span>Get</span><wbr><span>Gif</span><wbr><span>Suggestions</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1096807196%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-get-gif-suggestions-use-case/index.html">GetGifSuggestionsUseCase</a></div><div class="brief "><p class="paragraph">Suggests Giphy search terms that complete <a href="-get-gif-suggestions-use-case/invoke.html">invoke</a>'s query.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1309685596%2FClasslikes%2F-642582577" anchor-label="GetGifSuggestionsUseCaseImpl" id="1309685596%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-gif-suggestions-use-case-impl/index.html"><span>Get</span><wbr><span>Gif</span><wbr><span>Suggestions</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1309685596%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-get-gif-suggestions-use-case-impl/index.html">GetGifSuggestionsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">giphyRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.giphy/-giphy-repository/index.html">GiphyRepository</a></span></span><span class="token punctuation">)</span> : <a href="-get-gif-suggestions-use-case/index.html">GetGifSuggestionsUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1816372155%2FClasslikes%2F-642582577" anchor-label="GetTrendingGifsUseCase" id="-1816372155%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-trending-gifs-use-case/index.html"><span>Get</span><wbr><span>Trending</span><wbr><span>Gifs</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1816372155%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-get-trending-gifs-use-case/index.html">GetTrendingGifsUseCase</a></div><div class="brief "><p class="paragraph">Gets Giphy's trending GIFs rated pg or milder.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-598612987%2FClasslikes%2F-642582577" anchor-label="GetTrendingGifsUseCaseImpl" id="-598612987%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-trending-gifs-use-case-impl/index.html"><span>Get</span><wbr><span>Trending</span><wbr><span>Gifs</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-598612987%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-get-trending-gifs-use-case-impl/index.html">GetTrendingGifsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">giphyRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.giphy/-giphy-repository/index.html">GiphyRepository</a></span></span><span class="token punctuation">)</span> : <a href="-get-trending-gifs-use-case/index.html">GetTrendingGifsUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="806391325%2FClasslikes%2F-642582577" anchor-label="GiphyScope" id="806391325%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-giphy-scope/index.html"><span>Giphy</span><wbr><span><span>Scope</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="806391325%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-giphy-scope/index.html">GiphyScope</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">giphyRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.giphy/-giphy-repository/index.html">GiphyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">sendTextMessage<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.message/-send-text-message-use-case/index.html">SendTextMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">sendAssetMessage<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.asset.upload/-schedule-new-asset-message-use-case/index.html">ScheduleNewAssetMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">observeFileSharingStatus<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.user/-observe-file-sharing-status-use-case/index.html">ObserveFileSharingStatusUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">validateAssetFileType<span class="token operator">: </span><a href="../../logic/com.wire.kalium.logic.feature.asset/-validate-asset-file-type-use-case/index.html">ValidateAssetFileTypeUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">scope<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineScope///PointingToDeclaration/">CoroutineScope</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">GIF search and sending through the backend's Giphy proxy. Search requests go through the Wire backend; GIF files load directly from Giphy's CDN.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="788176432%2FClasslikes%2F-642582577" anchor-label="SearchGifsUseCase" id="788176432%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-search-gifs-use-case/index.html"><span>Search</span><wbr><span>Gifs</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="788176432%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-search-gifs-use-case/index.html">SearchGifsUseCase</a></div><div class="brief "><p class="paragraph">Searches Giphy for GIFs rated pg or milder.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1232550000%2FClasslikes%2F-642582577" anchor-label="SearchGifsUseCaseImpl" id="1232550000%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-search-gifs-use-case-impl/index.html"><span>Search</span><wbr><span>Gifs</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1232550000%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-search-gifs-use-case-impl/index.html">SearchGifsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">giphyRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.giphy/-giphy-repository/index.html">GiphyRepository</a></span></span><span class="token punctuation">)</span> : <a href="-search-gifs-use-case/index.html">SearchGifsUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="858105642%2FClasslikes%2F-642582577" anchor-label="SendGifMessageResult" id="858105642%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-send-gif-message-result/index.html"><span>Send</span><wbr><span>Gif</span><wbr><span>Message</span><wbr><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="858105642%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">interface </span><a href="-send-gif-message-result/index.html">SendGifMessageResult</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="583679236%2FClasslikes%2F-642582577" anchor-label="SendGifMessageUseCase" id="583679236%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-send-gif-message-use-case/index.html"><span>Send</span><wbr><span>Gif</span><wbr><span>Message</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="583679236%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-send-gif-message-use-case/index.html">SendGifMessageUseCase</a></div><div class="brief "><p class="paragraph">Sends a downloaded GIF the way web and the old iOS app do: an optional caption text message, then the GIF as an <code class="lang-kotlin">image/gif</code> asset. Receivers need nothing new. Both messages follow the conversation's self-deleting timer.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2079542596%2FClasslikes%2F-642582577" anchor-label="SendGifMessageUseCaseImpl" id="2079542596%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-send-gif-message-use-case-impl/index.html"><span>Send</span><wbr><span>Gif</span><wbr><span>Message</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2079542596%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-send-gif-message-use-case-impl/index.html">SendGifMessageUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sendText<span class="token operator">: </span><span class="token keyword">suspend </span><span class="token punctuation">(</span><a href="../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span>text<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span>quotedMessageId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="../com.wire.kalium.logic.feature.message/-message-operation-result/index.html">MessageOperationResult</a><span class="token punctuation">, </span></span><span class="parameter ">sendAssetMessage<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.asset.upload/-schedule-new-asset-message-use-case/index.html">ScheduleNewAssetMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">observeFileSharingStatus<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.user/-observe-file-sharing-status-use-case/index.html">ObserveFileSharingStatusUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">validateAssetFileType<span class="token operator">: </span><a href="../../logic/com.wire.kalium.logic.feature.asset/-validate-asset-file-type-use-case/index.html">ValidateAssetFileTypeUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">scope<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineScope///PointingToDeclaration/">CoroutineScope</span></span></span><span class="token punctuation">)</span> : <a href="-send-gif-message-use-case/index.html">SendGifMessageUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="EXTENSION_FUNCTION">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="-462899337%2FFunctions%2F-642582577" anchor-label="toGetGifsResult" id="-462899337%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-get-gifs-result.html"><span>to</span><wbr><span>Get</span><wbr><span>Gifs</span><wbr><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-462899337%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><span data-unresolved-link="com.wire.kalium.common.functional/Either///PointingToDeclaration/">Either</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.common.error/NetworkFailure///PointingToDeclaration/">NetworkFailure</span><span class="token punctuation">, </span><a href="../com.wire.kalium.logic.data.giphy/-gif-page/index.html">GifPage</a><span class="token operator">&gt;</span><span class="token punctuation">.</span><a href="to-get-gifs-result.html"><span class="token function">toGetGifsResult</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-get-gifs-result/index.html">GetGifsResult</a></div><div class="brief "><p class="paragraph">A 404 means the backend has no Giphy proxy.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
