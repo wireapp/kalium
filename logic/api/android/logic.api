@@ -576,6 +576,68 @@ public final class com/wire/kalium/logic/data/event/EventExtentionKt {
 	public static final fun toEventResponseToStore (Lcom/wire/kalium/network/api/authenticated/notification/EventResponse;)Lcom/wire/kalium/network/api/authenticated/notification/EventResponseToStore;
 }
 
+public final class com/wire/kalium/logic/data/giphy/DownloadedGif {
+	public fun <init> (Lcom/wire/kalium/logic/data/giphy/Gif;Lokio/Path;J)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/giphy/Gif;
+	public final fun component2 ()Lokio/Path;
+	public final fun component3 ()J
+	public final fun copy (Lcom/wire/kalium/logic/data/giphy/Gif;Lokio/Path;J)Lcom/wire/kalium/logic/data/giphy/DownloadedGif;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/DownloadedGif;Lcom/wire/kalium/logic/data/giphy/Gif;Lokio/Path;JILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/DownloadedGif;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getGif ()Lcom/wire/kalium/logic/data/giphy/Gif;
+	public final fun getPath ()Lokio/Path;
+	public final fun getSizeInBytes ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/data/giphy/Gif {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
+	public final fun component4 ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;)Lcom/wire/kalium/logic/data/giphy/Gif;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/Gif;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/Gif;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getOriginal ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
+	public final fun getPreview ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
+	public final fun getTitle ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/data/giphy/GifPage {
+	public fun <init> (Ljava/util/List;Ljava/lang/Integer;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun copy (Ljava/util/List;Ljava/lang/Integer;)Lcom/wire/kalium/logic/data/giphy/GifPage;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/GifPage;Ljava/util/List;Ljava/lang/Integer;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/GifPage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getGifs ()Ljava/util/List;
+	public final fun getNextOffset ()Ljava/lang/Integer;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/data/giphy/GifRendition {
+	public fun <init> (Ljava/lang/String;IILjava/lang/Long;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/String;IILjava/lang/Long;)Lcom/wire/kalium/logic/data/giphy/GifRendition;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/GifRendition;Ljava/lang/String;IILjava/lang/Long;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/GifRendition;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHeight ()I
+	public final fun getSizeInBytes ()Ljava/lang/Long;
+	public final fun getUrl ()Ljava/lang/String;
+	public final fun getWidth ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/data/id/FederatedIdMapper {
 	public abstract fun parseToFederatedId (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun parseToFederatedId (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -1292,6 +1354,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getGetOtherUserSecurityClassificationLabel ()Lcom/wire/kalium/logic/feature/conversation/ObserveOtherUserSecurityClassificationLabelUseCase;
 	public final fun getGetPersistentWebSocketStatus ()Lcom/wire/kalium/logic/feature/user/webSocketStatus/GetPersistentWebSocketStatus;
 	public final fun getGetTeamUrlUseCase ()Lcom/wire/kalium/logic/feature/server/GetTeamUrlUseCase;
+	public final fun getGiphy ()Lcom/wire/kalium/logic/feature/giphy/GiphyScope;
 	public final fun getKaliumFileSystem ()Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;
 	public final fun getLogout ()Lcom/wire/kalium/logic/feature/auth/LogoutUseCase;
 	public final fun getLongWork ()Lcom/wire/kalium/work/LongWorkScope;
@@ -5386,6 +5449,126 @@ public abstract interface class com/wire/kalium/logic/feature/featureConfig/Obse
 
 public abstract interface class com/wire/kalium/logic/feature/featureConfig/ObserveIsAppsAllowedForUsageUseCase {
 	public abstract fun invoke ()Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/giphy/DownloadGifResult {
+}
+
+public final class com/wire/kalium/logic/feature/giphy/DownloadGifResult$Failure : com/wire/kalium/logic/feature/giphy/DownloadGifResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/giphy/DownloadGifResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/giphy/DownloadGifResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/giphy/DownloadGifResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/giphy/DownloadGifResult$Success : com/wire/kalium/logic/feature/giphy/DownloadGifResult {
+	public fun <init> (Lcom/wire/kalium/logic/data/giphy/DownloadedGif;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/giphy/DownloadedGif;
+	public final fun copy (Lcom/wire/kalium/logic/data/giphy/DownloadedGif;)Lcom/wire/kalium/logic/feature/giphy/DownloadGifResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/giphy/DownloadGifResult$Success;Lcom/wire/kalium/logic/data/giphy/DownloadedGif;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/giphy/DownloadGifResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDownloadedGif ()Lcom/wire/kalium/logic/data/giphy/DownloadedGif;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/giphy/DownloadGifUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/giphy/Gif;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/giphy/GetGifSuggestionsUseCase {
+	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/giphy/GetGifsResult {
+}
+
+public final class com/wire/kalium/logic/feature/giphy/GetGifsResult$Failure : com/wire/kalium/logic/feature/giphy/GetGifsResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/giphy/GetGifsResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/giphy/GetGifsResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/giphy/GetGifsResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/giphy/GetGifsResult$Success : com/wire/kalium/logic/feature/giphy/GetGifsResult {
+	public fun <init> (Lcom/wire/kalium/logic/data/giphy/GifPage;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/giphy/GifPage;
+	public final fun copy (Lcom/wire/kalium/logic/data/giphy/GifPage;)Lcom/wire/kalium/logic/feature/giphy/GetGifsResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/giphy/GetGifsResult$Success;Lcom/wire/kalium/logic/data/giphy/GifPage;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/giphy/GetGifsResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPage ()Lcom/wire/kalium/logic/data/giphy/GifPage;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/giphy/GetGifsResult$Unavailable : com/wire/kalium/logic/feature/giphy/GetGifsResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/giphy/GetGifsResult$Unavailable;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/giphy/GetTrendingGifsUseCase {
+	public abstract fun invoke (ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/giphy/GiphyScope {
+	public final fun getDownloadGif ()Lcom/wire/kalium/logic/feature/giphy/DownloadGifUseCase;
+	public final fun getGetGifSuggestions ()Lcom/wire/kalium/logic/feature/giphy/GetGifSuggestionsUseCase;
+	public final fun getGetTrendingGifs ()Lcom/wire/kalium/logic/feature/giphy/GetTrendingGifsUseCase;
+	public final fun getSearchGifs ()Lcom/wire/kalium/logic/feature/giphy/SearchGifsUseCase;
+	public final fun getSendGifMessage ()Lcom/wire/kalium/logic/feature/giphy/SendGifMessageUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/giphy/SearchGifsUseCase {
+	public abstract fun invoke (Ljava/lang/String;ILjava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/giphy/SendGifMessageResult {
+}
+
+public final class com/wire/kalium/logic/feature/giphy/SendGifMessageResult$DisabledByTeam : com/wire/kalium/logic/feature/giphy/SendGifMessageResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/giphy/SendGifMessageResult$DisabledByTeam;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/giphy/SendGifMessageResult$Failure : com/wire/kalium/logic/feature/giphy/SendGifMessageResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/giphy/SendGifMessageResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/giphy/SendGifMessageResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/giphy/SendGifMessageResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/giphy/SendGifMessageResult$RestrictedFileType : com/wire/kalium/logic/feature/giphy/SendGifMessageResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/giphy/SendGifMessageResult$RestrictedFileType;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/giphy/SendGifMessageResult$Success : com/wire/kalium/logic/feature/giphy/SendGifMessageResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/giphy/SendGifMessageResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/giphy/SendGifMessageUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/giphy/DownloadedGif;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/incallreaction/SendInCallReactionUseCase {
