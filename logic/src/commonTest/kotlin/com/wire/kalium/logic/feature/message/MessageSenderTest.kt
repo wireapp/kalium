@@ -662,7 +662,7 @@ class MessageSenderTest {
 
             assertEquals(listOf(false), queueHeldWhileWaiting)
             verifySuspend(VerifyMode.exactly(2)) {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
             }
         }
     }
