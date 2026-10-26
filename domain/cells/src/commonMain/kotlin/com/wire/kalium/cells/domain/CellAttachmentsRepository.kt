@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.persistence.dao.cellfile.CellFileLocalPath
 
+@Suppress("TooManyFunctions")
 internal interface CellAttachmentsRepository {
     suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?>
     suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
@@ -40,8 +41,11 @@ internal interface CellAttachmentsRepository {
         remotePath: String,
         isEditSupported: Boolean,
     ): Either<StorageFailure, Unit>
+
     suspend fun getAttachments(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
     suspend fun getAttachmentsByIds(assetIds: List<String>): Either<StorageFailure, List<MessageAttachment>>
+
+    @Suppress("LongParameterList")
     suspend fun saveStandaloneAssetPath(
         assetId: String,
         conversationId: String?,
@@ -51,8 +55,10 @@ internal interface CellAttachmentsRepository {
         ownerId: String? = null,
         remotePath: String? = null,
     ): Either<StorageFailure, Unit>
+
     suspend fun setStandaloneAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
     suspend fun getStandaloneAssetPathsByIds(assetIds: List<String>): Either<StorageFailure, List<CellFileLocalPath>>
+
     /** Deletes the asset's local record, kept (without its local copy) when a message refers to it as an attachment. */
     suspend fun deleteStandaloneAsset(assetId: String): Either<StorageFailure, Unit>
 

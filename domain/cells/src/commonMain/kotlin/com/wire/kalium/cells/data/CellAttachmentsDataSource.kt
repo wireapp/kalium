@@ -36,6 +36,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
+@Suppress("TooManyFunctions")
 internal class CellAttachmentsDataSource(
     private val messageAttachments: MessageAttachmentsDao,
     private val cellFileDao: CellFileDao,
