@@ -1,0 +1,1 @@
+Suppress incoming meeting ringing in Apple's notification service extension, matching the full calling engine. Keep meeting signals available for replay and joining, and preserve ordinary incoming call ringing.
