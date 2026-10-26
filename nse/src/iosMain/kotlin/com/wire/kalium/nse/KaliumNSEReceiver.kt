@@ -44,6 +44,7 @@ import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -202,21 +203,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         var produced: KaliumNSEResult? = null
         val outcome = try {
             withTimeoutOrNull(request.budgetMilliseconds) {
-                val result = AppleAccountRuntime.use(
-                    configuration.rootPath,
-                    userId,
-                    ApplePersistenceConfig(
-                        serviceName = configuration.keychainService,
-                        keychainAccessibility = configuration.keychainAccessibility.toApple(),
-                        accessGroup = configuration.keychainAccessGroup,
-                    ),
-                    configuration.userAgent,
-                    configuration.certificatePins,
-                    diagnostics = diagnostics,
-                    // The app releases the account within moments of moving to the background. Another attempt of
-                    // this process presents only what it received, so this one waits for it too.
-                    busyRetry = BUSY_RETRY,
-                ) { runtime ->
+                // The app releases the account within moments of moving to the background. Another attempt of
+                // this process presents only what it received, so this one waits for it too.
+                val result = configuration.useAccount(userId, diagnostics, BUSY_RETRY) { runtime ->
                     // The badge is auxiliary: a slow count read must not discard already-produced alerts.
                     val received = receive(runtime, request, diagnostics, started, delivery).also { produced = it }
                     received.copy(
@@ -461,6 +450,27 @@ private fun failure(reason: String) = KaliumNSEResult(
     null,
     null,
     failureReason = reason
+)
+
+/** Opens the prepared account for [block] with the app's shared configuration. */
+private suspend fun <T> KaliumNSEConfiguration.useAccount(
+    userId: UserId,
+    diagnostics: ReceivingDiagnostics,
+    busyRetry: Duration,
+    block: suspend (AppleAccountRuntime) -> T,
+) = AppleAccountRuntime.use(
+    rootPath,
+    userId,
+    ApplePersistenceConfig(
+        serviceName = keychainService,
+        keychainAccessibility = keychainAccessibility.toApple(),
+        accessGroup = keychainAccessGroup,
+    ),
+    userAgent,
+    certificatePins,
+    diagnostics = diagnostics,
+    busyRetry = busyRetry,
+    block = block,
 )
 
 private fun KaliumNSEKeychainAccessibility.toApple(): KeychainAccessibility = when (this) {
