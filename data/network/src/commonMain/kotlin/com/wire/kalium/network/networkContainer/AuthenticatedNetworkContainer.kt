@@ -22,6 +22,8 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.FailableRequests
+import com.wire.kalium.network.HttpTrafficObserver
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.GiphyApi
@@ -71,8 +73,6 @@ import com.wire.kalium.network.api.v8.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v9.authenticated.networkContainer.AuthenticatedNetworkContainerV9
 import com.wire.kalium.network.api.vcommon.GiphyApiImpl
 import com.wire.kalium.network.api.vcommon.SFTApiImpl
-import com.wire.kalium.network.HttpTrafficObserver
-import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
@@ -180,6 +180,7 @@ interface AuthenticatedNetworkContainer {
             mockWebSocketSession: WebSocketSession?,
             kaliumLogger: KaliumLogger,
             httpTrafficObserver: HttpTrafficObserver? = null,
+            pendingConnectionsEnabled: Boolean = false,
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -365,6 +366,7 @@ interface AuthenticatedNetworkContainer {
                     engine = engine,
                 )
 
+                // All containers from v17 onward must forward the contact-status feature flag.
                 17 -> AuthenticatedNetworkContainerV17(
                     sessionManager,
                     selfUserId,
@@ -373,6 +375,7 @@ interface AuthenticatedNetworkContainer {
                     mockWebSocketSession,
                     kaliumLogger,
                     engine = engine,
+                    pendingConnectionsEnabled = pendingConnectionsEnabled,
                 )
 
                 18 -> AuthenticatedNetworkContainerV18(
@@ -383,6 +386,7 @@ interface AuthenticatedNetworkContainer {
                     mockWebSocketSession,
                     kaliumLogger,
                     engine = engine,
+                    pendingConnectionsEnabled = pendingConnectionsEnabled,
                 )
 
                 19 -> AuthenticatedNetworkContainerV19(
@@ -393,6 +397,7 @@ interface AuthenticatedNetworkContainer {
                     mockWebSocketSession,
                     kaliumLogger,
                     engine = engine,
+                    pendingConnectionsEnabled = pendingConnectionsEnabled,
                 )
 
                 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to

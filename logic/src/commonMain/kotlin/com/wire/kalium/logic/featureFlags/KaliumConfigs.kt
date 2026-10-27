@@ -80,4 +80,5 @@ public data class KaliumConfigs(
     // Opt-in hook to observe real HTTP traffic (including bodies) for debugging purposes.
     // See HttpTrafficObserver's documentation for how this differs from KaliumHttpLogger.
     val httpTrafficObserver: HttpTrafficObserver? = null,
+    val pendingConnections: Boolean = false,
 )

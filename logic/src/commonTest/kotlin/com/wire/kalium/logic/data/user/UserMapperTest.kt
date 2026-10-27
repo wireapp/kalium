@@ -33,11 +33,31 @@ import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Instant
 
 class UserMapperTest {
+
+    @Test
+    fun contactStatusIsMappedFromRemoteButNotPersisted() = runTest {
+        val (_, mapper) = Arrangement().arrange()
+        for ((wireState, expected) in listOf(
+            "non-contactable" to ContactStatus.NON_CONTACTABLE,
+            "contactable" to ContactStatus.CONTACTABLE,
+            "future-state" to null,
+            null to null
+        )) {
+            val profile = TestUser.USER_PROFILE_DTO.copy(
+                contactStatus = wireState?.let { com.wire.kalium.network.api.model.ContactStatusDTO(it) }
+            )
+            val entity = mapper.fromUserProfileDtoToUserEntity(
+                profile, ConnectionEntity.State.ACCEPTED, UserTypeEntity.EXTERNAL, TestUser.SELF.id, TestTeam.TEAM_ID
+            )
+            assertEquals(null, mapper.fromUserEntityToOtherUser(entity).contactStatus)
+            assertEquals(expected, mapper.fromUserProfileDtoToOtherUser(profile, TestUser.SELF.id, TestTeam.TEAM_ID).contactStatus)
+        }
+    }
 
     @Test
     fun givenUserProfileDTOAndUserTypeEntity_whenMappingFromApiResponse_thenDaoModelIsReturned() = runTest {
