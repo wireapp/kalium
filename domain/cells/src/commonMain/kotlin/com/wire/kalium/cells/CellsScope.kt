@@ -54,6 +54,8 @@ import com.wire.kalium.cells.domain.usecase.DeleteCellAssetsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.EmptyRecycleBinUseCase
+import com.wire.kalium.cells.domain.usecase.EmptyRecycleBinUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCase
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
@@ -394,6 +396,9 @@ public class CellsScope(
     }
     public val restoreNodesFromRecycleBin: RestoreNodesFromRecycleBinUseCase by lazy {
         RestoreNodesFromRecycleBinUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+    public val emptyRecycleBin: EmptyRecycleBinUseCase by lazy {
+        EmptyRecycleBinUseCaseImpl(cellsRepository)
     }
     public val getAllTags: GetAllTagsUseCase by lazy {
         GetAllTagsUseCaseImpl(cellsRepository)
