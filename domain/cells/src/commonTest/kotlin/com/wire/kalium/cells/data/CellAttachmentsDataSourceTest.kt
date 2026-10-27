@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.data
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.cellfile.CellFileDao
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
@@ -30,6 +32,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertIs
 
 class CellAttachmentsDataSourceTest {
     private val messageAttachments = mock<MessageAttachmentsDao>(MockMode.autoUnit)
@@ -37,18 +40,24 @@ class CellAttachmentsDataSourceTest {
 
     @Test
     fun givenRestoredAttachmentsWithAndWithoutLocalCopy_whenRefreshingStatus_thenEachGetsItsStatus() = runTest {
-        everySuspend { messageAttachments.getAttachment("with-copy") } returns attachment("with-copy", localPath = "localPath")
-        everySuspend { messageAttachments.getAttachment("without-copy") } returns attachment("without-copy", localPath = null)
+        val ids = listOf("with-copy", "without-copy")
+        everySuspend { messageAttachments.getAttachmentsByAssetIds(ids) } returns listOf(
+            attachment("with-copy", localPath = "localPath"),
+            attachment("without-copy", localPath = null),
+        )
 
-        repository.refreshRestoredAttachmentStatus(listOf("with-copy", "without-copy"))
+        val result = repository.refreshRestoredAttachmentStatus(ids)
 
+        assertIs<Either.Right<Unit>>(result)
         verifySuspend(VerifyMode.exactly(1)) { messageAttachments.setTransferStatus("with-copy", "SAVED_INTERNALLY") }
         verifySuspend(VerifyMode.exactly(1)) { messageAttachments.setTransferStatus("without-copy", "NOT_DOWNLOADED") }
     }
 
     @Test
     fun givenANodeThatIsNotACellAttachment_whenRefreshingStatus_thenItIsLeftUntouched() = runTest {
-        everySuspend { messageAttachments.getAttachment("not-cell") } returns attachment("not-cell", localPath = null, cellAsset = false)
+        everySuspend { messageAttachments.getAttachmentsByAssetIds(any()) } returns listOf(
+            attachment("not-cell", localPath = null, cellAsset = false)
+        )
 
         repository.refreshRestoredAttachmentStatus(listOf("not-cell"))
 
@@ -56,14 +65,37 @@ class CellAttachmentsDataSourceTest {
     }
 
     @Test
-    fun givenANodeWhoseAttachmentCannotBeRead_whenRefreshingStatus_thenTheOthersAreStillUpdated() = runTest {
-        everySuspend { messageAttachments.getAttachment("missing") } throws IllegalStateException("No attachment")
-        everySuspend { messageAttachments.getAttachment("present") } returns attachment("present", localPath = "localPath")
+    fun givenANodeWithoutAttachment_whenRefreshingStatus_thenTheOthersAreStillUpdated() = runTest {
+        everySuspend { messageAttachments.getAttachmentsByAssetIds(any()) } returns listOf(
+            attachment("present", localPath = "localPath")
+        )
 
         repository.refreshRestoredAttachmentStatus(listOf("missing", "present"))
 
         verifySuspend(VerifyMode.not) { messageAttachments.setTransferStatus("missing", any()) }
         verifySuspend(VerifyMode.exactly(1)) { messageAttachments.setTransferStatus("present", "SAVED_INTERNALLY") }
+    }
+
+    @Test
+    fun givenAnAssetAttachedToSeveralMessages_whenRefreshingStatus_thenItsStatusIsSetOnce() = runTest {
+        everySuspend { messageAttachments.getAttachmentsByAssetIds(any()) } returns listOf(
+            attachment("shared", localPath = "localPath"),
+            attachment("shared", localPath = "localPath"),
+        )
+
+        repository.refreshRestoredAttachmentStatus(listOf("shared"))
+
+        verifySuspend(VerifyMode.exactly(1)) { messageAttachments.setTransferStatus("shared", "SAVED_INTERNALLY") }
+    }
+
+    @Test
+    fun givenAttachmentsCannotBeRead_whenRefreshingStatus_thenFailureIsReturnedAndNothingIsUpdated() = runTest {
+        everySuspend { messageAttachments.getAttachmentsByAssetIds(any()) } throws IllegalStateException("DB error")
+
+        val result = repository.refreshRestoredAttachmentStatus(listOf("asset"))
+
+        assertIs<Either.Left<StorageFailure>>(result)
+        verifySuspend(VerifyMode.not) { messageAttachments.setTransferStatus(any(), any()) }
     }
 
     private fun attachment(assetId: String, localPath: String?, cellAsset: Boolean = true) = MessageAttachmentEntity(
