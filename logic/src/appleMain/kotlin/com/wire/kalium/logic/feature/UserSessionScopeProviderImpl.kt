@@ -54,6 +54,11 @@ import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -281,22 +286,48 @@ internal actual open class UserSessionScopeProviderImpl(
             val access = account.access
             var syncSuspension: SyncSuspension? = null
             try {
-                access.pause(
-                    // Access does not gate the WebSocket: stop sync and close it while sync can still finish
-                    // its writes. Pause holds its transition, so reopening cannot resume sync before release.
-                    quiesce = {
-                        if (access === account.access) syncSuspension = super.get(userId)?.suspendSync()
-                    },
-                ) {
-                    // Drain before taking the lifecycle mutex: admitted operations may still need it
-                    // to invalidate notification readiness or complete account preparation.
-                    releaseForBackground(account, userId, access)
-                }
+                pauseForBackground(account, userId, access) { syncSuspension = it }
             } finally {
                 // Reopening resumes sync after reacquiring ownership; undo only this suspension if ownership was kept.
                 if (account.lease != null && !account.unavailable) syncSuspension?.cancel()
             }
             if (access === account.access) return
+        }
+    }
+
+    /**
+     * A message send keeps its crypto transaction while its request waits on a bad network, up to the request
+     * timeout, which is longer than iOS keeps the app running; stopping sync can wait behind it too. After a
+     * short grace, fail the account's requests as offline until closing starts, so the account is still released.
+     */
+    private suspend fun pauseForBackground(
+        account: OwnedAccount,
+        userId: UserId,
+        access: AccountResourceAccess,
+        onSyncSuspended: (SyncSuspension?) -> Unit,
+    ) = coroutineScope {
+        val failingStalledRequests = launch {
+            delay(STALLED_REQUEST_GRACE)
+            super.get(userId)?.let { scope ->
+                kaliumLogger.w("Account release is waiting on requests; failing them as offline")
+                scope.failNetworkRequests { awaitCancellation() }
+            }
+        }
+        try {
+            access.pause(
+                // Access does not gate the WebSocket: stop sync and close it while sync can still finish
+                // its writes. Pause holds its transition, so reopening cannot resume sync before release.
+                quiesce = {
+                    if (access === account.access) onSyncSuspended(super.get(userId)?.suspendSync())
+                },
+            ) {
+                failingStalledRequests.cancelAndJoin()
+                // Drain before taking the lifecycle mutex: admitted operations may still need it
+                // to invalidate notification readiness or complete account preparation.
+                releaseForBackground(account, userId, access)
+            }
+        } finally {
+            failingStalledRequests.cancel()
         }
     }
 
@@ -557,3 +588,4 @@ internal actual open class UserSessionScopeProviderImpl(
  * work behind an extension that iOS suspended with its host; callers fail or retry instead.
  */
 private val OWNERSHIP_TIMEOUT = 15.seconds
+private val STALLED_REQUEST_GRACE = 5.seconds
