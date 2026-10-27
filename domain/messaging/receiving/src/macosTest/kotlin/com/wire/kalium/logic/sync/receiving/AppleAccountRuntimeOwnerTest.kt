@@ -40,14 +40,17 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSProcessInfo
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSUUID
+import platform.posix.getpid
 import platform.posix.stat
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -288,6 +291,41 @@ class AppleAccountRuntimeOwnerTest {
             acquiredLease(waiting.await()).release()
         } finally {
             process.stop()
+        }
+    }
+
+    @Test
+    fun waitingAcquireGivesUpWhenAnotherProcessKeepsTheAccountPastTheTimeout() = withLockRoot { rootPath ->
+        val accountId = UserId("kept-account", "example.com")
+        val owner = AppleAccountRuntimeOwner(rootPath)
+        createLockFile(owner, accountId)
+        val process = AccountLockProcess.start(owner.lockFilePath(accountId))
+
+        try {
+            assertEquals(Either.Left(AccountRuntimeFailure.BUSY), owner.acquire(accountId, 15.seconds))
+        } finally {
+            process.stop()
+        }
+
+        owner.acquireLease(accountId).release()
+    }
+
+    @Test
+    fun acquiringRecordsTheHolderForWhoeverWaitsNext() = withLockRoot { rootPath ->
+        val accountId = UserId("recorded-account", "example.com")
+        val owner = AppleAccountRuntimeOwner(rootPath)
+        val lease = owner.acquireLease(accountId)
+
+        try {
+            val holder = assertNotNull(owner.holder(accountId))
+            assertTrue(holder.startsWith("${NSProcessInfo.processInfo.processName} pid=${getpid()} since="), holder)
+            assertEquals(
+                Either.Left(AccountRuntimeFailure.BUSY),
+                owner.tryAcquire(accountId),
+                "Reading the holder must not release the lease",
+            )
+        } finally {
+            lease.release()
         }
     }
 

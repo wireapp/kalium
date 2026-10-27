@@ -30,9 +30,27 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.retryWhen
+import kotlin.time.Duration.Companion.seconds
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+
+/**
+ * Apple only: another process, such as an app extension, kept the account past the app's wait for it. Nothing changed,
+ * and opening can be retried. [holder] is what that process recorded when it took the account, for logs.
+ */
+public class AccountBusyException(public val holder: String?) :
+    IllegalStateException("Another process holds the account: ${holder ?: "unknown"}")
+
+/** Observations that open every account keep going, with their last values, until another process lets go. */
+internal fun <T> Flow<T>.retryWhileAccountBusy(): Flow<T> = retryWhen { cause, _ ->
+    (cause is AccountBusyException).also { busy -> if (busy) delay(ACCOUNT_BUSY_RETRY) }
+}
+
+private val ACCOUNT_BUSY_RETRY = 1.seconds
 
 internal interface UserSessionScopeProvider {
     suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean = false)

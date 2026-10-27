@@ -432,13 +432,19 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             }
         )
 
-    private companion object {
-        const val MAX_BUDGET_MS = 25_000L
-        val BUSY_RETRY = 3.seconds
-        const val CATCH_UP_SHARE = 0.6
-        const val PROCESS_SHARE = 0.85
-        const val QUEUE_END = "QUEUE_END"
-        const val BUDGET = "BUDGET"
+    public companion object {
+        /**
+         * Closing an account failed in this process, so it keeps that account's lease until it exits: neither the
+         * app nor a later push can open the account. End the process once the system has the request's content.
+         */
+        public val hasQuarantinedAccount: Boolean get() = AppleAccountRuntime.hasQuarantinedRuntime
+
+        private const val MAX_BUDGET_MS = 25_000L
+        private val BUSY_RETRY = 3.seconds
+        private const val CATCH_UP_SHARE = 0.6
+        private const val PROCESS_SHARE = 0.85
+        private const val QUEUE_END = "QUEUE_END"
+        private const val BUDGET = "BUDGET"
     }
 }
 
