@@ -397,11 +397,13 @@ internal class CellsApiImpl(
         )
     }.mapSuccess {}
 
-    override suspend fun restoreNode(uuid: String): NetworkResponse<Unit> = wrapCellsResponse {
+    override suspend fun restoreNode(uuid: String): NetworkResponse<Unit> = restoreNodes(listOf(uuid))
+
+    override suspend fun restoreNodes(uuids: List<String>): NetworkResponse<Unit> = wrapCellsResponse {
         getNodeServiceApi().performAction(
             name = NodeServiceApi.NamePerformAction.restore,
             parameters = RestActionParameters(
-                nodes = listOf(RestNodeLocator(uuid = uuid)),
+                nodes = uuids.map { RestNodeLocator(uuid = it) },
                 awaitStatus = JobsTaskStatus.Finished,
                 awaitTimeout = AWAIT_TIMEOUT
             )

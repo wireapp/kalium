@@ -57,6 +57,13 @@ internal interface CellAttachmentsRepository {
     ): Either<StorageFailure, Unit>
 
     suspend fun setStandaloneAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
+
+    /**
+     * Makes restored nodes available again as message attachments, deleting them having set their status to NOT_FOUND:
+     * SAVED_INTERNALLY if they still have a local copy, NOT_DOWNLOADED otherwise. Nodes no message refers to are left
+     * untouched, and so is a node whose status couldn't be read: the others are still updated.
+     */
+    suspend fun refreshRestoredAttachmentStatus(assetIds: List<String>): Either<StorageFailure, Unit>
     suspend fun getStandaloneAssetPathsByIds(assetIds: List<String>): Either<StorageFailure, List<CellFileLocalPath>>
 
     /** Deletes the asset's local record, kept (without its local copy) when a message refers to it as an attachment. */

@@ -306,6 +306,13 @@ internal class CellsDataSource internal constructor(
             }
         }
 
+    override suspend fun restoreNodes(uuids: List<String>): Either<NetworkFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                cellsApi.restoreNodes(uuids = uuids)
+            }
+        }
+
     override suspend fun getAllTags(): Either<NetworkFailure, List<String>> = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.getAllTags()

@@ -182,6 +182,10 @@ class FakeCellsRepository : CellsRepository {
         TODO("Not yet implemented")
     }
 
+    override suspend fun restoreNodes(uuids: List<String>): Either<NetworkFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun getAllTags(): Either<NetworkFailure, List<String>> {
         TODO("Not yet implemented")
     }
