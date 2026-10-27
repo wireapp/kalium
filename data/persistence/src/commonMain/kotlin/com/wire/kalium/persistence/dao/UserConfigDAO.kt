@@ -87,8 +87,8 @@ interface UserConfigDAO {
     suspend fun setWireCellsConfig(config: WireCellsConfigEntity)
     suspend fun removeWireCellsConfig()
     suspend fun getWireCellsConfig(): WireCellsConfigEntity?
-    suspend fun isMlsFaultyKeysRepairExecuted(): Boolean
-    suspend fun setMlsFaultyKeysRepairExecuted(repaired: Boolean)
+    suspend fun getMlsFaultyKeysRepairFingerprint(): String?
+    suspend fun setMlsFaultyKeysRepairFingerprint(fingerprint: String?)
     suspend fun setMeetingsEnabled(enabled: Boolean)
     suspend fun isMeetingsEnabled(): Boolean
     fun observeIsMeetingsEnabled(): Flow<Boolean>
@@ -301,11 +301,15 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun isPreventAdminlessGroupsEnabled(): Boolean =
         metadataDAO.valueByKey(PREVENT_ADMINLESS_GROUPS_ENABLED)?.toBoolean() ?: false
 
-    override suspend fun isMlsFaultyKeysRepairExecuted(): Boolean =
-        metadataDAO.valueByKey(MLS_FAULTY_CONVERSATIONS_REPAIRED)?.toBoolean() ?: false
+    override suspend fun getMlsFaultyKeysRepairFingerprint(): String? =
+        metadataDAO.valueByKey(MLS_FAULTY_CONVERSATIONS_REPAIRED)
 
-    override suspend fun setMlsFaultyKeysRepairExecuted(repaired: Boolean) {
-        metadataDAO.insertValue(repaired.toString(), MLS_FAULTY_CONVERSATIONS_REPAIRED)
+    override suspend fun setMlsFaultyKeysRepairFingerprint(fingerprint: String?) {
+        if (fingerprint == null) {
+            metadataDAO.deleteValue(MLS_FAULTY_CONVERSATIONS_REPAIRED)
+        } else {
+            metadataDAO.insertValue(fingerprint, MLS_FAULTY_CONVERSATIONS_REPAIRED)
+        }
     }
 
     override suspend fun setWireCellsConfig(config: WireCellsConfigEntity) {

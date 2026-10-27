@@ -33,9 +33,13 @@ checks the conversation and the file rules, then encrypts and uploads each file 
 persistent, AES-256-CBC with the IV prefixed. It streams each file and hashes the ciphertext as it writes
 it, so no file is held in memory, and reports progress over the plain size through `KaliumShareProgress`.
 
-Uploads run outside `budgetMilliseconds`: they end when they finish, fail or the host cancels, and the account
-stays held meanwhile. Nothing is stored until every upload succeeded, so a failed or cancelled upload leaves
-nothing behind in Wire but the uploaded files on the backend.
+Uploads run outside `budgetMilliseconds`, and the account stays held meanwhile. They end when they finish,
+fail or the host cancels, and with `OPEN_APP` when they run past their own budget (`UPLOAD_TIMEOUT`: 30
+seconds plus the files' size at 128 KiB/s, at most five minutes) or when the host calls `yieldAccount`
+(`ACCOUNT_WANTED`), because the app needs the account. The host then hands the share to the app, after
+posting the result's alerts. `yieldAccount` also stops the live hold while it catches up; a send that stored
+a message finishes within its budget. Nothing is stored until every upload
+succeeded, so a failed or stopped upload leaves nothing behind in Wire but the uploaded files on the backend.
 
 ## Sending
 
