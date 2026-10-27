@@ -26,8 +26,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensionsImpl
-import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
-import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.persistence.dao.message.KaliumPager
@@ -37,18 +35,14 @@ import com.wire.kalium.persistence.dao.message.MessageExtensions
 import com.wire.kalium.persistence.db.ReadDispatcher
 import dev.mokkery.answering.returns
 import dev.mokkery.every
-import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
-import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class MessageRepositoryExtensionsTest {
 
@@ -80,83 +74,19 @@ class MessageRepositoryExtensionsTest {
 
         verify(VerifyMode.exactly(1)) {
             arrangement.messageDaoExtensions.getPagerForConversation(
-                eq(CONVERSATION_ID_ENTITY), matching {
+                CONVERSATION_ID_ENTITY, matches {
                     val list = it.toList()
                     list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
-                }, eq(pagingConfig),
-                eq(startingOffset)
+                }, pagingConfig,
+                startingOffset
             )
         }
-    }
-
-    @Test
-    fun givenNomadEnabled_whenFetchingOlderMessages_thenUsesDaoTimestamp() = runTest {
-        val pagingConfig = PagingConfig(20)
-        val pager = Pager(pagingConfig) { fakePagingSource }
-        val kaliumPager = KaliumPager(pager, fakePagingSource, ReadDispatcher(StandardTestDispatcher()))
-        val (arrangement, messageRepositoryExtensions) = Arrangement()
-            .withMessageExtensionsReturningPager(kaliumPager)
-            .withOldestTimestamp(1234L)
-            .withPagingCoordinator()
-            .arrange()
-
-        messageRepositoryExtensions.fetchOlderNomadMessagesByConversationId(
-            conversationId = TestConversation.ID,
-            pageSize = 5,
-        )
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(
-                conversationId = eq(TestConversation.ID),
-                pageSize = eq(5),
-                beforeTimestampMs = eq(1234L),
-                onInvalidate = any()
-            )
-        }
-    }
-
-    @Test
-    fun givenNomadDisabled_whenFetchingOlderMessages_thenDoesNotCallCoordinator() = runTest {
-        val pagingConfig = PagingConfig(20)
-        val pager = Pager(pagingConfig) { fakePagingSource }
-        val kaliumPager = KaliumPager(pager, fakePagingSource, ReadDispatcher(StandardTestDispatcher()))
-        val (arrangement, messageRepositoryExtensions) = Arrangement()
-            .withMessageExtensionsReturningPager(kaliumPager)
-            .withOldestTimestamp(1234L)
-            .withoutPagingCoordinator()
-            .arrange()
-
-        messageRepositoryExtensions.fetchOlderNomadMessagesByConversationId(
-            conversationId = TestConversation.ID,
-            pageSize = 5,
-        )
-
-        verifySuspend(VerifyMode.not) { arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun givenPagingCoordinator_whenFetchingOlderMessages_thenReturnsCoordinatorResult() = runTest {
-        val expectedResult = NomadMessagePagingResult(hasMore = true)
-        val (arrangement, messageRepositoryExtensions) = Arrangement()
-            .withPagingCoordinatorResult(expectedResult)
-            .withOldestTimestamp(1234L)
-            .arrange()
-
-        val result = messageRepositoryExtensions.fetchOlderNomadMessagesByConversationId(
-            conversationId = TestConversation.ID,
-            pageSize = 5,
-        )
-
-        assertEquals(expectedResult, result)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
     }
 
     private data class Arrangement(
         val messageDaoExtensions: MessageExtensions = mock<MessageExtensions>(),
         val messageDAO: MessageDAO = mock<MessageDAO>(),
         val messageMapper: MessageMapper = mock<MessageMapper>(),
-        val pagingCoordinator: NomadMessagePagingCoordinator = mock<NomadMessagePagingCoordinator>(),
-        val usePagingCoordinator: Boolean = false,
     ) {
         init {
             every { messageMapper.fromEntityToMessage(any()) }.returns(MESSAGE)
@@ -170,31 +100,8 @@ class MessageRepositoryExtensionsTest {
                 }.returns(kaliumPager)
             }
 
-        suspend fun withOldestTimestamp(timestamp: Long?): Arrangement = copy().also {
-            everySuspend {
-                it.messageDAO.getOldestVisibleMessageTimestampByConversationId(CONVERSATION_ID_ENTITY)
-            } returns timestamp
-        }
-
-        suspend fun withPagingCoordinator(): Arrangement = copy(usePagingCoordinator = true).also {
-            everySuspend {
-                it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any())
-            } returns NomadMessagePagingResult(hasMore = true)
-        }
-
-        suspend fun withPagingCoordinatorResult(result: NomadMessagePagingResult): Arrangement =
-            copy(usePagingCoordinator = true).also {
-                everySuspend { it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) } returns result
-            }
-
-        fun withoutPagingCoordinator(): Arrangement = copy(usePagingCoordinator = false)
-
         private val messageRepositoryExtensions: MessageRepositoryExtensions by lazy {
-            MessageRepositoryExtensionsImpl(
-                messageDAO,
-                messageMapper,
-                if (usePagingCoordinator) pagingCoordinator else null,
-            )
+            MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
         }
 
         fun arrange() = this to messageRepositoryExtensions

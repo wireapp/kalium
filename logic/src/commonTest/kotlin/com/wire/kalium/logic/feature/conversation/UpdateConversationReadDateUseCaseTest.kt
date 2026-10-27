@@ -35,15 +35,13 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -101,7 +99,7 @@ class UpdateConversationReadDateUseCaseTest {
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matching { message ->
+                message = matches { message ->
                     val content = message.content
                     assertIs<MessageContent.LastRead>(content)
                     assertEquals(conversationId, content.conversationId)
@@ -125,7 +123,7 @@ class UpdateConversationReadDateUseCaseTest {
         updateConversationReadDateUseCase(conversationId, newLastRead)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sendConfirmation(eq(conversationId), eq(persistedLastRead), eq(newLastRead))
+            arrangement.sendConfirmation(conversationId, persistedLastRead, newLastRead)
         }
     }
 
@@ -141,22 +139,8 @@ class UpdateConversationReadDateUseCaseTest {
         updateConversationReadDateUseCase(conversationId, newLastRead)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationReadDate(eq(conversationId), eq(newLastRead))
+            arrangement.conversationRepository.updateConversationReadDate(conversationId, newLastRead)
         }
-    }
-
-    @Test
-    fun givenProvidedTimeIsNewerThanPersistedLastReadForConversation_whenWorking_thenShouldNotifyLastReadHook() = runTest {
-        val persistedLastRead = Clock.System.now()
-        val newLastRead = persistedLastRead + 1.seconds
-        val conversationId = TestConversation.CONVERSATION.id
-        val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withLastReadDateReturning(conversationId, persistedLastRead)
-        }
-
-        updateConversationReadDateUseCase(conversationId, newLastRead)
-
-        // Hook invocation is covered by integration tests; persistence notifier here is a no-op.
     }
 
     @Test
@@ -172,7 +156,7 @@ class UpdateConversationReadDateUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matching { message ->
+                message = matches { message ->
                     val content = message.content
                     assertIs<MessageContent.LastRead>(content)
                     assertEquals(conversationId, content.conversationId)
@@ -180,7 +164,7 @@ class UpdateConversationReadDateUseCaseTest {
                     assertEquals(arrangement.selfConversationId, message.conversationId)
                     true
                 },
-                messageTarget = matching { target ->
+                messageTarget = matches { target ->
                     assertIs<MessageTarget.Conversation>(target)
                     true
                 }
@@ -204,17 +188,17 @@ class UpdateConversationReadDateUseCaseTest {
         updateConversationReadDateUseCase(conversation.id, newLastRead)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationReadDate(eq(conversation.id), eq(newLastRead))
+            arrangement.conversationRepository.updateConversationReadDate(conversation.id, newLastRead)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matching { it.content is MessageContent.LastRead },
+                message = matches { it.content is MessageContent.LastRead },
                 messageTarget = any()
             )
         }
         verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(
-                message = matching { it.content is MessageContent.Receipt },
+                message = matches { it.content is MessageContent.Receipt },
                 messageTarget = any()
             )
         }
@@ -240,7 +224,7 @@ class UpdateConversationReadDateUseCaseTest {
         updateConversationReadDateUseCase(conversationId, newLastRead, invokeImmediately = true)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sendConfirmation(eq(conversationId), eq(persistedLastRead), eq(newLastRead))
+            arrangement.sendConfirmation(conversationId, persistedLastRead, newLastRead)
         }
     }
 
@@ -304,7 +288,7 @@ class UpdateConversationReadDateUseCaseTest {
         runCurrent()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationReadDate(eq(conversationId), eq(newLastRead))
+            arrangement.conversationRepository.updateConversationReadDate(conversationId, newLastRead)
         }
     }
 
@@ -322,7 +306,6 @@ class UpdateConversationReadDateUseCaseTest {
         private val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
         private val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
         var sendConfirmation: SendConfirmationUseCase = mock<SendConfirmationUseCase>(mode = MockMode.autoUnit)
-        val persistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         var workQueue: ConversationWorkQueue = InstantConversationWorkQueue()
 
@@ -346,20 +329,19 @@ class UpdateConversationReadDateUseCaseTest {
                 selfConversationIdProvider,
                 sendConfirmation,
                 workQueue,
-                persistenceEventHookNotifier,
                 kaliumLogger
             )
         }
 
         suspend fun withLastReadDateReturning(conversationId: ConversationId, lastReadDate: Instant) {
             everySuspend {
-                conversationRepository.getConversationLastReadDate(eq(conversationId))
+                conversationRepository.getConversationLastReadDate(conversationId)
             } returns Either.Right(lastReadDate)
         }
 
         suspend fun withRealSendConfirmation(conversation: Conversation) {
             everySuspend {
-                conversationRepository.getConversationById(eq(conversation.id))
+                conversationRepository.getConversationById(conversation.id)
             } returns Either.Right(conversation)
             sendConfirmation = SendConfirmationUseCase(
                 currentClientIdProvider = { Either.Right(currentClientId) },

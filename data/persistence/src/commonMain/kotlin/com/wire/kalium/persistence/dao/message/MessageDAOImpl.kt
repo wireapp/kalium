@@ -170,9 +170,9 @@ internal class MessageDAOImpl internal constructor(
         queries.transaction {
             if (!queries.messageExists(message.id, message.conversationId).awaitAsOne()) {
                 insertReceivedMessageInTransaction(message, updateConversationOrder)
-            } else if (isValidAssetMessageUpdate(message)) {
-                // Reuse the app's preview-to-valid-keys rule. A completed asset is immutable here.
-                insertReceivedMessageInTransaction(message, updateConversationOrder)
+            } else if (updateAssetMessageIfValid(message)) {
+                // Apply the follow-up once; the asset lookup and update already ran in this transaction.
+                updateReceivedMessageConversationDates(message, updateConversationOrder)
             }
             // Do not recreate unread state or update conversation dates on replay.
             // These effects committed with the original message.
@@ -194,6 +194,13 @@ internal class MessageDAOImpl internal constructor(
         updateConversationModifiedDate: Boolean,
     ): InsertMessageResult {
         insertInDB(message)
+        return updateReceivedMessageConversationDates(message, updateConversationModifiedDate)
+    }
+
+    private suspend fun updateReceivedMessageConversationDates(
+        message: MessageEntity,
+        updateConversationModifiedDate: Boolean,
+    ): InsertMessageResult {
         val needsToBeNotified = nonSuspendNeedsToBeNotified(message.id, message.conversationId)
         if (!needsToBeNotified) {
             conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
@@ -264,8 +271,7 @@ internal class MessageDAOImpl internal constructor(
     private suspend fun insertInDB(message: MessageEntity, withUnreadEvents: Boolean = true, checkAssetUpdate: Boolean = true) {
         // do not add withContext
         if (!updateIdIfAlreadyExists(message)) {
-            if (checkAssetUpdate && isValidAssetMessageUpdate(message)) {
-                updateAssetMessage(message)
+            if (checkAssetUpdate && updateAssetMessageIfValid(message)) {
                 return
             } else {
                 insertMessageOrIgnore(message, withUnreadEvents)
@@ -363,6 +369,23 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateMessageStatusIfNotAcknowledged(
+        status: MessageEntity.Status,
+        id: String,
+        conversationId: QualifiedIDEntity
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.updateMessageStatusIfNotAcknowledged(status, id, conversationId)
+        }
+    }
+
+    override suspend fun claimFailedMessageForRetry(id: String, conversationId: QualifiedIDEntity): Boolean =
+        withContext(writeDispatcher.value) {
+            queries.transactionWithResult {
+                queries.claimFailedMessageForRetry(id, conversationId).awaitAsOneOrNull() != null
+            }
+        }
+
     override suspend fun updateMessagesStatus(
         status: MessageEntity.Status,
         id: List<String>,
@@ -390,14 +413,6 @@ internal class MessageDAOImpl internal constructor(
             .map { it?.let { withMultipartAttachments(it) } }
             .distinctUntilChanged()
             .flowOn(readDispatcher.value)
-
-    override suspend fun getOldestVisibleMessageTimestampByConversationId(
-        conversationId: ConversationIDEntity
-    ): Long? = withContext(readDispatcher.value) {
-        queries.selectOldestVisibleMessageTimestampByConversationId(conversationId)
-            .awaitAsOneOrNull()
-            ?.MIN?.toEpochMilliseconds()
-    }
 
     override suspend fun getImageMessageAssets(
         conversationId: QualifiedIDEntity,

@@ -27,7 +27,6 @@ import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -57,7 +56,7 @@ class MessageMetadataRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageMetaDataDAO.originalSenderId(eq(ConversationIDEntity("conversation_id", "domain")), eq("message_id"))
+            arrangement.messageMetaDataDAO.originalSenderId(ConversationIDEntity("conversation_id", "domain"), "message_id")
         }
     }
 
@@ -79,7 +78,7 @@ class MessageMetadataRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageMetaDataDAO.originalSenderId(eq(ConversationIDEntity("conversation_id", "domain")), eq("message_id"))
+            arrangement.messageMetaDataDAO.originalSenderId(ConversationIDEntity("conversation_id", "domain"), "message_id")
         }
     }
 

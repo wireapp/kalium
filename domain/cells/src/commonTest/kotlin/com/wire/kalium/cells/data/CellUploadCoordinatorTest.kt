@@ -37,8 +37,11 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.CurrentNetwork
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -46,7 +49,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
@@ -638,6 +643,56 @@ class CellUploadCoordinatorTest {
         arrangement.close()
     }
 
+    @Test
+    fun cancelAndAwait_waitsForLateNodeAndRealAbortWithoutCancellingAnotherUpload() = runTest {
+        val arrangement = Arrangement(this, maxConcurrentUploads = 2)
+        val draft = CompletableDeferred<Unit>()
+        val abort = CompletableDeferred<Unit>()
+        arrangement.manager.beforeNode["a.txt"] = draft
+        arrangement.manager.beforeAbort["node-a.txt"] = abort
+        arrangement.coordinator.enqueue(listOf(request("a.txt"), request("b.txt")))
+        runCurrent()
+        assertEquals(null, arrangement.coordinator.uploads.value.first { it.fileName == "a.txt" }.nodeUuid)
+
+        val cancellation = async { arrangement.coordinator.cancelAndAwait(arrangement.id("a.txt")) }
+        runCurrent()
+        assertFalse(cancellation.isCompleted)
+        assertEquals(CellUploadState.Uploading(), arrangement.state("a.txt"))
+        assertEquals(CellUploadState.Uploading(), arrangement.state("b.txt"))
+
+        draft.complete(Unit)
+        runCurrent()
+        assertEquals(listOf("node-a.txt"), arrangement.manager.cancelled)
+        assertFalse(cancellation.isCompleted)
+        assertEquals(CellUploadState.Uploading(), arrangement.state("a.txt"))
+        abort.complete(Unit)
+        cancellation.await()
+        advanceUntilIdle()
+        assertEquals(CellUploadState.Cancelled, arrangement.state("a.txt"))
+        assertEquals(CellUploadState.Uploading(), arrangement.state("b.txt"))
+        assertEquals(listOf("node-a.txt"), arrangement.manager.cancelled)
+
+        arrangement.manager.emit("b.txt", CellUploadEvent.UploadCompleted)
+        advanceUntilIdle()
+        assertEquals(CellUploadState.Completed, arrangement.state("b.txt"))
+        arrangement.close()
+    }
+
+    @Test
+    fun cancelAndAwait_queuedItemDoesNotStartAndPreparingItemRemainsWithPicker() = runTest {
+        val arrangement = Arrangement(this, maxConcurrentUploads = 1)
+        val preparing = arrangement.coordinator.beginPreparing("preparing.txt", "cells")
+        arrangement.coordinator.enqueue(listOf(request("a.txt"), request("b.txt")))
+        runCurrent()
+        arrangement.coordinator.cancelAndAwait(arrangement.id("b.txt"))
+        arrangement.coordinator.cancelAndAwait(preparing)
+        assertEquals(CellUploadState.Cancelled, arrangement.state("b.txt"))
+        assertTrue(arrangement.state("preparing.txt") is CellUploadState.Preparing)
+        assertEquals(1, arrangement.manager.uploadCalls)
+        assertTrue(arrangement.manager.cancelled.isEmpty())
+        arrangement.close()
+    }
+
     private fun request(fileName: String, size: Long = 42L, conversationId: String = "cells") = CellUploadRequest(
         localPath = "/tmp/$fileName".toPath(),
         fileName = fileName,
@@ -712,12 +767,9 @@ class CellUploadCoordinatorTest {
         override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
         override suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>?> = throw NotImplementedError()
         override suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode> = throw NotImplementedError()
-        override suspend fun deleteFiles(paths: List<String>, permanentDelete: Boolean): Either<NetworkFailure, Unit> =
-            throw NotImplementedError()
-
-        override suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink> =
-            throw NotImplementedError()
-
+        override suspend fun deleteFiles(paths: List<String>, permanentDelete: Boolean): Either<NetworkFailure, Unit> = throw NotImplementedError()
+        override suspend fun deleteNodes(uuids: List<String>, permanentDelete: Boolean): Either<NetworkFailure, Unit> = throw NotImplementedError()
+        override suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink> = throw NotImplementedError()
         override suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, PublicLink> = throw NotImplementedError()
         override suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
         override suspend fun createPublicLinkPassword(linkUuid: String, password: String): Either<NetworkFailure, Unit> =
@@ -767,6 +819,8 @@ class CellUploadCoordinatorTest {
         val dropFlowAfterUpload = mutableSetOf<String>()
         val failedBeforeSubscription = mutableSetOf<String>()
         val cancelled = mutableListOf<String>()
+        val beforeNode = mutableMapOf<String, CompletableDeferred<Unit>>()
+        val beforeAbort = mutableMapOf<String, CompletableDeferred<Unit>>()
         var uploadCalls = 0
         var retryUploadCalls = 0
 
@@ -796,6 +850,7 @@ class CellUploadCoordinatorTest {
             val fileName = destNodePath.substringAfterLast('/')
             if (fileName in failWithNoNetworkFor) return NetworkFailure.NoNetworkConnection(null).left()
             if (fileName in failUploadFor) return NetworkFailure.ServerMiscommunication(Exception("upload failed")).left()
+            beforeNode[fileName]?.let { gate -> withContext(NonCancellable) { gate.await() } }
             val uuid = "node-$fileName"
             if (fileName !in dropFlowAfterUpload) {
                 flows[uuid] = MutableSharedFlow(extraBufferCapacity = 16)
@@ -819,6 +874,9 @@ class CellUploadCoordinatorTest {
 
         override suspend fun cancelUpload(nodeUuid: String) {
             cancelled += nodeUuid
+            beforeAbort[nodeUuid]?.await()
+            flows.remove(nodeUuid)
+            infos.remove(nodeUuid)
         }
 
         override fun getUploadInfo(nodeUuid: String): CellUploadInfo? = infos[nodeUuid]

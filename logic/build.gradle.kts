@@ -46,7 +46,6 @@ kotlin {
     explicitApi()
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
     abiValidation {
-        enabled.set(true)
         filters {
             exclude {
                 annotatedWith.add("com.wire.kalium.util.InternalKaliumApi")
@@ -98,11 +97,9 @@ kotlin {
                 implementation(projects.core.util)
                 implementation(projects.domain.cells)
                 implementation(projects.domain.backup)
-                implementation(projects.domain.nomaddevice)
                 implementation(projects.domain.userstorage)
                 implementation(projects.domain.usernetwork)
                 implementation(projects.domain.messaging.sending)
-                implementation(projects.domain.messaging.hooks)
 
                 // coroutines
                 implementation(libs.coroutines.core)

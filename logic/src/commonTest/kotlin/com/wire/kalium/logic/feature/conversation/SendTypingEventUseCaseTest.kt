@@ -28,7 +28,6 @@ import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -47,7 +46,7 @@ class SendTypingEventUseCaseTest {
         useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STOPPED)
 
         verifySuspend(VerifyMode.atLeast(1)) {
-            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STOPPED))
+            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(TestConversation.ID, Conversation.TypingIndicatorMode.STOPPED)
         }
     }
 
@@ -63,7 +62,7 @@ class SendTypingEventUseCaseTest {
         val result = useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STARTED)
 
         verifySuspend(VerifyMode.atLeast(1)) {
-            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STARTED))
+            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(TestConversation.ID, Conversation.TypingIndicatorMode.STARTED)
         }
         assertEquals(Unit, result)
     }
@@ -76,7 +75,7 @@ class SendTypingEventUseCaseTest {
             result: Either<CoreFailure, Unit> = Either.Right(Unit)
         ) = apply {
             everySuspend {
-                typingIndicatorRepository.sendTypingIndicatorStatus(any(), eq(typingMode))
+                typingIndicatorRepository.sendTypingIndicatorStatus(any(), typingMode)
             } returns result
         }
 

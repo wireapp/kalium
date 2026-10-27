@@ -33,7 +33,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -73,7 +72,7 @@ class LoginRepositoryTest {
             verificationCode = TEST_SECOND_FACTOR_CODE
         )
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.loginApi.login(eq(expectedParam), eq(TEST_PERSIST_CLIENT))
+            arrangement.loginApi.login(expectedParam, TEST_PERSIST_CLIENT)
         }
     }
 
@@ -94,7 +93,7 @@ class LoginRepositoryTest {
             label = TEST_LABEL,
         )
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.loginApi.login(eq(expectedParam), eq(TEST_PERSIST_CLIENT))
+            arrangement.loginApi.login(expectedParam, TEST_PERSIST_CLIENT)
         }
     }
 
@@ -104,7 +103,7 @@ class LoginRepositoryTest {
         loginRepository.getDomainRegistration(
             email = TEST_EMAIL
         )
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.getDomainRegistrationApi.getDomainRegistration(eq(TEST_EMAIL)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getDomainRegistrationApi.getDomainRegistration(TEST_EMAIL) }
     }
 
     @Test
@@ -114,7 +113,7 @@ class LoginRepositoryTest {
             .withFetchDomainRedirectCustomBackendConfigReturning(DOMAIN_LOOKUP_RESPONSE)
             .arrange()
         loginRepository.fetchDomainRedirectCustomBackendConfig(backendUrl = backendUrl)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.getDomainRegistrationApi.customBackendConfig(eq(backendUrl)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getDomainRegistrationApi.customBackendConfig(backendUrl) }
     }
 
     private class Arrangement {

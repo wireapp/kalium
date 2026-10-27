@@ -67,7 +67,6 @@ import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify
@@ -105,7 +104,7 @@ class MessageRepositoryTest {
         // Then
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                messageDAO.getMessagesByConversationAndVisibility(eq(mappedId), any(), any(), any())
+                messageDAO.getMessagesByConversationAndVisibility(mappedId, any(), any(), any())
             }
         }
     }
@@ -125,7 +124,7 @@ class MessageRepositoryTest {
         // Then
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                messageDAO.getImageMessageAssets(eq(mappedId), any(), any(), any())
+                messageDAO.getImageMessageAssets(mappedId, any(), any(), any())
             }
         }
     }
@@ -148,7 +147,7 @@ class MessageRepositoryTest {
         // Then
         with(arrangement) {
             verify(VerifyMode.exactly(1)) {
-                messageMapper.fromEntityToMessage(eq(entity))
+                messageMapper.fromEntityToMessage(entity)
             }
         }
     }
@@ -167,11 +166,11 @@ class MessageRepositoryTest {
 
         with(arrangement) {
             verify(VerifyMode.exactly(1)) {
-                messageMapper.fromMessageToEntity(eq(message))
+                messageMapper.fromMessageToEntity(message)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                messageDAO.insertOrIgnoreMessage(eq(mappedEntity), any())
+                messageDAO.insertOrIgnoreMessage(mappedEntity, any())
             }
         }
     }
@@ -344,10 +343,10 @@ class MessageRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDAO.promoteMessageToSentUpdatingServerTime(
-                eq(conversationID.toDao()),
-                eq(messageID),
-                eq(newServerData),
-                eq(millis)
+                conversationID.toDao(),
+                messageID,
+                newServerData,
+                millis
             )
         }
     }
@@ -400,10 +399,10 @@ class MessageRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDAO.insertFailedRecipientDelivery(
-                eq(messageID),
-                eq(conversationID.toDao()),
-                eq(expectedFailedUsers),
-                eq(RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED)
+                messageID,
+                conversationID.toDao(),
+                expectedFailedUsers,
+                RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
             )
         }
     }
@@ -480,8 +479,8 @@ class MessageRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDAO.moveMessages(
-                eq(sourceConversationId.toDao()),
-                eq(targetConversationId.toDao())
+                sourceConversationId.toDao(),
+                targetConversationId.toDao()
             )
         }
     }
@@ -546,9 +545,9 @@ class MessageRepositoryTest {
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDAO.updateLegalHoldMessageMembers(
-                eq(TEST_CONVERSATION_ID.toDao()),
-                eq(TEST_MESSAGE_ID),
-                eq(newUsersList.map { it.toDao() })
+                TEST_CONVERSATION_ID.toDao(),
+                TEST_MESSAGE_ID,
+                newUsersList.map { it.toDao() }
             )
         }
     }
@@ -564,7 +563,7 @@ class MessageRepositoryTest {
         messageRepository.getLastMessagesForConversationIds(conversationIds)
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.getLastMessagesByConversations(eq(conversationIds.map { it.toDao() }))
+            arrangement.messageDAO.getLastMessagesByConversations(conversationIds.map { it.toDao() })
         }
     }
 
@@ -704,7 +703,7 @@ class MessageRepositoryTest {
         result.shouldSucceed()
         verifySuspend {
             arrangement.messageDAO.updateCompositeMessageContent(
-                eq(message.conversationId.toDao()),
+                message.conversationId.toDao(),
                 any(),
                 any(),
                 any(),
@@ -751,7 +750,7 @@ class MessageRepositoryTest {
 
         fun withMappedMessageModel(result: Message.Regular, param: MessageEntity.Regular): Arrangement {
             every {
-                messageMapper.fromEntityToMessage(eq(param))
+                messageMapper.fromEntityToMessage(param)
             }.returns(result)
             return this
         }
@@ -847,7 +846,7 @@ class MessageRepositoryTest {
             result: Int
         ) = apply {
             everySuspend {
-                messageDAO.getSearchedConversationMessagePosition(eq(conversationId), eq(messageId))
+                messageDAO.getSearchedConversationMessagePosition(conversationId, messageId)
             }.returns(result)
         }
 
@@ -856,7 +855,7 @@ class MessageRepositoryTest {
             result: List<AssetMessageEntity>
         ) = apply {
             everySuspend {
-                messageDAO.getImageMessageAssets(eq(conversationId), any(), any(), any())
+                messageDAO.getImageMessageAssets(conversationId, any(), any(), any())
             }.returns(result)
         }
 

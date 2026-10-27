@@ -40,15 +40,10 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
-import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
-import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
-import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -57,7 +52,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class DeletedConversationEventHandlerTest {
 
@@ -74,7 +68,7 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.not) {
-                deleteConversation(any(), eq(TestConversation.ID))
+                deleteConversation(any(), TestConversation.ID)
             }
         }
     }
@@ -94,18 +88,16 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                deleteConversation(any(), eq(TestConversation.ID))
+                deleteConversation(any(), TestConversation.ID)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
                 notificationEventsManager.scheduleDeleteConversationNotification(
-                    eq(
-                        EphemeralConversationNotification(
+                    EphemeralConversationNotification(
                             event,
                             conversation,
                             otherUser
                         )
-                    )
                 )
             }
             verifySuspend(VerifyMode.not) { notificationEventsManager.scheduleMeetingNotification(any()) }
@@ -113,11 +105,10 @@ class DeletedConversationEventHandlerTest {
     }
 
     @Test
-    fun givenDeletedConversationWithoutSender_whenHandlingIt_thenSchedulesAnonymousNotificationAndNotifiesHook() = runTest {
+    fun givenDeletedConversationWithoutSender_whenHandlingIt_thenSchedulesAnonymousNotification() = runTest {
         val event = TestEvent.deletedConversation().copy(senderUserId = null)
         val conversation = TestConversation.CONVERSATION
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val (arrangement, eventHandler) = arrange(hookNotifier) {
+        val (arrangement, eventHandler) = arrange {
             withGetConversationByIdReturning(conversation)
             withDeletingConversationSucceeding()
         }
@@ -126,21 +117,17 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                deleteConversation(any(), eq(TestConversation.ID))
+                deleteConversation(any(), TestConversation.ID)
             }
             verifySuspend(VerifyMode.not) {
                 userRepository.observeUser(any())
             }
             verifySuspend(VerifyMode.exactly(1)) {
                 notificationEventsManager.scheduleDeleteConversationNotification(
-                    eq(EphemeralConversationNotification(event, conversation, null))
+                    EphemeralConversationNotification(event, conversation, null)
                 )
             }
         }
-        assertEquals(
-            ConversationDeleteEventData(event.conversationId) to TestUser.USER_ID,
-            hookNotifier.conversationDeleteCalls.single()
-        )
     }
 
     @Test
@@ -161,64 +148,6 @@ class DeletedConversationEventHandlerTest {
                 notificationEventsManager.scheduleDeleteConversationNotification(any())
             }
         }
-    }
-
-    @Test
-    fun givenADeletedConversationEvent_whenHandlingItSuccessfully_thenHookIsNotified() = runTest {
-        val event = TestEvent.deletedConversation()
-        val conversation = TestConversation.CONVERSATION
-        val otherUser = TestUser.OTHER
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val (arrangement, eventHandler) = arrange(hookNotifier) {
-            withGetConversationByIdReturning(conversation)
-            withObserveUser(flowOf(otherUser), requireNotNull(event.senderUserId))
-            withDeletingConversationSucceeding()
-        }
-
-        eventHandler.handle(arrangement.transactionContext, event)
-
-        assertEquals(1, hookNotifier.conversationDeleteCalls.size)
-        val (data, selfUserId) = hookNotifier.conversationDeleteCalls.single()
-        assertEquals(event.conversationId, data.conversationId)
-        assertEquals(TestUser.USER_ID, selfUserId)
-    }
-
-    @Test
-    fun givenADeletedConversationEvent_whenHandlingItWithError_thenHookIsStillNotified() = runTest {
-        val event = TestEvent.deletedConversation()
-        val conversation = TestConversation.CONVERSATION
-        val otherUser = TestUser.OTHER
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val (arrangement, eventHandler) = arrange(hookNotifier) {
-            withGetConversationByIdReturning(conversation)
-            withObserveUser(flowOf(otherUser), requireNotNull(event.senderUserId))
-            withDeletingConversationFailing()
-        }
-
-        eventHandler.handle(arrangement.transactionContext, event)
-
-        assertEquals(1, hookNotifier.conversationDeleteCalls.size)
-        val (data, selfUserId) = hookNotifier.conversationDeleteCalls.single()
-        assertEquals(event.conversationId, data.conversationId)
-        assertEquals(TestUser.USER_ID, selfUserId)
-    }
-
-    @Test
-    fun givenADeletedConversationEvent_whenConversationNotFound_thenHookIsStillNotified() = runTest {
-        val event = TestEvent.deletedConversation()
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val (arrangement, eventHandler) = arrange(hookNotifier) {
-            withGetConversationByIdReturning(null)
-            withObserveUser(userId = requireNotNull(event.senderUserId))
-            withDeletingConversationSucceeding()
-        }
-
-        eventHandler.handle(arrangement.transactionContext, event)
-
-        assertEquals(1, hookNotifier.conversationDeleteCalls.size)
-        val (data, selfUserId) = hookNotifier.conversationDeleteCalls.single()
-        assertEquals(event.conversationId, data.conversationId)
-        assertEquals(TestUser.USER_ID, selfUserId)
     }
 
     @Test
@@ -264,15 +193,9 @@ class DeletedConversationEventHandlerTest {
         }
     }
 
-    private suspend fun arrange(
-        hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,
-        block: suspend Arrangement.() -> Unit
-    ) = Arrangement(hookNotifier, block).arrange()
-
-    private suspend fun arrange(block: suspend Arrangement.() -> Unit) = arrange(NoOpPersistenceEventHookNotifier, block)
+    private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val hookNotifier: PersistenceEventHookNotifier,
         private val block: suspend Arrangement.() -> Unit
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
@@ -291,7 +214,7 @@ class DeletedConversationEventHandlerTest {
         }
 
         suspend fun withObserveUser(result: Flow<User?> = flowOf(TestUser.OTHER), userId: UserId = TestUser.OTHER_USER_ID) {
-            everySuspend { userRepository.observeUser(eq(userId)) } returns result
+            everySuspend { userRepository.observeUser(userId) } returns result
         }
 
         suspend fun withDeletingConversationSucceeding() {
@@ -314,23 +237,8 @@ class DeletedConversationEventHandlerTest {
                 meetingRepository = meetingRepository,
                 userRepository = userRepository,
                 notificationEventsManager = notificationEventsManager,
-                deleteConversation = deleteConversation,
-                persistenceEventHookNotifier = hookNotifier,
-                selfUserId = TestUser.USER_ID,
+                deleteConversation = deleteConversation
             )
         }
-    }
-
-    private class RecordingPersistenceEventHookNotifier : PersistenceEventHookNotifier {
-        val conversationDeleteCalls = mutableListOf<Pair<ConversationDeleteEventData, UserId>>()
-
-        override suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {
-            conversationDeleteCalls += data to selfUserId
-        }
-
-        override suspend fun onConversationLastReadPersisted(
-            data: ConversationLastReadEventData,
-            selfUserId: UserId
-        ) = Unit
     }
 }

@@ -9,7 +9,6 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.common.error.BackupFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
@@ -68,7 +67,7 @@ class MLSMessageFailureHandlerTest {
     }
 
     @Test
-    fun givenIgnorableMlsOrBackupFailure_whenHandling_thenIgnore() {
+    fun givenIgnorableMlsFailure_whenHandling_thenIgnore() {
         assertFailureResolutions(
             failures = listOf(
                 MLSFailure.DuplicateMessage,
@@ -85,7 +84,6 @@ class MLSMessageFailureHandlerTest {
                 MLSFailure.BufferedCommit,
                 MLSFailure.OrphanWelcome,
                 CoreFailure.DevelopmentAPINotAllowedOnProduction,
-                BackupFailure.NoCryptoStateAvailable,
             ),
             expected = MLSMessageFailureResolution.Ignore,
         )

@@ -37,7 +37,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -149,10 +148,10 @@ class GetOrRegisterClientUseCaseTest {
             arrangement.registerClientUseCase.invoke(any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
+            arrangement.upgradeCurrentSessionUseCase.invoke(clientId)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.persistClientId(eq(clientId))
+            arrangement.clientRepository.persistClientId(clientId)
         }
     }
 
@@ -190,16 +189,16 @@ class GetOrRegisterClientUseCaseTest {
             arrangement.clientRepository.clearRetainedClientId()
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(true)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.registerClientUseCase.invoke(any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
+            arrangement.upgradeCurrentSessionUseCase.invoke(clientId)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.persistClientId(eq(clientId))
+            arrangement.clientRepository.persistClientId(clientId)
         }
     }
 
@@ -261,10 +260,10 @@ class GetOrRegisterClientUseCaseTest {
             arrangement.registerClientUseCase.invoke(any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
+            arrangement.upgradeCurrentSessionUseCase.invoke(clientId)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.persistClientId(eq(clientId))
+            arrangement.clientRepository.persistClientId(clientId)
         }
     }
 
@@ -294,10 +293,10 @@ class GetOrRegisterClientUseCaseTest {
             arrangement.registerClientUseCase.invoke(any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
+            arrangement.upgradeCurrentSessionUseCase.invoke(clientId)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.persistClientId(eq(clientId))
+            arrangement.clientRepository.persistClientId(clientId)
         }
     }
 

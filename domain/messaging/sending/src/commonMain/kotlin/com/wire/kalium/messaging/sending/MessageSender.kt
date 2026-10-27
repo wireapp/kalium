@@ -75,6 +75,15 @@ interface MessageSender {
     ): Either<CoreFailure, Unit>
 
     /**
+     * Returns true only when this attempt sent the message; false when the persisted message is no longer eligible.
+     * Like [sendMessage], propagates failures without scheduling retries. Uses the same transaction and storage check.
+     */
+    suspend fun sendMessageWithOutcome(
+        message: Message.Sendable,
+        messageTarget: MessageTarget = MessageTarget.Conversation()
+    ): Either<CoreFailure, Boolean>
+
+    /**
      * Attempts to send the given [BroadcastMessage] to suitable recipients.
      *
      * Will handle all the needed encryption and possible set-up

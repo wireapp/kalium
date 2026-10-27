@@ -35,14 +35,9 @@ import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
-import com.wire.kalium.messaging.hooks.ConversationClearEventData
-import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -58,8 +53,7 @@ class ClearConversationContentHandlerTest {
     @Test
     fun NSEReplayUsesItsSnapshotInsteadOfClearingNewerEffectsAgain() = runTest {
         val calls = mutableListOf<String>()
-        val hook = RecordingPersistenceEventHookNotifier()
-        val (arrangement, handler) = Arrangement(hookNotifier = hook).arrange(recoverNSEClear = { message, _ ->
+        val (arrangement, handler) = Arrangement().arrange(recoverNSEClear = { message, _ ->
             calls += message.id
             true
         }) {
@@ -69,8 +63,7 @@ class ClearConversationContentHandlerTest {
         handler.handle(arrangement.transactionContext, OWN_MESSAGE,
             MessageContent.Cleared(CONVERSATION_ID, OWN_MESSAGE.date, false))
         assertEquals(listOf(OWN_MESSAGE.id), calls)
-        assertEquals(0, hook.conversationClearCalls.size)
-        assertNoCleanup(arrangement, hook)
+        assertNoCleanup(arrangement)
     }
 
     @Test
@@ -85,9 +78,8 @@ class ClearConversationContentHandlerTest {
     private fun rejectedSignal(message: Message.Signaling, selfConversation: Boolean) = runTest {
         for (removeLocally in listOf(false, true)) {
             for (target in listOf(CONVERSATION_ID, ConversationId("another-conversation", "other-domain"))) {
-                val hook = RecordingPersistenceEventHookNotifier()
                 val recoveryCalls = mutableListOf<String>()
-                val (arrangement, handler) = Arrangement(hook).arrange(recoverNSEClear = { signal, _ ->
+                val (arrangement, handler) = Arrangement().arrange(recoverNSEClear = { signal, _ ->
                     recoveryCalls += signal.id
                     false
                 }) { withMessageSentInSelfConversation(selfConversation) }
@@ -95,7 +87,7 @@ class ClearConversationContentHandlerTest {
                 handler.handle(arrangement.transactionContext, message,
                     MessageContent.Cleared(target, Instant.DISTANT_PAST, removeLocally))
 
-                assertNoCleanup(arrangement, hook)
+                assertNoCleanup(arrangement)
                 assertEquals(emptyList(), recoveryCalls)
                 verifySuspend(VerifyMode.not) { arrangement.conversationRepository.getConversationById(any()) }
             }
@@ -104,8 +96,7 @@ class ClearConversationContentHandlerTest {
 
     @Test
     fun missingTargetIsRejected() = runTest {
-        val hook = RecordingPersistenceEventHookNotifier()
-        val (arrangement, handler) = Arrangement(hook).arrange {
+        val (arrangement, handler) = Arrangement().arrange {
             withMessageSentInSelfConversation(true)
             everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns Either.Left(StorageFailure.DataNotFound)
         }
@@ -113,13 +104,12 @@ class ClearConversationContentHandlerTest {
             handler.handle(arrangement.transactionContext, OWN_MESSAGE,
                 MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, removeLocally))
         }
-        assertNoCleanup(arrangement, hook)
+        assertNoCleanup(arrangement)
     }
 
     @Test
     fun selfConversationTargetIsRejected() = runTest {
-        val hook = RecordingPersistenceEventHookNotifier()
-        val (arrangement, handler) = Arrangement(hook).arrange(recoverNSEClear = { _, _ ->
+        val (arrangement, handler) = Arrangement().arrange(recoverNSEClear = { _, _ ->
             error("Self-conversation target must not trigger recovery")
         }) {
             withMessageSentInSelfConversation(true)
@@ -132,13 +122,12 @@ class ClearConversationContentHandlerTest {
                     MessageContent.Cleared(target, Instant.DISTANT_PAST, removeLocally))
             }
         }
-        assertNoCleanup(arrangement, hook)
+        assertNoCleanup(arrangement)
     }
 
     @Test
     fun targetLookupFailurePreventsCleanupAndRecovery() = runTest {
-        val hook = RecordingPersistenceEventHookNotifier()
-        val (arrangement, handler) = Arrangement(hook).arrange(recoverNSEClear = { _, _ ->
+        val (arrangement, handler) = Arrangement().arrange(recoverNSEClear = { _, _ ->
             error("Failed target lookup must not trigger recovery")
         }) {
             withMessageSentInSelfConversation(true)
@@ -149,14 +138,13 @@ class ClearConversationContentHandlerTest {
             handler.handle(arrangement.transactionContext, OWN_MESSAGE,
                 MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, true))
         }
-        assertNoCleanup(arrangement, hook)
+        assertNoCleanup(arrangement)
     }
 
-    private suspend fun assertNoCleanup(arrangement: Arrangement, hook: RecordingPersistenceEventHookNotifier) {
+    private suspend fun assertNoCleanup(arrangement: Arrangement) {
         verifySuspend(VerifyMode.not) { arrangement.conversationRepository.clearContent(any()) }
         verifySuspend(VerifyMode.not) { arrangement.clearConversationAssetsLocally(any()) }
         verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
-        assertEquals(emptyList(), hook.conversationClearCalls)
     }
 
     @Test
@@ -208,37 +196,8 @@ class ClearConversationContentHandlerTest {
     }
 
     @Test
-    fun givenConversationClearedSuccessfully_whenHandled_thenHookIsNotified() = runTest {
-        // given
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val (arrangement, handler) = Arrangement(hookNotifier = hookNotifier)
-            .arrange {
-                withMessageSentInSelfConversation(true)
-            }
-
-        // when
-        handler.handle(
-            message = OWN_MESSAGE,
-            messageContent = MessageContent.Cleared(
-                conversationId = CONVERSATION_ID,
-                time = Instant.DISTANT_PAST,
-                needToRemoveLocally = false
-            ),
-            transactionContext = arrangement.transactionContext
-        )
-
-        // then
-        assertEquals(1, hookNotifier.conversationClearCalls.size)
-        val (data, selfUserId) = hookNotifier.conversationClearCalls.single()
-        assertEquals(CONVERSATION_ID, data.conversationId)
-        assertEquals(TestUser.USER_ID, selfUserId)
-    }
-
-
-    @Test
     fun assetCleanupFailureDoesNotPreventClearAndRemove() = runTest {
-        val hook = RecordingPersistenceEventHookNotifier()
-        val (arrangement, handler) = Arrangement(hook).arrange {
+        val (arrangement, handler) = Arrangement().arrange {
             withMessageSentInSelfConversation(true)
             everySuspend { clearConversationAssetsLocally(any()) } returns Either.Left(CoreFailure.Unknown(null))
         }
@@ -247,14 +206,12 @@ class ClearConversationContentHandlerTest {
             MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, true))
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(CONVERSATION_ID) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.deleteConversation(any(), eq(CONVERSATION_ID)) }
-        assertEquals(1, hook.conversationClearCalls.size)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.deleteConversation(any(), CONVERSATION_ID) }
     }
 
     @Test
-    fun contentFailureStillPreventsRemovalAndSuccessHook() = runTest {
-        val hook = RecordingPersistenceEventHookNotifier()
-        val (arrangement, handler) = Arrangement(hook).arrange {
+    fun contentFailureStillPreventsRemoval() = runTest {
+        val (arrangement, handler) = Arrangement().arrange {
             withMessageSentInSelfConversation(true)
             everySuspend { conversationRepository.clearContent(any()) } returns Either.Left(CoreFailure.Unknown(null))
         }
@@ -265,7 +222,6 @@ class ClearConversationContentHandlerTest {
         }
 
         verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
-        assertEquals(0, hook.conversationClearCalls.size)
     }
 
     @Test
@@ -281,9 +237,7 @@ class ClearConversationContentHandlerTest {
         }
     }
 
-    private class Arrangement(
-        private val hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,
-    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
         val conversationRepository = mock<ConversationRepository>()
         val deleteConversation = mock<DeleteConversationUseCase>()
@@ -304,7 +258,6 @@ class ClearConversationContentHandlerTest {
                 isMessageSentInSelfConversation = isMessageSentInSelfConversationUseCase,
                 clearLocalConversationAssets = clearConversationAssetsLocally,
                 deleteConversation = deleteConversation,
-                persistenceEventHookNotifier = hookNotifier,
                 recoverNSEClear = recoverNSEClear,
             )
             withDeletingConversationSucceeding()
@@ -324,19 +277,6 @@ class ClearConversationContentHandlerTest {
         suspend fun withClearContentSucceeding() {
             everySuspend { conversationRepository.clearContent(any()) } returns Either.Right(Unit)
         }
-    }
-
-    private class RecordingPersistenceEventHookNotifier : PersistenceEventHookNotifier {
-        val conversationClearCalls = mutableListOf<Pair<ConversationClearEventData, UserId>>()
-
-        override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
-            conversationClearCalls += data to selfUserId
-        }
-
-        override suspend fun onConversationLastReadPersisted(
-            data: ConversationLastReadEventData,
-            selfUserId: UserId
-        ) = Unit
     }
 
     companion object {

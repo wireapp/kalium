@@ -26,6 +26,8 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.SYSTEM
 
@@ -57,8 +59,15 @@ internal class DeleteCellAssetsUseCaseImpl(
 
     override suspend fun invoke(nodes: List<NodeToDelete>, permanentDelete: Boolean): Either<CoreFailure, Unit> {
         if (nodes.isEmpty()) return Unit.right()
-        return cellsRepository.deleteFiles(nodes.map { it.locator.path }, permanentDelete)
-            // Done for every node even if it fails for one of them, see the result contract above.
-            .onSuccess { nodes.forEach { localCleanup(it.locator.uuid, it.localPath) } }
+        return cellsRepository.deleteNodes(nodes.map { it.uuid }, permanentDelete)
+            .onSuccess {
+                // The nodes are gone from the server: finish cleaning up all of them even if the caller is cancelled
+                // meanwhile (e.g. its screen closed), or the rest would keep stale local data. One block for the whole
+                // loop, as leaving a withContext rethrows the caller's cancellation and would stop it between nodes.
+                withContext(NonCancellable) {
+                    // Done for every node even if it fails for one of them, see the result contract above.
+                    nodes.forEach { localCleanup(it.uuid, it.localPath, it.folderPath) }
+                }
+            }
     }
 }

@@ -18,6 +18,18 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.feature.asset.upload.AssetUploadCompletion
+import com.wire.kalium.logic.feature.asset.upload.TrackedAssetUploadImpl
+import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
+import com.wire.kalium.logic.feature.asset.upload.UploadAssetMessageMetadata
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
+import com.wire.kalium.logic.data.asset.UploadedAssetId
+import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
+import kotlinx.coroutines.awaitCancellation
+import okio.Path.Companion.toPath
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -73,9 +85,8 @@ import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.every
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.sequentiallyReturns
@@ -119,7 +130,7 @@ class MessageSenderTest {
     fun givenCancellationQueuedFirst_whenStaleSendWaitsForTransaction_thenItDoesNotSend() {
         val (arrangement, sender) = arrange { }
         arrangement.testScope.runTest {
-            val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
+            val pending = TestMessage.assetMessage().copy(isSelfMessage = true)
             var stored: Message? = pending
             everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls {
                 stored?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
@@ -231,12 +242,42 @@ class MessageSenderTest {
                 mock(mode = MockMode.autoUnit),
                 mock(mode = MockMode.autoUnit),
                 mock(mode = MockMode.autoUnit),
-                object : com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier {},
                 testKaliumDispatcher
             )
 
             delete(pending.conversationId, pending.id, false).toEither().shouldSucceed()
+            assertEquals(Either.Right(false), sender.sendMessageWithOutcome(pending))
             sender.sendMessage(pending).shouldSucceed()
+            val updateTransfer = mock<UpdateAssetMessageTransferStatusUseCase>()
+            everySuspend { updateTransfer(any(), any(), any()) } returns UpdateTransferStatusResult.Success
+            val upload = UploadAssetUseCaseImpl(
+                mock(), sender, mock(), updateTransfer, mock(), mock(), AudioNormalizedLoudnessBuilderMock(),
+                dispatcher = testKaliumDispatcher,
+            )
+            val metadata = UploadAssetMessageMetadata(
+                conversationId = pending.conversationId,
+                mimeType = "image/jpeg",
+                assetId = UploadedAssetId("uploaded", "domain"),
+                assetDataPath = "/unused".toPath(),
+                assetDataSize = 1L,
+                assetName = "image.jpg",
+                assetWidth = null,
+                assetHeight = null,
+                otrKey = AES256Key(byteArrayOf()),
+                sha256Key = SHA256Key(byteArrayOf(1)),
+                audioLengthInMs = 0L,
+                audioNormalizedLoudness = null,
+            )
+            val operation = TrackedAssetUploadImpl(
+                pending.id,
+                backgroundScope,
+                retryOperation = { error("Deleted upload must not automatically retry") },
+                // Deliberately hold the visibility monitor: only the sender observes the committed deletion.
+                monitor = { awaitCancellation() },
+                upload = { upload(pending, metadata) },
+                onCancelled = { error("Deleted message must not be marked failed") },
+            )
+            assertEquals(AssetUploadCompletion.Cancelled, operation.awaitCompletion())
             verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.messageRepository.sendEnvelope(any(), any(), any())
             }
@@ -286,7 +327,7 @@ class MessageSenderTest {
             result.shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                    eq(TEST_PROTOCOL_INFO_FAILURE),
+                    TEST_PROTOCOL_INFO_FAILURE,
                     any(),
                     any(),
                     any(),
@@ -311,7 +352,7 @@ class MessageSenderTest {
             result.shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                    eq(Arrangement.TEST_CORE_FAILURE),
+                    Arrangement.TEST_CORE_FAILURE,
                     any(),
                     any(),
                     any(),
@@ -336,7 +377,7 @@ class MessageSenderTest {
             result.shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                    eq(Arrangement.TEST_CORE_FAILURE),
+                    Arrangement.TEST_CORE_FAILURE,
                     any(),
                     any(),
                     any(),
@@ -361,7 +402,7 @@ class MessageSenderTest {
             result.shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                    eq(Arrangement.TEST_CORE_FAILURE),
+                    Arrangement.TEST_CORE_FAILURE,
                     any(),
                     any(),
                     any(),
@@ -386,7 +427,7 @@ class MessageSenderTest {
             // then
             result.shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(failure, any(), any(), any(), any())
             }
         }
     }
@@ -407,7 +448,7 @@ class MessageSenderTest {
             // then
             result.shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(failure, any(), any(), any(), any())
             }
         }
     }
@@ -447,7 +488,7 @@ class MessageSenderTest {
 
             // then
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(failure, any(), any(), any(), any())
             }
         }
     }
@@ -489,7 +530,7 @@ class MessageSenderTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.staleEpochVerifier.verifyEpoch(
                     any(),
-                    eq(Arrangement.TEST_CONVERSATION_ID),
+                    Arrangement.TEST_CONVERSATION_ID,
                     any(),
                     any()
                 )
@@ -595,7 +636,83 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(2)) {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
+            }
+        }
+    }
+
+    @Test
+    fun givenStaleMlsRejection_whenWaitingForLive_thenTheCryptoTransactionIsReleased() {
+        val (arrangement, messageSender) = arrange {
+            withSendMlsMessage()
+            withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
+            withPromoteMessageToSentUpdatingServerTime()
+            withVerifyEpoch(Either.Right(Unit))
+        }
+        arrangement.testScope.runTest {
+            arrangement.serializeTransactions()
+            // Catch-up needs the transaction queue to process the commits the send missed.
+            val queueHeldWhileWaiting = mutableListOf<Boolean>()
+            everySuspend { arrangement.syncManager.waitUntilLiveOrFailure() } calls {
+                queueHeldWhileWaiting += arrangement.transactionQueue.isLocked
+                Either.Right(Unit)
+            }
+
+            messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldSucceed()
+
+            assertEquals(listOf(false), queueHeldWhileWaiting)
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
+            }
+        }
+    }
+
+    @Test
+    fun givenMlsStillStaleAfterLive_whenSending_thenRetryOnceAndReturnTheRejection() {
+        val (arrangement, messageSender) = arrange {
+            withSendMlsMessage(sendMlsMessageWithResult = Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE))
+            withWaitUntilLiveOrFailure()
+            withVerifyEpoch(Either.Right(Unit))
+        }
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(TestMessage.TEXT_MESSAGE)
+
+            assertEquals(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), result)
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenStaleMlsSendWaitingForLive_whenPendingMessageIsDeleted_thenCancelWithoutWaitingAndDoNotRetry() {
+        val live = CompletableDeferred<Either<CoreFailure, Unit>>()
+        val (arrangement, sender) = arrange {
+            withSendMlsMessage()
+            withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
+            withVerifyEpoch(Either.Right(Unit))
+            everySuspend { syncManager.waitUntilLiveOrFailure() } calls { live.await() }
+        }
+        arrangement.testScope.runTest {
+            val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
+            var stored: Message? = pending
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls {
+                stored?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+            }
+            everySuspend { arrangement.messageRepository.deleteMessage(any(), any()) } calls {
+                stored = null
+                Either.Right(Unit)
+            }
+            arrangement.serializeTransactions()
+            val send = async { sender.sendMessage(pending) }
+            runCurrent()
+            assertFalse(send.isCompleted)
+
+            assertEquals(Either.Right(true), sender.cancelPendingMessage(pending.conversationId, pending.id))
+            live.complete(Either.Right(Unit))
+            send.await().shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.sendMLSMessage(any())
             }
         }
     }
@@ -617,7 +734,7 @@ class MessageSenderTest {
             result.shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                    eq(Arrangement.TEST_CORE_FAILURE),
+                    Arrangement.TEST_CORE_FAILURE,
                     any(),
                     any(),
                     any(),
@@ -670,17 +787,15 @@ class MessageSenderTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
                     any(),
-                    eq(
-                        listOf(
+                    listOf(
                             Arrangement.TEST_RECIPIENT_1,
                             Arrangement.TEST_RECIPIENT_2
                         )
-                    )
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendEnvelope(eq(message.conversationId), any(), eq(messageTarget))
+                arrangement.messageRepository.sendEnvelope(message.conversationId, any(), messageTarget)
             }
         }
     }
@@ -721,11 +836,11 @@ class MessageSenderTest {
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), eq(listOf(Arrangement.TEST_RECIPIENT_1)))
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), listOf(Arrangement.TEST_RECIPIENT_1))
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendEnvelope(eq(message.conversationId), any(), eq(messageTarget))
+                arrangement.messageRepository.sendEnvelope(message.conversationId, any(), messageTarget)
             }
         }
     }
@@ -745,7 +860,7 @@ class MessageSenderTest {
             // then
             result.shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(failure, any(), any(), any(), any())
             }
         }
     }
@@ -766,7 +881,7 @@ class MessageSenderTest {
             // then
             result.shouldFail()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(failure, any(), any(), any(), any())
             }
         }
     }
@@ -795,7 +910,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), eq(listOf(Arrangement.TEST_MEMBER_1)))
+                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), listOf(Arrangement.TEST_MEMBER_1))
             }
         }
     }
@@ -826,10 +941,10 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(2)) {
-                arrangement.messageRepository.persistNoClientsToDeliverFailure(any(), any(), eq(listOf(TEST_MEMBER_2)))
+                arrangement.messageRepository.persistNoClientsToDeliverFailure(any(), any(), listOf(TEST_MEMBER_2))
             }
             verifySuspend(VerifyMode.not) {
-                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), eq(listOf(TEST_MEMBER_2)))
+                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), listOf(TEST_MEMBER_2))
             }
         }
     }
@@ -878,17 +993,15 @@ class MessageSenderTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
                     any(),
-                    eq(
-                        listOf(
+                    listOf(
                             Arrangement.TEST_RECIPIENT_1,
                             Arrangement.TEST_RECIPIENT_2
                         )
-                    )
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.broadcastEnvelope(any(), eq(option))
+                arrangement.messageRepository.broadcastEnvelope(any(), option)
             }
         }
     }
@@ -934,11 +1047,11 @@ class MessageSenderTest {
 
             // then
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), matching { it.size == 2 })
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), matches { it.size == 2 })
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.broadcastEnvelope(any(), eq(option))
+                arrangement.messageRepository.broadcastEnvelope(any(), option)
             }
         }
     }
@@ -986,11 +1099,11 @@ class MessageSenderTest {
 
             // then
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), matching { it.size == 2 })
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any(), matches { it.size == 2 })
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.broadcastEnvelope(any(), eq(option))
+                arrangement.messageRepository.broadcastEnvelope(any(), option)
             }
         }
     }
@@ -1026,10 +1139,10 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.updateTextMessage(any(), eq(content), eq(editedMessageId), any())
+                arrangement.messageRepository.updateTextMessage(any(), content, editedMessageId, any())
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), eq(editedMessageId), eq<Instant?>(null), any())
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), editedMessageId, null, any())
             }
         }
     }
@@ -1065,10 +1178,10 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.updateMultipartMessage(any(), eq(content), eq(editedMessageId), any())
+                arrangement.messageRepository.updateMultipartMessage(any(), content, editedMessageId, any())
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), eq(editedMessageId), eq<Instant?>(null), any())
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), editedMessageId, null, any())
             }
         }
     }
@@ -1094,8 +1207,8 @@ class MessageSenderTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(
                     any(),
-                    eq(TestMessage.TEXT_MESSAGE.id),
-                    matching { it != null },
+                    TestMessage.TEXT_MESSAGE.id,
+                    matches { it != null },
                     any()
                 )
             }
@@ -1122,7 +1235,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verify(VerifyMode.exactly(1)) {
-                arrangement.selfDeleteMessageSenderHandler.enqueueSelfDeletion(eq(message), any())
+                arrangement.selfDeleteMessageSenderHandler.enqueueSelfDeletion(message, any())
             }
         }
     }
@@ -1147,7 +1260,7 @@ class MessageSenderTest {
             // then
             result.shouldFail()
             verify(VerifyMode.not) {
-                arrangement.selfDeleteMessageSenderHandler.enqueueSelfDeletion(eq(message), any())
+                arrangement.selfDeleteMessageSenderHandler.enqueueSelfDeletion(message, any())
             }
         }
     }
@@ -1171,7 +1284,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), eq(listOf(TEST_MEMBER_2)))
+                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), listOf(TEST_MEMBER_2))
             }
         }
     }
@@ -1193,10 +1306,10 @@ class MessageSenderTest {
             messageSender.sendMessage(message)
             // then
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(any(), eq(failure), eq(message.conversationId))
+                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(any(), failure, message.conversationId)
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.legalHoldHandler.handleMessageSendFailure(eq(message.conversationId), eq(message.date), any())
+                arrangement.legalHoldHandler.handleMessageSendFailure(message.conversationId, message.date, any())
             }
         }
     }
@@ -1220,7 +1333,7 @@ class MessageSenderTest {
             messageSender.broadcastMessage(message, BroadcastMessageTarget.AllUsers(100))
             // then
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(any(), eq(failure), eq<ConversationId?>(null))
+                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(any(), failure, null)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.legalHoldHandler.handleMessageSendFailure(any(), any(), any())
@@ -1248,7 +1361,7 @@ class MessageSenderTest {
                 assertEquals(message.id, it.messageId)
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendEnvelope(eq(message.conversationId), any(), any())
+                arrangement.messageRepository.sendEnvelope(message.conversationId, any(), any())
             }
         }
     }
@@ -1271,7 +1384,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(2)) {
-                arrangement.messageRepository.sendEnvelope(eq(message.conversationId), any(), any())
+                arrangement.messageRepository.sendEnvelope(message.conversationId, any(), any())
             }
         }
     }
@@ -1330,13 +1443,14 @@ class MessageSenderTest {
             )
         }
 
+        // Models the existing CoreCrypto transaction queue, not a message-specific lock.
+        val transactionQueue = Mutex()
+
         @Suppress("UNCHECKED_CAST")
         suspend fun serializeTransactions() {
-            // Model the existing CoreCrypto transaction queue, not a message-specific lock.
-            val queue = Mutex()
             everySuspend { cryptoTransactionProvider.transaction<Any?>(any(), any()) } calls {
                 val operation = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, Any?>
-                queue.withLock { operation(transactionContext) }
+                transactionQueue.withLock { operation(transactionContext) }
             }
         }
 
@@ -1427,7 +1541,7 @@ class MessageSenderTest {
         ) = apply {
             var invocationCounter = 0
             everySuspend {
-                messageRepository.sendMLSMessage(matching { invocationCounter += 1; invocationCounter <= times })
+                messageRepository.sendMLSMessage(matches { invocationCounter += 1; invocationCounter <= times })
             } returns result
         }
 

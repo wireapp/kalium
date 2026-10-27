@@ -55,13 +55,11 @@ import com.wire.kalium.persistence.PendingDeliveryConfirmations
 import com.wire.kalium.persistence.PendingActions
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
-import com.wire.kalium.persistence.RemotebackupChangeLog
 import com.wire.kalium.persistence.SelfUser
 import com.wire.kalium.persistence.Service
 import com.wire.kalium.persistence.UnreadEvent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.adapter.BotServiceAdapter
-import com.wire.kalium.persistence.adapter.ChangeLogEventTypeAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
@@ -145,6 +143,8 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         asset_widthAdapter = IntColumnAdapter,
         asset_heightAdapter = IntColumnAdapter,
+        preview_asset_widthAdapter = IntColumnAdapter,
+        preview_asset_heightAdapter = IntColumnAdapter,
     )
 
     val messageLinkPreviewAdapter = MessageLinkPreview.Adapter(
@@ -289,11 +289,6 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter
     )
 
-    val remoteBackupChangeLogAdapter = RemotebackupChangeLog.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter,
-        event_typeAdapter = ChangeLogEventTypeAdapter
-    )
-
     val appAdapter = App.Adapter(
         idAdapter = QualifiedIDAdapter,
         preview_asset_idAdapter = QualifiedIDAdapter,
@@ -316,7 +311,8 @@ internal object TableMapper {
         start_dateAdapter = InstantTypeAdapter,
         end_dateAdapter = InstantTypeAdapter,
         recurrence_frequencyAdapter = EnumColumnAdapter(),
-        recurrence_end_dateAdapter = InstantTypeAdapter
+        recurrence_end_dateAdapter = InstantTypeAdapter,
+        typeAdapter = EnumColumnAdapter(),
     )
 
     val meetingOccurrenceAdapter = MeetingOccurrence.Adapter(

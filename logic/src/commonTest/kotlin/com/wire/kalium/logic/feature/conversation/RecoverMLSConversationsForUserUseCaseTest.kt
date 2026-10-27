@@ -25,7 +25,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -47,10 +46,10 @@ class RecoverMLSConversationsForUserUseCaseTest {
 
         assertIs<RecoverMLSConversationsForUserResult.Success>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.recoverEstablishedMLSConversations.invoke(eq(arrangement.transactionContext))
+            arrangement.recoverEstablishedMLSConversations.invoke(arrangement.transactionContext)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinPendingMLSConversations.invoke(eq(true), eq(true), eq(false), any())
+            arrangement.joinPendingMLSConversations.invoke(true, true, false, any())
         }
     }
 

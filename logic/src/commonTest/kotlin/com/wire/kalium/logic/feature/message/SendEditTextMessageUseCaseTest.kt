@@ -42,7 +42,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -118,7 +117,7 @@ class SendEditTextMessageUseCaseTest {
             arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.PENDING, any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(true))
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), true)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
@@ -147,7 +146,7 @@ class SendEditTextMessageUseCaseTest {
         // Then
         assertIs<MessageOperationResult.Failure>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), false)
         }
     }
 
@@ -169,7 +168,7 @@ class SendEditTextMessageUseCaseTest {
         // Then
         assertIs<MessageOperationResult.Success>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.updateTextMessage(any(), eq(originalMessageId), any<MessageContent.Text>())
+            arrangement.messageRepository.updateTextMessage(any(), originalMessageId, any<MessageContent.Text>())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.updateMessageStatus(any(), any(), any())

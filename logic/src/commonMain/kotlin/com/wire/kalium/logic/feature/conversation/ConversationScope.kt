@@ -50,7 +50,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
@@ -152,7 +151,6 @@ public class ConversationScope internal constructor(
     private val transactionProvider: CryptoTransactionProvider,
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val systemMessageInserter: SystemMessageInserter,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val pendingActionsRepository: PendingActionsRepository,
@@ -309,15 +307,12 @@ public class ConversationScope internal constructor(
             selfConversationIdProvider,
             sendConfirmation,
             conversationWorkQueue,
-            persistenceEventHookNotifier,
             kaliumLogger
         )
 
     public val markConversationAsReadLocally: MarkConversationAsReadLocallyUseCase
         get() = MarkConversationAsReadLocallyUseCaseImpl(
-            conversationRepository,
-            persistenceEventHookNotifier,
-            selfUserId
+            conversationRepository
         )
 
     public val updateConversationAccess: UpdateConversationAccessRoleUseCase
@@ -370,7 +365,6 @@ public class ConversationScope internal constructor(
             currentClientIdProvider,
             selfConversationIdProvider,
             clearConversationAssetsLocally,
-            persistenceEventHookNotifier,
         )
 
     public val markConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
@@ -443,6 +437,9 @@ public class ConversationScope internal constructor(
 
     public val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
         get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
+
+    public val observeUnreadConversationBadgeCount: ObserveUnreadConversationBadgeCountUseCase
+        get() = ObserveUnreadConversationBadgeCountUseCaseImpl(conversationRepository)
 
     private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler =
         TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)

@@ -162,11 +162,14 @@ internal class CellsApiImpl(
         }.mapSuccess { response -> response.toDto() }
 
     override suspend fun delete(nodeUuid: String, permanentDelete: Boolean): NetworkResponse<Unit> =
+        deleteNodes(listOf(nodeUuid), permanentDelete)
+
+    override suspend fun deleteNodes(uuids: List<String>, permanentDelete: Boolean): NetworkResponse<Unit> =
         wrapCellsResponse {
             getNodeServiceApi().performAction(
                 name = NodeServiceApi.NamePerformAction.delete,
                 parameters = RestActionParameters(
-                    nodes = listOf(RestNodeLocator(uuid = nodeUuid)),
+                    nodes = uuids.map { RestNodeLocator(uuid = it) },
                     deleteOptions = RestActionOptionsDelete(permanentDelete = permanentDelete),
                 )
             )

@@ -25,7 +25,6 @@ import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import dev.mokkery.MockMode
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -53,14 +52,12 @@ class CodeUpdateHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversionDAO.updateGuestRoomLink(
-                eq(
-                    ConversationIDEntity(
+                ConversationIDEntity(
                         event.conversationId.value,
                         event.conversationId.domain
-                    )
-                ),
-                eq(event.uri!!),
-                eq(event.isPasswordProtected)
+                    ),
+                event.uri!!,
+                event.isPasswordProtected
             )
         }
     }
@@ -86,14 +83,12 @@ class CodeUpdateHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversionDAO.updateGuestRoomLink(
-                eq(
-                    ConversationIDEntity(
+                ConversationIDEntity(
                         event.conversationId.value,
                         event.conversationId.domain
-                    )
-                ),
-                eq(expected),
-                eq(event.isPasswordProtected)
+                    ),
+                expected,
+                event.isPasswordProtected
             )
         }
     }

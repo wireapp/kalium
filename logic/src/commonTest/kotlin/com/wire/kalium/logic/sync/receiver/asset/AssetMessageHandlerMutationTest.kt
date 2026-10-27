@@ -34,7 +34,6 @@ import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArran
 import com.wire.kalium.logic.util.arrangement.usecase.ValidateAssetFileTypeUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.ValidateAssetFileTypeUseCaseArrangementImpl
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
@@ -126,9 +125,9 @@ class AssetMessageHandlerMutationTest {
 
         verify(VerifyMode.exactly(1)) {
             arrangement.validateAssetFileTypeUseCase(
-                eq(completeAsset().name),
-                eq(completeAsset().mimeType),
-                eq(allowedTypes),
+                completeAsset().name,
+                completeAsset().mimeType,
+                allowedTypes,
             )
         }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessageUseCase.invoke(message) }

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
@@ -31,6 +32,7 @@ import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
@@ -48,10 +50,14 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -118,7 +124,7 @@ class SendPendingAssetMessageUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching {
+                matches {
                     it.id == message.id && it.content is MessageContent.Asset
                             && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                             && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
@@ -127,7 +133,7 @@ class SendPendingAssetMessageUseCaseTest {
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matching { m ->
+                matches { m ->
                     m.id == message.id && m.content is MessageContent.Asset
                             && (m.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                 },
@@ -168,7 +174,7 @@ class SendPendingAssetMessageUseCaseTest {
         arrangement.audioNormalizedLoudnessBuilder.assertInvoked(path.toString())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching {
+                matches {
                     val assetContent = (it.content as? MessageContent.Asset)?.value
                     val metadata = assetContent?.metadata as? AssetContent.AssetMetadata.Audio
                     it.id == message.id &&
@@ -212,7 +218,7 @@ class SendPendingAssetMessageUseCaseTest {
         arrangement.audioNormalizedLoudnessBuilder.assertInvoked(path.toString(), 0)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching {
+                matches {
                     val metadata = ((it.content as? MessageContent.Asset)?.value?.metadata as? AssetContent.AssetMetadata.Audio)
                     metadata != null &&
                             metadata.durationMs == 2_000L &&
@@ -252,7 +258,7 @@ class SendPendingAssetMessageUseCaseTest {
         arrangement.audioNormalizedLoudnessBuilder.assertInvoked(path.toString(), 0)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matching {
+                matches {
                     val metadata = ((it.content as? MessageContent.Asset)?.value?.metadata as? AssetContent.AssetMetadata.Image)
                     metadata != null && metadata.width == 100 && metadata.height == 100
                 }
@@ -360,6 +366,71 @@ class SendPendingAssetMessageUseCaseTest {
         }
         verifySuspend(VerifyMode.not) {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenPreviewUploadSuspended_whenCancelled_thenDoesNotPersistDeleteCacheOrSend() = runTest {
+        val name = "video.mp4"
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+        val previewPath = fakeKaliumFileSystem.providePersistentAssetPath("preview.jpg")
+        val preview = AssetContent.Preview(
+            "image/jpeg", 1024, 512, 288,
+            AssetContent.RemoteData(ByteArray(32) { 1 }, byteArrayOf(), "temp-preview", null, "", MessageEncryptionAlgorithm.AES_CBC),
+        )
+        val message = assetMessage().copy(content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, preview = preview)))
+        val previewUploadStarted = CompletableDeferred<Unit>()
+        val (arrangement, useCase) = Arrangement()
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+            .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+            .withFetchPrivateDecodedAsset(Either.Right(path))
+            .withUploadAndPersistPrivateAsset(
+                Either.Right(UploadedAssetId("remote_key", "remote_domain", "remote_token") to SHA256Key(byteArrayOf(1)))
+            )
+            .arrange()
+        everySuspend { arrangement.assetRepository.fetchPreviewAsset(preview) } returns Either.Right(FetchedAssetData(previewPath, false))
+        everySuspend {
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), previewPath, any(), any(), any(), any(), any())
+        } calls {
+            previewUploadStarted.complete(Unit)
+            awaitCancellation()
+        }
+
+        val retry = launch { useCase(message) }
+        previewUploadStarted.await()
+        retry.cancelAndJoin()
+
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.persistMessage(any())
+            arrangement.assetRepository.deleteAssetLocally(any())
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenUploadSucceeds_whenPersistenceFails_thenRetainsCacheAndDoesNotSend() = runTest {
+        val name = "photo.jpg"
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+        val message = assetMessage().copy(content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name)))
+        val (arrangement, useCase) = Arrangement()
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+            .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+            .withFetchPrivateDecodedAsset(Either.Right(path))
+            .withUploadAndPersistPrivateAsset(
+                Either.Right(UploadedAssetId("remote_key", "remote_domain", "remote_token") to SHA256Key(byteArrayOf(1)))
+            )
+            .withPersistMessage(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        useCase(message)
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage(any()) }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.assetRepository.deleteAssetLocally(any())
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
         }
     }
 

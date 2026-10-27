@@ -89,7 +89,7 @@ class MessageInsertExtensionTest : BaseDatabaseTest() {
 
         val deletedMessage = messageDAO.getMessageById(assetMessage.id, conversationEntity1.id)
 
-        messageExtensions.updateAssetMessage(assetMessage)
+        messageExtensions.updateAssetMessageIfValid(assetMessage)
 
         messageDAO.getMessageById(assetMessage.id, conversationEntity1.id).also {
             assertEquals(deletedMessage, it)

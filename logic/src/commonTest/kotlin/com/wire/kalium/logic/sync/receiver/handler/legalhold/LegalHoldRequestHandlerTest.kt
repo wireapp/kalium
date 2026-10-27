@@ -27,7 +27,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -47,9 +46,9 @@ class LegalHoldRequestHandlerTest {
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setLegalHoldRequest(
-                eq(legalHoldRequestSelfUser.clientId.value),
-                eq(legalHoldRequestSelfUser.lastPreKey.id),
-                eq(legalHoldRequestSelfUser.lastPreKey.key)
+                legalHoldRequestSelfUser.clientId.value,
+                legalHoldRequestSelfUser.lastPreKey.id,
+                legalHoldRequestSelfUser.lastPreKey.key
             )
         }
     }

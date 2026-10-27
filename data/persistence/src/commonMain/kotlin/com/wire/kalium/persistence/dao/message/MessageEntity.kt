@@ -318,6 +318,7 @@ sealed class MessageEntityContent {
         val assetHeight: Int? = null,
         val assetDurationMs: Long? = null,
         val assetNormalizedLoudness: ByteArray? = null,
+        val assetPreview: AssetPreviewEntity? = null,
 
         ) : Regular()
 

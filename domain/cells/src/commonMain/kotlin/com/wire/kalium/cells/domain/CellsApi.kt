@@ -65,6 +65,7 @@ internal interface CellsApi {
     suspend fun delete(nodeUuid: String, permanentDelete: Boolean = false): NetworkResponse<Unit>
     suspend fun createPublicLink(uuid: String, fileName: String): NetworkResponse<PublicLink>
     suspend fun delete(paths: List<String>, permanentDelete: Boolean = false): NetworkResponse<Unit>
+    suspend fun deleteNodes(uuids: List<String>, permanentDelete: Boolean = false): NetworkResponse<Unit>
     suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
 
     suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO>

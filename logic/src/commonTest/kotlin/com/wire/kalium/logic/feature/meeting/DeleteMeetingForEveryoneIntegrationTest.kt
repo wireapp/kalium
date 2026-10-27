@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUse
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCaseImpl
 import com.wire.kalium.logic.framework.TestCall
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -40,8 +39,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.ClientApiStub
 import com.wire.kalium.logic.util.stubs.ConversationApiStub
-import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.utils.NetworkResponse
@@ -109,7 +106,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
         assertEquals(Either.Left(StorageFailure.DataNotFound), fixture.conversations.getConversationById(CONVERSATION_ID))
         withContext(Dispatchers.Default) { withTimeout(5.seconds) { fixture.callEnded.await() } }
         assertEquals(listOf(CONVERSATION_ID), fixture.endedCalls)
-        assertEquals(listOf("remote-delete", "crypto-start", "mls-leave", "deleted-hook", "crypto-end"), fixture.events)
+        assertEquals(listOf("remote-delete", "crypto-start", "mls-leave", "crypto-end"), fixture.events)
     }
 
     @Test
@@ -124,7 +121,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
 
         withContext(Dispatchers.Default) { withTimeout(5.seconds) { fixture.callEnded.await() } }
         assertEquals(listOf(CONVERSATION_ID), fixture.endedCalls)
-        assertEquals(listOf("remote-delete", "crypto-start", "deleted-hook", "crypto-end"), fixture.events)
+        assertEquals(listOf("remote-delete", "crypto-start", "crypto-end"), fixture.events)
     }
 
     @Test
@@ -223,13 +220,6 @@ class DeleteMeetingForEveryoneIntegrationTest {
             pendingActionsRepository = mock(),
             userRepository = mock(),
         )
-        private val deletedHook = object : PersistenceEventHookNotifier {
-            override suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {
-                assertEquals(CONVERSATION_ID, data.conversationId)
-                assertEquals(TestUser.USER_ID, selfUserId)
-                events += "deleted-hook"
-            }
-        }
         val scope = MeetingScope(
             dispatcher = KaliumDispatcherImpl,
             meetingRepository = meetings,
@@ -239,7 +229,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
             resetMLSConversation = mock(),
             joinExistingMLSConversation = mock(),
             leaveConversation = mock(),
-            deleteConversation = DeleteConversationUseCaseImpl(conversations, mlsRepository, deletedHook, TestUser.USER_ID),
+            deleteConversation = DeleteConversationUseCaseImpl(conversations, mlsRepository),
             transactionProvider = cryptoTransactionProvider,
         )
         private val calls = mock<CallRepository>()

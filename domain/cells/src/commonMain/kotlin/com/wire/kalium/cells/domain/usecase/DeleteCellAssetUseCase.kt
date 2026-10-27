@@ -24,6 +24,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.SYSTEM
 
@@ -35,7 +37,12 @@ import okio.SYSTEM
  * transfer status is set to NOT_FOUND.
  */
 public interface DeleteCellAssetUseCase {
-        public suspend operator fun invoke(assetId: String, localPath: String?): Either<CoreFailure, Unit>
+    /**
+     * @param localPath the local copy of the file to remove, null for folders and files never downloaded.
+     * @param folderPath for a folder, its remote path, to also clean up the local copies of the files stored under it.
+     * Null for a file.
+     */
+    public suspend operator fun invoke(assetId: String, localPath: String?, folderPath: String? = null): Either<CoreFailure, Unit>
 }
 
 internal class DeleteCellAssetUseCaseImpl(
@@ -47,7 +54,8 @@ internal class DeleteCellAssetUseCaseImpl(
 
     private val localCleanup = CellAssetLocalCleanup(cellAttachmentsRepository, fileSystem, dispatchers)
 
-    override suspend fun invoke(assetId: String, localPath: String?) =
+    override suspend fun invoke(assetId: String, localPath: String?, folderPath: String?) =
         cellsRepository.deleteFile(assetId)
-            .flatMap { localCleanup(assetId, localPath) }
+            // Deleted on the server: clean up even if the caller is cancelled meanwhile, not to keep stale local data.
+            .flatMap { withContext(NonCancellable) { localCleanup(assetId, localPath, folderPath) } }
 }

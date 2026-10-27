@@ -25,7 +25,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
@@ -115,11 +114,11 @@ class PreKeyListMapperTest {
         subject.fromRemoteQualifiedPreKeyInfoMap(preKeyResponse)
 
         verify(VerifyMode.exactly(1)) {
-            preKeyMapper.fromPreKeyDTO(eq(firstKey))
+            preKeyMapper.fromPreKeyDTO(firstKey)
         }
 
         verify(VerifyMode.exactly(1)) {
-            preKeyMapper.fromPreKeyDTO(eq(secondKey))
+            preKeyMapper.fromPreKeyDTO(secondKey)
         }
     }
 
@@ -179,15 +178,15 @@ class PreKeyListMapperTest {
             )
         )
         every {
-            preKeyMapper.fromPreKeyDTO(eq(firstKeySet.response))
+            preKeyMapper.fromPreKeyDTO(firstKeySet.response)
         }.returns(firstKeySet.mapped)
 
         every {
-            preKeyMapper.fromPreKeyDTO(eq(secondKeySet.response))
+            preKeyMapper.fromPreKeyDTO(secondKeySet.response)
         }.returns(secondKeySet.mapped)
 
         every {
-            preKeyMapper.fromPreKeyDTO(eq(thirdKeySet.response))
+            preKeyMapper.fromPreKeyDTO(thirdKeySet.response)
         }.returns(thirdKeySet.mapped)
 
         val result = subject.fromRemoteQualifiedPreKeyInfoMap(preKeyResponse)

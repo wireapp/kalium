@@ -35,7 +35,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -68,7 +67,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(eq(pendingConversationIds))
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(pendingConversationIds)
         }
     }
 
@@ -104,7 +103,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(eq(pendingConversationIds))
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(pendingConversationIds)
         }
     }
 
@@ -123,7 +122,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(eq(pendingConversationIds))
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(pendingConversationIds)
         }
     }
 
@@ -143,7 +142,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(eq(listOf(successfulConversationId)))
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(successfulConversationId))
         }
     }
 
@@ -186,7 +185,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
                     transactionContext = any(),
                     conversationId = any(),
                     mlsPublicKeys = any(),
-                    allowJoinByExternalCommit = eq(true)
+                    allowJoinByExternalCommit = true
                 )
             } returns result
         }
@@ -195,9 +194,9 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
             everySuspend {
                 joinExistingMLSConversation.invoke(
                     transactionContext = any(),
-                    conversationId = eq(conversationId),
+                    conversationId = conversationId,
                     mlsPublicKeys = any(),
-                    allowJoinByExternalCommit = eq(true)
+                    allowJoinByExternalCommit = true
                 )
             } returns result
         }
@@ -212,13 +211,13 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
         suspend fun withMarkingConversationDeletedLocallySucceeding() = apply {
             everySuspend {
-                conversationRepository.setConversationDeletedLocally(any(), eq(true))
+                conversationRepository.setConversationDeletedLocally(any(), true)
             } returns Either.Right(Unit)
         }
 
         suspend fun withMarkingConversationDeletedLocallyFailing() = apply {
             everySuspend {
-                conversationRepository.setConversationDeletedLocally(any(), eq(true))
+                conversationRepository.setConversationDeletedLocally(any(), true)
             } returns Either.Left(StorageFailure.DataNotFound)
         }
 

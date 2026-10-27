@@ -39,7 +39,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -71,11 +71,11 @@ class SendButtonMessageCaseTest {
             arrangement.userPropertyRepository.getReadReceiptsStatus()
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { message -> message.content is MessageContent.Composite })
+            arrangement.persistMessage.invoke(matches { message -> message.content is MessageContent.Composite })
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matching { message -> message.content is MessageContent.Composite },
+                matches { message -> message.content is MessageContent.Composite },
                 any()
             )
         }

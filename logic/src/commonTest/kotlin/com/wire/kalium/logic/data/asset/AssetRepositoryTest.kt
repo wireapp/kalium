@@ -18,6 +18,27 @@
 
 package com.wire.kalium.logic.data.asset
 
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
+import com.wire.kalium.logic.feature.asset.upload.UploadAssetMessageMetadata
+import com.wire.kalium.logic.feature.asset.upload.AssetMessageSendReceipt
+import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.framework.TestMessage
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
+import dev.mokkery.MockMode
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.withContext
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.EncryptionFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -46,9 +67,8 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
-import dev.mokkery.matcher.matching
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -101,6 +121,55 @@ internal class AssetRepositoryTest {
     @Test
     fun retriedEncryptedUploadReopensTheSource() = runTest {
         verifyRetriedUpload(privateAsset = true)
+    }
+
+    @Test
+    fun cancellationBeforeMessageMetadataCommitKeepsRealSourceForRetry() = runTest {
+        val key = UserAssetId("temporary", "domain")
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(key.value)
+        val payload = "original file retained until message commit".encodeToByteArray()
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem).withRawStoredData(payload, path)
+            .withSuccessfulUpload(AssetResponse("uploaded", "domain", "expiry", "token"))
+            .withAssetAuditLogEnabled(false)
+            .withMockedAssetDaoGetByKeyCall(key, stubAssetEntity(key.value, path, payload.size.toLong()))
+            .withSuccessDeleteLocallyResponse().arrange()
+        val persist = mock<PersistMessageUseCase>()
+        val sender = mock<MessageSender>()
+        val transfer = mock<UpdateAssetMessageTransferStatusUseCase>()
+        everySuspend { transfer(any(), any(), any()) } returns UpdateTransferStatusResult.Success
+        everySuspend { sender.sendMessageWithOutcome(any(), any()) } returns true.right()
+        val message = TestMessage.assetMessage()
+        val metadata = UploadAssetMessageMetadata(
+            conversationId = message.conversationId, mimeType = "image/png", assetId = UploadedAssetId(key.value, key.domain),
+            assetDataPath = path, assetDataSize = payload.size.toLong(), assetName = "file.png", assetWidth = null, assetHeight = null,
+            otrKey = generateRandomAES256Key(), sha256Key = SHA256Key(byteArrayOf()), audioLengthInMs = 0, audioNormalizedLoudness = null,
+        )
+        val useCase = UploadAssetUseCaseImpl(
+            repository, sender, mock<MessageSendFailureHandler>(mode = MockMode.autoUnit), transfer,
+            mock<UpdateAudioMessageNormalizedLoudnessUseCase>(mode = MockMode.autoUnit), persist,
+            mock<AudioNormalizedLoudnessBuilder>(), dispatcher = testScope.testKaliumDispatcher(),
+        )
+        val copiedFile = CompletableDeferred<Unit>()
+        everySuspend { arrangement.assetDAO.insertAsset(any()) } calls {
+            // Real file copy completed, but message metadata still references the temporary asset.
+            copiedFile.complete(Unit)
+            awaitCancellation()
+        }
+        val first = launch { withContext(AssetMessageSendReceipt()) { useCase(message, metadata) } }
+        copiedFile.await()
+        first.cancelAndJoin()
+        assertTrue(first.isCancelled)
+        verifySuspend(VerifyMode.exactly(0)) { persist(any()) }
+        everySuspend { arrangement.assetDAO.insertAsset(any()) } returns Unit
+        assertContentEquals(payload, fakeKaliumFileSystem.source(path).buffer().use { it.readByteArray() })
+        everySuspend { persist(any()) } calls {
+            assertEquals("uploaded", (((it.args[0] as Message.Regular).content) as MessageContent.Asset).value.remoteData.assetId)
+            assertTrue(fakeKaliumFileSystem.exists(path))
+            Unit.right()
+        }
+        withContext(AssetMessageSendReceipt()) { useCase(message, metadata) }.shouldSucceed()
+        assertEquals(false, fakeKaliumFileSystem.exists(path))
+        verifySuspend(VerifyMode.exactly(1)) { sender.sendMessageWithOutcome(any(), any()) }
     }
 
     private suspend fun verifyRetriedUpload(privateAsset: Boolean) {
@@ -280,7 +349,7 @@ internal class AssetRepositoryTest {
         // Then
         with(arrangement) {
             verifySuspend {
-                assetDAO.getAssetByKey(eq(assetKey.value))
+                assetDAO.getAssetByKey(assetKey.value)
             }
             verifySuspend {
                 assetApi.downloadAsset(
@@ -336,10 +405,10 @@ internal class AssetRepositoryTest {
                 assertEquals(true, justDownloaded)
                 assertEquals(expectedPath, realPath)
                 verifySuspend {
-                    assetDAO.getAssetByKey(eq(assetKey.value))
+                    assetDAO.getAssetByKey(assetKey.value)
                 }
                 verifySuspend {
-                    assetApi.downloadAsset(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(assetToken), any())
+                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, assetToken, any())
                 }
                 verifySuspend {
                     assetDAO.insertAsset(any())
@@ -383,7 +452,7 @@ internal class AssetRepositoryTest {
                     assetDAO.getAssetByKey(assetKey.value)
                 }
                 verifySuspend(mode = VerifyMode.not) {
-                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, eq(assetToken), any())
+                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, assetToken, any())
                 }
                 verifySuspend(mode = VerifyMode.not) {
                     assetDAO.insertAsset(any())
@@ -428,10 +497,10 @@ internal class AssetRepositoryTest {
                 assertEquals(false, justDownloaded)
                 assertEquals(assetPath, realPath)
                 verifySuspend {
-                    assetDAO.getAssetByKey(eq(assetKey.value))
+                    assetDAO.getAssetByKey(assetKey.value)
                 }
                 verifySuspend(mode = VerifyMode.not) {
-                    assetApi.downloadAsset(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(assetToken), any())
+                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, assetToken, any())
                 }
                 verifySuspend(mode = VerifyMode.not) {
                     assetDAO.insertAsset(any())
@@ -500,7 +569,7 @@ internal class AssetRepositoryTest {
 
         with(arrangement) {
             verifySuspend {
-                assetDAO.getAssetByKey(matching { it == assetKey.value })
+                assetDAO.getAssetByKey(matches { it == assetKey.value })
             }
             verifySuspend {
                 assetApi.downloadAsset(
@@ -547,13 +616,13 @@ internal class AssetRepositoryTest {
 
         with(arrangement) {
             verifySuspend {
-                assetDAO.getAssetByKey(matching { it == assetKey.value })
+                assetDAO.getAssetByKey(matches { it == assetKey.value })
             }
             verifySuspend {
                 assetApi.downloadAsset(
-                    matching { it == assetKey.value },
-                    matching { it == assetKey.domain },
-                    eq<String?>(null),
+                    matches { it == assetKey.value },
+                    matches { it == assetKey.domain },
+                    null,
                     any()
                 )
             }
@@ -581,13 +650,13 @@ internal class AssetRepositoryTest {
         // Then
         with(arrangement) {
             verifySuspend {
-                assetDAO.getAssetByKey(eq(assetKey.value))
+                assetDAO.getAssetByKey(assetKey.value)
             }
             verifySuspend(mode = VerifyMode.not) {
                 assetApi.downloadAsset(
-                    matching { it == assetKey.value },
-                    matching { it == assetKey.value },
-                    matching { it == null },
+                    matches { it == assetKey.value },
+                    matches { it == assetKey.value },
+                    matches { it == null },
                     any()
                 )
             }
@@ -616,7 +685,7 @@ internal class AssetRepositoryTest {
     }
 
     @Test
-    fun givenSuccessfulResponse_whenDeletingRemotelyAsset_thenDeleteAssetLocallyShouldBeInvoked() = runTest {
+    fun givenNoCachedAsset_whenDeletingRemotelyAsset_thenNoCacheRecordIsDeleted() = runTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
 
@@ -633,7 +702,7 @@ internal class AssetRepositoryTest {
         verifySuspend {
             arrangement.assetApi.deleteAsset(any(), any(), any())
         }
-        verifySuspend {
+        verifySuspend(VerifyMode.not) {
             arrangement.assetDAO.deleteAsset(any())
         }
     }
@@ -649,7 +718,7 @@ internal class AssetRepositoryTest {
             .withSuccessDeleteRemotelyResponse()
             .withSuccessDeleteLocallyResponse()
             .withRawStoredData(assetRawData, assetFile)
-            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()))
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()).copy(domain = assetKey.domain))
             .arrange()
 
         assertEquals(true, fakeKaliumFileSystem!!.exists(assetFile))
@@ -659,6 +728,23 @@ internal class AssetRepositoryTest {
 
         // Then
         assertEquals(false, fakeKaliumFileSystem!!.exists(assetFile))
+    }
+
+    @Test
+    fun remoteDeletionPreservesSameKeyCachedUnderAnotherDomain() = runTest {
+        val assetKey = UserAssetId("shared-key", "remote.domain")
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.value)
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withSuccessDeleteRemotelyResponse()
+            .withSuccessDeleteLocallyResponse()
+            .withRawStoredData(byteArrayOf(1), path)
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, path, 1).copy(domain = "local.domain"))
+            .arrange()
+
+        repository.deleteAsset(assetKey.value, assetKey.domain, "token").shouldSucceed()
+
+        assertTrue(fakeKaliumFileSystem.exists(path))
+        verifySuspend(VerifyMode.not) { arrangement.assetDAO.deleteAsset(any()) }
     }
 
     @Test
@@ -753,11 +839,32 @@ internal class AssetRepositoryTest {
         }
         verifySuspend {
             arrangement.assetDAO.insertAsset(
-                matching {
+                matches {
                     it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
                 }
             )
         }    }
+
+    @Test
+    fun uploadingManagedAssetRetainsSourceUntilMessageCommits() = runTest {
+        val localId = UserAssetId("pending-video", "")
+        val source = fakeKaliumFileSystem.providePersistentAssetPath(localId.value)
+        val bytes = "video bytes needed for retry".encodeToByteArray()
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withRawStoredData(bytes, source)
+            .withMockedAssetDaoGetByKeyCall(localId, stubAssetEntity(localId.value, source, bytes.size.toLong()))
+            .withSuccessfulUpload(AssetResponse("uploaded-video", "domain", null, "token"))
+            .withAssetAuditLogEnabled(false)
+            .arrange()
+        everySuspend { arrangement.assetDAO.isFileReferenced(source.toString()) } returns true
+
+        repository.uploadAndPersistPrivateAsset("video/mp4", source, generateRandomAES256Key(), "mp4").shouldSucceed()
+
+        // Cancellation before the message update must leave its old ID readable for a retry.
+        assertTrue(fakeKaliumFileSystem.exists(source))
+        repository.fetchDecodedAsset(localId.value).shouldSucceed { assertEquals(source, it) }
+        assertContentEquals(bytes, fakeKaliumFileSystem.source(source).buffer().use { it.readByteArray() })
+    }
 
     @Test
     fun givenAnError_whenPersistingAsset_thenShouldReturnFailure() = runTest {
@@ -788,7 +895,7 @@ internal class AssetRepositoryTest {
         actual.shouldFail()
         verifySuspend {
             arrangement.assetDAO.insertAsset(
-                matching {
+                matches {
                     it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
                 }
             )
@@ -852,7 +959,7 @@ internal class AssetRepositoryTest {
         // Then
         verifySuspend {
             arrangement.assetApi.uploadAsset(
-                matching {
+                matches {
                     it.conversationId == testConversationId &&
                     it.filename == testFilename &&
                     it.filetype == testFiletype
@@ -893,7 +1000,7 @@ internal class AssetRepositoryTest {
         // Then
         verifySuspend {
             arrangement.assetApi.uploadAsset(
-                matching {
+                matches {
                     it.conversationId == testConversationId &&
                     it.filename == testFilename &&
                     it.filetype == testFiletype
@@ -934,7 +1041,7 @@ internal class AssetRepositoryTest {
         // Then
         verifySuspend {
             arrangement.assetApi.uploadAsset(
-                matching {
+                matches {
                     it.conversationId == null &&
                     it.filename == null &&
                     it.filetype == null
@@ -1018,7 +1125,7 @@ internal class AssetRepositoryTest {
         // Then
         verifySuspend {
             arrangement.assetApi.uploadAsset(
-                matching {
+                matches {
                     it.conversationId == null &&
                     it.filename == null &&
                     it.filetype == null
@@ -1036,6 +1143,10 @@ internal class AssetRepositoryTest {
 
         val assetApi = mock<AssetApi>()
         val assetDAO = mock<AssetDAO>()
+
+        init {
+            everySuspend { assetDAO.isFileReferenced(any()) } returns false
+        }
 
         private val assetAuditLog = mock<AssetAuditFeatureHandler>()
 
@@ -1090,7 +1201,7 @@ internal class AssetRepositoryTest {
                 everySuspend {
                     assetApi.downloadAsset(
                         any(), any(), any(),
-                        matching {
+                        matches {
                             val buffer = Buffer()
                             buffer.write(assetData)
                             it.write(buffer, assetData.size.toLong())
@@ -1100,8 +1211,8 @@ internal class AssetRepositoryTest {
                 } returns NetworkResponse.Success(Unit, mapOf(), 200)
                 everySuspend {
                     assetApi.downloadAsset(
-                        any(), any(), matching { it == null },
-                        matching {
+                        any(), any(), matches { it == null },
+                        matches {
                             val buffer = Buffer()
                             buffer.write(assetData)
                             it.write(buffer, assetData.size.toLong())
@@ -1136,7 +1247,7 @@ internal class AssetRepositoryTest {
 
         fun withMockedAssetDaoGetByKeyCall(assetKey: UserAssetId, expectedAssetEntity: AssetEntity?): Arrangement = apply {
             everySuspend {
-                assetDAO.getAssetByKey(eq(assetKey.value))
+                assetDAO.getAssetByKey(assetKey.value)
             } returns flowOf(expectedAssetEntity)
         }
 

@@ -111,9 +111,17 @@ internal suspend fun evaluateCallingEvents(
         val conversation = database.conversationDAO.getConversationById(
             QualifiedIDEntity(result.conversationValue, result.conversationDomain)
         )
-        val canPreview = conversation != null &&
-            conversation.mlsVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED &&
-            conversation.proteusVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED
+        // Match iOS runtime policy: only the conversation's protocols can suppress its name.
+        // Pure MLS rows can retain degraded Proteus state after member/client changes.
+        val canPreview = conversation != null && when (conversation.protocolInfo) {
+            is ConversationEntity.ProtocolInfo.MLS ->
+                conversation.mlsVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED
+            ConversationEntity.ProtocolInfo.Proteus ->
+                conversation.proteusVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED
+            is ConversationEntity.ProtocolInfo.Mixed ->
+                conversation.mlsVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED &&
+                    conversation.proteusVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED
+        }
         val name = if (!canPreview) null else if (conversation.type.isGroup) conversation.name else {
             database.userDAO.getNameAndHandle(QualifiedIDEntity(result.callerValue, result.callerDomain))?.name ?: conversation.name
         }
@@ -141,9 +149,11 @@ internal suspend fun evaluateCallingEvents(
         } else null
         // AVS can mark our other device's start as ringing. Keep its signaling for host replay,
         // but never present it as an incoming call on this account.
+        // Lightweight AVS has no meeting flag; match the full engine's silent meeting policy here.
         val shouldRing = result.shouldRing &&
             QualifiedIDEntity(result.callerValue, result.callerDomain) != self.toDao() &&
             availability != UserAvailabilityStatusEntity.AWAY && conversation != null &&
+            conversation.type != ConversationEntity.Type.MEETING &&
             conversation.mutedStatus != ConversationEntity.MutedStatus.ALL_MUTED
         platform.Foundation.NSLog(
             "CALL_FLOW call=${source?.id ?: "none"} stage=nse_decision type=${result.type} " +

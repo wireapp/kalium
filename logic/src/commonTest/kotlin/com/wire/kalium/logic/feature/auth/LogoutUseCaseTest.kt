@@ -49,7 +49,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
 import dev.mokkery.every
 import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -89,7 +88,7 @@ class LogoutUseCaseTest {
             arrangement.globalTestScope.advanceUntilIdle()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.sessionRepository.logout(any(), eq(reason))
+                arrangement.sessionRepository.logout(any(), reason)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.sessionRepository.updateCurrentSession(any())
@@ -103,15 +102,15 @@ class LogoutUseCaseTest {
 
             if (reason == LogoutReason.SELF_HARD_LOGOUT) {
                 verifySuspend(VerifyMode.not) {
-                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(true)
                 }
             } else {
                 verifySuspend(VerifyMode.exactly(1)) {
-                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(true)
                 }
             }
             verifySuspend {
-                arrangement.logoutCallback(any<UserId>(), eq(reason))
+                arrangement.logoutCallback(any<UserId>(), reason)
             }
         }
     }
@@ -209,41 +208,6 @@ class LogoutUseCaseTest {
             .withUserSessionScopeGetResult(null)
             .withFirebaseTokenUpdate()
             .withKaliumConfigs { it.copy(wipeOnCookieInvalid = true) }
-            .withNoOngoingCalls()
-            .arrange()
-
-        logoutUseCase.invoke(reason)
-        arrangement.globalTestScope.advanceUntilIdle()
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.deregisterTokenUseCase.invoke()
-        }
-        verifySuspend(VerifyMode.not) {
-            arrangement.logoutRepository.logout()
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clearClientDataUseCase.invoke()
-        }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clearUserDataUseCase.invoke()
-        }
-    }
-
-    @Test
-    fun givenSessionExpired_whenLoggingOutWithNomadProfiles_thenExecuteAllRequiredActions() = runTest {
-        val reason = LogoutReason.SESSION_EXPIRED
-        val (arrangement, logoutUseCase) = Arrangement()
-            .withLogoutResult(Either.Right(Unit))
-            .withSessionLogoutResult(Either.Right(Unit))
-            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
-            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
-            .withClearCurrentClientIdResult(Either.Right(Unit))
-            .withClearRetainedClientIdResult(Either.Right(Unit))
-            .withUserSessionScopeGetResult(null)
-            .withFirebaseTokenUpdate()
-            .withKaliumConfigs { it.copy(wipeOnCookieInvalid = false) }
-            .withIsNomadEnabled(true)
             .withNoOngoingCalls()
             .arrange()
 
@@ -447,7 +411,7 @@ class LogoutUseCaseTest {
             arrangement.clientRepository.clearRetainedClientId()
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(true)
         }
     }
 
@@ -507,7 +471,6 @@ class LogoutUseCaseTest {
         val observeEstablishedCallsUseCase: ObserveEstablishedCallsUseCase = mock<ObserveEstablishedCallsUseCase>(mode = MockMode.autoUnit),
         val endCall: EndCallUseCase = mock<EndCallUseCase>(mode = MockMode.autoUnit),
         val logoutCallback: LogoutCallback = mock<LogoutCallback>(mode = MockMode.autoUnit),
-        val isNomadEnabled: () -> Boolean = { false },
         var kaliumConfigs: KaliumConfigs = KaliumConfigs(),
         val globalTestScope: TestScope = TestScope()
     ) {
@@ -596,10 +559,6 @@ class LogoutUseCaseTest {
             } returns (flowOf(emptyList()))
         }
 
-        fun withIsNomadEnabled(isEnabled: Boolean): Arrangement {
-            return copy(isNomadEnabled = { isEnabled })
-        }
-
         suspend fun arrange() = this to LogoutUseCaseImpl(
             logoutRepository = logoutRepository,
             sessionScope = sessionScope,
@@ -617,8 +576,7 @@ class LogoutUseCaseTest {
             getEstablishedCallsUseCase = observeEstablishedCallsUseCase,
             endCallUseCase = endCall,
             logoutCallback = logoutCallback,
-            kaliumConfigs = kaliumConfigs,
-            isNomadEnabled = isNomadEnabled
+            kaliumConfigs = kaliumConfigs
         ).also {
             everySuspend { userSessionScopeProvider.logout(any(), any(), any(), any()) } calls { invocation ->
                 @Suppress("UNCHECKED_CAST")

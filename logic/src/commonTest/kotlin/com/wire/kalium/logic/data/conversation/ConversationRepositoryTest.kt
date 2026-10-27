@@ -41,6 +41,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.feature.conversation.ObserveUnreadConversationBadgeCountUseCaseImpl
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
@@ -101,7 +102,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -116,7 +116,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Clock
@@ -440,7 +442,7 @@ class ConversationRepositoryTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
+                conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
             }
         }
     }
@@ -457,7 +459,7 @@ class ConversationRepositoryTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                conversationDAO.setConversationDeletedLocally(eq(conversationId.toDao()), eq(true))
+                conversationDAO.setConversationDeletedLocally(conversationId.toDao(), true)
             }
         }
     }
@@ -676,7 +678,7 @@ class ConversationRepositoryTest {
             assertEquals(isMemberResponse.value, isMember)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.memberDAO.observeIsUserMember(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
+                arrangement.memberDAO.observeIsUserMember(CONVERSATION_ENTITY_ID, USER_ENTITY_ID)
             }
 
             awaitComplete()
@@ -700,7 +702,7 @@ class ConversationRepositoryTest {
             assertEquals(isMemberResponse.value, isMember)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.memberDAO.observeIsUserMember(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
+                arrangement.memberDAO.observeIsUserMember(CONVERSATION_ENTITY_ID, USER_ENTITY_ID)
             }
 
             awaitComplete()
@@ -850,7 +852,7 @@ class ConversationRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientDao.recipientsIfTheyArePartOfConversation(eq(conversationId), eq(setOf(user)))
+            arrangement.clientDao.recipientsIfTheyArePartOfConversation(conversationId, setOf(user))
         }
     }
 
@@ -913,6 +915,40 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun givenBadgeCountChanges_whenObservingThroughUseCase_thenUpdatesReachTheConsumer() = runTest {
+        val counts = MutableStateFlow(3L)
+        val (_, conversationRepository) = Arrangement()
+            .withUnreadConversationBadgeCounts(counts)
+            .arrange()
+        val observeBadgeCount = ObserveUnreadConversationBadgeCountUseCaseImpl(conversationRepository)
+
+        observeBadgeCount().test {
+            assertEquals(3L, awaitItem())
+            counts.value = 0L
+            assertEquals(0L, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenBadgeStorageFailure_whenObservingThroughUseCase_thenTheCountFallsBackToZero() = runTest {
+        val counts = flow {
+            emit(5L)
+            error("Badge count storage unavailable")
+        }
+        val (_, conversationRepository) = Arrangement()
+            .withUnreadConversationBadgeCounts(counts)
+            .arrange()
+        val observeBadgeCount = ObserveUnreadConversationBadgeCountUseCaseImpl(conversationRepository)
+
+        observeBadgeCount().test {
+            assertEquals(5L, awaitItem())
+            assertEquals(0L, awaitItem())
+            awaitComplete()
+        }
+    }
+
+    @Test
     fun givenNoChange_whenUpdatingProtocolToMls_thenShouldUpdateLocally() = runTest {
         // given
         val protocol = Conversation.Protocol.MLS
@@ -935,10 +971,10 @@ class ConversationRepositoryTest {
             shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
                 arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
-                    eq(CONVERSATION_ID.toDao()),
-                    eq(conversationResponse.value.groupId),
-                    eq(protocol.toDao()),
-                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                    CONVERSATION_ID.toDao(),
+                    conversationResponse.value.groupId,
+                    protocol.toDao(),
+                    ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag)
                 )
             }
         }
@@ -967,7 +1003,7 @@ class ConversationRepositoryTest {
         with(result) {
             shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationApi.fetchConversationDetails(eq(CONVERSATION_ID.toApi()))
+                arrangement.conversationApi.fetchConversationDetails(CONVERSATION_ID.toApi())
             }
         }
     }
@@ -996,10 +1032,10 @@ class ConversationRepositoryTest {
             shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
                 arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
-                    eq(CONVERSATION_ID.toDao()),
-                    eq(conversationResponse.value.groupId),
-                    eq(protocol.toDao()),
-                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                    CONVERSATION_ID.toDao(),
+                    conversationResponse.value.groupId,
+                    protocol.toDao(),
+                    ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag)
                 )
             }
         }
@@ -1028,10 +1064,10 @@ class ConversationRepositoryTest {
             shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
                 arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
-                    eq(CONVERSATION_ID.toDao()),
-                    eq(conversationResponse.value.groupId),
-                    eq(protocol.toDao()),
-                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                    CONVERSATION_ID.toDao(),
+                    conversationResponse.value.groupId,
+                    protocol.toDao(),
+                    ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag)
                 )
             }
         }
@@ -1067,7 +1103,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.conversationDAO.updateLegalHoldStatus(eq(CONVERSATION_ID.toDao()), any())
+            arrange.conversationDAO.updateLegalHoldStatus(CONVERSATION_ID.toDao(), any())
         }
     }
 
@@ -1082,7 +1118,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.conversationDAO.updateLegalHoldStatusChangeNotified(eq(CONVERSATION_ID.toDao()), any())
+            arrange.conversationDAO.updateLegalHoldStatusChangeNotified(CONVERSATION_ID.toDao(), any())
         }
     }
 
@@ -1097,7 +1133,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
         // then
         verifySuspend(VerifyMode.exactly(0)) {
-            arrange.conversationDAO.updateLegalHoldStatusChangeNotified(eq(CONVERSATION_ID.toDao()), any())
+            arrange.conversationDAO.updateLegalHoldStatusChangeNotified(CONVERSATION_ID.toDao(), any())
         }
     }
 
@@ -1110,7 +1146,7 @@ class ConversationRepositoryTest {
         conversationRepository.observeLegalHoldStatus(CONVERSATION_ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.conversationDAO.observeLegalHoldStatus(eq(CONVERSATION_ID.toDao()))
+            arrange.conversationDAO.observeLegalHoldStatus(CONVERSATION_ID.toDao())
         }
     }
 
@@ -1123,7 +1159,7 @@ class ConversationRepositoryTest {
         conversationRepository.observeLegalHoldStatusChangeNotified(CONVERSATION_ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.conversationDAO.observeLegalHoldStatusChangeNotified(eq(CONVERSATION_ID.toDao()))
+            arrange.conversationDAO.observeLegalHoldStatusChangeNotified(CONVERSATION_ID.toDao())
         }
     }
 
@@ -1291,6 +1327,12 @@ class ConversationRepositoryTest {
             }.returns(flowOf(unreadCount))
         }
 
+        suspend fun withUnreadConversationBadgeCounts(counts: Flow<Long>) = apply {
+            everySuspend {
+                conversationDAO.observeUnreadConversationBadgeCount()
+            }.returns(counts)
+        }
+
         suspend fun withUnreadMessageCounter(unreadCounter: Map<ConversationIDEntity, Int>) = apply {
             everySuspend {
                 messageDAO.observeUnreadMessageCounter()
@@ -1427,13 +1469,13 @@ class ConversationRepositoryTest {
 
         suspend fun withConversationRenameCall(newName: String = "newName") = apply {
             everySuspend {
-                conversationDAO.updateConversationName(any(), eq(newName), any())
+                conversationDAO.updateConversationName(any(), newName, any())
             }.returns(Unit)
         }
 
         suspend fun withConversationRenameApiCall(newName: String = "newName") = apply {
             everySuspend {
-                conversationApi.updateConversationName(any(), eq(newName))
+                conversationApi.updateConversationName(any(), newName)
             }.returns(NetworkResponse.Success(CONVERSATION_RENAME_RESPONSE, emptyMap(), HttpStatusCode.OK.value))
         }
 
@@ -1449,7 +1491,7 @@ class ConversationRepositoryTest {
 
         suspend fun withUpdateReceiptModeSuccess(receiptMode: ReceiptMode) = apply {
             everySuspend {
-                conversationApi.updateReceiptMode(any(), eq(ConversationReceiptModeDTO(receiptMode)))
+                conversationApi.updateReceiptMode(any(), ConversationReceiptModeDTO(receiptMode))
             }.returns(
                 NetworkResponse.Success(
                     UpdateConversationReceiptModeResponse.ReceiptModeUpdated(
@@ -1478,8 +1520,8 @@ class ConversationRepositoryTest {
         ) = apply {
             everySuspend {
                 memberDAO.getGroupConversationWithUserIdsWithBothDomains(
-                    eq(firstDomain),
-                    eq(secondDomain)
+                    firstDomain,
+                    secondDomain
                 )
             }.returns(result)
         }
@@ -1489,7 +1531,7 @@ class ConversationRepositoryTest {
             domain: String
         ) = apply {
             everySuspend {
-                memberDAO.getOneOneConversationWithFederatedMembers(eq(domain))
+                memberDAO.getOneOneConversationWithFederatedMembers(domain)
             }.returns(result)
         }
 

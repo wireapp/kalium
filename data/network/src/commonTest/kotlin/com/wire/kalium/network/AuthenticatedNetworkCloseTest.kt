@@ -202,7 +202,6 @@ internal class AuthenticatedNetworkCloseTest : ApiTest() {
 
     private fun provider(engine: HttpClientEngine, ownsEngine: Boolean = true) = AuthenticatedHttpClientProviderImpl(
         sessionManager = TEST_SESSION_MANAGER,
-        nomadServiceUrl = null,
         accessTokenApi = { AccessTokenApiV0(it) },
         engine = engine,
         ownsEngine = ownsEngine,

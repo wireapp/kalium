@@ -21,23 +21,26 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.AssetDataSource
+import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetEntity
+import kotlinx.coroutines.flow.flowOf
+import okio.buffer
+import okio.use
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.messaging.hooks.MessageDeleteEventData
-import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.common.error.StorageFailure
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -75,7 +78,7 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
     }
 
@@ -104,15 +107,15 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.markMessageAsDeleted(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+            arrangement.messageRepository.getMessageById(conversationId, originalMessageID)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -146,19 +149,19 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.markMessageAsDeleted(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+            arrangement.messageRepository.getMessageById(conversationId, originalMessageID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.notificationEventsManager.scheduleDeleteMessageNotification(eq(originalMessage))
+            arrangement.notificationEventsManager.scheduleDeleteMessageNotification(originalMessage)
         }
     }
 
@@ -184,15 +187,15 @@ class DeleteMessageHandlerTest {
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.markMessageAsDeleted(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+            arrangement.messageRepository.getMessageById(conversationId, originalMessageID)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -224,15 +227,15 @@ class DeleteMessageHandlerTest {
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.markMessageAsDeleted(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
+            arrangement.messageDAO.deleteMessage(originalMessageID, conversationId.toDao())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+            arrangement.messageRepository.getMessageById(conversationId, originalMessageID)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -241,67 +244,16 @@ class DeleteMessageHandlerTest {
     }
 
     @Test
-    fun givenMessageDeletedSuccessfully_whenHandled_thenHookIsNotified() = runTest {
-        val originalMessageID = "originalMessageID"
-        val content = MessageContent.DeleteMessage(originalMessageID)
-        val conversationId = ConversationId("conversationId", "conversationDomain")
-
-        val originalMessage =
-            TestMessage.TEXT_MESSAGE.copy(
-                senderUserId = SELF_USER_ID,
-                id = originalMessageID,
-                conversationId = conversationId,
-                expirationData = Message.ExpirationData(expireAfter = Duration.parse("PT1H"))
-            )
-
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val (_, handler) = arrange(hookNotifier) {
-            withGetMessageById(Either.Right(originalMessage))
-            withDeleteMessage()
-        }
-
-        handler(
-            content = content,
-            senderUserId = UserId("requesterID", "requesterDomain"),
-            conversationId = conversationId
-        )
-
-        assertEquals(1, hookNotifier.deleteMessageCalls.size)
-        val (data, selfUserId) = hookNotifier.deleteMessageCalls.single()
-        assertEquals(conversationId, data.conversationId)
-        assertEquals(originalMessageID, data.messageId)
-        assertEquals(SELF_USER_ID, selfUserId)
-    }
-
-    @Test
-    fun givenGetMessageByIdFails_whenHandled_thenHookIsStillNotified() = runTest {
-        val originalMessageID = "originalMessageID"
-        val content = MessageContent.DeleteMessage(originalMessageID)
-        val conversationId = ConversationId("conversationId", "conversationDomain")
-
-        val hookNotifier = RecordingPersistenceEventHookNotifier()
-        val (_, handler) = arrange(hookNotifier) {
-            withGetMessageById(Either.Left(StorageFailure.DataNotFound))
-        }
-
-        handler(
-            content = content,
-            senderUserId = UserId("requesterID", "requesterDomain"),
-            conversationId = conversationId
-        )
-
-        assertEquals(1, hookNotifier.deleteMessageCalls.size)
-        val (data, selfUserId) = hookNotifier.deleteMessageCalls.single()
-        assertEquals(conversationId, data.conversationId)
-        assertEquals(originalMessageID, data.messageId)
-        assertEquals(SELF_USER_ID, selfUserId)
-    }
-
-    @Test
     fun givenDeletedMessageHasRemoteAsset_whenHandled_thenLocalAssetIsDeleted() = runTest {
         val conversationId = ConversationId("conversationId", "conversationDomain")
         val originalMessage = TestMessage.TEXT_MESSAGE.copy(
-            content = TestMessage.ASSET_CONTENT,
+            content = MessageContent.Asset(
+                TestMessage.ASSET_CONTENT.value.copy(
+                    preview = AssetContent.Preview(
+                        "image/jpeg", 123, 64, 48, TestMessage.ASSET_CONTENT.value.remoteData.copy(assetId = "preview-id")
+                    )
+                )
+            ),
             conversationId = conversationId,
             expirationData = null,
         )
@@ -318,8 +270,61 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAssetLocally(eq(TestMessage.ASSET_CONTENT.value.remoteData!!.assetId))
+            arrangement.assetRepository.deleteAssetLocally(
+                TestMessage.ASSET_CONTENT.value.remoteData.assetId, TestMessage.ASSET_CONTENT.value.remoteData.assetDomain
+            )
         }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.assetRepository.deleteAssetLocally("preview-id", TestMessage.ASSET_CONTENT.value.remoteData.assetDomain)
+        }
+    }
+
+    @Test
+    fun previewDeletionPreservesSameKeyFromAnotherDomain() = runTest {
+        verifyPreviewDeletionDomain("local.domain", "remote.domain", shouldDelete = false)
+    }
+
+    @Test
+    fun previewDeletionRemovesMatchingDomain() = runTest {
+        verifyPreviewDeletionDomain("remote.domain", "remote.domain", shouldDelete = true)
+    }
+
+    @Test
+    fun previewDeletionNormalizesMissingDomain() = runTest {
+        verifyPreviewDeletionDomain("", null, shouldDelete = true)
+    }
+
+    private suspend fun verifyPreviewDeletionDomain(cacheDomain: String, previewDomain: String?, shouldDelete: Boolean) {
+        val fileSystem = FakeKaliumFileSystem()
+        val path = fileSystem.providePersistentAssetPath("cached-preview")
+        fileSystem.sink(path).buffer().use { it.write(byteArrayOf(1)) }
+        val assetDAO = mock<AssetDAO>(mode = MockMode.autoUnit)
+        everySuspend { assetDAO.getAssetByKey(any()) } returns flowOf(null)
+        everySuspend { assetDAO.getAssetByKey("shared-key") } returns flowOf(
+            AssetEntity("shared-key", cacheDomain, path.toString(), 1, downloadedDate = null)
+        )
+        val repository = AssetDataSource(
+            mock(), assetDAO, SELF_USER_ID, assetAuditLog = lazy { mock() }, kaliumFileSystem = fileSystem
+        )
+        val preview = AssetContent.Preview(
+            "image/jpeg", 1, 64, 48,
+            TestMessage.ASSET_CONTENT.value.remoteData.copy(
+                assetId = "shared-key", assetDomain = previewDomain, otrKey = ByteArray(32), sha256 = ByteArray(32)
+            )
+        )
+        val message = TestMessage.TEXT_MESSAGE.copy(
+            content = MessageContent.Asset(TestMessage.ASSET_CONTENT.value.copy(preview = preview)),
+            expirationData = null,
+        )
+        val (_, handler) = arrange {
+            withGetMessageById(Either.Right(message))
+            withAssetRepository(repository)
+        }
+
+        handler(MessageContent.DeleteMessage(message.id), message.conversationId, message.senderUserId)
+
+        assertEquals(!shouldDelete, fileSystem.exists(path))
+        verifySuspend(if (shouldDelete) VerifyMode.exactly(1) else VerifyMode.not) { assetDAO.deleteAsset("shared-key") }
     }
 
     @Test
@@ -327,7 +332,7 @@ class DeleteMessageHandlerTest {
         val message = TestMessage.TEXT_MESSAGE.copy(content = TestMessage.ASSET_CONTENT, expirationData = null)
         val (arrangement, handler) = arrange { withGetMessageById(Either.Right(message)) }
         handler(MessageContent.DeleteMessage(message.id), message.conversationId, UserId("unrelated", "example.com"))
-        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any(), any()) }
         verifySuspend(VerifyMode.not) { arrangement.messageDAO.markMessageAsDeleted(any(), any()) }
     }
 
@@ -349,20 +354,15 @@ class DeleteMessageHandlerTest {
         val SELF_USER_ID = UserId("selfID", "selfDomain")
     }
 
-    private fun arrange(
-        hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,
-        block: suspend Arrangement.() -> Unit
-    ) = Arrangement(hookNotifier, block).arrange()
-
-    private fun arrange(block: suspend Arrangement.() -> Unit) = arrange(NoOpPersistenceEventHookNotifier, block)
+    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val hookNotifier: PersistenceEventHookNotifier,
         private val block: suspend Arrangement.() -> Unit
     ) {
         val messageRepository = mock<MessageRepository>()
         val messageDAO = mock<MessageDAO>(mode = MockMode.autoUnit)
         val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
+        private var repositoryOverride: AssetRepository? = null
         val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
@@ -373,12 +373,13 @@ class DeleteMessageHandlerTest {
             this@Arrangement to DeleteMessageHandlerImpl(
                 messageRepository = messageRepository,
                 messageDAO = messageDAO,
-                assetRepository = assetRepository,
+                assetRepository = repositoryOverride ?: assetRepository,
                 notificationEventsManager = notificationEventsManager,
-                selfUserId = SELF_USER_ID,
-                persistenceEventHookNotifier = hookNotifier,
+                selfUserId = SELF_USER_ID
             )
         }
+
+        fun withAssetRepository(repository: AssetRepository) = apply { repositoryOverride = repository }
 
         suspend fun withGetMessageById(result: Either<StorageFailure, Message>) = apply {
             everySuspend {
@@ -400,21 +401,8 @@ class DeleteMessageHandlerTest {
 
         suspend fun withDeleteAssetLocally(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
             everySuspend {
-                assetRepository.deleteAssetLocally(any())
+                assetRepository.deleteAssetLocally(any(), any())
             } returns result
         }
-    }
-
-    private class RecordingPersistenceEventHookNotifier : PersistenceEventHookNotifier {
-        val deleteMessageCalls = mutableListOf<Pair<MessageDeleteEventData, UserId>>()
-
-        override suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {
-            deleteMessageCalls += data to selfUserId
-        }
-
-        override suspend fun onConversationLastReadPersisted(
-            data: ConversationLastReadEventData,
-            selfUserId: UserId
-        ) = Unit
     }
 }

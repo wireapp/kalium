@@ -18,11 +18,13 @@
 package com.wire.kalium.cells.domain.usecase
 
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import dev.mokkery.matcher.any
@@ -78,6 +80,9 @@ class ObserveAttachmentDraftsUseCaseTest {
                 )
             ).right())
 
+            everySuspend { repository.get(any()) } calls {
+                repository.getAll(ConversationId("1", "test")).getOrNull()?.single().right()
+            }
             everySuspend { repository.remove(any()) }.returns(Unit.right())
 
             everySuspend { repository.observe(any()) }.returns(emptyFlow())

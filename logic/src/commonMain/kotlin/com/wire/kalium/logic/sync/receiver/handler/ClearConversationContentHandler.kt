@@ -35,8 +35,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
-import com.wire.kalium.messaging.hooks.ConversationClearEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 
 internal interface ClearConversationContentHandler {
     suspend fun handle(
@@ -46,14 +44,13 @@ internal interface ClearConversationContentHandler {
     )
 }
 
-@Suppress("LongParameterList") // Existing account-owned cleanup dependencies and recovery hook.
+@Suppress("LongParameterList") // Existing account-owned cleanup dependencies and recovery callback.
 internal class ClearConversationContentHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
     private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase,
     private val deleteConversation: DeleteConversationUseCase,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val recoverNSEClear: suspend (Message.Signaling, MessageContent.Cleared) -> Boolean = { _, _ -> false },
 ) : ClearConversationContentHandler {
 
@@ -75,8 +72,6 @@ internal class ClearConversationContentHandlerImpl(
             null
         }
         if (target?.type == Conversation.Type.Self) return
-        // NSE already applied an exact snapshot. The backup hook represents an unconditional
-        // conversation wipe and cannot safely describe a cutoff that preserved newer messages.
         // Recovery must also work after the NSE has already removed the target conversation.
         if (recoverNSEClear(message, messageContent)) return
         if (target == null) return
@@ -97,9 +92,5 @@ internal class ClearConversationContentHandlerImpl(
         conversationRepository.clearContent(conversationId).getOrFail {
             throw KaliumSyncException("Conversation content cleanup failed", it)
         }
-        persistenceEventHookNotifier.onConversationCleared(
-            ConversationClearEventData(conversationId),
-            selfUserId
-        )
     }
 }

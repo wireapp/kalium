@@ -67,6 +67,7 @@ internal interface CellsRepository {
     suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>?>
     suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode>
     suspend fun deleteFiles(paths: List<String>, permanentDelete: Boolean = false): Either<NetworkFailure, Unit>
+    suspend fun deleteNodes(uuids: List<String>, permanentDelete: Boolean = false): Either<NetworkFailure, Unit>
     suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink>
     suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, PublicLink>
     suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit>

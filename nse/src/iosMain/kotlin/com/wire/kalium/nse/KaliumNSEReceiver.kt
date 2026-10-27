@@ -20,6 +20,7 @@ package com.wire.kalium.nse
 import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
@@ -40,8 +41,8 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
@@ -124,6 +125,8 @@ public data class KaliumNSEResult(
     /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */
     public val stoppedReason: String? = null,
     public val messageKind: NotificationMessageKind? = null,
+    /** Absolute unread-conversation count after receiving; absent when receiving failed. */
+    public val unreadConversationBadgeCount: Long? = null,
 )
 
 /** A message alert beyond the request's own; text and names are present only when preview is allowed. */
@@ -205,7 +208,13 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     configuration.userAgent,
                     configuration.certificatePins,
                     diagnostics = diagnostics,
-                ) { runtime -> receive(runtime, request, diagnostics, started, delivery).also { produced = it } }
+                ) { runtime ->
+                    // The badge is auxiliary: a slow count read must not discard already-produced alerts.
+                    val received = receive(runtime, request, diagnostics, started, delivery).also { produced = it }
+                    received.copy(
+                        unreadConversationBadgeCount = runtime.readUnreadConversationBadgeCount().getOrNull()
+                    ).also { produced = it }
+                }
                 when (result) {
                     is Either.Left -> failure(result.value.name)
                     is Either.Right -> result.value

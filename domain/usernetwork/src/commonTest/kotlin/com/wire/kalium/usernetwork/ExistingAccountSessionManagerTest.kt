@@ -129,7 +129,7 @@ class ExistingAccountSessionManagerTest {
             }
         }
         val container = AuthenticatedNetworkContainer.create(
-            manager(storage), null, QualifiedID("self", "wire.test"), "prepared-test", emptyMap(), engine, null, kaliumLogger
+            manager(storage), QualifiedID("self", "wire.test"), "prepared-test", emptyMap(), engine, null, kaliumLogger
         )
         try {
             assertIs<NetworkResponse.Success<*>>(container.clientApi.fetchSelfUserClient())
@@ -144,7 +144,7 @@ class ExistingAccountSessionManagerTest {
     private fun manager(storage: Tokens) = ExistingAccountSessionManager(
         UserId("self", "wire.test"), ClientId("abc123"),
         ServerConfig("test", ServerConfig.DUMMY, ServerConfig.MetaData(false, CommonApiVersionType.Valid(8), "wire.test")),
-        null, storage
+        storage
     )
 
     private fun success(refresh: String?) = NetworkResponse.Success(

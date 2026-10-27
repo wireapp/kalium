@@ -69,6 +69,8 @@ import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCaseI
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
+import com.wire.kalium.logic.feature.asset.GetMessageAssetPreviewUseCase
+import com.wire.kalium.logic.feature.asset.GetMessageAssetPreviewUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
@@ -84,6 +86,7 @@ import com.wire.kalium.logic.feature.asset.upload.PersistNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.upload.PersistNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCaseImpl
+import com.wire.kalium.logic.feature.asset.upload.StartTrackedAssetUploadUseCase
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCase
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -126,7 +129,6 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
@@ -181,7 +183,6 @@ public class MessageScope internal constructor(
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val linkPreviewEnabled: Boolean,
     private val scope: CoroutineScope,
     private val kaliumConfigs: KaliumConfigs,
@@ -295,7 +296,6 @@ public class MessageScope internal constructor(
             messageRepository = messageRepository,
             selfUserId = selfUserId,
             notificationEventsManager = notificationEventsManager,
-            persistMessageHookNotifier = persistenceEventHookNotifier
         )
 
     public val sendTextMessage: SendTextMessageUseCase by lazy {
@@ -386,9 +386,11 @@ public class MessageScope internal constructor(
             dispatcher,
             messageSender,
             updateAssetMessageTransferStatus,
-            getAssetMessageTransferStatus,
-            messageSendFailureHandler
+            getAssetMessageTransferStatus
         )
+
+    public val retryFailedMessageAndAwait: RetryFailedMessageAndAwaitUseCase
+        get() = RetryFailedMessageAndAwaitUseCase(retryFailedMessage)
 
     public val getMessageById: GetMessageByIdUseCase
         get() = GetMessageByIdUseCase(messageRepository)
@@ -406,26 +408,31 @@ public class MessageScope internal constructor(
             dispatcher
         )
 
-    private val uploadAssetUseCase: UploadAssetUseCase
-        get() = UploadAssetUseCaseImpl(
-            assetDataSource = assetRepository,
-            messageSender = messageSender,
-            messageSendFailureHandler = messageSendFailureHandler,
-            updateAssetMessageTransferStatus = updateAssetMessageTransferStatus,
-            updateAudioNormalizedLoudness = updateAudioMessageNormalizedLoudnessUseCase,
-            persistMessage = persistMessage,
-            audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
-            dispatcher = dispatcher,
-            pendingMessagesEnabled = kaliumConfigs.pendingMessages,
-        )
+    private fun uploadAssetUseCase(pendingMessagesEnabled: Boolean): UploadAssetUseCase = UploadAssetUseCaseImpl(
+        assetDataSource = assetRepository,
+        messageSender = messageSender,
+        messageSendFailureHandler = messageSendFailureHandler,
+        updateAssetMessageTransferStatus = updateAssetMessageTransferStatus,
+        updateAudioNormalizedLoudness = updateAudioMessageNormalizedLoudnessUseCase,
+        persistMessage = persistMessage,
+        audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
+        dispatcher = dispatcher,
+        pendingMessagesEnabled = pendingMessagesEnabled,
+    )
 
     public val sendAssetMessage: ScheduleNewAssetMessageUseCase
         get() = scheduleAssetMessage
 
+    public val startTrackedAssetUpload: StartTrackedAssetUploadUseCase
+        get() = StartTrackedAssetUploadUseCase(createAssetMessageScheduler(pendingMessagesEnabled = false))
+
     internal val scheduleAssetMessage: ScheduleNewAssetMessageUseCaseImpl
-        get() = ScheduleNewAssetMessageUseCaseImpl(
+        get() = createAssetMessageScheduler(pendingMessagesEnabled = kaliumConfigs.pendingMessages)
+
+    private fun createAssetMessageScheduler(pendingMessagesEnabled: Boolean): ScheduleNewAssetMessageUseCaseImpl =
+        ScheduleNewAssetMessageUseCaseImpl(
             persistNewAssetMessage = persistNewAssetMessageUseCase,
-            uploadAsset = uploadAssetUseCase,
+            uploadAsset = uploadAssetUseCase(pendingMessagesEnabled),
             updateAssetMessageTransferStatus = updateAssetMessageTransferStatus,
             userId = selfUserId,
             slowSyncRepository = slowSyncRepository,
@@ -435,8 +442,11 @@ public class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             scope = scope,
             dispatcher = dispatcher,
-            pendingMessagesEnabled = kaliumConfigs.pendingMessages,
+            pendingMessagesEnabled = pendingMessagesEnabled,
         )
+
+    public val getAssetMessagePreview: GetMessageAssetPreviewUseCase
+        get() = GetMessageAssetPreviewUseCaseImpl(assetRepository, messageRepository, scope, dispatcher)
 
     public val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
@@ -471,7 +481,6 @@ public class MessageScope internal constructor(
             currentClientIdProvider,
             selfConversationIdProvider,
             deleteMessageAttachmentsUseCase.value,
-            persistenceEventHookNotifier,
         )
 
     public val toggleReaction: ToggleReactionUseCase
@@ -481,7 +490,6 @@ public class MessageScope internal constructor(
             slowSyncRepository,
             reactionRepository,
             messageSender,
-            persistenceEventHookNotifier
         )
 
     public val observeMessageReactions: ObserveMessageReactionsUseCase

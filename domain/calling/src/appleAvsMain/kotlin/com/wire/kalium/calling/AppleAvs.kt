@@ -22,7 +22,7 @@ package com.wire.kalium.calling
 
 import avs.wcall_answer
 import avs.wcall_config_update
-import avs.wcall_create
+import avs.wcall_create_ex
 import avs.wcall_destroy
 import avs.wcall_end
 import avs.wcall_network_changed
@@ -67,6 +67,10 @@ import platform.Foundation.NSRecursiveLock
 actual object AppleAvs {
     actual val bridge: AppleAvsBridge = AppleAvsBridgeImpl
 }
+
+// Signaling integration tests use real AVS without starting iOS audio services.
+internal fun signalingUserHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt? =
+    AppleAvsBridgeImpl.createUserHandle(selfUserId, selfClientId, callbacks, useMediaManager = false)
 
 @Suppress("LongParameterList", "ReturnCount", "TooManyFunctions")
 private object AppleAvsBridgeImpl : AppleAvsBridge {
@@ -294,7 +298,15 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
         }
     }
 
-    override fun userHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt? {
+    override fun userHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt? =
+        createUserHandle(selfUserId, selfClientId, callbacks, useMediaManager = true)
+
+    fun createUserHandle(
+        selfUserId: String,
+        selfClientId: String,
+        callbacks: AppleAvsCallbacks,
+        useMediaManager: Boolean,
+    ): UInt? {
         if (!startIfAvailable()) return null
         val key = "$selfUserId:$selfClientId"
         val created = withHandlesLock {
@@ -309,9 +321,11 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
         }
         val arg = created.stableRef.asCPointer()
         // Native calls can log from another thread. Never hold handlesLock across them.
-        val handle = wcall_create(
+        val handle = wcall_create_ex(
             userid = selfUserId,
             clientid = selfClientId,
+            use_mediamgr = if (useMediaManager) 1 else 0,
+            msys_name = "voe",
             readyh = readyHandler,
             sendh = sendHandler,
             sfth = sftRequestHandler,
