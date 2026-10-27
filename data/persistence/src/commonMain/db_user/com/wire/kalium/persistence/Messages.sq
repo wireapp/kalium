@@ -642,6 +642,7 @@ SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? AND s
 selectByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey message_sender_profile
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 selectPendingByConversationIdAndVisibility:

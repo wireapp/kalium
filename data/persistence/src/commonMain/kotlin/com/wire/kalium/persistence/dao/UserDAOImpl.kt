@@ -200,20 +200,26 @@ class UserDAOImpl internal constructor(
 
     override suspend fun updateUser(update: PartialUserEntity) {
         withContext(writeDispatcher.value) {
-            userQueries.updateUser(
-                name = update.name,
-                handle = update.handle,
-                email = update.email,
-                accent_id = update.accentId?.toLong(),
-                preview_asset_id = update.previewAssetId,
-                complete_asset_id = update.completeAssetId,
-                supported_protocols = update.supportedProtocols,
-                update.id
-            )
+            userQueries.transaction {
+                userQueries.updateUser(
+                    name = update.name,
+                    handle = update.handle,
+                    email = update.email,
+                    accent_id = update.accentId?.toLong(),
+                    preview_asset_id = update.previewAssetId,
+                    complete_asset_id = update.completeAssetId,
+                    supported_protocols = update.supportedProtocols,
+                    update.id
+                )
+                if (update.hasMessageSenderProfileUpdate()) {
+                    userQueries.notifyMessageSenderProfileUpdated(update.id)
+                }
+            }
         }
     }
 
     override suspend fun updateUser(users: List<PartialUserEntity>) = withContext(writeDispatcher.value) {
+        val messageSenderProfileUserId = users.firstOrNull { it.hasMessageSenderProfileUpdate() }?.id
         userQueries.transaction {
             for (user: PartialUserEntity in users) {
                 userQueries.updatePartialUserInformation(
@@ -227,8 +233,12 @@ class UserDAOImpl internal constructor(
                     user.id
                 )
             }
+            messageSenderProfileUserId?.let { userQueries.notifyMessageSenderProfileUpdated(it) }
         }
     }
+
+    private fun PartialUserEntity.hasMessageSenderProfileUpdate() =
+        name != null || previewAssetId != null || completeAssetId != null
 
     private suspend fun insertUser(user: UserEntity): Boolean {
         userQueries.insertUser(
