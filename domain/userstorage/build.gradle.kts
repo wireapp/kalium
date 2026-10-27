@@ -31,30 +31,23 @@ val providerCacheScope: String = resolveRequiredEnumGradleProperty(
 )
 val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/userstorage/commonMain/kotlin")
 
-val generateUserStorageCacheConfig by tasks.registering {
-    inputs.property("providerCacheScope", providerCacheScope)
-    outputs.dir(generatedCommonMainKotlinDir)
-    doLast {
-        val packagePath = "com/wire/kalium/userstorage/di"
-        val outDir = generatedCommonMainKotlinDir.get().asFile.resolve(packagePath)
-        outDir.mkdirs()
+val generateUserStorageCacheConfig by tasks.registering(GenerateKotlinSourceTask::class) {
+    outputDirectory.set(generatedCommonMainKotlinDir)
+    relativePath.set("com/wire/kalium/userstorage/di/UserStorageBuildConfig.kt")
+    source.set(
+        """
+        package com.wire.kalium.userstorage.di
 
-        val outputFile = outDir.resolve("UserStorageBuildConfig.kt")
-        outputFile.writeText(
-            """
-            package com.wire.kalium.userstorage.di
-
-            /**
-             * Controls provider cache scope via shared compile-time policy.
-             *
-             * - [ProviderCacheScope.GLOBAL]: all provider instances share one in-memory cache.
-             * - [ProviderCacheScope.LOCAL]: each provider instance keeps an isolated in-memory cache.
-             */
-            internal enum class ProviderCacheScope { LOCAL, GLOBAL }
-            internal val PROVIDER_CACHE_SCOPE: ProviderCacheScope = ProviderCacheScope.$providerCacheScope
-            """.trimIndent() + "\n"
-        )
-    }
+        /**
+         * Controls provider cache scope via shared compile-time policy.
+         *
+         * - [ProviderCacheScope.GLOBAL]: all provider instances share one in-memory cache.
+         * - [ProviderCacheScope.LOCAL]: each provider instance keeps an isolated in-memory cache.
+         */
+        internal enum class ProviderCacheScope { LOCAL, GLOBAL }
+        internal val PROVIDER_CACHE_SCOPE: ProviderCacheScope = ProviderCacheScope.$providerCacheScope
+        """.trimIndent() + "\n"
+    )
 }
 
 kaliumLibrary {
