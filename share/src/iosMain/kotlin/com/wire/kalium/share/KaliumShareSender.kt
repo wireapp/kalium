@@ -404,16 +404,22 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
 
     private fun failure(reason: String) = KaliumShareResult(KaliumShareStatus.FAILED, failureReason = reason)
 
-    private companion object {
-        const val MAX_BUDGET_MS = 60_000L
+    public companion object {
+        /**
+         * Closing an account failed in this process, so it keeps that account's lease until it exits: neither the
+         * app nor the notification extension can open the account. End the process once the request ended.
+         */
+        public val hasQuarantinedAccount: Boolean get() = AppleAccountRuntime.hasQuarantinedRuntime
 
-        const val QUEUE_END = "QUEUE_END"
+        private const val MAX_BUDGET_MS = 60_000L
+
+        private const val QUEUE_END = "QUEUE_END"
 
         // Soft deadlines: connect, catch up, send, then close and process what arrived.
-        const val CONNECT_SHARE = 0.25
-        const val SEND_BY_SHARE = 0.45
-        const val SENT_BY_SHARE = 0.7
-        const val PROCESS_SHARE = 0.85
+        private const val CONNECT_SHARE = 0.25
+        private const val SEND_BY_SHARE = 0.45
+        private const val SENT_BY_SHARE = 0.7
+        private const val PROCESS_SHARE = 0.85
     }
 }
 

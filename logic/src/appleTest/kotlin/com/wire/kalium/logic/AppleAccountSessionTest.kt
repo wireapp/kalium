@@ -38,6 +38,7 @@ import dev.mokkery.matcher.any
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.AccountBusyException
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
@@ -68,11 +69,14 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSUUID
+import platform.posix.getpid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -82,6 +86,7 @@ import kotlin.test.assertNotSame
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class AppleAccountSessionTest {
     private val userId = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
@@ -161,6 +166,49 @@ class AppleAccountSessionTest {
                 kotlin.test.assertSame(first, second)
                 pending.await()
                 assertEquals("after", metadata.valueByKey("handoff-test"))
+            } finally {
+                logic.releaseSessionScope(userId)
+            }
+        }
+    }
+
+    @Test
+    fun `reopening after background handoff waits for another owner cancellably`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val first = logic.openSessionScope(userId)
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            try {
+                logic.suspendSessionScope(userId)
+                val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+                val reopening = async { logic.openSessionScope(userId) }
+                delay(200)
+                assertFalse(reopening.isCompleted)
+                // The wait used to run inside the non-cancellable restore and outlived its caller.
+                withTimeout(5.seconds) { reopening.cancelAndJoin() }
+                lease.release()
+                kotlin.test.assertSame(first, logic.openSessionScope(userId))
+            } finally {
+                logic.releaseSessionScope(userId)
+            }
+        }
+    }
+
+    @Test
+    fun `reopening gives up on an account another process keeps and can reopen it later`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val first = logic.openSessionScope(userId)
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            try {
+                logic.suspendSessionScope(userId)
+                val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+                val busy = assertFailsWith<AccountBusyException> { logic.openSessionScope(userId) }
+                assertTrue(busy.holder.orEmpty().contains("pid=${getpid()}"), busy.holder)
+                lease.release()
+                kotlin.test.assertSame(first, logic.openSessionScope(userId))
             } finally {
                 logic.releaseSessionScope(userId)
             }

@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.MessageContentPreference
+import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.ReceivedMessageResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationType
@@ -147,6 +148,23 @@ class KaliumNSEPresentationTest {
 
         val read = ReceivedNotificationResult(message(ReceivedNotificationType.MESSAGE).copy(shouldNotify = false))
         assertEquals("earlier", receiver.presentation(read, listOf(unnotified("earlier"))).first.message?.messageId)
+    }
+
+    @Test
+    fun ownershipFailuresAskForAGenericAlertOnlyWhenNobodyElsePresents() {
+        for (reason in AccountRuntimeFailure.entries) for (appPresentsAlerts in listOf(false, true)) {
+            val result = receiver.ownershipFailure(reason, appPresentsAlerts)
+            val expected = when (reason) {
+                AccountRuntimeFailure.BUSY, AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE ->
+                    !appPresentsAlerts
+                AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
+                AccountRuntimeFailure.MISSING_STORAGE -> false
+            }
+            assertEquals(KaliumNSEStatus.FAILED, result.status)
+            assertEquals(reason.name, result.failureReason)
+            assertFalse(result.shouldNotify)
+            assertEquals(expected, result.presentGenericAlert, "$reason $appPresentsAlerts")
+        }
     }
 
     private fun unnotified(id: String) = message(ReceivedNotificationType.MESSAGE).copy(messageId = id)

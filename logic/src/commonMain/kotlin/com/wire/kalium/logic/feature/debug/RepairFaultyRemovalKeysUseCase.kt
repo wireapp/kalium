@@ -21,9 +21,9 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
@@ -66,15 +66,23 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
         }
         transactionProvider.transaction("RepairFaultRemovalKeys") { transactionContext ->
             // get all MLS conversations for the user's domain.
-            val conversations = conversationRepository.getMLSConversationsByDomain(selfUserId.domain).getOrElse { emptyList() }
-            val conversationsWithFaultyKeys = conversations.filter { convo ->
-                checkConversationHasFaultyKey(convo.protocol, param.faultyKeys, transactionContext)
+            val conversations = when (val result = conversationRepository.getMLSConversationsByDomain(selfUserId.domain)) {
+                is Either.Left -> return@transaction result
+                is Either.Right -> result.value
             }
-            when {
-                conversationsWithFaultyKeys.isEmpty() -> RepairResult.NoConversationsToRepair.right()
-                else ->
-                    repairConversations(conversationsWithFaultyKeys, conversations.size, transactionContext).right()
+            val conversationsWithFaultyKeys = mutableListOf<Conversation>()
+            var hasInspectionFailures = false
+            conversations.forEach { conversation ->
+                when (val result = checkConversationHasFaultyKey(conversation.protocol, param.faultyKeys, transactionContext)) {
+                    is Either.Left -> hasInspectionFailures = true
+                    is Either.Right -> if (result.value) conversationsWithFaultyKeys += conversation
+                }
             }
+            val repairResult = when {
+                conversationsWithFaultyKeys.isEmpty() -> RepairResult.NoConversationsToRepair
+                else -> repairConversations(conversationsWithFaultyKeys, conversations.size, transactionContext)
+            }
+            if (hasInspectionFailures) RepairResult.Error.right() else repairResult.right()
         }.fold(
             fnL = {
                 logger.e("Error occurred during repair of faulty removal keys")
@@ -116,23 +124,19 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
         protocolInfo: Conversation.ProtocolInfo,
         faultyKeys: List<String>,
         transactionContext: CryptoTransactionContext
-    ): Boolean =
+    ): Either<CoreFailure, Boolean> =
         when (protocolInfo) {
-            Conversation.ProtocolInfo.Proteus -> false
+            Conversation.ProtocolInfo.Proteus -> false.right()
             is Conversation.ProtocolInfo.MLS,
             is Conversation.ProtocolInfo.Mixed -> {
                 transactionContext.wrapInMLSContext { context ->
                     wrapMLSRequest {
                         val externalHex = context.getExternalSenders(protocolInfo.groupId.value).value.toHexString()
-                        faultyKeys.contains(externalHex)
+                        faultyKeys.any { it.trim().equals(externalHex, ignoreCase = true) }
                     }
-                }.fold(
-                    fnL = {
-                        logger.w("Skipping faulty key check for conversation ${protocolInfo.groupId.toLogString()} due to error")
-                        false
-                    },
-                    fnR = { it }
-                )
+                }.onFailure {
+                    logger.w("Failed faulty key check for conversation ${protocolInfo.groupId.toLogString()}")
+                }
             }
         }
 }
