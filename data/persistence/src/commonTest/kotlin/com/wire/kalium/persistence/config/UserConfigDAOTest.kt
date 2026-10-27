@@ -136,6 +136,17 @@ class UserConfigDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenMlsFaultyKeysRepairFingerprint_whenStoredAndCleared_thenItCanNoLongerBeRead() = runTest {
+        val fingerprint = "repair-fingerprint"
+
+        userConfigDAO.setMlsFaultyKeysRepairFingerprint(fingerprint)
+        assertEquals(fingerprint, userConfigDAO.getMlsFaultyKeysRepairFingerprint())
+
+        userConfigDAO.setMlsFaultyKeysRepairFingerprint(null)
+        assertNull(userConfigDAO.getMlsFaultyKeysRepairFingerprint())
+    }
+
+    @Test
     fun givenShouldJoinPendingMLSConversationsIsUpdated_whenObserving_thenLatestValueIsEmitted() = runTest {
         userConfigDAO.observeShouldJoinPendingMLSConversations().test {
             assertFalse(awaitItem())

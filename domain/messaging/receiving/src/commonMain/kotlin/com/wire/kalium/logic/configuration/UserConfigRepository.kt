@@ -175,8 +175,8 @@ interface UserConfigRepository {
     suspend fun isPreventAdminlessGroupsEnabled(): Boolean
     suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
     suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?>
-    suspend fun isMLSFaultyKeysRepairExecuted(): Boolean
-    suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit>
+    suspend fun getMLSFaultyKeysRepairFingerprint(): String?
+    suspend fun setMLSFaultyKeysRepairFingerprint(fingerprint: String?): Either<StorageFailure, Unit>
     suspend fun setMeetingsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isMeetingsEnabled(): Boolean
     fun observeIsMeetingsEnabled(): Flow<Boolean>
@@ -689,9 +689,9 @@ class UserConfigDataSource constructor(
         }
     }
 
-    override suspend fun isMLSFaultyKeysRepairExecuted(): Boolean = userConfigDAO.isMlsFaultyKeysRepairExecuted()
-    override suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigDAO.setMlsFaultyKeysRepairExecuted(repaired)
+    override suspend fun getMLSFaultyKeysRepairFingerprint(): String? = userConfigDAO.getMlsFaultyKeysRepairFingerprint()
+    override suspend fun setMLSFaultyKeysRepairFingerprint(fingerprint: String?): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigDAO.setMlsFaultyKeysRepairFingerprint(fingerprint)
     }
 
     override suspend fun setMeetingsEnabled(enabled: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
