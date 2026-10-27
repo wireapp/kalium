@@ -182,6 +182,9 @@ internal class CellsApiImpl(
                 parameters = RestActionParameters(
                     nodes = paths.map { RestNodeLocator(it) },
                     deleteOptions = RestActionOptionsDelete(permanentDelete = permanentDelete),
+                    // Otherwise it returns once the job is queued: a list loaded right after still shows the nodes.
+                    awaitStatus = JobsTaskStatus.Finished,
+                    awaitTimeout = AWAIT_TIMEOUT,
                 )
             )
         }.mapSuccess {}
