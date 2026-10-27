@@ -101,7 +101,7 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
                 }
 
                 else -> {
-                    Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+                    Either.Left(serverMiscommunication(result.kException))
                 }
             }
         }
@@ -128,7 +128,7 @@ fun mapMLSError(mlsError: MLSError): NetworkFailure.MlsMessageRejectedFailure = 
     is MLSErrorResponse.SelfRemovalNotAllowed,
     is MLSErrorResponse.SubconversationJoinParentMissing,
     is MLSErrorResponse.UnsupportedMessage,
-    is MLSErrorResponse.WelcomeMismatch -> NetworkFailure.MlsMessageRejectedFailure.Other(body)
+    is MLSErrorResponse.WelcomeMismatch -> NetworkFailure.MlsMessageRejectedFailure.Other(body.toMlsErrorDetails())
 }
 
 inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Either<ProteusFailure, T> {
@@ -140,7 +140,7 @@ inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Either<Proteus
                 |"cause": ${e.cause} }",
                 |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
         )
-        Either.Left(ProteusFailure(e))
+        Either.Left(proteusFailure(e))
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
@@ -149,7 +149,7 @@ inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Either<Proteus
                 |"cause": ${e.cause} },
                 |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
         )
-        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)))
+        Either.Left(proteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)))
     }
 }
 

@@ -37,13 +37,13 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
-import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.authenticationCodeFailure
-import com.wire.kalium.network.exceptions.isBadRequest
-import com.wire.kalium.network.exceptions.isInvalidCredentials
-import com.wire.kalium.network.exceptions.isMissingAuth
-import com.wire.kalium.network.exceptions.isTooManyClients
+import com.wire.kalium.common.error.AuthenticationCodeFailure
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.authenticationCodeFailure
+import com.wire.kalium.common.error.isBadRequest
+import com.wire.kalium.common.error.isInvalidCredentials
+import com.wire.kalium.common.error.isMissingAuth
+import com.wire.kalium.common.error.isTooManyClients
 import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -174,17 +174,17 @@ internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) intern
     private suspend fun handleFailure(
         failure: CoreFailure,
     ): RegisterClientResult = if (failure is NetworkFailure.ServerMiscommunication &&
-        failure.kaliumException is KaliumException.InvalidRequestError
+        failure.reason is ServerError.InvalidRequest
     ) {
-        val kaliumException = failure.kaliumException as KaliumException.InvalidRequestError
-        val authCodeFailure = kaliumException.authenticationCodeFailure
+        val reason = failure.reason as ServerError.InvalidRequest
+        val authCodeFailure = reason.authenticationCodeFailure
         when {
-            kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
-            kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
-            kaliumException.isInvalidCredentials() ->
+            reason.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
+            reason.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
+            reason.isInvalidCredentials() ->
                 RegisterClientResult.Failure.InvalidCredentials.InvalidPassword
 
-            kaliumException.isBadRequest() ->
+            reason.isBadRequest() ->
                 RegisterClientResult.Failure.InvalidCredentials.InvalidPassword
 
             authCodeFailure != null -> handleAuthCodeFailure(authCodeFailure)

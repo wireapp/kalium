@@ -17,10 +17,11 @@
  */
 package com.wire.kalium.cells.domain.usecase.publiclink
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import dev.mokkery.matcher.any
@@ -134,7 +135,7 @@ class UpdatePublicLinkPasswordUseCaseTest {
 
         suspend fun withUpdatePasswordFailure() = apply {
             everySuspend { repository.updatePublicLinkPassword(any(), any()) } returns
-                    NetworkFailure.ServerMiscommunication(IllegalStateException()).left()
+                    serverMiscommunication(IllegalStateException()).left()
         }
 
         suspend fun withRemovePasswordSuccess() = apply {
@@ -143,7 +144,7 @@ class UpdatePublicLinkPasswordUseCaseTest {
 
         suspend fun withRemovePasswordFailure() = apply {
             everySuspend { repository.removePublicLinkPassword(any()) } returns
-                    NetworkFailure.ServerMiscommunication(IllegalStateException()).left()
+                    serverMiscommunication(IllegalStateException()).left()
         }
 
         fun arrange() = this to UpdatePublicLinkPasswordUseCaseImpl(

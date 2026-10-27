@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.proteusFailure
+
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -27,7 +28,7 @@ class ProteusMessageFailureHandlerTest {
 
     @Test
     fun givenDuplicateCode_whenHandlingProteusFailure_thenIgnore() {
-        val failure = ProteusFailure(
+        val failure = proteusFailure(
             ProteusException(
                 message = null,
                 code = ProteusException.Code.DUPLICATE_MESSAGE,
@@ -42,7 +43,7 @@ class ProteusMessageFailureHandlerTest {
 
     @Test
     fun givenUnknownCodeWithDuplicateMessageText_whenHandlingProteusFailure_thenInformUser() {
-        val failure = ProteusFailure(
+        val failure = proteusFailure(
             ProteusException(
                 message = "exception=com.wire.crypto.ProteusException\$DuplicateMessage: ",
                 code = ProteusException.Code.UNKNOWN_ERROR,
@@ -57,7 +58,7 @@ class ProteusMessageFailureHandlerTest {
 
     @Test
     fun givenTooDistantFuture_whenHandlingProteusFailure_thenRecoverSession() {
-        val failure = ProteusFailure(
+        val failure = proteusFailure(
             ProteusException(
                 message = null,
                 code = ProteusException.Code.TOO_DISTANT_FUTURE,
@@ -72,7 +73,7 @@ class ProteusMessageFailureHandlerTest {
 
     @Test
     fun givenSessionNotFound_whenHandlingProteusFailure_thenRecoverSession() {
-        val failure = ProteusFailure(
+        val failure = proteusFailure(
             ProteusException(
                 message = null,
                 code = ProteusException.Code.SESSION_NOT_FOUND,
@@ -87,7 +88,7 @@ class ProteusMessageFailureHandlerTest {
 
     @Test
     fun givenNonDuplicateProteusFailure_whenHandling_thenInformUser() {
-        val failure = ProteusFailure(
+        val failure = proteusFailure(
             ProteusException(
                 message = null,
                 code = ProteusException.Code.INVALID_SIGNATURE,

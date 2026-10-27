@@ -18,7 +18,8 @@
 
 package com.wire.kalium.logic.feature.register
 
-import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -65,7 +66,7 @@ class VerifyActivationCodeUseCaseTest {
     fun givenRepositoryCallFailWithInvalidCode_thenInvalidCodeIsPropagated() = runTest {
         val email = TEST_EMAIL
         val code = TEST_CODE
-        val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCode)
+        val expected = serverMiscommunication(TestNetworkException.invalidCode)
 
         everySuspend {
             registerAccountRepository.verifyActivationCode(email, code) 
@@ -84,7 +85,7 @@ class VerifyActivationCodeUseCaseTest {
     fun givenRepositoryCallFail_thenErrorIsPropagated() = runTest {
         val email = TEST_EMAIL
         val code = TEST_CODE
-        val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val expected = serverMiscommunication(TestNetworkException.generic)
 
         everySuspend {
             registerAccountRepository.verifyActivationCode(email, code) 

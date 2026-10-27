@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.client.remote
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.Client
@@ -86,7 +88,7 @@ internal class ClientRemoteDataSource(
                 clientId.value
             )
         }
-    } ?: NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IllegalArgumentException("Unknown cipher suite"))).left()
+    } ?: serverMiscommunication(KaliumException.GenericError(IllegalArgumentException("Unknown cipher suite"))).left()
 
     override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { clientApi.deleteClient(param.password, param.clientId.value) }

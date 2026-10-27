@@ -21,11 +21,11 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isBlackListedEmail
-import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
-import com.wire.kalium.network.exceptions.isInvalidEmail
-import com.wire.kalium.network.exceptions.isKeyExists
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isBlackListedEmail
+import com.wire.kalium.common.error.isDomainBlockedForRegistration
+import com.wire.kalium.common.error.isInvalidEmail
+import com.wire.kalium.common.error.isKeyExists
 
 /**
  * Use case to request an activation code for a given email address.
@@ -42,8 +42,8 @@ public class RequestActivationCodeUseCase internal constructor(
 
         return registerAccountRepository.requestEmailActivationCode(email)
             .fold({
-                if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                    val error = it.kaliumException as KaliumException.InvalidRequestError
+                if (it is NetworkFailure.ServerMiscommunication && it.reason is ServerError.InvalidRequest) {
+                    val error = it.reason as ServerError.InvalidRequest
                     when {
                         error.isInvalidEmail() -> RequestActivationCodeResult.Failure.InvalidEmail
                         error.isBlackListedEmail() -> RequestActivationCodeResult.Failure.BlacklistedEmail

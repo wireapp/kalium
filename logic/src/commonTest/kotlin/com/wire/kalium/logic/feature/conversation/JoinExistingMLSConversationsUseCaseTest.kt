@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -536,7 +538,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             } returns(
                 Either.Left(
-                    NetworkFailure.ServerMiscommunication(
+                    serverMiscommunication(
                         KaliumException.InvalidRequestError(
                             errorResponse = GenericAPIErrorResponse(400, "Invalid LeafNode signature", "mls-protocol-error")
                         )
@@ -550,7 +552,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             } returns(
                 Either.Left(
-                    NetworkFailure.ServerMiscommunication(
+                    serverMiscommunication(
                         KaliumException.InvalidRequestError(
                             errorResponse = GenericAPIErrorResponse(420, "unknown status code", "throttled by ingress")
                         )

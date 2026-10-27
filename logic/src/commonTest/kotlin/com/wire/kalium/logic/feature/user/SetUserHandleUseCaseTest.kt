@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
@@ -187,7 +189,7 @@ class SetUserHandleUseCaseTest {
     @Test
     fun givenValidHandleAndRepositoryFailWithGenericError_thenErrorIsPropagated() = runTest {
         val handle = "user_handle"
-        val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val expected = serverMiscommunication(TestNetworkException.generic)
         every {
             validateHandleUseCase.invoke(any())
         } returns ValidateUserHandleResult.Valid(handle)
@@ -202,7 +204,7 @@ class SetUserHandleUseCaseTest {
 
         assertIs<SetUserHandleResult.Failure.Generic>(actual)
         assertIs<NetworkFailure.ServerMiscommunication>(actual.error)
-        assertEquals(expected.kaliumException, (actual.error as NetworkFailure.ServerMiscommunication).kaliumException)
+        assertEquals(expected.rootCause, (actual.error as NetworkFailure.ServerMiscommunication).rootCause)
 
         verify(VerifyMode.exactly(1)) {
             validateHandleUseCase.invoke(handle)
@@ -222,7 +224,7 @@ class SetUserHandleUseCaseTest {
 
     private fun testErrors(kaliumException: KaliumException, expectedError: SetUserHandleResult.Failure) = runTest {
         val handle = "user_handle"
-        val error = NetworkFailure.ServerMiscommunication(kaliumException)
+        val error = serverMiscommunication(kaliumException)
         every {
             validateHandleUseCase.invoke(any())
         } returns ValidateUserHandleResult.Valid(handle)

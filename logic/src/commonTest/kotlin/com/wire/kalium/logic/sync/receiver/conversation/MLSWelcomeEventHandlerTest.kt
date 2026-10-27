@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CommonizedMLSException
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
@@ -90,7 +92,7 @@ class MLSWelcomeEventHandlerTest {
 
     @Test
     fun givenConversationWasDeleted_whenHandlingWelcome_thenShouldSkipStaleEvent() = runTest {
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation)
+        val failure = serverMiscommunication(TestNetworkException.noConversation)
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withFetchConversationIfUnknownFailingWith(failure)
         }

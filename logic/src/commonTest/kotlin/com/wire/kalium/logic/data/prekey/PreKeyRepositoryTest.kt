@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.prekey
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
@@ -202,7 +204,7 @@ class PreKeyRepositoryTest {
         prekeyRepository.establishSessions(arrangement.proteusContext, mapOf(TEST_USER_ID_1 to listOf(TEST_CLIENT_ID_1)))
             .shouldFail {
                 assertIs<ProteusFailure>(it)
-                assertEquals(exception, it.proteusException)
+                assertEquals(exception, it.rootCause)
             }
     }
 
@@ -244,13 +246,13 @@ class PreKeyRepositoryTest {
 
         val (arrangement, sessionEstablisher) = Arrangement()
             .withDoesSessionExist(false)
-            .withGetRemoteUsersPreKeyFail(NetworkResponse.Error(failure.kaliumException))
+            .withGetRemoteUsersPreKeyFail(NetworkResponse.Error(failure.rootCause as KaliumException))
             .arrange {}
 
         sessionEstablisher.establishSessions(arrangement.proteusContext, mapOf(TEST_USER_ID_1 to listOf(TEST_CLIENT_ID_1)))
             .shouldFail {
                 assertIs<NetworkFailure.ServerMiscommunication>(it)
-                assertEquals(failure.kaliumException, it.kaliumException)
+                assertEquals(failure.rootCause, it.rootCause)
             }
     }
 
@@ -343,7 +345,7 @@ class PreKeyRepositoryTest {
         val TEST_USER_ID_1 = TestUser.USER_ID
         val TEST_CLIENT_ID_1 = TestClient.CLIENT_ID
         val TEST_RECIPIENT_1 = Recipient(TestUser.USER_ID, listOf(TestClient.CLIENT_ID))
-        val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val NETWORK_ERROR = serverMiscommunication(TestNetworkException.generic)
     }
 
     private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementMokkeryImpl() {

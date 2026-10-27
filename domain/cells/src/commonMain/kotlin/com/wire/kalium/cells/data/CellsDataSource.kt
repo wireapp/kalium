@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.data
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.data.model.toModel
 import com.wire.kalium.cells.domain.CellsApi
@@ -85,7 +87,7 @@ internal class CellsDataSource internal constructor(
         } catch (e: NoNetworkConnectionException) {
             Either.Left(NetworkFailure.NoNetworkConnection(e.cause))
         } catch (e: Exception) {
-            Either.Left(NetworkFailure.ServerMiscommunication(e))
+            Either.Left(serverMiscommunication(e))
         }
     }
 
@@ -179,7 +181,7 @@ internal class CellsDataSource internal constructor(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> {
         val partPath = out.parent?.let { it / "${out.name}.part" }
-            ?: return Either.Left(NetworkFailure.ServerMiscommunication(Exception("Cannot derive .part path for: $out")))
+            ?: return Either.Left(serverMiscommunication(Exception("Cannot derive .part path for: $out")))
 
         return try {
             fileSystem.sink(partPath).use { sink ->
@@ -192,7 +194,7 @@ internal class CellsDataSource internal constructor(
             throw e
         } catch (e: Exception) {
             fileSystem.delete(partPath, mustExist = false)
-            Either.Left(NetworkFailure.ServerMiscommunication(e))
+            Either.Left(serverMiscommunication(e))
         }
     }
 

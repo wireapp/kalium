@@ -18,7 +18,8 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.framework.TestConversation
@@ -74,7 +75,7 @@ class UpdateConversationMutedStatusUseCaseTest {
 
         everySuspend {
             conversationRepository.updateMutedStatusRemotely(any(), MutedConversationStatus.AllMuted, any())
-        } returns Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException("some error")))
+        } returns Either.Left(serverMiscommunication(RuntimeException("some error")))
 
         val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.AllMuted)
         assertEquals(ConversationUpdateStatusResult.Failure::class, result::class)

@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -242,7 +244,7 @@ class UserEventReceiverTest {
     @Test
     fun givenStaleNewConnectionEvent_whenUserDetailsReturnNotFound_thenConnectionIsPersisted() = runTest {
         val event = TestEvent.newConnection(status = ConnectionState.PENDING)
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.notFound)
+        val failure = serverMiscommunication(TestNetworkException.notFound)
         val (arrangement, eventReceiver) = arrange {
             withFetchUserInfoReturning(Either.Left(failure))
             withInsertConnectionFromEventSucceeding()
@@ -259,7 +261,7 @@ class UserEventReceiverTest {
     @Test
     fun givenNewConnectionEvent_whenFetchingUserDetailsFails_thenFailureIsPropagated() = runTest {
         val event = TestEvent.newConnection(status = ConnectionState.PENDING)
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val failure = serverMiscommunication(TestNetworkException.generic)
         val (arrangement, eventReceiver) = arrange {
             withFetchUserInfoReturning(Either.Left(failure))
         }

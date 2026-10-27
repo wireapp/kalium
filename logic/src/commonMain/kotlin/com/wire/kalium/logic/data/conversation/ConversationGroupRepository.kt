@@ -61,8 +61,8 @@ import com.wire.kalium.network.api.authenticated.conversation.model.Conversation
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ServiceAddedResponse
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationHasNoCode
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isConversationHasNoCode
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
@@ -726,8 +726,8 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.guestLinkInfo(conversationId.toApi())
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication &&
-                it.kaliumException is KaliumException.InvalidRequestError &&
-                (it.kaliumException as KaliumException.InvalidRequestError).isConversationHasNoCode()
+                it.reason is ServerError.InvalidRequest &&
+                (it.reason as ServerError.InvalidRequest).isConversationHasNoCode()
             ) {
                 wrapStorageRequest {
                     conversationDAO.deleteGuestRoomLink(conversationId.toDao())

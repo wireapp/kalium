@@ -4,6 +4,7 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.ServerError
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
@@ -11,7 +12,6 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import okio.ByteString.Companion.encodeUtf8
 
@@ -63,19 +63,19 @@ public class ReceivingDiagnostics {
             val item = current
             seen += item
             types += safeFailureType(item)
-            val response = errorResponse(item)
+            val core = (item as? KaliumSyncException)?.coreFailureCause
+            val response = (core as? NetworkFailure.ServerMiscommunication)?.reason?.errorResponse() ?: errorResponse(item)
             if (response != null) {
                 httpStatus = response.code
                 networkError = safeNetworkError(response.label)
             }
-            val core = (item as? KaliumSyncException)?.coreFailureCause
             if (core != null) {
                 val category = safeCoreFailureType(core)
                 types += category
                 if (errorCode == null) errorCode = category
             }
             current = when (core) {
-                is NetworkFailure.ServerMiscommunication -> core.kaliumException
+                is NetworkFailure.ServerMiscommunication -> core.rootCause
                 is MLSFailure.Generic -> core.rootCause
                 is CoreFailure.Unknown -> core.rootCause
                 is StorageFailure.Generic -> core.rootCause
@@ -129,10 +129,17 @@ public class ReceivingDiagnostics {
 private const val EVENT_HASH_LENGTH = 24
 private const val MAX_FAILURE_DEPTH = 8
 
-private fun errorResponse(failure: Throwable): GenericAPIErrorResponse? = when (failure) {
+private fun errorResponse(failure: Throwable): ServerError.Response? = when (failure) {
     is KaliumException.InvalidRequestError -> failure.errorResponse
     is KaliumException.ServerError -> failure.errorResponse
     is KaliumException.RedirectError -> failure.errorResponse
+    else -> null
+}?.let { ServerError.Response(it.code, it.message, it.label) }
+
+private fun ServerError.errorResponse(): ServerError.Response? = when (this) {
+    is ServerError.InvalidRequest -> errorResponse
+    is ServerError.Server -> errorResponse
+    is ServerError.Redirect -> errorResponse
     else -> null
 }
 

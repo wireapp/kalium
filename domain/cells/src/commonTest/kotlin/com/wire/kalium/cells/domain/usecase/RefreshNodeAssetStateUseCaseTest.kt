@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.calls
@@ -25,7 +27,6 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodePreview
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
@@ -576,13 +577,13 @@ class RefreshNodeAssetStateUseCaseTest {
 
         suspend fun withNodeResponseError() = apply {
             everySuspend { cellsRepository.getNode(any()) }.returns(
-                NetworkFailure.ServerMiscommunication(IllegalStateException("Test")).left()
+                serverMiscommunication(IllegalStateException("Test")).left()
             )
         }
 
         suspend fun withNodeResponseNotFound() = apply {
             everySuspend { cellsRepository.getNode(any()) }.returns(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.ServerError(
                         GenericAPIErrorResponse(HttpStatusCode.NotFound.value, "Test", "")
                     )
@@ -592,7 +593,7 @@ class RefreshNodeAssetStateUseCaseTest {
 
         suspend fun withNodeResponseForbidden() = apply {
             everySuspend { cellsRepository.getNode(any()) }.returns(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.ServerError(
                         GenericAPIErrorResponse(HttpStatusCode.Forbidden.value, "Test", "")
                     )
@@ -626,7 +627,7 @@ class RefreshNodeAssetStateUseCaseTest {
 
         suspend fun withAssetNotFound() = apply {
             everySuspend { cellsRepository.getPreviews(any()) }.returns(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.ServerError(
                         GenericAPIErrorResponse(HttpStatusCode.NotFound.value, "Test", "")
                     )

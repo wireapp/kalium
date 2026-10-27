@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.hasValidPendingData
 import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.AssetId
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.getExtensionFromMimeType
 import kotlinx.coroutines.CoroutineScope
@@ -84,6 +84,6 @@ internal class GetMessageAssetPreviewUseCaseImpl(
 
 private fun CoreFailure.isTransientPreviewFailure(): Boolean = when (this) {
     is NetworkFailure.NoNetworkConnection, is NetworkFailure.ProxyError -> true
-    is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
+    is NetworkFailure.ServerMiscommunication -> reason is ServerError.Server
     else -> false
 }

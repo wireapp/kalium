@@ -24,7 +24,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.sso.SSOUtil
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import io.ktor.http.HttpStatusCode
 
 public sealed class SSOInitiateLoginResult {
@@ -89,8 +89,8 @@ internal class SSOInitiateLoginUseCaseImpl(
                 )
             }
         }.fold({
-            if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                val error = it.kaliumException as KaliumException.InvalidRequestError
+            if (it is NetworkFailure.ServerMiscommunication && it.reason is ServerError.InvalidRequest) {
+                val error = it.reason as ServerError.InvalidRequest
                 if (error.errorResponse.code == HttpStatusCode.BadRequest.value)
                     return@fold SSOInitiateLoginResult.Failure.InvalidRedirect
                 if (error.errorResponse.code == HttpStatusCode.NotFound.value)

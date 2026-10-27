@@ -17,7 +17,8 @@
  */
 package com.wire.kalium.logic.feature.team
 
-import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.SelfUser
@@ -188,7 +189,7 @@ class SyncSelfTeamUseCaseTest {
             .withFailingTeamMembers()
             .withFailingServicesSync()
             .arrange()
-        val failure = Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied))
+        val failure = Either.Left(serverMiscommunication(TestNetworkException.accessDenied))
         everySuspend { arrangement.teamRepository.fetchAppsByTeamId(any()) } returns failure
         everySuspend { arrangement.teamRepository.fetchCollaboratorsByTeamId(any()) } returns failure
 
@@ -267,7 +268,7 @@ class SyncSelfTeamUseCaseTest {
         suspend fun withFailingTeamInfo() = apply {
             everySuspend {
                 teamRepository.fetchTeamById(any())
-            } returns Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest))
+            } returns Either.Left(serverMiscommunication(TestNetworkException.badRequest))
         }
 
         suspend fun withTeamMembers() = apply {
@@ -279,7 +280,7 @@ class SyncSelfTeamUseCaseTest {
         suspend fun withFailingTeamMembers() = apply {
             everySuspend {
                 teamRepository.fetchMembersByTeamId(any(), any(), any(), any())
-            } returns Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied))
+            } returns Either.Left(serverMiscommunication(TestNetworkException.accessDenied))
         }
 
         suspend fun withServicesSync() = apply {
@@ -303,7 +304,7 @@ class SyncSelfTeamUseCaseTest {
         suspend fun withFailingServicesSync() = apply {
             everySuspend {
                 teamRepository.syncServices(any())
-            } returns Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied))
+            } returns Either.Left(serverMiscommunication(TestNetworkException.accessDenied))
         }
 
         fun arrange(): Pair<Arrangement, SyncSelfTeamUseCase> {

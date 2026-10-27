@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.connection
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -126,7 +128,7 @@ class SendConnectionRequestUseCaseTest {
             .withFetchUserInfoResult(Either.Right(Unit))
             .withCreateConnectionResult(
                 Either.Left(
-                    NetworkFailure.ServerMiscommunication(
+                    serverMiscommunication(
                         KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "", "missing-legalhold-consent"))
                     )
                 )

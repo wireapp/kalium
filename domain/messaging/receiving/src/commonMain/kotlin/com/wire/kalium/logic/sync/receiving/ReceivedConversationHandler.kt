@@ -35,9 +35,9 @@ import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationNotFound
-import com.wire.kalium.network.exceptions.isAccessDenied
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isConversationNotFound
+import com.wire.kalium.common.error.isAccessDenied
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.MessageEffectDAOs
@@ -467,7 +467,7 @@ internal class ReceivedConversationHandler(
 /** Apply only to fetchConversationDetails; a status or label alone does not establish staleness. */
 private fun Either<NetworkFailure, ConversationResponse>.isUnavailableConversationFetch(): Boolean {
     val failure = (this as? Either.Left)?.value as? NetworkFailure.ServerMiscommunication
-    val error = failure?.kaliumException as? KaliumException.InvalidRequestError ?: return false
+    val error = failure?.reason as? ServerError.InvalidRequest ?: return false
     return error.errorResponse.code == HttpStatusCode.NotFound.value && error.isConversationNotFound() ||
         error.errorResponse.code == HttpStatusCode.Forbidden.value && error.isAccessDenied()
 }

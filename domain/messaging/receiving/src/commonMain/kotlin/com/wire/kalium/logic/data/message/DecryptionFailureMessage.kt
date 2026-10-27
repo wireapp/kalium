@@ -16,7 +16,7 @@ import kotlin.time.Instant
 fun Event.Conversation.NewMessage.decryptionFailureContent(failure: CoreFailure, resolved: Boolean): MessageContent.FailedDecryption =
     MessageContent.FailedDecryption(
         encodedData = encryptedExternalContent?.data,
-        errorCode = (failure as? ProteusFailure)?.proteusException?.intCode,
+        errorCode = (failure as? ProteusFailure)?.intCode,
         isDecryptionResolved = resolved,
         senderUserId = senderUserId,
         clientId = ClientId(senderClientId.value),

@@ -35,8 +35,8 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFoundLabel
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isNotFoundLabel
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -122,8 +122,8 @@ internal class GetMessageAssetUseCaseImpl(
                                 kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
                                 // This should be called if there is an issue while downloading the asset
                                 if (it is NetworkFailure.ServerMiscommunication &&
-                                    it.kaliumException is KaliumException.InvalidRequestError
-                                    && (it.kaliumException as KaliumException.InvalidRequestError).isNotFoundLabel()
+                                    it.reason is ServerError.InvalidRequest
+                                    && (it.reason as ServerError.InvalidRequest).isNotFoundLabel()
                                 ) {
                                     updateAssetMessageTransferStatus(AssetTransferStatus.NOT_FOUND, conversationId, messageId)
                                 } else {

@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
@@ -110,7 +112,7 @@ class ObserveLoginContextUseCaseTest {
     @Test
     fun givenLinks_whenInvokedAndError_thenBubbleUpError() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withObserveServerConfigByLinks(flowOf(NetworkFailure.ServerMiscommunication(RuntimeException()).left()))
+            .withObserveServerConfigByLinks(flowOf(serverMiscommunication(RuntimeException()).left()))
             .arrange()
 
         useCase(ServerConfig.DUMMY)

@@ -7,8 +7,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.giphy.GifPage
 import com.wire.kalium.logic.data.giphy.GiphyRepository
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFound
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isNotFound
 
 /** Searches Giphy for GIFs rated pg or milder. */
 public interface SearchGifsUseCase {
@@ -27,8 +27,8 @@ internal class SearchGifsUseCaseImpl(private val giphyRepository: GiphyRepositor
 /** A 404 means the backend has no Giphy proxy. */
 internal fun Either<NetworkFailure, GifPage>.toGetGifsResult(): GetGifsResult = fold(
     { failure ->
-        val exception = (failure as? NetworkFailure.ServerMiscommunication)?.kaliumException
-        if (exception is KaliumException.InvalidRequestError && exception.isNotFound()) {
+        val exception = (failure as? NetworkFailure.ServerMiscommunication)?.reason
+        if (exception is ServerError.InvalidRequest && exception.isNotFound()) {
             GetGifsResult.Unavailable
         } else {
             GetGifsResult.Failure(failure)

@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
@@ -114,7 +116,7 @@ class ProtocolUpdateEventHandlerTest {
     @Test
     fun givenStaleProtocolEventForDeletedConversation_whenBackendReturnsNoConversation_thenEventIsSkipped() = runTest {
         val event = TestEvent.newConversationProtocolEvent()
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation)
+        val failure = serverMiscommunication(TestNetworkException.noConversation)
 
         val (arrangement, useCase) = arrange {
             withUpdateProtocolUpdateReturns(Either.Left(failure))
@@ -130,7 +132,7 @@ class ProtocolUpdateEventHandlerTest {
     @Test
     fun givenProtocolEvent_whenBackendReturnsOtherServerError_thenErrorIsPropagated() = runTest {
         val event = TestEvent.newConversationProtocolEvent()
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val failure = serverMiscommunication(TestNetworkException.generic)
 
         val (arrangement, useCase) = arrange {
             withUpdateProtocolUpdateReturns(Either.Left(failure))

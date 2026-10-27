@@ -22,7 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import io.ktor.http.HttpStatusCode
 
 internal sealed class SSOFinalizeLoginResult {
@@ -51,8 +51,8 @@ internal class SSOFinalizeLoginUseCaseImpl(
 
     override suspend fun invoke(cookie: String): SSOFinalizeLoginResult =
         ssoLoginRepository.finalize(cookie).fold({
-            if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                if ((it.kaliumException as KaliumException.InvalidRequestError).errorResponse.code == HttpStatusCode.BadRequest.value)
+            if (it is NetworkFailure.ServerMiscommunication && it.reason is ServerError.InvalidRequest) {
+                if ((it.reason as ServerError.InvalidRequest).errorResponse.code == HttpStatusCode.BadRequest.value)
                     return@fold SSOFinalizeLoginResult.Failure.InvalidCookie
             }
             SSOFinalizeLoginResult.Failure.Generic(it)

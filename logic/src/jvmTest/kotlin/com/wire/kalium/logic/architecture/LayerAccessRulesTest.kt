@@ -31,10 +31,9 @@ class LayerAccessRulesTest {
             "com.wire.kalium.network.",
             "com.wire.kalium.persistence.",
             "com.wire.kalium.cryptography.",
-            "com.wire.crypto.",
-            "com.wire.kalium.common.error."
+            "com.wire.crypto."
         )
-        listOf("core/common", "core/data").forEach { module ->
+        listOf("core/common", "core/data", "core/failures").forEach { module ->
             val files = Konsist.scopeFromProduction(moduleName = module).files
             assertTrue(files.isNotEmpty(), "Expected production sources in $module")
             files.assertFalse { file ->

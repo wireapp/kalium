@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.network
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -73,7 +75,7 @@ class SessionManagerTest {
 
     @Test
     fun givenInvalidCredentialsOnRefresh_whenRefreshingToken_thenShouldExpireSessionWithoutRetryableFailure() = runTest {
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
+        val failure = serverMiscommunication(TestNetworkException.invalidCredentials)
         val (arrangement, sessionManager) = arrange {
             withTokenRefresherResult(Either.Left(failure))
         }

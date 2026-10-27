@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.asset
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -98,7 +100,7 @@ class GetPublicAssetUseCaseTest {
         everySuspend {
             assetRepository.downloadPublicAsset(assetKey.value, assetKey.domain)
         } returns Either.Left(
-            NetworkFailure.ServerMiscommunication(
+            serverMiscommunication(
                 KaliumException.InvalidRequestError(
                     GenericAPIErrorResponse(
                         404,

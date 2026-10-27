@@ -7,8 +7,8 @@ package com.wire.kalium.logic.sync.receiver.meeting
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.network.exceptions.KaliumException.InvalidRequestError
-import com.wire.kalium.network.exceptions.isMeetingNotFound
+import com.wire.kalium.common.error.ServerError.InvalidRequest
+import com.wire.kalium.common.error.isMeetingNotFound
 
 fun CoreFailure.isMeetingNotFound(): Boolean =
-    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? InvalidRequestError)?.isMeetingNotFound() == true
+    ((this as? NetworkFailure.ServerMiscommunication)?.reason as? InvalidRequest)?.isMeetingNotFound() == true

@@ -92,7 +92,7 @@ class RegisterAccountRepositoryTest {
         val actual = registerAccountRepository.requestEmailActivationCode(email)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
-        assertEquals(expected, actual.value.kaliumException)
+        assertEquals(expected, actual.value.rootCause)
         verifySuspend(VerifyMode.exactly(1)) {
             registerApi.requestActivationCode(RequestActivationCodeParam.Email(email))
         }
@@ -129,7 +129,7 @@ class RegisterAccountRepositoryTest {
         val actual = registerAccountRepository.verifyActivationCode(email, code)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
-        assertEquals(expected, actual.value.kaliumException)
+        assertEquals(expected, actual.value.rootCause)
 
         verifySuspend(VerifyMode.exactly(1)) {
             registerApi.activate(ActivationParam.Email(email, code))
@@ -303,7 +303,7 @@ class RegisterAccountRepositoryTest {
         )
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
-        assertEquals(expected, actual.value.kaliumException)
+        assertEquals(expected, actual.value.rootCause)
 
         verifySuspend(VerifyMode.exactly(1)) {
             registerApi.register(

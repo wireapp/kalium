@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.data
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import io.ktor.client.HttpClient
@@ -49,7 +51,7 @@ private class FileDownloaderImpl(
     ): Either<NetworkFailure, Unit> = httpClient.prepareGet(presignedUrl).execute { response ->
         if (!response.status.isSuccess()) {
             val exception = IOException("Download failed: ${response.status}")
-            return@execute Either.Left(NetworkFailure.ServerMiscommunication(exception))
+            return@execute Either.Left(serverMiscommunication(exception))
         }
 
         response.bodyAsChannel().copyToSink(

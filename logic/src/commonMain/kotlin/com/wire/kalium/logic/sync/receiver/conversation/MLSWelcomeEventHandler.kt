@@ -50,8 +50,8 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationNotFound
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isConversationNotFound
 import kotlinx.coroutines.flow.first
 
 internal interface MLSWelcomeEventHandler {
@@ -223,6 +223,6 @@ internal class MLSWelcomeEventHandlerImpl(
 
 private fun CoreFailure.isConversationNotFoundFailure(): Boolean {
     val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)
-        ?.kaliumException as? KaliumException.InvalidRequestError
+        ?.reason as? ServerError.InvalidRequest
     return invalidRequest?.isConversationNotFound() == true
 }

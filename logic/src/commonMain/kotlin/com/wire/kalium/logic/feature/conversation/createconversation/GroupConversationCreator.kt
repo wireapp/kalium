@@ -43,8 +43,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isOperationDenied
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isOperationDenied
 import com.wire.kalium.util.DateTimeUtil
 
 /**
@@ -203,8 +203,8 @@ internal class GroupConversationCreatorImpl(
             }
 
             is NetworkFailure.ServerMiscommunication -> {
-                val exception = failure.kaliumException
-                if (exception is KaliumException.InvalidRequestError && exception.isOperationDenied()
+                val exception = failure.reason
+                if (exception is ServerError.InvalidRequest && exception.isOperationDenied()
                 ) {
                     ConversationCreationResult.Forbidden
                 } else {

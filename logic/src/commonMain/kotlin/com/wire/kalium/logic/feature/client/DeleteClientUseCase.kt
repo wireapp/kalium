@@ -26,10 +26,10 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isBadRequest
-import com.wire.kalium.network.exceptions.isInvalidCredentials
-import com.wire.kalium.network.exceptions.isMissingAuth
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isBadRequest
+import com.wire.kalium.common.error.isInvalidCredentials
+import com.wire.kalium.common.error.isMissingAuth
 
 /**
  * This use case is responsible for deleting the client.
@@ -64,8 +64,8 @@ internal class DeleteClientUseCaseImpl(
             )
 
     private fun handleError(failure: NetworkFailure): DeleteClientResult.Failure =
-        if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
-            val error = failure.kaliumException as KaliumException.InvalidRequestError
+        if (failure is NetworkFailure.ServerMiscommunication && failure.reason is ServerError.InvalidRequest) {
+            val error = failure.reason as ServerError.InvalidRequest
             when {
                 error.isInvalidCredentials() -> DeleteClientResult.Failure.InvalidCredentials
                 error.isMissingAuth() -> DeleteClientResult.Failure.PasswordAuthRequired

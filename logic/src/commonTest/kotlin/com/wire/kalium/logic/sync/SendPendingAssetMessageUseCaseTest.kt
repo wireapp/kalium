@@ -18,8 +18,9 @@
 
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -278,7 +279,7 @@ class SendPendingAssetMessageUseCaseTest {
             .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
             .withFetchPrivateDecodedAsset(Either.Right(path))
             .withStoredData(mockedLongAssetData(), path)
-            .withUploadAndPersistPrivateAsset(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
+            .withUploadAndPersistPrivateAsset(Either.Left(serverMiscommunication(TestNetworkException.missingAuth)))
             .arrange()
 
         useCase(message)
@@ -314,7 +315,7 @@ class SendPendingAssetMessageUseCaseTest {
             .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
             .withFetchPrivateDecodedAsset(Either.Right(path))
             .withStoredData(mockedLongAssetData(), path)
-            .withUploadAndPersistPrivateAsset(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
+            .withUploadAndPersistPrivateAsset(Either.Left(serverMiscommunication(TestNetworkException.missingAuth)))
             .withPendingMessagesDisabled()
             .arrange()
 

@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.feature.mlsmigration
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -268,7 +269,7 @@ class MLSMigratorTest {
         suspend fun withEstablishGroupFails() = apply {
             everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-            } returns Either.Left(NetworkFailure.ServerMiscommunication(MLS_STALE_MESSAGE_ERROR))
+            } returns Either.Left(serverMiscommunication(MLS_STALE_MESSAGE_ERROR))
         }
 
         suspend fun withAddMembersSucceeds() = apply {

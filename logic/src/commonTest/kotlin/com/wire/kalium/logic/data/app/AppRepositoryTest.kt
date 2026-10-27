@@ -362,7 +362,7 @@ class AppRepositoryTest {
         everySuspend { arrangement.teamsApi.getTeamApps(any()) } returns NetworkResponse.Error(error)
 
         repository.syncApps(TeamId(Arrangement.TEAM_ID), true).shouldFail {
-            assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).kaliumException)
+            assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).rootCause)
         }
         verifySuspend(VerifyMode.exactly(0)) { arrangement.teamsApi.getTeamCollaborators(any()) }
         verifySuspend(VerifyMode.exactly(0)) { arrangement.appDAO.upsertApps(any()) }
@@ -383,7 +383,7 @@ class AppRepositoryTest {
         }) } returns NetworkResponse.Error(error)
 
         repository.syncApps(TeamId(Arrangement.TEAM_ID), false).shouldFail {
-            assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).kaliumException)
+            assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).rootCause)
         }
         verifySuspend(VerifyMode.exactly(2)) { arrangement.userDetailsApi.getMultipleUsers(any()) }
         verifySuspend(VerifyMode.exactly(0)) { arrangement.appDAO.upsertApps(any()) }
@@ -399,7 +399,7 @@ class AppRepositoryTest {
             val (arrangement, repository) = Arrangement().withCollaboratorFailure(error).arrange()
 
             repository.syncApps(TeamId(Arrangement.TEAM_ID), false).shouldFail {
-                assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).kaliumException)
+                assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).rootCause)
             }
             verifySuspend(VerifyMode.exactly(0)) { arrangement.appDAO.upsertApps(any()) }
         }

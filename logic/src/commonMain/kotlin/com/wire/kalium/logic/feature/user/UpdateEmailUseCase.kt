@@ -21,9 +21,9 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isInvalidEmail
-import com.wire.kalium.network.exceptions.isKeyExists
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isInvalidEmail
+import com.wire.kalium.common.error.isKeyExists
 
 /**
  * Updates the user's email address.
@@ -44,8 +44,8 @@ public class UpdateEmailUseCase internal constructor(
         .fold(::onError, ::onSuccess)
 
     private fun onError(error: NetworkFailure): Result.Failure {
-        return if (error is NetworkFailure.ServerMiscommunication && error.kaliumException is KaliumException.InvalidRequestError) {
-            val exception = error.kaliumException as KaliumException.InvalidRequestError
+        return if (error is NetworkFailure.ServerMiscommunication && error.reason is ServerError.InvalidRequest) {
+            val exception = error.reason as ServerError.InvalidRequest
             when {
                 exception.isKeyExists() -> Result.Failure.EmailAlreadyInUse
                 exception.isInvalidEmail() -> Result.Failure.InvalidEmail

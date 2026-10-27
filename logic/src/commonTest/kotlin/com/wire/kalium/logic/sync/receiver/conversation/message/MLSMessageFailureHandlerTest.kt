@@ -9,15 +9,18 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.proteusFailure
+
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.network.api.model.MLSErrorResponse
+import com.wire.kalium.common.error.MlsErrorDetails
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -42,7 +45,7 @@ class MLSMessageFailureHandlerTest {
             NetworkFailure.MlsMessageRejectedFailure.ClientMismatch,
             NetworkFailure.MlsMessageRejectedFailure.CommitMissingReferences,
             NetworkFailure.MlsMessageRejectedFailure.MissingGroupInfo,
-            NetworkFailure.MlsMessageRejectedFailure.Other(MLSErrorResponse.ProtocolError("error")),
+            NetworkFailure.MlsMessageRejectedFailure.Other(MlsErrorDetails("mls-protocol-error", "error")),
             NetworkFailure.MlsMessageRejectedFailure.StaleMessage,
         )
 
@@ -111,8 +114,8 @@ class MLSMessageFailureHandlerTest {
                 NetworkFailure.FederatedBackendFailure.General("general"),
                 NetworkFailure.NoNetworkConnection(null),
                 NetworkFailure.ProxyError(null),
-                NetworkFailure.ServerMiscommunication(IllegalStateException("server")),
-                ProteusFailure(ProteusException("proteus", ProteusException.Code.INVALID_MESSAGE, 1)),
+                serverMiscommunication(IllegalStateException("server")),
+                proteusFailure(ProteusException("proteus", ProteusException.Code.INVALID_MESSAGE, 1)),
                 StorageFailure.DataNotFound,
                 StorageFailure.Generic(IllegalStateException("storage")),
                 CoreFailure.Unknown(null),

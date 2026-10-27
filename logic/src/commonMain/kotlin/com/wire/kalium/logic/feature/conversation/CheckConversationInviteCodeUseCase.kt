@@ -27,12 +27,12 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isAccessDenied
-import com.wire.kalium.network.exceptions.isConversationHasNoCode
-import com.wire.kalium.network.exceptions.isConversationNotFound
-import com.wire.kalium.network.exceptions.isGuestLinkDisabled
-import com.wire.kalium.network.exceptions.isNotTeamMember
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isAccessDenied
+import com.wire.kalium.common.error.isConversationHasNoCode
+import com.wire.kalium.common.error.isConversationNotFound
+import com.wire.kalium.common.error.isGuestLinkDisabled
+import com.wire.kalium.common.error.isNotTeamMember
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.first
 
@@ -80,10 +80,10 @@ public class CheckConversationInviteCodeUseCase internal constructor(
     }
 
     private fun handleServerMissCommunicationError(error: NetworkFailure.ServerMiscommunication): Result.Failure =
-        when (error.kaliumException) {
+        when (error.reason) {
 
-            is KaliumException.InvalidRequestError -> {
-                with(error.kaliumException as KaliumException.InvalidRequestError) {
+            is ServerError.InvalidRequest -> {
+                with(error.reason as ServerError.InvalidRequest) {
                     when {
                         // for more info about error codes see
                         // https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_conversations_join

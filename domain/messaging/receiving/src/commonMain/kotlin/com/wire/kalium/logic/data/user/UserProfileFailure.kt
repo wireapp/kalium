@@ -7,10 +7,10 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFound
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isNotFound
 
 /** Existing connection-receiving policy, including the profile's team lookup. */
 fun CoreFailure.isUserNotFoundFailure(): Boolean =
-    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError)
+    ((this as? NetworkFailure.ServerMiscommunication)?.reason as? ServerError.InvalidRequest)
         ?.isNotFound() == true

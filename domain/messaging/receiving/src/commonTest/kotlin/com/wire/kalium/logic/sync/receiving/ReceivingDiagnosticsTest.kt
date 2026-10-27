@@ -1,10 +1,13 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.ServerError
 import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
@@ -19,6 +22,18 @@ import kotlin.test.assertTrue
 
 class ReceivingDiagnosticsTest {
     @Test
+    fun normalizedFailureWithoutTransportCauseKeepsSafeDiagnostics() {
+        val diagnostic = ReceivingDiagnostics()
+        diagnostic.failed(KaliumSyncException("private message", NetworkFailure.ServerMiscommunication(
+            ServerError.InvalidRequest(ServerError.Response(404, "private body", "no-conversation"))
+        )))
+
+        assertEquals(404, diagnostic.httpStatus)
+        assertEquals("NO_CONVERSATION", diagnostic.networkError)
+        assertEquals("ServerMiscommunication", diagnostic.errorCode)
+    }
+
+    @Test
     fun configuredWriterReceivesSafeStructuredFailure() {
         val writer = RecordingWriter()
         CoreLogger.init(KaliumLogger.Config(KaliumLogLevel.INFO, listOf(writer)))
@@ -29,7 +44,7 @@ class ReceivingDiagnosticsTest {
             diagnostic.failed(
                 KaliumSyncException(
                     "secret-message-content",
-                    NetworkFailure.ServerMiscommunication(
+                    serverMiscommunication(
                         KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "secret-body", "secret-server-label"))
                     )
                 )
@@ -64,7 +79,7 @@ class ReceivingDiagnosticsTest {
             )
             failures.forEach { failure ->
                 val diagnostic = ReceivingDiagnostics()
-                diagnostic.failed(KaliumSyncException("secret-message", NetworkFailure.ServerMiscommunication(failure)))
+                diagnostic.failed(KaliumSyncException("secret-message", serverMiscommunication(failure)))
                 diagnostic.record("FAILED", null, false)
             }
             assertEquals(2, writer.entries.size)

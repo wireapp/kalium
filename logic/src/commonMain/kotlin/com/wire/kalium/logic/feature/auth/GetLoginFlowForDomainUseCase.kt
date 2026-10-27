@@ -32,9 +32,9 @@ import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isEnterpriseServiceNotEnabled
-import com.wire.kalium.network.exceptions.isNotFound
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isEnterpriseServiceNotEnabled
+import com.wire.kalium.common.error.isNotFound
 
 /**
  * Use case to get the login flow for the client app/user to follow.
@@ -134,8 +134,8 @@ internal fun GetLoginFlowForDomainUseCase(
 
     private fun Either<NetworkFailure, LoginDomainPath>.handleEnterpriseServiceNotEnabled() = this.flatMapLeft {
         if (it is NetworkFailure.ServerMiscommunication
-            && it.kaliumException is KaliumException.ServerError
-            && (it.kaliumException as KaliumException.ServerError).isEnterpriseServiceNotEnabled()
+            && it.reason is ServerError.Server
+            && (it.reason as ServerError.Server).isEnterpriseServiceNotEnabled()
         ) {
             logger.logStructuredJson(
                 level = KaliumLogLevel.DEBUG,
@@ -159,8 +159,8 @@ internal fun GetLoginFlowForDomainUseCase(
     private fun NetworkFailure.shouldFallbackToDomainRegistration(): Boolean =
         this is NetworkFailure.FeatureNotSupported ||
                 (this as? NetworkFailure.ServerMiscommunication)
-                    ?.kaliumException
-                    ?.let { it as? KaliumException.InvalidRequestError }
+                    ?.reason
+                    ?.let { it as? ServerError.InvalidRequest }
                     ?.isNotFound() == true
 
 }

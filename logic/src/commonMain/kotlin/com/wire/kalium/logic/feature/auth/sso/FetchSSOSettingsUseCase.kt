@@ -22,7 +22,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.feature.auth.sso.FetchSSOSettingsUseCase.Result
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import io.ktor.http.HttpStatusCode
 
 /**
@@ -37,8 +37,8 @@ public class FetchSSOSettingsUseCase internal constructor(
     public suspend operator fun invoke(): Result = ssoLoginRepository.settings()
         .fold({
             if (it is NetworkFailure.ServerMiscommunication &&
-                it.kaliumException is KaliumException.InvalidRequestError &&
-                (it.kaliumException as KaliumException.InvalidRequestError).errorResponse.code == HttpStatusCode.NotFound.value
+                it.reason is ServerError.InvalidRequest &&
+                (it.reason as ServerError.InvalidRequest).errorResponse.code == HttpStatusCode.NotFound.value
             ) {
                 Result.Success(null)
             } else {

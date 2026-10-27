@@ -31,6 +31,7 @@ kotlin {
             dependencies {
                 implementation(projects.core.data)
                 api(projects.core.common)
+                api(projects.core.failures)
                 implementation(projects.data.protobuf)
                 implementation(projects.data.persistence)
                 implementation(projects.core.cryptography)

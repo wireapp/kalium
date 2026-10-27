@@ -18,11 +18,7 @@
 
 package com.wire.kalium.common.error
 
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.model.MLSErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -30,7 +26,7 @@ sealed interface CoreFailure {
 
     val isInvalidRequestError: Boolean
         get() = this is NetworkFailure.ServerMiscommunication
-                && this.kaliumException is KaliumException.InvalidRequestError
+                && this.reason is ServerError.InvalidRequest
 
     val hasUnreachableDomainsError: Boolean
         get() = this is NetworkFailure.FederatedBackendFailure.FailedDomains && this.domains.isNotEmpty()
@@ -47,8 +43,8 @@ sealed interface CoreFailure {
 
     val isMissingLegalHoldConsentError: Boolean
         get() = this is NetworkFailure.ServerMiscommunication
-                && this.kaliumException is KaliumException.InvalidRequestError
-                && this.kaliumException.isMissingLegalHoldConsent()
+                && this.reason is ServerError.InvalidRequest
+                && this.reason.isMissingLegalHoldConsent()
 
     /**
      * The attempted operation requires that this client is registered.
@@ -145,15 +141,11 @@ sealed class NetworkFailure : CoreFailure {
      * or anything API-related that is out of control from the user.
      * Either fix our app or our backend.
      */
-    class ServerMiscommunication(val kaliumException: KaliumException) : NetworkFailure() {
-        constructor(cause: Throwable) : this(KaliumException.GenericError(cause))
-
-        val rootCause: Throwable get() = kaliumException
-
-        override fun toString(): String {
-            return "ServerMiscommunication(cause = $rootCause)"
-        }
-
+    class ServerMiscommunication(
+        val reason: ServerError,
+        val rootCause: Throwable? = null
+    ) : NetworkFailure() {
+        override fun toString(): String = "ServerMiscommunication(reason = $reason, cause = $rootCause)"
     }
 
     /**
@@ -203,7 +195,7 @@ sealed class NetworkFailure : CoreFailure {
         data object InvalidLeafNodeSignature : MlsMessageRejectedFailure()
 
         @Serializable
-        data class Other(@SerialName("remoteCause") val remoteCause: MLSErrorResponse) : MlsMessageRejectedFailure()
+        data class Other(@SerialName("remoteCause") val remoteCause: MlsErrorDetails) : MlsMessageRejectedFailure()
 
         @Serializable
         data class GroupOutOfSync(@SerialName("missingUsers") val missingUsers: List<UserId>) : MlsMessageRejectedFailure()
@@ -214,14 +206,6 @@ sealed class NetworkFailure : CoreFailure {
      */
     data object FeatureNotSupported : NetworkFailure()
 }
-
-class CommonizedMLSException(
-    val failure: MLSFailure,
-    override val cause: Throwable
-) : Exception(
-    "An error occurred during MLS operation: $failure",
-    cause
-)
 
 sealed interface MLSFailure : CoreFailure {
 
@@ -301,9 +285,137 @@ interface E2EIFailure : CoreFailure {
     }
 }
 
-class ProteusFailure(val proteusException: ProteusException) : CoreFailure {
+/** Stable error classification; [rootCause] is retained only for diagnostics. */
+class ProteusFailure(
+    val code: Code,
+    val intCode: Int? = null,
+    val rootCause: Throwable? = null
+) : CoreFailure {
+    enum class Code {
+        /**
+         * A requested session was not found.
+         */
+        SESSION_NOT_FOUND,
 
-    val rootCause: Throwable get() = proteusException
+        /**
+         * The remote identity of a session changed.
+         *
+         *
+         * Usually the user should be informed and the session reinitialised.
+         * If the remote fingerprint was previously verified, it will need to be
+         * verified anew in order to exclude any potential MITM.
+         */
+        REMOTE_IDENTITY_CHANGED,
+
+        /**
+         * The signature of a decrypted message is invalid.
+         *
+         *
+         * The message being decrypted is incomplete or has otherwise been
+         * tampered with.
+         */
+        INVALID_SIGNATURE,
+
+        /**
+         * A message is invalid.
+         *
+         *
+         * The message is well-formed but cannot be decrypted, e.g.
+         * because the message is used to initialise a session but does not
+         * contain a a pre-key or the used session does not contain the
+         * appropriate key material for decrypting the message. The problem
+         * should be reported to the user, as it might be necessary for both
+         * peers to re-initialise their sessions.
+         */
+        INVALID_MESSAGE,
+
+        /**
+         * A message is a duplicate.
+         *
+         *
+         * The message being decrypted is a duplicate of a message that has
+         * previously been decrypted with the same session. The message can
+         * be safely discarded.
+         */
+        DUPLICATE_MESSAGE,
+
+        /**
+         * A message is too recent.
+         *
+         *
+         * There is an unreasonably large gap between the last decrypted
+         * message and the message being decrypted, i.e. there are too many
+         * intermediate messages missing. The message should be dropped.
+         */
+        TOO_DISTANT_FUTURE,
+
+        /**
+         * A message is too old.
+         *
+         *
+         * The message being decrypted is unreasonably old and cannot
+         * be decrypted any longer due to the key material no longer being available.
+         * The message should be dropped.
+         */
+        OUTDATED_MESSAGE,
+
+        /**
+         * A message or key could not be decoded.
+         *
+         *
+         * The message or key being decoded is either malformed or
+         * otherwise encoded in a way such it cannot be understood.
+         */
+        DECODE_ERROR,
+
+        /**
+         * An internal storage error occurred.
+         *
+         *
+         * An error occurred while loading or persisting key material.
+         * The operation may be retried a limited number of times.
+         */
+        STORAGE_ERROR,
+
+        /**
+         * A CBox has been opened with an incomplete or mismatching identity
+         * using opening a crypto box.
+         *
+         *
+         * This is typically a programmer error.
+         */
+        IDENTITY_ERROR,
+
+        /**
+         * An attempt was made to initialise a new session using session initialization
+         * whereby the prekey corresponding to the prekey ID in the message could not be found.
+         */
+        PREKEY_NOT_FOUND,
+
+        /**
+         * A panic occurred. This is a last resort error raised form native code to
+         * signal a severe problem, like a violation of a critical invariant, that
+         * would otherwise have caused a crash. Client code can choose to handle
+         * these errors more gracefully, preventing the application from crashing.
+         *
+         *
+         * Note that any crypto sessions which might have been involved in a
+         * computation leading to a panic must no longer be used as their in-memory
+         * state may be corrupt. Such sessions should be closed and may be subsequently
+         * reloaded to retry the operation(s).
+         */
+        PANIC,
+
+        /**
+         * An unspecified error occurred.
+         */
+        UNKNOWN_ERROR,
+
+        /**
+         * Local files were not found.
+         */
+        LOCAL_FILES_NOT_FOUND
+    }
 }
 
 sealed class EncryptionFailure : CoreFailure.FeatureFailure() {

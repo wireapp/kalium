@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import io.ktor.http.HttpStatusCode
 
 /** The app and receiving use the same batching and federation fallback. */
@@ -102,7 +102,7 @@ suspend fun recoverMalformedQualifiedIdsIfNeeded(
                     "malformedUsersCount" to malformedUsers.size,
                     "sample" to malformedUsers.toObfuscatedSample(),
                     "cause" to malformedDomainError.errorResponse.message,
-                    "stackTrace" to malformedDomainError.stackTraceToString(),
+                    "stackTrace" to (error as? NetworkFailure.ServerMiscommunication)?.rootCause?.stackTraceToString(),
                 )
             )
 
@@ -124,8 +124,8 @@ suspend fun recoverMalformedQualifiedIdsIfNeeded(
     fnR = { listUsersDTO -> Either.Right(listUsersDTO) }
 )
 
-private fun CoreFailure.asMalformedQualifiedIdsDomainError(): KaliumException.InvalidRequestError? {
-    val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError
+private fun CoreFailure.asMalformedQualifiedIdsDomainError(): ServerError.InvalidRequest? {
+    val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)?.reason as? ServerError.InvalidRequest
     return if (
         invalidRequest?.errorResponse?.code == HttpStatusCode.BadRequest.value &&
         QUALIFIED_IDS_DOMAIN_VALIDATION_ERROR_REGEX.matches(invalidRequest.errorResponse.message)

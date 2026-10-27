@@ -68,7 +68,7 @@ class SecondFactorVerificationRepositoryTest {
 
         result.shouldFail { networkFailure ->
             assertIs<NetworkFailure.ServerMiscommunication>(networkFailure)
-            assertEquals(networkFailure.kaliumException, failure)
+            assertEquals(networkFailure.rootCause, failure)
         }
     }
 

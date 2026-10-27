@@ -53,7 +53,7 @@ class WrapApiRequestTest {
         val actual = wrapApiRequest { expected }
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
-        assertEquals(expected.kException, actual.value.kaliumException)
+        assertEquals(expected.kException, actual.value.rootCause)
     }
 
     @Test

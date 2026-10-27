@@ -18,6 +18,10 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.common.error.proteusFailure
+
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
@@ -156,7 +160,7 @@ class RegisterClientUseCaseTest {
     @Test
     fun givenStored2FACode_whenRegisteringFailsDueToInvalid2FA_thenTheStored2FAIsCleared() = runTest {
         val stored2FACode = "SomeStored2FACode"
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidAuthenticationCode)
+        val failure = serverMiscommunication(TestNetworkException.invalidAuthenticationCode)
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
             .withRegisterClient(Either.Left(failure))
@@ -179,7 +183,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueMissingPassword_whenRegistering_thenPasswordAuthRequiredErrorShouldBeReturned() = runTest {
-        val missingPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+        val missingPasswordFailure = serverMiscommunication(TestNetworkException.missingAuth)
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
             .withRegisterClient(Either.Left(missingPasswordFailure))
@@ -201,7 +205,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueInvalidPassword_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
-        val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
+        val wrongPasswordFailure = serverMiscommunication(TestNetworkException.invalidCredentials)
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
             .withRegisterClient(Either.Left(wrongPasswordFailure))
@@ -238,7 +242,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueToTooManyClientsRegistered_whenRegistering_thenTooManyClientsErrorShouldBeReturned() = runTest {
-        val tooManyClientsFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.tooManyClient)
+        val tooManyClientsFailure = serverMiscommunication(TestNetworkException.tooManyClient)
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
             .withRegisterClient(Either.Left(tooManyClientsFailure))
@@ -252,7 +256,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueToMissingAuthCode_whenRegistering_thenMissing2FAErrorShouldBeReturned() = runTest {
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuthenticationCode)
+        val failure = serverMiscommunication(TestNetworkException.missingAuthenticationCode)
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
             .withRegisterClient(Either.Left(failure))
@@ -266,7 +270,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueToInvalidAuthCode_whenRegistering_thenInvalid2FAErrorShouldBeReturned() = runTest {
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidAuthenticationCode)
+        val failure = serverMiscommunication(TestNetworkException.invalidAuthenticationCode)
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
             .withRegisterClient(Either.Left(failure))
@@ -329,7 +333,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenProteusClient_whenNewPreKeysThrowException_thenReturnProteusFailure() = runTest {
-        val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
+        val failure = proteusFailure(ProteusException("why are we still here just to suffer", 55))
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
             .withGenerateNewPreKeysAuto(Either.Left(failure))
@@ -344,7 +348,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenProteusClient_whenNewLastPreKeyThrowException_thenReturnProteusFailure() = runTest {
-        val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
+        val failure = proteusFailure(ProteusException("why are we still here just to suffer", 55))
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
             .withGenerateNewLastKey(Either.Left(failure))
@@ -359,7 +363,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueBadRequest_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
-        val badRequestFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
+        val badRequestFailure = serverMiscommunication(TestNetworkException.badRequest)
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
             .withRegisterClient(Either.Left(badRequestFailure))
@@ -411,7 +415,7 @@ class RegisterClientUseCaseTest {
         val CLIENT = TestClient.CLIENT
         val MLS_CLIENT: MLSClient = mock(mode = MockMode.autoUnit)
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
-        val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
+        val TEST_FAILURE = serverMiscommunication(KaliumException.GenericError(IOException("no internet")))
         const val TEST_COOKIE_LABEL = "cookieLabel"
     }
 

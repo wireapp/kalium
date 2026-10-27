@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.data
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadInfo
 import com.wire.kalium.cells.domain.CellUploadManager
@@ -822,7 +824,7 @@ class CellUploadCoordinatorTest {
             uploadCalls += 1
             val fileName = destNodePath.substringAfterLast('/')
             if (fileName in failWithNoNetworkFor) return NetworkFailure.NoNetworkConnection(null).left()
-            if (fileName in failUploadFor) return NetworkFailure.ServerMiscommunication(Exception("upload failed")).left()
+            if (fileName in failUploadFor) return serverMiscommunication(Exception("upload failed")).left()
             beforeNode[fileName]?.let { gate -> withContext(NonCancellable) { gate.await() } }
             val uuid = "node-$fileName"
             if (fileName !in dropFlowAfterUpload) {

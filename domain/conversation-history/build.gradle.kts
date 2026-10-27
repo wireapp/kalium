@@ -31,6 +31,7 @@ kotlin {
                 implementation(projects.core.common)
                 implementation(projects.data.network)
                 implementation(projects.core.data)
+                api(projects.core.failures)
                 implementation(projects.data.dataMappers)
                 implementation(projects.core.util)
                 implementation(projects.core.cryptography)
