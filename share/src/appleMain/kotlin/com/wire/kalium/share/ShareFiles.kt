@@ -51,6 +51,11 @@ import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import io.ktor.http.Url
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import okio.Buffer
@@ -60,6 +65,9 @@ import okio.HashingSink
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Source
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -151,6 +159,42 @@ internal suspend fun AppleAccountRuntime.uploadSharedFiles(
         else -> ShareUploads(network.assetApi, assetAuditLog()).upload(files, conversationId, progress)
     }
 }
+
+/**
+ * Runs [upload] while the extension holds the account for it, which keeps the account from the app and the NSE
+ * (ADR 12). Uploads end with `OPEN_APP`, for the host to hand the share to the app, when [accountWanted] completes
+ * or [budget] ends. Nothing is stored before every upload finished, so stopping them stores nothing.
+ */
+internal suspend fun <T> yieldingUploads(
+    budget: Duration,
+    accountWanted: Job,
+    upload: suspend () -> Either<ShareOutcome, T>,
+): Either<ShareOutcome, T> = coroutineScope {
+    val uploads = async {
+        withTimeoutOrNull(budget) { upload() } ?: Either.Left(ShareOutcome(ShareStatus.OPEN_APP, UPLOAD_TIMEOUT))
+    }
+    select {
+        uploads.onAwait { it }
+        accountWanted.onJoin {
+            uploads.cancel()
+            Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ACCOUNT_WANTED))
+        }
+    }
+}
+
+/**
+ * How long uploads of [totalBytes] may hold the account: enough at about 1 Mbit/s, and at most five minutes. A
+ * slower share goes to the app, which uploads it while it owns the account anyway.
+ */
+internal fun uploadBudget(totalBytes: Long): Duration =
+    (UPLOAD_BUDGET_BASE + (totalBytes / MIN_UPLOAD_BYTES_PER_SECOND).seconds).coerceAtMost(MAX_UPLOAD_BUDGET)
+
+/** Another process wants the account the extension holds; see [yieldingUploads]. */
+internal const val ACCOUNT_WANTED = "ACCOUNT_WANTED"
+private const val UPLOAD_TIMEOUT = "UPLOAD_TIMEOUT"
+private const val MIN_UPLOAD_BYTES_PER_SECOND = 128L * 1024
+private val UPLOAD_BUDGET_BASE = 30.seconds
+private val MAX_UPLOAD_BUDGET = 5.minutes
 
 /** The app names the conversation, the file and its type to an auditing on-premises backend. */
 private suspend fun AppleAccountRuntime.assetAuditLog(): Boolean {

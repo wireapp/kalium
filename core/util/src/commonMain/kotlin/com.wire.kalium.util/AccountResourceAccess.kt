@@ -78,16 +78,24 @@ class AccountResourceAccess {
     /** Restore ownership before releasing queued operations. */
     suspend fun resume(openResources: suspend () -> Unit) {
         checkOutsideOperation()
-        transition.withLock { restore(openResources) }
+        transition.withLock { restore({}, openResources) }
     }
 
-    /** Admit a lifecycle operation atomically with resumption, before another pause can start. */
-    suspend fun <T> withResumedAccess(openResources: suspend () -> Unit, operation: suspend () -> T): T {
+    /**
+     * Admit a lifecycle operation atomically with resumption, before another pause can start.
+     * When paused, [acquireOwnership] runs first and stays cancellable: if it fails, access stays paused and can
+     * resume later. [openResources] then runs non-cancellably.
+     */
+    suspend fun <T> withResumedAccess(
+        acquireOwnership: suspend () -> Unit,
+        openResources: suspend () -> Unit,
+        operation: suspend () -> T,
+    ): T {
         val parent = currentCoroutineContext()[Access]
         if (parent?.contains(this) == true) return withAccess(operation)
         checkOutsideOperation()
         val permit = transition.withLock {
-            restore(openResources)
+            restore(acquireOwnership, openResources)
             acquirePermit(trackCoroutine = false)
         }
         return try {
@@ -97,9 +105,10 @@ class AccountResourceAccess {
         }
     }
 
-    private suspend fun restore(openResources: suspend () -> Unit) {
+    private suspend fun restore(acquireOwnership: suspend () -> Unit, openResources: suspend () -> Unit) {
         checkFailure()
         if (state.value.accepting) return
+        acquireOwnership()
         withContext(NonCancellable) {
             try {
                 withLifecycleAccess(openResources)
