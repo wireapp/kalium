@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 # renovate: datasource=node-version depName=node versioning=node
 node = "24.19.0"
 ksp = "2.3.12"
