@@ -1865,7 +1865,7 @@ protected Keychain access or signed-device budgets.</li>
                     <div class="panel-body"><h1>12. Sending From Apple Extensions</h1>
 <p>Date: 2026-10-13</p>
 <h2>Status</h2>
-<p>Accepted</p>
+<p>Accepted. Amended 2026-10-25: uploads have a budget and give the account up when the app needs it.</p>
 <h2>Context</h2>
 <p>The iOS share extension must send a message to a conversation the user picks; later, notification
 actions may send replies, read receipts and delivery receipts. Sending requires a live account: Proteus
@@ -1907,7 +1907,15 @@ app's conversation list components.</p>
 stays open while they run: the extension encrypts and uploads every file before it holds the account
 live, reports progress, and stops when the user cancels. Uploading needs the account's tokens, so the
 extension holds the account meanwhile, but not its socket, and the live hold's budget starts after the
-uploads. Nothing is stored until every upload succeeded; each file then becomes an uploaded asset
+uploads. Holding the account keeps it from the app and the NSE, so uploads have a budget of their own,
+enough at about 1 Mbit/s and at most five minutes, and they stop when the app needs the account: the app
+posts a Darwin notification when it enters the foreground or a call arrives, and the extension stops when
+its host leaves the foreground, because iOS then suspends it with the account held. The extension then
+releases the account and hands the share to the app (ADR 13), which uploads the files again. The same
+applies once the hold's socket is live, while it catches up; the connection itself is not interrupted.
+Once the extension stored a message, the send finishes within its budget: stopping it then could send the
+message twice.
+Nothing is stored until every upload succeeded; each file then becomes an uploaded asset
 message, so a message that fails to send is retried in the app without uploading again. The extension
 follows the app's file rules: file sharing, allowed types, size limits, and Cells conversations, whose
 files only the app uploads.</p>
@@ -1990,7 +1998,9 @@ request, protected while the device is locked, and excluded from backups. The ap
 requests on their own, so a share being imported never keeps a sheet waiting for its list.</p>
 <p><strong>The sheet.</strong> When the app does not answer, the account is busy for another reason, usually the NSE.
 Then the extension retries opening the account itself until its budget ends. If the account becomes
-busy between listing and sending, the extension retries sending for a moment, then hands the share off. Once the app claims the
+busy between listing and sending, the extension retries sending for a moment, then hands the share off. It
+also hands the share off when the app wants the account while the extension uploads, or when uploading takes
+too long (ADR 12). Once the app claims the
 share, the sheet closes: the app has it. If the app writes a refusal in time, the sheet shows the
 reason. If the app does not claim the entry within a few seconds, the entry stays in the outbox, and
 the sheet says Wire will send it when Wire is opened. The sheet offers no cancel while it waits.</p>

@@ -64,7 +64,9 @@ requests on their own, so a share being imported never keeps a sheet waiting for
 
 **The sheet.** When the app does not answer, the account is busy for another reason, usually the NSE.
 Then the extension retries opening the account itself until its budget ends. If the account becomes
-busy between listing and sending, the extension retries sending for a moment, then hands the share off. Once the app claims the
+busy between listing and sending, the extension retries sending for a moment, then hands the share off. It
+also hands the share off when the app wants the account while the extension uploads, or when uploading takes
+too long (ADR 12). Once the app claims the
 share, the sheet closes: the app has it. If the app writes a refusal in time, the sheet shows the
 reason. If the app does not claim the entry within a few seconds, the entry stays in the outbox, and
 the sheet says Wire will send it when Wire is opened. The sheet offers no cancel while it waits.
