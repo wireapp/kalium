@@ -361,7 +361,6 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         showContent: Boolean,
         preference: Either<StorageFailure, MessageContentPreference>,
     ): KaliumNSEResult {
-        val savedAllowsPreview = preference is Either.Right && preference.value != MessageContentPreference.Disabled
         val message = result.message
         val preview = message?.notificationPreview(showContent, preference)
         val contentType = when (preview?.type) {
@@ -378,8 +377,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             presentationReason = result.presentationReason ?: when {
                 message == null -> "NO_MESSAGE_CANDIDATE"
                 !message.shouldNotify -> message.suppressionReason ?: "NOT_ELIGIBLE"
-                !showContent || !savedAllowsPreview -> "MESSAGE_CONTENT_HIDDEN"
-                !message.mayPreview -> message.previewPolicyReason ?: "PREVIEW_POLICY"
+                // The preview says why it hides content, so only messages report hidden message content.
+                preview?.mayPreview == false -> preview.previewPolicyReason ?: "PREVIEW_POLICY"
                 message.messageKind != null && message.messageKind != NotificationMessageKind.TEXT -> "TYPED_MESSAGE"
                 message.text.isNullOrEmpty() -> "NO_TEXT"
                 else -> "TEXT"

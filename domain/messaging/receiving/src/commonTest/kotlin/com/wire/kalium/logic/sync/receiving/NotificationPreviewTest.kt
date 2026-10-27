@@ -35,27 +35,30 @@ class NotificationPreviewTest {
 
     @Test
     fun contentIsVisibleOnlyWhenEveryPolicyAllowsIt() {
-        for (requested in listOf(false, true)) {
-            for (eligible in listOf(false, true)) {
-                for (previewable in listOf(false, true)) {
-                    for (preference in MessageContentPreference.entries) {
-                        val original = ReceivedMessageResult(
-                            "message", "conversation", "wire.com", "secret", eligible, previewable,
-                            type = ReceivedNotificationType.CONNECTION_REQUEST,
-                            conversationName = "private conversation", senderName = "private sender", isGroupConversation = true,
-                        )
-                        val result = original.notificationPreview(requested, Either.Right(preference))
-                        if (requested && eligible && previewable && preference != MessageContentPreference.Disabled) {
-                            assertEquals(original, result)
-                        } else {
-                            assertNull(result.text)
-                            assertNull(result.senderName)
-                            assertNull(result.conversationName)
-                            assertFalse(result.isGroupConversation)
-                            assertFalse(result.mayPreview)
-                            assertEquals(ReceivedNotificationType.MESSAGE, result.type)
-                            assertEquals(eligible, result.shouldNotify)
-                        }
+        val preferences = MessageContentPreference.entries.map { Either.Right(it) } +
+            Either.Left(StorageFailure.Generic(IllegalStateException("unreadable preference")))
+        for (type in ReceivedNotificationType.entries) for (requested in listOf(false, true)) {
+            for (eligible in listOf(false, true)) for (previewable in listOf(false, true)) {
+                for (preference in preferences) {
+                    val original = ReceivedMessageResult(
+                        "message", "conversation", "wire.com", "secret", eligible, previewable, type = type,
+                        conversationName = "private conversation", senderName = "private sender", isGroupConversation = true,
+                    )
+                    val result = original.notificationPreview(requested, preference)
+                    // As on Android, hidden message content leaves connection requests and conversation deletions intact.
+                    val showsContent = type != ReceivedNotificationType.MESSAGE || requested &&
+                        preference is Either.Right && preference.value != MessageContentPreference.Disabled
+                    if (showsContent && eligible && previewable) {
+                        assertEquals(original, result)
+                    } else {
+                        assertNull(result.text)
+                        assertNull(result.senderName)
+                        assertNull(result.conversationName)
+                        assertFalse(result.isGroupConversation)
+                        assertFalse(result.mayPreview)
+                        assertEquals(ReceivedNotificationType.MESSAGE, result.type)
+                        assertEquals(eligible, result.shouldNotify)
+                        assertEquals(if (showsContent) null else "MESSAGE_CONTENT_HIDDEN", result.previewPolicyReason)
                     }
                 }
             }
