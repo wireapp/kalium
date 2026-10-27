@@ -42,6 +42,31 @@ ON CONFLICT(uuid) DO UPDATE SET
 deleteCellFile:
 DELETE FROM CellFile WHERE uuid = ?;
 
+-- Deleting a row a message refers to would remove the attachment from the message (MessageAttachments cascades):
+-- such rows are kept, only their local copy is forgotten.
+clearLocalCopyOfAttachment:
+UPDATE CellFile SET isOffline = 0, localPath = NULL
+WHERE uuid = ? AND uuid IN (SELECT asset_id FROM MessageAttachments);
+
+deleteStandaloneCellFile:
+DELETE FROM CellFile
+WHERE uuid = ? AND uuid NOT IN (SELECT asset_id FROM MessageAttachments);
+
+-- The files stored at any depth under a folder: those whose path is in [pathStart, pathEnd), i.e. starts with
+-- pathStart ("folder/") as pathEnd is "folder0", '0' coming right after '/' in byte order. Unlike LIKE, no character in
+-- names acts as a wildcard; comparing with the column also keeps the parameters typed as TEXT.
+selectLocalPathsUnderPath:
+SELECT uuid, localPath FROM CellFile
+WHERE localPath IS NOT NULL AND assetPath >= :pathStart AND assetPath < :pathEnd;
+
+markAttachmentsUnderPathNotFound:
+UPDATE CellFile SET assetTransferStatus = :assetTransferStatus, isOffline = 0, localPath = NULL
+WHERE assetPath >= :pathStart AND assetPath < :pathEnd AND uuid IN (SELECT asset_id FROM MessageAttachments);
+
+deleteStandaloneCellFilesUnderPath:
+DELETE FROM CellFile
+WHERE assetPath >= :pathStart AND assetPath < :pathEnd AND uuid NOT IN (SELECT asset_id FROM MessageAttachments);
+
 clearOfflineAccess:
 UPDATE CellFile SET isOffline = 0, localPath = NULL WHERE uuid = ?;
 

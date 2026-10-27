@@ -36,6 +36,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
+@Suppress("TooManyFunctions")
 internal class CellAttachmentsDataSource(
     private val messageAttachments: MessageAttachmentsDao,
     private val cellFileDao: CellFileDao,
@@ -110,6 +111,7 @@ internal class CellAttachmentsDataSource(
         size: Long,
         name: String?,
         ownerId: String?,
+        remotePath: String?,
     ) = withContext(dispatchers.io) {
         wrapStorageRequest {
             cellFileDao.upsert(
@@ -122,6 +124,8 @@ internal class CellAttachmentsDataSource(
                     size = size,
                     downloadedAt = DateTimeUtil.currentInstant().toEpochMilliseconds(),
                     isOffline = false,
+                    // Lets the file be found and cleaned up when a folder above it is deleted.
+                    remotePath = remotePath,
                 )
             )
         }
@@ -135,7 +139,13 @@ internal class CellAttachmentsDataSource(
 
     override suspend fun deleteStandaloneAsset(assetId: String) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            cellFileDao.delete(assetId)
+            cellFileDao.deleteStandalone(assetId)
+        }
+    }
+
+    override suspend fun deleteFolderContents(folderPath: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            cellFileDao.deleteUnderFolder(folderPath, AssetTransferStatus.NOT_FOUND.name).map { it.localPath }
         }
     }
 
