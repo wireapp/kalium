@@ -64,6 +64,32 @@ internal class CellFileDaoImpl(
         }
     }
 
+    override suspend fun deleteStandalone(id: String) {
+        withContext(writeDispatcher.value) {
+            queries.transaction {
+                queries.clearLocalCopyOfAttachment(id)
+                queries.deleteStandaloneCellFile(id)
+            }
+        }
+    }
+
+    override suspend fun deleteUnderFolder(folderPath: String, attachmentStatus: String): List<CellFileLocalPath> =
+        withContext(writeDispatcher.value) {
+            // Paths starting with "folder/": the slash keeps a sibling sharing the name's start ("folder2") out.
+            // See the queries for why the end is "folder0".
+            val folder = folderPath.trimEnd('/')
+            val pathStart = "$folder/"
+            val pathEnd = "${folder}0"
+            queries.transactionWithResult {
+                val localPaths = queries.selectLocalPathsUnderPath(pathStart, pathEnd) { uuid, localPath ->
+                    CellFileLocalPath(uuid, localPath)
+                }.awaitAsList()
+                queries.markAttachmentsUnderPathNotFound(attachmentStatus, pathStart, pathEnd)
+                queries.deleteStandaloneCellFilesUnderPath(pathStart, pathEnd)
+                localPaths
+            }
+        }
+
     override suspend fun clearOfflineAccess(id: String) {
         withContext(writeDispatcher.value) {
             queries.clearOfflineAccess(id)
