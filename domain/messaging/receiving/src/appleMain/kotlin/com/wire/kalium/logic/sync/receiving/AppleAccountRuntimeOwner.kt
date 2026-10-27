@@ -30,9 +30,14 @@ import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.string.toHexString
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.coroutines.coroutineContext
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import platform.posix.EACCES
 import platform.posix.EAGAIN
 import platform.posix.EEXIST
@@ -69,15 +74,21 @@ public class AppleAccountRuntimeOwner internal constructor(
 
     public constructor(rootPath: String) : this(rootPath, {})
 
-    /** One non-blocking attempt for an extension with a limited execution budget. */
-    public suspend fun tryAcquire(accountId: UserId): Either<AccountRuntimeFailure, AccountRuntimeLease> =
-        acquire(accountId, wait = false)
+    /**
+     * For an extension with a limited execution budget: one attempt, or attempts until [retryFor] passes
+     * while another owner holds the account. A retrying attempt also waits for another attempt of this process,
+     * which holds the account only within its own budget and presents only what it received.
+     */
+    public suspend fun tryAcquire(
+        accountId: UserId,
+        retryFor: Duration = Duration.ZERO,
+    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, retryFor)
 
     /** Wait cancellably for app ownership. Waiting for one account does not block other accounts. */
     public suspend fun acquire(accountId: UserId): Either<AccountRuntimeFailure, AccountRuntimeLease> =
-        acquire(accountId, wait = true)
+        acquire(accountId, Duration.INFINITE)
 
-    private suspend fun acquire(accountId: UserId, wait: Boolean): Either<AccountRuntimeFailure, AccountRuntimeLease> {
+    private suspend fun acquire(accountId: UserId, waitFor: Duration): Either<AccountRuntimeFailure, AccountRuntimeLease> {
         coroutineContext.ensureActive()
         val descriptor = when (val result = openLockFile(accountId)) {
             is Either.Left -> return result
@@ -86,10 +97,11 @@ public class AppleAccountRuntimeOwner internal constructor(
         var lease: AccountRuntimeLease? = null
         val result = try {
             coroutineContext.ensureActive()
-            val failure = lock(descriptor, wait)
+            val lockFile = paths.filePath(accountId)
+            val failure = lock(descriptor, lockFile, waitFor)
             if (failure == null) {
                 onLockAcquired()
-                val acquiredLease = AccountRuntimeLease(accountId, descriptor, rootPath)
+                val acquiredLease = AccountRuntimeLease(accountId, descriptor, rootPath, lockFile)
                 lease = acquiredLease
                 Either.Right(acquiredLease)
             } else {
@@ -106,13 +118,22 @@ public class AppleAccountRuntimeOwner internal constructor(
         }
     }
 
-    private suspend fun lock(descriptor: Int, wait: Boolean): AccountRuntimeFailure? {
+    private suspend fun lock(descriptor: Int, lockFile: String, waitFor: Duration): AccountRuntimeFailure? {
         var failure = tryLock(descriptor)
-        while (wait && failure == AccountRuntimeFailure.BUSY) {
-            delay(LOCK_RETRY_DELAY_MILLIS)
-            failure = tryLock(descriptor)
+        // Elapsed time bounds the window, so slow wake-ups do not stretch it.
+        withTimeoutOrNull(waitFor) {
+            while (failure == AccountRuntimeFailure.BUSY) failure = retryLock(descriptor)
+        }
+        // flock refuses this process's other descriptors too. Unlike another owner, an attempt of this process ends.
+        while (failure == AccountRuntimeFailure.BUSY && waitFor > Duration.ZERO && lockFile in heldLockFiles.value) {
+            failure = retryLock(descriptor)
         }
         return failure
+    }
+
+    private suspend fun retryLock(descriptor: Int): AccountRuntimeFailure? {
+        delay(LOCK_RETRY_DELAY)
+        return tryLock(descriptor)
     }
 
     private fun tryLock(descriptor: Int): AccountRuntimeFailure? = if (flock(descriptor, LOCK_EX or LOCK_NB) == 0) {
@@ -135,7 +156,7 @@ public class AppleAccountRuntimeOwner internal constructor(
     }
 
     private companion object {
-        private const val LOCK_RETRY_DELAY_MILLIS = 20L
+        private val LOCK_RETRY_DELAY = 20.milliseconds
     }
 }
 
@@ -149,14 +170,22 @@ public enum class AccountRuntimeFailure {
     STORAGE,
 }
 
+/** Lock files this process holds a lease for. */
+private val heldLockFiles = MutableStateFlow<Set<String>>(emptySet())
+
 /** Hold this lease until account workers stop and every account resource closes successfully. */
 @InternalKaliumApi
 public class AccountRuntimeLease internal constructor(
     public val accountId: UserId,
     private val descriptor: Int,
     private val rootPath: String,
+    private val lockFile: String,
 ) {
     private val released = AtomicInt(0)
+
+    init {
+        heldLockFiles.update { it + lockFile }
+    }
 
     internal fun requireHeld(rootPath: String, accountId: UserId) {
         check(released.load() == 0) { "Account lease has already been released" }
@@ -165,6 +194,7 @@ public class AccountRuntimeLease internal constructor(
 
     public fun release() {
         if (released.compareAndSet(expectedValue = 0, newValue = 1)) {
+            heldLockFiles.update { it - lockFile }
             // close releases flock. Never retry an interrupted close: the fd number may be reused.
             close(descriptor)
         }

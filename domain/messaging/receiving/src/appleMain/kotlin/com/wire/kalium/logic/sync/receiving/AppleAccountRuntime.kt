@@ -77,6 +77,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import okio.FileSystem
 import okio.Path.Companion.toPath
+import kotlin.time.Duration
 
 /**
  * Concrete extension resources for one owned, login-prepared account. Resources may only be used
@@ -291,9 +292,11 @@ public class AppleAccountRuntime private constructor(
             userAgent: String,
             certificatePinning: CertificatePinning,
             diagnostics: ReceivingDiagnostics? = null,
+            /** How long to keep trying while another owner holds the account. */
+            busyRetry: Duration = Duration.ZERO,
             block: suspend (AppleAccountRuntime) -> T,
         ): Either<AccountRuntimeFailure, T> {
-            val lease = when (val acquired = AppleAccountRuntimeOwner(rootPath).tryAcquire(userId)) {
+            val lease = when (val acquired = AppleAccountRuntimeOwner(rootPath).tryAcquire(userId, busyRetry)) {
                 is Either.Left -> return acquired
                 is Either.Right -> acquired.value
             }
