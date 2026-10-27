@@ -680,9 +680,15 @@ class CellUploadCoordinatorTest {
             return if (publishFails) NetworkFailure.NoNetworkConnection(null).left() else Unit.right()
         }
 
-        override suspend fun preCheck(nodePath: String): Either<NetworkFailure, com.wire.kalium.cells.domain.model.PreCheckResult> = throw NotImplementedError()
-        override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> = throw NotImplementedError()
-        override suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> = throw NotImplementedError()
+        override suspend fun preCheck(nodePath: String): Either<NetworkFailure, com.wire.kalium.cells.domain.model.PreCheckResult> =
+            throw NotImplementedError()
+
+        override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
+        override suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
         override suspend fun getPaginatedNodes(
             path: String?,
             query: String,
@@ -700,22 +706,43 @@ class CellUploadCoordinatorTest {
             sortingSpec: SortingSpec,
         ): Either<NetworkFailure, List<CellNode>> = throw NotImplementedError()
 
-        override suspend fun deleteFile(nodeUuid: String, permanentDelete: Boolean): Either<NetworkFailure, Unit> = throw NotImplementedError()
+        override suspend fun deleteFile(nodeUuid: String, permanentDelete: Boolean): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
         override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
         override suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>?> = throw NotImplementedError()
         override suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode> = throw NotImplementedError()
-        override suspend fun deleteFiles(paths: List<String>, permanentDelete: Boolean): Either<NetworkFailure, Unit> = throw NotImplementedError()
-        override suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink> = throw NotImplementedError()
+        override suspend fun deleteFiles(paths: List<String>, permanentDelete: Boolean): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
+        override suspend fun createPublicLink(nodeUuid: String, fileName: String): Either<NetworkFailure, PublicLink> =
+            throw NotImplementedError()
+
         override suspend fun getPublicLink(linkUuid: String): Either<NetworkFailure, PublicLink> = throw NotImplementedError()
         override suspend fun deletePublicLink(linkUuid: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
-        override suspend fun createPublicLinkPassword(linkUuid: String, password: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
-        override suspend fun updatePublicLinkPassword(linkUuid: String, password: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
+        override suspend fun createPublicLinkPassword(linkUuid: String, password: String): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
+        override suspend fun updatePublicLinkPassword(linkUuid: String, password: String): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
         override suspend fun removePublicLinkPassword(linkUuid: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
         override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = throw NotImplementedError()
-        override suspend fun createFile(folderName: String, contentType: String, templateUuid: String): Either<NetworkFailure, List<CellNode>> = throw NotImplementedError()
-        override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
-        override suspend fun moveNodes(nodes: List<NodeLocator>, targetPath: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
-        override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
+        override suspend fun createFile(
+            folderName: String,
+            contentType: String,
+            templateUuid: String
+        ): Either<NetworkFailure, List<CellNode>> = throw NotImplementedError()
+
+        override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
+        override suspend fun moveNodes(nodes: List<NodeLocator>, targetPath: String): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
+        override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
         override suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
         override suspend fun getAllTags(): Either<NetworkFailure, List<String>> = throw NotImplementedError()
         override suspend fun updateNodeTags(uuid: String, tags: List<String>): Either<NetworkFailure, Unit> = throw NotImplementedError()
@@ -723,10 +750,13 @@ class CellUploadCoordinatorTest {
         override suspend fun getPublicLinkPassword(linkUuid: String): Either<StorageFailure, String?> = throw NotImplementedError()
         override suspend fun savePublicLinkPassword(linkUuid: String, password: String) = throw NotImplementedError()
         override suspend fun clearPublicLinkPassword(linkUuid: String) = throw NotImplementedError()
-        override suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?): Either<NetworkFailure, Unit> = throw NotImplementedError()
+        override suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?): Either<NetworkFailure, Unit> =
+            throw NotImplementedError()
+
         override suspend fun getEditorUrl(nodeUuid: String, urlKey: String): Either<NetworkFailure, String> = throw NotImplementedError()
         override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> = throw NotImplementedError()
         override suspend fun restoreNodeVersion(uuid: String, versionId: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
+        override suspend fun restoreNodes(uuids: List<String>): Either<NetworkFailure, Unit> = throw NotImplementedError()
     }
 
     private class FakeCellUploadManager : CellUploadManager {
