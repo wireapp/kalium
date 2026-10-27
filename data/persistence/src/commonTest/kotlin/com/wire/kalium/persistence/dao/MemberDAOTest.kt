@@ -141,6 +141,19 @@ class MemberDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenConversationWithoutMembers_whenGettingMemberCounts_thenReturnsZeroCounts() = runTest(dispatcher) {
+        val conversation = TestStubs.conversationEntity1
+        conversationDAO.insertConversation(conversation)
+
+        val result = memberDAO.getConversationMemberCounts(conversation.id)
+
+        assertEquals(0, result.conversationSize)
+        assertEquals(0, result.servicesCount)
+        assertEquals(0, result.guestsCount)
+        assertEquals(0, result.guestsProCount)
+    }
+
+    @Test
     fun givenExistingConversation_whenGettingMemberCounts_thenReturnsAggregateSnapshot() = runTest(dispatcher) {
         val conversationEntity1 = TestStubs.conversationEntity1
         val guestUser = TestStubs.user1.copy(userType = UserTypeEntity.GUEST, team = null)
