@@ -21,10 +21,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import com.wire.kalium.logic.data.message.CellAssetContent
 
 public interface RestoreNodeFromRecycleBinUseCase {
     /**
@@ -42,23 +39,6 @@ internal class RestoreNodeFromRecycleBinUseCaseImpl(
     override suspend fun invoke(uuid: String): Either<CoreFailure, Unit> =
         cellsRepository.restoreNode(uuid = uuid)
             .onSuccess {
-                attachmentsRepository.refreshRestoredAttachmentStatus(uuid)
+                attachmentsRepository.refreshRestoredAttachmentStatus(listOf(uuid))
             }
-}
-
-/**
- * Makes a restored node available again as a message attachment: deleting it set its status to NOT_FOUND.
- * Shared by [RestoreNodeFromRecycleBinUseCase] and [RestoreNodesFromRecycleBinUseCase].
- */
-internal suspend fun CellAttachmentsRepository.refreshRestoredAttachmentStatus(uuid: String) {
-
-    val attachment = getAttachment(uuid).getOrNull() as? CellAssetContent ?: return
-
-    val status = if (attachment.localPath.isNullOrEmpty()) {
-        AssetTransferStatus.NOT_DOWNLOADED
-    } else {
-        AssetTransferStatus.SAVED_INTERNALLY
-    }
-
-    setAssetTransferStatus(uuid, status)
 }

@@ -45,6 +45,6 @@ internal class RestoreNodesFromRecycleBinUseCaseImpl(
     override suspend fun invoke(uuids: List<String>): Either<CoreFailure, Unit> {
         if (uuids.isEmpty()) return Unit.right()
         return cellsRepository.restoreNodes(uuids)
-            .onSuccess { uuids.forEach { attachmentsRepository.refreshRestoredAttachmentStatus(it) } }
+            .onSuccess { attachmentsRepository.refreshRestoredAttachmentStatus(uuids) }
     }
 }

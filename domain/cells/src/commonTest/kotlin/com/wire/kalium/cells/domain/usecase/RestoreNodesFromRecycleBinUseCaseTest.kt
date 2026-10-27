@@ -20,12 +20,9 @@ package com.wire.kalium.cells.domain.usecase
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import com.wire.kalium.logic.data.message.CellAssetContent
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -52,21 +49,14 @@ class RestoreNodesFromRecycleBinUseCaseTest {
     }
 
     @Test
-    fun givenNodesWithAttachments_whenRestoreSucceeds_thenMakeEveryAttachmentAvailableAgain() = runTest {
+    fun givenNodes_whenRestoreSucceeds_thenRefreshTheAttachmentStatusOfAllOfThemAtOnce() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withRestoreReturning(Unit.right())
-            .withAttachment("uuid-1", attachment("uuid-1", localPath = "localPath"))
-            .withAttachment("uuid-2", attachment("uuid-2", localPath = null))
             .arrange()
 
         useCase(UUIDS)
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.attachmentsRepository.setAssetTransferStatus("uuid-1", AssetTransferStatus.SAVED_INTERNALLY)
-        }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.attachmentsRepository.setAssetTransferStatus("uuid-2", AssetTransferStatus.NOT_DOWNLOADED)
-        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.attachmentsRepository.refreshRestoredAttachmentStatus(UUIDS) }
     }
 
     @Test
@@ -79,7 +69,7 @@ class RestoreNodesFromRecycleBinUseCaseTest {
         val result = useCase(UUIDS)
 
         assertEquals(failure.left(), result)
-        verifySuspend(VerifyMode.not) { arrangement.attachmentsRepository.setAssetTransferStatus(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.attachmentsRepository.refreshRestoredAttachmentStatus(any()) }
     }
 
     @Test
@@ -98,23 +88,13 @@ class RestoreNodesFromRecycleBinUseCaseTest {
 
         val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
         val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
-        private val attachments = mutableMapOf<String, CellAssetContent>()
 
         suspend fun withRestoreReturning(result: Either<NetworkFailure, Unit>) = apply {
             everySuspend { cellsRepository.restoreNodes(any()) } returns result
         }
 
-        fun withAttachment(uuid: String, attachment: CellAssetContent) = apply {
-            attachments[uuid] = attachment
-        }
-
         suspend fun arrange(): Pair<Arrangement, RestoreNodesFromRecycleBinUseCase> {
-            // The catch-all first: the stub defined last wins, so the specific attachments below take precedence.
-            everySuspend { attachmentsRepository.getAttachment(any()) } returns StorageFailure.DataNotFound.left()
-            attachments.forEach { (uuid, attachment) ->
-                everySuspend { attachmentsRepository.getAttachment(uuid) } returns attachment.right()
-            }
-            everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) } returns Unit.right()
+            everySuspend { attachmentsRepository.refreshRestoredAttachmentStatus(any()) } returns Unit.right()
 
             return this to RestoreNodesFromRecycleBinUseCaseImpl(
                 cellsRepository = cellsRepository,
@@ -125,19 +105,5 @@ class RestoreNodesFromRecycleBinUseCaseTest {
 
     private companion object {
         val UUIDS = listOf("uuid-1", "uuid-2")
-
-        fun attachment(uuid: String, localPath: String?) = CellAssetContent(
-            id = uuid,
-            versionId = "versionId",
-            mimeType = "image/png",
-            assetPath = "assetPath",
-            assetSize = 1024,
-            contentHash = "contentHash",
-            localPath = localPath,
-            contentUrl = "http://contentUrl",
-            previewUrl = "http://previewUrl",
-            metadata = null,
-            transferStatus = AssetTransferStatus.NOT_FOUND,
-        )
     }
 }
