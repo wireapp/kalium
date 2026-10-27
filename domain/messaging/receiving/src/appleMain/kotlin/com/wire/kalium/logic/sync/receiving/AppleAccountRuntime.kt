@@ -77,6 +77,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import okio.FileSystem
 import okio.Path.Companion.toPath
+import kotlin.time.Duration
 
 /**
  * Concrete extension resources for one owned, login-prepared account. Resources may only be used
@@ -282,6 +283,9 @@ public class AppleAccountRuntime private constructor(
         private const val DRAIN_TIMEOUT_MS = 3_000L
         private val quarantined = MutableStateFlow<List<AppleAccountRuntime>>(emptyList())
 
+        /** A close failed in this process: that runtime keeps its account lease until the process exits. */
+        public val hasQuarantinedRuntime: Boolean get() = quarantined.value.isNotEmpty()
+
         /** Open, run owned work, drain and close before releasing ownership, including on cancellation. */
         @Suppress("LongParameterList", "TooGenericExceptionCaught", "ReturnCount")
         public suspend fun <T> use(
@@ -291,9 +295,11 @@ public class AppleAccountRuntime private constructor(
             userAgent: String,
             certificatePinning: CertificatePinning,
             diagnostics: ReceivingDiagnostics? = null,
+            /** How long to keep trying while another owner holds the account. */
+            busyRetry: Duration = Duration.ZERO,
             block: suspend (AppleAccountRuntime) -> T,
         ): Either<AccountRuntimeFailure, T> {
-            val lease = when (val acquired = AppleAccountRuntimeOwner(rootPath).tryAcquire(userId)) {
+            val lease = when (val acquired = AppleAccountRuntimeOwner(rootPath).tryAcquire(userId, busyRetry)) {
                 is Either.Left -> return acquired
                 is Either.Right -> acquired.value
             }

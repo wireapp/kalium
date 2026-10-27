@@ -21,8 +21,10 @@ package com.wire.kalium.network.networkContainer
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.FailableRequests
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.GiphyApi
 import com.wire.kalium.network.api.base.authenticated.SFTApi
 import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -67,6 +69,7 @@ import com.wire.kalium.network.api.v6.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v7.authenticated.networkContainer.AuthenticatedNetworkContainerV7
 import com.wire.kalium.network.api.v8.authenticated.networkContainer.AuthenticatedNetworkContainerV8
 import com.wire.kalium.network.api.v9.authenticated.networkContainer.AuthenticatedNetworkContainerV9
+import com.wire.kalium.network.api.vcommon.GiphyApiImpl
 import com.wire.kalium.network.api.vcommon.SFTApiImpl
 import com.wire.kalium.network.HttpTrafficObserver
 import com.wire.kalium.network.UnboundNetworkClient
@@ -103,6 +106,12 @@ interface AuthenticatedNetworkContainer {
      */
     suspend fun closeWebSockets()
 
+    /**
+     * Fail HTTP requests to the backend, in flight and new, as having no network until [block] returns.
+     * WebSockets are not affected. Use it to end requests that would hold an account handoff.
+     */
+    suspend fun <T> failRequests(block: suspend () -> T): T
+
     val accessTokenApi: AccessTokenApi
 
     val logoutApi: LogoutApi
@@ -138,6 +147,8 @@ interface AuthenticatedNetworkContainer {
     val callApi: CallApi
 
     val sftApi: SFTApi
+
+    val giphyApi: GiphyApi
 
     val connectionApi: ConnectionApi
 
@@ -395,6 +406,7 @@ interface AuthenticatedNetworkContainer {
 internal interface AuthenticatedHttpClientProvider {
     suspend fun close()
     suspend fun closeWebSockets()
+    suspend fun <T> failRequests(block: suspend () -> T): T
     val cellsHttpClient: HttpClient
         get() = networkClient.httpClient
     val backendConfig: ServerConfigDTO.Links
@@ -405,6 +417,7 @@ internal interface AuthenticatedHttpClientProvider {
     /** For SFT servers, which are not Wire backends and must never receive the Wire access token. */
     val sftNetworkClient: UnboundNetworkClient
     val sftApi: SFTApi
+    val giphyApi: GiphyApi
     suspend fun clearCachedToken()
 }
 
@@ -448,13 +461,15 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     override val backendConfig = sessionManager.serverConfig().links
 
+    private val failableRequests = FailableRequests()
+
     private val networkClientDelegate = lazy {
         AuthenticatedNetworkClient(
             engine,
             sessionManager.serverConfig(),
             bearerAuthProvider,
             kaliumLogger
-        )
+        ).also { failableRequests.install(it.httpClient) }
     }
     private val websocketClientDelegate = lazy {
         AuthenticatedWebSocketClient(
@@ -472,7 +487,7 @@ internal class AuthenticatedHttpClientProviderImpl(
             bearerAuthProvider,
             kaliumLogger,
             installCompression = false
-        )
+        ).also { failableRequests.install(it.httpClient) }
     }
     private val sftNetworkClientDelegate = lazy { UnboundNetworkClient(engine) }
 
@@ -481,6 +496,7 @@ internal class AuthenticatedHttpClientProviderImpl(
     override val networkClientWithoutCompression by networkClientWithoutCompressionDelegate
     override val sftNetworkClient by sftNetworkClientDelegate
     override val sftApi: SFTApi get() = SFTApiImpl(sftNetworkClient)
+    override val giphyApi: GiphyApi get() = GiphyApiImpl(networkClient, sftNetworkClient)
     private val closeMutex = Mutex()
     private var closeFailure: Throwable? = null
     private var closed = false
@@ -514,4 +530,6 @@ internal class AuthenticatedHttpClientProviderImpl(
     override suspend fun closeWebSockets() {
         if (websocketClientDelegate.isInitialized()) websocketClientDelegate.value.closeSessions()
     }
+
+    override suspend fun <T> failRequests(block: suspend () -> T): T = failableRequests.failRequests(block)
 }
