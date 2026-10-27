@@ -42,8 +42,9 @@ public interface SyncRequest {
     /**
      * Suspends until sync starts progressing after this wait starts, then reaches a terminal state.
      *
-     * This ignores stale failure emissions from a previous attempt until a non-failed sync state is
-     * observed, which is useful when starting a fresh sync request after the device comes back online.
+     * This ignores stale failure emissions from a previous attempt until a non-failed sync state or a retry
+     * attempt is observed, which is useful when starting a fresh sync request after the device comes back online.
+     * A retry already attempting when this wait starts is the attempt it follows, so its failure is returned.
      */
     public suspend fun waitUntilNextLiveOrFailure(): SyncRequestResult
 

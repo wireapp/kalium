@@ -41,13 +41,13 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -108,15 +108,28 @@ public abstract class SyncExecutor {
 
         override suspend fun waitUntilNextLiveOrFailure(): SyncRequestResult {
             var hasObservedSyncProgress = false
-            return syncStateFlow.drop(1).map { state ->
-                if (!hasObservedSyncProgress && state !is SyncState.Failed) {
-                    hasObservedSyncProgress = true
-                }
-                when (state) {
-                    is SyncState.Failed -> if (hasObservedSyncProgress) SyncRequestResult.Failure(state.cause) else null
-                    SyncState.Live -> SyncRequestResult.Success
+            var observedRetryId: String? = null
+            return syncStateFlow.withIndex().map { (index, state) ->
+                val retryStatus = (state as? SyncState.Failed)?.retryStatus
+                val retryId = retryStatus?.retryId()
+                // A new schedule follows a failed attempt, even when this collector missed that attempt's states.
+                val followsFailedAttempt =
+                    retryStatus is SyncRetryStatus.Scheduled && observedRetryId != null && retryId != observedRetryId
+                val result = when {
+                    index == 0 -> null
+                    state is SyncState.Failed -> SyncRequestResult.Failure(state.cause).takeIf {
+                        followsFailedAttempt || (hasObservedSyncProgress && retryStatus !is SyncRetryStatus.Attempting)
+                    }
+                    state == SyncState.Live -> SyncRequestResult.Success
                     else -> null
                 }
+                // A retry attempt is progress, even one already running when this wait starts:
+                // it can fail before publishing a sync step.
+                if (retryStatus is SyncRetryStatus.Attempting || (index > 0 && state !is SyncState.Failed)) {
+                    hasObservedSyncProgress = true
+                }
+                if (retryId != null) observedRetryId = retryId
+                result
             }.filterNotNull().first()
         }
 
@@ -124,6 +137,13 @@ public abstract class SyncExecutor {
             isEndless = true
         }
     }
+}
+
+/** The retry wait this status belongs to; its schedule and attempt share the id. */
+private fun SyncRetryStatus.retryId(): String? = when (this) {
+    is SyncRetryStatus.Scheduled -> id
+    is SyncRetryStatus.Attempting -> id
+    SyncRetryStatus.None -> null
 }
 
 /** A sync suspension whose owner kept the account and must let sync run again. */
@@ -153,8 +173,8 @@ internal class SyncExecutorImpl(
         /** First request arrived — start sync. */
         START(startsExecution = true),
 
-        /** New request while recovery is backing off — restart immediately with fresh backoff. */
-        RESTART(startsExecution = true),
+        /** New request while recovery is backing off — wake the retry with fresh backoff, keeping the current execution. */
+        RETRY_NOW,
 
         /** New request while an attempt is in flight — keep it running, but a later failure retries from the minimum delay. */
         RESET_BACKOFF,
@@ -220,6 +240,9 @@ internal class SyncExecutorImpl(
                 .runningFold(SyncDemand()) { previous, requesterCount ->
                     val syncState = syncStateObserver.syncState.value
                     val action = decideDemandAction(previous.requesterCount, requesterCount, syncState)
+                    if (action == DemandAction.RETRY_NOW) {
+                        retryNow()
+                    }
                     if (action == DemandAction.RESET_BACKOFF) {
                         slowSyncManager.resetRetryBackoff()
                         incrementalSyncManager.resetRetryBackoff()
@@ -295,8 +318,9 @@ internal class SyncExecutorImpl(
         if (resume) ExecutionGate(gate.generation + 1, suspended = false) else gate
 
     /**
-     * The demand policy: the first request starts sync. A later request restarts it only when
-     * recovery is backing off; an in-flight or live connection is left undisturbed.
+     * The demand policy: the first request starts sync. A later request wakes the pending retry only when
+     * recovery is backing off; the running execution is never replaced. [syncState] can lag behind the
+     * retry it describes, so a stale failure only wakes a retry and cannot cancel an attempt already dispatched.
      */
     private fun decideDemandAction(
         previousCount: Int,
@@ -306,7 +330,7 @@ internal class SyncExecutorImpl(
         val requestAdded = requesterCount > previousCount
         return when {
             requestAdded && previousCount == 0 -> DemandAction.START
-            requestAdded && syncState is SyncState.Failed && syncState.retryStatus !is SyncRetryStatus.Attempting -> DemandAction.RESTART
+            requestAdded && syncState is SyncState.Failed -> DemandAction.RETRY_NOW
 //             requestAdded && syncState != SyncState.Live -> DemandAction.RESET_BACKOFF // for now disabled need a bit more testing
             requesterCount == 0 && previousCount > 0 -> DemandAction.STOP
             requesterCount > 0 -> DemandAction.KEEP_RUNNING
