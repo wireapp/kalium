@@ -125,7 +125,8 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
                 outFilePath.toString(),
                 assetSize,
                 name,
-                ownerId
+                ownerId,
+                path,
             )
             attachmentsRepository.setStandaloneAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
         }

@@ -426,6 +426,9 @@ private class TestRepository : CellsRepository {
     override suspend fun deleteFiles(paths: List<String>, permanentDelete: Boolean): Either<NetworkFailure, Unit> =
         Unit.right()
 
+    override suspend fun deleteNodes(uuids: List<String>, permanentDelete: Boolean): Either<NetworkFailure, Unit> =
+        Unit.right()
+
     override suspend fun createPublicLink(nodeUuid: String, fileName: String) =
         PublicLink("", "").right()
 
@@ -474,4 +477,6 @@ private class TestRepository : CellsRepository {
         uuid: String,
         versionId: String
     ): Either<NetworkFailure, Unit> = Unit.right()
+
+    override suspend fun restoreNodes(uuids: List<String>): Either<NetworkFailure, Unit> = Unit.right()
 }

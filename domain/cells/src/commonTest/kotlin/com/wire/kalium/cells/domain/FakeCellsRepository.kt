@@ -114,6 +114,13 @@ class FakeCellsRepository : CellsRepository {
         TODO("Not yet implemented")
     }
 
+    override suspend fun deleteNodes(
+        uuids: List<String>,
+        permanentDelete: Boolean
+    ): Either<NetworkFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun createPublicLink(
         nodeUuid: String,
         fileName: String
@@ -172,6 +179,10 @@ class FakeCellsRepository : CellsRepository {
     }
 
     override suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun restoreNodes(uuids: List<String>): Either<NetworkFailure, Unit> {
         TODO("Not yet implemented")
     }
 
