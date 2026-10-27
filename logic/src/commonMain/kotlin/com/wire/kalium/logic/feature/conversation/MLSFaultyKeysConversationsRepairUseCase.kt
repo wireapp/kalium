@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -25,10 +26,11 @@ import com.wire.kalium.logic.feature.debug.RepairResult
 import com.wire.kalium.logic.feature.debug.TargetedRepairParam
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncStateObserver
+import com.wire.kalium.util.string.toHexString
 
 /**
  * Internal use case to repair conversations with faulty MLS keys based on known faulty keys per domain.
- * This is intended to be run once after an app update that includes the fix for the faulty keys.
+ * This is intended to run once for each configured set of faulty keys.
  */
 internal interface MLSFaultyKeysConversationsRepairUseCase {
     suspend operator fun invoke()
@@ -45,52 +47,60 @@ internal class MLSFaultyKeysConversationsRepairUseCaseImpl(
     private val logger by lazy { kaliumLogger.withTextTag("MLSFaultyKeysConversationsRepairUseCase") }
 
     override suspend fun invoke() {
-        val wasRepairPerformed = userConfigRepository.isMLSFaultyKeysRepairExecuted()
-        if (wasRepairPerformed) {
-            logger.d("Skipping MLS faulty keys repair - already executed for current user ${selfUserId.toLogString()}")
+        val faultyKeys = kaliumConfigs.domainWithFaultyKeysMap[selfUserId.domain]
+            ?.map(String::trim)
+            ?.filter(String::isNotEmpty)
+        val storedFingerprint = userConfigRepository.getMLSFaultyKeysRepairFingerprint()
+
+        if (faultyKeys.isNullOrEmpty()) {
+            if (storedFingerprint != null) {
+                userConfigRepository.setMLSFaultyKeysRepairFingerprint(null)
+            }
+            logger.d("Skipping MLS faulty keys repair - no keys configured for current user's domain")
+            return
+        }
+
+        val repairFingerprint = repairFingerprint(selfUserId.domain, faultyKeys)
+        if (storedFingerprint == repairFingerprint) {
+            logger.d("Skipping MLS faulty keys repair - already executed for current configuration")
             return
         }
 
         logger.d("Starting MLS faulty keys repair - for current user ${selfUserId.toLogString()}")
         syncStateObserver.waitUntilLive()
-        val matched = kaliumConfigs.domainWithFaultyKeysMap.filter { (domain, _) -> selfUserId.domain == domain }
-        when {
-            matched.isEmpty() -> {
-                logger.d("Skipping MLS faulty keys repair - domain does not match current user ${selfUserId.toLogString()}")
+        val result = repairFaultyRemovalKeys(
+            TargetedRepairParam(
+                domain = selfUserId.domain,
+                faultyKeys = faultyKeys
+            )
+        )
+
+        when (result) {
+            RepairResult.Error ->
+                logger.e("Error occurred during MLS faulty keys repair for user ${selfUserId.toLogString()}")
+
+            RepairResult.NoConversationsToRepair -> {
+                userConfigRepository.setMLSFaultyKeysRepairFingerprint(repairFingerprint)
+                logger.d("No conversations to repair for user ${selfUserId.toLogString()}")
             }
 
-            else -> {
-                matched.forEach { (domain, faultyKey) ->
-                    val result = repairFaultyRemovalKeys(
-                        TargetedRepairParam(
-                            domain = domain,
-                            faultyKeys = faultyKey
-                        )
-                    )
+            RepairResult.RepairNotNeeded ->
+                logger.d("Repair not needed for user ${selfUserId.toLogString()}")
 
-                    when (result) {
-                        RepairResult.Error ->
-                            logger.e("Error occurred during MLS faulty keys repair for user ${selfUserId.toLogString()}")
-
-                        RepairResult.NoConversationsToRepair ->
-                            logger.d("No conversations to repair for user ${selfUserId.toLogString()}")
-
-                        RepairResult.RepairNotNeeded ->
-                            logger.d("Repair not needed for user ${selfUserId.toLogString()}")
-
-                        is RepairResult.RepairPerformed -> {
-                            mapResultOfRepairPerformed(result)
-                        }
-                    }
-                }
-            }
+            is RepairResult.RepairPerformed -> mapResultOfRepairPerformed(result, repairFingerprint)
         }
     }
 
-    private suspend fun mapResultOfRepairPerformed(result: RepairResult.RepairPerformed) {
+    private suspend fun mapResultOfRepairPerformed(result: RepairResult.RepairPerformed, repairFingerprint: String) {
         if (result.failedRepairs.isEmpty()) {
-            userConfigRepository.setMLSFaultyKeysRepairExecuted(true)
+            userConfigRepository.setMLSFaultyKeysRepairFingerprint(repairFingerprint)
         }
         logger.i("Repair was performed for user: ${selfUserId.toLogString()} with result: ${result.toLogString()}")
+    }
+
+    private fun repairFingerprint(domain: String, faultyKeys: List<String>): String {
+        val normalizedKeys = faultyKeys.map { it.lowercase() }.sorted().joinToString(",")
+        val normalizedConfig = "$domain:$normalizedKeys"
+        return calcSHA256(normalizedConfig.encodeToByteArray()).toHexString()
     }
 }
