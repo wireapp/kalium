@@ -37,7 +37,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -168,12 +167,12 @@ class RepairFaultyRemovalKeysUseCaseTest {
 
         @OptIn(ExperimentalStdlibApi::class)
         suspend fun withGetExternalKeyForConversation(groupId: GroupID, key: String) = apply {
-            everySuspend { mlsContext.getExternalSenders(eq(groupId.value)) } returns
+            everySuspend { mlsContext.getExternalSenders(groupId.value) } returns
                     ExternalSenderKey(key.hexToByteArray())
         }
 
         suspend fun withGetExternalKeyFailureForConversation(groupId: GroupID) = apply {
-            everySuspend { mlsContext.getExternalSenders(eq(groupId.value)) } throws
+            everySuspend { mlsContext.getExternalSenders(groupId.value) } throws
                     IllegalStateException("Conversation not found")
         }
 
