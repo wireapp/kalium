@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.retryWhileAccountBusy
 import com.wire.kalium.common.functional.flatMapRight
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.mapToRightOr
@@ -54,5 +55,6 @@ internal class ObserveIsAppLockEditableUseCaseImpl internal constructor(
                     }
                 ) { it.contains(true).not() }
             }
+            .retryWhileAccountBusy()
             .mapToRightOr(false)
 }

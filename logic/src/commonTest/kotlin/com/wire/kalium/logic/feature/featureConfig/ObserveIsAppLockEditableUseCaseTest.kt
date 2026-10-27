@@ -24,11 +24,13 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.AccountBusyException
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -88,6 +90,26 @@ internal class ObserveIsAppLockEditableUseCaseTest {
             assertEquals(false, awaitItem())
             cancel()
         }
+    }
+
+    @Test
+    fun givenAnAccountAnotherProcessHoldsForAWhile_whenInvoked_thenKeepObservingUntilItOpens() = runTest {
+        val appLockTeamConfig = AppLockTeamConfig(isEnforced = true, timeout = 1.minutes, isStatusChanged = null)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        var opens = 0
+        val (arrangement, useCase) = Arrangement()
+            .withAllValidSessionsFlow(flowOf(listOf(AccountInfo.Valid(TestUser.SELF.id))))
+            .arrange()
+        everySuspend {
+            arrangement.userSessionScopeProvider.open(TestUser.SELF.id, any<UserSessionScope.() -> UserConfigRepository>())
+        } calls {
+            if (opens++ == 0) throw AccountBusyException("WireShareExt pid=1")
+            userConfigRepository
+        }
+        every { userConfigRepository.observeAppLockConfig() } returns flowOf(Either.Right(appLockTeamConfig))
+
+        assertEquals(false, useCase().first())
+        assertEquals(2, opens)
     }
 
     class Arrangement {
