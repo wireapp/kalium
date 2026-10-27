@@ -14,14 +14,17 @@ Feature code should stay within the narrowest layer that can own it. The `:logic
 
 Foundation modules shared by the rest of the SDK:
 
-- `:core:common`: error handling, `Either`, shared utilities
-- `:core:data`: public and internal data models
+- `:core:common`: `Either`, shared utilities, shared logger access and structured logging
+- `:core:data`: domain models without network DTO dependencies
 - `:core:cryptography`: CoreCrypto and libsodium integration
 - `:core:libsodium`: libsodium bindings
 - `:core:logger`: logging infrastructure
 - `:core:util`: platform utilities and serialization helpers
 
 Core modules may depend on other core modules and external libraries.
+`:core:common` and `:core:data` also stay independent of crypto implementations. Infrastructure
+error contracts and composition belong to the data layer, even when their historical package
+name contains `common` or `logic.data`.
 
 ### `data:*`
 
@@ -32,10 +35,13 @@ Persistence, networking, and model transformation:
 - `:data:network-util`: network state and shared network helpers
 - `:data:persistence`: SQLDelight databases and DAOs
 - `:data:persistence-test`: database test fixtures
-- `:data:data-mappers`: network/persistence/domain mappers
+- `:data:data-mappers`: network/persistence/domain mappers, infrastructure failures and exception adapters,
+  transport wrappers, and logging initialization
 - `:data:protobuf`: protobuf definitions and generated access
 
-Data modules depend on core modules.
+Data modules depend on core modules and other data modules. See
+[ADR 18](adr/0018-core-infrastructure-boundaries.md) and the
+[low-level API migration guide](guides/core-infrastructure-migration.md) for the core dependency cleanup.
 
 ### `domain:*`
 

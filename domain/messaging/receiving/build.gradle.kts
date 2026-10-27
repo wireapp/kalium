@@ -69,7 +69,7 @@ kotlin {
             implementation(projects.data.persistence)
             implementation(projects.data.networkModel)
             implementation(projects.data.network)
-            implementation(projects.data.dataMappers)
+            api(projects.data.dataMappers)
             implementation(libs.ktxSerialization)
             implementation(libs.ktxDateTime)
             implementation(libs.okio.core)

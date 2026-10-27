@@ -9,8 +9,14 @@ Data access and transformation layer handling persistence, networking, and mappi
 - `persistence` - Database operations (SQLDelight)
 - `persistence-test` - Test utilities for persistence layer
 - `protobuf` - Protocol buffer message definitions
-- `data-mappers` - Mapping between network models, persistence models, and domain models
+- `data-mappers` - Model and exception mapping, infrastructure failure contracts, transport wrappers, and logging initialization
 
-**Dependencies:**  Core layer only
+**Dependencies:** Core modules and other data modules
+
+`data-mappers` owns the `com.wire.kalium.common.error` contracts because they expose network and
+crypto exceptions. It also owns `CoreLogger`, which initializes logging across the infrastructure
+modules. Shared logger access and `Either` remain in `:core:common`.
+
+See the [migration guide](../docs/guides/core-infrastructure-migration.md) for the moved low-level APIs.
 
 **Used by:** Domain layer, Logic layer

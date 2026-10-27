@@ -51,6 +51,7 @@ kotlin {
                 implementation(projects.data.network)
                 implementation(projects.core.cryptography)
                 implementation(projects.logic)
+                implementation(projects.data.dataMappers)
                 implementation(projects.core.util)
 
                 implementation(libs.cliKt)

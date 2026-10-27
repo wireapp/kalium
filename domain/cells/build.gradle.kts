@@ -31,6 +31,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(projects.core.common)
+                implementation(projects.data.dataMappers)
                 implementation(projects.data.network)
                 implementation(projects.core.data)
                 implementation(projects.core.util)

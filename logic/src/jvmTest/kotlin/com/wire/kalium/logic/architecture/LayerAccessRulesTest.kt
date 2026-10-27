@@ -21,8 +21,30 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.withPackage
 import com.lemonappdev.konsist.api.verify.assertFalse
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class LayerAccessRulesTest {
+
+    @Test
+    fun foundationalCoreModulesShouldNotImportInfrastructure() {
+        val infrastructurePackages = listOf(
+            "com.wire.kalium.network.",
+            "com.wire.kalium.persistence.",
+            "com.wire.kalium.cryptography.",
+            "com.wire.crypto.",
+            "com.wire.kalium.common.error."
+        )
+        listOf("core/common", "core/data").forEach { module ->
+            val files = Konsist.scopeFromProduction(moduleName = module).files
+            assertTrue(files.isNotEmpty(), "Expected production sources in $module")
+            files.assertFalse { file ->
+                file.hasImport { imported ->
+                    infrastructurePackages.any { imported.name.startsWith(it) } ||
+                        imported.name == "com.wire.kalium.common.logger.CoreLogger"
+                }
+            }
+        }
+    }
 
     private companion object {
         val importsFromFeatureLayer = ".*?(\\.|)feature(\\..*|\\n)".toRegex()
