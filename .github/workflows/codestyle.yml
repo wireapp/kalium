@@ -23,7 +23,9 @@ jobs:
         uses: ./.github/actions/setup-java-gradle
 
       - name: Check CI cache policy
-        run: python3 -m unittest discover -s .github/actions/setup-java-gradle -p 'test_*.py'
+        run: |
+          python3 -m unittest discover -s .github/actions/setup-java-gradle -p 'test_*.py'
+          python3 -m unittest discover -s .github/actions/gradle-cache-report -p 'test_*.py'
 
       - name: Run Detekt
         run: |

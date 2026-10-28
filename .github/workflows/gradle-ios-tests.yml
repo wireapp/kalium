@@ -70,6 +70,11 @@ jobs:
         with:
           use-external-cache: "true"
 
+      - name: Record cache restore start
+        if: steps.setup-gradle.outputs.cache-enabled == 'true'
+        continue-on-error: true
+        run: python3 .github/actions/gradle-cache-report/report.py restore-start
+
       - name: Restore shared iOS Gradle dependencies
         if: steps.setup-gradle.outputs.cache-enabled == 'true'
         id: gradle-dependencies
@@ -105,6 +110,11 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-konan-${{ hashFiles('gradle.properties', 'gradle/libs.versions.toml') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-konan-
+
+      - name: Record cache restore end
+        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' }}
+        continue-on-error: true
+        run: python3 .github/actions/gradle-cache-report/report.py restore-end
 
       - name: Record runner memory in the background
         run: |
@@ -184,17 +194,6 @@ jobs:
           df -h
           ps -axo pid,ppid,%cpu,rss,comm | sort -k4 -nr | head -20 || true
 
-      - name: Archive build timings
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: ios-build-timings-${{ matrix.shard }}
-          path: |
-            build/reports/profile/**
-            build/affected-tests/**
-            build/ci/ios-test-tasks.txt
-            build/ci/ios-runner-memory.log
-
       - name: Generate aggregated iOS test report
         if: ${{ always() && (steps.ios-tests.outcome == 'success' || steps.ios-tests.outcome == 'failure') }}
         run: ./gradlew -Dorg.gradle.jvmargs="-Xmx1g -XX:+UseParallelGC" aggregateIosSimulatorArm64TestReport
@@ -223,7 +222,6 @@ jobs:
         if: ${{ always() && steps.build-tests.outputs.has-tests == 'true' }}
         with:
           check_name: iOS Test Results (${{ matrix.shard }})
-          large_files: true
           action_fail_on_inconclusive: true
           # Native test logs can exceed the XML parser's default CDATA limit.
           large_files: true
@@ -238,7 +236,13 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
+      - name: Record cache save start
+        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' }}
+        continue-on-error: true
+        run: python3 .github/actions/gradle-cache-report/report.py save-start
+
       - name: Save shared iOS Gradle dependencies
+        id: save-gradle-dependencies
         # Logic has the broadest dependencies. Failed tests must not discard a successful build.
         if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && matrix.shard == 'logic' && steps.build-tests.outcome == 'success' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-dependencies.outcome == 'success' && steps.gradle-dependencies.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
@@ -250,18 +254,49 @@ jobs:
           key: ${{ steps.gradle-dependencies.outputs.cache-primary-key }}
 
       - name: Save iOS shard build outputs
-        if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && steps.build-tests.outcome == 'success' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-outputs.outcome == 'success' && steps.gradle-outputs.outputs.cache-hit != 'true' }}
+        id: save-gradle-outputs
+        # The shared policy permits develop and same-repository PRs; merge queue is read-only.
+        # PR merge-ref caches let later commits on that PR reuse outputs without seeding other PRs.
+        if: ${{ always() && steps.build-tests.outcome == 'success' && steps.build-tests.outputs.has-tests == 'true' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-outputs.outcome == 'success' && steps.gradle-outputs.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.gradle/caches/build-cache-*
           key: ${{ steps.gradle-outputs.outputs.cache-primary-key }}
 
       - name: Save Kotlin/Native tooling cache (.konan)
+        id: save-konan
         if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && matrix.shard == 'logic' && steps.build-tests.outcome == 'success' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.konan-cache.outcome == 'success' && steps.konan-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.konan
           key: ${{ steps.konan-cache.outputs.cache-primary-key }}
+
+      - name: Summarize cache effectiveness
+        if: always()
+        continue-on-error: true
+        env:
+          CACHE_REPORT_LABEL: iOS ${{ matrix.shard }}
+          GRADLE_STAGES: |
+            {"Build binaries": "${{ steps.build-tests.outcome }}", "Tests": "${{ steps.ios-tests.outcome }}"}
+          CACHE_STATES: |
+            {
+              "dependencies": {"restore": ${{ toJSON(steps.gradle-dependencies) }}, "save": ${{ toJSON(steps.save-gradle-dependencies) }}},
+              "outputs": {"restore": ${{ toJSON(steps.gradle-outputs) }}, "save": ${{ toJSON(steps.save-gradle-outputs) }}},
+              "konan": {"restore": ${{ toJSON(steps.konan-cache) }}, "save": ${{ toJSON(steps.save-konan) }}}
+            }
+        run: python3 .github/actions/gradle-cache-report/report.py summary
+
+      - name: Archive build timings
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ios-build-timings-${{ matrix.shard }}
+          path: |
+            build/reports/profile/**
+            build/affected-tests/**
+            build/ci/ios-test-tasks.txt
+            build/ci/ios-runner-memory.log
+            build/ci/cache-report.json
 
   # Preserve the existing required check name while exposing each shard's result separately.
   gradle-run-tests:
