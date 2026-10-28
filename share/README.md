@@ -12,7 +12,7 @@ with the same `-Pwire.ios.simulatorOnly=true` and `-Pwire.ios.deviceOnly=true` s
 ## Choosing a conversation
 
 `conversations` lists unarchived conversations the extension may send to, most recently active first.
-It mirrors the app's interaction rules and leaves out conversations that need the app: legal hold the
+It holds the account only to read its database, and opens neither CoreCrypto nor the network. It mirrors the app's interaction rules and leaves out conversations that need the app: legal hold the
 user has not consented to, verification that degraded since the user acknowledged it, and MLS groups
 this client has not established. `acceptsFiles` is false for Cells conversations, which take files through
 Cells; only the app uploads there. `failureReason` names a runtime failure such as `BUSY` when the

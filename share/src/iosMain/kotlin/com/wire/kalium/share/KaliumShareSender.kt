@@ -211,8 +211,10 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
     /** `BUSY` as [KaliumShareConversations.failureReason] can mean the app owns the account: ask it instead. */
     @Throws(CancellationException::class)
     public suspend fun conversations(userValue: String, userDomain: String): KaliumShareConversations {
-        val result = use(UserId(userValue, userDomain)) { runtime ->
-            runtime.database.sharePicker(runtime.prepared.userId, options().fileRestrictionState)
+        // Listing reads only the database, so it holds the account without opening CoreCrypto or the network.
+        val userId = UserId(userValue, userDomain)
+        val result = AppleAccountRuntime.useDatabase(configuration.rootPath, userId, persistence) { database, prepared ->
+            database.sharePicker(prepared.userId, options().fileRestrictionState)
         }
         return when (result) {
             is Either.Left -> KaliumShareConversations(emptyList(), failureReason = result.value.name)
@@ -375,14 +377,16 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
     private suspend fun <T> use(userId: UserId, block: suspend (AppleAccountRuntime) -> T) = AppleAccountRuntime.use(
         configuration.rootPath,
         userId,
-        ApplePersistenceConfig(
-            serviceName = configuration.keychainService,
-            keychainAccessibility = configuration.keychainAccessibility.toApple(),
-            accessGroup = configuration.keychainAccessGroup,
-        ),
+        persistence,
         configuration.userAgent,
         configuration.certificatePins,
         block = block,
+    )
+
+    private val persistence get() = ApplePersistenceConfig(
+        serviceName = configuration.keychainService,
+        keychainAccessibility = configuration.keychainAccessibility.toApple(),
+        accessGroup = configuration.keychainAccessGroup,
     )
 
     private fun options() = ReceivingOptions(

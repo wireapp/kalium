@@ -81,7 +81,7 @@ import kotlin.time.Duration
 
 /**
  * Concrete extension resources for one owned, login-prepared account. Resources may only be used
- * inside [use]. This opens no global SQLite or app session and never generates keys or repairs state.
+ * inside [use] or [useDatabase]. This opens no global SQLite or app session and never generates keys or repairs state.
  * CoreCrypto still uses its available open-or-create API after practical prepared-file checks.
  */
 @InternalKaliumApi
@@ -128,7 +128,7 @@ public class AppleAccountRuntime private constructor(
     private var cleanupUncertain = false
 
     @Suppress("LongMethod", "TooGenericExceptionCaught")
-    private suspend fun open(rootPath: String, keychainConfig: ApplePersistenceConfig, userAgent: String, pins: CertificatePinning) {
+    private suspend fun open(rootPath: String, keychainConfig: ApplePersistenceConfig, network: NetworkSettings?) {
         val userId = prepared.userId
         invalidateReceiving = { ApplePreparedAccountStore(rootPath, userId).invalidate(lease, prepared.clientId) }
         val root = appleAccountPath(rootPath, userId)
@@ -173,6 +173,8 @@ public class AppleAccountRuntime private constructor(
             mlsCipherSuite = CipherSuite.fromTag(checkNotNull(database.userConfigDAO.getDefaultCipherSuite()).default)
             check(mlsCipherSuite !is CipherSuite.UNKNOWN) { "Configured MLS cipher suite is unsupported" }
         }
+        // Reading the database needs neither CoreCrypto nor the network; the checks above still apply.
+        if (network == null) return
         // A failing native factory can allocate a handle before returning it. Clear this flag only
         // after each returned handle has been retained; known cleanup cannot recover a lost handle.
         cleanupUncertain = true
@@ -192,13 +194,13 @@ public class AppleAccountRuntime private constructor(
         }
         cleanupUncertain = true
         openedNetwork = AuthenticatedNetworkContainer.create(
-            session, QualifiedID(userId.value, userId.domain), userAgent,
-            pins, null, null, kaliumLogger
+            session, QualifiedID(userId.value, userId.domain), network.userAgent,
+            network.pins, null, null, kaliumLogger
         )
         cleanupUncertain = false
         openedMLS?.let { central ->
             cleanupUncertain = true
-            val unbound = UnboundNetworkContainerCommon(userAgent, false, pins, null, false)
+            val unbound = UnboundNetworkContainerCommon(network.userAgent, false, network.pins, null, false)
             val http = unbound.cellsClient.also { pkiHttpClient = it }
             cleanupUncertain = false
             val config = UserConfigDataSource(
@@ -253,13 +255,12 @@ public class AppleAccountRuntime private constructor(
     private suspend fun <T> run(
         rootPath: String,
         keychainConfig: ApplePersistenceConfig,
-        userAgent: String,
-        certificatePinning: CertificatePinning,
+        network: NetworkSettings?,
         block: suspend (AppleAccountRuntime) -> T,
     ): T {
         var operationFailure: Throwable? = null
         return try {
-            open(rootPath, keychainConfig, userAgent, certificatePinning)
+            open(rootPath, keychainConfig, network)
             processingScope.async { block(this@AppleAccountRuntime) }.await()
         } catch (failure: Throwable) {
             operationFailure = failure
@@ -279,6 +280,9 @@ public class AppleAccountRuntime private constructor(
         }
     }
 
+    /** What the network opens with; [useDatabase] opens none. */
+    private class NetworkSettings(val userAgent: String, val pins: CertificatePinning)
+
     public companion object {
         private const val DRAIN_TIMEOUT_MS = 3_000L
         private val quarantined = MutableStateFlow<List<AppleAccountRuntime>>(emptyList())
@@ -287,7 +291,7 @@ public class AppleAccountRuntime private constructor(
         public val hasQuarantinedRuntime: Boolean get() = quarantined.value.isNotEmpty()
 
         /** Open, run owned work, drain and close before releasing ownership, including on cancellation. */
-        @Suppress("LongParameterList", "TooGenericExceptionCaught", "ReturnCount")
+        @Suppress("LongParameterList")
         public suspend fun <T> use(
             rootPath: String,
             userId: UserId,
@@ -297,6 +301,33 @@ public class AppleAccountRuntime private constructor(
             diagnostics: ReceivingDiagnostics? = null,
             /** How long to keep trying while another owner holds the account. */
             busyRetry: Duration = Duration.ZERO,
+            block: suspend (AppleAccountRuntime) -> T,
+        ): Either<AccountRuntimeFailure, T> =
+            use(rootPath, userId, keychainConfig, NetworkSettings(userAgent, certificatePinning), diagnostics, busyRetry, block)
+
+        /**
+         * As [use], but opens only the account's database: no CoreCrypto, network or PKI client. For reads, such
+         * as listing conversations, that should hold the account and memory no longer than the read. Tries the
+         * account once; a caller that wants to wait retries.
+         */
+        public suspend fun <T> useDatabase(
+            rootPath: String,
+            userId: UserId,
+            keychainConfig: ApplePersistenceConfig,
+            block: suspend (database: UserDatabaseBuilder, prepared: PreparedAccount) -> T,
+        ): Either<AccountRuntimeFailure, T> =
+            use(rootPath, userId, keychainConfig, network = null, diagnostics = null, busyRetry = Duration.ZERO) {
+                block(it.database, it.prepared)
+            }
+
+        @Suppress("LongParameterList", "TooGenericExceptionCaught", "ReturnCount")
+        private suspend fun <T> use(
+            rootPath: String,
+            userId: UserId,
+            keychainConfig: ApplePersistenceConfig,
+            network: NetworkSettings?,
+            diagnostics: ReceivingDiagnostics?,
+            busyRetry: Duration,
             block: suspend (AppleAccountRuntime) -> T,
         ): Either<AccountRuntimeFailure, T> {
             val lease = when (val acquired = AppleAccountRuntimeOwner(rootPath).tryAcquire(userId, busyRetry)) {
@@ -309,7 +340,7 @@ public class AppleAccountRuntime private constructor(
                     ?: return Either.Left(AccountRuntimeFailure.NOT_PREPARED)
                 val account = AppleAccountRuntime(prepared, lease, "${appleAccountPath(rootPath, userId)}/storage/files")
                     .also { runtime = it }
-                Either.Right(account.run(rootPath, keychainConfig, userAgent, certificatePinning, block))
+                Either.Right(account.run(rootPath, keychainConfig, network, block))
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (failure: Throwable) {
