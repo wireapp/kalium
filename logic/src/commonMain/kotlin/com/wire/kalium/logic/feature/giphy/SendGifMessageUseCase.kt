@@ -5,6 +5,7 @@ package com.wire.kalium.logic.feature.giphy
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.giphy.DownloadedGif
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.upload.AssetUploadParams
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult
@@ -20,7 +21,16 @@ import kotlinx.coroutines.async
  * as an `image/gif` asset. Receivers need nothing new. Both messages follow the conversation's self-deleting timer.
  *
  * [SendGifMessageResult.Success] means both messages are stored in the conversation. Like any message, they then
- * send in the background, and a failed delivery shows in the conversation with a retry.
+ * send in the background, and a failed delivery shows in the conversation with a retry. That includes a caption that was
+ * stored but not delivered, for example while offline: the GIF still follows it.
+ *
+ * What the other results leave in the conversation:
+ * - [SendGifMessageResult.DisabledByTeam] and [SendGifMessageResult.RestrictedFileType]: nothing.
+ * - [SendGifMessageResult.Failure] with [LegalHoldEnabledForConversationFailure]: only the caption, stored under that
+ *   failure's message ID and failed because sending it found the conversation under legal hold. The GIF was not sent.
+ *   Once the user accepts, retry the caption by that ID and send the GIF again without a caption.
+ * - Any other [SendGifMessageResult.Failure]: no GIF. Usually no caption either; only when storing the GIF itself
+ *   failed is a caption already in the conversation.
  */
 public interface SendGifMessageUseCase {
     /**
@@ -67,7 +77,10 @@ internal class SendGifMessageUseCaseImpl(
     ): SendGifMessageResult {
         val captionResult = caption?.let { sendText(conversationId, it, quotedMessageId) }
         // A caption that was stored but not delivered stays retryable in the conversation, so the GIF still follows it.
-        return if (captionResult is MessageOperationResult.Failure && captionResult.messageId == null) {
+        // Legal hold is the exception: the user must accept it before anything more is sent.
+        return if (captionResult is MessageOperationResult.Failure &&
+            (captionResult.messageId == null || captionResult.error is LegalHoldEnabledForConversationFailure)
+        ) {
             SendGifMessageResult.Failure(captionResult.error)
         } else {
             sendAssetMessage(
