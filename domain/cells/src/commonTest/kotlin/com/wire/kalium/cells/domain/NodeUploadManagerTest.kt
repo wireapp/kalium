@@ -17,6 +17,16 @@
  */
 package com.wire.kalium.cells.domain
 
+import com.wire.kalium.cells.domain.usecase.awaitDraftTransfer
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.job
+import kotlin.test.assertNotNull
 import app.cash.turbine.test
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.FileFilters
@@ -317,6 +327,53 @@ class NodeUploadManagerTest {
         assertEquals(CellUploadEvent.UploadCompleted, manager.consumeUploadOutcome(node.uuid))
         assertFalse(manager.isUploading(node.uuid))
         verifySuspend(VerifyMode.exactly(2)) { arrangement.repository.uploadFile(any(), any(), any()) }
+    }
+
+    @Test
+    fun concurrentUploadsKeepBothDraftsUntilTheirTransfersComplete() = runTest {
+        // Real workers exercise the registration race hidden by a single-threaded test dispatcher.
+        repeat(5000) { iteration ->
+            val finishNetwork = CompletableDeferred<Unit>()
+            val uploadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            val repository = object : CellsRepository by TestRepository() {
+                override suspend fun uploadFile(
+                    path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit
+                ): Either<NetworkFailure, Unit> {
+                    finishNetwork.await()
+                    onProgressUpdate(166)
+                    return Unit.right()
+                }
+            }
+            val manager = CellUploadManagerImpl(repository, uploadScope)
+            try {
+                val ready = List(2) { CompletableDeferred<Unit>() }
+                val start = CompletableDeferred<Unit>()
+                val workers = List(2) { index ->
+                    async(Dispatchers.Default) {
+                        ready[index].complete(Unit)
+                        start.await()
+                        manager.upload("source-$index".toPath(), 166, "cell/file-$index.txt")
+                            .getOrFail { error("precheck failed") }
+                    }
+                }
+                ready.forEach { it.await() }
+                start.complete(Unit)
+                val nodes = workers.awaitAll()
+                nodes.forEach { node ->
+                    assertNotNull(manager.getUploadInfo(node.uuid), "Lost registration at iteration $iteration")
+                    assertNotNull(manager.captureUploadAttempt(node.uuid))
+                }
+                val results = nodes.map { node ->
+                    async(start = CoroutineStart.UNDISPATCHED) { manager.awaitDraftTransfer(node.uuid) }
+                }
+                assertTrue(results.none { it.isCompleted })
+                finishNetwork.complete(Unit)
+                assertEquals(List(2) { CellAttachmentDraftUploadResult.Completed }, results.awaitAll())
+                nodes.forEach { assertFalse(manager.isUploading(it.uuid)) }
+            } finally {
+                uploadScope.coroutineContext.job.cancelAndJoin()
+            }
+        }
     }
 
     private class Arrangement(val uploadScope: CoroutineScope) {
