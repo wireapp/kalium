@@ -151,7 +151,8 @@ internal class NewMessageEventHandlerImpl(
         )
     }
 
-    @Suppress("ReturnCount") // Receipt replay and successful recovery terminate before normal message effects.
+    @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod")
+    // Receipt replay and successful recovery terminate before normal message effects.
     override suspend fun handleNewMLSMessage(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMLSMessage,
