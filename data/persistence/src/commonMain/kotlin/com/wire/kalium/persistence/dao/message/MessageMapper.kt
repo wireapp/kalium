@@ -240,6 +240,11 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.LEGAL_HOLD -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.MULTIPART -> when {
+                text.isNullOrBlank() -> MessagePreviewEntityContent.Asset(
+                    senderName = senderName,
+                    type = AssetTypeEntity.GENERIC_ASSET
+                )
+
                 isSelfMessage -> MessagePreviewEntityContent.Text(
                     senderName = senderName,
                     messageBody = text.requireField("text")
