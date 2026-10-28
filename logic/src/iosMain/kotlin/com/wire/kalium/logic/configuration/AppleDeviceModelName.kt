@@ -18,14 +18,23 @@
 
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.logic.data.client.DeviceType
 import platform.Foundation.NSProcessInfo
 
+internal actual fun appleDeviceType(): DeviceType = deviceIdentifier()?.let(::iosDeviceType) ?: DeviceType.Phone
+
 internal actual fun appleDeviceModelName(): String {
-    val simulatorIdentifier = NSProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] as? String
-    val identifier = simulatorIdentifier ?: sysctlString("hw.machine") ?: return "N/A"
+    val identifier = deviceIdentifier() ?: return "N/A"
     val name = iosDeviceModelName(identifier)
-    return if (simulatorIdentifier != null) "$name Simulator" else name
+    return if (simulatorIdentifier() != null) "$name Simulator" else name
 }
+
+private fun simulatorIdentifier(): String? = NSProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] as? String
+
+private fun deviceIdentifier(): String? = simulatorIdentifier() ?: sysctlString("hw.machine")
+
+internal fun iosDeviceType(identifier: String): DeviceType =
+    if (identifier.startsWith("iPad")) DeviceType.Tablet else DeviceType.Phone
 
 /**
  * Apple's marketing name for a device identifier such as `iPhone17,3`, or the identifier itself
