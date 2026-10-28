@@ -2,4 +2,4 @@ Accepting a connection request no longer reports a failure when the backend acce
 
   - ABI: unchanged.
   - Source: unchanged.
-  - Migration: hosts no longer need to treat a failed accept as possibly accepted.
+  - Migration: none. A `Failure` can still follow a backend accept if fetching the conversation, updating its date or adding the warning fails afterwards.
