@@ -229,6 +229,15 @@ class ConnectionRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
         }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.connectionDAO.updateConnectionStatus(
+                QualifiedIDEntity("connectionId1", "domain"),
+                ConnectionEntity.State.ACCEPTED
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.connectionDAO.insertConnection(any())
+        }
     }
 
     @Test

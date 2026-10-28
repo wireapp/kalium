@@ -268,6 +268,9 @@ internal class ConnectionDataSource(
 
             if (connection.status != ACCEPTED) {
                 connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
+            } else {
+                // Accepted connections are not stored, but a stored request for the user must stop being pending.
+                connectionDAO.updateConnectionStatus(connection.qualifiedToId.toDao(), connectionStatus)
             }
         }
 

@@ -1,0 +1,5 @@
+-- Accepting used to leave the stored request in its earlier state, so accepted requests still showed as pending.
+UPDATE Connection
+SET status = 'ACCEPTED'
+WHERE status IS NOT 'ACCEPTED'
+    AND qualified_to IN (SELECT qualified_id FROM User WHERE connection_status = 'ACCEPTED');

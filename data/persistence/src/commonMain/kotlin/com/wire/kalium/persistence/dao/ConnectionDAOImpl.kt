@@ -189,6 +189,12 @@ class ConnectionDAOImpl(
             .flowOn(readDispatcher.value)
     }
 
+    override suspend fun updateConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State) {
+        withContext(writeDispatcher.value) {
+            connectionsQueries.updateConnectionStatus(status, userId)
+        }
+    }
+
     override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
             connectionsQueries.updateNotificationFlag(flag, userId)

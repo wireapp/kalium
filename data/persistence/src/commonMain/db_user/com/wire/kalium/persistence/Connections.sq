@@ -42,6 +42,11 @@ updateConnectionLastUpdated:
 -- @NotifyCustomKey Connection
 UPDATE Connection SET last_update_date = ? WHERE to_id = ?;
 
+updateConnectionStatus:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Connection
+UPDATE Connection SET status = ? WHERE qualified_to = ?;
+
 updateNotificationFlag:
 UPDATE Connection SET should_notify = ? WHERE qualified_to = ?;
 
