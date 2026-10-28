@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.persistence.dao.cellfile.CellFileLocalPath
 
+@Suppress("TooManyFunctions")
 internal interface CellAttachmentsRepository {
     suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?>
     suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
@@ -40,8 +41,11 @@ internal interface CellAttachmentsRepository {
         remotePath: String,
         isEditSupported: Boolean,
     ): Either<StorageFailure, Unit>
+
     suspend fun getAttachments(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
     suspend fun getAttachmentsByIds(assetIds: List<String>): Either<StorageFailure, List<MessageAttachment>>
+
+    @Suppress("LongParameterList")
     suspend fun saveStandaloneAssetPath(
         assetId: String,
         conversationId: String?,
@@ -49,9 +53,27 @@ internal interface CellAttachmentsRepository {
         size: Long,
         name: String? = null,
         ownerId: String? = null,
+        remotePath: String? = null,
     ): Either<StorageFailure, Unit>
+
     suspend fun setStandaloneAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
+
+    /**
+     * Makes restored nodes available again as message attachments, deleting them having set their status to NOT_FOUND:
+     * SAVED_INTERNALLY if they still have a local copy, NOT_DOWNLOADED otherwise. Nodes no message refers to are left
+     * untouched, and so is a node whose status couldn't be read: the others are still updated.
+     */
+    suspend fun refreshRestoredAttachmentStatus(assetIds: List<String>): Either<StorageFailure, Unit>
     suspend fun getStandaloneAssetPathsByIds(assetIds: List<String>): Either<StorageFailure, List<CellFileLocalPath>>
+
+    /** Deletes the asset's local record, kept (without its local copy) when a message refers to it as an attachment. */
     suspend fun deleteStandaloneAsset(assetId: String): Either<StorageFailure, Unit>
+
+    /**
+     * [deleteStandaloneAsset] for every asset stored under the folder at [folderPath], at any depth. The attachments
+     * among them are marked as not found.
+     * @return the local copies of those assets, for the caller to delete.
+     */
+    suspend fun deleteFolderContents(folderPath: String): Either<StorageFailure, List<String>>
     suspend fun updateAssetPath(assetId: String, remotePath: String): Either<StorageFailure, Unit>
 }

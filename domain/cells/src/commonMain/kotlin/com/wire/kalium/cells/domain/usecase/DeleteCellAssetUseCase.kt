@@ -22,13 +22,11 @@ import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import okio.FileSystem
-import okio.Path.Companion.toPath
 import okio.SYSTEM
 
 /**
@@ -39,35 +37,25 @@ import okio.SYSTEM
  * transfer status is set to NOT_FOUND.
  */
 public interface DeleteCellAssetUseCase {
-        public suspend operator fun invoke(assetId: String, localPath: String?): Either<CoreFailure, Unit>
+    /**
+     * @param localPath the local copy of the file to remove, null for folders and files never downloaded.
+     * @param folderPath for a folder, its remote path, to also clean up the local copies of the files stored under it.
+     * Null for a file.
+     */
+    public suspend operator fun invoke(assetId: String, localPath: String?, folderPath: String? = null): Either<CoreFailure, Unit>
 }
 
 internal class DeleteCellAssetUseCaseImpl(
     private val cellsRepository: CellsRepository,
-    private val cellAttachmentsRepository: CellAttachmentsRepository,
-    private val fileSystem: FileSystem = FileSystem.SYSTEM,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    cellAttachmentsRepository: CellAttachmentsRepository,
+    fileSystem: FileSystem = FileSystem.SYSTEM,
+    dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : DeleteCellAssetUseCase {
 
-    override suspend fun invoke(assetId: String, localPath: String?) =
-        cellsRepository.deleteFile(assetId)
-            .flatMap {
-                // Keep asset data but set transfer status to NOT_FOUND to show attachment as not available
-                cellAttachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
-            }
-            .flatMap {
-                // Delete asset from the database if it was not received as message attachment
-                cellAttachmentsRepository.deleteStandaloneAsset(assetId)
-            }
-            .onSuccess {
-                deleteLocalFile(localPath)
-            }
+    private val localCleanup = CellAssetLocalCleanup(cellAttachmentsRepository, fileSystem, dispatchers)
 
-    private suspend fun deleteLocalFile(localPath: String?) {
-        localPath?.let {
-            withContext(dispatchers.io) {
-                fileSystem.delete(it.toPath())
-            }
-        }
-    }
+    override suspend fun invoke(assetId: String, localPath: String?, folderPath: String?) =
+        cellsRepository.deleteFile(assetId)
+            // Deleted on the server: clean up even if the caller is cancelled meanwhile, not to keep stale local data.
+            .flatMap { withContext(NonCancellable) { localCleanup(assetId, localPath, folderPath) } }
 }

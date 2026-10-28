@@ -160,6 +160,12 @@ internal class CellsDataSource internal constructor(
         }
     }
 
+    override suspend fun deleteNodes(uuids: List<String>, permanentDelete: Boolean) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.deleteNodes(uuids, permanentDelete)
+        }
+    }
+
     override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>) = withContext(dispatchers.io) {
         coroutineScope {
             nodes.map { (nodeId, versionId) ->
@@ -297,6 +303,13 @@ internal class CellsDataSource internal constructor(
         withContext(dispatchers.io) {
             wrapApiRequest {
                 cellsApi.restoreNode(uuid = uuid)
+            }
+        }
+
+    override suspend fun restoreNodes(uuids: List<String>): Either<NetworkFailure, Unit> =
+        withContext(dispatchers.io) {
+            wrapApiRequest {
+                cellsApi.restoreNodes(uuids = uuids)
             }
         }
 
