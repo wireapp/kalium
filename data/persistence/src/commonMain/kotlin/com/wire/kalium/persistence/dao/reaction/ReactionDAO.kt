@@ -100,10 +100,11 @@ class ReactionDAOImpl(
     ) = withContext(writeDispatcher.value) {
         reactionsQueries.transaction {
             reactionsQueries.doesMessageExist(originalMessageId, conversationId).awaitAsOneOrNull()?.let {
-                reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
+                // Rows the sender keeps stay untouched, so each emoji keeps its place on the message.
+                reactionsQueries.deleteReactionsOnMessageFromUserExcept(originalMessageId, conversationId, senderUserId, reactions)
                 val date = instant.toIsoDateTimeString()
                 reactions.forEach {
-                    reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, date)
+                    reactionsQueries.insertReactionOrIgnore(originalMessageId, conversationId, senderUserId, it, date)
                 }
             }
         }

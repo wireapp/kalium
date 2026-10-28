@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.flow.first
@@ -60,6 +61,23 @@ class MessageReactionsTest : BaseMessageTest() {
                 .first()
         }
     }
+
+    @Test
+    fun givenReactionsArriveOneAfterAnother_whenGettingMessageById_thenEmojisKeepTheOrderTheyFirstArrivedIn() = runTest {
+        insertInitialData()
+        // "5.0": the sender adds 5️⃣ and later 0️⃣, so their second update carries both.
+        updateReactions(OTHER_USER.id, "5️⃣")
+        updateReactions(SELF_USER_ID, "👍")
+        updateReactions(OTHER_USER.id, "5️⃣", "0️⃣")
+
+        val result = messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId)
+
+        assertIs<MessageEntity.Regular>(result)
+        assertEquals(listOf("5️⃣", "👍", "0️⃣"), result.reactions.reactions.keys.toList())
+    }
+
+    private suspend fun updateReactions(sender: UserIDEntity, vararg emojis: String) =
+        reactionDAO.updateReactions(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, sender, Instant.DISTANT_PAST, emojis.toSet())
 
     private suspend fun testTotalReactionCount(initialMessageEntity: MessageEntity, queryMessageEntity: suspend () -> MessageEntity?) {
         // Given

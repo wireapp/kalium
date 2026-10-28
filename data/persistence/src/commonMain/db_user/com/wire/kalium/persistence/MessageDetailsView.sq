@@ -104,6 +104,8 @@ IFNULL(
         WHERE Reaction.message_id = Message.id
             AND Reaction.conversation_id = Message.conversation_id
         GROUP BY Reaction.emoji
+        -- Each emoji in the order it first reached the message, like the desktop client.
+        ORDER BY MIN(Reaction.rowid)
     )
     ),
     '[]'

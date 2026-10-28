@@ -273,6 +273,17 @@ class MessageTimelineDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun reactionsKeepTheOrderEachEmojiFirstReachedTheMessage() = runTest(dispatcher) {
+        seed(listOf(message(0)))
+        // "5.0": the sender adds 5️⃣ and later 0️⃣, so their second update carries both.
+        db.reactionDAO.updateReactions("0000", conversation.id, other.id, Instant.DISTANT_PAST, setOf("5️⃣"))
+        db.reactionDAO.updateReactions("0000", conversation.id, self.id, Instant.DISTANT_PAST, setOf("👍"))
+        db.reactionDAO.updateReactions("0000", conversation.id, other.id, Instant.DISTANT_PAST, setOf("5️⃣", "0️⃣"))
+
+        assertEquals(listOf("5️⃣", "👍", "0️⃣"), open().page().reactions.getValue("0000").map { it.emoji })
+    }
+
+    @Test
     fun changesToEarlierPagesInvalidateAfterALaterPageWasLoadedAndBatchingIsRespected() = runTest(dispatcher) {
         seed((0..40).map(::message))
         val mutations: List<suspend () -> Unit> = listOf(
