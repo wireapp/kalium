@@ -117,6 +117,9 @@ class AcceptConnectionRequestUseCaseTest {
                 true
             )
         }
+        verifySuspend(VerifyMode.not) {
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(mokkeryAny())
+        }
     }
 
     @Test
@@ -144,6 +147,27 @@ class AcceptConnectionRequestUseCaseTest {
                 CONNECTION.qualifiedConversationId,
                 mokkeryAny()
             )
+        }
+    }
+
+    @Test
+    fun givenResolvingOneOnOneFailsPermanently_whenInvokingUseCase_thenShouldReturnSuccessWithoutRetrying() = runTest {
+        // given
+        val (arrangement, acceptConnectionRequestUseCase) = arrange {
+            withUpdateConnectionStatus(Either.Right(CONNECTION))
+            withFetchConversationSucceeding()
+            withUpdateConversationModifiedDate(Either.Right(Unit))
+            withPersistUnverifiedWarningMessageSuccess()
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Left(CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate))
+        }
+
+        // when
+        val result = acceptConnectionRequestUseCase(USER_ID)
+
+        // then
+        assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(mokkeryAny())
         }
     }
 

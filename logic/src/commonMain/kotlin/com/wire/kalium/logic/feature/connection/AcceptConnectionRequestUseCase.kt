@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.feature.conversation.mls.isRetryableOnForeground
 import com.wire.kalium.util.DateTimeUtil
 
 /**
@@ -77,12 +78,14 @@ internal class AcceptConnectionRequestUseCaseImpl(
                                 invalidateCurrentKnownProtocols = true
                             ).map { }.flatMapLeft { failure ->
                                 // The backend already accepted the connection, so this must not fail the accept.
-                                // The other user can still establish the 1:1, otherwise we retry on next foreground.
+                                // The other user can still establish the 1:1, and failures that may pass are retried.
                                 kaliumLogger.w(
                                     "Accepted the connection request from ${userId.toLogString()} but resolving " +
-                                        "the one-on-one failed: $failure, retrying on next foreground"
+                                        "the one-on-one failed: $failure"
                                 )
-                                pendingActionsRepository.enqueuePendingOneOnOneResolution(connection.qualifiedToId)
+                                if (failure.isRetryableOnForeground()) {
+                                    pendingActionsRepository.enqueuePendingOneOnOneResolution(connection.qualifiedToId)
+                                }
                                 Either.Right(Unit)
                             }
                         }.flatMap {
