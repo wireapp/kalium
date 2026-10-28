@@ -18,6 +18,9 @@
 
 package com.wire.kalium.share
 
+import com.wire.kalium.cells.CellFileSharing
+import com.wire.kalium.cells.CellSharedFile
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
@@ -138,17 +141,17 @@ internal fun SharePolicy?.refusal(name: String, mimeType: String, sizeInBytes: L
  * Checks [files] against the conversation and the account's rules, then uploads them. Sending checks the
  * conversation again after catching up; checking now avoids uploading for nothing.
  */
+@Suppress("ReturnCount")
 internal suspend fun AppleAccountRuntime.uploadSharedFiles(
     conversationId: ConversationId,
     files: List<ShareFile>,
     restriction: BuildFileRestrictionState,
     progress: (uploaded: Long, total: Long) -> Unit,
-): Either<ShareOutcome, List<UploadedFile>> {
+): Either<ShareOutcome, List<ShareItem>> {
     if (files.isEmpty()) return Either.Right(emptyList())
     val conversation = database.conversationDAO.getConversationDetailsById(conversationId.toDao())
     val block = when {
         conversation == null -> ShareBlock.UNAVAILABLE
-        conversation.wireCell != null -> ShareBlock.CELLS
         else -> database.shareBlock(conversation)
     }
     val policy = database.sharePolicy(prepared.userId, restriction)
@@ -156,7 +159,32 @@ internal suspend fun AppleAccountRuntime.uploadSharedFiles(
     return when {
         block != null -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, block.name))
         refused != null -> Either.Left(ShareOutcome(ShareStatus.FAILED, refused.name))
+        conversation?.wireCell != null -> {
+            val sharing = CellFileSharing.create(
+                network.cellsHttpClient,
+                authenticatedSession,
+                network.accessTokenApi,
+                database.userConfigDAO,
+                database.publicLinks
+            )
+            try {
+                val cellName = database.conversationDAO.getCellName(conversationId.toDao())
+                    ?: return Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
+                when (val result = sharing.upload(cellName, files.map { it.cellFile() }, progress)) {
+                    is Either.Left -> Either.Left(
+                        ShareOutcome(
+                            if (result.value is NetworkFailure.NoNetworkConnection) ShareStatus.OFFLINE else ShareStatus.FAILED,
+                            "UPLOAD_FAILED"
+                        )
+                    )
+                    is Either.Right -> Either.Right(listOf(ShareItem.Cells(files, result.value, cellName)))
+                }
+            } finally {
+                sharing.close()
+            }
+        }
         else -> ShareUploads(network.assetApi, assetAuditLog()).upload(files, conversationId, progress)
+            .map { uploads -> uploads.map { ShareItem.File(it) } }
     }
 }
 
@@ -203,19 +231,23 @@ private suspend fun AppleAccountRuntime.assetAuditLog(): Boolean {
         !ServerConfig.PRODUCTION.api.contains(Url(links.api).host)
 }
 
+internal fun ShareFile.metadata(): AssetContent.AssetMetadata? = when {
+    isDisplayableImageMimeType(mimeType) && width != null && height != null && width > 0 && height > 0 ->
+        AssetContent.AssetMetadata.Image(width, height)
+    isVideoMimeType(mimeType) -> AssetContent.AssetMetadata.Video(width, height, durationMs)
+    isAudioMimeType(mimeType) -> AssetContent.AssetMetadata.Audio(durationMs, normalizedLoudness = null)
+    else -> null
+}
+
+internal fun ShareFile.cellFile() = CellSharedFile(path.toPath(), name, mimeType, sizeInBytes, metadata())
+
 /** The asset content the app sends once an upload finished; metadata follows the app's mime type rules. */
 internal fun UploadedFile.content() = MessageContent.Asset(
     AssetContent(
         sizeInBytes = file.sizeInBytes,
         name = file.name,
         mimeType = file.mimeType,
-        metadata = when {
-            isDisplayableImageMimeType(file.mimeType) && file.width != null && file.height != null &&
-                file.width > 0 && file.height > 0 -> AssetContent.AssetMetadata.Image(file.width, file.height)
-            isVideoMimeType(file.mimeType) -> AssetContent.AssetMetadata.Video(file.width, file.height, file.durationMs)
-            isAudioMimeType(file.mimeType) -> AssetContent.AssetMetadata.Audio(file.durationMs, normalizedLoudness = null)
-            else -> null
-        },
+        metadata = file.metadata(),
         remoteData = AssetContent.RemoteData(
             otrKey = otrKey.data,
             sha256 = sha256.data,

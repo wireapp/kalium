@@ -272,6 +272,8 @@ public class CellsScope(
         CellFileDataSource(dao.cellFileDao)
     }
 
+    public val fileSharing: CellFileSharing by lazy { CellFileSharing(cellsRepository) }
+
     public val uploadManager: CellUploadManager by lazy {
         CellUploadManagerImpl(
             repository = cellsRepository,

@@ -24,6 +24,15 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.cells.CellsScope
+import com.wire.kalium.cells.CellSharedFile
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
+import com.wire.kalium.logic.data.asset.isVideoMimeType
+import com.wire.kalium.logic.data.asset.isAudioMimeType
+import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.logic.feature.asset.upload.AssetUploadParams
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -52,7 +61,12 @@ public suspend fun UserSessionScope.serveShareExtension(doorbell: Flow<Unit>) {
             selfUserId = userId,
             database = userStorage.database,
             restriction = kaliumConfigs.fileRestrictionState.value,
-            sending = ComposerSending(lazy { messages }, syncStateObserver.value),
+            sending = ComposerSending(
+                messages = lazy { messages },
+                syncStateObserver = syncStateObserver.value,
+                cells = lazy { cells },
+                conversations = userStorage.database.conversationDAO,
+            ),
         ).serve(doorbell)
     }
 }
@@ -61,6 +75,8 @@ public suspend fun UserSessionScope.serveShareExtension(doorbell: Flow<Unit>) {
 internal class ComposerSending(
     private val messages: Lazy<MessageScope>,
     private val syncStateObserver: SyncStateObserver,
+    private val cells: Lazy<CellsScope>,
+    private val conversations: ConversationDAO,
 ) : ShareOutboxSending {
 
     override suspend fun awaitSynced() {
@@ -86,6 +102,34 @@ internal class ComposerSending(
             ScheduleNewAssetMessageResult.Failure.DisabledByTeam -> "FILE_SHARING_DISABLED"
             ScheduleNewAssetMessageResult.Failure.RestrictedFileType -> "FILE_TYPE_RESTRICTED"
             is ScheduleNewAssetMessageResult.Failure.Generic -> "FAILED"
+        }
+    }
+
+    override suspend fun cells(
+        conversationId: ConversationId,
+        files: List<ShareOutboxFile>,
+        text: String,
+        messageId: String,
+    ): String? {
+        val cellName = conversations.getCellName(conversationId.toDao()) ?: return "UNAVAILABLE"
+        val prepared = files.map { file ->
+            val width = file.width
+            val height = file.height
+            val metadata = when {
+                isDisplayableImageMimeType(file.mimeType) && width != null && height != null && width > 0 && height > 0 ->
+                    AssetContent.AssetMetadata.Image(width, height)
+                isVideoMimeType(file.mimeType) -> AssetContent.AssetMetadata.Video(file.width, file.height, file.durationMs)
+                isAudioMimeType(file.mimeType) -> AssetContent.AssetMetadata.Audio(file.durationMs, null)
+                else -> null
+            }
+            CellSharedFile(file.path.toPath(), file.name, file.mimeType, file.sizeInBytes, metadata)
+        }
+        return when (val uploaded = cells.value.fileSharing.upload(cellName, prepared)) {
+            is Either.Left -> "UPLOAD_FAILED"
+            is Either.Right -> {
+                val stored = messages.value.sendMultipartMessage.storeShared(messageId, conversationId, text, uploaded.value)
+                if (stored) null else "FAILED"
+            }
         }
     }
 

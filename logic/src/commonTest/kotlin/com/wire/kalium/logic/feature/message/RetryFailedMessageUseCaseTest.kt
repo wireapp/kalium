@@ -829,6 +829,26 @@ class RetryFailedMessageUseCaseTest {
     }
 
     @Test
+    fun retryPublishesTheStoredCellsAttachmentsWithoutReadingTheComposerDraft() = runTest(testDispatcher.default) {
+        val attachment = com.wire.kalium.logic.data.message.CellAssetContent(
+            id = "shared-node", versionId = "shared-version", mimeType = "text/plain",
+            assetPath = "cell/shared.txt", assetSize = 1, localPath = null, previewUrl = null,
+            metadata = null, transferStatus = AssetTransferStatus.NOT_DOWNLOADED)
+        val message = TEXT_MESSAGE.copy(
+            content = MessageContent.Multipart("caption", attachments = listOf(attachment)), status = Message.Status.Failed)
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withSendMessage(Either.Right(Unit))
+            .arrange()
+        everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
+        everySuspend { arrangement.publishAttachments(listOf(attachment)) } returns Either.Right(Unit)
+        assertIs<MessageOperationResult.Success>(RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId))
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.publishAttachments(listOf(attachment)) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.attachmentsRepository.getAll(any()) }
+    }
+
+    @Test
     fun givenMultipartPublishFails_whenAwaitingRetry_thenPropagateFailureWithoutSending() = runTest(testDispatcher.default) {
         val message = TEXT_MESSAGE.copy(content = MessageContent.Multipart("attachment"), status = Message.Status.Failed)
         val failure = NetworkFailure.NoNetworkConnection(null)
@@ -1247,7 +1267,6 @@ class RetryFailedMessageUseCaseTest {
             messageRepository,
             assetRepository,
             conversationRepository,
-            attachmentsRepository,
             persistMessage,
             publishAttachments,
             testScope,

@@ -87,6 +87,8 @@ class ComposerSendingTest {
         val sending = ComposerSending(
             messages = lazy { error("Waiting for sync must not initialize the composer") },
             syncStateObserver = SyncStateObserverImpl(slowSync, incremental, scope),
+            cells = lazy { error("Waiting for sync must not initialize Cells") },
+            conversations = mock<com.wire.kalium.persistence.dao.conversation.ConversationDAO>(),
         )
     }
 }

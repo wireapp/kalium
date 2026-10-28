@@ -168,6 +168,41 @@ public class SendMultipartMessageUseCase internal constructor(
         )
     }.await()
 
+    /** Stores only the explicitly supplied, already published share attachments, never the composer's draft. */
+    internal suspend fun storeShared(
+        messageId: String,
+        conversationId: ConversationId,
+        text: String,
+        attachments: List<CellAssetContent>,
+    ): Boolean {
+        if (!conversationRepository.isCellEnabled(conversationId).getOrElse { false }) return false
+        return provideClientId().flatMap { clientId ->
+            val message = buildMessage(
+                conversationId,
+                clientId,
+                messageId,
+                text,
+                emptyList(),
+                emptyList(),
+                attachments,
+                null,
+                isCellEnabled = true
+            )
+            persistMessage(message).onSuccess {
+                scope.launch(dispatchers.io) {
+                    messageSender.sendMessage(message).onFailure {
+                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                            failure = it,
+                            conversationId = conversationId,
+                            messageId = messageId,
+                            messageType = "Multipart"
+                        )
+                    }
+                }
+            }
+        }.fold({ false }, { true })
+    }
+
     private suspend fun buildMessage(
         conversationId: ConversationId,
         clientId: ClientId,

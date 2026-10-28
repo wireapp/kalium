@@ -62,6 +62,36 @@ class ShareOutboxTest {
     fun deleteRoot() = FileSystem.SYSTEM.deleteRecursively(root)
 
     @Test
+    fun restartingAfterStoringACellsShareDoesNotUploadOrStoreItAgain() = runTest {
+        withDatabase { database ->
+            seed(database)
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val id = outbox.handOff(request(PHOTO, VIDEO), listOf(file("photo"), file("video")))
+            val interrupted = RecordingSending(database, cancelOn = "t")
+            assertFailsWith<CancellationException> { server(database, interrupted).importShares() }
+            val restarted = RecordingSending(database)
+            server(database, restarted).importShares()
+            assertEquals(emptyList(), restarted.stored)
+            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
+        }
+    }
+
+    @Test
+    fun cellsShareIsVisibleAndImportedAsOneBatchWithCaption() = runTest {
+        withDatabase { database ->
+            seed(database)
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val picker = database.sharePicker(SELF, BuildFileRestrictionState.NoRestriction)
+            assertEquals(true, picker.conversations.single { it.value == "group" }.acceptsFiles)
+            val id = outbox.handOff(request(PHOTO, VIDEO), listOf(file("photo"), file("video")))
+            val sending = RecordingSending(database)
+            server(database, sending).importShares()
+            assertEquals(listOf("Cells:photo.jpg,video.mp4:Hello as t"), sending.stored)
+            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
+        }
+    }
+
+    @Test
     fun theAppStoresAHandedOffShareFilesFirstAndReportsItOnce() = runTest {
         withDatabase { database ->
             seed(database)
@@ -243,6 +273,15 @@ class ShareOutboxTest {
             }
             val content = FileSystem.SYSTEM.read(file.path.toPath()) { readUtf8() }
             store(conversationId, messageId, "${file.name}=$content as $messageId")
+            return null
+        }
+
+        override suspend fun cells(
+            conversationId: ConversationId, files: List<ShareOutboxFile>, text: String, messageId: String,
+        ): String? {
+            files.forEach { assertEquals(true, FileSystem.SYSTEM.exists(it.path.toPath())) }
+            store(conversationId, messageId, "Cells:${files.joinToString(",") { it.name }}:$text as $messageId")
+            if (messageId == cancelOn) throw CancellationException("Backgrounded after storage")
             return null
         }
 

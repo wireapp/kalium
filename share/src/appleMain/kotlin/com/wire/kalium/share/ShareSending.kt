@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.RegularMessageMapper
@@ -76,6 +77,19 @@ import kotlin.uuid.Uuid
 internal sealed interface ShareItem {
     data class Text(val text: String) : ShareItem
     data class File(val upload: UploadedFile) : ShareItem
+    data class Cells(
+        val files: List<ShareFile>,
+        val attachments: List<CellAssetContent>,
+        val cellId: String,
+        val text: String = "",
+    ) : ShareItem
+}
+
+/** A Cells share is one multipart message, with its caption; regular assets retain their existing ordering. */
+internal fun sharedItems(uploads: List<ShareItem>, text: String): List<ShareItem> {
+    val cells = uploads.singleOrNull() as? ShareItem.Cells
+    return if (cells != null) listOf(cells.copy(text = text))
+    else uploads + text.takeIf { it.isNotBlank() }?.let { listOf(ShareItem.Text(it)) }.orEmpty()
 }
 
 /** How a share ended. Content-free: [reason] is a diagnostic code. */
@@ -167,7 +181,10 @@ internal class ShareSending(
         val conversation = database.conversationDAO.getConversationDetailsById(conversationId.toDao())
             ?: return ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name)
         val block = database.shareBlock(conversation)
-            ?: ShareBlock.CELLS.takeIf { conversation.wireCell != null && items.any { it is ShareItem.File } }
+            ?: ShareBlock.UNAVAILABLE.takeIf {
+                items.any { it is ShareItem.Cells && it.cellId != conversation.wireCell } ||
+                    conversation.wireCell != null && items.any { it is ShareItem.File }
+            }
         return block?.let { ShareOutcome(ShareStatus.OPEN_APP, it.name) }
             ?: fileRefusal(items)?.let { ShareOutcome(ShareStatus.FAILED, it.name) }
             ?: sendInOrder(composer(conversationId, conversation), items, shouldStop)
@@ -175,7 +192,13 @@ internal class ShareSending(
 
     /** Catching up can apply a change to the account's file rules, such as file sharing turned off. */
     private suspend fun fileRefusal(items: List<ShareItem>): FileRefusal? {
-        val files = items.filterIsInstance<ShareItem.File>().map { it.upload.file }
+        val files = items.flatMap {
+            when (it) {
+                is ShareItem.File -> listOf(it.upload.file)
+                is ShareItem.Cells -> it.files
+                is ShareItem.Text -> emptyList()
+            }
+        }
         if (files.isEmpty()) return null
         val policy = database.sharePolicy(selfUserId, restriction)
         return files.firstNotNullOfOrNull { policy.refusal(it.name, it.mimeType, it.sizeInBytes) }
@@ -231,6 +254,7 @@ internal class ShareSending(
                 content = when (item) {
                     is ShareItem.Text -> MessageContent.Text(value = item.text)
                     is ShareItem.File -> item.upload.content()
+                    is ShareItem.Cells -> MessageContent.Multipart(value = item.text, attachments = item.attachments)
                 },
                 conversationId = conversationId,
                 selfUserId = selfUserId,

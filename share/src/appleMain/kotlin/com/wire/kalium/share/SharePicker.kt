@@ -47,7 +47,7 @@ internal data class SharePicker(
         @SerialName("domain") val domain: String,
         @SerialName("name") val name: String?,
         @SerialName("isGroup") val isGroup: Boolean,
-        /** False for Cells conversations: they take files through Cells, which only the app uploads to. */
+        /** Whether the current destination supports files. */
         @SerialName("acceptsFiles") val acceptsFiles: Boolean,
     )
 }
@@ -60,7 +60,7 @@ internal suspend fun UserDatabaseBuilder.sharePicker(selfUserId: UserId, restric
         appLock = false,
         files = sharePolicy(selfUserId, restriction),
         conversations = shareableConversations().map {
-            SharePicker.Conversation(it.id.value, it.id.domain, it.name, it.type.isGroup, acceptsFiles = it.wireCell == null)
+            SharePicker.Conversation(it.id.value, it.id.domain, it.name, it.type.isGroup, acceptsFiles = true)
         },
     )
 }

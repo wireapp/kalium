@@ -379,7 +379,6 @@ public class MessageScope internal constructor(
             messageRepository,
             assetRepository,
             conversationRepository,
-            attachmentsRepository.value,
             persistMessage,
             publishAttachmentsUseCase.value,
             scope,

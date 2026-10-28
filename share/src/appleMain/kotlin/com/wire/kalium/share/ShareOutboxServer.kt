@@ -47,6 +47,12 @@ public interface ShareOutboxSending {
     /** Returns once incremental sync has processed pending events and reached live, or failed, before checking import rules. */
     public suspend fun awaitSynced()
     public suspend fun file(conversationId: ConversationId, file: ShareOutboxFile, messageId: String): String?
+    public suspend fun cells(
+        conversationId: ConversationId,
+        files: List<ShareOutboxFile>,
+        text: String,
+        messageId: String,
+    ): String? = "CELLS"
     public suspend fun text(conversationId: ConversationId, text: String, messageId: String): String?
 }
 
@@ -108,6 +114,22 @@ public class ShareOutboxServer(
         sending.awaitSynced()
         val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
         refusal(conversationId, request)?.let { return it }
+        val isCells = database.conversationDAO.getConversationDetailsById(conversationId.toDao())?.wireCell != null
+        if (isCells && request.files.isNotEmpty()) {
+            if (stored(conversationId, request.textMessageId)) return ShareOutbox.STORED
+            val files = request.files.mapIndexed { index, file ->
+                ShareOutboxFile(
+                    outbox.importCopy(id, index),
+                    file.name,
+                    file.mimeType,
+                    file.sizeInBytes,
+                    file.width,
+                    file.height,
+                    file.durationMs
+                )
+            }
+            return sending.cells(conversationId, files, request.text, request.textMessageId) ?: ShareOutbox.STORED
+        }
         request.files.forEachIndexed { index, file ->
             if (!stored(conversationId, file.messageId)) {
                 val shared = ShareOutboxFile(
@@ -135,7 +157,6 @@ public class ShareOutboxServer(
             ?: return ShareBlock.UNAVAILABLE.name
         database.shareBlock(conversation)?.let { return it.name }
         if (request.files.isEmpty()) return null
-        if (conversation.wireCell != null) return ShareBlock.CELLS.name
         val policy = database.sharePolicy(selfUserId, restriction)
         return request.files.firstNotNullOfOrNull { policy.refusal(it.name, it.mimeType, it.sizeInBytes) }?.name
     }

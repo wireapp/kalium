@@ -80,7 +80,7 @@ public data class KaliumShareConversation(
     public val conversationDomain: String,
     public val name: String?,
     public val isGroup: Boolean,
-    /** False for Cells conversations: they take files through Cells, which only the app uploads to. */
+    /** Whether the current destination supports files. */
     public val acceptsFiles: Boolean,
 )
 
@@ -292,7 +292,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         runtime: AppleAccountRuntime,
         request: KaliumShareRequest,
         sending: ShareSending,
-        uploads: List<UploadedFile>,
+        uploads: List<ShareItem>,
         budget: Duration,
         started: TimeSource.Monotonic.ValueTimeMark,
     ): KaliumShareResult {
@@ -306,8 +306,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
                     sending = sending,
                     request = request,
                     // The text follows the files, as a caption does.
-                    items = uploads.map { ShareItem.File(it) } +
-                        request.text.takeIf { it.isNotBlank() }?.let { listOf(ShareItem.Text(it)) }.orEmpty(),
+                    items = sharedItems(uploads, request.text),
                     shouldStopCatchingUp = { started.elapsedNow() > budget * SEND_BY_SHARE || accountWanted.isCompleted },
                     shouldStopSending = { started.elapsedNow() > budget * SENT_BY_SHARE },
                 )
