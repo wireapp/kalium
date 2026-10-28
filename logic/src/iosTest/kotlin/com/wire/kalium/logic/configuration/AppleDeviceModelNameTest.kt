@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.configuration
 
+import platform.Foundation.NSProcessInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class AppleDeviceModelNameTest {
 
@@ -38,9 +38,8 @@ class AppleDeviceModelNameTest {
 
     @Test
     fun givenASimulator_whenGettingTheDeviceModelName_thenTheSimulatedModelIsNamed() {
-        val name = appleDeviceModelName()
+        val identifier = NSProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] as? String ?: return
 
-        assertTrue(name.endsWith(" Simulator"), name)
-        assertTrue(name.startsWith("iPhone ") || name.startsWith("iPad "), name)
+        assertEquals("${iosDeviceModelName(identifier)} Simulator", ClientConfigImpl().deviceModelName())
     }
 }
