@@ -75,12 +75,21 @@ public class KaliumShareOutbox(private val rootPath: String) {
         when (val state = readingFiles(HandOffState.Waiting) { outbox(userValue, userDomain).state(handOffId) }) {
             HandOffState.Waiting -> KaliumShareHandOff(KaliumShareHandOffStatus.WAITING)
             HandOffState.Claimed -> KaliumShareHandOff(KaliumShareHandOffStatus.CLAIMED)
-            is HandOffState.Finished -> if (state.result == ShareOutbox.STORED) {
-                KaliumShareHandOff(KaliumShareHandOffStatus.STORED)
-            } else {
-                KaliumShareHandOff(KaliumShareHandOffStatus.NOT_STORED, state.result)
-            }
+            is HandOffState.Finished -> state.toKalium()
         }
+
+    /**
+     * Stops following a handoff before the app finished it: from then on, the app tells the user itself if it does not
+     * store the share. Returns the app's result if it arrived meanwhile, once; otherwise null.
+     */
+    public fun stopWaiting(userValue: String, userDomain: String, handOffId: String): KaliumShareHandOff? =
+        readingFiles(null) { outbox(userValue, userDomain).stopWaiting(handOffId) }?.toKalium()
+
+    private fun HandOffState.Finished.toKalium() = if (result == ShareOutbox.STORED) {
+        KaliumShareHandOff(KaliumShareHandOffStatus.STORED)
+    } else {
+        KaliumShareHandOff(KaliumShareHandOffStatus.NOT_STORED, result)
+    }
 
     private fun outbox(userValue: String, userDomain: String) = ShareOutbox(rootPath, UserId(userValue, userDomain))
 
