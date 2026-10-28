@@ -6,15 +6,19 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
+import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
+import com.wire.kalium.logic.sync.receiving.NotificationAppWork
 import com.wire.kalium.logic.sync.receiving.ReceivedMessageResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationType
 import com.wire.kalium.logic.sync.receiving.ReceivedCallResult
 import com.wire.kalium.logic.sync.receiving.ReceivedCallType
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class KaliumNSEPresentationTest {
     private val receiver = KaliumNSEReceiver(KaliumNSEConfiguration(
@@ -165,6 +169,27 @@ class KaliumNSEPresentationTest {
             assertFalse(result.shouldNotify)
             assertEquals(expected, result.presentGenericAlert, "$reason $appPresentsAlerts")
         }
+    }
+
+    @Test
+    fun legalHoldHandoffAsksForAGenericAlertWhileItsEventWaitsAndNobodyElsePresents() = runTest {
+        for (work in listOf(null) + NotificationAppWork.entries) for (appPresentsAlerts in listOf(false, true)) {
+            for (targetProcessed in listOf(false, true)) {
+                val received = ReceivedNotificationResult(
+                    null, appWorkPending = work, stoppedReason = if (work == null) "QUEUE_END" else "LEGAL_HOLD_REQUIRES_APP"
+                )
+                val expected = work == NotificationAppWork.LEGAL_HOLD && !appPresentsAlerts && !targetProcessed
+                assertEquals(
+                    expected,
+                    receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received, appPresentsAlerts) { targetProcessed },
+                    "$work $appPresentsAlerts $targetProcessed"
+                )
+            }
+        }
+        // Running out of time still asks even while the app presents.
+        assertTrue(receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, ReceivedNotificationResult(null, stoppedReason = "BUDGET"), true) {
+            false
+        })
     }
 
     private fun unnotified(id: String) = message(ReceivedNotificationType.MESSAGE).copy(messageId = id)
