@@ -143,7 +143,7 @@ internal class EventProcessorImpl(
 
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.Federation -> federationEventReceiver.onEvent(transactionContext, event, deliveryInfo)
-            is Event.Team.MemberLeave -> teamEventReceiver.onEvent(transactionContext, event, deliveryInfo)
+            is Event.Team -> teamEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.Meeting -> meetingEventReceiver.onEvent(transactionContext, event, deliveryInfo)
         }.map { event.id }
     }

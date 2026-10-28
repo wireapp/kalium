@@ -115,6 +115,7 @@ internal class EventMapper(
             is EventContentDTO.Conversation.AdminlessDeleteReminderDTO -> adminlessDeleteReminder(id, eventContentDTO)
             is EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO -> adminlessDeleteReminder(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, payloadIndex)
+            is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
             is EventContentDTO.User.UpdateDTO -> userUpdate(selfUserId, id, eventContentDTO)
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(selfUserId, id, eventContentDTO)
@@ -306,6 +307,16 @@ internal class EventMapper(
         payloadIndex: Int = 0,
     ) =
         com.wire.kalium.logic.data.event.conversationRenamed(id, event, payloadIndex)
+
+    private fun teamMemberJoined(
+        id: String,
+        event: EventContentDTO.Team.MemberJoin,
+    ) = Event.Team.MemberJoin(
+        id = id,
+        teamId = event.teamId,
+        memberId = event.teamMember.nonQualifiedUserId,
+        dateTime = event.time
+    )
 
     private fun teamMemberLeft(
         id: String,

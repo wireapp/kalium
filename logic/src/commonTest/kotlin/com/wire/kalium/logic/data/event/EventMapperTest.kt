@@ -25,6 +25,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.team.TeamMemberIdData
 import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,6 +34,25 @@ import com.wire.kalium.logic.data.id.QualifiedID as ModelQualifiedID
 import com.wire.kalium.network.api.model.QualifiedID as NetworkQualifiedID
 
 class EventMapperTest {
+
+    @Test
+    fun teamMemberJoinPreservesMemberTeamAndTime() {
+        val timestamp = Instant.parse("2026-10-28T12:00:00Z")
+        val dto = EventContentDTO.Team.MemberJoin(
+            teamMember = TeamMemberIdData("member-id"),
+            teamId = "team-id",
+            time = timestamp,
+        )
+
+        val event = assertIs<Event.Team.MemberJoin>(
+            MapperProvider.eventMapper(TestUser.SELF.id).fromEventContentDTO("event-id", dto)
+        )
+
+        assertEquals("event-id", event.id)
+        assertEquals("team-id", event.teamId)
+        assertEquals("member-id", event.memberId)
+        assertEquals(timestamp, event.dateTime)
+    }
 
     @Test
     fun meetingConversationUsesTheExistingCreationEventAndKeepsItsGroupType() {

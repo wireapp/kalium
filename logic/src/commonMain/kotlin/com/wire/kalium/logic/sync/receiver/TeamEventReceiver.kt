@@ -43,8 +43,9 @@ internal class TeamEventReceiverImpl(
         event: Event.Team,
         deliveryInfo: EventDeliveryInfo
     ): Either<CoreFailure, Unit> {
-        when {
-            event is Event.Team.MemberLeave -> handleMemberLeave(event)
+        when (event) {
+            is Event.Team.MemberJoin -> handleMemberJoin(event)
+            is Event.Team.MemberLeave -> handleMemberLeave(event)
         }
         // TODO: Make sure errors are accounted for by each handler.
         //       onEvent now requires Either, so we can propagate errors,
@@ -62,5 +63,11 @@ internal class TeamEventReceiverImpl(
                     persistMessage(event.removedFromTeamMessage(selfUserId.domain, conversationId, Uuid.random().toString()))
                 }
             }
+    }
+
+    private suspend fun handleMemberJoin(event: Event.Team.MemberJoin) {
+        userRepository.fetchUsersIfUnknownByIds(
+            setOf(UserId(event.memberId, selfUserId.domain))
+        )
     }
 }
