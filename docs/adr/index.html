@@ -1785,9 +1785,14 @@ account. The NSE checks this before processing any row, so earlier rows stay
 pending too. It writes the invalidation marker and revokes readiness without
 deleting stores; the app runs the same offline scan and logs out with the
 matching reason instead of processing the queue.</li>
-<li><code>LEGAL_HOLD</code>: app legal-hold transitions are pending, or a membership change or
-fetched profile disagrees with the stored legal-hold status. The app recovers its
-transition journals, then processes the events normally.</li>
+<li><code>LEGAL_HOLD</code>: a user's legal hold is enabled or disabled, app legal-hold
+transitions are pending, or a membership change or fetched profile disagrees with
+the stored legal-hold status. The app recovers its transition journals, then
+processes the events normally; for enable and disable it refreshes the user's
+clients first. Every later attempt stops at the same event until the app runs, so a
+push whose event waits behind it asks for a generic alert unless the app presents
+alerts. The self user's legal-hold request is a single stored value, which the NSE
+writes as the app does.</li>
 </ul>
 <p>The Apple app's pre-sync cleanup also retries pending MLS group wipes queued by local
 removal.</p>
