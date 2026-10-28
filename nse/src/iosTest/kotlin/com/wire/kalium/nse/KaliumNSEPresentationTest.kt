@@ -59,11 +59,14 @@ class KaliumNSEPresentationTest {
                 )
                 val savedAllowsPreview = preference == Either.Right(MessageContentPreference.Unset) ||
                     preference == Either.Right(MessageContentPreference.Enabled)
+                // As on Android, hidden message content leaves connection requests and conversation deletions intact.
+                val showsContent = type != ReceivedNotificationType.MESSAGE || showContent && savedAllowsPreview
                 assertEquals(true, result.shouldNotify)
                 assertEquals("message", result.messageId)
                 assertEquals("conversation", result.conversationValue)
                 assertEquals("example.com", result.conversationDomain)
-                if (showContent && mayPreview && savedAllowsPreview) {
+                assertEquals(!showsContent, result.presentationReason == "MESSAGE_CONTENT_HIDDEN")
+                if (showsContent && mayPreview) {
                     assertEquals(type.name, result.contentType.name)
                     assertEquals("Sender", result.senderName)
                     assertEquals("Group", result.conversationName)
