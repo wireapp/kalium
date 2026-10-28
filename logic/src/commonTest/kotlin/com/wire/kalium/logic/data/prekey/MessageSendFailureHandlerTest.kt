@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.prekey
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -129,7 +131,7 @@ internal class MessageSendFailureHandlerTest {
 
     @Test
     fun givenRepositoryFailsToFetchClients_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val failure = serverMiscommunication(TestNetworkException.generic)
         val (arrangement, messageSendFailureHandler) = Arrangement()
             .arrange {
                 withFetchUsersByIdSuccess()
@@ -472,6 +474,6 @@ internal class MessageSendFailureHandlerTest {
     }
 
     private companion object {
-        val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val NETWORK_ERROR = serverMiscommunication(TestNetworkException.generic)
     }
 }

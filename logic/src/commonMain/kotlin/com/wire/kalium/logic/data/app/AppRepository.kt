@@ -44,7 +44,7 @@ import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.UserTypeDTO
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import io.ktor.http.HttpStatusCode
@@ -158,7 +158,7 @@ internal class AppDataSource internal constructor(
 
 private fun CoreFailure.isInsufficientPermissions(): Boolean {
     val error = (this as? NetworkFailure.ServerMiscommunication)
-        ?.kaliumException as? KaliumException.InvalidRequestError
+        ?.reason as? ServerError.InvalidRequest
     return error?.errorResponse?.code == HttpStatusCode.Forbidden.value &&
         error.errorResponse.label == INSUFFICIENT_PERMISSIONS_LABEL
 }

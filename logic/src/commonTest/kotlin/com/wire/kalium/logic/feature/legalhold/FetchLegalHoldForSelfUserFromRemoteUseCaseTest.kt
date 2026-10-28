@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.feature.legalhold
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
@@ -108,7 +109,7 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
     fun givenAGenericError_whenFetching_thenGenericErrorShouldBeReturned() = runTest {
         // given
         val selfTeamId = TeamId(TestTeam.TEAM.id)
-        val failure = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
+        val failure = serverMiscommunication(KaliumException.GenericError(IOException("no internet")))
         val (_, useCase) = Arrangement()
             .withGetSelfTeamResult(Either.Right(selfTeamId))
             .withFetchLegalHoldStatusResult(Either.Left(failure))

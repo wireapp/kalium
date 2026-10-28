@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -115,7 +117,7 @@ class CheckConversationInviteCodeUseCaseTest {
             .withFetchLimitedInfoViaInviteCodeResult(
                 code,
                 key,
-                Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest))
+                Either.Left(serverMiscommunication(TestNetworkException.badRequest))
             )
             .arrange()
 
@@ -142,7 +144,7 @@ class CheckConversationInviteCodeUseCaseTest {
             .withFetchLimitedInfoViaInviteCodeResult(
                 code,
                 key,
-                Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.noTeamMember))
+                Either.Left(serverMiscommunication(TestNetworkException.noTeamMember))
             )
             .arrange()
 
@@ -169,7 +171,7 @@ class CheckConversationInviteCodeUseCaseTest {
             .withFetchLimitedInfoViaInviteCodeResult(
                 code,
                 key,
-                Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation))
+                Either.Left(serverMiscommunication(TestNetworkException.noConversation))
             )
             .arrange()
 
@@ -196,7 +198,7 @@ class CheckConversationInviteCodeUseCaseTest {
             .withFetchLimitedInfoViaInviteCodeResult(
                 code,
                 key,
-                Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.noConversationCode))
+                Either.Left(serverMiscommunication(TestNetworkException.noConversationCode))
             )
             .arrange()
 
@@ -223,7 +225,7 @@ class CheckConversationInviteCodeUseCaseTest {
             .withFetchLimitedInfoViaInviteCodeResult(
                 code,
                 key,
-                Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.guestLinkDisables))
+                Either.Left(serverMiscommunication(TestNetworkException.guestLinkDisables))
             )
             .arrange()
 

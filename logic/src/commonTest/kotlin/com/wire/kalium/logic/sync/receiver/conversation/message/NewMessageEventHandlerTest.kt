@@ -18,11 +18,12 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.proteusFailure
+
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.sync.incremental.EventSource
@@ -195,7 +196,7 @@ class NewMessageEventHandlerTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withProteusUnpackerReturning(
                 Either.Left(
-                    ProteusFailure(
+                    proteusFailure(
                         ProteusException(
                             message = null,
                             code = ProteusException.Code.DUPLICATE_MESSAGE,
@@ -224,7 +225,7 @@ class NewMessageEventHandlerTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withProteusUnpackerReturning(
                 Either.Left(
-                    ProteusFailure(
+                    proteusFailure(
                         ProteusException(
                             message = "exception=com.wire.crypto.ProteusException\$DuplicateMessage: ",
                             code = ProteusException.Code.UNKNOWN_ERROR,
@@ -253,7 +254,7 @@ class NewMessageEventHandlerTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withProteusUnpackerReturning(
                 Either.Left(
-                    ProteusFailure(
+                    proteusFailure(
                         ProteusException(
                             message = null,
                             code = ProteusException.Code.INVALID_SIGNATURE,
@@ -282,7 +283,7 @@ class NewMessageEventHandlerTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withProteusUnpackerReturning(
                 Either.Left(
-                    ProteusFailure(
+                    proteusFailure(
                         ProteusException(
                             message = null,
                             code = ProteusException.Code.INVALID_SIGNATURE,
@@ -320,7 +321,7 @@ class NewMessageEventHandlerTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withProteusUnpackerReturning(
                 Either.Left(
-                    ProteusFailure(
+                    proteusFailure(
                         ProteusException(
                             message = null,
                             code = ProteusException.Code.SESSION_NOT_FOUND,

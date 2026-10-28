@@ -27,8 +27,8 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isMissingLegalHoldConsent
 
 /**
  * Use Case that allows a user send a connection request to connect with another User
@@ -68,9 +68,9 @@ internal class SendConnectionRequestUseCaseImpl(
     }
 
     private fun handleServerMissCommunicationError(failure: NetworkFailure.ServerMiscommunication): SendConnectionRequestResult.Failure =
-        when (failure.kaliumException) {
-            is KaliumException.InvalidRequestError -> {
-                with(failure.kaliumException as KaliumException.InvalidRequestError) {
+        when (failure.reason) {
+            is ServerError.InvalidRequest -> {
+                with(failure.reason as ServerError.InvalidRequest) {
                     when {
                         isMissingLegalHoldConsent() -> SendConnectionRequestResult.Failure.MissingLegalHoldConsent
                         else -> SendConnectionRequestResult.Failure.GenericFailure(failure)

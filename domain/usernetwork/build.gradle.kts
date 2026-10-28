@@ -78,6 +78,7 @@ kotlin {
                 api(projects.core.common)
                 api(projects.core.data)
                 api(projects.data.persistence)
+                api(projects.core.failures)
                 implementation(projects.data.dataMappers)
                 implementation(libs.coroutines.core)
                 implementation(libs.concurrentCollections)

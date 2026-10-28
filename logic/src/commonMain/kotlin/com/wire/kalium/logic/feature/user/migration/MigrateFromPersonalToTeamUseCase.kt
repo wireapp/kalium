@@ -24,7 +24,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 
 /**
  * Use case to migrate user personal account to team account.
@@ -64,8 +64,8 @@ internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(
         return userRepository.migrateUserToTeam(teamName).fold({ error ->
             return when (error) {
                 is NetworkFailure.ServerMiscommunication -> {
-                    if (error.kaliumException is KaliumException.InvalidRequestError) {
-                        val response = (error.kaliumException as KaliumException.InvalidRequestError).errorResponse
+                    if (error.reason is ServerError.InvalidRequest) {
+                        val response = (error.reason as ServerError.InvalidRequest).errorResponse
                         if (response.label == MigrateFromPersonalToTeamFailure.UserAlreadyInTeam.ERROR_LABEL) {
                             MigrateFromPersonalToTeamResult.Error(
                                 MigrateFromPersonalToTeamFailure.UserAlreadyInTeam()

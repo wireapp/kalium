@@ -59,8 +59,8 @@ import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isBadConnectionStatusUpdate
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isBadConnectionStatusUpdate
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.logic.data.conversation.pendingConversation
 import com.wire.kalium.persistence.dao.ConnectionEntity
@@ -160,8 +160,8 @@ internal class ConnectionDataSource(
             connectionApi.updateConnection(userId.toApi(), newConnectionStatus)
         }.onFailure { networkFailure ->
             if (networkFailure is NetworkFailure.ServerMiscommunication &&
-                networkFailure.kaliumException is KaliumException.InvalidRequestError &&
-                (networkFailure.kaliumException as KaliumException.InvalidRequestError).isBadConnectionStatusUpdate()
+                networkFailure.reason is ServerError.InvalidRequest &&
+                (networkFailure.reason as ServerError.InvalidRequest).isBadConnectionStatusUpdate()
             ) {
                 kaliumLogger.e(
                     "Failed to update connection status for ${userId.toLogString()}" +

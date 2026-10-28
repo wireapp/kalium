@@ -43,7 +43,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
@@ -123,8 +123,8 @@ internal class ConversationFolderDataSource internal constructor(
     }
         .flatMapLeft {
             if (it is NetworkFailure.ServerMiscommunication
-                && it.kaliumException is KaliumException.InvalidRequestError
-                && (it.kaliumException as KaliumException.InvalidRequestError).errorResponse.code == HttpStatusCode.NotFound.value
+                && it.reason is ServerError.InvalidRequest
+                && (it.reason as ServerError.InvalidRequest).errorResponse.code == HttpStatusCode.NotFound.value
             ) {
                 kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS).v("User has no labels, creating an empty list")
                 // If the user has no labels, we create an empty list and on next stage we will create a favorite label

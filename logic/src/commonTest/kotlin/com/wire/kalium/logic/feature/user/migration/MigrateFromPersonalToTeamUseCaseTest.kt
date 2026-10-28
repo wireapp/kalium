@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.user.migration
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -106,7 +108,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
                 (result.failure as MigrateFromPersonalToTeamFailure.UnknownError).coreFailure
             val serverMiscommunication = coreFailure as NetworkFailure.ServerMiscommunication
             val invalidRequestError =
-                serverMiscommunication.kaliumException as KaliumException.InvalidRequestError
+                serverMiscommunication.rootCause as KaliumException.InvalidRequestError
             val errorLabel = invalidRequestError.errorResponse.label
 
             assertEquals("not-found", errorLabel)
@@ -129,7 +131,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
 
         suspend fun withUserAlreadyInTeamFailure() = withMigrationReturning(
             Either.Left(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(
                             HttpStatusCode.Forbidden.value,
@@ -143,7 +145,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
 
         suspend fun withMigrationUserNotFoundFailure() = withMigrationReturning(
             Either.Left(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(
                             HttpStatusCode.NotFound.value,

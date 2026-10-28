@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.register
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.AccountTokens
@@ -138,7 +140,7 @@ class RegisterAccountUseCaseTest {
     @Test
     fun givenRepositoryCallFailWithGenericError_whenRegisteringPersonalAccount_thenErrorIsPropagated() = runTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
-        val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val expected = serverMiscommunication(TestNetworkException.generic)
 
         everySuspend {
             registerAccountRepository.registerPersonalAccountWithEmail(
@@ -154,7 +156,7 @@ class RegisterAccountUseCaseTest {
 
         assertIs<RegisterResult.Failure.Generic>(actual)
         assertIs<NetworkFailure.ServerMiscommunication>(actual.failure)
-        assertEquals(expected.kaliumException, (actual.failure as NetworkFailure.ServerMiscommunication).kaliumException)
+        assertEquals(expected.rootCause, (actual.failure as NetworkFailure.ServerMiscommunication).rootCause)
 
         verifySuspend(VerifyMode.exactly(1)) {
             registerAccountRepository.registerPersonalAccountWithEmail(
@@ -193,7 +195,7 @@ class RegisterAccountUseCaseTest {
 
     private fun testSpecificError(kaliumException: KaliumException, error: RegisterResult.Failure) = runTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
-        val expected = NetworkFailure.ServerMiscommunication(kaliumException)
+        val expected = serverMiscommunication(kaliumException)
 
         everySuspend {
             registerAccountRepository.registerPersonalAccountWithEmail(

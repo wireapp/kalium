@@ -17,9 +17,10 @@
  */
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatten
 import com.wire.kalium.cryptography.CryptoTransactionContext
@@ -225,7 +226,7 @@ class PendingProposalSchedulerTest {
         runTest {
             val (arrangement, _) = Arrangement()
                 .withScheduledProposalTimers(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
-                .withCommitPendingProposalsFailing(NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation))
+                .withCommitPendingProposalsFailing(serverMiscommunication(TestNetworkException.noConversation))
                 .withClearProposalTimerSuccessful()
                 .arrange(testDispatcher())
 

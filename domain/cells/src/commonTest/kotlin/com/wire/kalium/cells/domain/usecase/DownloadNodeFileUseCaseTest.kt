@@ -17,10 +17,11 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCaseImpl
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
@@ -311,7 +312,7 @@ class DownloadNodeFileUseCaseTest {
 
         fun withDownloadFailure() = apply {
             everySuspend { cellsRepository.downloadFile(any(), any(), any()) }.returns(
-                NetworkFailure.ServerMiscommunication(IllegalStateException("Test")).left()
+                serverMiscommunication(IllegalStateException("Test")).left()
             )
         }
 

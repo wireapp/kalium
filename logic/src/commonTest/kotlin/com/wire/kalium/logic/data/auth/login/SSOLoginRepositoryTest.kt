@@ -156,7 +156,7 @@ class SSOLoginRepositoryTest {
         val actual = ssoLoginRepository.metaData()
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
-        assertEquals(TestNetworkException.generic, actual.value.kaliumException)
+        assertEquals(TestNetworkException.generic, actual.value.rootCause)
         verifySuspend(VerifyMode.exactly(1)) {
             ssoLogin.metaData()
         }
@@ -215,7 +215,7 @@ class SSOLoginRepositoryTest {
         val actual = ssoLoginRepository.getByEmail(TEST_EMAIL)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
-        assertEquals(TestNetworkException.generic, actual.value.kaliumException)
+        assertEquals(TestNetworkException.generic, actual.value.rootCause)
         verifySuspend(VerifyMode.exactly(1)) {
             ssoLogin.getByEmail(TEST_EMAIL)
         }
@@ -261,7 +261,7 @@ class SSOLoginRepositoryTest {
         actual: Either<NetworkFailure, T>
     ) {
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
-        assertEquals(expected, actual.value.kaliumException)
+        assertEquals(expected, actual.value.rootCause)
     }
 
     private companion object {

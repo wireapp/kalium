@@ -19,7 +19,6 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.ProteusFailure
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.message.InvalidMessageContent
 
 sealed class ProteusMessageFailureResolution {
@@ -35,23 +34,23 @@ object ProteusMessageFailureHandler {
             else ProteusMessageFailureResolution.InformUser
         }
 
-        return when (failure.proteusException.code) {
-            ProteusException.Code.DUPLICATE_MESSAGE -> ProteusMessageFailureResolution.Ignore
+        return when (failure.code) {
+            ProteusFailure.Code.DUPLICATE_MESSAGE -> ProteusMessageFailureResolution.Ignore
 
-            ProteusException.Code.SESSION_NOT_FOUND,
-            ProteusException.Code.TOO_DISTANT_FUTURE,
-            ProteusException.Code.STORAGE_ERROR,
-            ProteusException.Code.PREKEY_NOT_FOUND,
-            ProteusException.Code.PANIC,
-            ProteusException.Code.OUTDATED_MESSAGE,
-            ProteusException.Code.LOCAL_FILES_NOT_FOUND -> ProteusMessageFailureResolution.RecoverSession
+            ProteusFailure.Code.SESSION_NOT_FOUND,
+            ProteusFailure.Code.TOO_DISTANT_FUTURE,
+            ProteusFailure.Code.STORAGE_ERROR,
+            ProteusFailure.Code.PREKEY_NOT_FOUND,
+            ProteusFailure.Code.PANIC,
+            ProteusFailure.Code.OUTDATED_MESSAGE,
+            ProteusFailure.Code.LOCAL_FILES_NOT_FOUND -> ProteusMessageFailureResolution.RecoverSession
 
-            ProteusException.Code.REMOTE_IDENTITY_CHANGED,
-            ProteusException.Code.INVALID_SIGNATURE,
-            ProteusException.Code.INVALID_MESSAGE,
-            ProteusException.Code.DECODE_ERROR,
-            ProteusException.Code.IDENTITY_ERROR,
-            ProteusException.Code.UNKNOWN_ERROR -> ProteusMessageFailureResolution.InformUser
+            ProteusFailure.Code.REMOTE_IDENTITY_CHANGED,
+            ProteusFailure.Code.INVALID_SIGNATURE,
+            ProteusFailure.Code.INVALID_MESSAGE,
+            ProteusFailure.Code.DECODE_ERROR,
+            ProteusFailure.Code.IDENTITY_ERROR,
+            ProteusFailure.Code.UNKNOWN_ERROR -> ProteusMessageFailureResolution.InformUser
         }
     }
 }

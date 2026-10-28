@@ -43,8 +43,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse as NetworkConversationResponse
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isMlsStaleMessage
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isMlsStaleMessage
 import com.wire.kalium.util.ConversationPersistenceApi
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.native.HiddenFromObjC
@@ -294,8 +294,8 @@ private fun NetworkConversationResponse.mlsResetInfo(): Either<CoreFailure, Rese
 
 private fun CoreFailure.isMlsStaleMessageConflict(): Boolean =
     this is NetworkFailure.ServerMiscommunication && run {
-        val exception = kaliumException
-        exception is KaliumException.InvalidRequestError && exception.isMlsStaleMessage()
+        val exception = reason
+        exception is ServerError.InvalidRequest && exception.isMlsStaleMessage()
     }
 
 public sealed class ResetMLSConversationResult {

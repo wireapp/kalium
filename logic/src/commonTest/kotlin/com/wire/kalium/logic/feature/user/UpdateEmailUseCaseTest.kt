@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.common.functional.Either
@@ -64,7 +66,7 @@ class UpdateEmailUseCaseTest {
     @Test
     fun givenUpdateEmailFailure_whenInvoked_thenReturnsFailure() = runTest {
         val (arrange, useCase) = Arrangement()
-            .withUpdateSelfEmailFailure(NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException())))
+            .withUpdateSelfEmailFailure(serverMiscommunication(KaliumException.GenericError(IOException())))
             .arrange()
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Failure.GenericFailure>(result)
@@ -78,7 +80,7 @@ class UpdateEmailUseCaseTest {
     fun givenEmailAlreadyInUse_whenUpdatingEmail_thenEmailAlreadyInUseErrorIsReturned() = runTest {
         val (arrange, useCase) = Arrangement()
             .withUpdateSelfEmailFailure(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(
                             400,
@@ -101,7 +103,7 @@ class UpdateEmailUseCaseTest {
     fun givenInvalidEmail_whenUpdatingEmail_thenInvalidEmailErrorIsReturned() = runTest {
         val (arrange, useCase) = Arrangement()
             .withUpdateSelfEmailFailure(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(
                             400,

@@ -17,11 +17,12 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
@@ -155,7 +156,7 @@ class DeleteNodeAssetUseCaseTest {
 
         suspend fun withDeleteFailure() = apply {
             everySuspend { cellsRepository.deleteFile(any(), any()) }.returns(
-                NetworkFailure.ServerMiscommunication(IllegalStateException("Test")).left()
+                serverMiscommunication(IllegalStateException("Test")).left()
             )
         }
 

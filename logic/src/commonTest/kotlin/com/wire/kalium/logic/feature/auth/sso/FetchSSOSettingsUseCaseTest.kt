@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.auth.sso
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.common.functional.Either
@@ -74,7 +76,7 @@ class FetchSSOSettingsUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withSSOSettings(
                 Either.Left(
-                    NetworkFailure.ServerMiscommunication(
+                    serverMiscommunication(
                         KaliumException.InvalidRequestError(
                             GenericAPIErrorResponse(404, "Not Found", "Not Found")
                         )

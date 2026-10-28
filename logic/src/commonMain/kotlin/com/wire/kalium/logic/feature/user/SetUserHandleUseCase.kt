@@ -25,9 +25,9 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isHandleExists
-import com.wire.kalium.network.exceptions.isInvalidHandle
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isHandleExists
+import com.wire.kalium.common.error.isInvalidHandle
 
 public sealed class SetUserHandleResult {
     public data object Success : SetUserHandleResult()
@@ -59,8 +59,8 @@ public class SetUserHandleUseCase internal constructor(
             when (handleState) {
                 is ValidateUserHandleResult.Valid -> accountRepository.updateSelfHandle(handleState.handle).fold(
                     {
-                        if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
-                            handleSpecificError(it.kaliumException as KaliumException.InvalidRequestError)
+                        if (it is NetworkFailure.ServerMiscommunication && it.reason is ServerError.InvalidRequest)
+                            handleSpecificError(it.reason as ServerError.InvalidRequest, it)
                         else SetUserHandleResult.Failure.Generic(it)
                     },
                     {
@@ -74,11 +74,14 @@ public class SetUserHandleUseCase internal constructor(
         }
     }
 
-    private fun handleSpecificError(error: KaliumException.InvalidRequestError): SetUserHandleResult.Failure = with(error) {
+    private fun handleSpecificError(
+        error: ServerError.InvalidRequest,
+        originalFailure: CoreFailure
+    ): SetUserHandleResult.Failure = with(error) {
         when {
             isInvalidHandle() -> SetUserHandleResult.Failure.InvalidHandle
             isHandleExists() -> SetUserHandleResult.Failure.HandleExists
-            else -> SetUserHandleResult.Failure.Generic(NetworkFailure.ServerMiscommunication(this))
+            else -> SetUserHandleResult.Failure.Generic(originalFailure)
         }
     }
 }

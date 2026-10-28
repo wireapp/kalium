@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.data.mls
 
-import com.wire.kalium.network.api.authenticated.client.MLSPublicKeyTypeDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -107,15 +106,4 @@ sealed class CipherSuite(
 
         fun fromTag(tag: UShort) = fromTag(tag.toInt())
     }
-}
-
-fun CipherSuite.signatureAlgorithm(): MLSPublicKeyTypeDTO? = when (this) {
-    CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256 -> MLSPublicKeyTypeDTO.ECDSA_SECP256R1_SHA256
-    CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> MLSPublicKeyTypeDTO.ED25519
-    CipherSuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 -> MLSPublicKeyTypeDTO.ED25519
-    CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384 -> MLSPublicKeyTypeDTO.ECDSA_SECP384R1_SHA384
-    CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521 -> MLSPublicKeyTypeDTO.ECDSA_SECP521R1_SHA512
-    CipherSuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 -> MLSPublicKeyTypeDTO.ED448
-    CipherSuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> MLSPublicKeyTypeDTO.ED448
-    is CipherSuite.UNKNOWN -> null
 }

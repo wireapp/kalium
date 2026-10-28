@@ -24,8 +24,8 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenReposit
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFound
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isNotFound
 
 /**
  * This use case will deregister the current push notification token.
@@ -52,8 +52,8 @@ internal class DeregisterTokenUseCaseImpl(
             clientRepository.deregisterToken(notiToken.token)
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication &&
-                it.kaliumException is KaliumException.InvalidRequestError &&
-                (it.kaliumException as KaliumException.InvalidRequestError).isNotFound()
+                it.reason is ServerError.InvalidRequest &&
+                (it.reason as ServerError.InvalidRequest).isNotFound()
             ) {
                 DeregisterTokenUseCase.Result.Failure.NotFound
             }

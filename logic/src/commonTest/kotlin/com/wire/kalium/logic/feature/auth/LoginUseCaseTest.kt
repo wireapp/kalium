@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.AccountTokens
@@ -238,7 +240,7 @@ class LoginUseCaseTest {
     @Test
     fun givenWrongPassword_whenLoggingIn_thenReturnInvalidCredentials() = runTest {
         val invalidCredentialsFailure =
-            NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
+            serverMiscommunication(TestNetworkException.invalidCredentials)
 
         val (arrangement, loginUseCase) = Arrangement()
             .withLoginUsingEmailResulting(Either.Left(invalidCredentialsFailure))
@@ -288,7 +290,7 @@ class LoginUseCaseTest {
 
     @Test
     fun givenBadRequest_whenLoggingIn_thenReturnInvalidCredentials() = runTest {
-        val badRequestFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
+        val badRequestFailure = serverMiscommunication(TestNetworkException.badRequest)
 
         val (arrangement, loginUseCase) = Arrangement()
             .withLoginUsingEmailResulting(Either.Left(badRequestFailure))
@@ -338,7 +340,7 @@ class LoginUseCaseTest {
 
     @Test
     fun givenMissingAuthenticationCode_whenLoggingIn_thenReturnMissing2FA() = runTest {
-        val missingAuthCodeFailure = NetworkFailure.ServerMiscommunication(
+        val missingAuthCodeFailure = serverMiscommunication(
             TestNetworkException.missingAuthenticationCode
         )
 
@@ -378,7 +380,7 @@ class LoginUseCaseTest {
 
     @Test
     fun givenInvalidAuthenticationCode_whenLoggingIn_thenReturnInvalid2FA() = runTest {
-        val invalidAuthCodeFailure = NetworkFailure.ServerMiscommunication(
+        val invalidAuthCodeFailure = serverMiscommunication(
             TestNetworkException.invalidAuthenticationCode
         )
 
@@ -502,7 +504,7 @@ class LoginUseCaseTest {
 
     @Test
     fun givenAccountSuspended_whenLoggingIn_thenReturnAccountSuspendedFailure() = runTest {
-        val invalidAuthCodeFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.accountSuspended)
+        val invalidAuthCodeFailure = serverMiscommunication(TestNetworkException.accountSuspended)
 
         val (arrangement, loginUseCase) = Arrangement()
             .withLoginUsingEmailResulting(Either.Left(invalidAuthCodeFailure))
@@ -534,7 +536,7 @@ class LoginUseCaseTest {
 
     @Test
     fun givenAccountPendingActivation_whenLoggingIn_thenReturnAccountPendingActivationFailure() = runTest {
-        val invalidAuthCodeFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.accountPendingActivation)
+        val invalidAuthCodeFailure = serverMiscommunication(TestNetworkException.accountPendingActivation)
 
         val (arrangement, loginUseCase) = Arrangement()
             .withLoginUsingEmailResulting(Either.Left(invalidAuthCodeFailure))

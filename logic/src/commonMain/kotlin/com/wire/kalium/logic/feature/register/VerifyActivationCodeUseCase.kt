@@ -21,8 +21,8 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isInvalidCode
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isInvalidCode
 
 /**
  * Use case to validate an activation code for a given email address.
@@ -40,8 +40,8 @@ internal class VerifyActivationCodeUseCase internal constructor(
             .fold({
                 if (
                     it is NetworkFailure.ServerMiscommunication &&
-                    it.kaliumException is KaliumException.InvalidRequestError &&
-                    (it.kaliumException as KaliumException.InvalidRequestError).isInvalidCode()
+                    it.reason is ServerError.InvalidRequest &&
+                    (it.reason as ServerError.InvalidRequest).isInvalidCode()
                 ) {
                     VerifyActivationCodeResult.Failure.InvalidCode
                 } else {

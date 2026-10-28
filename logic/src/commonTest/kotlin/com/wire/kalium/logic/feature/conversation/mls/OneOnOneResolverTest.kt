@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -335,7 +337,7 @@ class OneOnOneResolverTest {
             withGetUsersWithOneOnOneConversationReturning(oneOnOneUsers)
             withGetProtocolForUser(
                 Either.Left(
-                    NetworkFailure.ServerMiscommunication(
+                    serverMiscommunication(
                         KaliumException.InvalidRequestError(
                             GenericAPIErrorResponse(420, "", "Unknown Status Code")
                         )
@@ -357,7 +359,7 @@ class OneOnOneResolverTest {
     fun givenThrottleErrorThenSuccess_whenResolveAllOneOnOneConversations_thenSucceeds() = runTest {
         val oneOnOneUsers = listOf(TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID))
         val throttleFailure = Either.Left(
-            NetworkFailure.ServerMiscommunication(
+            serverMiscommunication(
                 KaliumException.InvalidRequestError(
                     GenericAPIErrorResponse(420, "", "Unknown Status Code")
                 )

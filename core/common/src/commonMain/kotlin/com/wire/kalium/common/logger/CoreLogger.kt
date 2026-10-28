@@ -18,36 +18,12 @@
 
 package com.wire.kalium.common.logger
 
-import com.wire.kalium.cryptography.CryptographyLogger
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.network.NetworkLogger
-import com.wire.kalium.network.NetworkUtilLogger
-import com.wire.kalium.network.utils.NetworkModelLogger
-import com.wire.kalium.persistence.PersistenceLogger
 import com.wire.kalium.util.serialization.toJsonElement
 
-private var kaliumLoggerConfig = KaliumLogger.Config.DISABLED
 var kaliumLogger = KaliumLogger.disabled()
 var callingLogger = KaliumLogger.disabled()
-
-object CoreLogger {
-
-    fun init(config: KaliumLogger.Config) {
-        kaliumLoggerConfig = config
-        kaliumLogger = KaliumLogger(config = kaliumLoggerConfig, tag = "CoreLogic")
-        callingLogger = KaliumLogger(config = kaliumLoggerConfig, tag = "Calling")
-        NetworkLogger.init(config = config)
-        NetworkModelLogger.init(config = config)
-        NetworkUtilLogger.init(config = config)
-        CryptographyLogger.init(config = config)
-        PersistenceLogger.init(config = config)
-    }
-
-    fun setLoggingLevel(level: KaliumLogLevel) {
-        kaliumLoggerConfig.logLevel = level
-    }
-}
 
 /**
  * Log a structured JSON message, in the following format:

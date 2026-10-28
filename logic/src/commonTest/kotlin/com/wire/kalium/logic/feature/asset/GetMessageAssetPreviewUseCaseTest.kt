@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.asset
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.EncryptionFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -102,8 +104,8 @@ class GetMessageAssetPreviewUseCaseTest {
     @Test
     fun permanentFailuresDoNotRequestAnotherPreviewDownload() = runTest {
         val failures = listOf(
-            NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(404, "gone", "not-found"))),
-            NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(400, "invalid", "bad-request"))),
+            serverMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(404, "gone", "not-found"))),
+            serverMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(400, "invalid", "bad-request"))),
             NetworkFailure.FederatedBackendFailure.FederationDenied("federation-denied"),
             NetworkFailure.FederatedBackendFailure.FailedDomains(listOf("domain")),
             EncryptionFailure.WrongAssetHash,
@@ -133,7 +135,7 @@ class GetMessageAssetPreviewUseCaseTest {
         val failures: List<CoreFailure> = listOf(
             NetworkFailure.NoNetworkConnection(IOException("offline")),
             NetworkFailure.ProxyError(IOException("proxy unavailable")),
-            NetworkFailure.ServerMiscommunication(KaliumException.ServerError(GenericAPIErrorResponse(503, "unavailable", "server-error"))),
+            serverMiscommunication(KaliumException.ServerError(GenericAPIErrorResponse(503, "unavailable", "server-error"))),
         )
         val assets = mock<AssetRepository>()
         val messages = mock<MessageRepository>()

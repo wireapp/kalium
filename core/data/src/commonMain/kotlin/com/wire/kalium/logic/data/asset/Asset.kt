@@ -18,28 +18,10 @@
 
 package com.wire.kalium.logic.data.asset
 
-import com.wire.kalium.network.api.model.ConversationId
-import okio.Path
-
 data class UploadedAssetId(
     val key: String,
     val domain: String,
     val assetToken: String? = null
-)
-
-/**
- * On creation of this model, the use case should "calculate" the logic.
- * For example, rules that apply for an eternal/public asset
- */
-data class UploadAssetData(
-    val tempEncryptedDataPath: Path,
-    val dataSize: Long,
-    val assetType: String,
-    val isPublic: Boolean,
-    val retentionType: RetentionType,
-    val conversationId: ConversationId? = null,
-    val filename: String? = null,
-    val filetype: String? = null,
 )
 
 enum class RetentionType {

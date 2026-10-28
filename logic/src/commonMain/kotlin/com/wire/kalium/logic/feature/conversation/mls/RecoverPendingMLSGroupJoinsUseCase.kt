@@ -32,8 +32,8 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.sync.SyncStateObserver
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFound
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isNotFound
 
 internal interface RecoverPendingMLSGroupJoinsUseCase {
     suspend operator fun invoke()
@@ -88,8 +88,8 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
                     val failure = transportFailure.normalizeFederatedBackendConflict()
                     kaliumLogger.w("Failed to recover pending MLS group join for ${conversationId.toLogString()}: $failure")
                     if (failure is NetworkFailure.ServerMiscommunication &&
-                        failure.kaliumException is KaliumException.InvalidRequestError &&
-                        (failure.kaliumException as KaliumException.InvalidRequestError).isNotFound()
+                        failure.reason is ServerError.InvalidRequest &&
+                        (failure.reason as ServerError.InvalidRequest).isNotFound()
                     ) {
                         successfulConversationIds.add(conversationId)
                     } else if (failure is StorageFailure.DataNotFound) {

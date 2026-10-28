@@ -17,13 +17,14 @@
  */
 package com.wire.kalium.cells.data
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.cells.domain.CellUploadRequest
 import com.wire.kalium.cells.domain.CellUploadState
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.PreCheckResult
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.NetworkState
@@ -181,7 +182,7 @@ class CellUploadCoordinatorIntegrationTest {
                 val progress = invocation.args[2] as (Long) -> Unit
                 if (failNextTransfer) {
                     failNextTransfer = false
-                    NetworkFailure.ServerMiscommunication(Exception("upload failed")).left()
+                    serverMiscommunication(Exception("upload failed")).left()
                 } else {
                     val transfer = CompletableDeferred<Unit>()
                     transfers[node.path.substringAfterLast('/')] = transfer

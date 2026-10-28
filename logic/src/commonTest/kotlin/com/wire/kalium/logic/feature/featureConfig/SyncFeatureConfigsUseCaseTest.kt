@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.featureConfig
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.CoreFailure
@@ -529,7 +531,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenRepositoryCallFailWithInvalidCredentials_thenOperationDeniedIsReturned() = runTest {
         val operationDeniedException = TestNetworkException.operationDenied
         val (arrangement, getFileSharingStatusUseCase) = arrangement()
-            .withRemoteFeatureConfigsReturning(Either.Left(NetworkFailure.ServerMiscommunication(operationDeniedException)))
+            .withRemoteFeatureConfigsReturning(Either.Left(serverMiscommunication(operationDeniedException)))
             .arrange()
 
         getFileSharingStatusUseCase.invoke()
@@ -543,7 +545,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenRepositoryCallFailWithUserThatNotInTheTeam_thenNoTeamIsReturned() = runTest {
         val noTeamException = TestNetworkException.noTeam
         val (arrangement, getFileSharingStatusUseCase) = arrangement()
-            .withRemoteFeatureConfigsReturning(Either.Left(NetworkFailure.ServerMiscommunication(noTeamException)))
+            .withRemoteFeatureConfigsReturning(Either.Left(serverMiscommunication(noTeamException)))
             .arrange()
 
         getFileSharingStatusUseCase.invoke()

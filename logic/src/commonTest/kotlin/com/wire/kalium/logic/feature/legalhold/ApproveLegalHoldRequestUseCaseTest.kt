@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.feature.legalhold
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
@@ -77,7 +78,7 @@ class ApproveLegalHoldRequestUseCaseTest {
         // given
         val selfTeamId = TeamId(TestTeam.TEAM.id)
         val password = "password"
-        val failure = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
+        val failure = serverMiscommunication(KaliumException.GenericError(IOException("no internet")))
         val (_, useCase) = Arrangement()
             .withGetSelfTeamResult(Either.Right(selfTeamId))
             .withApproveLegalHoldResult(Either.Left(failure))
@@ -94,7 +95,7 @@ class ApproveLegalHoldRequestUseCaseTest {
         // given
         val selfTeamId = TeamId(TestTeam.TEAM.id)
         val password = "password"
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
+        val failure = serverMiscommunication(TestNetworkException.badRequest)
         val (_, useCase) = Arrangement()
             .withGetSelfTeamResult(Either.Right(selfTeamId))
             .withApproveLegalHoldResult(Either.Left(failure))
@@ -109,7 +110,7 @@ class ApproveLegalHoldRequestUseCaseTest {
     fun givenApproveFailsDueToAccessDenied_whenDeleting_thenPasswordRequiredErrorShouldBeReturned() = runTest {
         // given
         val selfTeamId = TeamId(TestTeam.TEAM.id)
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied)
+        val failure = serverMiscommunication(TestNetworkException.accessDenied)
         val (_, useCase) = Arrangement()
             .withGetSelfTeamResult(Either.Right(selfTeamId))
             .withApproveLegalHoldResult(Either.Left(failure))

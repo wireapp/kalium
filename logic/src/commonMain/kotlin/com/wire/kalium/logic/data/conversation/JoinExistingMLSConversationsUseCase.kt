@@ -37,8 +37,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.sync.SlowSyncProgress
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isTooManyRequests
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isTooManyRequests
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -206,7 +206,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                     )
                     Either.Left(failure)
                 } else if (failure is NetworkFailure.ServerMiscommunication
-                    && failure.kaliumException is KaliumException.InvalidRequestError
+                    && failure.reason is ServerError.InvalidRequest
                 ) {
                     kaliumLogger.w(
                         "Failed to establish mls group for ${conversation.id.toLogString()} " +
@@ -256,7 +256,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
 
     private fun CoreFailure.isThrottleFailure(): Boolean =
         this is NetworkFailure.ServerMiscommunication &&
-            (kaliumException as? KaliumException.InvalidRequestError)?.isTooManyRequests() == true
+            (reason as? ServerError.InvalidRequest)?.isTooManyRequests() == true
 
     private suspend fun enqueueForForegroundRecovery(conversationId: ConversationId, failure: CoreFailure) {
         kaliumLogger.w(

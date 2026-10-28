@@ -40,8 +40,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isWrongConversationPassword
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isWrongConversationPassword
 import com.wire.kalium.persistence.dao.message.LocalId
 
 /**
@@ -126,8 +126,8 @@ public class JoinConversationViaCodeUseCase internal constructor(
 
     private fun onError(networkFailure: NetworkFailure): Result.Failure = when (networkFailure) {
         is NetworkFailure.ServerMiscommunication -> {
-            if (networkFailure.kaliumException is KaliumException.InvalidRequestError &&
-                (networkFailure.kaliumException as KaliumException.InvalidRequestError).isWrongConversationPassword()
+            if (networkFailure.reason is ServerError.InvalidRequest &&
+                (networkFailure.reason as ServerError.InvalidRequest).isWrongConversationPassword()
             ) {
                 Result.Failure.IncorrectPassword
             } else {

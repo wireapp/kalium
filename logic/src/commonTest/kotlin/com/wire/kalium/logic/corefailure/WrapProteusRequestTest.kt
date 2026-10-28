@@ -44,6 +44,6 @@ class WrapProteusRequestTest {
         val actual = wrapProteusRequest { throw expected }
 
         assertIs<Either.Left<ProteusFailure>>(actual)
-        assertEquals(expected, actual.value.proteusException)
+        assertEquals(expected, actual.value.rootCause)
     }
 }

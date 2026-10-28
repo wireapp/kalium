@@ -18,7 +18,8 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -113,7 +114,7 @@ class FetchUsersClientsFromRemoteUseCaseTest {
         suspend fun withGetOtherUserClientsErrorResponse(exception: KaliumException): Arrangement {
             everySuspend {
                 clientRemoteRepository.fetchOtherUserClients(any())
-            } returns Either.Left(NetworkFailure.ServerMiscommunication(exception))
+            } returns Either.Left(serverMiscommunication(exception))
             return this
         }
 

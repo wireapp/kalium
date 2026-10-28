@@ -44,8 +44,8 @@ import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNoTeam
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isNoTeam
 
 /** Fetch and apply the team's feature settings. */
 internal interface SyncFeatureConfigsUseCase {
@@ -138,9 +138,9 @@ internal class SyncFeatureConfigsUseCaseImpl(
         }.onFailure { networkFailure ->
             if (
                 networkFailure is NetworkFailure.ServerMiscommunication &&
-                networkFailure.kaliumException is KaliumException.InvalidRequestError
+                networkFailure.reason is ServerError.InvalidRequest
             ) {
-                if ((networkFailure.kaliumException as KaliumException.InvalidRequestError).isNoTeam()) {
+                if ((networkFailure.reason as ServerError.InvalidRequest).isNoTeam()) {
                     kaliumLogger.i("this user doesn't belong to a team")
                 } else {
                     kaliumLogger.d("operation denied due to insufficient permissions")

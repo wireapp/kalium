@@ -27,14 +27,14 @@ import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isBlackListedEmail
-import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
-import com.wire.kalium.network.exceptions.isInvalidCode
-import com.wire.kalium.network.exceptions.isInvalidEmail
-import com.wire.kalium.network.exceptions.isKeyExists
-import com.wire.kalium.network.exceptions.isTooManyMembers
-import com.wire.kalium.network.exceptions.isUserCreationRestricted
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isBlackListedEmail
+import com.wire.kalium.common.error.isDomainBlockedForRegistration
+import com.wire.kalium.common.error.isInvalidCode
+import com.wire.kalium.common.error.isInvalidEmail
+import com.wire.kalium.common.error.isKeyExists
+import com.wire.kalium.common.error.isTooManyMembers
+import com.wire.kalium.common.error.isUserCreationRestricted
 import kotlin.uuid.Uuid
 
 public sealed class RegisterParam(
@@ -132,8 +132,8 @@ public class RegisterAccountUseCase internal constructor(
     }.map { (ssoId, authTokens) ->
         RegisterResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials)
     }.fold({
-        if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-            handleSpecialErrors(it.kaliumException as KaliumException.InvalidRequestError)
+        if (it is NetworkFailure.ServerMiscommunication && it.reason is ServerError.InvalidRequest) {
+            handleSpecialErrors(it.reason as ServerError.InvalidRequest, it)
         } else {
             RegisterResult.Failure.Generic(it)
         }
@@ -141,7 +141,7 @@ public class RegisterAccountUseCase internal constructor(
         it
     })
 
-    private fun handleSpecialErrors(error: KaliumException.InvalidRequestError) = with(error) {
+    private fun handleSpecialErrors(error: ServerError.InvalidRequest, originalFailure: CoreFailure) = with(error) {
         when {
             isInvalidEmail() -> RegisterResult.Failure.InvalidEmail
             isInvalidCode() -> RegisterResult.Failure.InvalidActivationCode
@@ -150,7 +150,7 @@ public class RegisterAccountUseCase internal constructor(
             isUserCreationRestricted() -> RegisterResult.Failure.UserCreationRestricted
             isTooManyMembers() -> RegisterResult.Failure.TeamMembersLimitReached
             isDomainBlockedForRegistration() -> RegisterResult.Failure.EmailDomainBlocked
-            else -> RegisterResult.Failure.Generic(NetworkFailure.ServerMiscommunication(this))
+            else -> RegisterResult.Failure.Generic(originalFailure)
         }
     }
 }

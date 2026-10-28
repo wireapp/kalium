@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -494,7 +496,7 @@ class JoinExistingMLSConversationUseCaseTest {
         companion object {
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
 
-            val MLS_UNSUPPORTED_PROPOSAL_FAILURE = NetworkFailure.ServerMiscommunication(
+            val MLS_UNSUPPORTED_PROPOSAL_FAILURE = serverMiscommunication(
                 KaliumException.InvalidRequestError(
                     GenericAPIErrorResponse(
                         422,

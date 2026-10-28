@@ -23,8 +23,8 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
 import com.wire.kalium.logic.feature.register.RequestActivationCodeUseCase
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isTooManyRequests
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isTooManyRequests
 
 /**
  * Sends a verification code to an email.
@@ -58,10 +58,10 @@ public class RequestSecondFactorVerificationCodeUseCase internal constructor(
         verifiableAction: VerifiableAction,
     ): Result = secondFactorVerificationRepository.requestVerificationCode(email, verifiableAction).fold({
         if (it is NetworkFailure.ServerMiscommunication
-            && it.kaliumException is KaliumException.InvalidRequestError
-            && (it.kaliumException as KaliumException.InvalidRequestError).isTooManyRequests()
+            && it.reason is ServerError.InvalidRequest
+            && (it.reason as ServerError.InvalidRequest).isTooManyRequests()
         ) {
-            Result.Failure.TooManyRequests((it.kaliumException as KaliumException.InvalidRequestError).retryAfterSeconds)
+            Result.Failure.TooManyRequests((it.reason as ServerError.InvalidRequest).retryAfterSeconds)
         } else {
             Result.Failure.Generic(it)
         }

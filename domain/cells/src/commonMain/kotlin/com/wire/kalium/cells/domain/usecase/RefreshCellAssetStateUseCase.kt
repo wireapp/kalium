@@ -36,7 +36,7 @@ import com.wire.kalium.common.functional.retry
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.CellAssetContent
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
@@ -176,8 +176,8 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
 
 @Suppress("ReturnCount")
 internal fun NetworkFailure.isAssetNotFound(): Boolean {
-    val error = (this as? ServerMiscommunication)?.kaliumException ?: return false
-    val response = (error as? KaliumException.ServerError)?.errorResponse ?: return false
+    val error = (this as? ServerMiscommunication)?.reason ?: return false
+    val response = (error as? ServerError.Server)?.errorResponse ?: return false
     return response.code == HttpStatusCode.NotFound.value || response.code == HttpStatusCode.Forbidden.value
 }
 

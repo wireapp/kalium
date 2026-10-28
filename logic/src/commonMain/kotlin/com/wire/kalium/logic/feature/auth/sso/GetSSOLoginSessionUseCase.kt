@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import io.ktor.http.HttpStatusCode
 
 public sealed class SSOLoginSessionResult {
@@ -93,7 +93,7 @@ internal class GetSSOLoginSessionUseCaseImpl(
         )
 
     private fun NetworkFailure.toLoginFailure(): SSOLoginSessionResult.Failure {
-        val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError
+        val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)?.reason as? ServerError.InvalidRequest
         return if (invalidRequest?.errorResponse?.code == HttpStatusCode.BadRequest.value) {
             SSOLoginSessionResult.Failure.InvalidCookie
         } else {

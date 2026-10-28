@@ -275,7 +275,7 @@ class MessageEnvelopeCreatorTest {
         creator.createOutgoingEnvelope(arrangement.proteusContext, TEST_RECIPIENTS, TestMessage.TEXT_MESSAGE)
             .shouldFail {
                 assertIs<ProteusFailure>(it)
-                assertEquals(exception, it.proteusException)
+                assertEquals(exception, it.rootCause)
             }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -493,7 +493,7 @@ class MessageEnvelopeCreatorTest {
         creator.createOutgoingBroadcastEnvelope(arrangement.proteusContext, TEST_RECIPIENTS, TestMessage.BROADCAST_MESSAGE)
             .shouldFail {
                 assertIs<ProteusFailure>(it)
-                assertEquals(exception, it.proteusException)
+                assertEquals(exception, it.rootCause)
             }
     }
 

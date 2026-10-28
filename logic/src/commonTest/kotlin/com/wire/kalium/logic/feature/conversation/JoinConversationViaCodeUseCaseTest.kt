@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -315,7 +317,7 @@ class JoinConversationViaCodeUseCaseTest {
         val (useCase, arrangement) = Arrangement()
             .withJoinViaInviteCodeReturns(
                 code, key, null, password, Either.Left(
-                    NetworkFailure.ServerMiscommunication(
+                    serverMiscommunication(
                         KaliumException.InvalidRequestError(
                             GenericAPIErrorResponse(403, "wrong password", "invalid-conversation-password")
                         )

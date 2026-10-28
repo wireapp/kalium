@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.asset
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
@@ -153,7 +155,7 @@ class GetMessageAssetUseCaseTest {
             // Given
             val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
             val someMessageId = "some-message-id"
-            val notFoundFailure = NetworkFailure.ServerMiscommunication(
+            val notFoundFailure = serverMiscommunication(
                 KaliumException.InvalidRequestError(
                     GenericAPIErrorResponse(
                         404,

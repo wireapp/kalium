@@ -17,9 +17,10 @@
  */
 package com.wire.kalium.cells.domain.usecase.versioning
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.cells.domain.FakeCellsRepository
 import com.wire.kalium.cells.domain.model.NodeVersion
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -40,7 +41,7 @@ class GetNodeVersionsUseCaseTest {
 
     @Test
     fun given_repository_returns_failure_WHEN_invoking_use_case_THEN_it_returns_failure() = runTest {
-        val failure = Either.Left(NetworkFailure.ServerMiscommunication(IllegalStateException()))
+        val failure = Either.Left(serverMiscommunication(IllegalStateException()))
         fakeRepository.result = failure
         val useCase = GetNodeVersionsUseCaseImpl(fakeRepository)
 

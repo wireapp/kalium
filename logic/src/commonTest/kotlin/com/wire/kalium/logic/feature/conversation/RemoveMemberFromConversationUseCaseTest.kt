@@ -18,8 +18,9 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -122,7 +123,7 @@ class RemoveMemberFromConversationUseCaseTest {
 
     private companion object {
         fun adminlessConversationFailure(eligibleMembers: List<com.wire.kalium.logic.data.user.UserId>) =
-            NetworkFailure.ServerMiscommunication(
+            serverMiscommunication(
                 AdminlessConversationError(
                     AdminlessConversationErrorResponse(
                         code = 400,

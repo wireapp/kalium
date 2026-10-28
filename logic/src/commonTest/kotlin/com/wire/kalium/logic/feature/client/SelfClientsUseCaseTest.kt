@@ -18,7 +18,8 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -81,7 +82,7 @@ class SelfClientsUseCaseTest {
 
     @Test
     fun givenSelfListOfClientsFail_thenTheErrorPropagated() = runTest {
-        val expected = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("some error")))
+        val expected = serverMiscommunication(KaliumException.GenericError(IOException("some error")))
         everySuspend {
             clientRepository.selfListOfClients()
         } returns Either.Left(expected)

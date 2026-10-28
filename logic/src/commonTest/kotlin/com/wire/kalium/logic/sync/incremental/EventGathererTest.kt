@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -120,7 +122,7 @@ class EventGathererTest {
 //     fun givenWebSocketOpensAndFetchingPendingEventsFail_whenGathering_thenGatheringShouldFailWithSyncException() = runTest(testScope) {
 //         val liveEventsChannel = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
 //
-//         val failureCause = NetworkFailure.ServerMiscommunication(IOException())
+//         val failureCause = serverMiscommunication(IOException())
 //         val (_, eventGatherer) = Arrangement()
 //             .withLastEventIdReturning(Either.Right("lastEventId"))
 //             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
@@ -143,7 +145,7 @@ class EventGathererTest {
 //     fun givenWebSocketReceivesEventsAndFetchingPendingEventsFail_whenGathering_thenEventsShouldNotBeEmitted() = runTest(testScope) {
 //         val liveEventsChannel = Channel<WebSocketEvent<EventVersion>>(capacity = Channel.UNLIMITED)
 //
-//         val failureCause = NetworkFailure.ServerMiscommunication(IOException())
+//         val failureCause = serverMiscommunication(IOException())
 //         val (_, eventGatherer) = Arrangement()
 //             .withLastEventIdReturning(Either.Right("lastEventId"))
 //             .withLiveEventsReturning(Either.Right(liveEventsChannel.receiveAsFlow()))

@@ -37,8 +37,8 @@ import com.wire.kalium.logic.data.message.PendingSubconversationProposal
 import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationNotFound
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isConversationNotFound
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -205,10 +205,10 @@ internal class PendingProposalSchedulerImpl(
 
 }
 
-private fun Throwable?.isConversationNotFoundError() =
-    this is KaliumException.InvalidRequestError && isConversationNotFound()
+private fun ServerError?.isConversationNotFoundError() =
+    this is ServerError.InvalidRequest && isConversationNotFound()
 
 private fun CoreFailure.isUnrecoverableProposalFailure() =
     this is MLSFailure.ConversationNotFound ||
         this is MLSFailure.StaleProposal ||
-        this is NetworkFailure.ServerMiscommunication && kaliumException.isConversationNotFoundError()
+        this is NetworkFailure.ServerMiscommunication && reason.isConversationNotFoundError()

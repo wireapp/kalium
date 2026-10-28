@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.auth.verification
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
@@ -68,7 +70,7 @@ class RequestSecondFactorVerificationCodeUseCaseTest {
 
     @Test
     fun givenRepositoryFailsWithTooManyRequests_whenRequesting2FACode_thenShouldFailWithTooManyRequests() = runTest {
-        val networkFailure = NetworkFailure.ServerMiscommunication(
+        val networkFailure = serverMiscommunication(
             KaliumException.InvalidRequestError(
                 GenericAPIErrorResponse(HttpStatusCode.TooManyRequests.value, "", "too-many-requests")
             )
@@ -88,7 +90,7 @@ class RequestSecondFactorVerificationCodeUseCaseTest {
     @Test
     fun rateLimitDelaySurvivesUseCaseMapping() = runTest {
         for (seconds in listOf(287, 0, null)) {
-            val failure = NetworkFailure.ServerMiscommunication(
+            val failure = serverMiscommunication(
                 KaliumException.InvalidRequestError(
                     GenericAPIErrorResponse(429, "", "too-many-requests"), retryAfterSeconds = seconds
                 )

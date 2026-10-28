@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -319,7 +321,7 @@ class ClientRepositoryTest {
 
     @Test
     fun whenSelfListOfClientsIsFail_thenTheErrorIsPropagated() = runTest {
-        val expected: NetworkResponse.Error = NetworkResponse.Error(TEST_FAILURE.kaliumException)
+        val expected: NetworkResponse.Error = NetworkResponse.Error(TEST_FAILURE.rootCause as KaliumException)
 
         val (_, clientRepository) = Arrangement()
             .withFetchSelfUserClient(expected)
@@ -327,7 +329,7 @@ class ClientRepositoryTest {
 
         clientRepository.selfListOfClients().shouldFail {
             assertIs<NetworkFailure.ServerMiscommunication>(it)
-            assertEquals(expected.kException, it.kaliumException)
+            assertEquals(expected.kException, it.rootCause)
         }
     }
 
@@ -500,7 +502,7 @@ class ClientRepositoryTest {
         val MLS_CIPHER_SUITE = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
-        val TEST_FAILURE = NetworkFailure.ServerMiscommunication(
+        val TEST_FAILURE = serverMiscommunication(
             KaliumException.InvalidRequestError(
                 GenericAPIErrorResponse(
                     420, "forbidden", "forbidden"

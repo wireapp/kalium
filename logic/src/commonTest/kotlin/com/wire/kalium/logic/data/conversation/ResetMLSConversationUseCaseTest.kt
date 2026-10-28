@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
@@ -186,7 +188,7 @@ class ResetMLSConversationUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withFeatureEnabled()
             .withResetMlsConversationResponses(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(409, "epoch is too old", "mls-stale-message")
                     )
@@ -230,12 +232,12 @@ class ResetMLSConversationUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withFeatureEnabled()
             .withResetMlsConversationResponses(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(409, "epoch is too old", "mls-stale-message")
                     )
                 ).left(),
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(409, "epoch is too old", "mls-stale-message")
                     )

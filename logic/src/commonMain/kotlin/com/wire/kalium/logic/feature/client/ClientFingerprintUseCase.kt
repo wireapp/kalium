@@ -28,7 +28,6 @@ import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.toCrypto
@@ -72,8 +71,8 @@ internal class ClientFingerprintUseCaseImpl internal constructor(
         clientId: ClientId,
         proteusContext: ProteusCoreCryptoContext
     ): Either<CoreFailure, String> =
-        when (proteusFailure.proteusException.code) {
-            ProteusException.Code.SESSION_NOT_FOUND -> onSessionNotFound(userId, clientId, proteusContext)
+        when (proteusFailure.code) {
+            ProteusFailure.Code.SESSION_NOT_FOUND -> onSessionNotFound(userId, clientId, proteusContext)
             else -> Either.Left(proteusFailure)
         }
 

@@ -86,6 +86,7 @@ kotlin {
                 api(projects.domain.work)
                 implementation(projects.data.network)
                 api(projects.core.data)
+                api(projects.core.failures)
                 implementation(projects.data.dataMappers)
                 api(projects.domain.messaging.receiving)
                 api(projects.data.networkUtil)

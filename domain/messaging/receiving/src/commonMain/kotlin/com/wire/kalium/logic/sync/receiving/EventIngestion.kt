@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.common.error.serverMiscommunication
+
+import com.wire.kalium.common.error.ServerError
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
@@ -40,7 +43,6 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponseToSto
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -163,7 +165,7 @@ class EventIngestion(
                 hasMore = page.hasMore
                 lastFetchedNotificationId = page.notifications.lastOrNull()?.id ?: lastFetchedNotificationId
             } else {
-                return Either.Left(NetworkFailure.ServerMiscommunication(notificationsPageResult.kException))
+                return Either.Left(serverMiscommunication(notificationsPageResult.kException))
             }
         }
         currentCoroutineContext().ensureActive()
@@ -264,7 +266,7 @@ class EventIngestion(
             }
             val sent = notificationApi.acknowledgeEventsOnOpenSession(ackClientId, marker.orEmpty(), request)
             if (!sent.isSuccessful()) {
-                throw KaliumSyncException("Acknowledgement failed", NetworkFailure.ServerMiscommunication(sent.kException))
+                throw KaliumSyncException("Acknowledgement failed", serverMiscommunication(sent.kException))
             }
         }
     }
@@ -286,8 +288,8 @@ class EventIngestion(
         )
 
     private fun throwPendingEventException(failure: CoreFailure): Nothing {
-        val networkCause = (failure as? NetworkFailure.ServerMiscommunication)?.rootCause
-        val isEventNotFound = networkCause is KaliumException.InvalidRequestError && networkCause.errorResponse.code == NOT_FOUND
+        val networkCause = (failure as? NetworkFailure.ServerMiscommunication)?.reason
+        val isEventNotFound = networkCause is ServerError.InvalidRequest && networkCause.errorResponse.code == NOT_FOUND
         throw KaliumSyncException(
             message = "Failure to fetch pending events, aborting Incremental Sync",
             coreFailureCause = if (isEventNotFound) CoreFailure.SyncEventOrClientNotFound else failure

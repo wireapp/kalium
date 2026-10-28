@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
@@ -71,7 +73,7 @@ class GetLoginFlowForDomainUseCaseTest {
     fun givenEmail_whenSsoCodeByEmailReturnsNotFound_thenFallbackToDomainRegistration() = runTest {
         val notFoundError = KaliumException.InvalidRequestError(GenericAPIErrorResponse(404, "", "not-found"))
         val (arrangement, useCase) = Arrangement()
-            .withSsoCodeByEmailResult(NetworkFailure.ServerMiscommunication(notFoundError).left())
+            .withSsoCodeByEmailResult(serverMiscommunication(notFoundError).left())
             .withDomainRegistrationResult(LoginDomainPath.Default.right())
             .arrange()
 
@@ -85,7 +87,7 @@ class GetLoginFlowForDomainUseCaseTest {
     @Test
     fun givenEmail_whenSsoCodeByEmailReturnsGenericError_thenDoNotFallbackToDomainRegistration() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSsoCodeByEmailResult(NetworkFailure.ServerMiscommunication(RuntimeException()).left())
+            .withSsoCodeByEmailResult(serverMiscommunication(RuntimeException()).left())
             .arrange()
 
         val result = useCase(Arrangement.EMAIL)
@@ -98,7 +100,7 @@ class GetLoginFlowForDomainUseCaseTest {
     @Test
     fun givenEmail_whenInvokedAndError_thenBubbleUpError() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withDomainRegistrationResult(NetworkFailure.ServerMiscommunication(RuntimeException()).left())
+            .withDomainRegistrationResult(serverMiscommunication(RuntimeException()).left())
             .arrange()
 
         val result = useCase(Arrangement.EMAIL)
@@ -144,7 +146,7 @@ class GetLoginFlowForDomainUseCaseTest {
     fun givenEmail_whenInvokedAndErrorBecauseOfEnterpriseServiceNotEnabled_thenReturnSuccessNoRegistration() = runTest {
         val enterpriseServiceNotEnabledError = KaliumException.ServerError(GenericAPIErrorResponse(503, "", "enterprise-service-not-enabled"))
         val (arrangement, useCase) = Arrangement()
-            .withDomainRegistrationResult(NetworkFailure.ServerMiscommunication(enterpriseServiceNotEnabledError).left())
+            .withDomainRegistrationResult(serverMiscommunication(enterpriseServiceNotEnabledError).left())
             .arrange()
 
         val result = useCase(Arrangement.EMAIL)

@@ -2,6 +2,8 @@
 
 package com.wire.kalium.logic.feature.giphy
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.giphy.GifPage
@@ -50,7 +52,7 @@ class SearchGifsUseCaseTest {
         assertIs<GetGifsResult.Failure>(SearchGifsUseCaseImpl(repository)("cat", 0, null))
     }
 
-    private fun serverError(code: Int) = NetworkFailure.ServerMiscommunication(
+    private fun serverError(code: Int) = serverMiscommunication(
         if (code < 500) {
             KaliumException.InvalidRequestError(GenericAPIErrorResponse(code, "error", "error"))
         } else {

@@ -102,10 +102,10 @@ class ProteusMessageUnpackerImpl(
             is ProteusFailure -> {
                 val loggableException = """
                     {
-                      "code": "${it.proteusException.code.name}",
-                      "intCode": "${it.proteusException.intCode}",
-                      "message": "${it.proteusException.message}",
-                      "error": "${it.proteusException.stackTraceToString()}",
+                      "code": "${it.code.name}",
+                      "intCode": "${it.intCode}",
+                      "message": "${it.rootCause?.message}",
+                      "error": "${it.rootCause?.stackTraceToString()}",
                       "senderClientId": "${event.senderClientId.value.obfuscateId()}",
                       "senderUserId": "${event.senderUserId.value.obfuscateId()}",
                       "cryptoClientId": "${cryptoSessionId.cryptoClientId.value.obfuscateId()}",

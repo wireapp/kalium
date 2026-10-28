@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -78,7 +80,7 @@ class DeleteClientUseCaseTest {
 
     @Test
     fun givenRepositoryDeleteClientFailsDueToWrongPassword_whenDeleting_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
-        val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
+        val wrongPasswordFailure = serverMiscommunication(TestNetworkException.invalidCredentials)
         val (_, deleteClient) = arrange {
             withDeleteClient(Either.Left(wrongPasswordFailure))
         }
@@ -90,7 +92,7 @@ class DeleteClientUseCaseTest {
 
     @Test
     fun givenRepositoryDeleteClientFailsDueToMissingPassword_whenDeleting_thenPasswordAuthRequiredErrorShouldBeReturned() = runTest {
-        val missingPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+        val missingPasswordFailure = serverMiscommunication(TestNetworkException.missingAuth)
         val (_, deleteClient) = arrange {
             withDeleteClient(Either.Left(missingPasswordFailure))
         }
@@ -102,7 +104,7 @@ class DeleteClientUseCaseTest {
 
     @Test
     fun givenRepositoryDeleteClientFailsDueToBadRequest_whenDeleting_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
-        val badRequest = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
+        val badRequest = serverMiscommunication(TestNetworkException.badRequest)
         val (_, deleteClient) = arrange {
             withDeleteClient(Either.Left(badRequest))
         }
@@ -163,6 +165,6 @@ class DeleteClientUseCaseTest {
 
         val CLIENT = TestClient.CLIENT
         val DELETE_CLIENT_PARAMETERS = DeleteClientParam("pass", CLIENT.id)
-        val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
+        val TEST_FAILURE = serverMiscommunication(KaliumException.GenericError(IOException("no internet")))
     }
 }

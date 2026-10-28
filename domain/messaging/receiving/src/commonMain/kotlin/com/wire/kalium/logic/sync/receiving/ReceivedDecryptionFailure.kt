@@ -7,7 +7,6 @@ package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.ProteusFailure
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.decryptionFailureContent
 import com.wire.kalium.logic.data.message.decryptionFailureMessage
@@ -23,12 +22,12 @@ internal fun receivedProteusDecryptionFailure(
 ): ReceivedPayload.DecryptionFailure {
     // A failed ciphertext can be shown and repaired through the app's explicit reset action.
     // Store/identity/panic failures do not establish that the native account is safe to continue.
-    val code = (failure as? ProteusFailure)?.proteusException?.code
+    val code = (failure as? ProteusFailure)?.code
     val displayable = when (code) {
-        ProteusException.Code.REMOTE_IDENTITY_CHANGED, ProteusException.Code.INVALID_SIGNATURE,
-        ProteusException.Code.INVALID_MESSAGE, ProteusException.Code.DECODE_ERROR,
-        ProteusException.Code.SESSION_NOT_FOUND, ProteusException.Code.PREKEY_NOT_FOUND,
-        ProteusException.Code.TOO_DISTANT_FUTURE, ProteusException.Code.OUTDATED_MESSAGE -> true
+        ProteusFailure.Code.REMOTE_IDENTITY_CHANGED, ProteusFailure.Code.INVALID_SIGNATURE,
+        ProteusFailure.Code.INVALID_MESSAGE, ProteusFailure.Code.DECODE_ERROR,
+        ProteusFailure.Code.SESSION_NOT_FOUND, ProteusFailure.Code.PREKEY_NOT_FOUND,
+        ProteusFailure.Code.TOO_DISTANT_FUTURE, ProteusFailure.Code.OUTDATED_MESSAGE -> true
         else -> false
     }
     if (!displayable) throw KaliumSyncException("Native decryption requires recovery before receiving can continue", failure)

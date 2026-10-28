@@ -25,9 +25,9 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isAccessDenied
-import com.wire.kalium.network.exceptions.isBadRequest
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isAccessDenied
+import com.wire.kalium.common.error.isBadRequest
 import io.ktor.http.HttpStatusCode
 
 /**
@@ -70,8 +70,8 @@ internal class ApproveLegalHoldRequestUseCaseImpl internal constructor(
     }
 
     private fun handleError(failure: CoreFailure): ApproveLegalHoldRequestUseCase.Result.Failure =
-        if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
-            (failure.kaliumException as KaliumException.InvalidRequestError).let { error ->
+        if (failure is NetworkFailure.ServerMiscommunication && failure.reason is ServerError.InvalidRequest)
+            (failure.reason as ServerError.InvalidRequest).let { error ->
                 when {
                     error.errorResponse.code == HttpStatusCode.BadRequest.value && error.isBadRequest() ->
                         ApproveLegalHoldRequestUseCase.Result.Failure.InvalidPassword

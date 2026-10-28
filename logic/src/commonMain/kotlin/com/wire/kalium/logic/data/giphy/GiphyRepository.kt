@@ -2,6 +2,8 @@
 
 package com.wire.kalium.logic.data.giphy
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -63,7 +65,7 @@ internal class GiphyDataSource(
                 if (hasGifHeader(path)) {
                     Either.Right(size)
                 } else {
-                    Either.Left(NetworkFailure.ServerMiscommunication(IllegalStateException("Giphy's response is not a GIF")))
+                    Either.Left(serverMiscommunication(IllegalStateException("Giphy's response is not a GIF")))
                 }
             }
     } catch (e: IOException) {

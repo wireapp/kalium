@@ -17,7 +17,8 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -218,13 +219,13 @@ class UpdateConversationArchivedStatusUseCaseTest {
         suspend fun withRemoteUpdateArchivedStatusFailure() = apply {
             everySuspend {
                 conversationRepository.updateArchivedStatusRemotely(any(), any(), any())
-            } returns Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException("some error")))
+            } returns Either.Left(serverMiscommunication(RuntimeException("some error")))
         }
 
         suspend fun withRemoteNoConversationFailure() = apply {
             everySuspend {
                 conversationRepository.updateArchivedStatusRemotely(any(), any(), any())
-            } returns Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation))
+            } returns Either.Left(serverMiscommunication(TestNetworkException.noConversation))
 
             everySuspend {
                 conversationRepository.updateArchivedStatusLocally(any(), any(), any())

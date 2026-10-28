@@ -18,7 +18,8 @@
 
 package com.wire.kalium.logic.feature.asset
 
-import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -100,7 +101,7 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
         suspend fun withErrorResponse(): Arrangement {
             everySuspend {
                 messageRepository.updateAssetMessageTransferStatus(any(), any(), any())
-            } returns Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException()))
+            } returns Either.Left(serverMiscommunication(RuntimeException()))
             return this
         }
 

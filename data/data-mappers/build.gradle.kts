@@ -30,18 +30,42 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(projects.core.data)
-                implementation(projects.core.common)
+                api(projects.core.common)
+                api(projects.core.failures)
                 implementation(projects.data.protobuf)
                 implementation(projects.data.persistence)
                 implementation(projects.core.cryptography)
                 implementation(projects.data.networkModel)
                 implementation(projects.core.util)
+                implementation(projects.core.logger)
+                implementation(projects.data.network)
+                implementation(projects.data.networkUtil)
 
                 implementation(libs.coroutines.core)
                 implementation(libs.okio.core)
                 implementation(libs.ktxDateTime)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktor.serialization)
+            }
+        }
+
+        appleMain.dependencies {
+            implementation(libs.coreCryptoKmp)
+        }
+        jvmMain {
+            kotlin.srcDir("src/commonJvmAndroid/kotlin")
+            dependencies {
+                implementation(libs.jna)
+                implementation(libs.coreCryptoJvm)
+            }
+        }
+        androidMain {
+            kotlin.srcDir("src/commonJvmAndroid/kotlin")
+            dependencies {
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
             }
         }
     }

@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
@@ -445,7 +447,7 @@ class RetryFailedMessageUseCaseTest {
             val (_, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
-                .withSendMessage(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
+                .withSendMessage(Either.Left(serverMiscommunication(TestNetworkException.missingAuth)))
                 .arrange()
 
             // when
@@ -464,7 +466,7 @@ class RetryFailedMessageUseCaseTest {
             val (_, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
-                .withSendMessage(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
+                .withSendMessage(Either.Left(serverMiscommunication(TestNetworkException.missingAuth)))
                 .arrange()
 
             // when
@@ -489,7 +491,7 @@ class RetryFailedMessageUseCaseTest {
                 .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
                 .withFetchPrivateDecodedAsset(Either.Right(path))
                 .withStoredData(mockedLongAssetData(), path)
-                .withUploadAndPersistPrivateAsset(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
+                .withUploadAndPersistPrivateAsset(Either.Left(serverMiscommunication(TestNetworkException.missingAuth)))
                 .arrange()
 
             // when
@@ -519,7 +521,7 @@ class RetryFailedMessageUseCaseTest {
                 .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
                 .withUploadAndPersistPrivateAsset(Either.Right(uploadedAssetId to uploadedAssetSha))
                 .withPersistMessage(Either.Right(Unit))
-                .withSendMessage(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
+                .withSendMessage(Either.Left(serverMiscommunication(TestNetworkException.missingAuth)))
                 .arrange()
 
             // when

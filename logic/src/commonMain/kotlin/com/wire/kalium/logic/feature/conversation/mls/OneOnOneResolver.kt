@@ -44,8 +44,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.NoClientsForUser
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isTooManyRequests
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isTooManyRequests
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -212,7 +212,7 @@ internal class OneOnOneResolverImpl(
         }
 
         failure is NetworkFailure.ServerMiscommunication -> {
-            if (failure.kaliumException is KaliumException.InvalidRequestError) {
+            if (failure.reason is ServerError.InvalidRequest) {
                 kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
                 Either.Right(Unit)
             } else {
@@ -246,7 +246,7 @@ internal class OneOnOneResolverImpl(
 
     private fun CoreFailure.isThrottleFailure(): Boolean =
         this is NetworkFailure.ServerMiscommunication &&
-            (kaliumException as? KaliumException.InvalidRequestError)?.isTooManyRequests() == true
+            (reason as? ServerError.InvalidRequest)?.isTooManyRequests() == true
 
     private suspend fun fetchAllOtherUsersIfNeeded(synchronizeUsers: Boolean) = if (synchronizeUsers) {
         userRepository.fetchAllOtherUsers()

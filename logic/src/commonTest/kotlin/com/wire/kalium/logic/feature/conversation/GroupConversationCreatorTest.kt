@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -549,7 +551,7 @@ class GroupConversationCreatorTest {
         suspend fun withWaitingForSyncFailing() = withSyncReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         suspend fun withForbiddenFailure() = withSyncReturning(
             Either.Left(
-                NetworkFailure.ServerMiscommunication(
+                serverMiscommunication(
                     KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(
                             code = 403,

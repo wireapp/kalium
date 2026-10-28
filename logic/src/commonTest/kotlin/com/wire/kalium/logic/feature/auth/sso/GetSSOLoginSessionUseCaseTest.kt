@@ -18,8 +18,9 @@
 
 package com.wire.kalium.logic.feature.auth.sso
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.session.SessionMapperImpl
@@ -95,7 +96,7 @@ class GetSSOLoginSessionUseCaseTest {
 
     @Test
     fun loginFailureSkipsSettingsAndPreservesInvalidCookieMapping() = runTest {
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
+        val failure = serverMiscommunication(TestNetworkException.badRequest)
         everySuspend { repository.provideLoginSession("cookie") } returns Either.Left(failure)
 
         assertIs<SSOLoginSessionResult.Failure.InvalidCookie>(useCase("cookie", true))
@@ -104,7 +105,7 @@ class GetSSOLoginSessionUseCaseTest {
 
     @Test
     fun genericLoginFailureSkipsSettings() = runTest {
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+        val failure = serverMiscommunication(TestNetworkException.missingAuth)
         everySuspend { repository.provideLoginSession("cookie") } returns Either.Left(failure)
 
         val result = useCase("cookie", true)

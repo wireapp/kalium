@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.test_util
 
+import com.wire.kalium.common.error.serverMiscommunication
+
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
@@ -152,4 +154,4 @@ object TestNetworkResponseError {
 }
 
 fun serverMiscommunicationFailure(code: Int = HttpStatusCode.BadRequest.value, message: String = "", label: String = "") =
-    NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(code, message, label)))
+    serverMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(code, message, label)))

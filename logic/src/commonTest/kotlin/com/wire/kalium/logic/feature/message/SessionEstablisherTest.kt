@@ -74,7 +74,7 @@ class SessionEstablisherTest {
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(arrangement.proteusContext, listOf(TEST_RECIPIENT_1))
             .shouldFail {
                 assertIs<ProteusFailure>(it)
-                assertEquals(exception, it.proteusException)
+                assertEquals(exception, it.rootCause)
             }
     }
 

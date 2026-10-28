@@ -31,13 +31,13 @@ import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerifi
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.user.SsoManagedBy
-import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.authenticationCodeFailure
-import com.wire.kalium.network.exceptions.isAccountPendingActivation
-import com.wire.kalium.network.exceptions.isAccountSuspended
-import com.wire.kalium.network.exceptions.isBadRequest
-import com.wire.kalium.network.exceptions.isInvalidCredentials
+import com.wire.kalium.common.error.AuthenticationCodeFailure
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.authenticationCodeFailure
+import com.wire.kalium.common.error.isAccountPendingActivation
+import com.wire.kalium.common.error.isAccountSuspended
+import com.wire.kalium.common.error.isBadRequest
+import com.wire.kalium.common.error.isInvalidCredentials
 
 public sealed class AuthenticationResult {
     public data class Success(
@@ -173,17 +173,17 @@ internal class LoginUseCaseImpl internal constructor(
     ): AuthenticationResult.Failure {
         fun genericError() = AuthenticationResult.Failure.Generic(error)
 
-        val kaliumException = error.kaliumException
+        val reason = error.reason
 
         return when {
-            kaliumException !is KaliumException.InvalidRequestError -> genericError()
-            kaliumException.isInvalidCredentials() || kaliumException.isBadRequest() -> {
+            reason !is ServerError.InvalidRequest -> genericError()
+            reason.isInvalidCredentials() || reason.isBadRequest() -> {
                 AuthenticationResult.Failure.InvalidCredentials.InvalidPasswordIdentityCombination
             }
-            kaliumException.isAccountSuspended() -> AuthenticationResult.Failure.AccountSuspended
-            kaliumException.isAccountPendingActivation() -> AuthenticationResult.Failure.AccountPendingActivation
+            reason.isAccountSuspended() -> AuthenticationResult.Failure.AccountSuspended
+            reason.isAccountPendingActivation() -> AuthenticationResult.Failure.AccountPendingActivation
 
-            else -> when (kaliumException.authenticationCodeFailure) {
+            else -> when (reason.authenticationCodeFailure) {
                 AuthenticationCodeFailure.MISSING_AUTHENTICATION_CODE ->
                     AuthenticationResult.Failure.InvalidCredentials.Missing2FA
 

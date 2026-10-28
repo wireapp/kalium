@@ -33,6 +33,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(projects.core.cryptography)
+                api(projects.core.failures)
                 implementation(projects.data.dataMappers)
                 implementation(projects.data.network)
                 implementation(projects.data.networkModel)

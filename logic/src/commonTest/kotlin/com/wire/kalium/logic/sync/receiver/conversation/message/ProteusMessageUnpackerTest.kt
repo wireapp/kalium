@@ -158,7 +158,7 @@ class ProteusMessageUnpackerTest {
 
             result.shouldFail {
                 assertIs<ProteusFailure>(it)
-                assertEquals(code, it.proteusException.code)
+                assertEquals(code.name, it.code.name)
             }
         }
     }

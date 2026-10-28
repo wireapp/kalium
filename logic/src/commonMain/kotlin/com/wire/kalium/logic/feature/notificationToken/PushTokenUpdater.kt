@@ -33,7 +33,7 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.common.error.ServerError
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -133,7 +133,7 @@ internal class PushTokenUpdater(
     }
 
     private fun NetworkFailure.isAppNotFoundError(): Boolean {
-        val invalidRequestError = (this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError
+        val invalidRequestError = (this as? NetworkFailure.ServerMiscommunication)?.reason as? ServerError.InvalidRequest
             ?: return false
         return invalidRequestError.errorResponse.code == APP_NOT_FOUND_CODE &&
                 invalidRequestError.errorResponse.label == APP_NOT_FOUND_LABEL

@@ -28,8 +28,8 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationNotFound
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isConversationNotFound
 import com.wire.kalium.util.DateTimeUtil
 import kotlin.time.Instant
 
@@ -107,8 +107,8 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
         shouldArchiveConversation: Boolean
     ): Either<NetworkFailure, Unit> = flatMapLeft { failure ->
         if (failure is NetworkFailure.ServerMiscommunication &&
-            failure.kaliumException is KaliumException.InvalidRequestError &&
-            (failure.kaliumException as KaliumException.InvalidRequestError).isConversationNotFound()
+            failure.reason is ServerError.InvalidRequest &&
+            (failure.reason as ServerError.InvalidRequest).isConversationNotFound()
         ) {
             kaliumLogger.w(
                 "Remote archive update returned no-conversation for convId (${conversationId.toLogString()}) " +

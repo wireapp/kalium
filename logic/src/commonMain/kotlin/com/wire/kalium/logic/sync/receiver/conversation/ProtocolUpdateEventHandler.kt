@@ -34,8 +34,8 @@ import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationNotFound
+import com.wire.kalium.common.error.ServerError
+import com.wire.kalium.common.error.isConversationNotFound
 import kotlinx.coroutines.flow.first
 
 internal interface ProtocolUpdateEventHandler {
@@ -91,5 +91,5 @@ internal class ProtocolUpdateEventHandlerImpl(
 }
 
 private fun CoreFailure.isNoConversationFailure(): Boolean =
-    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError)
+    ((this as? NetworkFailure.ServerMiscommunication)?.reason as? ServerError.InvalidRequest)
         ?.isConversationNotFound() == true

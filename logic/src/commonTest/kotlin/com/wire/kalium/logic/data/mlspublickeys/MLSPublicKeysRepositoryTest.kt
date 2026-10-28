@@ -94,7 +94,7 @@ class MLSPublicKeysRepositoryTest {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
         }
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result).let {
-            assertEquals(error, it.value.kaliumException)
+            assertEquals(error, it.value.rootCause)
         }
     }
 
@@ -184,7 +184,7 @@ class MLSPublicKeysRepositoryTest {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
         }
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result).let {
-            assertEquals(error, it.value.kaliumException)
+            assertEquals(error, it.value.rootCause)
         }
     }
 

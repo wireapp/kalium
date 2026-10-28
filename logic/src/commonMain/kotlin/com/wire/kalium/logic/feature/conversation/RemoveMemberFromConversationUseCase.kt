@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.network.exceptions.AdminlessConversationError
+import com.wire.kalium.common.error.ServerError.AdminlessConversation
 
 public interface RemoveMemberFromConversationUseCase {
 
@@ -60,6 +60,6 @@ internal class RemoveMemberFromConversationUseCaseImpl(
 public data class AdminlessConversationFailure(val eligibleMembers: List<UserId>) : CoreFailure.FeatureFailure()
 
 private fun CoreFailure.adminlessConversationEligibleMembers(): List<UserId>? {
-    val adminlessError = (this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? AdminlessConversationError
-    return adminlessError?.errorResponse?.eligibleMembers?.map { UserId(it.value, it.domain) }
+    val adminlessError = (this as? NetworkFailure.ServerMiscommunication)?.reason as? AdminlessConversation
+    return adminlessError?.eligibleMembers
 }

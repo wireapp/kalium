@@ -69,6 +69,7 @@ kotlin {
             implementation(projects.data.persistence)
             implementation(projects.data.networkModel)
             implementation(projects.data.network)
+            api(projects.core.failures)
             implementation(projects.data.dataMappers)
             implementation(libs.ktxSerialization)
             implementation(libs.ktxDateTime)

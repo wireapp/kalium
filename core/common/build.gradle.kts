@@ -16,7 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 plugins {
-    alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -26,46 +25,12 @@ kaliumLibrary {
 
 kotlin {
     sourceSets {
-        commonMain {
-            dependencies {
-                implementation(projects.core.data)
-                implementation(projects.core.logger)
-                implementation(projects.core.util)
-                implementation(projects.data.persistence)
-                implementation(projects.data.network)
-                implementation(projects.data.networkUtil)
-                implementation(projects.core.cryptography)
-                implementation(libs.ktxSerialization)
-                implementation(libs.coroutines.core)
-            }
-        }
-
-        fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
-            kotlin.srcDir("src/commonJvmAndroid/kotlin")
-        }
-
-        val appleMain by getting {
-            dependencies {
-                implementation(libs.coreCryptoKmp)
-            }
-        }
-        val jvmMain by getting {
-            addCommonKotlinJvmSourceDir()
-            dependencies {
-                implementation(libs.jna)
-                implementation(libs.coreCryptoJvm)
-            }
-        }
-
-        val androidMain by getting {
-            addCommonKotlinJvmSourceDir()
-            dependencies {
-                implementation(libs.work)
-                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                    exclude("androidx.core")
-                    exclude("androidx.appcompat")
-                }
-            }
+        commonMain.dependencies {
+            implementation(projects.core.data)
+            implementation(projects.core.logger)
+            implementation(projects.core.util)
+            implementation(libs.ktxSerialization)
+            implementation(libs.coroutines.core)
         }
     }
 }
