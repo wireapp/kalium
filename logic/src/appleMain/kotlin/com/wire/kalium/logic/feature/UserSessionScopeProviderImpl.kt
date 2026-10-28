@@ -32,6 +32,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.receiving.PreparedAccount
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.persistence.dbPassphrase.existingCoreCryptoKey
@@ -49,13 +50,20 @@ import com.wire.kalium.logic.sync.SyncSuspension
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.job
+import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.concurrent.Volatile
+import kotlin.time.Duration.Companion.seconds
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
@@ -278,22 +286,48 @@ internal actual open class UserSessionScopeProviderImpl(
             val access = account.access
             var syncSuspension: SyncSuspension? = null
             try {
-                access.pause(
-                    // Access does not gate the WebSocket: stop sync and close it while sync can still finish
-                    // its writes. Pause holds its transition, so reopening cannot resume sync before release.
-                    quiesce = {
-                        if (access === account.access) syncSuspension = super.get(userId)?.suspendSync()
-                    },
-                ) {
-                    // Drain before taking the lifecycle mutex: admitted operations may still need it
-                    // to invalidate notification readiness or complete account preparation.
-                    releaseForBackground(account, userId, access)
-                }
+                pauseForBackground(account, userId, access) { syncSuspension = it }
             } finally {
                 // Reopening resumes sync after reacquiring ownership; undo only this suspension if ownership was kept.
                 if (account.lease != null && !account.unavailable) syncSuspension?.cancel()
             }
             if (access === account.access) return
+        }
+    }
+
+    /**
+     * A message send keeps its crypto transaction while its request waits on a bad network, up to the request
+     * timeout, which is longer than iOS keeps the app running; stopping sync can wait behind it too. After a
+     * short grace, fail the account's requests as offline until closing starts, so the account is still released.
+     */
+    private suspend fun pauseForBackground(
+        account: OwnedAccount,
+        userId: UserId,
+        access: AccountResourceAccess,
+        onSyncSuspended: (SyncSuspension?) -> Unit,
+    ) = coroutineScope {
+        val failingStalledRequests = launch {
+            delay(STALLED_REQUEST_GRACE)
+            super.get(userId)?.let { scope ->
+                kaliumLogger.w("Account release is waiting on requests; failing them as offline")
+                scope.failNetworkRequests { awaitCancellation() }
+            }
+        }
+        try {
+            access.pause(
+                // Access does not gate the WebSocket: stop sync and close it while sync can still finish
+                // its writes. Pause holds its transition, so reopening cannot resume sync before release.
+                quiesce = {
+                    if (access === account.access) onSyncSuspended(super.get(userId)?.suspendSync())
+                },
+            ) {
+                failingStalledRequests.cancelAndJoin()
+                // Drain before taking the lifecycle mutex: admitted operations may still need it
+                // to invalidate notification readiness or complete account preparation.
+                releaseForBackground(account, userId, access)
+            }
+        } finally {
+            failingStalledRequests.cancel()
         }
     }
 
@@ -435,6 +469,13 @@ internal actual open class UserSessionScopeProviderImpl(
             var completed = false
             var result: T? = null
             access.withResumedAccess(
+                // Another process may hold the lease for long: wait here, where cancellation still works and a
+                // failure keeps the account paused instead of unavailable.
+                acquireOwnership = {
+                    account.mutex.withLock {
+                        if (access === account.access && !account.unavailable) acquire(account, userId)
+                    }
+                },
                 openResources = {
                     account.mutex.withLock {
                         check(!account.unavailable) { "Account resources are unavailable until process exit" }
@@ -464,8 +505,12 @@ internal actual open class UserSessionScopeProviderImpl(
 
     private suspend fun acquire(account: OwnedAccount, userId: UserId) {
         if (account.lease == null) {
-            account.lease = when (val acquired = owner.acquire(userId)) {
-                is Either.Left -> error("Cannot acquire account ownership: ${acquired.value}")
+            account.lease = when (val acquired = owner.acquire(userId, OWNERSHIP_TIMEOUT)) {
+                is Either.Left -> throw if (acquired.value == AccountRuntimeFailure.BUSY) {
+                    AccountBusyException(owner.holder(userId)).also { kaliumLogger.w("Account ownership wait ended: ${it.message}") }
+                } else {
+                    IllegalStateException("Cannot acquire account ownership: ${acquired.value}")
+                }
                 is Either.Right -> acquired.value
             }
         }
@@ -537,3 +582,10 @@ internal actual open class UserSessionScopeProviderImpl(
     }
 
 }
+
+/**
+ * An NSE attempt holds an account for a few seconds, within its 20 s budget. Waiting longer only keeps app lifecycle
+ * work behind an extension that iOS suspended with its host; callers fail or retry instead.
+ */
+private val OWNERSHIP_TIMEOUT = 15.seconds
+private val STALLED_REQUEST_GRACE = 5.seconds

@@ -265,7 +265,7 @@ class DownloadNodeFileUseCaseTest {
         useCase(assetId, conversationId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.attachmentsRepository.saveStandaloneAssetPath(assetId, conversationId, outFilePath.toString(), assetSize, null, null)
+            arrangement.attachmentsRepository.saveStandaloneAssetPath(assetId, conversationId, outFilePath.toString(), assetSize, null, null, remoteFilePath)
         }
     }
 
@@ -320,7 +320,7 @@ class DownloadNodeFileUseCaseTest {
             everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.setStandaloneAssetTransferStatus(any(), any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
-            everySuspend { attachmentsRepository.saveStandaloneAssetPath(any(), any(), any(), any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.saveStandaloneAssetPath(any(), any(), any(), any(), any(), any(), any()) }.returns(Unit.right())
 
             return this to DownloadCellFileUseCaseImpl(
                 cellsRepository = cellsRepository,

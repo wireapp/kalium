@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.notificationToken
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
+import com.wire.kalium.logic.feature.AccountBusyException
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.common.functional.fold
@@ -57,8 +58,12 @@ internal class SaveNotificationTokenUseCaseImpl(
             observeValidAccounts()
                 .first()
                 .forEach { (selfUser, _) ->
-                    userSessionScopeProvider.open(selfUser.id) { pushTokenRepository }
-                        .setUpdateFirebaseTokenFlag(true)
+                    try {
+                        userSessionScopeProvider.open(selfUser.id) { pushTokenRepository }
+                            .setUpdateFirebaseTokenFlag(true)
+                    } catch (_: AccountBusyException) {
+                        // Another process holds it; the next token save marks it.
+                    }
                 }
             Result.Success
         })

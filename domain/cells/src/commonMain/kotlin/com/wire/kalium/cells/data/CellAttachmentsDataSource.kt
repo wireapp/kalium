@@ -21,6 +21,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CellAssetContent
@@ -36,6 +37,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
+@Suppress("TooManyFunctions")
 internal class CellAttachmentsDataSource(
     private val messageAttachments: MessageAttachmentsDao,
     private val cellFileDao: CellFileDao,
@@ -68,6 +70,23 @@ internal class CellAttachmentsDataSource(
             messageAttachments.setTransferStatus(assetId, status.name)
         }
     }
+
+    override suspend fun refreshRestoredAttachmentStatus(assetIds: List<String>): Either<StorageFailure, Unit> =
+        getAttachmentsByIds(assetIds).map { attachments ->
+            attachments
+                .filterIsInstance<CellAssetContent>()
+                // One row is returned per message referencing the asset.
+                .distinctBy { it.id }
+                .forEach { attachment ->
+                    val status = if (attachment.localPath.isNullOrEmpty()) {
+                        AssetTransferStatus.NOT_DOWNLOADED
+                    } else {
+                        AssetTransferStatus.SAVED_INTERNALLY
+                    }
+
+                    setAssetTransferStatus(attachment.id, status)
+                }
+        }
 
     override suspend fun saveLocalPath(assetId: String, path: String?) = withContext(dispatchers.io) {
         wrapStorageRequest {
@@ -110,6 +129,7 @@ internal class CellAttachmentsDataSource(
         size: Long,
         name: String?,
         ownerId: String?,
+        remotePath: String?,
     ) = withContext(dispatchers.io) {
         wrapStorageRequest {
             cellFileDao.upsert(
@@ -122,6 +142,8 @@ internal class CellAttachmentsDataSource(
                     size = size,
                     downloadedAt = DateTimeUtil.currentInstant().toEpochMilliseconds(),
                     isOffline = false,
+                    // Lets the file be found and cleaned up when a folder above it is deleted.
+                    remotePath = remotePath,
                 )
             )
         }
@@ -135,7 +157,13 @@ internal class CellAttachmentsDataSource(
 
     override suspend fun deleteStandaloneAsset(assetId: String) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            cellFileDao.delete(assetId)
+            cellFileDao.deleteStandalone(assetId)
+        }
+    }
+
+    override suspend fun deleteFolderContents(folderPath: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            cellFileDao.deleteUnderFolder(folderPath, AssetTransferStatus.NOT_FOUND.name).map { it.localPath }
         }
     }
 

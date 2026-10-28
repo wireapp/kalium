@@ -42,6 +42,19 @@ interface CellFileDao {
     suspend fun upsert(entity: CellFileEntity)
     suspend fun setTransferStatus(id: String, status: String)
     suspend fun delete(id: String)
+
+    /**
+     * Deletes the file's row, unless a message refers to it as an attachment: deleting it would remove the attachment
+     * from the message, so only its local copy and offline access are cleared.
+     */
+    suspend fun deleteStandalone(id: String)
+
+    /**
+     * [deleteStandalone] for every file stored under the folder at [folderPath], at any depth, matched by the remote
+     * path they were saved with. The attachments among them are also set to [attachmentStatus].
+     * @return the local copies of those files, for the caller to delete.
+     */
+    suspend fun deleteUnderFolder(folderPath: String, attachmentStatus: String): List<CellFileLocalPath>
     suspend fun clearOfflineAccess(id: String)
     fun observeOfflineFiles(): Flow<List<CellFileEntity>>
     fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<CellFileEntity>>

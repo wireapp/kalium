@@ -19,9 +19,9 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCase
 import com.wire.kalium.logic.feature.debug.RepairResult
@@ -29,6 +29,7 @@ import com.wire.kalium.logic.feature.debug.TargetedRepairParam
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncStateObserver
+import com.wire.kalium.util.string.toHexString
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -42,60 +43,61 @@ import kotlin.test.Test
 class MLSFaultyKeysConversationsRepairUseCaseTest {
 
     @Test
-    fun givenRepairAlreadyExecuted_whenInvoking_thenSkipRepairAndDoNotWaitForSync() = runTest {
+    fun givenNoKeysForCurrentDomain_whenInvoking_thenClearFingerprintAndSkipRepair() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(true)
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.syncStateObserver.waitUntilLive()
-        }
-        verifySuspend(VerifyMode.not) {
-            arrangement.repairFaultyRemovalKeysUseCase(any())
-        }
-    }
-
-    @Test
-    fun givenRepairNotExecutedYet_whenInvoking_thenWaitForSyncLive() = runTest {
-        val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(false)
             .withDomainWithFaultyKeysMap(emptyMap())
+            .withStoredFingerprint("previous-fingerprint")
             .arrange()
 
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.syncStateObserver.waitUntilLive()
+            arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(null)
         }
+        verifySuspend(VerifyMode.not) { arrangement.syncStateObserver.waitUntilLive() }
+        verifySuspend(VerifyMode.not) { arrangement.repairFaultyRemovalKeysUseCase(any()) }
     }
 
     @Test
-    fun givenDomainDoesNotMatch_whenInvoking_thenDoNotAttemptRepair() = runTest {
+    fun givenCurrentConfigurationWasRepaired_whenInvoking_thenSkipRepair() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(false)
-            .withDomainWithFaultyKeysMap(
-                mapOf("other.domain" to listOf("somekey"))
-            )
+            .withDomainWithFaultyKeysMap(mapOf(TestUser.USER_ID.domain to FAULTY_KEYS.reversed()))
+            .withStoredFingerprint(repairFingerprint(FAULTY_KEYS))
             .arrange()
 
         useCase()
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.repairFaultyRemovalKeysUseCase(any())
+        verifySuspend(VerifyMode.not) { arrangement.syncStateObserver.waitUntilLive() }
+        verifySuspend(VerifyMode.not) { arrangement.repairFaultyRemovalKeysUseCase(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(any()) }
+    }
+
+    @Test
+    fun givenLegacyBooleanState_whenInvoking_thenRunRepairAndStoreFingerprint() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDomainWithFaultyKeysMap(mapOf(TestUser.USER_ID.domain to FAULTY_KEYS))
+            .withStoredFingerprint("true")
+            .withRepairResult(RepairResult.NoConversationsToRepair)
+            .arrange()
+
+        useCase()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.syncStateObserver.waitUntilLive() }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(repairFingerprint(FAULTY_KEYS))
         }
     }
 
     @Test
-    fun givenDomainMatches_whenInvoking_thenAttemptRepairWithCorrectParams() = runTest {
-        val faultyKey = listOf("16665373b6bf396f75914a0bed297d44")
+    fun givenChangedConfiguration_whenInvoking_thenRunRepairWithCurrentKeys() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(false)
             .withDomainWithFaultyKeysMap(
-                mapOf(TestUser.USER_ID.domain to faultyKey)
+                mapOf(
+                    TestUser.USER_ID.domain to FAULTY_KEYS,
+                    "other.domain" to listOf("other-key")
+                )
             )
-            .withRepairResult(RepairResult.NoConversationsToRepair)
+            .withStoredFingerprint("previous-fingerprint")
             .arrange()
 
         useCase()
@@ -104,20 +106,16 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
             arrangement.repairFaultyRemovalKeysUseCase(
                 TargetedRepairParam(
                     domain = TestUser.USER_ID.domain,
-                    faultyKeys = faultyKey
+                    faultyKeys = FAULTY_KEYS
                 )
             )
         }
     }
 
     @Test
-    fun givenSuccessfulRepairWithNoFailures_whenInvoking_thenSetRepairExecutedFlag() = runTest {
-        val faultyKey = listOf("16665373b6bf396f75914a0bed297d44")
+    fun givenSuccessfulRepair_whenInvoking_thenStoreCurrentFingerprint() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(false)
-            .withDomainWithFaultyKeysMap(
-                mapOf(TestUser.USER_ID.domain to faultyKey)
-            )
+            .withDomainWithFaultyKeysMap(mapOf(TestUser.USER_ID.domain to FAULTY_KEYS))
             .withRepairResult(
                 RepairResult.RepairPerformed(
                     totalConversationsChecked = 10,
@@ -126,24 +124,19 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
                     failedRepairs = emptyList()
                 )
             )
-            .withSetRepairExecutedResult(Unit.right())
             .arrange()
 
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(true)
+            arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(repairFingerprint(FAULTY_KEYS))
         }
     }
 
     @Test
-    fun givenRepairWithFailures_whenInvoking_thenDoNotSetRepairExecutedFlag() = runTest {
-        val faultyKey = listOf("16665373b6bf396f75914a0bed297d44")
+    fun givenRepairHasFailures_whenInvoking_thenDoNotStoreFingerprint() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(false)
-            .withDomainWithFaultyKeysMap(
-                mapOf(TestUser.USER_ID.domain to faultyKey)
-            )
+            .withDomainWithFaultyKeysMap(mapOf(TestUser.USER_ID.domain to FAULTY_KEYS))
             .withRepairResult(
                 RepairResult.RepairPerformed(
                     totalConversationsChecked = 10,
@@ -157,96 +150,21 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(any())
+            arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(any())
         }
     }
 
     @Test
-    fun givenRepairReturnsError_whenInvoking_thenDoNotSetRepairExecutedFlag() = runTest {
-        val faultyKey = listOf("16665373b6bf396f75914a0bed297d44")
+    fun givenRepairReturnsError_whenInvoking_thenDoNotStoreFingerprint() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(false)
-            .withDomainWithFaultyKeysMap(
-                mapOf(TestUser.USER_ID.domain to faultyKey)
-            )
+            .withDomainWithFaultyKeysMap(mapOf(TestUser.USER_ID.domain to FAULTY_KEYS))
             .withRepairResult(RepairResult.Error)
             .arrange()
 
         useCase()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(any())
-        }
-    }
-
-    @Test
-    fun givenRepairReturnsNoConversationsToRepair_whenInvoking_thenDoNotSetRepairExecutedFlag() = runTest {
-        val faultyKey = listOf("16665373b6bf396f75914a0bed297d44")
-        val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(false)
-            .withDomainWithFaultyKeysMap(
-                mapOf(TestUser.USER_ID.domain to faultyKey)
-            )
-            .withRepairResult(RepairResult.NoConversationsToRepair)
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(any())
-        }
-    }
-
-    @Test
-    fun givenMultipleDomainsInConfig_whenOnlyOneMatches_thenRepairOnlyMatchingDomain() = runTest {
-        val matchingKey = listOf("key1")
-        val nonMatchingKey = listOf("key2")
-        val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(false)
-            .withDomainWithFaultyKeysMap(
-                mapOf(
-                    TestUser.USER_ID.domain to matchingKey,
-                    "other.domain" to nonMatchingKey
-                )
-            )
-            .withRepairResult(RepairResult.NoConversationsToRepair)
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.repairFaultyRemovalKeysUseCase(
-                TargetedRepairParam(
-                    domain = TestUser.USER_ID.domain,
-                    faultyKeys = matchingKey
-                )
-            )
-        }
-    }
-
-    @Test
-    fun givenSetFlagReturnsFailure_whenInvoking_thenOperationCompletes() = runTest {
-        val faultyKey = listOf("16665373b6bf396f75914a0bed297d44")
-        val (arrangement, useCase) = Arrangement()
-            .withRepairAlreadyExecuted(false)
-            .withDomainWithFaultyKeysMap(
-                mapOf(TestUser.USER_ID.domain to faultyKey)
-            )
-            .withRepairResult(
-                RepairResult.RepairPerformed(
-                    totalConversationsChecked = 10,
-                    conversationsWithFaultyKeys = 5,
-                    successfullyRepairedConversations = 5,
-                    failedRepairs = emptyList()
-                )
-            )
-            .withSetRepairExecutedResult(StorageFailure.Generic(RuntimeException("DB error")).left())
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(true)
+            arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(any())
         }
     }
 
@@ -255,33 +173,27 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
         val syncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
         val repairFaultyRemovalKeysUseCase = mock<RepairFaultyRemovalKeysUseCase>(mode = MockMode.autoUnit)
         private var kaliumConfigs = KaliumConfigs()
+        private var storedFingerprint: String? = null
+        private var repairResult: RepairResult = RepairResult.NoConversationsToRepair
+        private var setFingerprintResult: Either<StorageFailure, Unit> = Unit.right()
 
-        suspend fun withRepairAlreadyExecuted(executed: Boolean) = apply {
-            everySuspend {
-                userConfigRepository.isMLSFaultyKeysRepairExecuted()
-            } returns executed
+        fun withStoredFingerprint(fingerprint: String?) = apply {
+            storedFingerprint = fingerprint
         }
 
         fun withDomainWithFaultyKeysMap(map: Map<String, List<String>>) = apply {
             kaliumConfigs = kaliumConfigs.copy(domainWithFaultyKeysMap = map)
         }
 
-        suspend fun withRepairResult(result: RepairResult) = apply {
-            everySuspend {
-                repairFaultyRemovalKeysUseCase(any())
-            } returns result
-        }
-
-        suspend fun withSetRepairExecutedResult(result: Either<StorageFailure, Unit>) = apply {
-            everySuspend {
-                userConfigRepository.setMLSFaultyKeysRepairExecuted(any())
-            } returns result
+        fun withRepairResult(result: RepairResult) = apply {
+            repairResult = result
         }
 
         suspend fun arrange(): Pair<Arrangement, MLSFaultyKeysConversationsRepairUseCaseImpl> {
-            everySuspend {
-                syncStateObserver.waitUntilLive()
-            } returns Unit
+            everySuspend { userConfigRepository.getMLSFaultyKeysRepairFingerprint() } returns storedFingerprint
+            everySuspend { userConfigRepository.setMLSFaultyKeysRepairFingerprint(any()) } returns setFingerprintResult
+            everySuspend { syncStateObserver.waitUntilLive() } returns Unit
+            everySuspend { repairFaultyRemovalKeysUseCase(any()) } returns repairResult
 
             return this to MLSFaultyKeysConversationsRepairUseCaseImpl(
                 selfUserId = TestUser.USER_ID,
@@ -291,6 +203,18 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
                 repairFaultyRemovalKeys = repairFaultyRemovalKeysUseCase,
                 kaliumLogger = kaliumLogger
             )
+        }
+    }
+
+    private companion object {
+        val FAULTY_KEYS = listOf(
+            "16665373b6bf396f75914a0bed297d44",
+            "26665373b6bf396f75914a0bed297d55"
+        )
+
+        fun repairFingerprint(faultyKeys: List<String>): String {
+            val normalizedKeys = faultyKeys.map { it.lowercase() }.sorted().joinToString(",")
+            return calcSHA256("${TestUser.USER_ID.domain}:$normalizedKeys".encodeToByteArray()).toHexString()
         }
     }
 }

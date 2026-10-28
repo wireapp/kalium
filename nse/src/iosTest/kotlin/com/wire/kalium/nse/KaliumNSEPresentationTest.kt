@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.MessageContentPreference
+import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.ReceivedMessageResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationType
@@ -58,11 +59,14 @@ class KaliumNSEPresentationTest {
                 )
                 val savedAllowsPreview = preference == Either.Right(MessageContentPreference.Unset) ||
                     preference == Either.Right(MessageContentPreference.Enabled)
+                // As on Android, hidden message content leaves connection requests and conversation deletions intact.
+                val showsContent = type != ReceivedNotificationType.MESSAGE || showContent && savedAllowsPreview
                 assertEquals(true, result.shouldNotify)
                 assertEquals("message", result.messageId)
                 assertEquals("conversation", result.conversationValue)
                 assertEquals("example.com", result.conversationDomain)
-                if (showContent && mayPreview && savedAllowsPreview) {
+                assertEquals(!showsContent, result.presentationReason == "MESSAGE_CONTENT_HIDDEN")
+                if (showsContent && mayPreview) {
                     assertEquals(type.name, result.contentType.name)
                     assertEquals("Sender", result.senderName)
                     assertEquals("Group", result.conversationName)
@@ -144,6 +148,23 @@ class KaliumNSEPresentationTest {
 
         val read = ReceivedNotificationResult(message(ReceivedNotificationType.MESSAGE).copy(shouldNotify = false))
         assertEquals("earlier", receiver.presentation(read, listOf(unnotified("earlier"))).first.message?.messageId)
+    }
+
+    @Test
+    fun ownershipFailuresAskForAGenericAlertOnlyWhenNobodyElsePresents() {
+        for (reason in AccountRuntimeFailure.entries) for (appPresentsAlerts in listOf(false, true)) {
+            val result = receiver.ownershipFailure(reason, appPresentsAlerts)
+            val expected = when (reason) {
+                AccountRuntimeFailure.BUSY, AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE ->
+                    !appPresentsAlerts
+                AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
+                AccountRuntimeFailure.MISSING_STORAGE -> false
+            }
+            assertEquals(KaliumNSEStatus.FAILED, result.status)
+            assertEquals(reason.name, result.failureReason)
+            assertFalse(result.shouldNotify)
+            assertEquals(expected, result.presentGenericAlert, "$reason $appPresentsAlerts")
+        }
     }
 
     private fun unnotified(id: String) = message(ReceivedNotificationType.MESSAGE).copy(messageId = id)

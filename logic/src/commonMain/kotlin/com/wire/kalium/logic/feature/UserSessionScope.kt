@@ -925,6 +925,9 @@ public class UserSessionScope internal constructor(
         return suspension
     }
 
+    /** Fail this account's HTTP requests, in flight and new, as having no network until [block] returns. */
+    internal suspend fun <T> failNetworkRequests(block: suspend () -> T): T = authenticatedNetworkContainer.failRequests(block)
+
     /** Resume after ownership returns. */
     internal fun resumeSync() {
         syncExecutorImpl.resumeExecution()

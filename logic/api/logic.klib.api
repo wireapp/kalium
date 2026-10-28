@@ -6285,6 +6285,13 @@ final class com.wire.kalium.logic.feature.user/UserScope { // com.wire.kalium.lo
         final fun <get-uploadUserAvatar>(): com.wire.kalium.logic.feature.user/UploadUserAvatarUseCase // com.wire.kalium.logic.feature.user/UserScope.uploadUserAvatar.<get-uploadUserAvatar>|<get-uploadUserAvatar>(){}[0]
 }
 
+final class com.wire.kalium.logic.feature/AccountBusyException : kotlin/IllegalStateException { // com.wire.kalium.logic.feature/AccountBusyException|null[0]
+    constructor <init>(kotlin/String?) // com.wire.kalium.logic.feature/AccountBusyException.<init>|<init>(kotlin.String?){}[0]
+
+    final val holder // com.wire.kalium.logic.feature/AccountBusyException.holder|{}holder[0]
+        final fun <get-holder>(): kotlin/String? // com.wire.kalium.logic.feature/AccountBusyException.holder.<get-holder>|<get-holder>(){}[0]
+}
+
 final class com.wire.kalium.logic.feature/LocalVideoPreviewAttachment { // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment|null[0]
     final suspend fun detach() // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment.detach|detach(){}[0]
     final suspend fun startCapture() // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment.startCapture|startCapture(){}[0]

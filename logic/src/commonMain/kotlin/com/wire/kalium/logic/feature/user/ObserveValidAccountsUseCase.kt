@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.retryWhileAccountBusy
 import com.wire.kalium.common.functional.flatMapRight
 import com.wire.kalium.common.functional.mapToRightOr
 import kotlinx.coroutines.CoroutineDispatcher
@@ -65,6 +66,7 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
                     combine(flowsOfSelfUsers) { it.asList() }
                 }
             }
+            .retryWhileAccountBusy()
             .mapToRightOr(emptyList())
             .flowOn(ioDispatcher)
 }
