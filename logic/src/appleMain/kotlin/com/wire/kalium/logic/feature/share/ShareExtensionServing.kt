@@ -31,8 +31,9 @@ import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
 import com.wire.kalium.logic.data.asset.isVideoMimeType
 import com.wire.kalium.logic.data.asset.isAudioMimeType
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.feature.asset.upload.AssetUploadParams
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -42,6 +43,7 @@ import com.wire.kalium.share.ShareOutboxSending
 import com.wire.kalium.share.ShareOutboxServer
 import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.Path.Companion.toPath
@@ -65,7 +67,7 @@ public suspend fun UserSessionScope.serveShareExtension(doorbell: Flow<Unit>) {
                 messages = lazy { messages },
                 syncStateObserver = syncStateObserver.value,
                 cells = lazy { cells },
-                conversations = userStorage.database.conversationDAO,
+                conversations = conversations.conversationRepository,
             ),
         ).serve(doorbell)
     }
@@ -76,7 +78,7 @@ internal class ComposerSending(
     private val messages: Lazy<MessageScope>,
     private val syncStateObserver: SyncStateObserver,
     private val cells: Lazy<CellsScope>,
-    private val conversations: ConversationDAO,
+    private val conversations: ConversationRepository,
 ) : ShareOutboxSending {
 
     override suspend fun awaitSynced() {
@@ -111,7 +113,8 @@ internal class ComposerSending(
         text: String,
         messageId: String,
     ): String? {
-        val cellName = conversations.getCellName(conversationId.toDao()) ?: return "UNAVAILABLE"
+        val conversation = conversations.observeConversationDetailsById(conversationId).first().getOrNull()
+        val cellName = (conversation as? ConversationDetails.Group)?.wireCell ?: return "UNAVAILABLE"
         val prepared = files.map { file ->
             val width = file.width
             val height = file.height
