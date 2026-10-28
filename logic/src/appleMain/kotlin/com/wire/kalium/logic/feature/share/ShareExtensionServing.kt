@@ -43,9 +43,13 @@ private val turns = ConcurrentMutableMap<UserId, Mutex>()
  * Answers the share extension while the app owns this account, live or not (ADR 13). It lists the account's
  * conversations when the extension asks, and stores handed-off shares as the composer would: now, and whenever
  * [doorbell] rings. Runs until cancelled, which must happen before the app releases the account. Servers of one
- * account take turns.
+ * account take turns. A share it refuses after the extension stopped waiting goes to [refused], for the app to tell
+ * the user.
  */
-public suspend fun UserSessionScope.serveShareExtension(doorbell: Flow<Unit>) {
+public suspend fun UserSessionScope.serveShareExtension(
+    doorbell: Flow<Unit>,
+    refused: suspend (conversationId: ConversationId, conversationName: String?, reason: String) -> Unit,
+) {
     turns.computeIfAbsent(userId) { Mutex() }.withLock {
         ShareOutboxServer(
             rootPath = rootPathsProvider.rootPath,
@@ -53,6 +57,7 @@ public suspend fun UserSessionScope.serveShareExtension(doorbell: Flow<Unit>) {
             database = userStorage.database,
             restriction = kaliumConfigs.fileRestrictionState.value,
             sending = ComposerSending(lazy { messages }, syncStateObserver.value),
+            refused = refused,
         ).serve(doorbell)
     }
 }
