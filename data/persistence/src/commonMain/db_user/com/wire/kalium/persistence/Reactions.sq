@@ -15,10 +15,11 @@ CREATE INDEX reaction_msg_conv_emoji_sender ON Reaction(message_id, conversation
 doesMessageExist:
 SELECT 1 FROM Message WHERE id = :message_id AND conversation_id = :conversation_id;
 
-deleteAllReactionsOnMessageFromUser:
+deleteReactionsOnMessageFromUserExcept:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey Reaction
-DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ?;
+DELETE FROM Reaction
+WHERE message_id = :message_id AND conversation_id = :conversation_id AND sender_id = :sender_id AND emoji NOT IN :kept_emojis;
 
 deleteReaction:
 -- @NotifyCustomKey message_list_:conversation_id

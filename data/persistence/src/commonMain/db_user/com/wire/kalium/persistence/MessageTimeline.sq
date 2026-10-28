@@ -106,7 +106,9 @@ WHERE conversation_id = :conversationId AND poll_message_id IN :ids;
 timelineReactions:
 SELECT message_id, emoji, COUNT(*) AS reaction_count,
        MAX(CASE WHEN sender_id = (SELECT id FROM SelfUser) THEN 1 ELSE 0 END) AS is_self
-FROM Reaction WHERE conversation_id = :conversationId AND message_id IN :ids GROUP BY message_id, emoji;
+FROM Reaction WHERE conversation_id = :conversationId AND message_id IN :ids GROUP BY message_id, emoji
+-- Each emoji in the order it first reached the message, like the desktop client.
+ORDER BY MIN(rowid);
 
 timelineReadCounts:
 SELECT message_id, COUNT(*) AS read_count
