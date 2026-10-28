@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -845,7 +844,6 @@ class RetryFailedMessageUseCaseTest {
         everySuspend { arrangement.publishAttachments(listOf(attachment)) } returns Either.Right(Unit)
         assertIs<MessageOperationResult.Success>(RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId))
         verifySuspend(VerifyMode.exactly(1)) { arrangement.publishAttachments(listOf(attachment)) }
-        verifySuspend(VerifyMode.exactly(0)) { arrangement.attachmentsRepository.getAll(any()) }
     }
 
     @Test
@@ -857,7 +855,6 @@ class RetryFailedMessageUseCaseTest {
             .withUpdateMessageStatus(Either.Right(Unit))
             .arrange()
         everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
-        everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
         everySuspend { arrangement.publishAttachments(any()) } returns Either.Left(failure)
 
         val result = RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId)
@@ -875,7 +872,6 @@ class RetryFailedMessageUseCaseTest {
             .withSendMessage(Either.Right(Unit))
             .arrange()
         everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
-        everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
         everySuspend { arrangement.publishAttachments(any()) } returns Either.Right(Unit)
 
         assertIs<MessageOperationResult.Success>(RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId))
@@ -969,7 +965,6 @@ class RetryFailedMessageUseCaseTest {
         val (arrangement, useCase) = Arrangement().withGetMessageById(Either.Right(message))
             .withUpdateMessageStatus(Either.Right(Unit)).arrange()
         everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
-        everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
         everySuspend { arrangement.publishAttachments(any()) } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         assertIs<MessageOperationResult.Success>(useCase(message.id, message.conversationId))
         advanceUntilIdle()
@@ -1180,7 +1175,6 @@ class RetryFailedMessageUseCaseTest {
         init {
             everySuspend { assetRepository.deleteAssetLocally(any()) } returns Either.Right(Unit)
         }
-        val attachmentsRepository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)

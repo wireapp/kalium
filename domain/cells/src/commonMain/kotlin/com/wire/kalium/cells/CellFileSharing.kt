@@ -27,8 +27,8 @@ import com.wire.kalium.cells.data.credentialsOrThrow
 import com.wire.kalium.cells.data.installCellsS3HttpTimeout
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
-import com.wire.kalium.cells.domain.model.NodeIdAndVersion
-import com.wire.kalium.cells.domain.model.PreCheckResult
+import com.wire.kalium.cells.data.prepareUploadNode
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.common.error.NetworkFailure
@@ -47,7 +47,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import okio.FileSystem
 import okio.Path
 import okio.SYSTEM
-import kotlin.uuid.Uuid
+import kotlinx.coroutines.CancellationException
 
 /** Files supplied by a share, independent of the conversation's composer draft. */
 public data class CellSharedFile(
@@ -65,7 +65,7 @@ public class CellFileSharing internal constructor(
 ) {
     public fun close(): Unit = closeTransport()
 
-    /** Uploads all files before publishing them. Failed/cancelled batches discard their unpublished nodes. */
+    /** Uploads drafts only. The caller must store a message before publishing, or discard the returned drafts. */
     @Suppress("ReturnCount")
     public suspend fun upload(
         cellName: String,
@@ -74,7 +74,7 @@ public class CellFileSharing internal constructor(
     ): Either<NetworkFailure, List<CellAssetContent>> {
         require(files.isNotEmpty())
         val nodes = mutableListOf<CellNode>()
-        var published = false
+        var completed = false
         val total = files.sumOf { it.size }
         var done = 0L
         try {
@@ -83,28 +83,15 @@ public class CellFileSharing internal constructor(
                 val name = file.name.substringAfterLast('/').substringAfterLast('\\')
                 require(name.isNotBlank() && name != "." && name != "..")
                 val requestedPath = "$cellName/$name"
-                val checked = repository.preCheck(requestedPath)
-                if (checked is Either.Left) return checked
-                val path = when (val result = (checked as Either.Right).value) {
-                    is PreCheckResult.FileExists -> result.nextPath
-                    PreCheckResult.Success -> requestedPath
-                }
-                val node = CellNode(
-                    Uuid.random().toString(),
-                    versionId = Uuid.random().toString(),
-                    path = path,
-                    size = file.size,
-                    isDraft = true
-                )
+                val prepared = repository.prepareUploadNode(requestedPath, file.size, nodes.map { it.path }.toSet())
+                if (prepared is Either.Left) return prepared
+                val node = (prepared as Either.Right).value
                 nodes += node
                 val result = repository.uploadFile(file.path, node) { progress(done + it.coerceIn(0, file.size), total) }
                 if (result is Either.Left) return result
                 done += file.size
                 progress(done, total)
             }
-            val result = repository.publishDrafts(nodes.map { NodeIdAndVersion(it.uuid, it.versionId) })
-            if (result is Either.Left) return result
-            published = true
             val attachments = nodes.zip(files) { node, file ->
                 CellAssetContent(
                     id = node.uuid,
@@ -118,11 +105,39 @@ public class CellFileSharing internal constructor(
                     transferStatus = AssetTransferStatus.NOT_DOWNLOADED,
                 )
             }
+            completed = true
             return Either.Right(attachments)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+            return Either.Left(NetworkFailure.ServerMiscommunication(failure))
         } finally {
-            if (!published) withContext(NonCancellable) {
-                withTimeoutOrNull(CLEANUP_TIMEOUT_MS) { nodes.forEach { repository.deleteFile(it.uuid, permanentDelete = true) } }
+            if (!completed) withContext(NonCancellable) {
+                withTimeoutOrNull(CLEANUP_TIMEOUT_MS) { nodes.forEach { cancelDraft(it.uuid, it.versionId) } }
             }
+        }
+    }
+
+    /** Only called after the message owns the attachments, so failed publication remains retryable. */
+    public suspend fun publish(attachments: List<CellAssetContent>): Either<NetworkFailure, Unit> =
+        PublishAttachmentsUseCaseImpl(repository)(attachments)
+
+    public suspend fun discard(attachments: List<CellAssetContent>) {
+        withContext(NonCancellable) {
+            withTimeoutOrNull(CLEANUP_TIMEOUT_MS) {
+                attachments.forEach { cancelDraft(it.id, it.versionId) }
+            }
+        }
+    }
+
+    private suspend fun cancelDraft(id: String, version: String) {
+        try {
+            repository.cancelDraft(id, version)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+            // Cleanup is best effort and must not replace the original upload/store outcome.
+            com.wire.kalium.common.logger.kaliumLogger.w("Could not cancel shared Cells draft: ${failure::class.simpleName}")
         }
     }
 

@@ -27,10 +27,9 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.cells.CellSharedFile
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
-import com.wire.kalium.logic.data.asset.isVideoMimeType
-import com.wire.kalium.logic.data.asset.isAudioMimeType
-import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.share.metadata
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.common.functional.getOrNull
@@ -103,10 +102,11 @@ internal class ComposerSending(
             is ScheduleNewAssetMessageResult.Success -> null
             ScheduleNewAssetMessageResult.Failure.DisabledByTeam -> "FILE_SHARING_DISABLED"
             ScheduleNewAssetMessageResult.Failure.RestrictedFileType -> "FILE_TYPE_RESTRICTED"
-            is ScheduleNewAssetMessageResult.Failure.Generic -> "FAILED"
+            is ScheduleNewAssetMessageResult.Failure.Generic -> ShareOutboxSending.FAILED
         }
     }
 
+    @Suppress("ReturnCount")
     override suspend fun cells(
         conversationId: ConversationId,
         files: List<ShareOutboxFile>,
@@ -114,28 +114,28 @@ internal class ComposerSending(
         messageId: String,
     ): String? {
         val conversation = conversations.observeConversationDetailsById(conversationId).first().getOrNull()
-        val cellName = (conversation as? ConversationDetails.Group)?.wireCell ?: return "UNAVAILABLE"
+        val cellName = (conversation as? ConversationDetails.Group)?.wireCell ?: return ShareOutboxSending.UNAVAILABLE
+        if (cells.value.getCellConfig()?.backendUrl.isNullOrBlank()) return ShareOutboxSending.UNAVAILABLE
         val prepared = files.map { file ->
-            val width = file.width
-            val height = file.height
-            val metadata = when {
-                isDisplayableImageMimeType(file.mimeType) && width != null && height != null && width > 0 && height > 0 ->
-                    AssetContent.AssetMetadata.Image(width, height)
-                isVideoMimeType(file.mimeType) -> AssetContent.AssetMetadata.Video(file.width, file.height, file.durationMs)
-                isAudioMimeType(file.mimeType) -> AssetContent.AssetMetadata.Audio(file.durationMs, null)
-                else -> null
-            }
-            CellSharedFile(file.path.toPath(), file.name, file.mimeType, file.sizeInBytes, metadata)
+            CellSharedFile(file.path.toPath(), file.name, file.mimeType, file.sizeInBytes, file.metadata())
         }
         return when (val uploaded = cells.value.fileSharing.upload(cellName, prepared)) {
-            is Either.Left -> "UPLOAD_FAILED"
+            is Either.Left -> ShareOutboxSending.UPLOAD_FAILED
             is Either.Right -> {
-                val stored = messages.value.sendMultipartMessage.storeShared(messageId, conversationId, text, uploaded.value)
-                if (stored) null else "FAILED"
+                var stored = false
+                try {
+                    // A cancellation must not lose the ownership transfer after the message was persisted.
+                    withContext(NonCancellable) {
+                        stored = messages.value.sendMultipartMessage.storeShared(messageId, conversationId, text, uploaded.value)
+                    }
+                    if (stored) null else ShareOutboxSending.FAILED
+                } finally {
+                    if (!stored) cells.value.fileSharing.discard(uploaded.value)
+                }
             }
         }
     }
 
     override suspend fun text(conversationId: ConversationId, text: String, messageId: String): String? =
-        if (messages.value.sendTextMessage.store(messageId, conversationId, text)) null else "FAILED"
+        if (messages.value.sendTextMessage.store(messageId, conversationId, text)) null else ShareOutboxSending.FAILED
 }

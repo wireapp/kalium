@@ -44,6 +44,12 @@ import kotlin.native.HiddenFromObjC
 // The app uses these from Kotlin; the extension's Swift never does.
 @HiddenFromObjC
 public interface ShareOutboxSending {
+    public companion object {
+        public const val UNAVAILABLE: String = "UNAVAILABLE"
+        public const val UPLOAD_FAILED: String = "UPLOAD_FAILED"
+        public const val FAILED: String = "FAILED"
+    }
+
     /** Returns once incremental sync has processed pending events and reached live, or failed, before checking import rules. */
     public suspend fun awaitSynced()
     public suspend fun file(conversationId: ConversationId, file: ShareOutboxFile, messageId: String): String?
@@ -52,7 +58,7 @@ public interface ShareOutboxSending {
         files: List<ShareOutboxFile>,
         text: String,
         messageId: String,
-    ): String? = "CELLS"
+    ): String?
     public suspend fun text(conversationId: ConversationId, text: String, messageId: String): String?
 }
 

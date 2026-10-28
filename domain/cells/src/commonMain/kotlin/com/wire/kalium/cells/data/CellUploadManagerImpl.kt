@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.data
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadAttempt
 import com.wire.kalium.cells.domain.CellUploadInfo
@@ -25,7 +24,6 @@ import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.CellNode
-import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -61,22 +59,8 @@ internal class CellUploadManagerImpl internal constructor(
         assetSize: Long,
         destNodePath: String,
     ): Either<NetworkFailure, CellNode> =
-        repository.preCheck(destNodePath).map { result ->
-
-            val path = when (result) {
-                is PreCheckResult.FileExists -> result.nextPath
-                is PreCheckResult.Success -> destNodePath
-            }
-
-            CellNode(
-                uuid = Uuid.random().toString(),
-                versionId = Uuid.random().toString(),
-                path = path,
-                size = assetSize,
-                isDraft = true,
-            ).also {
-                startUpload(localPath, it)
-            }
+        repository.prepareUploadNode(destNodePath, assetSize).map { node ->
+            node.also { startUpload(localPath, it) }
         }
 
     private fun startUpload(localPath: Path, node: CellNode) {

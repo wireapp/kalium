@@ -56,6 +56,9 @@ import io.ktor.http.Url
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
@@ -159,6 +162,8 @@ internal suspend fun AppleAccountRuntime.uploadSharedFiles(
     return when {
         block != null -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, block.name))
         refused != null -> Either.Left(ShareOutcome(ShareStatus.FAILED, refused.name))
+        conversation?.wireCell != null && !database.cellsConfigured() ->
+            Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
         conversation?.wireCell != null -> {
             val sharing = CellFileSharing.create(
                 network.cellsHttpClient,
@@ -196,16 +201,27 @@ internal suspend fun AppleAccountRuntime.uploadSharedFiles(
 internal suspend fun <T> yieldingUploads(
     budget: Duration,
     accountWanted: Job,
+    discard: suspend (T) -> Unit = {},
     upload: suspend () -> Either<ShareOutcome, T>,
 ): Either<ShareOutcome, T> = coroutineScope {
+    var completed: Either<ShareOutcome, T>? = null
+    var delivered = false
     val uploads = async {
-        withTimeoutOrNull(budget) { upload() } ?: Either.Left(ShareOutcome(ShareStatus.OPEN_APP, UPLOAD_TIMEOUT))
+        withTimeoutOrNull(budget) { upload().also { completed = it } }
+            ?: Either.Left(ShareOutcome(ShareStatus.OPEN_APP, UPLOAD_TIMEOUT))
     }
-    select {
-        uploads.onAwait { it }
-        accountWanted.onJoin {
-            uploads.cancel()
-            Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ACCOUNT_WANTED))
+    try {
+        select {
+            uploads.onAwait {
+                delivered = it is Either.Right
+                it
+            }
+            accountWanted.onJoin { Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ACCOUNT_WANTED)) }
+        }
+    } finally {
+        withContext(NonCancellable) {
+            uploads.cancelAndJoin()
+            if (!delivered) (completed as? Either.Right)?.value?.let { discard(it) }
         }
     }
 }
@@ -231,7 +247,14 @@ private suspend fun AppleAccountRuntime.assetAuditLog(): Boolean {
         !ServerConfig.PRODUCTION.api.contains(Url(links.api).host)
 }
 
-internal fun ShareFile.metadata(): AssetContent.AssetMetadata? = when {
+internal fun ShareFile.metadata(): AssetContent.AssetMetadata? =
+    sharedFileMetadata(mimeType, width, height, durationMs)
+
+@com.wire.kalium.util.InternalKaliumApi
+public fun ShareOutboxFile.metadata(): AssetContent.AssetMetadata? =
+    sharedFileMetadata(mimeType, width, height, durationMs)
+
+private fun sharedFileMetadata(mimeType: String, width: Int?, height: Int?, durationMs: Long?): AssetContent.AssetMetadata? = when {
     isDisplayableImageMimeType(mimeType) && width != null && height != null && width > 0 && height > 0 ->
         AssetContent.AssetMetadata.Image(width, height)
     isVideoMimeType(mimeType) -> AssetContent.AssetMetadata.Video(width, height, durationMs)

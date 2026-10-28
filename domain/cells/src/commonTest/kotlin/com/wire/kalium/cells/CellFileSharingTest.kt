@@ -39,14 +39,14 @@ import kotlin.test.assertNotEquals
 
 class CellFileSharingTest {
     @Test
-    fun uploadsEveryFileBeforePublishingAndUsesCollisionSafePaths() = runTest {
+    fun uploadsDraftsWithoutPublishingAndUsesCollisionSafePaths() = runTest {
         val repository = RecordingRepository()
         val progress = mutableListOf<Long>()
         val result = CellFileSharing(repository).upload("cell", files) { sent, total ->
             assertEquals(12L, total)
             progress += sent
         } as Either.Right
-        assertEquals(listOf("upload:cell/a.txt", "upload:cell/b-2.txt", "publish"), repository.events)
+        assertEquals(listOf("upload:cell/a.txt", "upload:cell/b-2.txt"), repository.events)
         assertEquals(listOf("cell/a.txt", "cell/b-2.txt"), result.value.map { it.assetPath })
         assertNotEquals(result.value[0].id, result.value[1].id)
         assertEquals(12L, progress.last())
@@ -63,10 +63,12 @@ class CellFileSharingTest {
     }
 
     @Test
-    fun failedPublishDiscardsTheUnsentBatch() = runTest {
+    fun failedPublishKeepsDraftsForMessageRetry() = runTest {
         val repository = RecordingRepository(failPublish = true)
-        assertTrue(CellFileSharing(repository).upload("cell", files) is Either.Left)
-        assertEquals(repository.uploaded.map { it.uuid }, repository.deleted)
+        val sharing = CellFileSharing(repository)
+        val attachments = (sharing.upload("cell", files) as Either.Right).value
+        assertTrue(sharing.publish(attachments) is Either.Left)
+        assertTrue(repository.deleted.isEmpty(), "Stored message owns drafts after publication fails")
     }
 
     @Test
@@ -79,6 +81,39 @@ class CellFileSharingTest {
         assertTrue(upload.isCancelled)
         assertEquals(repository.uploaded.map { it.uuid }, repository.deleted)
         assertTrue("publish" !in repository.events)
+    }
+
+    @Test
+    fun duplicateNamesWithinBatchUseDifferentPaths() = runTest {
+        val repository = RecordingRepository()
+        val result = CellFileSharing(repository).upload("cell", listOf(files.first(), files.first())) as Either.Right
+        assertEquals(listOf("cell/a.txt", "cell/a (1).txt"), result.value.map { it.assetPath })
+    }
+
+    @Test
+    fun backendSuggestedPathAlreadyReservedIsRenamed() = runTest {
+        val repository = RecordingRepository()
+        val first = files.first().copy(name = "b-2.txt")
+        val result = CellFileSharing(repository).upload("cell", listOf(first, files.last())) as Either.Right
+        assertEquals(listOf("cell/b-2.txt", "cell/b (1).txt"), result.value.map { it.assetPath })
+    }
+
+    @Test
+    fun discardAfterUploadCancelsDraftVersionsWithoutPublishing() = runTest {
+        val repository = RecordingRepository()
+        val sharing = CellFileSharing(repository)
+        val attachments = (sharing.upload("cell", files) as Either.Right).value
+        sharing.discard(attachments)
+        assertEquals(attachments.map { it.id }, repository.deleted)
+        assertTrue("publish" !in repository.events)
+    }
+
+    @Test
+    fun missingCredentialsReturnsFailureInsteadOfThrowing() = runTest {
+        val repository = object : CellsRepository by FakeCellsRepository() {
+            override suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult> = error("Missing configuration")
+        }
+        assertTrue(CellFileSharing(repository).upload("cell", files) is Either.Left)
     }
 
     private class RecordingRepository(
@@ -103,8 +138,10 @@ class CellFileSharingTest {
             events += "publish"
             return if (failPublish) Either.Left(NetworkFailure.NoNetworkConnection(null)) else Either.Right(Unit)
         }
-        override suspend fun deleteFile(nodeUuid: String, permanentDelete: Boolean): Either<NetworkFailure, Unit> {
-            assertTrue(permanentDelete)
+        override suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode> =
+            Either.Right(uploaded.first { it.uuid == nodeUuid })
+        override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit> {
+            assertEquals(uploaded.first { it.uuid == nodeUuid }.versionId, versionUuid)
             deleted += nodeUuid
             return Either.Right(Unit)
         }

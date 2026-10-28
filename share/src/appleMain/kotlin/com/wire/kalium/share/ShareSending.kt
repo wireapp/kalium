@@ -278,7 +278,16 @@ internal class ShareSending(
 
     private suspend fun send(message: Message.Regular): ShareOutcome {
         val sent = try {
-            sender.sendMessage(message)
+            val attachments = (message.content as? MessageContent.Multipart)?.attachments?.filterIsInstance<CellAssetContent>().orEmpty()
+            if (attachments.isEmpty()) sender.sendMessage(message)
+            else {
+                val sharing = runtime.cellFileSharing()
+                try {
+                    sharing.publish(attachments).flatMap { sender.sendMessage(message) }
+                } finally {
+                    sharing.close()
+                }
+            }
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) { finish(message, FAILED_UNEXPECTEDLY) }
             throw cancelled

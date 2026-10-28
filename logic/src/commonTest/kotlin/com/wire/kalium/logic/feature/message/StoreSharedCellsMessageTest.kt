@@ -37,6 +37,9 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSender
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.calls
+import dev.mokkery.MockMode
+import com.wire.kalium.common.error.NetworkFailure
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
@@ -54,7 +57,12 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class StoreSharedCellsMessageTest {
     @Test
-    fun storesOnlySuppliedFilesWithStableIdentityAndLeavesTheComposerUntouched() = runTest {
+    fun storesOnlySuppliedFilesWithStableIdentityAndLeavesTheComposerUntouched() = verifyStoredShare(false)
+
+    @Test
+    fun publicationFailureKeepsStoredAttachmentsAndDoesNotSend() = verifyStoredShare(true)
+
+    private fun verifyStoredShare(publicationFails: Boolean) = runTest {
         val conversation = TestConversation.ID
         val conversations = mock<ConversationRepository>()
         val properties = mock<UserPropertyRepository>()
@@ -62,11 +70,16 @@ class StoreSharedCellsMessageTest {
         val drafts = mock<MessageAttachmentDraftRepository>()
         val removeDrafts = mock<RemoveAttachmentDraftsUseCase>()
         val sender = mock<MessageSender>()
+        val publisher = mock<com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase>()
+        val stored = mutableListOf<Message.Regular>()
+        everySuspend { publisher(any()) } calls {
+            assertEquals(1, stored.size, "The message must own the drafts before publication")
+            if (publicationFails) Either.Left(NetworkFailure.NoNetworkConnection(null)) else Either.Right(Unit)
+        }
         everySuspend { conversations.isCellEnabled(conversation) } returns Either.Right(true)
         everySuspend { properties.getReadReceiptsStatus() } returns false
         everySuspend { timer(conversation, true) } returns flowOf(SelfDeletionTimer.Disabled)
         everySuspend { sender.sendMessage(any(), any()) } returns Either.Right(Unit)
-        val stored = mutableListOf<Message.Regular>()
         val useCase = SendMultipartMessageUseCase(
             persistMessage = PersistMessageUseCase { stored += it as Message.Regular; Either.Right(Unit) },
             selfUserId = TestUser.SELF.id,
@@ -74,12 +87,12 @@ class StoreSharedCellsMessageTest {
             assetDataSource = mock(),
             slowSyncRepository = mock(),
             messageSender = sender,
-            messageSendFailureHandler = mock(),
+            messageSendFailureHandler = mock(mode = MockMode.autoUnit),
             userPropertyRepository = properties,
             conversationRepository = conversations,
             attachmentsRepository = drafts,
             selfDeleteTimer = timer,
-            publishAttachments = mock(),
+            publishAttachments = publisher,
             removeAttachmentDrafts = removeDrafts,
             sendAssetMessage = mock(),
             dispatchers = StandardTestDispatcher(testScheduler).testKaliumDispatcher(),
@@ -95,6 +108,7 @@ class StoreSharedCellsMessageTest {
         assertEquals(MessageContent.Multipart("Caption", attachments = listOf(attachment)), stored.single().content)
         verifySuspend(VerifyMode.exactly(0)) { drafts.getAll(any()) }
         verifySuspend(VerifyMode.exactly(0)) { removeDrafts(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { sender.sendMessage(stored.single(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { publisher(listOf(attachment)) }
+        verifySuspend(VerifyMode.exactly(if (publicationFails) 0 else 1)) { sender.sendMessage(stored.single(), any()) }
     }
 }

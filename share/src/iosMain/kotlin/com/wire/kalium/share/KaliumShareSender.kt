@@ -271,7 +271,11 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = APP_LOCK)
         }
         val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
-        val uploaded = yieldingUploads(uploadBudget(files.sumOf { it.sizeInBytes }), accountWanted) {
+        val uploaded = yieldingUploads(
+            uploadBudget(files.sumOf { it.sizeInBytes }),
+            accountWanted,
+            discard = runtime::discardSharedDrafts
+        ) {
             runtime.uploadSharedFiles(conversationId, files, options().fileRestrictionState) { bytes, total ->
                 progress?.uploaded(bytes, total)
             }
@@ -281,9 +285,14 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             val started = TimeSource.Monotonic.markNow()
             val sending = ShareSending(runtime, runtime.cryptoTransactions(), options().fileRestrictionState)
             // Messages stored before the deadline stay in Wire as failed, and the result says so.
-            withTimeoutOrNull(budget) {
-                share(runtime, request, sending, uploads, budget, started).also(produced)
-            } ?: failure("TIMEOUT").copy(presentGenericAlert = true, messageId = sending.firstStoredId)
+            try {
+                withTimeoutOrNull(budget) {
+                    share(runtime, request, sending, uploads, budget, started).also(produced)
+                } ?: failure("TIMEOUT").copy(presentGenericAlert = true, messageId = sending.firstStoredId)
+            } finally {
+                // Once stored, the message owns the drafts and the app can retry publication.
+                if (sending.firstStoredId == null) runtime.discardSharedDrafts(uploads)
+            }
         }
     }
 

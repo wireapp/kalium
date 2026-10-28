@@ -38,9 +38,18 @@ internal class PublishAttachmentsUseCaseImpl internal constructor(
 
     @Suppress("ReturnCount")
     override suspend fun invoke(attachments: List<MessageAttachment>): Either<NetworkFailure, Unit> {
-        val assets = attachments.filterIsInstance<CellAssetContent>().map {
-            NodeIdAndVersion(it.id, it.versionId)
-        }.toList()
-        return cellsRepository.publishDrafts(assets)
+        val drafts = mutableListOf<NodeIdAndVersion>()
+        for (asset in attachments.filterIsInstance<CellAssetContent>()) {
+            val result = cellsRepository.getNode(asset.id)
+            if (result is Either.Left) return result
+            val node = (result as Either.Right).value
+            // Retry after publication (including a lost response) must not publish the same version again.
+            if (!node.isDraft) continue
+            if (node.versionId != asset.versionId) {
+                return Either.Left(NetworkFailure.ServerMiscommunication(IllegalStateException("Cells draft version changed")))
+            }
+            drafts += NodeIdAndVersion(asset.id, asset.versionId)
+        }
+        return if (drafts.isEmpty()) Either.Right(Unit) else cellsRepository.publishDrafts(drafts)
     }
 }

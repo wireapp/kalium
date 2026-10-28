@@ -81,6 +81,11 @@ class ShareOutboxTest {
         withDatabase { database ->
             seed(database)
             conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val unavailable = database.sharePicker(SELF, BuildFileRestrictionState.NoRestriction)
+            assertEquals(false, unavailable.conversations.single { it.value == "group" }.acceptsFiles)
+            database.userConfigDAO.setWireCellsConfig(
+                com.wire.kalium.persistence.config.WireCellsConfigEntity("https://cells.test", "none", null)
+            )
             val picker = database.sharePicker(SELF, BuildFileRestrictionState.NoRestriction)
             assertEquals(true, picker.conversations.single { it.value == "group" }.acceptsFiles)
             val id = outbox.handOff(request(PHOTO, VIDEO), listOf(file("photo"), file("video")))

@@ -168,7 +168,7 @@ public class SendMultipartMessageUseCase internal constructor(
         )
     }.await()
 
-    /** Stores only the explicitly supplied, already published share attachments, never the composer's draft. */
+    /** Stores only the explicitly supplied, uploaded share drafts, never the composer's draft. */
     internal suspend fun storeShared(
         messageId: String,
         conversationId: ConversationId,
@@ -190,7 +190,7 @@ public class SendMultipartMessageUseCase internal constructor(
             )
             persistMessage(message).onSuccess {
                 scope.launch(dispatchers.io) {
-                    messageSender.sendMessage(message).onFailure {
+                    publishAttachments(attachments).flatMap { messageSender.sendMessage(message) }.onFailure {
                         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                             failure = it,
                             conversationId = conversationId,
