@@ -95,6 +95,24 @@ Use the same flag for any new provider-level cache:
 ./gradlew <task> -Pkalium.providerCacheScope=LOCAL
 ```
 
+### Generated Kotlin sources
+
+Provider cache configuration and receiving compatibility sources use typed, cacheable build tasks.
+Protobuf generation owns its raw output under `tools/protobuf-codegen/build/`; the protobuf module
+consumes the generated-source artifact and prepares its annotated Kotlin sources under
+`data/protobuf/build/generated/`. Do not move or edit the generator's raw output from another task.
+Compilation, source archives, and documentation consume the task-backed source directory.
+
+The JVM compilation graph supports configuration-cache reuse:
+
+```bash
+./gradlew :logic:compileKotlinJvm --configuration-cache --configuration-cache-problems=fail
+```
+
+Run the same command again to reuse the configured graph. This is a task-specific opt-in: it does not
+claim that all test, reporting, publishing, or native linking tasks support configuration caching.
+A build file or the `kalium.providerCacheScope` property changing should invalidate the relevant state.
+
 ## Testing Notes
 
 - Prefer `commonTest` for multiplatform behavior.

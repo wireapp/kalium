@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+import com.google.protobuf.gradle.GenerateProtoTask
 import com.google.protobuf.gradle.id
 import com.google.protobuf.gradle.remove
 
@@ -29,7 +30,6 @@ group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
 
 protobuf {
-    generatedFilesBaseDir = "$projectDir/generated"
     protoc {
         artifact = "com.google.protobuf:protoc:3.24.0"
     }
@@ -47,6 +47,19 @@ protobuf {
                 id("pbandk")
             }
         }
+    }
+}
+
+// Publish the producer-owned directory rather than exposing another project's task model.
+val generatedKotlinSources by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+}
+val generateProto = tasks.named<GenerateProtoTask>("generateProto")
+artifacts {
+    add(generatedKotlinSources.name, generateProto.map { File(it.outputBaseDir) }) {
+        builtBy(generateProto)
+        type = "directory"
     }
 }
 
