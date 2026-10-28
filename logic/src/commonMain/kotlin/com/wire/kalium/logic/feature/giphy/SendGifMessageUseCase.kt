@@ -25,7 +25,8 @@ import kotlinx.coroutines.async
  * stored but not delivered, for example while offline: the GIF still follows it.
  *
  * What the other results leave in the conversation:
- * - [SendGifMessageResult.DisabledByTeam] and [SendGifMessageResult.RestrictedFileType]: nothing.
+ * - [SendGifMessageResult.DisabledByTeam] and [SendGifMessageResult.RestrictedFileType]: nothing, unless the team
+ *   changed its file sharing settings while the caption was sending; then only the caption.
  * - [SendGifMessageResult.Failure] with [LegalHoldEnabledForConversationFailure]: only the caption, stored under that
  *   failure's message ID and failed because sending it found the conversation under legal hold. The GIF was not sent.
  *   Once the user accepts, retry the caption by that ID and send the GIF again without a caption.
