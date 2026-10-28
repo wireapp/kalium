@@ -22,8 +22,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CellAssetContent
