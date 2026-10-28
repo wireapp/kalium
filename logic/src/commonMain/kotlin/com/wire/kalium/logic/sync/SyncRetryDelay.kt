@@ -18,10 +18,16 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.sync.SyncRetryStatus
 import com.wire.kalium.logic.network.telemetryName
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.network.NetworkStateObserver
 import kotlin.time.Duration
+import kotlin.time.TimeSource
+import kotlin.uuid.Uuid
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 /**
  * Waits for [retryDelay] before the next sync retry attempt, completing earlier
@@ -31,28 +37,45 @@ import kotlin.time.Duration
  * (e.g. DNS is still catching up), the next failure backs off from the minimum delay
  * instead of inheriting the stale pre-reconnect backoff.
  */
+@Suppress("LongParameterList")
 internal suspend fun NetworkStateObserver.delayBeforeSyncRetry(
     retryDelay: Duration,
     exponentialDurationHelper: ExponentialDurationHelper,
     logger: KaliumLogger,
     syncType: SyncType,
+    timeSource: TimeSource = TimeSource.Monotonic,
+    onRetryStateChanged: suspend (SyncRetryStatus) -> Unit = {},
+    retryController: SyncRetryController = SyncRetryController(),
+    failureGeneration: Long? = null,
 ) {
+    val schedule = SyncRetryStatus.Scheduled(Uuid.random().toString(), timeSource.markNow() + retryDelay)
     val component = syncType.telemetryComponent()
-    logger.logSyncTelemetry(
-        event = SyncTelemetryEvent.RETRY_WAIT_STARTED,
-        component = component,
-        data = retryTelemetryData(retryDelay)
-    )
-    val reconnected = delayUntilConnectedWithInternetAgain(retryDelay)
-    if (reconnected) {
+    val trigger = try {
+        retryController.awaitRetry(
+            failureGeneration = failureGeneration ?: retryController.generation(),
+            onRegistered = {
+                onRetryStateChanged(schedule)
+                logger.logSyncTelemetry(
+                    event = SyncTelemetryEvent.RETRY_WAIT_STARTED,
+                    component = component,
+                    data = retryTelemetryData(retryDelay)
+                )
+            },
+            waitForNetworkOrTimeout = { delayUntilConnectedWithInternetAgain(schedule.remainingDelay()) },
+        ).also { onRetryStateChanged(SyncRetryStatus.Attempting(schedule.id)) }
+    } catch (cancelled: CancellationException) {
+        withContext(NonCancellable) { onRetryStateChanged(SyncRetryStatus.None) }
+        throw cancelled
+    }
+    if (trigger != RetryTrigger.RETRY_DELAY_ELAPSED) {
         exponentialDurationHelper.reset()
     }
     logger.logSyncTelemetry(
         event = SyncTelemetryEvent.RETRY_TRIGGERED,
         component = component,
         data = retryTelemetryData(retryDelay) + mapOf(
-            "trigger" to if (reconnected) "NETWORK_RECONNECTED" else "RETRY_DELAY_ELAPSED",
-            "backoffReset" to reconnected,
+            "trigger" to trigger.name,
+            "backoffReset" to (trigger != RetryTrigger.RETRY_DELAY_ELAPSED),
         )
     )
 }

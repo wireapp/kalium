@@ -3239,6 +3239,7 @@ abstract class com.wire.kalium.logic.sync/SyncExecutor { // com.wire.kalium.logi
 
     abstract fun startAndStopSyncAsNeeded() // com.wire.kalium.logic.sync/SyncExecutor.startAndStopSyncAsNeeded|startAndStopSyncAsNeeded(){}[0]
     abstract suspend fun <#A1: kotlin/Any?> request(kotlin.coroutines/SuspendFunction1<com.wire.kalium.logic.sync/SyncRequest, #A1>): #A1 // com.wire.kalium.logic.sync/SyncExecutor.request|request(kotlin.coroutines.SuspendFunction1<com.wire.kalium.logic.sync.SyncRequest,0:0>){0§<kotlin.Any?>}[0]
+    abstract suspend fun retryNow() // com.wire.kalium.logic.sync/SyncExecutor.retryNow|retryNow(){}[0]
     abstract suspend fun stopForRestart() // com.wire.kalium.logic.sync/SyncExecutor.stopForRestart|stopForRestart(){}[0]
 }
 
@@ -6789,16 +6790,19 @@ sealed class com.wire.kalium.logic.data.conversation/ResetMLSConversationResult 
 
 sealed class com.wire.kalium.logic.data.sync/SyncState { // com.wire.kalium.logic.data.sync/SyncState|null[0]
     final class Failed : com.wire.kalium.logic.data.sync/SyncState { // com.wire.kalium.logic.data.sync/SyncState.Failed|null[0]
-        constructor <init>(com.wire.kalium.common.error/CoreFailure, kotlin.time/Duration) // com.wire.kalium.logic.data.sync/SyncState.Failed.<init>|<init>(com.wire.kalium.common.error.CoreFailure;kotlin.time.Duration){}[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure, kotlin.time/Duration, com.wire.kalium.logic.data.sync/SyncRetryStatus = ...) // com.wire.kalium.logic.data.sync/SyncState.Failed.<init>|<init>(com.wire.kalium.common.error.CoreFailure;kotlin.time.Duration;com.wire.kalium.logic.data.sync.SyncRetryStatus){}[0]
 
         final val cause // com.wire.kalium.logic.data.sync/SyncState.Failed.cause|{}cause[0]
             final fun <get-cause>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.data.sync/SyncState.Failed.cause.<get-cause>|<get-cause>(){}[0]
         final val retryDelay // com.wire.kalium.logic.data.sync/SyncState.Failed.retryDelay|{}retryDelay[0]
             final fun <get-retryDelay>(): kotlin.time/Duration // com.wire.kalium.logic.data.sync/SyncState.Failed.retryDelay.<get-retryDelay>|<get-retryDelay>(){}[0]
+        final val retryStatus // com.wire.kalium.logic.data.sync/SyncState.Failed.retryStatus|{}retryStatus[0]
+            final fun <get-retryStatus>(): com.wire.kalium.logic.data.sync/SyncRetryStatus // com.wire.kalium.logic.data.sync/SyncState.Failed.retryStatus.<get-retryStatus>|<get-retryStatus>(){}[0]
 
         final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.data.sync/SyncState.Failed.component1|component1(){}[0]
         final fun component2(): kotlin.time/Duration // com.wire.kalium.logic.data.sync/SyncState.Failed.component2|component2(){}[0]
-        final fun copy(com.wire.kalium.common.error/CoreFailure = ..., kotlin.time/Duration = ...): com.wire.kalium.logic.data.sync/SyncState.Failed // com.wire.kalium.logic.data.sync/SyncState.Failed.copy|copy(com.wire.kalium.common.error.CoreFailure;kotlin.time.Duration){}[0]
+        final fun component3(): com.wire.kalium.logic.data.sync/SyncRetryStatus // com.wire.kalium.logic.data.sync/SyncState.Failed.component3|component3(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ..., kotlin.time/Duration = ..., com.wire.kalium.logic.data.sync/SyncRetryStatus = ...): com.wire.kalium.logic.data.sync/SyncState.Failed // com.wire.kalium.logic.data.sync/SyncState.Failed.copy|copy(com.wire.kalium.common.error.CoreFailure;kotlin.time.Duration;com.wire.kalium.logic.data.sync.SyncRetryStatus){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.sync/SyncState.Failed.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.sync/SyncState.Failed.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.data.sync/SyncState.Failed.toString|toString(){}[0]
