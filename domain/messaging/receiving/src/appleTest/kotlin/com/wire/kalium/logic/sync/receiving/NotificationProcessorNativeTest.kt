@@ -12114,7 +12114,7 @@ class NotificationProcessorNativeTest {
         fun legalHoldRequest(user: UserId, client: String) = plainEvent("request-$client",
             """{"type":"user.legalhold-request","id":"${user.value}","client":{"id":"$client"},"last_prekey":{"id":65535,"key":"key"}}""")
 
-        fun teamJoin(user: UserId) = plainEvent("team-join",
+         fun teamJoin(user: UserId) = plainEvent("team-join",
             """{"type":"team.member-join","team":"fixture-team","time":"$TIME","data":{"user":"${user.value}"}}""")
 
         fun teamLeave(user: UserId = THIRD) = plainEvent("team-leave",
