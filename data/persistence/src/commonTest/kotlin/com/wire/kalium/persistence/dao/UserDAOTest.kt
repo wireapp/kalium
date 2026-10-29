@@ -1186,6 +1186,30 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingUser_whenPartiallyUpdatingAccentId_thenAccentIdIsUpdated() = runTest(dispatcher) {
+        db.userDAO.upsertUser(user1)
+        val update = PartialUserEntity(id = user1.id, accentId = 7)
+
+        db.userDAO.updateUser(update)
+
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(update.accentId, result?.accentId)
+    }
+
+    @Test
+    fun givenExistingUsers_whenBatchUpdatingAccentIds_thenNullPreservesExistingAccentId() = runTest(dispatcher) {
+        db.userDAO.upsertUsers(listOf(user1, user2))
+        val update = PartialUserEntity(id = user1.id, accentId = 7)
+
+        db.userDAO.updateUser(listOf(update, PartialUserEntity(id = user2.id)))
+
+        val updatedUser = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        val unchangedUser = db.userDAO.observeUserDetailsByQualifiedID(user2.id).first()
+        assertEquals(update.accentId, updatedUser?.accentId)
+        assertEquals(user2.accentId, unchangedUser?.accentId)
+    }
+
+    @Test
     fun givenExistingUser_WhenUpdateUserAccentColor_ThenAccentIsUpdated() = runTest(dispatcher) {
         // given
         db.userDAO.upsertUser(user1)

@@ -182,9 +182,9 @@ internal class MemberDAOImpl internal constructor(
             memberQueries.selectConversationMemberCounts(conversationId) { conversationSize, servicesCount, guestsCount, guestsProCount ->
                 ConversationMemberCountsEntity(
                     conversationSize = conversationSize.toInt(),
-                    servicesCount = servicesCount.toInt(),
-                    guestsCount = guestsCount.toInt(),
-                    guestsProCount = guestsProCount.toInt()
+                    servicesCount = servicesCount?.toInt() ?: 0,
+                    guestsCount = guestsCount?.toInt() ?: 0,
+                    guestsProCount = guestsProCount?.toInt() ?: 0
                 )
             }.awaitAsOne()
         }

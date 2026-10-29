@@ -83,7 +83,14 @@ FROM UnreadEvent
 GROUP BY conversation_id;
 
 getConversationsUnreadEventCountsGrouped:
-SELECT * FROM UnreadEventCountsGrouped;
+SELECT
+    conversationId,
+    COALESCE(knocksCount, 0) AS knocksCount,
+    COALESCE(missedCallsCount, 0) AS missedCallsCount,
+    COALESCE(mentionsCount, 0) AS mentionsCount,
+    COALESCE(repliesCount, 0) AS repliesCount,
+    COALESCE(messagesCount, 0) AS messagesCount
+FROM UnreadEventCountsGrouped;
 
 getHasUnreadEventsForConversation:
 SELECT EXISTS(
