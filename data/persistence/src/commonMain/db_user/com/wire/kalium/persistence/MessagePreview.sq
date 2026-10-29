@@ -21,7 +21,9 @@ SELECT
     CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
     CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS updateConversationName,
     Conversation.name AS conversationName,
-    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+    EXISTS (SELECT 1 FROM MessageMention
+        WHERE message_id = Message.id AND conversation_id = Message.conversation_id
+            AND (user_id = SelfUser.id OR (user_id IS NULL AND Conversation.type IN ('GROUP', 'CHANNEL', 'MEETING')))) AS isMentioningSelfUser,
     TextContent.is_quoting_self AS isQuotingSelfUser,
     COALESCE(TextContent.text_body, PollContent.question) AS text,
     AssetContent.asset_mime_type AS assetMimeType,
@@ -35,7 +37,6 @@ LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN Conversation ON Message.conversation_id = Conversation.qualified_id
 LEFT JOIN MessageSystemContent AS SystemContent
     ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
-LEFT JOIN MessageMention AS Mention ON Message.id = Mention.message_id AND SelfUser.id = Mention.user_id
 LEFT JOIN MessageAssetContent AS AssetContent
     ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent

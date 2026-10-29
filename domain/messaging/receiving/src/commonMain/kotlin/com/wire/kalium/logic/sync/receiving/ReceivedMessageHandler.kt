@@ -546,13 +546,14 @@ internal suspend fun storedMessagePresentation(
     users: UserDAO,
 ): ReceivedMessageResult? {
     if (message.visibility != MessageEntity.Visibility.VISIBLE) return null
-    // Notification.sq excludes multipart even when its mute-policy check permits an alert.
+    // Match Notification.sq: multipart alerts are limited to explicit @all captions in groups.
     val reason = suppressionReason(message, conversation, mapper, selfUserId)
         ?: "NOTIFICATION_POLICY".takeUnless { messages.needsToBeNotified(message.id, message.conversationId) }
     // Match Android: verification warnings affect reply eligibility, not message previews.
     val mayPreview = message.expireAfterMs == null
     val text = when (val content = message.content) {
         is MessageEntityContent.Text -> content.messageBody
+        is MessageEntityContent.Multipart -> content.messageBody
         is MessageEntityContent.Poll -> content.question
         else -> null
     }
@@ -581,8 +582,10 @@ private fun suppressionReason(
     selfUserId: UserId,
 ): String? {
     val lastNotificationDate = conversation.lastNotificationDate
+    val multipart = message.content as? MessageEntityContent.Multipart
     return when {
-        message.content is MessageEntityContent.Multipart -> "MULTIPART"
+        multipart != null && !(conversation.type.isGroup && !multipart.messageBody.isNullOrBlank() &&
+            multipart.mentions.any { it.isEveryone }) -> "MULTIPART"
         !mapper.fromEntity(message).shouldNotifyUser() -> "CONTENT_POLICY"
         conversation.archived -> "ARCHIVED"
         message.senderUserId == selfUserId.toDao() -> "SELF_MESSAGE"

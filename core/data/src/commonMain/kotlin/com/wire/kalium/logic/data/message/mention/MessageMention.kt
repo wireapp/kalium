@@ -26,6 +26,9 @@ import kotlinx.serialization.Serializable
 data class MessageMention(
     @SerialName("start") val start: Int,
     @SerialName("length") val length: Int,
-    @SerialName("userId") val userId: UserId,
+    // A null target explicitly represents everyone in a group conversation.
+    @SerialName("userId") val userId: UserId?,
     @SerialName("isSelfMention") val isSelfMention: Boolean
-)
+) {
+    val isEveryone: Boolean get() = userId == null
+}

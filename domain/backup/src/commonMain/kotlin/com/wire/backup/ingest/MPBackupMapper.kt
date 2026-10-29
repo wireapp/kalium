@@ -35,6 +35,7 @@ import com.wire.kalium.protobuf.backup.ExportedAsset
 import com.wire.kalium.protobuf.backup.ExportedAudioMetaData
 import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedEncryptionAlgorithm
+import com.wire.kalium.protobuf.backup.ExportedEveryoneMention
 import com.wire.kalium.protobuf.backup.ExportedGenericMetaData
 import com.wire.kalium.protobuf.backup.ExportedImageMetaData
 import com.wire.kalium.protobuf.backup.ExportedLocation
@@ -118,13 +119,16 @@ internal class MPBackupMapper {
                 }
 
                 is BackupMessageContent.Text -> {
-                    fun mapMention(mention: BackupMessageContent.Text.Mention): ExportedMention =
-                        ExportedMention(mention.start, mention.length, mention.userId.toProtoModel())
                     Content.Text(
                         ExportedText(
                             content = content.text,
-                            mentions = content.mentions.map(::mapMention),
-                            quotedMessageId = content.quotedMessageId
+                            mentions = content.mentions.mapNotNull { mention ->
+                                mention.userId?.let { ExportedMention(mention.start, mention.length, it.toProtoModel()) }
+                            },
+                            quotedMessageId = content.quotedMessageId,
+                            everyoneMentions = content.mentions.filter { it.userId == null }.map {
+                                ExportedEveryoneMention(it.start, it.length)
+                            }
                         )
                     )
                 }
@@ -211,7 +215,9 @@ internal class MPBackupMapper {
 
                 BackupMessageContent.Text(
                     text = protoContent.value.content,
-                    mentions = protoContent.value.mentions.map(::mapMention),
+                    mentions = (protoContent.value.mentions.map(::mapMention) + protoContent.value.everyoneMentions.map {
+                        BackupMessageContent.Text.Mention(userId = null, start = it.start, length = it.length)
+                    }).sortedBy { it.start },
                     quotedMessageId = protoContent.value.quotedMessageId
                 )
             }

@@ -131,13 +131,14 @@ private fun BackupMessageContent.toMessageContent(selfUserId: UserId) =
         is BackupMessageContent.Text -> MessageContent.Text(
             value = text,
             mentions = mentions.mapNotNull { mention ->
-                val userId = mention.userId.toQualifiedIdOrNull("restore.message.mentionUserId")
-                    ?: return@mapNotNull null
+                val userId = mention.userId?.let {
+                    it.toQualifiedIdOrNull("restore.message.mentionUserId") ?: return@mapNotNull null
+                }
                 MessageMention(
                     start = mention.start,
                     length = mention.length,
                     userId = userId,
-                    isSelfMention = userId == selfUserId,
+                    isSelfMention = userId == null || userId == selfUserId,
                 )
             },
             quotedMessageReference = quotedMessageId?.let {

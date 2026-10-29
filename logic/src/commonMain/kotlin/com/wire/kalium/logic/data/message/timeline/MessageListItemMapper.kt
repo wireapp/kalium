@@ -180,7 +180,10 @@ internal class MessageListItemMapper(private val selfUserId: UserId) {
     private fun text(row: TimelineRows, page: MessageTimelinePageEntity, user: (UserIDEntity) -> MessageListUser) = MessageListText(
         body = row.text_body,
         mentions = page.mentions[row.id].orEmpty().map {
-            MessageMention(it.start, it.length, it.user_id.toModel(), it.user_id.toModel() == selfUserId)
+            MessageMention(
+                it.start, it.length, it.user_id?.toModel(),
+                isSelfMention = it.user_id == null || it.user_id?.toModel() == selfUserId
+            )
         },
         linkPreviews = page.previews[row.id].orEmpty().map {
             MessageListLinkPreview(
