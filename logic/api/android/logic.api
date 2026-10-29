@@ -7011,7 +7011,33 @@ public final class com/wire/kalium/logic/feature/search/SearchUsersByNameUseCase
 }
 
 public abstract interface class com/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase {
+	public abstract fun getSnapshot (Lcom/wire/kalium/logic/data/id/QualifiedID;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot {
+}
+
+public final class com/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot$Failure : com/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot {
+	public fun <init> (Lcom/wire/kalium/common/error/StorageFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/StorageFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/StorageFailure;)Lcom/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot$Failure;Lcom/wire/kalium/common/error/StorageFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Lcom/wire/kalium/common/error/StorageFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot$Success : com/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot {
+	public fun <init> (Lcom/wire/kalium/logic/data/message/SelfDeletionTimer;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/message/SelfDeletionTimer;
+	public final fun copy (Lcom/wire/kalium/logic/data/message/SelfDeletionTimer;)Lcom/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot$Success;Lcom/wire/kalium/logic/data/message/SelfDeletionTimer;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase$Snapshot$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getTimer ()Lcom/wire/kalium/logic/data/message/SelfDeletionTimer;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/selfDeletingMessages/ObserveTeamSettingsSelfDeletingStatusUseCase {
