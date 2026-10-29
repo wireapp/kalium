@@ -2130,11 +2130,12 @@ public class UserSessionScope internal constructor(
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
-            userRepository,
-            conversationRepository,
-            meetingRepository,
-            notificationEventsManager,
-            deleteConversationUseCase,
+            selfUserId = userId,
+            userRepository = userRepository,
+            conversationRepository = conversationRepository,
+            meetingRepository = meetingRepository,
+            notificationEventsManager = notificationEventsManager,
+            deleteConversation = deleteConversationUseCase,
         )
 
     private val deleteConversationReminderEventHandler: DeleteConversationReminderEventHandler
