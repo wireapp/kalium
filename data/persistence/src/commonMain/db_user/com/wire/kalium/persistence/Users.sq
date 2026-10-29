@@ -111,7 +111,7 @@ email = coalesce(:email, email),
 accent_id = coalesce(:accent_id, accent_id),
 preview_asset_id = :preview_asset_id, preview_asset_id = coalesce(:preview_asset_id, preview_asset_id),
 complete_asset_id = :complete_asset_id, complete_asset_id = coalesce(:complete_asset_id, complete_asset_id),
-text_status = CASE WHEN :text_status IS NULL THEN text_status ELSE NULLIF(TRIM(:text_status), '') END,
+text_status = CASE WHEN :text_status IS NULL THEN text_status ELSE NULLIF(:text_status, ' ') END,
 supported_protocols = :supported_protocols, supported_protocols = coalesce(:supported_protocols, supported_protocols)
 WHERE qualified_id = ?;
 
@@ -129,7 +129,7 @@ email = coalesce(:email, email),
 accent_id = coalesce(:accent_id, accent_id),
 preview_asset_id = :preview_asset_id, preview_asset_id = coalesce(:preview_asset_id, preview_asset_id),
 complete_asset_id = :complete_asset_id, complete_asset_id = coalesce(:complete_asset_id, complete_asset_id),
-text_status = CASE WHEN :text_status IS NULL THEN text_status ELSE NULLIF(TRIM(:text_status), '') END,
+text_status = CASE WHEN :text_status IS NULL THEN text_status ELSE NULLIF(:text_status, ' ') END,
 supported_protocols = :supported_protocols, supported_protocols = coalesce(:supported_protocols, supported_protocols)
 WHERE qualified_id = ?;
 

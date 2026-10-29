@@ -45,6 +45,28 @@ import kotlinx.coroutines.test.runTest
 class UserDAOTest : BaseDatabaseTest() {
 
     @Test
+    fun singlePartialUpdatesPreserveNonblankStatusWhitespace() = runTest(dispatcher) {
+        val user = newUserEntity(id = "padded-status-user").copy(textStatus = "Original")
+        db.userDAO.upsertUser(user)
+        val status = "  Out sick  "
+
+        db.userDAO.updateUser(PartialUserEntity(id = user.id, textStatus = status))
+
+        assertEquals(status, db.userDAO.getUserDetailsByQualifiedID(user.id)?.textStatus)
+    }
+
+    @Test
+    fun batchedPartialUpdatesPreserveNonblankStatusWhitespace() = runTest(dispatcher) {
+        val user = newUserEntity(id = "padded-status-user").copy(textStatus = "Original")
+        db.userDAO.upsertUser(user)
+        val status = "  Out sick  "
+
+        db.userDAO.updateUser(listOf(PartialUserEntity(id = user.id, textStatus = status)))
+
+        assertEquals(status, db.userDAO.getUserDetailsByQualifiedID(user.id)?.textStatus)
+    }
+
+    @Test
     fun partialProfileUpdatesPreserveAbsentStatusAndClearExplicitBlankStatus() = runTest(dispatcher) {
         val user = newUserEntity(id = "status-user").copy(textStatus = "🎧 In a meeting")
         db.userDAO.upsertUser(user)
