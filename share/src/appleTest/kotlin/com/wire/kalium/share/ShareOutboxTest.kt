@@ -43,6 +43,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import okio.FileSystem
+import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import kotlin.test.AfterTest
@@ -136,6 +137,26 @@ class ShareOutboxTest {
             assertEquals(listOf("photo.jpg=photo as m1", "video.mp4=video as m2", "Hello as t"), sending.stored)
             assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
             assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(id), "A result is reported once")
+        }
+    }
+
+    @Test
+    fun aShareToSeveralConversationsIsOneEntryPerConversationAndPublishedOnlyOnceAllAreCopied() = runTest {
+        withDatabase { database ->
+            seed(database)
+            conversation(database, "second", ConversationEntity.Type.GROUP, T2)
+            val second = request(PHOTO.copy(messageId = "m3"), conversation = "second", textMessageId = "t2")
+            assertFailsWith<IOException> {
+                outbox.handOff(listOf(request(PHOTO), second), listOf(root.resolve("missing").toString()))
+            }
+            assertEquals(emptyList(), outbox.claim(), "A failed copy publishes nothing")
+
+            val ids = outbox.handOff(listOf(request(PHOTO), second), listOf(file("photo")))
+            val sending = RecordingSending(database)
+            server(database, sending).importShares()
+
+            assertEquals(listOf("photo.jpg=photo as m1", "Hello as t", "photo.jpg=photo as m3", "Hello as t2"), sending.stored)
+            assertEquals(List(2) { HandOffState.Finished(ShareOutbox.STORED) }, ids.map { outbox.state(it) })
         }
     }
 

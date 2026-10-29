@@ -20,7 +20,8 @@ package com.wire.kalium.share
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
@@ -130,18 +131,31 @@ public fun interface KaliumShareProgress {
     public fun uploaded(bytes: Long, totalBytes: Long)
 }
 
-/** [text] may be blank when there are attachments; each attachment is sent as its own message, then the text. */
+/** A conversation a share goes to. */
+public data class KaliumShareDestination(
+    public val conversationValue: String,
+    public val conversationDomain: String,
+)
+
+/**
+ * [text] may be blank when there are attachments; in each conversation, each attachment is sent as its own message,
+ * then the text.
+ */
 public data class KaliumShareRequest(
     public val userValue: String,
     public val userDomain: String,
-    public val conversationValue: String,
-    public val conversationDomain: String,
+    /**
+     * One to five different conversations, sent to in this order. Each file is encrypted and uploaded once for all of
+     * them, except where the upload belongs to one conversation: its cell, or a backend that audits uploads.
+     */
+    public val conversations: List<KaliumShareDestination>,
     public val text: String,
     public val attachments: List<KaliumShareAttachment>,
     /** Additional host message-preview restriction for alerts; the saved account choice is read for each request. */
     public val showMessageContent: Boolean,
     /** Bounds the live hold that sends; uploads run before it, with a budget of their own that grows with the files' size. */
     public val budgetMilliseconds: Long,
+    /** Cells drafts prepared for the only conversation. */
     public val preparedDraftIds: List<String> = emptyList(),
 )
 
@@ -162,6 +176,11 @@ public enum class KaliumShareStatus {
     OPEN_APP,
 }
 
+/**
+ * How a share ended. Once it reached its conversations, [conversations] tells how each ended, and [status],
+ * [messageId] and [failureReason] are those of the first one not sent, or else of the last one. Before, they are the
+ * whole share's, and [conversations] is empty.
+ */
 public data class KaliumShareResult(
     public val status: KaliumShareStatus,
     /**
@@ -171,6 +190,8 @@ public data class KaliumShareResult(
     public val messageId: String? = null,
     /** Diagnostic code only; never contains account data or message content. */
     public val failureReason: String? = null,
+    /** One per requested conversation, in request order, once the share reached them. */
+    public val conversations: List<KaliumShareConversationResult> = emptyList(),
     /**
      * Unnotified message alerts, oldest first. The backend sent no push for events delivered over the
      * open socket, so the host posts each; Kalium has already marked them notified.
@@ -178,6 +199,16 @@ public data class KaliumShareResult(
     public val alerts: List<KaliumShareAlert> = emptyList(),
     /** Events may have arrived that could not be processed in time; the host shows a generic alert. */
     public val presentGenericAlert: Boolean = false,
+)
+
+/** How a share ended in one conversation; see [KaliumShareResult.messageId] for [messageId]. */
+public data class KaliumShareConversationResult(
+    public val conversationValue: String,
+    public val conversationDomain: String,
+    public val status: KaliumShareStatus,
+    public val messageId: String? = null,
+    /** Diagnostic code only. */
+    public val failureReason: String? = null,
 )
 
 /** Text and names are present only when preview is allowed. */
@@ -236,8 +267,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
     public suspend fun send(request: KaliumShareRequest, progress: KaliumShareProgress?): KaliumShareResult {
         val files = request.attachments.map { it.toShareFile() }
         val invalid = when {
-            request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.attachments.size > MAX_ATTACHMENTS -> "INVALID_REQUEST"
-            request.text.isBlank() && request.attachments.isEmpty() -> "INVALID_REQUEST"
+            request.budgetMilliseconds !in 1..MAX_BUDGET_MS || !request.isValid() -> "INVALID_REQUEST"
             null in files -> "FILE_UNREADABLE"
             else -> null
         }
@@ -327,7 +357,10 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         "DRAFT_FAILED"
     }
 
-    /** Uploading needs no live socket, so it runs before the hold, with its own budget. */
+    /**
+     * Uploading needs no live socket, so it runs before the hold, with its own budget. Conversations that send the
+     * same assets share their upload.
+     */
     @Suppress("ReturnCount")
     private suspend fun uploadAndShare(
         runtime: AppleAccountRuntime,
@@ -340,47 +373,57 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         if (runtime.database.appLockEnforcedByTeam(options().fileRestrictionState)) {
             return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = APP_LOCK)
         }
-        val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
+        val conversationIds = request.conversations.map { ConversationId(it.conversationValue, it.conversationDomain) }
         val draftStore = ShareDraftStore(configuration.rootPath, UserId(request.userValue, request.userDomain))
         val uploaded = if (request.preparedDraftIds.isNotEmpty()) {
+            val conversationId = conversationIds.single()
             val records = draftStore.resolve(request.preparedDraftIds, conversationId)
                 ?: return failure("DRAFT_UNAVAILABLE")
             if (records.size != files.size || records.map { it.file } != files) return failure("INVALID_REQUEST")
             val cells = records.map { requireNotNull(it.asset).cellName }.distinct()
             if (cells.size != 1) return failure("INVALID_REQUEST")
-            Either.Right(listOf(ShareItem.Cells(files, records.map { requireNotNull(it.asset).content(it.file) }, cells.single())))
-        } else yieldingUploads(
-            uploadBudget(files.sumOf { it.sizeInBytes }),
-            accountWanted,
-            discard = runtime::discardSharedDrafts
-        ) {
-            runtime.uploadSharedFiles(conversationId, files, options().fileRestrictionState) { bytes, total ->
-                progress?.uploaded(bytes, total)
-            }
+            val item = ShareItem.Cells(files, records.map { requireNotNull(it.asset).content(it.file) }, cells.single())
+            Either.Right(emptyMap<ConversationId, ShareOutcome>() to mapOf(conversationId to listOf<ShareItem>(item)))
+        } else runtime.planSharedUploads(conversationIds, files, options().fileRestrictionState).flatMap { plan ->
+            yieldingUploads(
+                uploadBudget(files.sumOf { it.sizeInBytes } * plan.targets.size),
+                accountWanted,
+                discard = { runtime.discardSharedDrafts(it.values.flatten()) }
+            ) {
+                runtime.uploadSharedFiles(plan, files) { bytes, total -> progress?.uploaded(bytes, total) }
+            }.map { plan.blocked to it }
         }
-        return uploaded.fold({ KaliumShareResult(it.status.toKalium(), failureReason = it.reason) }) { uploads ->
-            val budget = request.budgetMilliseconds.milliseconds
-            val started = TimeSource.Monotonic.markNow()
-            val sending = ShareSending(runtime, runtime.cryptoTransactions(), options().fileRestrictionState)
-            // Messages stored before the deadline stay in Wire as failed, and the result says so.
-            try {
-                withTimeoutOrNull(budget) {
-                    share(runtime, request, sending, uploads, budget, started).also(produced)
-                } ?: failure("TIMEOUT").copy(presentGenericAlert = true, messageId = sending.firstStoredId)
-            } finally {
-                // Once stored, the message owns the drafts and the app can retry publication.
-                if (sending.firstStoredId == null) runtime.discardSharedDrafts(uploads)
-                draftStore.consume(request.preparedDraftIds)
-            }
+        val (blocked, uploads) = when (uploaded) {
+            is Either.Left -> return KaliumShareResult(uploaded.value.status.toKalium(), failureReason = uploaded.value.reason)
+            is Either.Right -> uploaded.value
+        }
+        // No conversation can take the share now, so the account need not go live.
+        if (uploads.isEmpty()) return shareResult(conversationIds.map { it to blocked.getValue(it) })
+        val budget = request.budgetMilliseconds.milliseconds
+        val started = TimeSource.Monotonic.markNow()
+        val sending = ShareSending(runtime, runtime.cryptoTransactions(), options().fileRestrictionState)
+        // Messages stored before the deadline stay in Wire as failed, and the result says so.
+        return try {
+            withTimeoutOrNull(budget) {
+                // The text follows the files, as a caption does.
+                val items = uploads.mapValues { (_, uploads) -> sharedItems(uploads, request.text) }
+                share(runtime, request, sending, items, blocked, budget, started).also(produced)
+            } ?: failure("TIMEOUT").copy(presentGenericAlert = true, messageId = sending.firstStoredId)
+        } finally {
+            // Once stored, a message owns its drafts and the app can retry publication.
+            runtime.discardSharedDrafts(uploads.filterKeys { it !in sending.storedConversations }.values.flatten())
+            draftStore.consume(request.preparedDraftIds)
         }
     }
 
+    /** Sends [items] to each of their conversations; [blocked] ones keep their reason. */
     @Suppress("LongParameterList")
     private suspend fun share(
         runtime: AppleAccountRuntime,
         request: KaliumShareRequest,
         sending: ShareSending,
-        uploads: List<ShareItem>,
+        items: Map<ConversationId, List<ShareItem>>,
+        blocked: Map<ConversationId, ShareOutcome>,
         budget: Duration,
         started: TimeSource.Monotonic.ValueTimeMark,
     ): KaliumShareResult {
@@ -392,22 +435,20 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
                     runtime = runtime,
                     processor = processor,
                     sending = sending,
-                    request = request,
-                    // The text follows the files, as a caption does.
-                    items = sharedItems(uploads, request.text),
+                    items = items,
                     shouldStopCatchingUp = { started.elapsedNow() > budget * SEND_BY_SHARE || accountWanted.isCompleted },
                     shouldStopSending = { started.elapsedNow() > budget * SENT_BY_SHARE },
                 )
                 // Recovering missed events needs slow sync, which only the app runs.
-                CatchUpOutcome.NEEDS_SLOW_SYNC -> ShareOutcome(ShareStatus.OPEN_APP, hold.name) to emptyList()
-                else -> ShareOutcome(ShareStatus.OFFLINE, "CATCH_UP_${hold.name}") to emptyList()
+                CatchUpOutcome.NEEDS_SLOW_SYNC -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, hold.name)) to emptyList()
+                else -> Either.Left(ShareOutcome(ShareStatus.OFFLINE, "CATCH_UP_${hold.name}")) to emptyList()
             }
         }
         // The backend sent no push for events delivered over the open socket, so present unnotified messages.
         val processed = processor.processToLive(null) {
             started.elapsedNow() > budget * PROCESS_SHARE || accountWanted.isCompleted
         }
-        val (outcome, unnotifiedBeforeSending) = held.value
+        val (sent, unnotifiedBeforeSending) = held.value
         val unnotified = unnotifiedBeforeSending + runtime.takeUnnotifiedAlerts(processed)
         if (unnotified.isNotEmpty()) {
             runtime.database.messageDAO.rememberNotificationMessages(
@@ -421,39 +462,49 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         val unpresented = held.started == CatchUpOutcome.LIVE && held.closed != CatchUpOutcome.LIVE ||
             processed.stoppedReason != QUEUE_END || processed.appWorkPending != null ||
             runtime.database.eventDAO.observeUnprocessedEvents(limit = 1).first().isNotEmpty()
-        return KaliumShareResult(
-            status = outcome.status.toKalium(),
-            messageId = outcome.messageId,
-            failureReason = outcome.reason,
-            alerts = alerts,
-            presentGenericAlert = unpresented && alerts.isEmpty(),
+        return shareResult(request, sent, blocked).copy(alerts = alerts, presentGenericAlert = unpresented && alerts.isEmpty())
+    }
+
+    /** How the share ended: before it reached its conversations, or how each one ended, in request order. */
+    private fun shareResult(
+        request: KaliumShareRequest,
+        sent: Either<ShareOutcome, Map<ConversationId, ShareOutcome>>,
+        blocked: Map<ConversationId, ShareOutcome>,
+    ): KaliumShareResult = when (sent) {
+        is Either.Left -> KaliumShareResult(sent.value.status.toKalium(), sent.value.messageId, sent.value.reason)
+        is Either.Right -> shareResult(
+            request.conversations.map { ConversationId(it.conversationValue, it.conversationDomain) }
+                .map { it to (blocked[it] ?: sent.value.getValue(it)) }
         )
     }
 
-    /** Returns the send's outcome and the unnotified alerts from before the outgoing messages were stored. */
+    /**
+     * Returns how sending to each conversation ended, or why the share ended before it, and the unnotified alerts from
+     * before the outgoing messages were stored.
+     */
     @Suppress("LongParameterList")
     private suspend fun catchUpAndSend(
         runtime: AppleAccountRuntime,
         processor: NotificationProcessor,
         sending: ShareSending,
-        request: KaliumShareRequest,
-        items: List<ShareItem>,
+        items: Map<ConversationId, List<ShareItem>>,
         shouldStopCatchingUp: () -> Boolean,
         shouldStopSending: () -> Boolean,
-    ): Pair<ShareOutcome, List<ReceivedMessageResult>> {
+    ): Pair<Either<ShareOutcome, Map<ConversationId, ShareOutcome>>, List<ReceivedMessageResult>> {
         // A stale MLS epoch or client list fails the send, so bring the account current first.
         val processed = processor.processToLive(null, shouldStopCatchingUp)
         // Storing the outgoing message marks earlier messages notified, so take their alerts first.
         val unnotified = runtime.takeUnnotifiedAlerts(processed)
         val unfinished = processed.appWorkPending?.name ?: processed.stoppedReason.takeIf { it != QUEUE_END }
-        val outcome = when {
+        val sent = when {
             // Nothing is stored yet, so the app can take the share over.
-            accountWanted.isCompleted -> ShareOutcome(ShareStatus.OPEN_APP, ACCOUNT_WANTED)
+            accountWanted.isCompleted -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ACCOUNT_WANTED))
             // Unapplied events can carry consent or membership changes; sending would ignore them.
-            unfinished != null -> ShareOutcome(ShareStatus.OPEN_APP, "PROCESSING_$unfinished")
-            else -> sending.send(ConversationId(request.conversationValue, request.conversationDomain), items, shouldStopSending)
+            unfinished != null -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, "PROCESSING_$unfinished"))
+            // One conversation not taking the share does not keep the next from it.
+            else -> Either.Right(items.mapValues { (conversationId, items) -> sending.send(conversationId, items, shouldStopSending) })
         }
-        return outcome to unnotified
+        return sent to unnotified
     }
 
     /** Stored alerts may be presented only after the queued prefix was processed without deferral or handoff. */
@@ -521,6 +572,25 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
 
     private fun failure(reason: String) = KaliumShareResult(KaliumShareStatus.FAILED, failureReason = reason)
 
+    /** The first conversation not sent speaks for the share, or else the last one. */
+    private fun shareResult(outcomes: List<Pair<ConversationId, ShareOutcome>>): KaliumShareResult {
+        val (_, outcome) = outcomes.firstOrNull { it.second.status != ShareStatus.SENT } ?: outcomes.last()
+        return KaliumShareResult(
+            status = outcome.status.toKalium(),
+            messageId = outcome.messageId,
+            failureReason = outcome.reason,
+            conversations = outcomes.map { (conversationId, outcome) ->
+                KaliumShareConversationResult(
+                    conversationValue = conversationId.value,
+                    conversationDomain = conversationId.domain,
+                    status = outcome.status.toKalium(),
+                    messageId = outcome.messageId,
+                    failureReason = outcome.reason,
+                )
+            },
+        )
+    }
+
     public companion object {
         /**
          * Closing an account failed in this process, so it keeps that account's lease until it exits: neither the
@@ -542,6 +612,19 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
 
 /** The app sends at most this many files at once. */
 internal const val MAX_ATTACHMENTS = 20
+
+/** A share goes to at most this many conversations. */
+internal const val MAX_CONVERSATIONS = 5
+
+/**
+ * Text or files, at most [MAX_ATTACHMENTS] of them, for one to [MAX_CONVERSATIONS] different conversations; prepared
+ * drafts belong to the only one.
+ */
+internal fun KaliumShareRequest.isValid(): Boolean {
+    val content = (text.isNotBlank() || attachments.isNotEmpty()) && attachments.size <= MAX_ATTACHMENTS
+    val destinations = conversations.size in 1..MAX_CONVERSATIONS && conversations.distinct().size == conversations.size
+    return content && destinations && (preparedDraftIds.isEmpty() || conversations.size == 1)
+}
 
 private const val APP_LOCK = "APP_LOCK"
 

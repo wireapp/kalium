@@ -27,9 +27,11 @@ import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.configuration.UserConfigDataSource
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.user.UserId
@@ -335,6 +337,82 @@ class ShareFilesTest {
         assertNull("README".fileExtension())
     }
 
+    @Test
+    fun conversationsThatSendTheSameAssetsShareOneUploadButCellsAndAuditedUploadsDoNot() {
+        val cells = mapOf(CELLS to "cell")
+
+        assertEquals(
+            listOf(UploadTarget.Assets(listOf(CONVERSATION, OTHER)), UploadTarget.Cell(CELLS, "cell")),
+            uploadTargets(listOf(CONVERSATION, OTHER), cells, auditLog = false)
+        )
+        assertEquals(
+            listOf(UploadTarget.Assets(listOf(CONVERSATION)), UploadTarget.Assets(listOf(OTHER))),
+            uploadTargets(listOf(CONVERSATION, OTHER), emptyMap(), auditLog = true)
+        )
+        assertEquals(listOf(UploadTarget.Cell(CELLS, "cell")), uploadTargets(emptyList(), cells, auditLog = false))
+    }
+
+    @Test
+    fun eachFileIsEncryptedAndUploadedOnceForEveryConversationThatSendsIt() = runTest {
+        val files = listOf(write("photo.jpg", Random.nextBytes(1_000)), write("notes.pdf", Random.nextBytes(500), "application/pdf"))
+        val api = RecordingAssetApi()
+        val progress = mutableListOf<Pair<Long, Long>>()
+        val plan = SharePlan(
+            conversations = listOf(CONVERSATION, BLOCKED, OTHER),
+            blocked = mapOf(BLOCKED to ShareOutcome(ShareStatus.OPEN_APP, "LEGAL_HOLD")),
+            targets = uploadTargets(listOf(CONVERSATION, OTHER), emptyMap(), auditLog = false),
+        )
+
+        val result = uploadToTargets(
+            plan,
+            files,
+            progress = { sent, total -> progress += sent to total },
+            assets = { conversationId, sent -> uploads(api).upload(files, conversationId, sent) },
+            cell = { _, _ -> error("No cell") },
+            discard = {},
+        )
+
+        val items = assertIs<Either.Right<Map<ConversationId, List<ShareItem>>>>(result).value
+        assertEquals(2, api.bodies.size)
+        assertEquals(setOf(CONVERSATION, OTHER), items.keys)
+        assertEquals(items.getValue(CONVERSATION), items.getValue(OTHER))
+        assertEquals(listOf("asset-1", "asset-2"), items.getValue(OTHER).map { (it as ShareItem.File).upload.assetId.key })
+        assertEquals(1_500L to 1_500L, progress.last())
+    }
+
+    @Test
+    fun progressCoversEveryUploadAndAFailedOneDiscardsTheCellsUploadedBefore() = runTest {
+        val file = write("photo.jpg", Random.nextBytes(100))
+        val cellAsset = CellAssetContent(
+            id = "node", versionId = "version", mimeType = "image/jpeg", assetPath = "cell/photo.jpg", assetSize = 100,
+            localPath = null, previewUrl = null, metadata = null, transferStatus = AssetTransferStatus.NOT_DOWNLOADED
+        )
+        val progress = mutableListOf<Pair<Long, Long>>()
+        val discarded = mutableListOf<ShareItem>()
+        val targets = listOf(UploadTarget.Cell(CELLS, "cell"), UploadTarget.Assets(listOf(CONVERSATION)))
+        val plan = SharePlan(listOf(CELLS, CONVERSATION), emptyMap(), targets)
+
+        val result = uploadToTargets(
+            plan,
+            listOf(file),
+            progress = { sent, total -> progress += sent to total },
+            assets = { _, sent ->
+                sent(50, 100)
+                Either.Left(ShareOutcome(ShareStatus.OFFLINE, "UPLOAD_FAILED"))
+            },
+            cell = { _, sent ->
+                sent(100, 100)
+                Either.Right(listOf(cellAsset))
+            },
+            discard = { discarded += it },
+        )
+
+        assertEquals(Either.Left(ShareOutcome(ShareStatus.OFFLINE, "UPLOAD_FAILED")), result)
+        assertEquals(listOf<ShareItem>(ShareItem.Cells(listOf(file), listOf(cellAsset), "cell")), discarded)
+        // Both uploads count towards one total.
+        assertEquals(listOf(100L to 200L, 150L to 200L), progress)
+    }
+
     private fun write(name: String, bytes: ByteArray, mimeType: String = "image/jpeg"): ShareFile {
         fileSystem.createDirectories(root)
         val path = root / name
@@ -382,6 +460,9 @@ class ShareFilesTest {
     private companion object {
         val SELF = UserId("self", "wire.com")
         val CONVERSATION = ConversationId("conversation", "wire.com")
+        val OTHER = ConversationId("other", "wire.com")
+        val BLOCKED = ConversationId("blocked", "wire.com")
+        val CELLS = ConversationId("cells", "wire.com")
 
         fun self(team: String?) = UserEntity(
             id = QualifiedIDEntity(SELF.value, SELF.domain),

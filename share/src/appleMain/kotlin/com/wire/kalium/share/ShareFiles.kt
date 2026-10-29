@@ -18,9 +18,7 @@
 
 package com.wire.kalium.share
 
-import com.wire.kalium.cells.CellFileSharing
 import com.wire.kalium.cells.CellSharedFile
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
@@ -142,59 +140,6 @@ internal fun SharePolicy?.refusal(name: String, mimeType: String, sizeInBytes: L
 }
 
 /**
- * Checks [files] against the conversation and the account's rules, then uploads them. Sending checks the
- * conversation again after catching up; checking now avoids uploading for nothing.
- */
-@Suppress("ReturnCount")
-internal suspend fun AppleAccountRuntime.uploadSharedFiles(
-    conversationId: ConversationId,
-    files: List<ShareFile>,
-    restriction: BuildFileRestrictionState,
-    progress: (uploaded: Long, total: Long) -> Unit,
-): Either<ShareOutcome, List<ShareItem>> {
-    if (files.isEmpty()) return Either.Right(emptyList())
-    val conversation = database.conversationDAO.getConversationDetailsById(conversationId.toDao())
-    val block = when {
-        conversation == null -> ShareBlock.UNAVAILABLE
-        else -> database.shareBlock(conversation)
-    }
-    val policy = database.sharePolicy(prepared.userId, restriction)
-    val refused = files.firstNotNullOfOrNull { policy.refusal(it.name, it.mimeType, it.sizeInBytes) }
-    return when {
-        block != null -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, block.name))
-        refused != null -> Either.Left(ShareOutcome(ShareStatus.FAILED, refused.name))
-        conversation?.wireCell != null && !database.cellsConfigured() ->
-            Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
-        conversation?.wireCell != null -> {
-            val sharing = CellFileSharing.create(
-                network.cellsHttpClient,
-                authenticatedSession,
-                network.accessTokenApi,
-                database.userConfigDAO,
-                database.publicLinks
-            )
-            try {
-                val cellName = database.conversationDAO.getCellName(conversationId.toDao())
-                    ?: return Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
-                when (val result = sharing.upload(cellName, files.map { it.cellFile() }, progress)) {
-                    is Either.Left -> Either.Left(
-                        ShareOutcome(
-                            if (result.value is NetworkFailure.NoNetworkConnection) ShareStatus.OFFLINE else ShareStatus.FAILED,
-                            "UPLOAD_FAILED"
-                        )
-                    )
-                    is Either.Right -> Either.Right(listOf(ShareItem.Cells(files, result.value, cellName)))
-                }
-            } finally {
-                sharing.close()
-            }
-        }
-        else -> ShareUploads(network.assetApi, assetAuditLog()).upload(files, conversationId, progress)
-            .map { uploads -> uploads.map { ShareItem.File(it) } }
-    }
-}
-
-/**
  * Runs [upload] while the extension holds the account for it, which keeps the account from the app and the NSE
  * (ADR 12). Uploads end with `OPEN_APP`, for the host to hand the share to the app, when [accountWanted] completes
  * or [budget] ends. Nothing is stored before every upload finished, so stopping them stores nothing.
@@ -242,7 +187,7 @@ private val UPLOAD_BUDGET_BASE = 30.seconds
 private val MAX_UPLOAD_BUDGET = 5.minutes
 
 /** The app names the conversation, the file and its type to an auditing on-premises backend. */
-private suspend fun AppleAccountRuntime.assetAuditLog(): Boolean {
+internal suspend fun AppleAccountRuntime.assetAuditLog(): Boolean {
     val links = prepared.serverConfig.links
     return database.userConfigDAO.isAssetAuditLogEnabled() && links.isOnPremises &&
         !ServerConfig.PRODUCTION.api.contains(Url(links.api).host)

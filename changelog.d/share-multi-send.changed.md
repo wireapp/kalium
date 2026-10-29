@@ -1,0 +1,5 @@
+`KaliumShareSender.send` sends one share to up to five conversations. Each file is encrypted and uploaded once and every conversation sends the same asset, except Cells conversations and backends that audit uploads, which upload per conversation. `KaliumShareOutbox.handOff` hands off one entry per conversation.
+
+  - ABI: `KaliumShareRequest.conversations` (a list of the new `KaliumShareDestination`) replaces `conversationValue` and `conversationDomain`; `KaliumShareOutbox.handOff` returns a list of IDs. Both break their callers. `KaliumShareResult.conversations` is additive.
+  - Behavior: a share to one conversation behaves as before, except that a send whose soft deadline passed before its first message keeps every message as failed instead of sending one.
+  - Migration: hosts pass a one-element list for a single conversation, follow every returned handoff ID, and read `KaliumShareResult.conversations` to report each conversation.

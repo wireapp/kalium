@@ -2,7 +2,7 @@
 
 `KaliumShareSender` is the Swift entry point for sending from the iOS share extension
 ([ADR 12](../docs/adr/0012-sending-from-extensions.md)). It sends text, including links as text, and up to
-20 files to one conversation of a prepared Apple account. The app and the extension share the account as described in
+20 files to up to five conversations of a prepared Apple account. The app and the extension share the account as described in
 the [NSE README](../nse/README.md): same App Group root, Keychain settings, account identity and store
 versions. Construct `KaliumShareConfiguration` with the same values as `KaliumNSEConfiguration`.
 
@@ -29,9 +29,12 @@ explain a refused file before sending; `send` checks again.
 
 The host prepares each `KaliumShareAttachment`: a file it keeps until `send` returns, its name, mime type
 and, for images, videos and audio, dimensions and duration. Before it holds the account live, `send`
-checks the conversation and the file rules, then encrypts and uploads each file as the app does: private,
+checks the conversations and the file rules, then encrypts and uploads each file as the app does: private,
 persistent, AES-256-CBC with the IV prefixed. It streams each file and hashes the ciphertext as it writes
-it, so no file is held in memory, and reports progress over the plain size through `KaliumShareProgress`.
+it, so no file is held in memory, and reports progress over the plain size of every upload through
+`KaliumShareProgress`. Each file is uploaded once, and every conversation sends the same asset, except where an
+upload belongs to one conversation: a Cells conversation uploads to its cell, and a backend that audits uploads
+learns each conversation. A conversation that cannot take the share now keeps its reason and gets no upload.
 
 Uploads run outside `budgetMilliseconds`, and the account stays held meanwhile. They end when they finish,
 fail or the host cancels, and with `OPEN_APP` when they run past their own budget (`UPLOAD_TIMEOUT`: 30
@@ -48,9 +51,10 @@ succeeded, so a failed or stopped upload leaves nothing behind in Wire but the u
 1. It opens the WebSocket and keeps it open while it works. As the app's sender waits for live, it sends
    only over a live socket: if the socket does not reach live, it returns `OFFLINE` without storing a
    message.
-2. It processes stored events, so MLS commits and client changes are current, then stores each message
-   as pending and sends it through the app's sender: each file as an asset message, then the text, as a
-   caption follows what it describes.
+2. It processes stored events, so MLS commits and client changes are current, then, for each conversation
+   in turn, stores each message as pending and sends it through the app's sender: each file as an asset
+   message, then the text, as a caption follows what it describes. One conversation not taking the share
+   does not keep the next one from it, and `KaliumShareResult.conversations` tells how each one ended.
    A stored file message is uploaded, and the app shows it from a local copy in the account's asset
    directory. Once a message is not sent, or sending runs past its soft deadline or its budget, the
    remaining messages are stored as failed. The file rules are checked again after catching up, which can
@@ -77,8 +81,9 @@ App Group:
    with a Darwin notification. `appConversations` returns the app's answer once, built by the same code as
    `conversations`. When the app does not answer, something else owns the account for a moment; retry
    `conversations`.
-2. `handOff` copies the files (as clones, where the file system allows) next to the request and publishes
-   it, and the host rings the app again. `handOffStatus` follows it: `WAITING` until the app claims it,
+2. `handOff` copies the files (as clones, where the file system allows) next to one entry per conversation,
+   publishes them once all are copied and returns their IDs, and the host rings the app again. The app
+   imports each entry on its own, so it uploads the files for each conversation. `handOffStatus` follows it: `WAITING` until the app claims it,
    `CLAIMED` while the app stores it, then `STORED` or `NOT_STORED` with a reason, reported once. A host that
    stops following it calls `stopWaiting`, which returns a result that arrived meanwhile; otherwise the app
    reports a refusal itself.

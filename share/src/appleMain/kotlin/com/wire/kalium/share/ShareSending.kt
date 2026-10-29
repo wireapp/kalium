@@ -168,14 +168,22 @@ internal class ShareSending(
         scope = runtime.processingScope,
     )
 
-    /**
-     * Sends [items] in order, each as its own message. Once one is not sent, or [shouldStop] asks to end, the rest
-     * are kept in Wire as failed, so the user can retry them there. Returns the first outcome other than sent.
-     */
     /** The first message this share stored, if any: a share its deadline cut short still reports it. */
     var firstStoredId: String? = null
         private set
 
+    /** Conversations this share stored a message in; their messages own their Cells drafts. */
+    val storedConversations: Set<ConversationId> get() = storedIn
+    private val storedIn = mutableSetOf<ConversationId>()
+
+    /** Uploaded assets the app already has a local copy of; conversations of one share send the same assets. */
+    private val keptCopies = mutableSetOf<String>()
+
+    /**
+     * Sends [items] in order, each as its own message. Once one is not sent, or [shouldStop] asks to end, the rest
+     * are kept in Wire as failed, so the user can retry them there; all of them when it asks before the first.
+     * Returns the first outcome other than sent.
+     */
     suspend fun send(conversationId: ConversationId, items: List<ShareItem>, shouldStop: () -> Boolean): ShareOutcome {
         require(items.isNotEmpty())
         kaliumLogger.i("Share stage=SEND_START items=${items.size} cells=${items.any { it is ShareItem.Cells }}")
@@ -209,7 +217,7 @@ internal class ShareSending(
         var outcome: ShareOutcome? = null
         var next = 0
         try {
-            while (next < items.size && (outcome == null || outcome.sentInTime(shouldStop))) {
+            while (next < items.size && (outcome?.sentInTime(shouldStop) ?: !shouldStop())) {
                 // Storing is short; the deadline must not cut it between a message and its transfer status.
                 val message = withContext(NonCancellable) { composer.store(items[next], Message.Status.Pending) }
                 next++
@@ -221,7 +229,7 @@ internal class ShareSending(
             throw cancelled
         }
         val kept = withContext(NonCancellable) { items.drop(next).map { composer.store(it, Message.Status.Failed) } }
-        val last = checkNotNull(outcome)
+        val last = outcome ?: return ShareOutcome(ShareStatus.FAILED, OUT_OF_TIME, kept.first().id)
         return if (last.status == ShareStatus.SENT && kept.isNotEmpty()) ShareOutcome(ShareStatus.FAILED, OUT_OF_TIME, kept.first().id)
         else last
     }
@@ -265,7 +273,9 @@ internal class ShareSending(
                 expectsReadConfirmation = expectsReadConfirmation,
                 status = status,
             )
-            if (item is ShareItem.File) item.upload.keepLocalCopy(database, runtime.assetDirectory)
+            if (item is ShareItem.File && keptCopies.add(item.upload.assetId.key)) {
+                item.upload.keepLocalCopy(database, runtime.assetDirectory)
+            }
             val stored = groupReceiptMode?.let { message.withGroupReceiptMode(it) } ?: message
             database.messageDAO.insertOrIgnoreMessage(messageMapper.toEntity(stored), updateConversationModifiedDate = true)
             // A failed message with an uploaded asset is resent as is when the user retries it in Wire.
@@ -274,6 +284,7 @@ internal class ShareSending(
             }
             kaliumLogger.i("Share stage=MESSAGE_STORED cells=${item is ShareItem.Cells}")
             if (firstStoredId == null) firstStoredId = message.id
+            storedIn += conversationId
             return message
         }
     }

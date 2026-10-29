@@ -75,21 +75,33 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
     private val conversations = directory / "conversations.json"
 
     /** Copies [files] next to [request], publishes the entry and returns its ID. IDs sort oldest first. */
-    fun handOff(request: OutboxRequest, files: List<String>): String {
-        @OptIn(ExperimentalUuidApi::class)
-        val id = "${Clock.System.now().toEpochMilliseconds().toString().padStart(ID_TIME_DIGITS, '0')}-${Uuid.random()}"
-        val entry = staging / id
+    fun handOff(request: OutboxRequest, files: List<String>): String = handOff(listOf(request), files).single()
+
+    /**
+     * Hands off one entry per request, each with its own copy of [files], and returns their IDs in order. Every entry
+     * is copied before the first is published, so a failed copy publishes none.
+     */
+    @OptIn(ExperimentalUuidApi::class)
+    fun handOff(requests: List<OutboxRequest>, files: List<String>): List<String> {
+        val now = Clock.System.now().toEpochMilliseconds()
+        // The app imports entries in ID order, so the share's conversations keep theirs.
+        val ids = requests.indices.map { "${(now + it).toString().padStart(ID_TIME_DIGITS, '0')}-${Uuid.random()}" }
         try {
-            create(entry)
-            files.forEachIndexed { index, path -> copy(path, entry / index.toString()) }
-            fileSystem.write(entry / REQUEST) { writeUtf8(json.encodeToString(request)) }
+            requests.zip(ids) { request, id ->
+                val entry = staging / id
+                create(entry)
+                files.forEachIndexed { index, path -> copy(path, entry / index.toString()) }
+                fileSystem.write(entry / REQUEST) { writeUtf8(json.encodeToString(request)) }
+            }
             create(ready)
-            if (rename(entry.toString(), (ready / id).toString()) != 0) throw IOException("Cannot publish the share")
+            ids.forEach { id ->
+                if (rename((staging / id).toString(), (ready / id).toString()) != 0) throw IOException("Cannot publish the share")
+            }
         } catch (failure: IOException) {
-            fileSystem.deleteRecursively(entry)
+            ids.forEach { fileSystem.deleteRecursively(staging / it) }
             throw failure
         }
-        return id
+        return ids
     }
 
     /** Where entry [id] is. Its result is reported once. */

@@ -46,28 +46,31 @@ public class KaliumShareOutbox(private val rootPath: String) {
         readingFiles(null) { outbox(userValue, userDomain).takeConversations()?.toKalium() }
 
     /**
-     * Hands [request] to the app, which owns the account (ADR 13), and returns the handoff's ID. The host then rings the
-     * app and follows the handoff with [handOffStatus]. The app sends with its own budget and alerts, so
-     * [KaliumShareRequest.budgetMilliseconds] and [KaliumShareRequest.showMessageContent] do not apply. Null when the
-     * request is invalid or a file cannot be copied.
+     * Hands [request] to the app, which owns the account (ADR 13), and returns one handoff ID per conversation, in
+     * order. The host then rings the app and follows each handoff with [handOffStatus]. The app sends with its own
+     * budget and alerts, so [KaliumShareRequest.budgetMilliseconds] and [KaliumShareRequest.showMessageContent] do not
+     * apply; it uploads the files for each conversation. Null when the request is invalid or a file cannot be copied.
      */
     @OptIn(ExperimentalUuidApi::class)
     @Throws(CancellationException::class)
-    public suspend fun handOff(request: KaliumShareRequest): String? = withContext(Dispatchers.Default) {
+    public suspend fun handOff(request: KaliumShareRequest): List<String>? = withContext(Dispatchers.Default) {
         readingFiles(null) {
             val files = request.attachments.map { it.toShareFile() ?: return@readingFiles null }
-            if (files.size > MAX_ATTACHMENTS || request.text.isBlank() && files.isEmpty()) return@readingFiles null
-            val outboxRequest = OutboxRequest(
-                conversationValue = request.conversationValue,
-                conversationDomain = request.conversationDomain,
-                files = files.map {
-                    OutboxFile(Uuid.random().toString(), it.name, it.mimeType, it.sizeInBytes, it.width, it.height, it.durationMs)
-                },
-                text = request.text,
-                textMessageId = Uuid.random().toString(),
-                preparedDraftIds = request.preparedDraftIds,
-            )
-            outbox(request.userValue, request.userDomain).handOff(outboxRequest, files.map { it.path })
+            if (!request.isValid()) return@readingFiles null
+            // Each conversation stores its own messages, so each gets its own message IDs.
+            val requests = request.conversations.map { conversation ->
+                OutboxRequest(
+                    conversationValue = conversation.conversationValue,
+                    conversationDomain = conversation.conversationDomain,
+                    files = files.map {
+                        OutboxFile(Uuid.random().toString(), it.name, it.mimeType, it.sizeInBytes, it.width, it.height, it.durationMs)
+                    },
+                    text = request.text,
+                    textMessageId = Uuid.random().toString(),
+                    preparedDraftIds = request.preparedDraftIds,
+                )
+            }
+            outbox(request.userValue, request.userDomain).handOff(requests, files.map { it.path })
         }
     }
 
