@@ -144,9 +144,12 @@ public class SendTextMessageUseCase internal constructor(
         }
 
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
-        val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
-            .first()
-            .duration
+        val messageTimer: Duration? = when (val settings = selfDeleteTimer.getSnapshot(conversationId, true)) {
+            is ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success -> settings.timer.duration
+            is ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure -> {
+                return MessageOperationResult.Failure(settings.cause)
+            }
+        }
 
         val previews = uploadLinkPreviewImages(linkPreviews, conversationId)
 
