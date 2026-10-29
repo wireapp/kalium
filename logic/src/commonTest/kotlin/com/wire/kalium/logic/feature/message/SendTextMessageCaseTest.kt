@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.utils.SHA256Key
@@ -55,9 +56,9 @@ import dev.mokkery.mock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
+import kotlin.test.assertEquals
 import kotlin.test.Test
 import kotlin.test.assertIs
 
@@ -355,6 +356,28 @@ class SendTextMessageCaseTest {
         }
     }
 
+    @Test
+    fun givenMissingConversation_whenSendingText_thenFailsWithoutPersistenceUploadOrDelivery() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withSlowSyncStatusComplete()
+            .withToggleReadReceiptsStatus()
+            .arrange()
+        everySuspend { arrangement.observeSelfDeletionTimerSettingsForConversation.getSnapshot(any(), any()) } returns
+            ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure(StorageFailure.DataNotFound)
+
+        val result = sendTextMessage(TestConversation.ID, "absent", listOf(MessageLinkPreview(
+            url = "https://example.test", urlOffset = 0, title = "preview", summary = "", image = VALID_LINK_PREVIEW_ASSET, permanentUrl = ""
+        )))
+
+        assertEquals(MessageOperationResult.Failure(StorageFailure.DataNotFound), result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage.invoke(any())
+            arrangement.messageSender.sendMessage(any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+            arrangement.observeSelfDeletionTimerSettingsForConversation.invoke(any(), any())
+        }
+    }
+
     private class Arrangement(private val coroutineScope: CoroutineScope) {
         val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
         val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
@@ -420,8 +443,8 @@ class SendTextMessageCaseTest {
 
         suspend fun withMessageTimer(result: SelfDeletionTimer) = apply {
             everySuspend {
-                observeSelfDeletionTimerSettingsForConversation.invoke(any(), any())
-            } returns flowOf(result)
+                observeSelfDeletionTimerSettingsForConversation.getSnapshot(any(), any())
+            } returns ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success(result)
         }
 
         fun withPendingMessagesDisabled() = apply {
