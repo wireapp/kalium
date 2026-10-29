@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -829,6 +828,25 @@ class RetryFailedMessageUseCaseTest {
     }
 
     @Test
+    fun retryPublishesTheStoredCellsAttachmentsWithoutReadingTheComposerDraft() = runTest(testDispatcher.default) {
+        val attachment = com.wire.kalium.logic.data.message.CellAssetContent(
+            id = "shared-node", versionId = "shared-version", mimeType = "text/plain",
+            assetPath = "cell/shared.txt", assetSize = 1, localPath = null, previewUrl = null,
+            metadata = null, transferStatus = AssetTransferStatus.NOT_DOWNLOADED)
+        val message = TEXT_MESSAGE.copy(
+            content = MessageContent.Multipart("caption", attachments = listOf(attachment)), status = Message.Status.Failed)
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withSendMessage(Either.Right(Unit))
+            .arrange()
+        everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
+        everySuspend { arrangement.publishAttachments(listOf(attachment)) } returns Either.Right(Unit)
+        assertIs<MessageOperationResult.Success>(RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId))
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.publishAttachments(listOf(attachment)) }
+    }
+
+    @Test
     fun givenMultipartPublishFails_whenAwaitingRetry_thenPropagateFailureWithoutSending() = runTest(testDispatcher.default) {
         val message = TEXT_MESSAGE.copy(content = MessageContent.Multipart("attachment"), status = Message.Status.Failed)
         val failure = NetworkFailure.NoNetworkConnection(null)
@@ -837,7 +855,6 @@ class RetryFailedMessageUseCaseTest {
             .withUpdateMessageStatus(Either.Right(Unit))
             .arrange()
         everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
-        everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
         everySuspend { arrangement.publishAttachments(any()) } returns Either.Left(failure)
 
         val result = RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId)
@@ -855,7 +872,6 @@ class RetryFailedMessageUseCaseTest {
             .withSendMessage(Either.Right(Unit))
             .arrange()
         everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
-        everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
         everySuspend { arrangement.publishAttachments(any()) } returns Either.Right(Unit)
 
         assertIs<MessageOperationResult.Success>(RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId))
@@ -949,7 +965,6 @@ class RetryFailedMessageUseCaseTest {
         val (arrangement, useCase) = Arrangement().withGetMessageById(Either.Right(message))
             .withUpdateMessageStatus(Either.Right(Unit)).arrange()
         everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
-        everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
         everySuspend { arrangement.publishAttachments(any()) } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         assertIs<MessageOperationResult.Success>(useCase(message.id, message.conversationId))
         advanceUntilIdle()
@@ -1160,7 +1175,6 @@ class RetryFailedMessageUseCaseTest {
         init {
             everySuspend { assetRepository.deleteAssetLocally(any()) } returns Either.Right(Unit)
         }
-        val attachmentsRepository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
@@ -1247,7 +1261,6 @@ class RetryFailedMessageUseCaseTest {
             messageRepository,
             assetRepository,
             conversationRepository,
-            attachmentsRepository,
             persistMessage,
             publishAttachments,
             testScope,

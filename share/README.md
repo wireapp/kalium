@@ -12,7 +12,7 @@ with the same `-Pwire.ios.simulatorOnly=true` and `-Pwire.ios.deviceOnly=true` s
 ## Choosing a conversation
 
 `conversations` lists unarchived conversations the extension may send to, most recently active first.
-It mirrors the app's interaction rules and leaves out conversations that need the app: legal hold the
+It holds the account only to read its database, and opens neither CoreCrypto nor the network. It mirrors the app's interaction rules and leaves out conversations that need the app: legal hold the
 user has not consented to, verification that degraded since the user acknowledged it, and MLS groups
 this client has not established. `acceptsFiles` is false for Cells conversations, which take files through
 Cells; only the app uploads there. `failureReason` names a runtime failure such as `BUSY` when the
@@ -79,10 +79,13 @@ App Group:
    `conversations`.
 2. `handOff` copies the files (as clones, where the file system allows) next to the request and publishes
    it, and the host rings the app again. `handOffStatus` follows it: `WAITING` until the app claims it,
-   `CLAIMED` while the app stores it, then `STORED` or `NOT_STORED` with a reason, reported once.
+   `CLAIMED` while the app stores it, then `STORED` or `NOT_STORED` with a reason, reported once. A host that
+   stops following it calls `stopWaiting`, which returns a result that arrived meanwhile; otherwise the app
+   reports a refusal itself.
 
 The app runs `serveShareExtension` while it owns an account, live or not. It answers requests for conversations,
 claims handed-off shares and stores them with its composer's use cases, files first, then the text. Each
 item keeps the message ID the extension gave it, so an import interrupted by a background handoff never
 stores a message twice. Once the account caught up, the app checks the conversation and file rules again before it
-stores anything. Requests for conversations are answered meanwhile, on their own.
+stores anything. Requests for conversations are answered meanwhile, on their own, and shares handed off meanwhile
+are claimed at once. A refusal the extension stopped waiting for goes to `refused`, for the app to tell the user.

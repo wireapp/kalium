@@ -21,6 +21,8 @@
 package com.wire.kalium.share
 
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
@@ -28,11 +30,15 @@ import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.native.HiddenFromObjC
 
@@ -44,9 +50,33 @@ import kotlin.native.HiddenFromObjC
 // The app uses these from Kotlin; the extension's Swift never does.
 @HiddenFromObjC
 public interface ShareOutboxSending {
+    public companion object {
+        public const val UNAVAILABLE: String = "UNAVAILABLE"
+        public const val UPLOAD_FAILED: String = "UPLOAD_FAILED"
+        public const val FAILED: String = "FAILED"
+    }
+
     /** Returns once incremental sync has processed pending events and reached live, or failed, before checking import rules. */
     public suspend fun awaitSynced()
     public suspend fun file(conversationId: ConversationId, file: ShareOutboxFile, messageId: String): String?
+    public suspend fun cells(
+        conversationId: ConversationId,
+        files: List<ShareOutboxFile>,
+        text: String,
+        messageId: String,
+    ): String?
+    public suspend fun prepareCells(
+        conversationId: ConversationId,
+        files: List<ShareOutboxFile>,
+        progress: (Long, Long) -> Unit,
+    ): Either<String, List<CellAssetContent>>
+    public suspend fun discardCells(attachments: List<CellAssetContent>)
+    public suspend fun storeCells(
+        conversationId: ConversationId,
+        attachments: List<CellAssetContent>,
+        text: String,
+        messageId: String,
+    ): String?
     public suspend fun text(conversationId: ConversationId, text: String, messageId: String): String?
 }
 
@@ -75,17 +105,32 @@ public class ShareOutboxServer(
     private val database: UserDatabaseBuilder,
     private val restriction: BuildFileRestrictionState,
     private val sending: ShareOutboxSending,
+    /**
+     * Tells the user why the app stored no more of a share, when the extension stopped waiting for the answer. The
+     * reason is a share rule, as `send` reports them, or `FAILED`.
+     */
+    private val refused: suspend (conversationId: ConversationId, conversationName: String?, reason: String) -> Unit,
 ) {
     private val outbox = ShareOutbox(rootPath, selfUserId)
+    private val drafts = ShareDraftStore(rootPath, selfUserId)
 
     /**
      * Answers the extension now, then whenever [doorbell] rings, until cancelled. Requests for conversations are
-     * answered on their own, so a share being imported never keeps a sheet waiting for its list.
+     * answered on their own, so a share being imported never keeps a sheet waiting for its list. Shares are claimed
+     * on every ring, so a sheet learns at once that the app has its share, even while an import waits for the account
+     * to catch up; one import runs at a time.
      */
     public suspend fun serve(doorbell: Flow<Unit>): Unit = coroutineScope {
         guarded("sweep") { outbox.sweep() }
         launch { doorbell.onStart { emit(Unit) }.conflate().collect { answerConversations() } }
-        doorbell.onStart { emit(Unit) }.conflate().collect { importShares() }
+        val imports = Channel<Unit>(Channel.CONFLATED)
+        launch { imports.receiveAsFlow().collect { importShares() } }
+        doorbell.onStart { emit(Unit) }.conflate().collect {
+            // Claims at once, so a sheet learns the app has its share while an import waits. importShares claims
+            // again, which also lists what to import; both are needed.
+            guarded("claim") { outbox.claim() }
+            imports.send(Unit)
+        }
     }
 
     internal suspend fun answerConversations() {
@@ -94,20 +139,51 @@ public class ShareOutboxServer(
 
     internal suspend fun importShares() {
         for (id in guarded("claim") { outbox.claim() }.orEmpty()) {
+            val request = outbox.request(id)
             // An import that fails unexpectedly would fail again, so it ends with what it stored.
-            val result = guarded("import") { import(id) } ?: FAILED
-            guarded("finish") { outbox.finish(id, result) }
+            kaliumLogger.i("Share handoff stage=IMPORT_START")
+            val result = if (request == null) UNREADABLE else guarded("import") { import(id, request) } ?: FAILED
+            kaliumLogger.i("Share handoff stage=IMPORT_COMPLETE result=$result")
+            val unwatched = guarded("finish") { outbox.finish(id, result) } == true
+            if (request == null || request.draftAction != null) continue
+            if (unwatched && result != ShareOutbox.STORED) {
+                // The finished entry is gone, so a report cancelled now could not be retried.
+                withContext(NonCancellable) { guarded("report") { report(request, result) } }
+            }
         }
     }
 
+    private suspend fun report(request: OutboxRequest, reason: String) {
+        val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
+        refused(conversationId, database.conversationDAO.getConversationDetailsById(conversationId.toDao())?.name, reason)
+    }
+
     /** Stores the share's items in order, skipping those an interrupted import already stored. */
-    @Suppress("ReturnCount")
-    private suspend fun import(id: String): String {
-        val request = outbox.request(id) ?: return UNREADABLE
+    @Suppress("ReturnCount", "CyclomaticComplexMethod") // Route explicit outbox operations before ordinary messages.
+    private suspend fun import(id: String, request: OutboxRequest): String {
+        if (request.draftAction == "discard") return discardDraft(request)
         // Catching up can change the conversation or the account's file rules, so they are checked after it.
         sending.awaitSynced()
         val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
         refusal(conversationId, request)?.let { return it }
+        val isCells = database.conversationDAO.getConversationDetailsById(conversationId.toDao())?.wireCell != null
+        if (request.draftAction == "prepare") return prepareDraft(id, request, conversationId, isCells)
+        if (request.preparedDraftIds.isNotEmpty()) return storeDrafts(request, conversationId, isCells)
+        if (isCells && request.files.isNotEmpty()) {
+            if (stored(conversationId, request.textMessageId)) return ShareOutbox.STORED
+            val files = request.files.mapIndexed { index, file ->
+                ShareOutboxFile(
+                    outbox.importCopy(id, index),
+                    file.name,
+                    file.mimeType,
+                    file.sizeInBytes,
+                    file.width,
+                    file.height,
+                    file.durationMs
+                )
+            }
+            return sending.cells(conversationId, files, request.text, request.textMessageId) ?: ShareOutbox.STORED
+        }
         request.files.forEachIndexed { index, file ->
             if (!stored(conversationId, file.messageId)) {
                 val shared = ShareOutboxFile(
@@ -128,6 +204,66 @@ public class ShareOutboxServer(
         return ShareOutbox.STORED
     }
 
+    private suspend fun discardDraft(request: OutboxRequest): String {
+        request.draftId?.let { id ->
+            drafts.read(id)?.let { record ->
+                record.asset?.let { sending.discardCells(listOf(it.content(record.file))) }
+            }
+            drafts.consume(listOf(id))
+        }
+        return ShareOutbox.STORED
+    }
+
+    @Suppress("ReturnCount")
+    private suspend fun prepareDraft(id: String, request: OutboxRequest, conversationId: ConversationId, isCells: Boolean): String {
+        val draftId = request.draftId ?: return UNREADABLE
+        if (!isCells || request.files.size != 1) return UNREADABLE
+        val requestedDraft = drafts.read(draftId) ?: return UNREADABLE
+        if (requestedDraft.conversationId != conversationId || !request.files.single().matches(requestedDraft.file)) return UNREADABLE
+        prepareShareDraft(drafts, draftId, upload = { record, progress ->
+            val file = request.files.single()
+            val source = ShareOutboxFile(
+                outbox.importCopy(id, 0),
+                file.name,
+                file.mimeType,
+                file.sizeInBytes,
+                file.width,
+                file.height,
+                file.durationMs,
+            )
+            when (val result = sending.prepareCells(conversationId, listOf(source), progress)) {
+                is Either.Left -> result
+                is Either.Right -> {
+                    val asset = result.value.single()
+                    val cell = database.conversationDAO.getConversationDetailsById(conversationId.toDao())?.wireCell
+                    Either.Right(SharedDraftAsset(asset.id, asset.versionId, requireNotNull(asset.assetPath), requireNotNull(cell)))
+                }
+            }
+        }, discard = { record ->
+            record.asset?.let { sending.discardCells(listOf(it.content(record.file))) }
+        })
+        return ShareOutbox.STORED
+    }
+
+    @Suppress("ReturnCount")
+    private suspend fun storeDrafts(request: OutboxRequest, conversationId: ConversationId, isCells: Boolean): String {
+        if (!isCells) return ShareBlock.UNAVAILABLE.name
+        if (stored(conversationId, request.textMessageId)) {
+            drafts.consume(request.preparedDraftIds)
+            return ShareOutbox.STORED
+        }
+        val records = drafts.resolve(request.preparedDraftIds, conversationId) ?: return UNREADABLE
+        val cell = database.conversationDAO.getConversationDetailsById(conversationId.toDao())?.wireCell
+        if (records.size != request.files.size || records.zip(request.files).any { (record, file) ->
+                record.asset?.cellName != cell || !file.matches(record.file)
+            }
+        ) return UNREADABLE
+        val attachments = records.map { requireNotNull(it.asset).content(it.file) }
+        val failure = sending.storeCells(conversationId, attachments, request.text, request.textMessageId)
+        if (failure == null) drafts.consume(request.preparedDraftIds)
+        return failure ?: ShareOutbox.STORED
+    }
+
     /** The extension's rules, checked again: the conversation or the account's file rules may have changed since. */
     @Suppress("ReturnCount")
     private suspend fun refusal(conversationId: ConversationId, request: OutboxRequest): String? {
@@ -135,7 +271,6 @@ public class ShareOutboxServer(
             ?: return ShareBlock.UNAVAILABLE.name
         database.shareBlock(conversation)?.let { return it.name }
         if (request.files.isEmpty()) return null
-        if (conversation.wireCell != null) return ShareBlock.CELLS.name
         val policy = database.sharePolicy(selfUserId, restriction)
         return request.files.firstNotNullOfOrNull { policy.refusal(it.name, it.mimeType, it.sizeInBytes) }?.name
     }
@@ -159,3 +294,7 @@ public class ShareOutboxServer(
         const val FAILED = "FAILED"
     }
 }
+
+private fun OutboxFile.matches(file: ShareFile): Boolean =
+    name == file.name && mimeType == file.mimeType && sizeInBytes == file.sizeInBytes &&
+        width == file.width && height == file.height && durationMs == file.durationMs

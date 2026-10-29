@@ -9971,12 +9971,12 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun legalHoldNoopsMLS() = legalHoldNoops(true)
+    fun legalHoldRequestAndNoopsMLS() = legalHoldRequestAndNoops(true)
 
     @Test
-    fun legalHoldNoopsProteus() = legalHoldNoops(false)
+    fun legalHoldRequestAndNoopsProteus() = legalHoldRequestAndNoops(false)
 
-    private fun legalHoldNoops(mls: Boolean) = runTest {
+    private fun legalHoldRequestAndNoops(mls: Boolean) = runTest {
         withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 fixture.sql("UPDATE Conversation SET legal_hold_status = 'ENABLED'")
@@ -9984,12 +9984,9 @@ class NotificationProcessorNativeTest {
                 val next = fixture.encrypt("next")
                 val event = fixture.batch(
                     "notification",
-                    fixture.plainEvent(
-                        "request",
-                        """{"type":"user.legalhold-request","id":"${SELF.value}","client":{"id":"123"},"last_prekey":{"id":65535,"key":"key"}}"""
-                    ),
-                    fixture.plainEvent("enable", """{"type":"user.legalhold-enable","id":"${SELF.value}"}"""),
-                    fixture.plainEvent("disable", """{"type":"user.legalhold-disable","id":"${SELF.value}"}"""),
+                    fixture.legalHoldRequest(SELF, "123"),
+                    // Like the app, another user's request is not stored.
+                    fixture.legalHoldRequest(SENDER, "456"),
                     fixture.configEvent("legalhold"),
                     fixture.event("text", text)
                 )
@@ -10001,9 +9998,46 @@ class NotificationProcessorNativeTest {
                             ConversationEntity.LegalHoldStatus.ENABLED,
                             checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)).legalHoldStatus
                         )
+                        assertEquals(
+                            com.wire.kalium.persistence.config.LegalHoldRequestEntity(
+                                "123", com.wire.kalium.persistence.config.LastPreKey(65535, "key")
+                            ),
+                            runtime.database.userConfigDAO.observeLegalHoldRequest().first()
+                        )
                     }
                 )
                 fixture.verifyStoredAndNext(next, "first")
+            }
+        }
+    }
+
+    @Test
+    fun legalHoldUserTransitionHandoffMLS() = legalHoldUserTransitionHandoff(true)
+
+    @Test
+    fun legalHoldUserTransitionHandoffProteus() = legalHoldUserTransitionHandoff(false)
+
+    private fun legalHoldUserTransitionHandoff(mls: Boolean) = runTest {
+        withContext(Dispatchers.Default) {
+            for (type in listOf("enable", "disable")) for (user in listOf(SELF, SENDER)) withFixture(mls) { fixture ->
+                val scenario = "$type ${if (user == SELF) "self" else "other"}"
+                val prefix = fixture.encrypt("prefix")
+                val event = fixture.batch("notification", fixture.event("prefix", prefix),
+                    fixture.plainEvent("hold", """{"type":"user.legalhold-$type","id":"${user.value}"}"""))
+                val tail = fixture.event("tail", fixture.encrypt("tail"))
+                fixture.releasePrepared()
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event, tail), tail.id)).value, scenario)
+                assertEquals(NotificationAppWork.LEGAL_HOLD, fixture.receivedAppWork, scenario)
+                assertEquals("LEGAL_HOLD_REQUIRES_APP", fixture.receivedStop, scenario)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    // The app's handler refreshes clients and writes the transition notices.
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed, scenario)
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed, scenario)
+                    assertNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID), scenario)
+                    assertNull(runtime.database.messageDAO.getMessageById("tail", CONVERSATION_ID), scenario)
+                })
+                // Native rollback leaves the prefix for the app to decrypt.
+                assertIs<Either.Right<*>>(fixture.decryptAndCheck(prefix, "prefix"))
             }
         }
     }
@@ -12076,6 +12110,9 @@ class NotificationProcessorNativeTest {
 
         fun userDelete(user: UserId) = plainEvent("user-delete",
             """{"type":"user.delete","id":"${user.value}","qualified_id":{"id":"${user.value}","domain":"${user.domain}"}}""")
+
+        fun legalHoldRequest(user: UserId, client: String) = plainEvent("request-$client",
+            """{"type":"user.legalhold-request","id":"${user.value}","client":{"id":"$client"},"last_prekey":{"id":65535,"key":"key"}}""")
 
         fun teamJoin(user: UserId) = plainEvent("team-join",
             """{"type":"team.member-join","team":"fixture-team","time":"$TIME","data":{"user":"${user.value}"}}""")

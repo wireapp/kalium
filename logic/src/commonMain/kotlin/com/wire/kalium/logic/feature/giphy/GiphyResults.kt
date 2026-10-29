@@ -29,5 +29,6 @@ public sealed interface SendGifMessageResult {
     /** The team's file sharing settings do not allow GIFs. Nothing was sent. */
     public data object RestrictedFileType : SendGifMessageResult
 
+    /** See [SendGifMessageUseCase] for what a failure leaves in the conversation. */
     public data class Failure(val coreFailure: CoreFailure) : SendGifMessageResult
 }

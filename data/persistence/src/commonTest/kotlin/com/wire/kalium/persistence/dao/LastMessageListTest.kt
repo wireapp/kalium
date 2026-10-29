@@ -80,4 +80,38 @@ class LastMessageListTest: BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun multipartWithoutTextUsesAttachmentPreview() = runTest {
+        val conversation = newConversationEntity("cells")
+        val user = newUserEntity("sender")
+        conversationDAO.insertConversation(conversation)
+        userDAO.upsertUser(user)
+        val message = newRegularMessageEntity(
+            content = MessageEntityContent.Multipart(messageBody = null),
+            conversationId = conversation.id,
+            senderUserId = user.id
+        )
+        messageDAO.insertOrIgnoreMessage(message)
+        val preview = messageDAO.observeLastMessages().first().single()
+        assertEquals(message.id, preview.id)
+        assertIs<MessagePreviewEntityContent.Asset>(preview.content)
+    }
+
+    @Test
+    fun multipartWithCaptionKeepsTextPreview() = runTest {
+        val conversation = newConversationEntity("cells")
+        val user = newUserEntity("sender")
+        conversationDAO.insertConversation(conversation)
+        userDAO.upsertUser(user)
+        val message = newRegularMessageEntity(
+            content = MessageEntityContent.Multipart(messageBody = "Shared document"),
+            conversationId = conversation.id,
+            senderUserId = user.id
+        )
+        messageDAO.insertOrIgnoreMessage(message)
+        val preview = messageDAO.observeLastMessages().first().single()
+        assertEquals(message.id, preview.id)
+        assertEquals("Shared document", assertIs<MessagePreviewEntityContent.Text>(preview.content).messageBody)
+    }
+
 }

@@ -50,6 +50,7 @@ WHERE Message.id IN (
         AND LatestMessage.content_type IN (
             'TEXT',
             'ASSET',
+            'MULTIPART',
             'KNOCK',
             'MISSED_CALL',
             'CONVERSATION_RENAMED',

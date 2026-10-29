@@ -47,6 +47,7 @@ import com.wire.kalium.logic.data.event.updateUserProperties
 import com.wire.kalium.logic.data.event.userUpdate
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -537,9 +538,13 @@ class NotificationProcessor(
                 mlsHandler.leave(mlsContext, event)
                 listOf(ReceivedPayload.Membership(event, profiles))
             }
-            is EventContentDTO.User.NewLegalHoldRequestDTO,
+            // Like the app, only the self user's request is stored, for the app's request dialog.
+            is EventContentDTO.User.NewLegalHoldRequestDTO ->
+                if (QualifiedIdMapper(selfUserId).fromStringToQualifiedID(content.id) != selfUserId) emptyList()
+                else listOf(ReceivedPayload.LegalHoldRequest(content.clientId.clientId, content.lastPreKey.id, content.lastPreKey.key))
+            // The app refreshes the user's clients before it updates conversations and writes the notices.
             is EventContentDTO.User.LegalHoldEnabledDTO,
-            is EventContentDTO.User.LegalHoldDisabledDTO -> emptyList()
+            is EventContentDTO.User.LegalHoldDisabledDTO -> throw NotificationAppHandoff(NotificationAppWork.LEGAL_HOLD)
             // Match the app event mapper: an event type introduced by a newer backend is
             // acknowledged without effects so it cannot hold up later supported events.
             is EventContentDTO.Unknown -> emptyList()
