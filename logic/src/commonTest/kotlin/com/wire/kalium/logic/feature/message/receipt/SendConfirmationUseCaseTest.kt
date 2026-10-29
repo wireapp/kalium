@@ -18,12 +18,16 @@
 
 package com.wire.kalium.logic.feature.message.receipt
 
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -31,16 +35,20 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.messaging.sending.MessageTarget
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifyNoMoreCalls
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.seconds
 
 class SendConfirmationUseCaseTest {
@@ -135,6 +143,91 @@ class SendConfirmationUseCaseTest {
     }
 
     @Test
+    fun givenAConversationId_whenSendingReadConfirmation_thenShouldSendConfirmationOnlyToOriginalSender() = runTest {
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withGetConversationByIdSuccessful()
+            .withToggleReadReceiptsStatus(true)
+            .withPendingMessagesResponse(mapOf(TestUser.OTHER_USER_ID to listOf("message-1", "message-2")))
+            .withSendMessageSuccess()
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        result.toEither().shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(
+                matches { (it.content as? MessageContent.Receipt)?.messageIds == listOf("message-1", "message-2") },
+                MessageTarget.Users(TestUser.OTHER_USER_ID)
+            )
+        }
+    }
+
+    @Test
+    fun givenMessagesFromMultipleSenders_whenSendingReadConfirmation_thenShouldSendOneConfirmationPerSender() = runTest {
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withGetConversationByIdSuccessful(TestConversation.GROUP().copy(receiptMode = Conversation.ReceiptMode.ENABLED))
+            .withPendingMessagesResponse(
+                mapOf(
+                    TestUser.OTHER_USER_ID to listOf("message-1", "message-3"),
+                    TestUser.OTHER_USER_ID_2 to listOf("message-2")
+                )
+            )
+            .withSendMessageSuccess()
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        result.toEither().shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(
+                matches { (it.content as? MessageContent.Receipt)?.messageIds == listOf("message-1", "message-3") },
+                MessageTarget.Users(TestUser.OTHER_USER_ID)
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(
+                matches { (it.content as? MessageContent.Receipt)?.messageIds == listOf("message-2") },
+                MessageTarget.Users(TestUser.OTHER_USER_ID_2)
+            )
+        }
+        verifyNoMoreCalls(arrangement.messageSender)
+    }
+
+    @Test
+    fun givenSendingToOneSenderFails_whenSendingReadConfirmation_thenShouldStillSendToOtherSendersAndReturnFailure() = runTest {
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withGetConversationByIdSuccessful(TestConversation.GROUP().copy(receiptMode = Conversation.ReceiptMode.ENABLED))
+            .withPendingMessagesResponse(
+                mapOf(
+                    TestUser.OTHER_USER_ID to listOf("message-1"),
+                    TestUser.OTHER_USER_ID_2 to listOf("message-2")
+                )
+            )
+            .withSendMessageSuccess()
+            .withSendMessageFailureFor(TestUser.OTHER_USER_ID)
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        assertIs<MessageOperationResult.Failure>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(any(), MessageTarget.Users(TestUser.OTHER_USER_ID_2))
+        }
+    }
+
+    @Test
     fun givenAConversationId_whenReadConfirmationsDisabled_thenShouldNOTSendConfirmation() = runTest {
         val (arrangement, sendConfirmation) = Arrangement()
             .withCurrentClientIdProvider()
@@ -198,10 +291,18 @@ class SendConfirmationUseCaseTest {
             } returns enabled
         }
 
-        suspend fun withPendingMessagesResponse() = apply {
+        suspend fun withPendingMessagesResponse(
+            messageIdsBySender: Map<UserId, List<String>> = mapOf(TestUser.OTHER_USER_ID to listOf(TestMessage.TEXT_MESSAGE.id))
+        ) = apply {
             everySuspend {
                 messageRepository.getPendingConfirmationMessagesByConversationAfterDate(any(), any(), any(), any())
-            } returns Either.Right(listOf(TestMessage.TEXT_MESSAGE.id))
+            } returns Either.Right(messageIdsBySender)
+        }
+
+        suspend fun withSendMessageFailureFor(userId: UserId) = apply {
+            everySuspend {
+                messageSender.sendMessage(any(), MessageTarget.Users(userId))
+            } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
         fun arrange() = this to SendConfirmationUseCase(
