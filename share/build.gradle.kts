@@ -63,6 +63,7 @@ kotlin {
     macosArm64()
     sourceSets {
         commonMain.dependencies {
+            implementation(projects.domain.cells)
             implementation(projects.domain.messaging.receiving)
             implementation(projects.domain.messaging.sending)
             implementation(projects.core.cryptography)

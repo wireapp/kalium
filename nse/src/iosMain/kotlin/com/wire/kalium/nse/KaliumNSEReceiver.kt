@@ -27,6 +27,7 @@ import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
+import com.wire.kalium.logic.sync.receiving.NotificationAppWork
 import com.wire.kalium.logic.sync.receiving.catchUp
 import com.wire.kalium.logic.sync.receiving.ReceivedCallType
 import com.wire.kalium.logic.sync.receiving.ReceivedMessageResult
@@ -122,9 +123,10 @@ public data class KaliumNSEResult(
      */
     public val alerts: List<KaliumNSEAlert> = emptyList(),
     /**
-     * Receiving ran out of time or failed to catch up before reaching the request's notification, and has
-     * no alert to show. The host shows a generic alert instead of empty content. Also set on
-     * [KaliumNSEStatus.FAILED] timeouts and, while nobody else presents, a busy, unprepared or unreadable account.
+     * Receiving ran out of time, failed to catch up or, while nobody else presents, stopped for legal-hold work
+     * left for the app before reaching the request's notification, and has no alert to show. The host shows a
+     * generic alert instead of empty content. Also set on [KaliumNSEStatus.FAILED] timeouts and, while nobody
+     * else presents, a busy, unprepared or unreadable account.
      */
     public val presentGenericAlert: Boolean = false,
     /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */
@@ -266,23 +268,28 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         return result.copy(
             stoppedReason = received.stoppedReason,
             presentGenericAlert = !result.shouldNotify && result.alerts.isEmpty() &&
-                mayLeaveUnseenEvents(runtime, caughtUp, received, request.notificationId),
+                mayLeaveUnseenEvents(caughtUp, received, request.appPresentsAlerts) {
+                    runtime.database.eventDAO.getEventById(request.notificationId)?.isProcessed == true
+                },
         )
     }
 
     /**
      * An unfinished catch-up may leave events the socket received, which get no push; missed notifications
      * mean the backend dropped events until the app's slow sync. A failed catch-up, like processing that ran
-     * out of time, may not have reached the push's own event.
+     * out of time, may not have reached the push's own event. Nor may legal-hold work left for the app, which
+     * stops every later attempt at the same event until the app runs; a presenting app shows what follows.
      */
-    private suspend fun mayLeaveUnseenEvents(
-        runtime: AppleAccountRuntime,
+    internal suspend fun mayLeaveUnseenEvents(
         caughtUp: CatchUpOutcome,
         received: ReceivedNotificationResult,
-        notificationId: String,
+        appPresentsAlerts: Boolean,
+        targetProcessed: suspend () -> Boolean,
     ): Boolean = caughtUp == CatchUpOutcome.BUDGET || caughtUp == CatchUpOutcome.NEEDS_SLOW_SYNC || (
-        (received.stoppedReason == BUDGET || caughtUp == CatchUpOutcome.FAILED) &&
-            runtime.database.eventDAO.getEventById(notificationId)?.isProcessed != true
+        (
+            received.stoppedReason == BUDGET || caughtUp == CatchUpOutcome.FAILED ||
+                (received.appWorkPending == NotificationAppWork.LEGAL_HOLD && !appPresentsAlerts)
+            ) && !targetProcessed()
         )
 
     private suspend fun reconcileNotifications(
