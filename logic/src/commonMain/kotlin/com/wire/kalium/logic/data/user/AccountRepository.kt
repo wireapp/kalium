@@ -30,6 +30,8 @@ import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.persistence.dao.UserDAO
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal interface AccountRepository {
     suspend fun deleteAccount(password: String?): Either<NetworkFailure, Unit>
@@ -55,6 +57,9 @@ internal class AccountRepositoryImpl(
     private val selfUserId: UserId,
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper()
 ) : AccountRepository {
+    // UserScope retains this repository across its freshly created status use cases.
+    private val textStatusMutationMutex = Mutex()
+
     override suspend fun deleteAccount(password: String?): Either<NetworkFailure, Unit> = wrapApiRequest {
         selfApi.deleteAccount(password)
     }
@@ -94,11 +99,11 @@ internal class AccountRepositoryImpl(
         )
     }
 
-    override suspend fun updateSelfUserTextStatus(textStatus: String?): Either<CoreFailure, Unit> {
+    override suspend fun updateSelfUserTextStatus(textStatus: String?): Either<CoreFailure, Unit> = textStatusMutationMutex.withLock {
         val normalizedStatus = textStatus?.takeUnless { it.isBlank() }
         // The backend accepts 1..256 characters. Null is an omitted update, so a
         // single space clears the visible status; it never escapes into local data.
-        return wrapApiRequest {
+        wrapApiRequest {
             selfApi.updateSelf(UserUpdateRequest(name = null, assets = null, accentId = null, textStatus = normalizedStatus ?: " "))
         }.flatMap {
             wrapStorageRequest {

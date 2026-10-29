@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.feature.user.UpdateSelfTextStatusUseCase
 import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
@@ -28,6 +29,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.UserDAO
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -36,10 +38,46 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 
 class AccountRepositoryTest {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun concurrentStatusUseCasesKeepTheCacheConsistentWithTheLastBackendWrite() = runTest {
+        val arrangement = Arrangement()
+        val firstResponse = CompletableDeferred<Unit>()
+        var backendStatus: String? = "Original"
+        var cachedStatus: String? = "Original"
+        everySuspend { arrangement.selfApi.updateSelf(any()) } calls { (request: UserUpdateRequest) ->
+            backendStatus = request.textStatus?.takeUnless { it.isBlank() }
+            if (request.textStatus == "🎧 In a meeting") firstResponse.await()
+            NetworkResponse.Success(Unit, mapOf(), 200)
+        }
+        everySuspend { arrangement.userDAO.updateUserTextStatus(any(), any()) } calls { call ->
+            cachedStatus = call.args[1] as String?
+        }
+        val firstUseCase = UpdateSelfTextStatusUseCase(arrangement.accountRepo)
+        val secondUseCase = UpdateSelfTextStatusUseCase(arrangement.accountRepo)
+
+        val first = async { firstUseCase("🎧 In a meeting") }
+        runCurrent()
+        val second = async { secondUseCase(null) }
+        runCurrent()
+        firstResponse.complete(Unit)
+        first.await().shouldSucceed()
+        second.await().shouldSucceed()
+
+        assertNull(backendStatus)
+        assertEquals(backendStatus, cachedStatus)
+    }
 
     @Test
     fun clearingTextStatusUsesTheBackendSentinelAndPersistsNullOnlyAfterSuccess() = runTest {
