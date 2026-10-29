@@ -26,6 +26,8 @@ import co.touchlab.sqliter.DatabaseConfiguration
 import co.touchlab.sqliter.DatabaseConnection
 import co.touchlab.sqliter.DatabaseManager
 import co.touchlab.sqliter.createDatabaseManager
+import com.wire.kalium.persistence.util.FileNameUtil
+import com.wire.kalium.logger.AppleSuspensionDiagnostics
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import co.touchlab.sqliter.JournalMode
@@ -59,6 +61,7 @@ fun databaseDriver(
     passphrase: ByteArray? = null,
     config: DriverConfigurationBuilder.() -> Unit = {}
 ): SqlDriver {
+    val databaseKind = if (dbName == FileNameUtil.globalDBName()) "global_database" else "user_database"
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
     val sqlCipherKey = passphrase?.takeIf { it.isNotEmpty() }?.decodeToString()?.also(::requireSqlCipherKey)
     val inMemory = driverUri == null
@@ -73,10 +76,12 @@ fun databaseDriver(
             DatabaseConfiguration.Logging()
         },
         create = { connection ->
-            wrapConnection(connection) { schema.create(it) }
+            wrapConnection(connection) { schema.create(AppleSuspensionSqlDriver(it, databaseKind)) }
         },
         upgrade = { connection, oldVersion, newVersion ->
-            wrapConnection(connection) { schema.migrate(it, oldVersion.toLong(), newVersion.toLong()) }
+            wrapConnection(connection) {
+                schema.migrate(AppleSuspensionSqlDriver(it, databaseKind), oldVersion.toLong(), newVersion.toLong())
+            }
         }
     ).copy(
         extendedConfig = if (inMemory) DatabaseConfiguration.Extended(
@@ -90,11 +95,15 @@ fun databaseDriver(
             onCreateConnection = { connection -> sqlCipherKey?.let(connection::setSqlCipherKey) }
         )
     )
-    return nativeDatabaseDriver(configuration, maxReaderConnections = NATIVE_MAX_READER_CONNECTIONS)
+    return nativeDatabaseDriver(configuration, maxReaderConnections = NATIVE_MAX_READER_CONNECTIONS, databaseKind = databaseKind)
 }
 
 /** Track connection creation, including connections that fail before SQLDelight registers them. */
-internal fun nativeDatabaseDriver(configuration: DatabaseConfiguration, maxReaderConnections: Int): SqlDriver {
+internal fun nativeDatabaseDriver(
+    configuration: DatabaseConfiguration,
+    maxReaderConnections: Int,
+    databaseKind: String = "user_database",
+): SqlDriver {
     val manager = createDatabaseManager(configuration)
     val failure = MutableStateFlow<Throwable?>(null)
     val connections = MutableStateFlow<List<DatabaseConnection>>(emptyList())
@@ -103,15 +112,22 @@ internal fun nativeDatabaseDriver(configuration: DatabaseConfiguration, maxReade
         override fun createSingleThreadedConnection(): DatabaseConnection = track { manager.createSingleThreadedConnection() }
 
         @Suppress("TooGenericExceptionCaught")
-        private fun track(create: () -> DatabaseConnection): DatabaseConnection = try {
-            create().also { connection -> connections.update { it + connection } }
-        } catch (cause: Throwable) {
-            failure.compareAndSet(null, cause)
-            throw cause
+        private fun track(create: () -> DatabaseConnection): DatabaseConnection {
+            val token = AppleSuspensionDiagnostics.beginDatabaseOperation(databaseKind, "open")
+            return try {
+                create().also { connection ->
+                    connections.update { it + connection }
+                    AppleSuspensionDiagnostics.endDatabaseOperation(token, "success")
+                }
+            } catch (cause: Throwable) {
+                AppleSuspensionDiagnostics.endDatabaseOperation(token, "failure")
+                failure.compareAndSet(null, cause)
+                throw cause
+            }
         }
     }
     val driver = NativeSqliteDriver(trackedManager, maxReaderConnections)
-    return object : SqlDriver by driver {
+    val trackedDriver = object : SqlDriver by driver {
         @Suppress("TooGenericExceptionCaught")
         override fun close() {
             try {
@@ -123,6 +139,7 @@ internal fun nativeDatabaseDriver(configuration: DatabaseConfiguration, maxReade
             failure.value?.let { throw IllegalStateException("Native database cleanup cannot be established", it) }
         }
     }
+    return AppleSuspensionSqlDriver(trackedDriver, databaseKind)
 }
 
 private object GradleSafeSqliterLogger : Logger {
