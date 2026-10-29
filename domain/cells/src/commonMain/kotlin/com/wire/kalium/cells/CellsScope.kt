@@ -48,6 +48,8 @@ import com.wire.kalium.cells.domain.SelfTeamIdProvider
 import com.wire.kalium.cells.domain.SelfTeamIdProviderImpl
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.CheckCellNodeAvailabilityUseCase
+import com.wire.kalium.cells.domain.usecase.CheckCellNodeAvailabilityUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetsUseCase
@@ -441,6 +443,9 @@ public class CellsScope(
 
     public val getCellFileUseCase: GetCellFileUseCase by lazy {
         GetCellFileUseCaseImpl(cellsRepository)
+    }
+    public val checkCellNodeAvailability: CheckCellNodeAvailabilityUseCase by lazy {
+        CheckCellNodeAvailabilityUseCaseImpl(cellsRepository, cellAttachmentsRepository)
     }
 
     public val createPublicLinkPasswordUseCase: CreatePublicLinkPasswordUseCase by lazy {
