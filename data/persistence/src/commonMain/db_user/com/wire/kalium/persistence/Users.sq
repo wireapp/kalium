@@ -47,6 +47,7 @@ insertUser:
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
+-- @NotifyCustomKey user_text_status
 INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, text_status, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
@@ -92,6 +93,7 @@ insertOrIgnoreUser:
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
+-- @NotifyCustomKey user_text_status
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, text_status, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
@@ -100,6 +102,7 @@ updateUser:
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
+-- @NotifyCustomKey user_text_status
 UPDATE OR FAIL User
 SET
 name = coalesce(:name, name),
@@ -117,6 +120,7 @@ updatePartialUserInformation:
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
+-- @NotifyCustomKey user_text_status
 UPDATE User
 SET
 name = coalesce(:name, name),
@@ -286,6 +290,7 @@ UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
 
 updateUserTextStatus:
 -- @NotifyCustomKey User
+-- @NotifyCustomKey user_text_status
 UPDATE User SET text_status = ? WHERE qualified_id = ?;
 
 getUsersNotInConversationByNameOrHandleOrEmail:
