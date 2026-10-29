@@ -65,6 +65,7 @@ public class KaliumShareOutbox(private val rootPath: String) {
                 },
                 text = request.text,
                 textMessageId = Uuid.random().toString(),
+                preparedDraftIds = request.preparedDraftIds,
             )
             outbox(request.userValue, request.userDomain).handOff(outboxRequest, files.map { it.path })
         }

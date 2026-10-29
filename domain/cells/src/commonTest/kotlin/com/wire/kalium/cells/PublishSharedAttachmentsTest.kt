@@ -7,7 +7,7 @@ package com.wire.kalium.cells
 
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.FakeCellsRepository
-import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
 import com.wire.kalium.common.error.NetworkFailure
@@ -39,21 +39,53 @@ class PublishSharedAttachmentsTest {
     }
 
     @Test
-    fun changedDraftVersionIsNotPublished() = runTest {
+    fun missingAttachmentVersionIsNotPublished() = runTest {
         val repository = Repository()
-        repository.node = repository.node.copy(versionId = "another-version")
+        repository.version = repository.version.copy(id = "another-version")
         assertIs<Either.Left<NetworkFailure>>(PublishAttachmentsUseCaseImpl(repository)(listOf(attachment)))
         assertEquals(0, repository.calls)
     }
 
+    @Test
+    fun omittedDraftFlagMeansAlreadyPublished() = runTest {
+        val repository = Repository()
+        repository.version = repository.version.copy(isDraft = null)
+        assertIs<Either.Right<Unit>>(PublishAttachmentsUseCaseImpl(repository)(listOf(attachment)))
+        assertEquals(0, repository.calls)
+    }
+
+    @Test
+    fun anotherPublishedVersionDoesNotSkipPublishingTheAttachmentDraft() = runTest {
+        val repository = Repository()
+        repository.otherVersions = listOf(repository.version.copy(id = "older-version", isDraft = false))
+        assertIs<Either.Right<Unit>>(PublishAttachmentsUseCaseImpl(repository)(listOf(attachment)))
+        assertEquals(1, repository.calls)
+    }
+
+    @Test
+    fun failedVersionLookupDoesNotPublish() = runTest {
+        val repository = Repository()
+        repository.lookupFailure = NetworkFailure.NoNetworkConnection(null)
+        val result = PublishAttachmentsUseCaseImpl(repository)(listOf(attachment))
+        assertEquals(repository.lookupFailure, assertIs<Either.Left<NetworkFailure>>(result).value)
+        assertEquals(0, repository.calls)
+    }
+
     private class Repository(val loseResponse: Boolean = false) : CellsRepository by FakeCellsRepository() {
-        var node = CellNode("node", "version", "cell/file.txt", isDraft = true)
+        var version = NodeVersion(
+            id = "version", hash = null, description = null, isDraft = true, etag = null,
+            editorUrls = null, filePreviews = null, isHead = false, modifiedTime = null,
+            ownerName = null, ownerUuid = null, getUrl = null, size = null,
+        )
+        var otherVersions = emptyList<NodeVersion>()
+        var lookupFailure: NetworkFailure? = null
         var calls = 0
-        override suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode> = Either.Right(node)
+        override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> =
+            lookupFailure?.let { Either.Left(it) } ?: Either.Right(otherVersions + version)
         override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit> {
             assertEquals(listOf(NodeIdAndVersion("node", "version")), nodes)
             calls++
-            node = node.copy(isDraft = false)
+            version = version.copy(isDraft = false)
             return if (loseResponse) Either.Left(NetworkFailure.NoNetworkConnection(null)) else Either.Right(Unit)
         }
     }

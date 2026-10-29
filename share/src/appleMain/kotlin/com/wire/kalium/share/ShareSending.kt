@@ -178,6 +178,7 @@ internal class ShareSending(
 
     suspend fun send(conversationId: ConversationId, items: List<ShareItem>, shouldStop: () -> Boolean): ShareOutcome {
         require(items.isNotEmpty())
+        kaliumLogger.i("Share stage=SEND_START items=${items.size} cells=${items.any { it is ShareItem.Cells }}")
         val conversation = database.conversationDAO.getConversationDetailsById(conversationId.toDao())
             ?: return ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name)
         val block = database.shareBlock(conversation)
@@ -271,6 +272,7 @@ internal class ShareSending(
             if (item is ShareItem.File) {
                 database.messageDAO.updateAssetTransferStatus(AssetTransferStatus.UPLOADED.toDao(), message.id, conversationId.toDao())
             }
+            kaliumLogger.i("Share stage=MESSAGE_STORED cells=${item is ShareItem.Cells}")
             if (firstStoredId == null) firstStoredId = message.id
             return message
         }
@@ -295,6 +297,7 @@ internal class ShareSending(
             kaliumLogger.w("Share send failed: ${failure::class.simpleName}")
             Either.Left(CoreFailure.Unknown(failure))
         }
+        kaliumLogger.i("Share stage=SEND_COMPLETE success=${sent is Either.Right}")
         return withContext(NonCancellable) {
             sent.fold({ failure -> finish(message, failure) }, { finish(message, null) })
         }

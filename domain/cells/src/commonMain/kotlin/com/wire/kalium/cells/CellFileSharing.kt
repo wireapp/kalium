@@ -33,6 +33,7 @@ import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
@@ -73,6 +74,7 @@ public class CellFileSharing internal constructor(
         progress: (Long, Long) -> Unit = { _, _ -> },
     ): Either<NetworkFailure, List<CellAssetContent>> {
         require(files.isNotEmpty())
+        kaliumLogger.i("Cells share stage=UPLOAD_START files=${files.size}")
         val nodes = mutableListOf<CellNode>()
         var completed = false
         val total = files.sumOf { it.size }
@@ -84,11 +86,18 @@ public class CellFileSharing internal constructor(
                 require(name.isNotBlank() && name != "." && name != "..")
                 val requestedPath = "$cellName/$name"
                 val prepared = repository.prepareUploadNode(requestedPath, file.size, nodes.map { it.path }.toSet())
-                if (prepared is Either.Left) return prepared
+                if (prepared is Either.Left) {
+                    kaliumLogger.w("Cells share stage=PRECHECK_FAILED index=${nodes.size} failure=${prepared.value.diagnosticSummary()}")
+                    return prepared
+                }
                 val node = (prepared as Either.Right).value
                 nodes += node
                 val result = repository.uploadFile(file.path, node) { progress(done + it.coerceIn(0, file.size), total) }
-                if (result is Either.Left) return result
+                if (result is Either.Left) {
+                    kaliumLogger.w("Cells share stage=UPLOAD_FAILED index=${nodes.size - 1} failure=${result.value.diagnosticSummary()}")
+                    return result
+                }
+                kaliumLogger.i("Cells share stage=FILE_UPLOADED index=${nodes.size - 1}")
                 done += file.size
                 progress(done, total)
             }
@@ -105,11 +114,14 @@ public class CellFileSharing internal constructor(
                     transferStatus = AssetTransferStatus.NOT_DOWNLOADED,
                 )
             }
+            kaliumLogger.i("Cells share stage=UPLOAD_COMPLETE files=${attachments.size}")
             completed = true
             return Either.Right(attachments)
         } catch (cancelled: CancellationException) {
+            kaliumLogger.i("Cells share stage=UPLOAD_CANCELLED")
             throw cancelled
         } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+            kaliumLogger.w("Cells share stage=UPLOAD_EXCEPTION type=${failure::class.simpleName}")
             return Either.Left(NetworkFailure.ServerMiscommunication(failure))
         } finally {
             if (!completed) withContext(NonCancellable) {
@@ -123,6 +135,7 @@ public class CellFileSharing internal constructor(
         PublishAttachmentsUseCaseImpl(repository)(attachments)
 
     public suspend fun discard(attachments: List<CellAssetContent>) {
+        kaliumLogger.i("Cells share stage=DISCARD files=${attachments.size}")
         withContext(NonCancellable) {
             withTimeoutOrNull(CLEANUP_TIMEOUT_MS) {
                 attachments.forEach { cancelDraft(it.id, it.versionId) }

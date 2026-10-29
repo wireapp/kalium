@@ -78,14 +78,15 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** A file the host prepared to share. Kalium reads [path] and never moves or deletes it. */
+@Serializable
 internal data class ShareFile(
-    val path: String,
-    val name: String,
-    val mimeType: String,
-    val sizeInBytes: Long,
-    val width: Int? = null,
-    val height: Int? = null,
-    val durationMs: Long? = null,
+    @SerialName("path") val path: String,
+    @SerialName("name") val name: String,
+    @SerialName("mimeType") val mimeType: String,
+    @SerialName("sizeInBytes") val sizeInBytes: Long,
+    @SerialName("width") val width: Int? = null,
+    @SerialName("height") val height: Int? = null,
+    @SerialName("durationMs") val durationMs: Long? = null,
 )
 
 /** A [ShareFile] the backend stored, encrypted with [otrKey]. */

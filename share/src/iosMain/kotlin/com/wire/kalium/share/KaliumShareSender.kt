@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
@@ -82,6 +83,7 @@ public data class KaliumShareConversation(
     public val isGroup: Boolean,
     /** Whether the current destination supports files. */
     public val acceptsFiles: Boolean,
+    public val isCells: Boolean = false,
 )
 
 /** [failureReason] is set, and the list empty, when the account could not be opened or its team enforces App Lock. */
@@ -140,6 +142,7 @@ public data class KaliumShareRequest(
     public val showMessageContent: Boolean,
     /** Bounds the live hold that sends; uploads run before it, with a budget of their own that grows with the files' size. */
     public val budgetMilliseconds: Long,
+    public val preparedDraftIds: List<String> = emptyList(),
 )
 
 public enum class KaliumShareStatus {
@@ -193,6 +196,7 @@ public data class KaliumShareAlert(
  * first, then holds the account and keeps it live over the WebSocket while it sends, then processes what
  * arrived and returns unnotified alerts.
  */
+@Suppress("TooManyFunctions") // The two draft operations use the same exclusive runtime as sending.
 public class KaliumShareSender(private val configuration: KaliumShareConfiguration) {
 
     /** Completes once another process wants the account; see [yieldAccount]. */
@@ -258,7 +262,73 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         }
     }
 
+    /** Uploads one Cells draft, releasing the account before the user continues composing. */
+    @Throws(CancellationException::class)
+    public suspend fun prepareDraft(userValue: String, userDomain: String, draftId: String): String? = try {
+        val userId = UserId(userValue, userDomain)
+        val store = ShareDraftStore(configuration.rootPath, userId)
+        val result = use(userId) { runtime ->
+            if (runtime.database.appLockEnforcedByTeam(options().fileRestrictionState)) return@use APP_LOCK
+            val record = store.read(draftId) ?: return@use "DRAFT_UNAVAILABLE"
+            if (runtime.database.conversationDAO.getConversationDetailsById(record.conversationId.toDao())?.wireCell == null) {
+                return@use "UNAVAILABLE"
+            }
+            prepareShareDraft(
+                store,
+                draftId,
+                upload = { draft, progress ->
+                    val uploaded = runtime.uploadSharedFiles(
+                        draft.conversationId,
+                        listOf(draft.file),
+                        options().fileRestrictionState,
+                        progress
+                    )
+                    when (uploaded) {
+                        is Either.Left -> Either.Left(uploaded.value.reason ?: "UPLOAD_FAILED")
+                        is Either.Right -> {
+                            val item = uploaded.value.singleOrNull() as? ShareItem.Cells
+                            if (item == null) Either.Left("UNAVAILABLE") else {
+                                val asset = item.attachments.single()
+                                Either.Right(SharedDraftAsset(asset.id, asset.versionId, requireNotNull(asset.assetPath), item.cellId))
+                            }
+                        }
+                    }
+                },
+                discard = { runtime.discardSharedDraft(it) },
+            )
+            null
+        }
+        when (result) {
+            is Either.Left -> result.value.name
+            is Either.Right -> result.value
+        }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+        com.wire.kalium.common.logger.kaliumLogger.w("Share draft operation failed", failure)
+        "DRAFT_FAILED"
+    }
+
+    @Throws(CancellationException::class)
+    public suspend fun discardDraft(userValue: String, userDomain: String, draftId: String): String? = try {
+        val userId = UserId(userValue, userDomain)
+        val store = ShareDraftStore(configuration.rootPath, userId)
+        store.cancel(draftId)
+        val result = use(userId) { runtime ->
+            val record = store.read(draftId)
+            if (record != null) runtime.discardSharedDraft(record)
+            store.consume(listOf(draftId))
+        }
+        (result as? Either.Left)?.value?.name
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+        com.wire.kalium.common.logger.kaliumLogger.w("Share draft cleanup failed", failure)
+        "DRAFT_FAILED"
+    }
+
     /** Uploading needs no live socket, so it runs before the hold, with its own budget. */
+    @Suppress("ReturnCount")
     private suspend fun uploadAndShare(
         runtime: AppleAccountRuntime,
         request: KaliumShareRequest,
@@ -271,7 +341,15 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = APP_LOCK)
         }
         val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
-        val uploaded = yieldingUploads(
+        val draftStore = ShareDraftStore(configuration.rootPath, UserId(request.userValue, request.userDomain))
+        val uploaded = if (request.preparedDraftIds.isNotEmpty()) {
+            val records = draftStore.resolve(request.preparedDraftIds, conversationId)
+                ?: return failure("DRAFT_UNAVAILABLE")
+            if (records.size != files.size || records.map { it.file } != files) return failure("INVALID_REQUEST")
+            val cells = records.map { requireNotNull(it.asset).cellName }.distinct()
+            if (cells.size != 1) return failure("INVALID_REQUEST")
+            Either.Right(listOf(ShareItem.Cells(files, records.map { requireNotNull(it.asset).content(it.file) }, cells.single())))
+        } else yieldingUploads(
             uploadBudget(files.sumOf { it.sizeInBytes }),
             accountWanted,
             discard = runtime::discardSharedDrafts
@@ -292,6 +370,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             } finally {
                 // Once stored, the message owns the drafts and the app can retry publication.
                 if (sending.firstStoredId == null) runtime.discardSharedDrafts(uploads)
+                draftStore.consume(request.preparedDraftIds)
             }
         }
     }
@@ -485,7 +564,7 @@ internal fun SharePicker.toKalium() = if (appLock) {
 } else {
     KaliumShareConversations(
         conversations = conversations.map {
-            KaliumShareConversation(it.value, it.domain, it.name, it.isGroup, acceptsFiles = it.acceptsFiles)
+            KaliumShareConversation(it.value, it.domain, it.name, it.isGroup, acceptsFiles = it.acceptsFiles, isCells = it.isCells)
         },
         selfName = selfName,
         files = files?.let { KaliumShareFiles(it.allowedExtensions, it.fileSizeLimitBytes, it.imageSizeLimitBytes) },

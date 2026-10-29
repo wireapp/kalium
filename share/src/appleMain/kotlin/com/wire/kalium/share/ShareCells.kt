@@ -39,3 +39,8 @@ internal suspend fun AppleAccountRuntime.discardSharedDrafts(items: List<ShareIt
         sharing.close()
     }
 }
+
+internal suspend fun AppleAccountRuntime.discardSharedDraft(record: ShareDraftRecord) {
+    val asset = record.asset ?: return
+    discardSharedDrafts(listOf(ShareItem.Cells(listOf(record.file), listOf(asset.content(record.file)), asset.cellName)))
+}

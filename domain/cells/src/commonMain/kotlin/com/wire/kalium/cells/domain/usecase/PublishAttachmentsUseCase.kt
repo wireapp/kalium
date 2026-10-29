@@ -18,9 +18,13 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.diagnosticSummary
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageAttachment
 
@@ -38,18 +42,27 @@ internal class PublishAttachmentsUseCaseImpl internal constructor(
 
     @Suppress("ReturnCount")
     override suspend fun invoke(attachments: List<MessageAttachment>): Either<NetworkFailure, Unit> {
+        kaliumLogger.i("Cells share stage=PUBLISH_START attachments=${attachments.size}")
         val drafts = mutableListOf<NodeIdAndVersion>()
         for (asset in attachments.filterIsInstance<CellAssetContent>()) {
-            val result = cellsRepository.getNode(asset.id)
-            if (result is Either.Left) return result
-            val node = (result as Either.Right).value
-            // Retry after publication (including a lost response) must not publish the same version again.
-            if (!node.isDraft) continue
-            if (node.versionId != asset.versionId) {
-                return Either.Left(NetworkFailure.ServerMiscommunication(IllegalStateException("Cells draft version changed")))
+            val result = cellsRepository.getNodeVersions(asset.id)
+            if (result is Either.Left) {
+                kaliumLogger.w("Cells share stage=VERSION_LOOKUP_FAILED failure=${result.value.diagnosticSummary()}")
+                return result
             }
+            val version = (result as Either.Right).value.firstOrNull { it.id == asset.versionId }
+            kaliumLogger.i("Cells share stage=VERSION_STATE found=${version != null} draft=${version?.isDraft}")
+            if (version == null) {
+                return Either.Left(
+                    NetworkFailure.ServerMiscommunication(IllegalStateException("Cells attachment version unavailable"))
+                )
+            }
+            // Cells omits the proto3 Draft field when false. A matching published version is safe to retry.
+            if (version.isDraft != true) continue
             drafts += NodeIdAndVersion(asset.id, asset.versionId)
         }
         return if (drafts.isEmpty()) Either.Right(Unit) else cellsRepository.publishDrafts(drafts)
+            .onFailure { kaliumLogger.w("Cells share stage=PUBLISH_FAILED failure=${it.diagnosticSummary()}") }
+            .onSuccess { kaliumLogger.i("Cells share stage=PUBLISH_COMPLETE drafts=${drafts.size}") }
     }
 }
