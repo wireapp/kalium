@@ -131,12 +131,8 @@ active operation or open connection is not proof of a file lock, and gaps/overfl
 delivery prevent an empty snapshot from proving that every lock was released. Capture a sysdiagnose
 promptly after a termination and correlate its system log with the crash's PID and timestamp.
 
-These focused native tests require no simulator:
-
-```bash
-./gradlew :core:logger:macosArm64Test --tests '*AppleSuspensionDiagnosticsTest'
-./gradlew :data:persistence:macosArm64Test --tests '*AppleSuspensionSqlDriverTest'
-```
+This is temporary investigation instrumentation, intended to be reverted after the required
+diagnostic evidence has been collected.
 
 ### Module tests
 
