@@ -25,6 +25,7 @@ fun Event.User.Update.toPartialUserEntity(): PartialUserEntity =
             name = name,
             handle = handle,
             accentId = accentId,
+            textStatus = textStatus,
             previewAssetId = previewAssetId?.let { QualifiedIDEntity(it, userId.domain) },
             completeAssetId = completeAssetId?.let { QualifiedIDEntity(it, userId.domain) },
             supportedProtocols = supportedProtocols?.toDao(),

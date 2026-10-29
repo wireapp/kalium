@@ -84,7 +84,8 @@ data class UserEntity(
     val expiresAt: Instant?,
     val defederated: Boolean,
     val supportedProtocols: Set<SupportedProtocolEntity>?,
-    val activeOneOnOneConversationId: QualifiedIDEntity?
+    val activeOneOnOneConversationId: QualifiedIDEntity?,
+    val textStatus: String? = null
 )
 
 data class UserDetailsEntity(
@@ -111,6 +112,7 @@ data class UserDetailsEntity(
     val supportedProtocols: Set<SupportedProtocolEntity>?,
     val activeOneOnOneConversationId: QualifiedIDEntity?,
     val isUnderLegalHold: Boolean,
+    val textStatus: String? = null,
 ) {
     fun toSimpleEntity() = UserEntity(
         id = id,
@@ -131,7 +133,8 @@ data class UserDetailsEntity(
         expiresAt = expiresAt,
         defederated = defederated,
         supportedProtocols = supportedProtocols,
-        activeOneOnOneConversationId = activeOneOnOneConversationId
+        activeOneOnOneConversationId = activeOneOnOneConversationId,
+        textStatus = textStatus
     )
 }
 
@@ -156,7 +159,9 @@ data class PartialUserEntity(
     val accentId: Int? = null,
     val previewAssetId: UserAssetIdEntity? = null,
     val completeAssetId: UserAssetIdEntity? = null,
-    val supportedProtocols: Set<SupportedProtocolEntity>? = null
+    val supportedProtocols: Set<SupportedProtocolEntity>? = null,
+    /** Null preserves the status; a non-null blank value explicitly clears it. */
+    val textStatus: String? = null,
 )
 
 /**
@@ -300,6 +305,7 @@ interface UserDAO {
     suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
+    suspend fun updateUserTextStatus(qualifiedID: QualifiedIDEntity, textStatus: String?)
     fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>)
     suspend fun insertOrIgnoreIncompleteUserWithOnlyEmail(userId: QualifiedIDEntity, email: String)

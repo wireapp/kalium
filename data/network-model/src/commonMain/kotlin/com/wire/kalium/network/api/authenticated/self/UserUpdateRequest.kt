@@ -29,5 +29,7 @@ data class UserUpdateRequest(
     @SerialName("assets")
     val assets: List<UserAssetDTO>?,
     @SerialName("accent_id")
-    val accentId: Int?
+    val accentId: Int?,
+    @SerialName("text_status")
+    val textStatus: String? = null
 )

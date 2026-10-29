@@ -46,6 +46,7 @@ internal interface AccountRepository {
     suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
     suspend fun updateLocalSelfUserHandle(handle: String): Either<CoreFailure, Unit>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus): Either<StorageFailure, Unit>
+    suspend fun updateSelfUserTextStatus(textStatus: String?): Either<CoreFailure, Unit>
 }
 
 internal class AccountRepositoryImpl(
@@ -91,6 +92,19 @@ internal class AccountRepositoryImpl(
             selfUserId.toDao(),
             availabilityStatusMapper.fromModelAvailabilityStatusToDao(status)
         )
+    }
+
+    override suspend fun updateSelfUserTextStatus(textStatus: String?): Either<CoreFailure, Unit> {
+        val normalizedStatus = textStatus?.takeUnless { it.isBlank() }
+        // The backend accepts 1..256 characters. Null is an omitted update, so a
+        // single space clears the visible status; it never escapes into local data.
+        return wrapApiRequest {
+            selfApi.updateSelf(UserUpdateRequest(name = null, assets = null, accentId = null, textStatus = normalizedStatus ?: " "))
+        }.flatMap {
+            wrapStorageRequest {
+                userDAO.updateUserTextStatus(selfUserId.toDao(), normalizedStatus)
+            }
+        }
     }
 
 }

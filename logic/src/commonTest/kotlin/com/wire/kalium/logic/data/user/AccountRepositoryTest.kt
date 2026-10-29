@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -38,6 +40,48 @@ import kotlinx.coroutines.test.runTest
 import okio.IOException
 
 class AccountRepositoryTest {
+
+    @Test
+    fun clearingTextStatusUsesTheBackendSentinelAndPersistsNullOnlyAfterSuccess() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withUpdateDisplayNameApiRequestResponse(NetworkResponse.Success(Unit, mapOf(), 200))
+            .arrange()
+
+        for (value in listOf(null, "", " \t\n")) {
+            repository.updateSelfUserTextStatus(value).shouldSucceed()
+        }
+
+        verifySuspend(VerifyMode.exactly(3)) {
+            arrangement.selfApi.updateSelf(UserUpdateRequest(name = null, assets = null, accentId = null, textStatus = " "))
+        }
+        verifySuspend(VerifyMode.exactly(3)) {
+            arrangement.userDAO.updateUserTextStatus(TestUser.SELF.id.toDao(), null)
+        }
+    }
+
+    @Test
+    fun failedTextStatusUpdatePreservesTheStoredStatus() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withUpdateDisplayNameApiRequestResponse(TestNetworkResponseError.genericResponseError())
+            .arrange()
+
+        repository.updateSelfUserTextStatus("🎧 In a meeting").shouldFail()
+
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.userDAO.updateUserTextStatus(any(), any()) }
+    }
+
+    @Test
+    fun successfulTextStatusUpdatePersistsTheNewValue() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withUpdateDisplayNameApiRequestResponse(NetworkResponse.Success(Unit, mapOf(), 200))
+            .arrange()
+
+        repository.updateSelfUserTextStatus("🎧 In a meeting").shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userDAO.updateUserTextStatus(TestUser.SELF.id.toDao(), "🎧 In a meeting")
+        }
+    }
 
     @Test
     fun givenANewDisplayName_whenUpdatingFails_thenShouldNotPersistLocallyTheName() = runTest {
