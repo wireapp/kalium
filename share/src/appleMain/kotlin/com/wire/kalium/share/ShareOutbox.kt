@@ -131,7 +131,7 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
     /** Answers [askForConversations] with [picker]. Conversation names are readable only while the device is unlocked. */
     suspend fun answerIfAsked(picker: suspend () -> SharePicker) {
         if (!fileSystem.exists(conversationsRequest)) return
-        write(conversations, json.encodeToString(picker()), whileUnlocked = true)
+        writeShareOutboxFile(conversations, json.encodeToString(picker()), whileUnlocked = true)
         fileSystem.delete(conversationsRequest)
     }
 
@@ -170,7 +170,7 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
      */
     fun finish(id: String, result: String): Boolean {
         create(results)
-        write(results / id, result, whileUnlocked = false)
+        writeShareOutboxFile(results / id, result, whileUnlocked = false)
         fileSystem.deleteRecursively(claimed / id)
         if (!fileSystem.exists(unwatched / id)) return false
         fileSystem.delete(unwatched / id)
@@ -242,7 +242,7 @@ private fun copy(source: String, target: Path) {
 }
 
 /** Replaces [path] at once, so the other side never reads half of it. */
-private fun write(path: Path, text: String, whileUnlocked: Boolean) {
+internal fun writeShareOutboxFile(path: Path, text: String, whileUnlocked: Boolean) {
     val data = NSString.create(string = text).dataUsingEncoding(NSUTF8StringEncoding) ?: throw IOException("Cannot encode")
     val options = if (whileUnlocked) NSDataWritingAtomic or readableWhileUnlocked else NSDataWritingAtomic
     if (!data.writeToFile(path.toString(), options, null)) throw IOException("Cannot write to the share outbox")
@@ -260,6 +260,9 @@ internal data class OutboxRequest(
     @SerialName("files") val files: List<OutboxFile>,
     @SerialName("text") val text: String,
     @SerialName("textMessageId") val textMessageId: String,
+    @SerialName("preparedDraftIds") val preparedDraftIds: List<String> = emptyList(),
+    @SerialName("draftAction") val draftAction: String? = null,
+    @SerialName("draftId") val draftId: String? = null,
 )
 
 /** Each item keeps the message ID the extension gave it, so importing it again stores nothing twice. */
