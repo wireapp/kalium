@@ -18,4 +18,8 @@
 
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.logic.data.client.DeviceType
+
+internal actual fun appleDeviceType(): DeviceType = DeviceType.Phone
+
 internal actual fun appleDeviceModelName(): String = sysctlString("hw.model") ?: "N/A"

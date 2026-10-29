@@ -31,9 +31,7 @@ import platform.Foundation.NSProcessInfo
 import platform.darwin.sysctlbyname
 
 internal actual open class ClientConfigImpl : ClientConfig {
-    actual override fun deviceType(): DeviceType {
-        return DeviceType.Phone
-    }
+    actual override fun deviceType(): DeviceType = appleDeviceType()
 
     actual override fun deviceModelName(): String = appleDeviceModelName()
 
@@ -45,6 +43,8 @@ internal actual open class ClientConfigImpl : ClientConfig {
         return ClientType.Permanent
     }
 }
+
+internal expect fun appleDeviceType(): DeviceType
 
 internal expect fun appleDeviceModelName(): String
 
