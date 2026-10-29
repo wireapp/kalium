@@ -94,11 +94,16 @@ import dev.mokkery.mock
 import dev.mokkery.verify
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runCurrent
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -111,6 +116,59 @@ import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
 import com.wire.kalium.messaging.sending.MLSMessageCreator
 
 class MessageSenderTest {
+    @Test
+    fun closingTheAccountAlsoCancelsACallerOwnedBroadcast() {
+        val arrangement = Arrangement { }
+        val account = SupervisorJob()
+        val (_, sender) = arrangement.arrange(CoroutineScope(arrangement.testScope.coroutineContext + account))
+        arrangement.testScope.runTest {
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            everySuspend { arrangement.userRepository.getAllRecipients() } calls {
+                entered.complete(Unit)
+                finish.await()
+                Either.Left(StorageFailure.DataNotFound)
+            }
+            val sending = launch { sender.broadcastMessage(TestMessage.BROADCAST_MESSAGE, BroadcastMessageTarget.AllUsers(100)) }
+            try {
+                entered.await()
+                account.cancel()
+                runCurrent()
+                assertTrue(sending.isCompleted, "Closing the account must cancel its caller-owned broadcasts")
+                assertTrue(coroutineContext[kotlinx.coroutines.Job]!!.isActive)
+            } finally {
+                finish.complete(Unit)
+                sending.cancelAndJoin()
+                account.cancelAndJoin()
+            }
+        }
+    }
+
+    @Test
+    fun cancellingABroadcastStopsItsWaitWithoutCancellingTheAccountScope() {
+        val (arrangement, sender) = arrange { }
+        arrangement.testScope.runTest {
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            everySuspend { arrangement.userRepository.getAllRecipients() } calls {
+                entered.complete(Unit)
+                finish.await()
+                Either.Left(StorageFailure.DataNotFound)
+            }
+            val sending = launch { sender.broadcastMessage(TestMessage.BROADCAST_MESSAGE, BroadcastMessageTarget.AllUsers(100)) }
+            try {
+                entered.await()
+                sending.cancel()
+                runCurrent()
+                assertTrue(sending.isCompleted, "A broadcast must retain its caller's cancellation")
+                assertTrue(arrangement.testScope.coroutineContext[kotlinx.coroutines.Job]!!.isActive)
+            } finally {
+                finish.complete(Unit)
+                sending.cancelAndJoin()
+            }
+        }
+    }
+
     @Test
     fun givenOfflineEditOfSentMessage_whenCancellingPending_thenDoNotRemoveItLocally() {
         val (arrangement, sender) = arrange { }
@@ -1413,7 +1471,7 @@ class MessageSenderTest {
             }
         }
 
-        fun arrange() = run {
+        fun arrange(senderScope: CoroutineScope = testScope) = run {
             runBlocking {
                 withGetMessageById()
                 block()
@@ -1439,7 +1497,7 @@ class MessageSenderTest {
                         expirationData
                     )
                 },
-                scope = testScope
+                scope = senderScope
             )
         }
 
