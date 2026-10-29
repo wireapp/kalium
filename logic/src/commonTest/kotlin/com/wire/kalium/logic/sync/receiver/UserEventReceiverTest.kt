@@ -419,6 +419,32 @@ class UserEventReceiverTest {
     }
 
     @Test
+    fun givenNewConnectionEventWithStatusAcceptedAndPreviousStatusWasAccepted_thenDoNotCreateUnverifiedWarningMessage() = runTest {
+        // given
+        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()
+        val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Right(Unit))
+            withInsertConnectionFromEventSucceeding()
+            withScheduleResolveOneOnOneConversationWithUserId()
+            withPersistUnverifiedWarningMessageSuccess()
+            withGetConnectionResult(
+                Either.Right(
+                    TestConversationDetails.CONNECTION.copy(
+                        conversationId = event.connection.qualifiedConversationId,
+                        connection = TestConnection.CONNECTION.copy(status = ConnectionState.ACCEPTED)
+                    )
+                )
+            )
+        }
+        // when
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
+        }
+    }
+
+    @Test
     fun givenNewConnectionEventWithStatusAcceptedAndPreviousStatusWasNotMissingConsent_thenCreateUnverifiedWarningMessage() = runTest {
         // given
         val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()

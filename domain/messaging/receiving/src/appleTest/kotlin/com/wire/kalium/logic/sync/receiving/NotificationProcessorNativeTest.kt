@@ -740,7 +740,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun acceptedConnectionRetainedRequestAndMovedWarningReplay() = runTest {
+    fun acceptedConnectionStoredRequestAndMovedWarningReplay() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 fixture.seedAcceptedConnection(false)
@@ -760,8 +760,9 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id,
                     fetchConnectionPeer = fixture::lifecyclePeer)).value
-                assertEquals(ReceivedNotificationType.CONNECTION_REQUEST, result?.type)
-                assertEquals(DELETE_TARGET.value, result?.conversationValue)
+                // The request was accepted in the same notification, so only the message alerts.
+                assertEquals(ReceivedNotificationType.MESSAGE, result?.type)
+                assertEquals(CONVERSATION_ID.value, result?.conversationValue)
                 assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it, false) })
             }
         }
@@ -11373,7 +11374,7 @@ class NotificationProcessorNativeTest {
         }
 
         suspend fun verifyAcceptedConnection(runtime: AppleAccountRuntime, consent: Boolean,
-            expectedState: ConnectionEntity.State = if (consent) ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT else ConnectionEntity.State.PENDING,
+            expectedState: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED,
             expectedUserState: ConnectionEntity.State = if (expectedState == ConnectionEntity.State.IGNORED) expectedState else ConnectionEntity.State.ACCEPTED) {
             val db = runtime.database
             val source = if (mlsEnabled) DELETE_TARGET else CONVERSATION_ID

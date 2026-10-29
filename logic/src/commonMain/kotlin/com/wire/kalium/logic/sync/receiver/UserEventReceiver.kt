@@ -135,7 +135,10 @@ internal class UserEventReceiverImpl internal constructor(
                                 event.connection.qualifiedToId,
                                 delay = if (deliveryInfo.source == EventSource.LIVE) 3.seconds else ZERO
                             )
-                            if (previousStatus != ConnectionState.MISSING_LEGALHOLD_CONSENT) {
+                            // An already accepted connection, or one accepted before legal hold blocked it, has its warning.
+                            if (previousStatus != ConnectionState.MISSING_LEGALHOLD_CONSENT &&
+                                previousStatus != ConnectionState.ACCEPTED
+                            ) {
                                 newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
                                     event.connection.qualifiedConversationId
                                 )

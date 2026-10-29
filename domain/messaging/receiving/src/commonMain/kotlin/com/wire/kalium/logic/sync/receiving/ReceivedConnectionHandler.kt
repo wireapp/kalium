@@ -54,7 +54,12 @@ internal class ReceivedConnectionHandler(
         data.users.insertOrIgnoreIncompleteUsers(listOf(connection.qualifiedToId))
         received.profiles.persist(data.users, data.apps)
         val previousStatus = data.connections.getConnection(id)?.status
-        data.users.upsertConnectionStatuses(mapOf(connection.qualifiedToId to connection.status))
+        if (connection.status == ConnectionEntity.State.ACCEPTED) {
+            // Accepted connections are not stored, but a stored request for the user is accepted together with the user.
+            data.connections.updateConnectionStatus(connection.qualifiedToId, connection.status)
+        } else {
+            data.users.upsertConnectionStatuses(mapOf(connection.qualifiedToId to connection.status))
+        }
         when (connection.status) {
             ConnectionEntity.State.CANCELLED -> {
                 check(id !in requiredEarlier && id !in recreatedLater) {
@@ -68,7 +73,10 @@ internal class ReceivedConnectionHandler(
                     MemberEntity(connection.qualifiedToId, MemberEntity.Role.Member),
                     id,
                 )
-                if (previousStatus != ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT || previousWarning != null) {
+                // A connection that was already accepted, or accepted before legal hold blocked it, already has its warning.
+                val alreadyWarned = previousStatus == ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT ||
+                    previousStatus == ConnectionEntity.State.ACCEPTED
+                if (!alreadyWarned || previousWarning != null) {
                     val active = data.users.getUserDetailsByQualifiedID(connection.qualifiedToId)?.activeOneOnOneConversationId
                     check(previousWarning == null || previousWarning.conversationId in listOf(id, active)) {
                         "Accepted warning belongs to another conversation"
@@ -82,7 +90,6 @@ internal class ReceivedConnectionHandler(
                         )
                     ).orThrow()
                 }
-                // The app retains the previous connection row on acceptance.
             }
             else -> {
                 if (connection.status == ConnectionEntity.State.PENDING) {
