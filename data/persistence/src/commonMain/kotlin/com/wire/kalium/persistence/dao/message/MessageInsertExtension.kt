@@ -568,9 +568,11 @@ internal class MessageInsertExtensionImpl(
             )
 
             textContent.mentions.any { it.userId == selfUserIDEntity } ||
-                (textContent.mentions.any { it.isEveryone } &&
-                    conversationsQueries.selectConversationByQualifiedId(message.conversationId)
-                        .awaitAsOneOrNull()?.type?.isGroup == true) ->
+                (
+                    textContent.mentions.any { it.isEveryone } &&
+                        conversationsQueries.selectConversationByQualifiedId(message.conversationId)
+                            .awaitAsOneOrNull()?.type?.isGroup == true
+                ) ->
                 unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MENTION,

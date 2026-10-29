@@ -181,7 +181,9 @@ internal class MessageListItemMapper(private val selfUserId: UserId) {
         body = row.text_body,
         mentions = page.mentions[row.id].orEmpty().map {
             MessageMention(
-                it.start, it.length, it.user_id?.toModel(),
+                it.start,
+                it.length,
+                it.user_id?.toModel(),
                 isSelfMention = it.user_id == null || it.user_id?.toModel() == selfUserId
             )
         },

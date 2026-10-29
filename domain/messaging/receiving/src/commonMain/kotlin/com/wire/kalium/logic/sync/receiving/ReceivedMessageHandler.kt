@@ -584,8 +584,9 @@ private fun suppressionReason(
     val lastNotificationDate = conversation.lastNotificationDate
     val multipart = message.content as? MessageEntityContent.Multipart
     return when {
-        multipart != null && !(conversation.type.isGroup && !multipart.messageBody.isNullOrBlank() &&
-            multipart.mentions.any { it.isEveryone }) -> "MULTIPART"
+        multipart != null && !(
+            conversation.type.isGroup && !multipart.messageBody.isNullOrBlank() && multipart.mentions.any { it.isEveryone }
+        ) -> "MULTIPART"
         !mapper.fromEntity(message).shouldNotifyUser() -> "CONTENT_POLICY"
         conversation.archived -> "ARCHIVED"
         message.senderUserId == selfUserId.toDao() -> "SELF_MESSAGE"

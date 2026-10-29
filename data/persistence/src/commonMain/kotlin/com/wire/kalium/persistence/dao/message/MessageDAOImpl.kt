@@ -629,8 +629,10 @@ internal class MessageDAOImpl internal constructor(
         }
 
         val isMentioningSelf = newTextContent.mentions.any { it.userId == selfUserId } ||
-            (newTextContent.mentions.any { it.isEveryone } &&
-                conversationsQueries.selectConversationByQualifiedId(conversationId).awaitAsOneOrNull()?.type?.isGroup == true)
+            (
+                newTextContent.mentions.any { it.isEveryone } &&
+                    conversationsQueries.selectConversationByQualifiedId(conversationId).awaitAsOneOrNull()?.type?.isGroup == true
+            )
         if (isMentioningSelf) {
             unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
         } else {

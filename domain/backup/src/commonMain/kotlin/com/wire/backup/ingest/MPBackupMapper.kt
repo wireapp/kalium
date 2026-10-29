@@ -212,12 +212,13 @@ internal class MPBackupMapper {
                     start = mention.start,
                     length = mention.length
                 )
+                val everyoneMentions = protoContent.value.everyoneMentions.map {
+                    BackupMessageContent.Text.Mention(userId = null, start = it.start, length = it.length)
+                }
 
                 BackupMessageContent.Text(
                     text = protoContent.value.content,
-                    mentions = (protoContent.value.mentions.map(::mapMention) + protoContent.value.everyoneMentions.map {
-                        BackupMessageContent.Text.Mention(userId = null, start = it.start, length = it.length)
-                    }).sortedBy { it.start },
+                    mentions = (protoContent.value.mentions.map(::mapMention) + everyoneMentions).sortedBy { it.start },
                     quotedMessageId = protoContent.value.quotedMessageId
                 )
             }

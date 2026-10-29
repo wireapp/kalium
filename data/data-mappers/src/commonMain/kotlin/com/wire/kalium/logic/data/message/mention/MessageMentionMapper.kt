@@ -48,15 +48,15 @@ class MessageMentionMapperImpl(
     override fun fromProtoToModel(mention: Mention): MessageMention? {
         if (mention.everyone == true) {
             // Conflicting targets must never turn a malformed mention into a broadcast.
-            if (mention.qualifiedUserId != null || mention.mentionType != null || mention.start < 0 || mention.length <= 0) {
-                return null
+            val hasUserTarget = mention.qualifiedUserId != null || mention.mentionType != null
+            val hasInvalidRange = mention.start < 0 || mention.length <= 0
+            return if (hasUserTarget || hasInvalidRange) null else {
+                MessageMention(mention.start, mention.length, userId = null, isSelfMention = true)
             }
-            return MessageMention(mention.start, mention.length, userId = null, isSelfMention = true)
         }
         val userId = mention.qualifiedUserId?.let(idMapper::fromProtoUserId)
             ?: (mention.mentionType as? Mention.MentionType.UserId)?.value?.let { UserId(it, selfUserId.domain) }
-            ?: return null
-        return MessageMention(mention.start, mention.length, userId, isSelfMention = userId == selfUserId)
+        return userId?.let { MessageMention(mention.start, mention.length, it, isSelfMention = it == selfUserId) }
     }
 
     override fun fromModelToProto(mention: MessageMention): Mention = Mention(
