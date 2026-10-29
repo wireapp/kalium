@@ -35,27 +35,7 @@ internal actual open class ClientConfigImpl : ClientConfig {
         return DeviceType.Phone
     }
 
-    actual override fun deviceModelName(): String {
-        // TODO map to human readable device model names
-        return hardwareModel() ?: "N/A"
-    }
-
-    private fun hardwareModel(): String? =
-        memScoped {
-            val len = alloc<ULongVar>()
-            sysctlbyname("hw.model", null, len.ptr, null, 0U)
-            val buf = ByteArray(len.value.toInt())
-
-            val result = buf.usePinned {
-                sysctlbyname("hw.model", it.addressOf(0), len.ptr, null, 0U)
-            }
-
-            if (result == 0 && len.value > 0UL) {
-                buf.decodeToString(0, len.value.toInt() - 1)
-            } else {
-                return null
-            }
-        }
+    actual override fun deviceModelName(): String = appleDeviceModelName()
 
     actual override fun deviceName(): String {
         return NSProcessInfo.processInfo.hostName
@@ -65,3 +45,22 @@ internal actual open class ClientConfigImpl : ClientConfig {
         return ClientType.Permanent
     }
 }
+
+internal expect fun appleDeviceModelName(): String
+
+internal fun sysctlString(name: String): String? =
+    memScoped {
+        val len = alloc<ULongVar>()
+        sysctlbyname(name, null, len.ptr, null, 0U)
+        val buf = ByteArray(len.value.toInt())
+
+        val result = buf.usePinned {
+            sysctlbyname(name, it.addressOf(0), len.ptr, null, 0U)
+        }
+
+        if (result == 0 && len.value > 0UL) {
+            buf.decodeToString(0, len.value.toInt() - 1)
+        } else {
+            return null
+        }
+    }
