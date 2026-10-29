@@ -1095,6 +1095,9 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    // Self-profile fetches and text-status writes share this account gate across fresh repository instances.
+    private val selfProfileMutationMutex = Mutex()
+
     private val userRepository: UserRepository
         get() = UserDataSource(
             userDAO = userStorage.database.userDAO,
@@ -1108,14 +1111,16 @@ public class UserSessionScope internal constructor(
             sessionRepository = globalScope.sessionRepository,
             selfUserId = userId,
             selfTeamIdProvider = selfTeamId,
-            legalHoldHandler = legalHoldHandler
+            legalHoldHandler = legalHoldHandler,
+            selfProfileMutationMutex = selfProfileMutationMutex,
         )
 
     private val accountRepository: AccountRepository
         get() = AccountRepositoryImpl(
             userDAO = userStorage.database.userDAO,
             selfUserId = userId,
-            selfApi = authenticatedNetworkContainer.selfApi
+            selfApi = authenticatedNetworkContainer.selfApi,
+            selfProfileMutationMutex = selfProfileMutationMutex,
         )
 
     internal val pushTokenRepository: PushTokenRepository
