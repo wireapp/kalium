@@ -238,6 +238,9 @@ class ConnectionRepositoryTest {
         verifySuspend(VerifyMode.not) {
             arrangement.connectionDAO.insertConnection(any())
         }
+        verifySuspend(VerifyMode.not) {
+            arrangement.userDAO.upsertConnectionStatuses(any())
+        }
     }
 
     @Test

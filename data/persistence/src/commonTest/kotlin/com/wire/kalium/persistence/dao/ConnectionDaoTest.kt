@@ -86,7 +86,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenRequests_WhenOneUserIsAccepted_ThenOnlyTheirRequestStopsBeingARequest() = runTest {
+    fun givenRequests_WhenOneUserIsAccepted_ThenTheUserAndOnlyTheirRequestAreAccepted() = runTest {
         val otherRequest = connection2.copy(qualifiedToId = QualifiedIDEntity("other", "wire.com"), toId = "other")
         db.connectionDAO.insertConnection(connection1)
         db.connectionDAO.insertConnection(otherRequest)
@@ -95,6 +95,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
 
         assertEquals(listOf(otherRequest.qualifiedToId), db.connectionDAO.getConnectionRequests().first().map { it.qualifiedToId })
         assertEquals(ConnectionEntity.State.ACCEPTED, db.connectionDAO.getConnection(connection1.qualifiedConversationId)?.status)
+        assertEquals(ConnectionEntity.State.ACCEPTED, db.userDAO.getUserDetailsByQualifiedID(connection1.qualifiedToId)?.connectionStatus)
     }
 
     @Test

@@ -42,10 +42,18 @@ updateConnectionLastUpdated:
 -- @NotifyCustomKey Connection
 UPDATE Connection SET last_update_date = ? WHERE to_id = ?;
 
-updateConnectionStatus:
+updateConnectionStatus {
 -- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 -- @NotifyCustomKey Connection
-UPDATE Connection SET status = ? WHERE qualified_to = ?;
+INSERT INTO User(qualified_id, connection_status)
+VALUES (:userId, :status)
+ON CONFLICT(qualified_id) DO UPDATE SET
+connection_status = excluded.connection_status;
+UPDATE Connection SET status = :status WHERE qualified_to = :userId;
+}
 
 updateNotificationFlag:
 UPDATE Connection SET should_notify = ? WHERE qualified_to = ?;

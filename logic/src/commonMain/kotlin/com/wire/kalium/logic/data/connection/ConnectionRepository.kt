@@ -262,15 +262,17 @@ internal class ConnectionDataSource(
     private suspend fun persistConnection(transactionContext: CryptoTransactionContext, connection: Connection) =
         wrapStorageRequest {
             val connectionStatus = connectionStatusMapper.toDaoModel(state = connection.status)
-            userDAO.upsertConnectionStatuses(mapOf(connection.qualifiedToId.toDao() to connectionStatus))
+            if (connection.status == ACCEPTED) {
+                // Accepted connections are not stored, but a stored request for the user is accepted together with the user.
+                connectionDAO.updateConnectionStatus(connection.qualifiedToId.toDao(), connectionStatus)
+            } else {
+                userDAO.upsertConnectionStatuses(mapOf(connection.qualifiedToId.toDao() to connectionStatus))
+            }
 
             insertConversationFromConnection(transactionContext, connection)
 
             if (connection.status != ACCEPTED) {
                 connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
-            } else {
-                // Accepted connections are not stored, but a stored request for the user must stop being pending.
-                connectionDAO.updateConnectionStatus(connection.qualifiedToId.toDao(), connectionStatus)
             }
         }
 

@@ -68,7 +68,10 @@ interface ConnectionDAO {
     suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String)
     suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity)
     fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>>
+
+    /** Sets the user's connection status and the status of their stored request, if any, in one transaction. */
     suspend fun updateConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State)
+
     suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity)
     suspend fun setAllConnectionsAsNotified()
     suspend fun getConnection(id: ConversationIDEntity): ConnectionEntity?

@@ -191,7 +191,7 @@ class ConnectionDAOImpl(
 
     override suspend fun updateConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State) {
         withContext(writeDispatcher.value) {
-            connectionsQueries.updateConnectionStatus(status, userId)
+            connectionsQueries.updateConnectionStatus(userId, status).await()
         }
     }
 
