@@ -3,11 +3,13 @@
 package com.wire.kalium.logic.feature.giphy
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.data.giphy.DownloadedGif
 import com.wire.kalium.logic.data.giphy.Gif
 import com.wire.kalium.logic.data.giphy.GifRendition
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.upload.AssetUploadParams
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult
@@ -92,12 +94,23 @@ class SendGifMessageUseCaseTest {
 
     @Test
     fun givenCaptionStoredButNotDelivered_whenSending_thenTheGifStillFollowsIt() = runTest {
-        val failure = CoreFailure.Unknown(null)
+        val failure = NetworkFailure.NoNetworkConnection(null)
         val arrangement = Arrangement(captionResult = MessageOperationResult.Failure(failure, messageId = "caption-id"))
 
         assertEquals(SendGifMessageResult.Success, arrangement.useCase(CONVERSATION_ID, DOWNLOADED_GIF, "caption", null))
 
         assertEquals(listOf("text:caption:null", "gif"), arrangement.events)
+    }
+
+    @Test
+    fun givenCaptionStoppedByLegalHold_whenSending_thenTheGifWaitsAndTheCaptionIdIsReturned() = runTest {
+        val failure = LegalHoldEnabledForConversationFailure("caption-id")
+        val arrangement = Arrangement(captionResult = MessageOperationResult.Failure(failure, messageId = "caption-id"))
+
+        val result = arrangement.useCase(CONVERSATION_ID, DOWNLOADED_GIF, "caption", "quoted-id")
+
+        assertEquals(SendGifMessageResult.Failure(LegalHoldEnabledForConversationFailure("caption-id")), result)
+        assertEquals(listOf("text:caption:quoted-id"), arrangement.events)
     }
 
     @Test

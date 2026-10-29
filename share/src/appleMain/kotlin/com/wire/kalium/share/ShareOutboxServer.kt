@@ -30,11 +30,15 @@ import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.native.HiddenFromObjC
 
@@ -101,18 +105,32 @@ public class ShareOutboxServer(
     private val database: UserDatabaseBuilder,
     private val restriction: BuildFileRestrictionState,
     private val sending: ShareOutboxSending,
+    /**
+     * Tells the user why the app stored no more of a share, when the extension stopped waiting for the answer. The
+     * reason is a share rule, as `send` reports them, or `FAILED`.
+     */
+    private val refused: suspend (conversationId: ConversationId, conversationName: String?, reason: String) -> Unit,
 ) {
     private val outbox = ShareOutbox(rootPath, selfUserId)
     private val drafts = ShareDraftStore(rootPath, selfUserId)
 
     /**
      * Answers the extension now, then whenever [doorbell] rings, until cancelled. Requests for conversations are
-     * answered on their own, so a share being imported never keeps a sheet waiting for its list.
+     * answered on their own, so a share being imported never keeps a sheet waiting for its list. Shares are claimed
+     * on every ring, so a sheet learns at once that the app has its share, even while an import waits for the account
+     * to catch up; one import runs at a time.
      */
     public suspend fun serve(doorbell: Flow<Unit>): Unit = coroutineScope {
         guarded("sweep") { outbox.sweep() }
         launch { doorbell.onStart { emit(Unit) }.conflate().collect { answerConversations() } }
-        doorbell.onStart { emit(Unit) }.conflate().collect { importShares() }
+        val imports = Channel<Unit>(Channel.CONFLATED)
+        launch { imports.receiveAsFlow().collect { importShares() } }
+        doorbell.onStart { emit(Unit) }.conflate().collect {
+            // Claims at once, so a sheet learns the app has its share while an import waits. importShares claims
+            // again, which also lists what to import; both are needed.
+            guarded("claim") { outbox.claim() }
+            imports.send(Unit)
+        }
     }
 
     internal suspend fun answerConversations() {
@@ -121,18 +139,28 @@ public class ShareOutboxServer(
 
     internal suspend fun importShares() {
         for (id in guarded("claim") { outbox.claim() }.orEmpty()) {
+            val request = outbox.request(id)
             // An import that fails unexpectedly would fail again, so it ends with what it stored.
             kaliumLogger.i("Share handoff stage=IMPORT_START")
-            val result = guarded("import") { import(id) } ?: FAILED
+            val result = if (request == null) UNREADABLE else guarded("import") { import(id, request) } ?: FAILED
             kaliumLogger.i("Share handoff stage=IMPORT_COMPLETE result=$result")
-            guarded("finish") { outbox.finish(id, result) }
+            val unwatched = guarded("finish") { outbox.finish(id, result) } == true
+            if (request == null || request.draftAction != null) continue
+            if (unwatched && result != ShareOutbox.STORED) {
+                // The finished entry is gone, so a report cancelled now could not be retried.
+                withContext(NonCancellable) { guarded("report") { report(request, result) } }
+            }
         }
+    }
+
+    private suspend fun report(request: OutboxRequest, reason: String) {
+        val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
+        refused(conversationId, database.conversationDAO.getConversationDetailsById(conversationId.toDao())?.name, reason)
     }
 
     /** Stores the share's items in order, skipping those an interrupted import already stored. */
     @Suppress("ReturnCount", "CyclomaticComplexMethod") // Route explicit outbox operations before ordinary messages.
-    private suspend fun import(id: String): String {
-        val request = outbox.request(id) ?: return UNREADABLE
+    private suspend fun import(id: String, request: OutboxRequest): String {
         if (request.draftAction == "discard") return discardDraft(request)
         // Catching up can change the conversation or the account's file rules, so they are checked after it.
         sending.awaitSynced()
