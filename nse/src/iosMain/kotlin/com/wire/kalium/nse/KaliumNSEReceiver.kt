@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.nse
 
+import com.wire.kalium.logger.AppleSuspensionDiagnostics
 import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -186,6 +187,7 @@ public interface KaliumNSEMessageDelivery {
 }
 
 /** Bounded prepared-account receiving. Unsupported earlier work stops the attempt and preserves its processed marker. */
+@Suppress("TooManyFunctions") // Keep the diagnostic boundary separate from the receiving workflow.
 public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration) {
     @Throws(CancellationException::class)
     public suspend fun process(request: KaliumNSERequest): KaliumNSEResult = processOwned(request, null)
@@ -195,6 +197,17 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         processOwned(request, delivery)
 
     private suspend fun processOwned(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
+        // An extension has a bounded host budget; this flag controls diagnostic verbosity only.
+        AppleSuspensionDiagnostics.setBackgrounded(true)
+        AppleSuspensionDiagnostics.snapshot("NSE_BEGIN")
+        return try {
+            processObserved(request, delivery)
+        } finally {
+            AppleSuspensionDiagnostics.snapshot("NSE_END")
+        }
+    }
+
+    private suspend fun processObserved(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
         val diagnostics = ReceivingDiagnostics()
         if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) {
             return failure("INVALID_REQUEST").also { diagnostics.record("FAILED", it.failureReason, false) }
