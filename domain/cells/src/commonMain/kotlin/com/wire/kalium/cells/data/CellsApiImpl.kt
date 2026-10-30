@@ -29,7 +29,6 @@ import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.domain.model.toTreeNodeType
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
-import com.wire.kalium.cells.sdk.kmp.model.JobsTaskStatus
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterMetaFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterMetaFilterOp
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterStatusFilter
@@ -72,8 +71,6 @@ internal class CellsApiImpl(
 
     @Suppress("MagicNumber")
     private companion object {
-        private const val AWAIT_TIMEOUT = "5s"
-
         private fun Long.toClientTime() = this * 1000
         private fun Long.toServerTime() = this / 1000
     }
@@ -175,19 +172,16 @@ internal class CellsApiImpl(
             )
         }.mapSuccess {}
 
+    // Awaited, otherwise a list loaded right after still shows the nodes.
     override suspend fun delete(paths: List<String>, permanentDelete: Boolean): NetworkResponse<Unit> =
-        wrapCellsResponse {
-            getNodeServiceApi().performAction(
-                name = NodeServiceApi.NamePerformAction.delete,
-                parameters = RestActionParameters(
-                    nodes = paths.map { RestNodeLocator(it) },
-                    deleteOptions = RestActionOptionsDelete(permanentDelete = permanentDelete),
-                    // Otherwise it returns once the job is queued: a list loaded right after still shows the nodes.
-                    awaitStatus = JobsTaskStatus.Finished,
-                    awaitTimeout = AWAIT_TIMEOUT,
-                )
-            )
-        }.mapSuccess {}
+        performAndAwait(
+            name = NodeServiceApi.NamePerformAction.delete,
+            statusName = NodeServiceApi.NameBackgroundActionInfo.delete,
+            parameters = RestActionParameters(
+                nodes = paths.map { RestNodeLocator(it) },
+                deleteOptions = RestActionOptionsDelete(permanentDelete = permanentDelete),
+            ),
+        )
 
     override suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit> =
         wrapCellsResponse {
@@ -366,52 +360,51 @@ internal class CellsApiImpl(
     override suspend fun moveNodes(
         nodes: List<NodeLocator>,
         targetPath: String,
-    ): NetworkResponse<Unit> = wrapCellsResponse {
-        getNodeServiceApi().performAction(
-            name = NodeServiceApi.NamePerformAction.move,
-            parameters = RestActionParameters(
-                nodes = nodes.map { RestNodeLocator(path = it.path, uuid = it.uuid) },
-                awaitStatus = JobsTaskStatus.Finished,
-                awaitTimeout = AWAIT_TIMEOUT,
-                copyMoveOptions = RestActionOptionsCopyMove(
-                    targetPath = targetPath,
-                    targetIsParent = true,
-                )
+    ): NetworkResponse<Unit> = performAndAwait(
+        name = NodeServiceApi.NamePerformAction.move,
+        statusName = NodeServiceApi.NameBackgroundActionInfo.move,
+        parameters = RestActionParameters(
+            nodes = nodes.map { RestNodeLocator(path = it.path, uuid = it.uuid) },
+            copyMoveOptions = RestActionOptionsCopyMove(
+                targetPath = targetPath,
+                targetIsParent = true,
             )
-        )
-    }.mapSuccess {}
+        ),
+    )
 
     override suspend fun renameNode(
         uuid: String,
         path: String,
         targetPath: String,
-    ): NetworkResponse<Unit> = wrapCellsResponse {
-        getNodeServiceApi().performAction(
-            name = NodeServiceApi.NamePerformAction.move,
-            parameters = RestActionParameters(
-                nodes = listOf(RestNodeLocator(path, uuid)),
-                awaitStatus = JobsTaskStatus.Finished,
-                awaitTimeout = AWAIT_TIMEOUT,
-                copyMoveOptions = RestActionOptionsCopyMove(
-                    targetPath = targetPath,
-                    targetIsParent = false,
-                )
+    ): NetworkResponse<Unit> = performAndAwait(
+        name = NodeServiceApi.NamePerformAction.move,
+        statusName = NodeServiceApi.NameBackgroundActionInfo.move,
+        parameters = RestActionParameters(
+            nodes = listOf(RestNodeLocator(path, uuid)),
+            copyMoveOptions = RestActionOptionsCopyMove(
+                targetPath = targetPath,
+                targetIsParent = false,
             )
-        )
-    }.mapSuccess {}
+        ),
+    )
 
     override suspend fun restoreNode(uuid: String): NetworkResponse<Unit> = restoreNodes(listOf(uuid))
 
-    override suspend fun restoreNodes(uuids: List<String>): NetworkResponse<Unit> = wrapCellsResponse {
-        getNodeServiceApi().performAction(
-            name = NodeServiceApi.NamePerformAction.restore,
-            parameters = RestActionParameters(
-                nodes = uuids.map { RestNodeLocator(uuid = it) },
-                awaitStatus = JobsTaskStatus.Finished,
-                awaitTimeout = AWAIT_TIMEOUT
-            )
-        )
-    }.mapSuccess {}
+    override suspend fun restoreNodes(uuids: List<String>): NetworkResponse<Unit> = performAndAwait(
+        name = NodeServiceApi.NamePerformAction.restore,
+        statusName = NodeServiceApi.NameBackgroundActionInfo.restore,
+        parameters = RestActionParameters(nodes = uuids.map { RestNodeLocator(uuid = it) }),
+    )
+
+    /** Performs an action and waits for its background jobs, see [awaitBackgroundAction]. */
+    private suspend fun performAndAwait(
+        name: NodeServiceApi.NamePerformAction,
+        statusName: NodeServiceApi.NameBackgroundActionInfo,
+        parameters: RestActionParameters,
+    ): NetworkResponse<Unit> = awaitBackgroundAction(
+        start = { wrapCellsResponse { getNodeServiceApi().performAction(name, parameters) } },
+        getStatus = { jobUuid -> wrapCellsResponse { getNodeServiceApi().backgroundActionInfo(statusName, jobUuid) } },
+    )
 
     override suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit> = wrapCellsResponse {
         getNodeServiceApi().patchNode(
