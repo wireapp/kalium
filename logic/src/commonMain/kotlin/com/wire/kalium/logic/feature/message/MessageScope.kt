@@ -16,8 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(InternalKaliumApi::class)
+
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.linkpreview.fetch.LinkPreviewFetcher
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSendFailureHandlerImpl
 import com.wire.kalium.messaging.sending.MessageSenderImpl
@@ -133,7 +136,6 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlin.time.Duration.Companion.seconds
 import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
 import com.wire.kalium.messaging.sending.MessageEnvelopeCreatorImpl
 import kotlinx.coroutines.flow.first
@@ -189,6 +191,7 @@ public class MessageScope internal constructor(
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher,
     private val messageTimelineDAO: MessageTimelineDAO,
+    private val linkPreviewFetcher: LinkPreviewFetcher,
 ) {
 
     private val messageTimelineRepository = MessageTimelineRepository(messageTimelineDAO, selfUserId)
@@ -676,18 +679,7 @@ public class MessageScope internal constructor(
 
     private val linkPreviewRepository: LinkPreviewRepository by lazy {
         LinkPreviewRepositoryImpl(
-            httpClient = io.ktor.client.HttpClient {
-                install(io.ktor.client.plugins.HttpTimeout) {
-                    requestTimeoutMillis = 5.seconds.inWholeMilliseconds
-                    connectTimeoutMillis = 3.seconds.inWholeMilliseconds
-                    socketTimeoutMillis = 5.seconds.inWholeMilliseconds
-                }
-                install(io.ktor.client.plugins.UserAgent) {
-                    agent = "Wire LinkPreviewFetcher"
-                }
-                followRedirects = false
-                expectSuccess = false
-            },
+            fetcher = linkPreviewFetcher,
             kaliumFileSystem = kaliumFileSystem
         )
     }

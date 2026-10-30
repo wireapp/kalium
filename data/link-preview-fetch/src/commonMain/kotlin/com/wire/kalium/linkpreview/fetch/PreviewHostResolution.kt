@@ -15,13 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.message.linkpreview
+package com.wire.kalium.linkpreview.fetch
 
-import java.net.InetAddress
-
-internal actual suspend fun resolvePreviewHostAddresses(host: String): List<String> =
-    runCatching {
-        InetAddress.getAllByName(host)
-            .mapNotNull { it.hostAddress?.substringBefore('%') }
-            .distinct()
-    }.getOrDefault(emptyList())
+internal expect suspend fun resolvePreviewHostAddresses(host: String): List<String>
