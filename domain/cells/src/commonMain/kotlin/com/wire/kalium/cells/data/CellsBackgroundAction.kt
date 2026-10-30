@@ -46,6 +46,7 @@ private const val MAX_CONSECUTIVE_STATUS_FAILURES = 3
  * @return success once every job finished, the failure of the action, of a job, or of getting its status, or a failure
  * if the jobs didn't finish within [timeout]: they may still finish later.
  */
+@Suppress("ReturnCount")
 internal suspend fun awaitBackgroundAction(
     start: suspend () -> NetworkResponse<RestPerformActionResponse>,
     getStatus: suspend (jobUuid: String) -> NetworkResponse<RestBackgroundAction>,
@@ -68,6 +69,7 @@ internal suspend fun awaitBackgroundAction(
 }
 
 /** @return null once the job finished, the failure otherwise. */
+@Suppress("ReturnCount")
 private suspend fun awaitJob(
     jobUuid: String,
     getStatus: suspend (jobUuid: String) -> NetworkResponse<RestBackgroundAction>,
