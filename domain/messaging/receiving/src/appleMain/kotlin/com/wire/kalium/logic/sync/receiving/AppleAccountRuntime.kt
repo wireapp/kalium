@@ -113,6 +113,9 @@ public class AppleAccountRuntime private constructor(
     public var mlsCipherSuite: CipherSuite? = prepared.mlsCipherSuite
         private set
 
+    /** The held account’s session, shared with the Cells upload transport. */
+    public val authenticatedSession: com.wire.kalium.network.session.SessionManager get() = sessionManager
+
     internal lateinit var sessionManager: ExistingAccountSessionManager
         private set
 

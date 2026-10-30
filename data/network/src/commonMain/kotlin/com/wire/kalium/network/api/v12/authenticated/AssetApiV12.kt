@@ -22,28 +22,25 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v11.authenticated.AssetApiV11
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 
 internal open class AssetApiV12 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
     selfUserId: UserId
 ) : AssetApiV11(authenticatedNetworkClient, selfUserId) {
 
-    override fun buildUploadMetaData(metadata: AssetMetadataRequest): String {
-
-        val params = buildList {
-            add("\"public\": ${metadata.public}")
-            add("\"retention\": \"${metadata.retentionType.name.lowercase()}\"")
-            metadata.conversationId?.let {
-                add("\"convId\": {\"id\": \"${it.value}\", \"domain\": \"${it.domain}\"}")
-            }
-            metadata.filename?.let {
-                add("\"filename\": \"$it\"")
-            }
-            metadata.filetype?.let {
-                add("\"filetype\": \"$it\"")
+    override fun buildUploadMetaData(metadata: AssetMetadataRequest): String = buildJsonObject {
+        put("public", metadata.public)
+        put("retention", metadata.retentionType.name.lowercase())
+        metadata.conversationId?.let {
+            putJsonObject("convId") {
+                put("id", it.value)
+                put("domain", it.domain)
             }
         }
-
-        return "{${params.joinToString(",")}}"
-    }
+        metadata.filename?.let { put("filename", it) }
+        metadata.filetype?.let { put("filetype", it) }
+    }.toString()
 }

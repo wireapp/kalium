@@ -95,9 +95,12 @@ actual fun userDatabaseDriverByPath(
     passphrase: UserDBSecret?,
     enableWAL: Boolean
 ): SqlDriver {
-    return NativeSqliteDriver(
-        UserDatabase.Schema.synchronous(),
-        path
+    return AppleSuspensionSqlDriver(
+        NativeSqliteDriver(
+            UserDatabase.Schema.synchronous(),
+            path
+        ),
+        "user_database"
     )
 }
 
