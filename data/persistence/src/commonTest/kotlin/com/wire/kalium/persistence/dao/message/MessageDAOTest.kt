@@ -159,6 +159,27 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun anAssetIsInOtherMessagesOnlyWhileAnotherMessageSendsIt() = runTest {
+        insertInitialData()
+        val content = MessageEntityContent.Asset(
+            assetSizeInBytes = 1_000, assetMimeType = "image/jpeg", assetOtrKey = byteArrayOf(1),
+            assetSha256Key = byteArrayOf(2), assetId = "shared-asset", assetEncryptionAlgorithm = "AES_CBC",
+        )
+        val first = newRegularMessageEntity(
+            id = "first", conversationId = conversationEntity1.id, senderUserId = userEntity1.id, content = content,
+        )
+        // A share to several conversations sends one upload, in a message of each conversation.
+        val second = first.copy(id = "second", conversationId = conversationEntity2.id)
+        messageDAO.insertOrIgnoreMessages(listOf(first))
+        assertFalse(messageDAO.isAssetInOtherMessages("shared-asset", first.id, first.conversationId))
+
+        messageDAO.insertOrIgnoreMessages(listOf(second))
+        assertTrue(messageDAO.isAssetInOtherMessages("shared-asset", first.id, first.conversationId))
+        assertTrue(messageDAO.isAssetInOtherMessages("shared-asset", second.id, second.conversationId))
+        assertFalse(messageDAO.isAssetInOtherMessages("other-asset", first.id, first.conversationId))
+    }
+
+    @Test
     fun previewUpdateFromDifferentClientCannotChangeCompletedAsset() = runTest {
         insertInitialData()
         val original = MessageEntityContent.Asset(

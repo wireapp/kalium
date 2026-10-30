@@ -297,6 +297,28 @@ class DeleteMessageUseCaseTest {
     }
 
     @Test
+    fun givenAnotherMessageSendsTheSameAsset_whenDeleting_thenKeepTheAsset() = runTest {
+        val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
+            .withSendMessageSucceed()
+            .withSelfUser(TestUser.SELF)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
+            .withCompletedSlowSync()
+            .withMessageRepositoryMarkMessageAsDeletedSucceed()
+            .withAssetMessage(inOtherMessages = true)
+            .withAssetRepositoryDeleteAssetSucceed()
+            .arrange()
+
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).toEither().shouldSucceed()
+
+        // A share to several conversations sends one upload, which the other conversations' messages still show.
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.assetRepository.deleteAsset(any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.markMessageAsDeleted(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
+        }
+    }
+
+    @Test
     fun givenOriginalAndPreviewShareRemoteIdentity_whenDeleting_thenDeleteRemoteAssetOnce() = runTest {
         verifyRemoteDeletionDeduplicates(ASSET_ID.domain, ASSET_ID.domain)
     }
@@ -447,10 +469,13 @@ class DeleteMessageUseCaseTest {
             } returns Either.Right(TestMessage.TEXT_MESSAGE.copy(status = status, expirationData = expirationData))
         }
 
-        suspend fun withAssetMessage(content: MessageContent.Asset = MESSAGE_ASSET_CONTENT) = apply {
+        suspend fun withAssetMessage(content: MessageContent.Asset = MESSAGE_ASSET_CONTENT, inOtherMessages: Boolean = false) = apply {
             everySuspend {
                 messageRepository.getMessageById(any(), any())
             } returns Either.Right(TestMessage.TEXT_MESSAGE.copy(content = content))
+            everySuspend {
+                messageRepository.isAssetInOtherMessages(any(), any(), any())
+            } returns Either.Right(inOtherMessages)
         }
 
         suspend fun withAssetRepositoryDeleteAssetSucceed() = apply {

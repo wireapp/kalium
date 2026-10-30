@@ -633,6 +633,10 @@ AND Message.visibility IS NOT 'DELETED';
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
+countOtherMessagesWithAsset:
+SELECT count(*) FROM MessageAssetContent
+WHERE asset_id = :asset_id AND (message_id != :message_id OR conversation_id != :conversation_id);
+
 countByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversation_id
 -- @CustomKey message_list

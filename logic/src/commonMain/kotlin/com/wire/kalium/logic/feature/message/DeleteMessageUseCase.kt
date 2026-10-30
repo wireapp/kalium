@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -217,6 +218,10 @@ public class DeleteMessageUseCase internal constructor(
     private suspend fun deleteMessageAsset(message: Message, deleteForEveryone: Boolean) {
         val assetContent = (message.content as? MessageContent.Asset)?.value
         assetContent.distinctRemoteAssets()
+            // A share to several conversations sends one upload; the other messages still need it. Keep it when unsure.
+            .filterNot { asset ->
+                messageRepository.isAssetInOtherMessages(asset.assetId, message.id, message.conversationId).getOrElse(true)
+            }
             .forEach { assetToRemove ->
                 assetRepository.deleteAsset(
                     assetToRemove.assetId,

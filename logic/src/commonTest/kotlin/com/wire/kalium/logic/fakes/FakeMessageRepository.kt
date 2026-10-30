@@ -259,6 +259,12 @@ internal open class FakeMessageRepository : MessageRepository {
     override suspend fun getAllAssetIdsFromConversationId(conversationId: ConversationId): Either<StorageFailure, List<String>> =
         emptyList<String>().right()
 
+    override suspend fun isAssetInOtherMessages(
+        assetId: String,
+        messageId: String,
+        conversationId: ConversationId,
+    ): Either<StorageFailure, Boolean> = false.right()
+
     override suspend fun getSenderNameByMessageId(
         conversationId: ConversationId,
         messageId: String

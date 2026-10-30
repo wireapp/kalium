@@ -862,6 +862,11 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun isAssetInOtherMessages(assetId: String, messageId: String, conversationId: QualifiedIDEntity): Boolean =
+        withContext(readDispatcher.value) {
+            queries.countOtherMessagesWithAsset(assetId, messageId, conversationId).awaitAsOne() > 0
+        }
+
     override suspend fun getSenderNameById(id: String, conversationId: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
         userQueries.selectNameByMessageId(id, conversationId).awaitAsOneOrNull()?.name
     }

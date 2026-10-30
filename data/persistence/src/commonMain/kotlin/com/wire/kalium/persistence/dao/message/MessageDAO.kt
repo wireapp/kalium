@@ -227,6 +227,9 @@ interface MessageDAO {
     fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>>
     suspend fun getMessageAssetTransferStatus(messageId: String, conversationId: QualifiedIDEntity): AssetTransferStatusEntity
     suspend fun getAllMessageAssetIdsForConversationId(conversationId: QualifiedIDEntity): List<String>
+
+    /** Whether a message other than this one sends the uploaded asset [assetId], as a share to several conversations does. */
+    suspend fun isAssetInOtherMessages(assetId: String, messageId: String, conversationId: QualifiedIDEntity): Boolean
     suspend fun getSenderNameById(id: String, conversationId: QualifiedIDEntity): String?
     suspend fun getNextAudioMessageInConversation(prevMessageId: String, conversationId: QualifiedIDEntity): String?
     fun getPagedMessagesFlow(

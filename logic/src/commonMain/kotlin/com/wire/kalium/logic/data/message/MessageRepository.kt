@@ -239,6 +239,13 @@ internal interface MessageRepository : OutgoingMessages, MessageTransport {
         conversationId: ConversationId,
     ): Either<StorageFailure, List<String>>
 
+    /** Whether a message other than this one sends the uploaded asset [assetId], as a share to several conversations does. */
+    suspend fun isAssetInOtherMessages(
+        assetId: String,
+        messageId: String,
+        conversationId: ConversationId,
+    ): Either<StorageFailure, Boolean>
+
     suspend fun getSenderNameByMessageId(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
     suspend fun getNextAudioMessageInConversation(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
     suspend fun updateMessagesStatusIfNotRead(
@@ -733,6 +740,14 @@ internal class MessageDataSource internal constructor(
         return wrapStorageRequest {
             messageDAO.getAllMessageAssetIdsForConversationId(conversationId = conversationId.toDao())
         }
+    }
+
+    override suspend fun isAssetInOtherMessages(
+        assetId: String,
+        messageId: String,
+        conversationId: ConversationId,
+    ): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        messageDAO.isAssetInOtherMessages(assetId, messageId, conversationId.toDao())
     }
 
     override suspend fun getSenderNameByMessageId(conversationId: ConversationId, messageId: String): Either<CoreFailure, String> =
