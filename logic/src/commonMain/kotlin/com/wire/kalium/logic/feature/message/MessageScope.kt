@@ -16,8 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(InternalKaliumApi::class)
+
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.linkpreview.fetch.LinkPreviewFetcher
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSendFailureHandlerImpl
 import com.wire.kalium.messaging.sending.MessageSenderImpl
@@ -54,7 +57,6 @@ import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
-import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewFetcher
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler

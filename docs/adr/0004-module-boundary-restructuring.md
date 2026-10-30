@@ -30,6 +30,7 @@ We reorganized modules into a hierarchical structure with clear architectural bo
 - `:data:network` (was `:network`)
 - `:data:network-model` (was `:network-model`)
 - `:data:network-util` (was `:network-util`)
+- `:data:link-preview-fetch` (isolated transport for untrusted link preview URLs)
 - `:data:persistence` (was `:persistence`)
 - `:data:persistence-test` (was `:persistence-test`)
 - `:data:protobuf` (was `:protobuf`)

@@ -15,8 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:OptIn(InternalKaliumApi::class)
+
 package com.wire.kalium.logic.data.message.linkpreview
 
+import com.wire.kalium.util.InternalKaliumApi
+import com.wire.kalium.linkpreview.fetch.FetchedPreviewImage
+import com.wire.kalium.linkpreview.fetch.LinkPreviewFetcher
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.KaliumFileSystem

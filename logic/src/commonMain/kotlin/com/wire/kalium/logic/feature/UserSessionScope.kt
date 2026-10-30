@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.linkpreview.fetch.createLinkPreviewFetcher
 import com.wire.kalium.logic.feature.call.usecase.SetCallHandRaisedUseCase
 import com.wire.kalium.logic.data.client.guardedBy
 import com.wire.kalium.logic.network.guardedBy
@@ -622,7 +623,6 @@ import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
-import com.wire.kalium.logic.data.message.linkpreview.createLinkPreviewFetcher
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope

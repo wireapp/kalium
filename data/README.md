@@ -6,6 +6,7 @@ Data access and transformation layer handling persistence, networking, and mappi
 - `network` - Network implementation (Ktor client, API calls, WebSocket)
 - `network-model` - DTOs, API request/response models
 - `network-util` - Network state observation and utilities
+- `link-preview-fetch` - Isolated fetching of untrusted preview URLs with public-address and resource limits
 - `persistence` - Database operations (SQLDelight)
 - `persistence-test` - Test utilities for persistence layer
 - `protobuf` - Protocol buffer message definitions
