@@ -21,6 +21,7 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.MockEngineConfig
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -33,10 +34,146 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertFailsWith
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 
-@OptIn(ExperimentalEncodingApi::class)
+@OptIn(ExperimentalEncodingApi::class, ExperimentalCoroutinesApi::class)
 class LinkPreviewRepositoryTest {
+
+    @Test
+    fun givenUnsafeUrlForm_whenFetching_thenRejectsBeforeHttp() = runTest {
+        val urls = listOf(
+            "https://user:password@example.com/page",
+            "https://127.0.0.1/page",
+            "https://[::1]/page",
+            "https://[0:0:0:0:0:0:0:1]/page",
+            "https://printer.local./page",
+            "https://service.localhost/page"
+        )
+        val requests = mutableListOf<String>()
+        val repository = newRepository(
+            onRequest = requests::add
+        )
+
+        urls.forEach { url -> assertNull(repository.fetchOpenGraph(url, url).getOrNull(), url) }
+        assertEquals(emptyList(), requests)
+    }
+
+    @Test
+    fun givenRedirectToPrivateLiteral_whenFetching_thenNeverRequestsRedirectTarget() = runTest {
+        val requests = mutableListOf<String>()
+        val repository = newRepository(
+            responses = mapOf("https://example.com/start" to redirectResponse("https://10.0.0.1/secret")),
+            onRequest = requests::add
+        )
+
+        assertNull(repository.fetchOpenGraph("https://example.com/start", "https://example.com/start").getOrNull())
+        assertEquals(listOf("https://example.com/start"), requests)
+    }
+
+    @Test
+    fun givenPrivateImageDestination_whenFetchingImage_thenDoesNotMakeRequest() = runTest {
+        val requests = mutableListOf<String>()
+        val repository = newRepository(onRequest = requests::add)
+
+        assertNull(repository.fetchImage("https://192.168.1.1/image.png").getOrNull())
+        assertEquals(emptyList(), requests)
+    }
+
+    @Test
+    fun givenImageRedirectToPrivateDestination_whenFetchingImage_thenStopsBeforePrivateRequest() = runTest {
+        val requests = mutableListOf<String>()
+        val repository = newRepository(
+            responses = mapOf("https://example.com/image.png" to redirectResponse("https://[::1]/image.png")),
+            onRequest = requests::add
+        )
+
+        assertNull(repository.fetchImage("https://example.com/image.png").getOrNull())
+        assertEquals(listOf("https://example.com/image.png"), requests)
+    }
+
+    @Test
+    fun givenFiveRedirects_whenFetching_thenReturnsPreviewWithinHopLimit() = runTest {
+        val responses = (0 until 5).associate { step ->
+            "https://example.com/$step" to redirectResponse("https://example.com/${step + 1}")
+        } + ("https://example.com/5" to htmlResponse("<head><title>Final page</title></head>"))
+        val requests = mutableListOf<String>()
+        val repository = newRepository(responses = responses, onRequest = requests::add)
+
+        assertNotNull(repository.fetchOpenGraph("https://example.com/0", "https://example.com/0").getOrNull())
+        assertEquals(6, requests.size)
+    }
+
+    @Test
+    fun givenMoreThanFiveDistinctRedirects_whenFetching_thenStopsAtHopLimit() = runTest {
+        val responses = (0..5).associate { step ->
+            "https://example.com/$step" to redirectResponse("https://example.com/${step + 1}")
+        }
+        val requests = mutableListOf<String>()
+        val repository = newRepository(responses = responses, onRequest = requests::add)
+
+        assertNull(repository.fetchOpenGraph("https://example.com/0", "https://example.com/0").getOrNull())
+        assertEquals((0..5).map { "https://example.com/$it" }, requests)
+    }
+
+    @Test
+    fun givenRequestExceedsOverallBudget_whenFetching_thenReturnsNull() = runTest {
+        val requests = mutableListOf<String>()
+        val repository = newRepository(
+            responseDelayMillis = 10_001,
+            dispatcher = StandardTestDispatcher(testScheduler),
+            onRequest = requests::add
+        )
+
+        assertNull(repository.fetchOpenGraph("https://example.com", "https://example.com").getOrNull())
+        assertEquals(10_000L, testScheduler.currentTime)
+        assertEquals(listOf("https://example.com"), requests)
+    }
+
+    @Test
+    fun givenRedirectsExceedCombinedBudget_whenFetching_thenDoesNotResetDeadlinePerHop() = runTest {
+        val responses = (0..5).associate { step ->
+            "https://example.com/$step" to redirectResponse("https://example.com/${step + 1}")
+        }
+        val requests = mutableListOf<String>()
+        val repository = newRepository(
+            responses = responses,
+            responseDelayMillis = 4_000,
+            dispatcher = StandardTestDispatcher(testScheduler),
+            onRequest = requests::add
+        )
+
+        assertNull(repository.fetchOpenGraph("https://example.com/0", "https://example.com/0").getOrNull())
+        assertEquals(10_000L, testScheduler.currentTime)
+        assertEquals((0..2).map { "https://example.com/$it" }, requests)
+    }
+
+    @Test
+    fun givenImageRequestExceedsOverallBudget_whenFetchingImage_thenReturnsNull() = runTest {
+        val repository = newRepository(responseDelayMillis = 10_001, dispatcher = StandardTestDispatcher(testScheduler))
+
+        assertNull(repository.fetchImage("https://example.com/image.png").getOrNull())
+        assertEquals(10_000L, testScheduler.currentTime)
+    }
+
+    @Test
+    fun givenCallerCancellation_whenFetching_thenPropagatesCancellation() = runTest {
+        val repository = newRepository(responseDelayMillis = 5_000, dispatcher = StandardTestDispatcher(testScheduler))
+        val request = async { repository.fetchOpenGraph("https://example.com", "https://example.com") }
+        runCurrent()
+
+        request.cancel()
+
+        assertFailsWith<CancellationException> { request.await() }
+    }
 
     @Test
     fun givenValidOgPage_whenFetchingOpenGraph_thenReturnsPreviewData() = runTest {
@@ -84,20 +221,6 @@ class LinkPreviewRepositoryTest {
         val result = repository.fetchOpenGraph(
             url = "https://localhost/page",
             originalUrl = "https://localhost/page"
-        ).getOrNull()
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenPrivateResolvedAddress_whenFetchingOpenGraph_thenReturnsNull() = runTest {
-        val repository = newRepository(
-            hostResolver = { listOf("10.0.0.1") }
-        )
-
-        val result = repository.fetchOpenGraph(
-            url = "https://example.com/page",
-            originalUrl = "https://example.com/page"
         ).getOrNull()
 
         assertNull(result)
@@ -339,28 +462,37 @@ class LinkPreviewRepositoryTest {
         assertNull(result)
     }
 
-    private fun newRepository(
+    private fun TestScope.newRepository(
         fileSystem: FakeKaliumFileSystem = FakeKaliumFileSystem(),
         responses: Map<String, MockResponse> = emptyMap(),
         thrownException: Throwable? = null,
-        hostResolver: suspend (String) -> List<String> = { listOf(PUBLIC_IPV4_ADDRESS) }
+        responseDelayMillis: Long = 0,
+        dispatcher: CoroutineDispatcher = StandardTestDispatcher(testScheduler),
+        onRequest: (String) -> Unit = {}
     ): LinkPreviewRepository {
-        val mockEngine = MockEngine { request ->
-            thrownException?.let { throw it }
-            val response = responses[request.url.toString()]
-                ?: error("No mocked response for ${request.url}")
+        val mockEngine = MockEngine(MockEngineConfig().apply {
+            this.dispatcher = dispatcher
+            addHandler { request ->
+                onRequest(request.url.toString())
+                delay(responseDelayMillis)
+                thrownException?.let { throw it }
+                val response = responses[request.url.toString()]
+                    ?: error("No mocked response for ${request.url}")
 
-            respond(
-                content = ByteReadChannel(response.body),
-                status = response.status,
-                headers = response.headers
-            )
-        }
+                respond(
+                    content = ByteReadChannel(response.body),
+                    status = response.status,
+                    headers = response.headers
+                )
+            }
+        })
 
         return LinkPreviewRepositoryImpl(
-            httpClient = HttpClient(mockEngine),
-            kaliumFileSystem = fileSystem,
-            resolveHostAddresses = hostResolver
+            httpClient = HttpClient(mockEngine) {
+                followRedirects = false
+                expectSuccess = false
+            },
+            kaliumFileSystem = fileSystem
         )
     }
 
@@ -400,7 +532,6 @@ class LinkPreviewRepositoryTest {
     )
 
     private companion object {
-        const val PUBLIC_IPV4_ADDRESS = "93.184.216.34"
         const val METADATA_CAP_BYTES = 64 * 1024
         const val IMAGE_CAP_BYTES = 5 * 1024 * 1024
         const val ONE_BY_ONE_PNG_BASE64 =

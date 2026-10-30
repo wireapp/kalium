@@ -28,6 +28,10 @@ import kotlinx.cinterop.ptr
 import kotlinx.cinterop.sizeOf
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.value
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.darwin.DISPATCH_QUEUE_PRIORITY_DEFAULT
+import platform.darwin.dispatch_async
+import platform.darwin.dispatch_get_global_queue
 import platform.posix.AF_UNSPEC
 import platform.posix.NI_MAXHOST
 import platform.posix.NI_NUMERICHOST
@@ -36,8 +40,20 @@ import platform.posix.freeaddrinfo
 import platform.posix.getaddrinfo
 import platform.posix.getnameinfo
 import platform.posix.memset
+import kotlin.coroutines.resume
 
-internal actual suspend fun resolvePreviewHostAddresses(host: String): List<String> = memScoped {
+internal actual suspend fun resolvePreviewHostAddresses(host: String): List<String> = suspendCancellableCoroutine { continuation ->
+    // getaddrinfo itself cannot be interrupted. Keep it outside the request's coroutine job so
+    // cancellation/deadlines can return immediately and discard any late DNS answer.
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT.toLong(), 0u)) {
+        if (continuation.isActive) {
+            val addresses = runCatching { resolveSystemPreviewHostAddresses(host) }.getOrDefault(emptyList())
+            continuation.resume(addresses)
+        }
+    }
+}
+
+private fun resolveSystemPreviewHostAddresses(host: String): List<String> = memScoped {
     val result = alloc<CPointerVar<addrinfo>>()
     val hints = alloc<addrinfo>()
     memset(hints.ptr, 0, sizeOf<addrinfo>().toULong())

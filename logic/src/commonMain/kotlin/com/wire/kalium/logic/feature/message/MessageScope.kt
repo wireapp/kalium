@@ -54,6 +54,7 @@ import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
+import com.wire.kalium.logic.data.message.linkpreview.createPreviewHttpClient
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
@@ -133,7 +134,6 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlin.time.Duration.Companion.seconds
 import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
 import com.wire.kalium.messaging.sending.MessageEnvelopeCreatorImpl
 import kotlinx.coroutines.flow.first
@@ -676,18 +676,7 @@ public class MessageScope internal constructor(
 
     private val linkPreviewRepository: LinkPreviewRepository by lazy {
         LinkPreviewRepositoryImpl(
-            httpClient = io.ktor.client.HttpClient {
-                install(io.ktor.client.plugins.HttpTimeout) {
-                    requestTimeoutMillis = 5.seconds.inWholeMilliseconds
-                    connectTimeoutMillis = 3.seconds.inWholeMilliseconds
-                    socketTimeoutMillis = 5.seconds.inWholeMilliseconds
-                }
-                install(io.ktor.client.plugins.UserAgent) {
-                    agent = "Wire LinkPreviewFetcher"
-                }
-                followRedirects = false
-                expectSuccess = false
-            },
+            httpClient = createPreviewHttpClient(),
             kaliumFileSystem = kaliumFileSystem
         )
     }
