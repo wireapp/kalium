@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -28,11 +29,17 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.sync.KaliumSyncException
 
 internal interface LastReadContentHandler {
     suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.LastRead
+    )
+
+    suspend fun handle(
+        message: Message.Signaling,
+        messageContent: MessageContent.MarkUnread
     )
 
     suspend fun flushPendingLastReads()
@@ -50,7 +57,25 @@ internal class LastReadContentHandlerImpl internal constructor(
     private val updates = LastReadUpdates(selfUserId)
 
     override suspend fun handle(message: Message.Signaling, messageContent: MessageContent.LastRead) {
-        updates.add(message, messageContent, isMessageSentInSelfConversation(message))
+        if (message.senderUserId != selfUserId || !isMessageSentInSelfConversation(message)) return
+        val operationTime = messageContent.operationTime ?: message.date
+        if (!isValidReadOperation(operationTime, message.date)) return
+        conversationRepository.clearManualUnreadMarker(messageContent.conversationId, messageContent.time, operationTime).getOrFail {
+            throw KaliumSyncException("Failed to clear manual unread marker", it)
+        }
+        updates.add(message, messageContent, isSelfConversation = true)
+    }
+
+    override suspend fun handle(message: Message.Signaling, messageContent: MessageContent.MarkUnread) {
+        if (message.senderUserId != selfUserId || !isMessageSentInSelfConversation(message)) return
+        if (!messageContent.isValidFor(message.date)) return
+        conversationRepository.markConversationAsUnread(
+            messageContent.conversationId,
+            messageContent.unreadFrom,
+            messageContent.operationTime
+        ).getOrFail {
+            throw KaliumSyncException("Failed to mark conversation as unread", it)
+        }
     }
 
     override suspend fun flushPendingLastReads() {

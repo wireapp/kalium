@@ -55,6 +55,7 @@ message GenericMessage {
         HistoryClientResponse historyClientResponse = 30;
         Poll poll = 31;
         PollVote pollVote = 32;
+        MarkUnread markUnread = 33;
     }
     optional UnknownStrategy unknownStrategy = 25 [default = IGNORE];
 
@@ -219,6 +220,15 @@ message LastRead {
     required int64 last_read_timestamp = 2;
     // only optional to maintain backwards compatibility
     optional QualifiedConversationId qualified_conversation_id = 3;
+    // Time of the user's read action, before any queued delivery delay.
+    optional int64 operation_timestamp = 4;
+}
+
+// Private synchronization between the user's own devices. Does not rewind LastRead.
+message MarkUnread {
+    required QualifiedConversationId qualified_conversation_id = 1;
+    required int64 unread_from_timestamp = 2; // inclusive, epoch milliseconds
+    required int64 operation_timestamp = 3; // time of the user's action, epoch milliseconds
 }
 
 message Cleared {

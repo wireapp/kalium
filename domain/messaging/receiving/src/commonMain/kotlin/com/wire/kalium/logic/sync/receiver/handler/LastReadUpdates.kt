@@ -11,7 +11,16 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
+
+private const val MAX_READ_OPERATION_SKEW_MINUTES = 5
+
+fun isValidReadOperation(operationTime: Instant, messageDate: Instant): Boolean =
+    operationTime.toEpochMilliseconds() >= 0 && operationTime <= messageDate + MAX_READ_OPERATION_SKEW_MINUTES.minutes
+
+fun MessageContent.MarkUnread.isValidFor(messageDate: Instant): Boolean =
+    unreadFrom.toEpochMilliseconds() >= 0 && unreadFrom <= messageDate && isValidReadOperation(operationTime, messageDate)
 
 /** Shared authorization and gathering. The app flushes at its existing batch boundary. */
 class LastReadUpdates(private val selfUserId: UserId) {

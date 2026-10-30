@@ -296,6 +296,7 @@ public class MessageScope internal constructor(
             messageRepository = messageRepository,
             selfUserId = selfUserId,
             notificationEventsManager = notificationEventsManager,
+            conversationRepository = conversationRepository,
         )
 
     public val sendTextMessage: SendTextMessageUseCase by lazy {

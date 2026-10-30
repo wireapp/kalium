@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.content.PollContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =
@@ -464,8 +465,9 @@ internal class MessageInsertExtensionImpl(
 
     @Suppress("LongMethod")
     private suspend fun insertUnreadEvent(message: MessageEntity) {
-        val lastRead = conversationsQueries.getConversationLastReadDate(message.conversationId).awaitAsOneOrNull()
-            ?: Instant.DISTANT_PAST
+        val readState = conversationsQueries.getConversationReadState(message.conversationId).awaitAsOneOrNull()
+        val lastRead = readState?.manual_unread_date?.minus(1.milliseconds)
+            ?: readState?.last_read_date ?: Instant.DISTANT_PAST
 
         if (!message.isSelfMessage && message.date > lastRead) {
             when (message.content) {

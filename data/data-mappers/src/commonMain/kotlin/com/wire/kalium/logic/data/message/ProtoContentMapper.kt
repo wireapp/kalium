@@ -65,6 +65,7 @@ import com.wire.kalium.protobuf.messages.InCallHandRaise
 import com.wire.kalium.protobuf.messages.InCallEmoji
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
+import com.wire.kalium.protobuf.messages.MarkUnread
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
 import com.wire.kalium.protobuf.messages.Location
 import com.wire.kalium.protobuf.messages.MessageDelete
@@ -154,6 +155,7 @@ class ProtoContentMapperImpl(
             )
 
             is MessageContent.LastRead -> packLastRead(readableContent)
+            is MessageContent.MarkUnread -> packMarkUnread(readableContent)
             is MessageContent.Cleared -> packCleared(readableContent)
             is MessageContent.Reaction -> packReaction(readableContent, legalHoldStatus)
             is MessageContent.Receipt -> packReceipt(readableContent)
@@ -400,6 +402,7 @@ class ProtoContentMapperImpl(
             is MessageContent.DeleteMessage,
             MessageContent.Ignored,
             is MessageContent.LastRead,
+            is MessageContent.MarkUnread,
             is MessageContent.Reaction,
             is MessageContent.Receipt,
             is MessageContent.Composite,
@@ -527,6 +530,11 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
             is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
             is GenericMessage.Content.LastRead -> unpackLastRead(genericMessage, protoContent)
+            is GenericMessage.Content.MarkUnread -> MessageContent.MarkUnread(
+                conversationId = idMapper.fromProtoModel(protoContent.value.qualifiedConversationId),
+                unreadFrom = Instant.fromEpochMilliseconds(protoContent.value.unreadFromTimestamp),
+                operationTime = Instant.fromEpochMilliseconds(protoContent.value.operationTimestamp)
+            )
             is GenericMessage.Content.Location -> unpackLocation(protoContent)
             is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
 
@@ -671,7 +679,8 @@ class ProtoContentMapperImpl(
         LastRead(
             conversationId = readableContent.conversationId.value,
             qualifiedConversationId = idMapper.toProtoModel(readableContent.conversationId),
-            lastReadTimestamp = readableContent.time.toEpochMilliseconds()
+            lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
+            operationTimestamp = readableContent.operationTime?.toEpochMilliseconds()
         )
     )
 
@@ -681,7 +690,16 @@ class ProtoContentMapperImpl(
     ) = MessageContent.LastRead(
         messageId = genericMessage.messageId,
         conversationId = extractConversationId(protoContent.value.qualifiedConversationId, protoContent.value.conversationId),
-        time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
+        time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp),
+        operationTime = protoContent.value.operationTimestamp?.let { Instant.fromEpochMilliseconds(it) }
+    )
+
+    private fun packMarkUnread(readableContent: MessageContent.MarkUnread) = GenericMessage.Content.MarkUnread(
+        MarkUnread(
+            qualifiedConversationId = idMapper.toProtoModel(readableContent.conversationId),
+            unreadFromTimestamp = readableContent.unreadFrom.toEpochMilliseconds(),
+            operationTimestamp = readableContent.operationTime.toEpochMilliseconds()
+        )
     )
 
     private fun packHidden(readableContent: MessageContent.DeleteForMe) = GenericMessage.Content.Hidden(

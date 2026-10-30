@@ -36,6 +36,7 @@ import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -45,6 +46,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 
 /**
@@ -63,7 +65,8 @@ public class UpdateConversationReadDateUseCase internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
     private val workQueue: ConversationWorkQueue,
-    private val logger: KaliumLogger = kaliumLogger
+    private val logger: KaliumLogger = kaliumLogger,
+    private val clock: Clock = Clock.System,
 ) {
 
     /**
@@ -78,29 +81,50 @@ public class UpdateConversationReadDateUseCase internal constructor(
         time: Instant,
         invokeImmediately: Boolean = false,
     ) {
+        val now = Instant.fromEpochMilliseconds(clock.now().toEpochMilliseconds())
+        val conversation = conversationRepository.getConversationById(conversationId).getOrFail {
+            logger.w("Failed to load conversation read state: $it")
+            return
+        }
+        val operationTime = maxOf(now, conversation.manualUnreadUpdatedAt?.plus(1.milliseconds) ?: now)
+        val input = ConversationTimeEventInput(conversationId, time, operationTime, conversation.manualUnreadUpdatedAt)
         if (invokeImmediately) {
-            doWork(conversationId, time)
+            doWork(input)
         } else {
-            workQueue.enqueue(ConversationTimeEventInput(conversationId, time), worker)
+            workQueue.enqueue(input, worker)
         }
     }
 
-    private val worker = ConversationTimeEventWorker { (conversationId, time) ->
-        doWork(conversationId, time)
+    private val worker = ConversationTimeEventWorker { input ->
+        doWork(input)
     }
 
-    private suspend fun doWork(conversationId: QualifiedID, requestedLastRead: Instant) {
+    private suspend fun doWork(input: ConversationTimeEventInput) {
+        val conversationId = input.conversationId
+        val requestedLastRead = input.eventTime
+        val operationTime = input.operationTime ?: return
         coroutineScope {
-            conversationRepository.getConversationLastReadDate(conversationId).onFailure {
+            conversationRepository.getConversationById(conversationId).onFailure {
                 logger.w("Failed to update conversation read date; StorageFailure $it")
-            }.onSuccess { storedLastRead ->
-                if (storedLastRead > requestedLastRead) {
+            }.onSuccess { conversation ->
+                val storedLastRead = conversation.lastReadDate
+                val marker = conversation.manualUnreadDate
+                // Visibility admitted before a later unread action must not undo it after debounce.
+                if (conversation.manualUnreadUpdatedAt?.let { operationTime <= it } == true) return@onSuccess
+                if (marker != null && requestedLastRead < marker) return@onSuccess
+                if (storedLastRead > requestedLastRead && marker == null) {
                     logger.d(
                         "Skipping last-read update for '${conversationId.toLogString()}': " +
                             "stored=$storedLastRead > requested=$requestedLastRead"
                     )
                     return@onSuccess
                 }
+
+                conversationRepository.clearManualUnreadMarker(conversationId, requestedLastRead, operationTime)
+                    .getOrFail {
+                        logger.w("Failed to clear manual unread state: $it")
+                        return@onSuccess
+                    }
 
                 val needsLocalPersistence = storedLastRead < requestedLastRead
                 // Network operations must stay cancellable. NonCancellable execution is used only to finish local persistence.
@@ -117,7 +141,7 @@ public class UpdateConversationReadDateUseCase internal constructor(
 
                 if (canPerformRemoteSync) {
                     launch {
-                        syncLastReadWithOtherClients(conversationId, requestedLastRead)
+                        syncLastReadWithOtherClients(conversationId, requestedLastRead, operationTime)
                     }
                 }
             }
@@ -140,10 +164,10 @@ public class UpdateConversationReadDateUseCase internal constructor(
         }
     }
 
-    private suspend fun syncLastReadWithOtherClients(conversationId: QualifiedID, lastRead: Instant) {
+    private suspend fun syncLastReadWithOtherClients(conversationId: QualifiedID, lastRead: Instant, operationTime: Instant) {
         selfConversationIdProvider().flatMap { selfConversationIds ->
             selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                sendLastReadToSelfConversation(conversationId, selfConversationId, lastRead)
+                sendLastReadToSelfConversation(conversationId, selfConversationId, lastRead, operationTime)
             }
         }
     }
@@ -151,7 +175,8 @@ public class UpdateConversationReadDateUseCase internal constructor(
     private suspend fun sendLastReadToSelfConversation(
         readConversationId: QualifiedID,
         selfConversationId: QualifiedID,
-        lastRead: Instant
+        lastRead: Instant,
+        operationTime: Instant,
     ): Either<CoreFailure, Unit> {
         val generatedMessageUuid = Uuid.random().toString()
 
@@ -161,7 +186,8 @@ public class UpdateConversationReadDateUseCase internal constructor(
                 content = MessageContent.LastRead(
                     messageId = generatedMessageUuid,
                     conversationId = readConversationId,
-                    time = lastRead
+                    time = lastRead,
+                    operationTime = operationTime,
                 ),
                 conversationId = selfConversationId,
                 date = Clock.System.now(),

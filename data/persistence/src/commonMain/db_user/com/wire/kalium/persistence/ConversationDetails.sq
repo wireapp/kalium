@@ -112,7 +112,9 @@ CurrentFolder.name AS folderName,
 Conversation.wire_cell AS wireCell,
 Conversation.history_sharing_retention_seconds AS historySharingRetentionSeconds,
 Conversation.deleted_locally AS deletedLocally,
-AdminlessGroupDelete.deletion_timestamp AS adminlessGroupDeletionTimestamp
+AdminlessGroupDelete.deletion_timestamp AS adminlessGroupDeletionTimestamp,
+Conversation.manual_unread_date AS manualUnreadDate,
+Conversation.manual_unread_updated_at AS manualUnreadUpdatedAt
 FROM Conversation
 LEFT JOIN SelfUser
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation

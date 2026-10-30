@@ -45,6 +45,10 @@ data class BroadcastMessage(
                 "time" to "${content.time}",
             )
 
+            is MessageContent.MarkUnread -> mutableMapOf(
+                "unreadFrom" to "${content.unreadFrom}",
+            )
+
             is MessageContent.Receipt -> mutableMapOf(
                 "content" to content.toLogMap(),
             )

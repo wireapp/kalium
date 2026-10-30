@@ -41,6 +41,7 @@ import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * A conversation is a group of users that can exchange messages.
@@ -85,7 +86,11 @@ data class Conversation(
     val legalHoldStatus: LegalHoldStatus,
     val mlsPublicKeys: MLSPublicKeys? = null,
     val adminlessGroupDeletionTimestamp: Instant? = null,
+    val manualUnreadDate: Instant? = null,
+    val manualUnreadUpdatedAt: Instant? = null,
 ) {
+    val effectiveLastReadDate: Instant
+        get() = manualUnreadDate?.minus(1.milliseconds) ?: lastReadDate
 
     companion object {
         /**

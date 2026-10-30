@@ -226,6 +226,11 @@ sealed interface Message {
                     "time" to "${content.time}",
                 )
 
+                is MessageContent.MarkUnread -> mutableMapOf(
+                    typeKey to "markUnread",
+                    "unreadFrom" to "${content.unreadFrom}",
+                )
+
                 is MessageContent.Availability -> mutableMapOf(
                     typeKey to "availability",
                 )

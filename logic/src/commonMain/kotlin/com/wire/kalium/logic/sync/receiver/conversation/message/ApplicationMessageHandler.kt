@@ -172,6 +172,7 @@ internal class ApplicationMessageHandlerImpl(
             }
             is MessageContent.TextEdited -> editTextHandler.handle(signaling, content)
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
+            is MessageContent.MarkUnread -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(transactionContext, signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
             is MessageContent.ButtonAction -> buttonActionHandler.handle(

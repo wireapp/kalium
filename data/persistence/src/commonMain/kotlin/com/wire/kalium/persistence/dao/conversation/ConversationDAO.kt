@@ -76,6 +76,8 @@ interface ConversationDAO {
     )
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant? = null)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
+    suspend fun markConversationAsUnread(conversationId: QualifiedIDEntity, unreadFrom: Instant, operationTime: Instant)
+    suspend fun clearManualUnreadMarker(conversationId: QualifiedIDEntity, readUntil: Instant, operationTime: Instant)
     suspend fun updateConversationReadDates(conversationDates: Map<QualifiedIDEntity, Instant>): Int
     suspend fun updateConversationReadAndModifiedDates(
         readDates: Map<QualifiedIDEntity, Instant>,

@@ -39,6 +39,7 @@ inline fun MessageContent.FromProto.typeDescription(): String = when (this) {
     is MessageContent.DeleteMessage -> "DeleteMessage"
     MessageContent.Ignored -> "Ignored"
     is MessageContent.LastRead -> "LastRead"
+    is MessageContent.MarkUnread -> "MarkUnread"
     is MessageContent.Reaction -> "Reaction"
     is MessageContent.Receipt -> "Receipt"
     is MessageContent.TextEdited -> "TextEdited"

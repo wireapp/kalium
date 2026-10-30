@@ -91,7 +91,12 @@ internal class ParallelConversationWorkQueue(
         val work = ConversationTimeEventWork(input, worker)
         val existingConversationQueue = conversationQueueMap[conversationId]
         return existingConversationQueue?.let {
-            val isNewWorkMoreRecent = time > it.value.conversationTimeEventInput.eventTime
+            val previous = it.value.conversationTimeEventInput
+            val isLaterOperation = input.operationTime?.let { operation ->
+                previous.operationTime?.let { operation > it } ?: true
+            } == true
+            val isNewWorkMoreRecent = time > previous.eventTime ||
+                isLaterOperation && (time == previous.eventTime || input.readStateVersion != previous.readStateVersion)
             if (isNewWorkMoreRecent) {
                 it.value = work
             }

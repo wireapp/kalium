@@ -49,6 +49,7 @@ fun MessageContent.shouldUpdateConversationOrder(): Boolean =
         is MessageContent.MissedCall -> true
         is MessageContent.Ignored -> false
         is MessageContent.LastRead -> false
+        is MessageContent.MarkUnread -> false
         is MessageContent.Reaction -> false
         is MessageContent.Cleared -> false
         is MessageContent.ConversationRenamed -> true
@@ -121,6 +122,7 @@ fun MessageContent.shouldNotifyUser(): Boolean =
         is MessageContent.FailedDecryption,
         is MessageContent.Ignored,
         is MessageContent.LastRead,
+        is MessageContent.MarkUnread,
         is MessageContent.Reaction,
         is MessageContent.Cleared,
         is MessageContent.ConversationRenamed,

@@ -27,7 +27,7 @@ SELECT
     TextContent.is_quoting_self AS isQuotingSelfUser,
     COALESCE(TextContent.text_body, PollContent.question) AS text,
     AssetContent.asset_mime_type AS assetMimeType,
-    (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    (Message.creation_date > COALESCE(Conversation.manual_unread_date - 1, Conversation.last_read_date)) AS isUnread,
     IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
     Conversation.muted_status AS mutedStatus,
     Conversation.type AS conversationType

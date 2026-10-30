@@ -360,7 +360,14 @@ sealed interface MessageContent {
     data class LastRead(
         val messageId: String,
         val conversationId: ConversationId,
-        val time: Instant
+        val time: Instant,
+        val operationTime: Instant? = null
+    ) : Signaling
+
+    data class MarkUnread(
+        val conversationId: ConversationId,
+        val unreadFrom: Instant,
+        val operationTime: Instant
     ) : Signaling
 
     data class ConversationRenamed(val conversationName: String) : System
@@ -513,6 +520,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.DeleteMessage -> "DeleteMessage"
     is MessageContent.Ignored -> "Ignored"
     is MessageContent.LastRead -> "LastRead"
+    is MessageContent.MarkUnread -> "MarkUnread"
     is MessageContent.Reaction -> "Reaction"
     is MessageContent.Receipt -> "Receipt"
     is MessageContent.TextEdited -> "TextEdited"

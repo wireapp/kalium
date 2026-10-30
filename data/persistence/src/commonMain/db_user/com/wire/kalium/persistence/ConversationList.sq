@@ -24,7 +24,8 @@ WITH pageKeys AS MATERIALIZED (
         )
     END
     WHERE C.deleted_locally = 0 AND C.archived = :fromArchive
-        AND (:unreadOnly = 0 OR EXISTS (SELECT 1 FROM UnreadEvent WHERE conversation_id = C.qualified_id))
+        AND (:unreadOnly = 0 OR C.manual_unread_date IS NOT NULL
+            OR EXISTS (SELECT 1 FROM UnreadEvent WHERE conversation_id = C.qualified_id))
         AND CASE :source
             WHEN 'ALL' THEN C.type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
             WHEN 'GROUPS' THEN C.type = 'GROUP'
@@ -62,6 +63,7 @@ SELECT
     C.type,
     C.name,
     C.muted_status AS mutedStatus,
+    (C.manual_unread_date IS NOT NULL) AS isManuallyUnread,
     C.legal_hold_status AS legalHoldStatus,
     AdminlessGroupDelete.deletion_timestamp AS adminlessGroupDeletionTimestamp,
     C.channel_access AS channelAccess,
@@ -135,7 +137,8 @@ WITH pageKeys AS MATERIALIZED (
         )
     END
     WHERE C.deleted_locally = 0 AND C.archived = :fromArchive
-        AND (:unreadOnly = 0 OR EXISTS (SELECT 1 FROM UnreadEvent WHERE conversation_id = C.qualified_id))
+        AND (:unreadOnly = 0 OR C.manual_unread_date IS NOT NULL
+            OR EXISTS (SELECT 1 FROM UnreadEvent WHERE conversation_id = C.qualified_id))
         AND CASE :source
             WHEN 'ALL' THEN C.type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
             WHEN 'GROUPS' THEN C.type = 'GROUP'
@@ -171,6 +174,7 @@ SELECT
     C.type,
     C.name,
     C.muted_status AS mutedStatus,
+    (C.manual_unread_date IS NOT NULL) AS isManuallyUnread,
     C.legal_hold_status AS legalHoldStatus,
     AdminlessGroupDelete.deletion_timestamp AS adminlessGroupDeletionTimestamp,
     C.channel_access AS channelAccess,

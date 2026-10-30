@@ -54,6 +54,7 @@ data class ConversationListItemEntity(
     val draftText: String?,
     val lastMessage: MessagePreviewEntity?,
     val adminlessGroupDeletionTimestamp: Instant? = null,
+    val isManuallyUnread: Boolean = false,
 )
 
 data class ConversationListUserEntity(
@@ -73,6 +74,7 @@ internal fun SelectConversationListOlder.toListItem() = ConversationListItemEnti
     type = type,
     name = name,
     mutedStatus = mutedStatus,
+    isManuallyUnread = isManuallyUnread,
     legalHoldStatus = legalHoldStatus,
     adminlessGroupDeletionTimestamp = adminlessGroupDeletionTimestamp,
     channelAccess = channelAccess,

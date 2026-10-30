@@ -47,6 +47,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.toRegularMessage
 import com.wire.kalium.logic.sync.receiver.conversation.message.toSignalingMessage
 import com.wire.kalium.logic.sync.receiver.conversation.message.verifyMessageQuote
 import com.wire.kalium.logic.sync.receiver.handler.LastReadUpdates
+import com.wire.kalium.logic.sync.receiver.handler.isValidFor
+import com.wire.kalium.logic.sync.receiver.handler.isValidReadOperation
 import com.wire.kalium.logic.sync.receiver.handler.deleteMessageForMe
 import com.wire.kalium.logic.sync.receiver.handler.applyReceivedDeletion
 import com.wire.kalium.logic.sync.receiver.handler.receivedDeletion
@@ -197,11 +199,20 @@ internal class ReceivedMessageHandler(
                 unpacked.toSignalingMessage(selfUserId),
                 content
             ).orThrow()
-            is MessageContent.LastRead -> lastReads.add(
-                unpacked.toSignalingMessage(selfUserId),
-                content,
-                unpacked.senderUserId == selfUserId && isSelfConversation(conversation)
-            )
+            is MessageContent.LastRead -> {
+                if (unpacked.senderUserId == selfUserId && isSelfConversation(conversation)) {
+                    val operationTime = content.operationTime ?: unpacked.instant
+                    if (isValidReadOperation(operationTime, unpacked.instant)) {
+                        data.conversations.clearManualUnreadMarker(content.conversationId.toDao(), content.time, operationTime)
+                        lastReads.add(unpacked.toSignalingMessage(selfUserId), content, isSelfConversation = true)
+                    }
+                }
+            }
+            is MessageContent.MarkUnread -> {
+                if (unpacked.senderUserId == selfUserId && isSelfConversation(conversation) && content.isValidFor(unpacked.instant)) {
+                    data.conversations.markConversationAsUnread(content.conversationId.toDao(), content.unreadFrom, content.operationTime)
+                }
+            }
             is MessageContent.LegalHold -> Unit
             is MessageContent.Calling -> handleCalling(unpacked, content, conversation, isMLS)
             is MessageContent.Availability -> updateUserAvailability(data.users, unpacked.senderUserId, content.status)
@@ -433,6 +444,9 @@ internal class ReceivedMessageHandler(
             message = message.withGroupReceiptMode(receiptMapper.fromEntityToModel(it))
         }
         data.messages.insertReceivedMessage(mapper.toEntity(message), message.content.shouldUpdateConversationOrder())
+        if (message.senderUserId == selfUserId) {
+            data.conversations.clearManualUnreadMarker(conversation.id, message.date, message.date)
+        }
         if (content is MessageContent.Text) previewImages.resolve(data, message)
         candidates += MessageCandidate(
             message.id,

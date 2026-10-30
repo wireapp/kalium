@@ -315,6 +315,17 @@ public class ConversationScope internal constructor(
             conversationRepository
         )
 
+    public val markConversationAsUnread: MarkConversationAsUnreadUseCase
+        get() = MarkConversationAsUnreadUseCaseImpl(
+            conversationRepository,
+            messageRepository,
+            messageSender,
+            currentClientIdProvider,
+            selfUserId,
+            selfConversationIdProvider,
+            scope,
+        )
+
     public val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() = UpdateConversationAccessRoleUseCaseImpl(conversationRepository, conversationGroupRepository, syncManager)
 
