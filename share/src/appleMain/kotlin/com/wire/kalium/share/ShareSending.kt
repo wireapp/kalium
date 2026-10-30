@@ -92,6 +92,34 @@ internal fun sharedItems(uploads: List<ShareItem>, text: String): List<ShareItem
     else uploads + text.takeIf { it.isNotBlank() }?.let { listOf(ShareItem.Text(it)) }.orEmpty()
 }
 
+/**
+ * Sends to each conversation in turn with [send], recording each outcome in [outcomes] as it ends. Cancelled, for
+ * example by the budget, the conversations not reached keep their messages as failed, as the rest of a conversation
+ * cut short does: [send] whose deadline already passed only stores.
+ */
+internal suspend fun sendToEach(
+    items: Map<ConversationId, List<ShareItem>>,
+    outcomes: MutableMap<ConversationId, ShareOutcome>,
+    shouldStop: () -> Boolean,
+    send: suspend (ConversationId, List<ShareItem>, shouldStop: () -> Boolean) -> ShareOutcome,
+): Map<ConversationId, ShareOutcome> {
+    var current: ConversationId? = null
+    try {
+        for ((conversationId, conversationItems) in items) {
+            current = conversationId
+            outcomes[conversationId] = send(conversationId, conversationItems, shouldStop)
+        }
+    } catch (cancelled: CancellationException) {
+        withContext(NonCancellable) {
+            for ((conversationId, conversationItems) in items.filterKeys { it !in outcomes && it != current }) {
+                outcomes[conversationId] = send(conversationId, conversationItems) { true }
+            }
+        }
+        throw cancelled
+    }
+    return outcomes.toMap()
+}
+
 /** How a share ended. Content-free: [reason] is a diagnostic code. */
 internal data class ShareOutcome(val status: ShareStatus, val reason: String? = null, val messageId: String? = null)
 
@@ -172,9 +200,9 @@ internal class ShareSending(
     var firstStoredId: String? = null
         private set
 
-    /** Conversations this share stored a message in; their messages own their Cells drafts. */
-    val storedConversations: Set<ConversationId> get() = storedIn
-    private val storedIn = mutableSetOf<ConversationId>()
+    /** The first message this share stored in each conversation; such a conversation's messages own its Cells drafts. */
+    val storedMessages: Map<ConversationId, String> get() = firstStored
+    private val firstStored = mutableMapOf<ConversationId, String>()
 
     /** Uploaded assets the app already has a local copy of; conversations of one share send the same assets. */
     private val keptCopies = mutableSetOf<String>()
@@ -284,7 +312,7 @@ internal class ShareSending(
             }
             kaliumLogger.i("Share stage=MESSAGE_STORED cells=${item is ShareItem.Cells}")
             if (firstStoredId == null) firstStoredId = message.id
-            storedIn += conversationId
+            firstStored.getOrPut(conversationId) { message.id }
             return message
         }
     }

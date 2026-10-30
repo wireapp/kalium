@@ -402,18 +402,41 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         val budget = request.budgetMilliseconds.milliseconds
         val started = TimeSource.Monotonic.markNow()
         val sending = ShareSending(runtime, runtime.cryptoTransactions(), options().fileRestrictionState)
+        // How each conversation ended, kept when the budget cuts the share short.
+        val outcomes = mutableMapOf<ConversationId, ShareOutcome>()
         // Messages stored before the deadline stay in Wire as failed, and the result says so.
         return try {
             withTimeoutOrNull(budget) {
                 // The text follows the files, as a caption does.
                 val items = uploads.mapValues { (_, uploads) -> sharedItems(uploads, request.text) }
-                share(runtime, request, sending, items, blocked, budget, started).also(produced)
-            } ?: failure("TIMEOUT").copy(presentGenericAlert = true, messageId = sending.firstStoredId)
+                share(runtime, request, sending, items, blocked, outcomes, budget, started).also(produced)
+            } ?: timedOut(conversationIds, blocked, outcomes, sending)
         } finally {
             // Once stored, a message owns its drafts and the app can retry publication.
-            runtime.discardSharedDrafts(uploads.filterKeys { it !in sending.storedConversations }.values.flatten())
+            runtime.discardSharedDrafts(uploads.filterKeys { it !in sending.storedMessages }.values.flatten())
             draftStore.consume(request.preparedDraftIds)
         }
+    }
+
+    /**
+     * Sending ran past the budget. Once it reached the conversations, each reports how it ended, one cut short with
+     * the message it stored; before, the share failed as a whole.
+     */
+    private fun timedOut(
+        conversationIds: List<ConversationId>,
+        blocked: Map<ConversationId, ShareOutcome>,
+        outcomes: Map<ConversationId, ShareOutcome>,
+        sending: ShareSending,
+    ): KaliumShareResult {
+        val result = if (outcomes.isEmpty()) {
+            failure(TIMEOUT).copy(messageId = sending.firstStoredId)
+        } else {
+            val reached = conversationIds.map { id ->
+                id to (outcomes[id] ?: blocked[id] ?: ShareOutcome(ShareStatus.FAILED, TIMEOUT, sending.storedMessages[id]))
+            }
+            shareResult(reached)
+        }
+        return result.copy(presentGenericAlert = true)
     }
 
     /** Sends [items] to each of their conversations; [blocked] ones keep their reason. */
@@ -424,6 +447,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         sending: ShareSending,
         items: Map<ConversationId, List<ShareItem>>,
         blocked: Map<ConversationId, ShareOutcome>,
+        outcomes: MutableMap<ConversationId, ShareOutcome>,
         budget: Duration,
         started: TimeSource.Monotonic.ValueTimeMark,
     ): KaliumShareResult {
@@ -436,6 +460,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
                     processor = processor,
                     sending = sending,
                     items = items,
+                    outcomes = outcomes,
                     shouldStopCatchingUp = { started.elapsedNow() > budget * SEND_BY_SHARE || accountWanted.isCompleted },
                     shouldStopSending = { started.elapsedNow() > budget * SENT_BY_SHARE },
                 )
@@ -488,6 +513,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         processor: NotificationProcessor,
         sending: ShareSending,
         items: Map<ConversationId, List<ShareItem>>,
+        outcomes: MutableMap<ConversationId, ShareOutcome>,
         shouldStopCatchingUp: () -> Boolean,
         shouldStopSending: () -> Boolean,
     ): Pair<Either<ShareOutcome, Map<ConversationId, ShareOutcome>>, List<ReceivedMessageResult>> {
@@ -502,7 +528,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             // Unapplied events can carry consent or membership changes; sending would ignore them.
             unfinished != null -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, "PROCESSING_$unfinished"))
             // One conversation not taking the share does not keep the next from it.
-            else -> Either.Right(items.mapValues { (conversationId, items) -> sending.send(conversationId, items, shouldStopSending) })
+            else -> Either.Right(sendToEach(items, outcomes, shouldStopSending, sending::send))
         }
         return sent to unnotified
     }
@@ -601,6 +627,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         private const val MAX_BUDGET_MS = 60_000L
 
         private const val QUEUE_END = "QUEUE_END"
+        private const val TIMEOUT = "TIMEOUT"
 
         // Soft deadlines: connect, catch up, send, then close and process what arrived.
         private const val CONNECT_SHARE = 0.25
