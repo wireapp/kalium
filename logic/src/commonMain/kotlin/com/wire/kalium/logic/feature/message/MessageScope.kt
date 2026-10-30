@@ -347,6 +347,7 @@ public class MessageScope internal constructor(
             provideClientId = currentClientIdProvider,
             slowSyncRepository = slowSyncRepository,
             messageSender = messageSender,
+            transactionProvider = transactionProvider,
             messageSendFailureHandler = messageSendFailureHandler,
             pendingMessagesEnabled = kaliumConfigs.pendingMessages
         )

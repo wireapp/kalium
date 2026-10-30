@@ -82,6 +82,7 @@ class SendTextMessageCaseTest {
         every { arrangement.slowSyncRepository.slowSyncStatus } returns sync.asStateFlow()
         val messages = mock<com.wire.kalium.logic.data.message.MessageRepository>()
         everySuspend { messages.updatePendingTextPolicy(any(), any(), any(), any()) } returns Either.Right(Unit)
+        everySuspend { messages.getReceiptModeFromGroupConversationByQualifiedID(any()) } returns Either.Right(null)
         val refresh = RefreshPendingTextPolicy(messages, arrangement.userPropertyRepository,
             arrangement.observeSelfDeletionTimerSettingsForConversation)
         var prepared: com.wire.kalium.logic.data.message.Message.Sendable? = null

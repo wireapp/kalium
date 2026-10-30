@@ -8,6 +8,8 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -25,11 +27,14 @@ internal class RefreshPendingTextPolicy(
         if (message !is Message.Regular || !message.canRefreshPolicy()) return Either.Right(message)
 
         val timer = selfDeleteTimer(message.conversationId, true).first().duration
-        val receipts = properties.getReadReceiptsStatus()
-        // UPDATE only. A deletion racing this preparation must never turn into an INSERT.
-        // The sender rechecks visibility/status under the same transaction queue as cancellation.
-        return messages.updatePendingTextPolicy(message.conversationId, message.id, timer?.inWholeMilliseconds, receipts).map {
-            message.copy(expirationData = timer?.let { Message.ExpirationData(it) }, expectsReadConfirmation = receipts)
+        val personalReceipts = properties.getReadReceiptsStatus()
+        return messages.getReceiptModeFromGroupConversationByQualifiedID(message.conversationId).flatMap { mode ->
+            val receipts = mode?.let { it == Conversation.ReceiptMode.ENABLED } ?: personalReceipts
+            // UPDATE only. A deletion racing this preparation must never turn into an INSERT.
+            // The sender rechecks visibility/status under the same transaction queue as cancellation.
+            messages.updatePendingTextPolicy(message.conversationId, message.id, timer?.inWholeMilliseconds, receipts).map {
+                message.copy(expirationData = timer?.let { Message.ExpirationData(it) }, expectsReadConfirmation = receipts)
+            }
         }
     }
 

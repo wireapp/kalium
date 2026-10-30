@@ -112,6 +112,70 @@ import com.wire.kalium.messaging.sending.MLSMessageCreator
 
 class MessageSenderTest {
     @Test
+    fun givenPendingTextWasEdited_whenSendingOldSnapshot_thenEncryptLatestText() {
+        val (arrangement, sender) = arrange { withSendProteusMessage(); withPromoteMessageToSentUpdatingServerTime() }
+        arrangement.testScope.runTest {
+            val original = TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true,
+                content = MessageContent.Text("original A"))
+            val edited = original.copy(content = MessageContent.Text("edited B"))
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns Either.Right(edited)
+            sender.sendMessage(original).shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageEnvelopeCreator.createOutgoingEnvelope(any(), any(), edited)
+            }
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.messageEnvelopeCreator.createOutgoingEnvelope(any(), any(), original)
+            }
+        }
+    }
+
+    @Test
+    fun givenSendOwnsTransaction_whenPendingTextIsEdited_thenWaitAndSendNormalEdit() {
+        val (arrangement, sender) = arrange { withSendProteusMessage() }
+        arrangement.testScope.runTest {
+            val pending = TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true)
+            var stored = pending
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { Either.Right(stored) }
+            val promoting = CompletableDeferred<Unit>()
+            val releaseSend = CompletableDeferred<Unit>()
+            everySuspend { arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any()) } calls {
+                promoting.complete(Unit)
+                releaseSend.await()
+                stored = pending.copy(status = Message.Status.Sent)
+                Either.Right(Unit)
+            }
+            arrangement.serializeTransactions()
+            val sync = mock<com.wire.kalium.logic.data.sync.SlowSyncRepository>()
+            every { sync.slowSyncStatus } returns kotlinx.coroutines.flow.MutableStateFlow(
+                com.wire.kalium.logic.data.sync.SlowSyncStatus.Complete)
+            val client = mock<com.wire.kalium.logic.data.id.CurrentClientIdProvider>()
+            everySuspend { client() } returns Either.Right(pending.senderClientId)
+            val editSender = mock<com.wire.kalium.messaging.sending.MessageSender>()
+            everySuspend { editSender.sendMessage(any(), any()) } returns Either.Right(Unit)
+            everySuspend { arrangement.messageRepository.updateTextMessage(any(), any<MessageContent.TextEdited>(), any(), any()) } returns
+                Either.Right(Unit)
+            everySuspend { arrangement.messageRepository.updateMessageStatus(any(), any(), any()) } returns Either.Right(Unit)
+            val edit = SendEditTextMessageUseCase(arrangement.messageRepository, pending.senderUserId, client, sync,
+                editSender, arrangement.cryptoTransactionProvider, arrangement.messageSendFailureHandler,
+                dispatchers = testKaliumDispatcher)
+            val sending = async { sender.sendMessage(pending) }
+            promoting.await()
+            val editing = async { edit(pending.conversationId, pending.id, "edited while sending") }
+            runCurrent()
+            assertFalse(editing.isCompleted)
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.messageRepository.updateTextMessage(any(), any<String>(), any<MessageContent.Text>())
+            }
+            releaseSend.complete(Unit)
+            sending.await().shouldSucceed()
+            assertIs<MessageOperationResult.Success>(editing.await())
+            verifySuspend(VerifyMode.exactly(1)) {
+                editSender.sendMessage(matches { it.content is MessageContent.TextEdited }, any())
+            }
+        }
+    }
+
+    @Test
     fun givenOfflineEditOfSentMessage_whenCancellingPending_thenDoNotRemoveItLocally() {
         val (arrangement, sender) = arrange { }
         arrangement.testScope.runTest {

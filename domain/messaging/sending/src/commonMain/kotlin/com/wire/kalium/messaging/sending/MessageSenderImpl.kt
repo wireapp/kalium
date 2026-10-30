@@ -151,15 +151,21 @@ class MessageSenderImpl(
         )
     }
 
-    private suspend fun shouldSend(message: Message.Sendable): Either<CoreFailure, Boolean> {
-        if (message !is Message.Regular || message.status != Message.Status.Pending) return Either.Right(true)
+    private suspend fun messageToSend(message: Message.Sendable): Either<CoreFailure, Message.Sendable?> {
+        if (message !is Message.Regular || message.status != Message.Status.Pending) return Either.Right(message)
         return messages.getMessageById(message.conversationId, message.id).fold(
             { failure ->
-                if (failure == StorageFailure.DataNotFound) Either.Right(false) else Either.Left(failure)
+                if (failure == StorageFailure.DataNotFound) Either.Right(null) else Either.Left(failure)
             },
             { current ->
-                val isVisible = current is Message.Regular && current.visibility == Message.Visibility.VISIBLE
-                Either.Right(isVisible && current.status == Message.Status.Pending)
+                when {
+                    current !is Message.Regular || current.visibility != Message.Visibility.VISIBLE ||
+                        current.status != Message.Status.Pending -> Either.Right(null)
+                    // Keep prepared asset metadata and other caller-specific fields, but do not send stale text.
+                    message.content is MessageContent.Text && current.content is MessageContent.Text ->
+                        Either.Right(message.copy(content = current.content))
+                    else -> Either.Right(message)
+                }
             }
         )
     }
@@ -185,9 +191,9 @@ class MessageSenderImpl(
         remainingAttempts: Int
     ): Either<CoreFailure, Message.Sendable?> =
         session.transaction("sendMessage") { transactionContext ->
-            shouldSend(message).flatMap { send ->
-                if (!send) return@flatMap Either.Right(null)
-                prepareMessage(message).flatMap { processedMessage ->
+            messageToSend(message).flatMap { current ->
+                if (current == null) return@flatMap Either.Right(null)
+                prepareMessage(current).flatMap { processedMessage ->
                     attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
                         val localDate = message.date
                         val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)

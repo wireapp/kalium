@@ -1,1 +1,1 @@
-Persist outgoing text as Pending before slow sync and safely refresh its timer before sending.
+Persist outgoing text as Pending before slow sync, preserve group receipt settings and self-deletion timers, and serialize Pending edits and cancellation with sending.

@@ -48,10 +48,28 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.common.error.StorageFailure
+import dev.mokkery.answering.sequentiallyReturns
 import kotlin.test.Test
 import kotlin.test.assertIs
 
 class SendEditTextMessageUseCaseTest {
+    @Test
+    fun givenPendingTextWasDeletedBeforeEditTransaction_thenDoNotRecreateOrSendIt() = runTest {
+        val (arrangement, edit) = Arrangement(testKaliumDispatcher).withSlowSyncStatusComplete().arrange()
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } sequentiallyReturns listOf(
+            Either.Right(TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending)),
+            Either.Left(StorageFailure.DataNotFound)
+        )
+        assertIs<MessageOperationResult.Failure>(edit(TestConversation.ID, "deleted", "new text"))
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageRepository.updateTextMessage(any(), any<String>(), any<MessageContent.Text>())
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
 
     @Test
     fun givenAValidMessage_whenSendingEditTextIsSuccessful_thenMarkMessageAsSentAndReturnSuccess() = runTest {
@@ -181,7 +199,8 @@ class SendEditTextMessageUseCaseTest {
         }
     }
 
-    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) :
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
         val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
         val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
@@ -239,15 +258,19 @@ class SendEditTextMessageUseCaseTest {
             pendingMessages = false
         }
 
-        fun arrange() = this to SendEditTextMessageUseCase(
-            messageRepository = messageRepository,
-            selfUserId = TestUser.SELF.id,
-            provideClientId = currentClientIdProvider,
-            slowSyncRepository = slowSyncRepository,
-            messageSender = messageSender,
-            messageSendFailureHandler = messageSendFailureHandler,
-            pendingMessagesEnabled = pendingMessages,
-            dispatchers = dispatcher,
-        )
+        suspend fun arrange(): Pair<Arrangement, SendEditTextMessageUseCase> {
+            withTransactionReturning(Either.Right(Unit))
+            return this to SendEditTextMessageUseCase(
+                messageRepository = messageRepository,
+                selfUserId = TestUser.SELF.id,
+                provideClientId = currentClientIdProvider,
+                slowSyncRepository = slowSyncRepository,
+                messageSender = messageSender,
+                transactionProvider = cryptoTransactionProvider,
+                messageSendFailureHandler = messageSendFailureHandler,
+                pendingMessagesEnabled = pendingMessages,
+                dispatchers = dispatcher,
+            )
+        }
     }
 }
