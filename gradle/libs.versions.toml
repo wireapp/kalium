@@ -27,7 +27,7 @@ android-test-ext-junit = "1.3.0"
 androidx-arch = "2.2.0"
 androidx-test-orchestrator = "1.5.1"
 androidx-sqlite = "2.6.2"
-ktx-datetime = { strictly = "0.7.1-0.6.x-compat" }
+ktx-datetime = { strictly = "0.8.0-0.6.x-compat" }
 ktx-serialization = "1.12.0"
 ktx-atomicfu = "0.33.0"
 kover = "0.9.11"
