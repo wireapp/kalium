@@ -104,11 +104,12 @@ public class DeleteMessageUseCase internal constructor(
         conversationId: ConversationId,
         messageId: String,
         deleteForEveryone: Boolean,
-    ) = when {
-        // Remove a locally queued message without requiring a network signal for Delete for Me.
+    ): Either<CoreFailure, Unit> = when {
+        // Remove a locally queued message without requiring a network signal. It has not been sent yet, so this applies to both
+        // Delete for Me and Delete for Everyone.
         message is Message.Regular && message.isSelfMessage &&
-            message.status == Message.Status.Pending && message.editStatus == Message.EditStatus.NotEdited && !deleteForEveryone ->
-            cancelPendingMessage(conversationId, messageId)
+            message.status == Message.Status.Pending && message.editStatus == Message.EditStatus.NotEdited ->
+            cancelPendingMessage(conversationId, messageId, deleteForEveryone)
 
         // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
         // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
@@ -116,14 +117,20 @@ public class DeleteMessageUseCase internal constructor(
         else -> deletePersistedMessage(message, conversationId, messageId, deleteForEveryone)
     }
 
-    private suspend fun cancelPendingMessage(conversationId: ConversationId, messageId: String) =
+    private suspend fun cancelPendingMessage(
+        conversationId: ConversationId,
+        messageId: String,
+        deleteForEveryone: Boolean,
+    ): Either<CoreFailure, Unit> =
         messageSender.cancelPendingMessage(conversationId, messageId).flatMap { cancelled ->
             if (cancelled) {
                 Either.Right(Unit)
             } else {
-                // Sending won the race. Keep the normal Delete for Me signaling for the sent message.
+                // Sending finished first (sent or failed). Delete the current message as the user requested.
+                // Cancellation fails only when the message is no longer an unedited own pending message,
+                // so this takes the sent or failed message branch.
                 messageRepository.getMessageById(conversationId, messageId).flatMap { current ->
-                    deletePersistedMessage(current, conversationId, messageId, deleteForEveryone = false)
+                    deleteMessage(current, conversationId, messageId, deleteForEveryone)
                 }
             }
         }
