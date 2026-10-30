@@ -71,13 +71,6 @@ internal class GenerateLinkPreviewUseCaseImpl(
         }
     }
 
-    private fun normalizeUrl(url: String): String {
-        return if (url.startsWith("http://") || url.startsWith("https://")) {
-            url
-        } else if (url.startsWith("www.")) {
-            "https://$url"
-        } else {
-            "https://$url"
-        }
-    }
+    private fun normalizeUrl(url: String): String =
+        if (url.startsWith("www.", ignoreCase = true)) "https://$url" else url
 }
