@@ -62,6 +62,42 @@ import kotlin.time.Duration.Companion.seconds
 class MessageDAOTest : BaseDatabaseTest() {
 
     @Test
+    fun pendingPolicyRefreshUpdatesOnlyVisibleUneditedPendingTextAndNeverRecreatesDeletedMessages() = runTest {
+        insertInitialData()
+        val pending = newRegularMessageEntity(
+            id = "policy-pending", conversationId = conversationEntity1.id, senderUserId = userEntity1.id,
+            status = MessageEntity.Status.PENDING,
+        )
+        val protected = listOf(
+            pending.copy(id = "policy-sent", status = MessageEntity.Status.SENT),
+            pending.copy(id = "policy-failed", status = MessageEntity.Status.FAILED),
+            pending.copy(id = "policy-edited", editStatus = MessageEntity.EditStatus.Edited(Instant.fromEpochSeconds(1))),
+            pending.copy(id = "policy-started", selfDeletionEndDate = Instant.fromEpochSeconds(100)),
+        )
+        messageDAO.insertOrIgnoreMessages(protected + listOf(
+            pending, pending.copy(id = "policy-deleted"), pending.copy(id = "policy-hidden"),
+        ))
+        messageDAO.deleteMessage("policy-deleted", conversationEntity1.id)
+        messageDAO.markMessageAsDeleted("policy-hidden", conversationEntity1.id)
+        val ids = protected.map { it.id } + listOf(pending.id, "policy-deleted", "policy-hidden")
+        for (id in ids) messageDAO.updatePendingTextPolicy(conversationEntity1.id, id, 60_000L, true)
+
+        val refreshed = assertIs<MessageEntity.Regular>(messageDAO.getMessageById(pending.id, conversationEntity1.id))
+        assertEquals(60_000L, refreshed.expireAfterMs)
+        assertTrue(refreshed.expectsReadConfirmation)
+        assertNull(messageDAO.getMessageById("policy-deleted", conversationEntity1.id))
+        for (id in protected.map { it.id } + "policy-hidden") {
+            val unchanged = assertIs<MessageEntity.Regular>(messageDAO.getMessageById(id, conversationEntity1.id))
+            assertNull(unchanged.expireAfterMs)
+            assertFalse(unchanged.expectsReadConfirmation)
+        }
+        messageDAO.updatePendingTextPolicy(conversationEntity1.id, pending.id, null, false)
+        val disabled = assertIs<MessageEntity.Regular>(messageDAO.getMessageById(pending.id, conversationEntity1.id))
+        assertNull(disabled.expireAfterMs)
+        assertFalse(disabled.expectsReadConfirmation)
+    }
+
+    @Test
     fun givenRestorePageWithDuplicates_whenImporting_thenKeepExistingContentAndInsertNewKeysAcrossConversations() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
