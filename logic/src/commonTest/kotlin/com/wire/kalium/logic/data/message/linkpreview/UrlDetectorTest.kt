@@ -62,14 +62,16 @@ class UrlDetectorTest {
     }
 
     @Test
-    fun givenInvalidDomainSuffix_whenDetecting_thenDoesNotReturnPartialHost() {
+    fun givenUnfamiliarDomainSuffix_whenDetecting_thenNeverReturnsPartialHost() {
         val suffixes = listOf("dev123", "dev-foo", "com.123", "d", "a".repeat(64))
 
         suffixes.forEach { suffix ->
             listOf("https://", "www.").forEach { prefix ->
                 val url = "${prefix}example.$suffix/article"
 
-                assertTrue(UrlDetector.detect(url).isEmpty(), url)
+                val matches = UrlDetector.detect(url)
+
+                assertTrue(matches.isEmpty() || matches == listOf(UrlDetector.UrlMatch(url, 0, url.length)), url)
             }
         }
     }
@@ -103,5 +105,54 @@ class UrlDetectorTest {
             listOf(UrlDetector.UrlMatch(url, prefix.length, prefix.length + url.length)),
             UrlDetector.detect("$prefix$url")
         )
+    }
+
+    @Test
+    fun givenAmbiguousAuthority_whenDetecting_thenRejectsWholeCandidateAndFindsNextLink() {
+        val invalidCandidates = listOf(
+            "https://example.com@attacker.example/path",
+            "https://example.com%2eattacker.example/path",
+            "https://example.comévil/path",
+            "https://example.com\\attacker.example/path",
+            "https://example.com_evil/path",
+            "https://example.com@attacker.example/(https://inner.example/path)"
+        )
+        val nextUrl = "https://safe.example/article"
+
+        invalidCandidates.forEach { candidate ->
+            val text = "$candidate $nextUrl"
+
+            assertEquals(
+                listOf(UrlDetector.UrlMatch(nextUrl, candidate.length + 1, text.length)),
+                UrlDetector.detect(text),
+                candidate
+            )
+        }
+    }
+
+    @Test
+    fun givenLongOrBudgetTruncatedCandidate_whenDetecting_thenRejectsWithoutPartialMatch() {
+        val hostPrefix = "https://example.com"
+        val crossingBudget = " ".repeat(8_000 - hostPrefix.length) + "$hostPrefix.attacker.example/path"
+        val candidates = listOf("https://" + "a.".repeat(2_000) + "x", crossingBudget)
+
+        candidates.forEach { text -> assertTrue(UrlDetector.detect(text).isEmpty()) }
+    }
+
+    @Test
+    fun givenSurroundingPunctuation_whenDetecting_thenPreservesBalancedUrlAndUtf16Offsets() {
+        val cases = listOf(
+            Triple("\uD83D\uDCAC (", "https://example.dev/path_(details)", ")."),
+            Triple("\uD83D\uDCAC [", "https://example.dev/query?value=[one]", "]!"),
+            Triple("**", "https://example.dev/path", "**"),
+            Triple("'", "https://example.dev", "'")
+        )
+
+        cases.forEach { (prefix, url, suffix) ->
+            assertEquals(
+                listOf(UrlDetector.UrlMatch(url, prefix.length, prefix.length + url.length)),
+                UrlDetector.detect("$prefix$url$suffix")
+            )
+        }
     }
 }
