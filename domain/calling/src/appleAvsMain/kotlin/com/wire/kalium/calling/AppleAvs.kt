@@ -424,6 +424,11 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
 
     override fun respondToSft(handle: UInt, error: Int, data: ByteArray, context: COpaquePointer?) {
         if (!startIfAvailable()) return
+        // addressOf(0) on an empty ByteArray throws ArrayIndexOutOfBoundsException in K/N; AVS accepts a null buffer
+        if (data.isEmpty()) {
+            wcall_sft_resp(handle, error, null, 0u, context)
+            return
+        }
         data.usePinned { pinned ->
             wcall_sft_resp(handle, error, pinned.addressOf(0).reinterpret(), data.size.toULong(), context)
         }
