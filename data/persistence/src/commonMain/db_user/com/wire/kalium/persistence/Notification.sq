@@ -48,7 +48,16 @@ WHERE
     AND c.archived = 0
     AND uc.unreadCreationDate > COALESCE(c.last_notified_date, 0)
     AND m.visibility = 'VISIBLE'
-    AND m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION', 'POLL')
+    AND (
+        m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION', 'POLL')
+        OR (
+            m.content_type = 'MULTIPART'
+            AND c.type IN ('GROUP', 'CHANNEL', 'MEETING')
+            AND LENGTH(TRIM(tc.text_body)) > 0
+            AND EXISTS (SELECT 1 FROM MessageMention
+                WHERE message_id = m.id AND conversation_id = m.conversation_id AND user_id IS NULL)
+        )
+    )
     AND NOT EXISTS (SELECT 1 FROM SelfUser WHERE id = m.sender_user_id)
 ORDER BY m.creation_date DESC;
 

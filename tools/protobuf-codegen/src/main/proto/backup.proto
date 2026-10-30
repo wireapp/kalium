@@ -84,12 +84,19 @@ message ExportedText {
     required string content = 1;
     repeated ExportedMention mentions = 2;
     optional string quoted_message_id = 3;
+    // Older backup readers ignore these ranges and retain the literal @all text.
+    repeated ExportedEveryoneMention everyone_mentions = 4;
 }
 
 message ExportedMention {
     required int32 start = 1; // offset from beginning of the message counting in utf16 characters
     required int32 length = 2;
     required ExportedQualifiedId user_id = 3; // Actual user ID being mentioned
+}
+
+message ExportedEveryoneMention {
+    required int32 start = 1;
+    required int32 length = 2;
 }
 
 enum ExportedEncryptionAlgorithm {
