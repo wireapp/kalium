@@ -646,11 +646,13 @@ SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? AND s
 selectByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey user_text_status
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 selectPendingByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey user_text_status
 SELECT *
 FROM MessageDetailsView
 WHERE conversationId = :conversationId
@@ -662,6 +664,7 @@ LIMIT :limit OFFSET :offset;
 selectNonPendingByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey user_text_status
 SELECT *
 FROM MessageDetailsView
 WHERE conversationId = :conversationId
@@ -692,6 +695,7 @@ WHERE LastMessage.conversation_id IN :conversationIds;
 selectMessagesByConversationIdAndVisibilityAfterDate:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey user_text_status
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;
 
 selectMessagesFromUserByStatus:
@@ -772,6 +776,7 @@ WHERE conversation_id = :from;
 selectConversationMessagesFromSearch:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey user_text_status
 SELECT MessageDetailsView.*
 FROM MessageTextContent AS TextContent
 JOIN MessageDetailsView

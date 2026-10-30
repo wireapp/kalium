@@ -50,6 +50,7 @@ fun UserProfileDTO.toUserEntity(connectionState: ConnectionEntity.State, userTyp
             ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
+        textStatus = userProfile.textStatus?.takeUnless { it.isBlank() },
         userType = userTypeEntity,
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,

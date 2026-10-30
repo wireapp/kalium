@@ -22,6 +22,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -56,6 +57,33 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MessageExtensionsTest : BaseDatabaseTest() {
+
+    @Test
+    fun loadedMessageAndSearchPagesRefreshSenderStatusAfterUpdatesAndClears() = runTest {
+        populateMessageData()
+        val updates: List<Pair<String?, suspend () -> Unit>> = listOf(
+            "🎧 In a meeting" to { userDAO.updateUserTextStatus(USER_ID, "🎧 In a meeting") },
+            null to { userDAO.updateUser(PartialUserEntity(id = USER_ID, textStatus = " ")) },
+            "Out sick" to { userDAO.updateUser(listOf(PartialUserEntity(id = USER_ID, textStatus = "Out sick"))) },
+            null to { userDAO.upsertUser(newUserEntity(qualifiedID = USER_ID).copy(textStatus = null)) },
+        )
+
+        for ((expected, update) in updates) {
+            val messageSource = getPager().pagingSource
+            val searchSource = getSearchMessagesPager("message").pagingSource
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(messageSource.refresh())
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(searchSource.refresh())
+            assertFalse(messageSource.invalid)
+            assertFalse(searchSource.invalid)
+
+            update()
+
+            assertTrue(messageSource.invalid)
+            assertTrue(searchSource.invalid)
+            val refreshed = assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(getPager().pagingSource.refresh())
+            assertTrue(refreshed.data.all { it.sender?.textStatus == expected })
+        }
+    }
 
     private lateinit var messageExtensions: MessageExtensions
     private lateinit var messageDAO: MessageDAO

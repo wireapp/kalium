@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.BATCH_SIZE
 import com.wire.kalium.logic.failure.SelfUserDeleted
+import com.wire.kalium.logic.feature.user.UpdateSelfTextStatusUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestTeam
@@ -46,6 +47,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated
+import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.authenticated.user.CreateUserTeamDTO
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
@@ -67,12 +69,14 @@ import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
+import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.answering.throws
@@ -89,10 +93,130 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.sync.Mutex
 
 class UserRepositoryTest {
+
+    @Test
+    fun selfRefreshCannotReplaceAStatusSavedDuringItsTeamLookup() = statusSurvivesProfileRefresh { repository ->
+        repository.fetchSelfUser().shouldSucceed()
+    }
+
+    @Test
+    fun singleSelfProfileRefreshCannotReplaceAStatusSavedDuringItsTeamLookup() = statusSurvivesProfileRefresh { repository ->
+        repository.fetchUserInfo(SELF_USER.id).shouldSucceed()
+    }
+
+    @Test
+    fun batchedSelfProfileRefreshCannotReplaceAStatusSavedDuringItsTeamLookup() = statusSurvivesProfileRefresh { repository ->
+        repository.fetchUsersByIds(setOf(SELF_USER.id)).shouldSucceed()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun otherUserRefreshesRemainConcurrentWithSelfStatusUpdates() = runTest {
+        val otherId = TestUser.OTHER_USER_ID
+        val profile = TestUser.USER_PROFILE_DTO.copy(id = otherId.toApi(), nonQualifiedId = otherId.value, teamId = null)
+        val (arrangement, repository) = Arrangement()
+            .withSuccessfulGetUsersInfo(profile)
+            .withSuccessfulGetMultipleUsersApiRequest(ListUsersDTO(emptyList(), listOf(profile)))
+            .arrange()
+        val updateStarted = CompletableDeferred<Unit>()
+        val releaseUpdate = CompletableDeferred<Unit>()
+        everySuspend { arrangement.selfApi.updateSelf(any()) } calls {
+            updateStarted.complete(Unit)
+            releaseUpdate.await()
+            NetworkResponse.Success(Unit, mapOf(), 200)
+        }
+        val updateStatus = UpdateSelfTextStatusUseCase(
+            AccountRepositoryImpl(
+                arrangement.selfApi,
+                arrangement.userDAO,
+                SELF_USER.id,
+                selfProfileMutationMutex = arrangement.selfProfileMutationMutex,
+            )
+        )
+        val update = async { updateStatus("🎧 In a meeting") }
+        updateStarted.await()
+        val single = async { repository.fetchUserInfo(otherId) }
+        val batch = async { repository.fetchUsersByIds(setOf(otherId)) }
+        runCurrent()
+        try {
+            assertTrue(single.isCompleted)
+            assertTrue(batch.isCompleted)
+        } finally {
+            releaseUpdate.complete(Unit)
+        }
+        update.await().shouldSucceed()
+        single.await().shouldSucceed()
+        batch.await().shouldSucceed()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun statusSurvivesProfileRefresh(fetch: suspend (UserRepository) -> Unit) = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val teamRequested = CompletableDeferred<Unit>()
+        val releaseTeam = CompletableDeferred<Unit>()
+        var backendStatus: String? = "Original"
+        var cachedStatus: String? = "Original"
+        val self = TestUser.SELF_USER_DTO.copy(teamId = TestTeam.TEAM_ID.value, textStatus = "Original")
+        val profile = TestUser.USER_PROFILE_DTO.copy(teamId = TestTeam.TEAM_ID.value, textStatus = "Original")
+        val member = TestTeam.memberDTO(SELF_USER.id.value)
+        everySuspend { arrangement.selfApi.getSelfInfo() } returns NetworkResponse.Success(self, mapOf(), 200)
+        everySuspend { arrangement.userDetailsApi.getUserInfo(any()) } returns NetworkResponse.Success(profile, mapOf(), 200)
+        everySuspend { arrangement.userDetailsApi.getMultipleUsers(any()) } returns
+            NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(profile)), mapOf(), 200)
+        everySuspend { arrangement.teamsApi.getTeamMember(any(), any()) } calls {
+            teamRequested.complete(Unit)
+            releaseTeam.await()
+            NetworkResponse.Success(member, mapOf(), 200)
+        }
+        everySuspend { arrangement.teamsApi.getTeamMembersByIds(any(), any()) } calls {
+            teamRequested.complete(Unit)
+            releaseTeam.await()
+            NetworkResponse.Success(TeamMemberListNonPaginated(false, listOf(member)), mapOf(), 200)
+        }
+        everySuspend { arrangement.userDAO.upsertUser(any()) } calls { call ->
+            cachedStatus = (call.args[0] as UserEntity).textStatus
+        }
+        everySuspend { arrangement.userDAO.upsertUsers(any()) } calls { call ->
+            @Suppress("UNCHECKED_CAST")
+            val users = call.args[0] as List<UserEntity>
+            cachedStatus = users.single { it.id == SELF_USER.id.toDao() }.textStatus
+        }
+        everySuspend { arrangement.selfApi.updateSelf(any()) } calls { (request: UserUpdateRequest) ->
+            backendStatus = request.textStatus
+            NetworkResponse.Success(Unit, mapOf(), 200)
+        }
+        everySuspend { arrangement.userDAO.updateUserTextStatus(any(), any()) } calls { call ->
+            cachedStatus = call.args[1] as String?
+        }
+        val updateStatus = UpdateSelfTextStatusUseCase(
+            AccountRepositoryImpl(
+                arrangement.selfApi,
+                arrangement.userDAO,
+                SELF_USER.id,
+                selfProfileMutationMutex = arrangement.selfProfileMutationMutex,
+            )
+        )
+
+        val refresh = async { fetch(repository) }
+        teamRequested.await()
+        val update = async { updateStatus("🎧 In a meeting") }
+        runCurrent()
+        releaseTeam.complete(Unit)
+        refresh.await()
+        update.await().shouldSucceed()
+
+        assertEquals("🎧 In a meeting", backendStatus)
+        assertEquals(backendStatus, cachedStatus)
+    }
 
     @Test
     fun givenAllUsersAreKnown_whenFetchingUsersIfUnknown_thenShouldNotFetchFromApiAndSucceed() = runTest {
@@ -848,6 +972,8 @@ class UserRepositoryTest {
 
     private class Arrangement {
 
+        val selfProfileMutationMutex = Mutex()
+
         val userDAO = mock<UserDAO>(mode = MockMode.autoUnit)
         val clientDAO = mock<ClientDAO>(mode = MockMode.autoUnit)
         val memberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
@@ -876,6 +1002,7 @@ class UserRepositoryTest {
                 selfTeamIdProvider = selfTeamIdProvider,
                 legalHoldHandler = legalHoldHandler,
                 upgradePersonalToTeamApi = upgradePersonalToTeamApi,
+                selfProfileMutationMutex = selfProfileMutationMutex,
             )
         }
 

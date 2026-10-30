@@ -30,6 +30,8 @@ internal class FailableRequests {
     fun install(client: HttpClient) {
         client.requestPipeline.intercept(HttpRequestPipeline.Before) {
             val caller = currentCoroutineContext()
+            val originalCaller = caller[RequestCallerCancellation]
+            originalCaller?.ensureActive()
             // Fail before plugins can wait, for example for a token the account owner no longer admits.
             if (failing.value > 0) {
                 caller.ensureActive()
@@ -39,6 +41,8 @@ internal class FailableRequests {
                 // A child, so failing also ends waits outside the engine, such as a token refresh, even when the
                 // caller is non-cancellable. Cancelling it cancels the engine call too.
                 val call = async { proceed() }
+                // Native crypto callbacks are non-cancellable, but their initiating caller still owns this request.
+                val callerCancellation = originalCaller?.cancelRequestWithCaller(call)
                 var failed = false
                 val failer = launch(start = CoroutineStart.UNDISPATCHED) {
                     failing.first { it > 0 }
@@ -49,9 +53,11 @@ internal class FailableRequests {
                     call.await()
                 } catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
                     caller.ensureActive()
+                    originalCaller?.ensureActive()
                     throw if (failed) IOException(FAILED_MESSAGE, failure) else failure
                 } finally {
                     failer.cancel()
+                    callerCancellation?.cancel()
                 }
             }
         }

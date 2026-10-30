@@ -52,8 +52,14 @@ import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
+import com.wire.kalium.network.RequestCallerCancellation
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
 
@@ -230,15 +236,28 @@ class MessageSenderImpl(
             }
         }, { sent -> Either.Right(sent) })
 
+    @OptIn(InternalKaliumApi::class)
     override suspend fun broadcastMessage(
         message: BroadcastMessage,
         target: BroadcastMessageTarget
-    ): Either<CoreFailure, Unit> =
-        withContext(scope.coroutineContext) {
-            session.transaction("broadcastMessage") {
-                attemptToBroadcastWithProteus(it, message, target, remainingAttempts = 2).map { }
+    ): Either<CoreFailure, Unit> {
+        scope.coroutineContext.ensureActive()
+        // Unlike persisted sends, an ephemeral broadcast must stop when its initiating caller leaves.
+        return withContext(scope.coroutineContext.minusKey(Job)) {
+            val caller = RequestCallerCancellation.capture()
+            // Retain account cancellation as well as caller cancellation, without replacing the caller's Job.
+            val accountCancellation = RequestCallerCancellation(scope).cancelRequestWithCaller(currentCoroutineContext().job)
+            try {
+                withContext(caller) {
+                    session.transaction("broadcastMessage") {
+                        attemptToBroadcastWithProteus(it, message, target, remainingAttempts = 2).map { }
+                    }
+                }
+            } finally {
+                accountCancellation.cancel()
             }
         }
+    }
 
     private suspend fun attemptToSend(
         transactionContext: CryptoTransactionContext,

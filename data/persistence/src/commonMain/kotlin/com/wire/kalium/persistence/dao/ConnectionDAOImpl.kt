@@ -68,6 +68,7 @@ private class ConnectionMapper {
         preview_asset_id: QualifiedIDEntity?,
         complete_asset_id: QualifiedIDEntity?,
         user_availability_status: UserAvailabilityStatusEntity?,
+        text_status: String?,
         user_type: UserTypeEntity?,
         bot_service: BotIdEntity?,
         deleted: Boolean?,
@@ -104,7 +105,8 @@ private class ConnectionMapper {
             expiresAt = expires_at,
             defederated = defederated.requireField("defederated"),
             supportedProtocols = supportedProtocols,
-            activeOneOnOneConversationId = oneToOneConversationId
+            activeOneOnOneConversationId = oneToOneConversationId,
+            textStatus = text_status?.takeUnless { it.isBlank() }
         ) else null
     )
 }

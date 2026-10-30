@@ -123,6 +123,7 @@ internal class UserMapperImpl(
             completePicture = completeAssetId?.toModel(),
             userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            textStatus = textStatus?.takeUnless { it.isBlank() },
             expiresAt = expiresAt,
             supportedProtocols = supportedProtocols?.toModel()
         )
@@ -142,6 +143,7 @@ internal class UserMapperImpl(
             completePicture = completeAssetId?.toModel(),
             userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            textStatus = textStatus?.takeUnless { it.isBlank() },
             expiresAt = expiresAt,
             supportedProtocols = supportedProtocols?.toModel(),
             isUnderLegalHold = userEntity.isUnderLegalHold,
@@ -160,6 +162,7 @@ internal class UserMapperImpl(
         previewPicture = userEntity.previewAssetId?.toModel(),
         completePicture = userEntity.completeAssetId?.toModel(),
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
+        textStatus = userEntity.textStatus?.takeUnless { it.isBlank() },
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
@@ -182,6 +185,7 @@ internal class UserMapperImpl(
         previewPicture = userEntity.previewAssetId?.toModel(),
         completePicture = userEntity.completeAssetId?.toModel(),
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
+        textStatus = userEntity.textStatus?.takeUnless { it.isBlank() },
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
@@ -229,6 +233,7 @@ internal class UserMapperImpl(
             previewAssetId = previewPicture?.toDao(),
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
+            textStatus = textStatus?.takeUnless { it.isBlank() },
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false,
@@ -252,6 +257,7 @@ internal class UserMapperImpl(
             previewAssetId = previewPicture?.toDao(),
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
+            textStatus = textStatus?.takeUnless { it.isBlank() },
             userType = userEntityTypeMapper.fromUserTypeInfo(userType),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted,
@@ -284,6 +290,7 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            textStatus = textStatus?.takeUnless { it.isBlank() },
             userType = userTypeEntity,
             botService = null,
             deleted = userDTO.deleted ?: false,
@@ -319,6 +326,7 @@ internal class UserMapperImpl(
     ): PartialUserEntity = PartialUserEntity(
         previewAssetId = updateRequest.assets.getPreviewAssetOrNull()?.toDao(selfUserId.domain),
         completeAssetId = updateRequest.assets.getCompleteAssetOrNull()?.toDao(selfUserId.domain),
+        textStatus = updateRequest.textStatus,
         id = selfUserId.toDao()
     )
 
@@ -349,6 +357,7 @@ internal class UserMapperImpl(
             completePicture = userProfile.assets.getCompleteAssetOrNull()
                 ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
             availabilityStatus = UserAvailabilityStatus.NONE,
+            textStatus = userProfile.textStatus?.takeUnless { it.isBlank() },
             userType = domainUserTypeMapper.fromUserTypeEntity(
                 userEntityTypeMapper.fromApiTypeAndTeamAndDomain(
                     apiUserTypeDTO = userProfile.type,

@@ -200,6 +200,7 @@ fun userUpdate(
     accentId = event.userData.accentId,
     ssoIdDeleted = event.userData.ssoIdDeleted,
     name = event.userData.name,
+    textStatus = event.userData.textStatus,
     handle = event.userData.handle,
     email = event.userData.email,
     previewAssetId = event.userData.assets?.getPreviewAssetOrNull()?.key,

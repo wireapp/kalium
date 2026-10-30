@@ -241,6 +241,7 @@ internal class MessageListItemMapper(private val selfUserId: UserId) {
             guestExpiresAt = row?.expires_at,
             botService = row?.bot_service?.let { BotService(it.id, it.provider) },
             isMissing = row == null,
+            textStatus = row?.text_status?.takeUnless { it.isBlank() },
         )
     }
 }

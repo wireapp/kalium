@@ -42,6 +42,7 @@ sealed class User {
     abstract val previewPicture: UserAssetId?
     abstract val completePicture: UserAssetId?
     abstract val availabilityStatus: UserAvailabilityStatus
+    abstract val textStatus: String?
     abstract val expiresAt: Instant?
     abstract val supportedProtocols: Set<SupportedProtocol>?
     abstract val userType: UserTypeInfo
@@ -139,6 +140,7 @@ data class SelfUser(
     override val expiresAt: Instant? = null,
     override val supportedProtocols: Set<SupportedProtocol>?,
     override val isUnderLegalHold: Boolean = false,
+    override val textStatus: String? = null,
 ) : User()
 
 data class OtherUserMinimized(
@@ -170,6 +172,7 @@ data class OtherUser(
     val isProteusVerified: Boolean,
     val activeOneOnOneConversationId: ConversationId? = null,
     override val isUnderLegalHold: Boolean = false,
+    override val textStatus: String? = null,
 ) : User() {
 
     /**
