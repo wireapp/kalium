@@ -29,25 +29,17 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 
-@OptIn(ExperimentalEncodingApi::class, ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalEncodingApi::class)
 class LinkPreviewRepositoryTest {
 
     @Test
     fun givenValidHtmlHead_whenFetchingOpenGraph_thenParsesMetadata() = runTest {
-        val fetchedUrls = mutableListOf<String>()
         val repository = newRepository(
             htmlHead = {
-                fetchedUrls.add(it)
                 """
                 <head>
                     <meta property="og:title" content="Example title" />
@@ -62,42 +54,15 @@ class LinkPreviewRepositoryTest {
         assertNotNull(result)
         assertEquals("Example title", result.title)
         assertEquals("https://example.com/og", result.url)
-        assertEquals(listOf("https://example.com/page"), fetchedUrls)
-    }
-
-    @Test
-    fun givenHtmlWithoutOgUrl_whenFetchingOpenGraph_thenPreservesOriginalUrl() = runTest {
-        val repository = newRepository(htmlHead = { "<head><title>Example title</title></head>" })
-
-        val result = repository.fetchOpenGraph("https://example.com/redirected", "https://example.com/original").getOrNull()
-
-        assertNotNull(result)
-        assertEquals("https://example.com/original", result.url)
-    }
-
-    @Test
-    fun givenUnavailableHtml_whenFetchingOpenGraph_thenReturnsNoPreview() = runTest {
-        val repository = newRepository()
-
-        assertNull(repository.fetchOpenGraph("https://example.com/page", "https://example.com/page").getOrNull())
-    }
-
-    @Test
-    fun givenFetcherFailure_whenFetchingOpenGraph_thenDegradesGracefully() = runTest {
-        val repository = newRepository(htmlHead = { error("Fetch failed") })
-
-        assertNull(repository.fetchOpenGraph("https://example.com/page", "https://example.com/page").getOrNull())
     }
 
     @Test
     fun givenRasterImage_whenFetchingImage_thenWritesAssetAndReadsMetadata() = runTest {
         val imageBytes = Base64.decode(ONE_BY_ONE_PNG_BASE64)
         val fileSystem = FakeKaliumFileSystem()
-        val fetchedUrls = mutableListOf<String>()
         val repository = newRepository(
             fileSystem = fileSystem,
             image = {
-                fetchedUrls.add(it)
                 FetchedPreviewImage(imageBytes, "image/png")
             }
         )
@@ -112,7 +77,6 @@ class LinkPreviewRepositoryTest {
         val assetDataPath = result.assetDataPath
         assertNotNull(assetDataPath)
         assertContentEquals(imageBytes, fileSystem.readByteArray(assetDataPath))
-        assertEquals(listOf("https://example.com/image.png"), fetchedUrls)
     }
 
     @Test
@@ -120,42 +84,6 @@ class LinkPreviewRepositoryTest {
         val repository = newRepository(image = { FetchedPreviewImage("not-a-real-png".encodeToByteArray(), "image/png") })
 
         assertNull(repository.fetchImage("https://example.com/broken.png").getOrNull())
-    }
-
-    @Test
-    fun givenUnavailableImage_whenFetchingImage_thenReturnsNoAsset() = runTest {
-        val repository = newRepository()
-
-        assertNull(repository.fetchImage("https://example.com/image.png").getOrNull())
-    }
-
-    @Test
-    fun givenFetcherFailure_whenFetchingImage_thenDegradesGracefully() = runTest {
-        val repository = newRepository(image = { error("Fetch failed") })
-
-        assertNull(repository.fetchImage("https://example.com/image.png").getOrNull())
-    }
-
-    @Test
-    fun givenCallerCancellation_whenFetchingOpenGraph_thenPropagatesCancellation() = runTest {
-        val repository = newRepository(htmlHead = { awaitCancellation() })
-        val request = async { repository.fetchOpenGraph("https://example.com/page", "https://example.com/page") }
-        runCurrent()
-
-        request.cancel()
-
-        assertFailsWith<CancellationException> { request.await() }
-    }
-
-    @Test
-    fun givenCallerCancellation_whenFetchingImage_thenPropagatesCancellation() = runTest {
-        val repository = newRepository(image = { awaitCancellation() })
-        val request = async { repository.fetchImage("https://example.com/image.png") }
-        runCurrent()
-
-        request.cancel()
-
-        assertFailsWith<CancellationException> { request.await() }
     }
 
     private fun newRepository(

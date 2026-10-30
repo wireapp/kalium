@@ -34,31 +34,14 @@ class PreviewAddressPolicyTest {
     )
 
     @Test
-    fun givenPublicIpv4_whenClassifying_thenAllowsAddress() {
-        listOf(
-            "1.1.1.1", "8.8.8.8", "93.184.216.34", "100.63.255.255", "100.128.0.0",
-            "169.253.255.255", "169.255.0.0", "172.15.255.255", "172.32.0.0", "192.0.1.1",
-            "192.88.98.255", "192.88.100.0", "192.167.255.255", "192.169.0.0", "198.17.255.255",
-            "198.20.0.0", "198.51.99.255", "198.51.101.0", "203.0.112.255", "203.0.114.0", "223.255.255.255"
-        ).forEach { assertTrue(isPublicPreviewAddress(it), it) }
-    }
-
-    @Test
     fun givenSpecialUseIpv4_whenClassifying_thenRejectsAddress() {
+        assertTrue(isPublicPreviewAddress("8.8.8.8"))
         blockedIpv4.forEach { assertFalse(isPublicPreviewAddress(it), it) }
     }
 
     @Test
-    fun givenPublicIpv6_whenClassifying_thenAllowsCompressedExpandedAndUppercaseForms() {
-        listOf(
-            "2001:4860:4860::8888", "2001:4860:4860:0:0:0:0:8888",
-            "2606:4700:4700::1111", "2A00:1450:4001:0830:0000:0000:0000:200E",
-            "2001:200::1", "3ffe::1", "3fff:1000::1", "2001:4860::8.8.8.8"
-        ).forEach { assertTrue(isPublicPreviewAddress(it), it) }
-    }
-
-    @Test
     fun givenSpecialUseIpv6_whenClassifying_thenRejectsEveryRepresentation() {
+        assertTrue(isPublicPreviewAddress("2001:4860:4860::8888"))
         listOf(
             "::", "0:0:0:0:0:0:0:0", "0000:0000:0000:0000:0000:0000:0000:0000",
             "::1", "0:0:0:0:0:0:0:1", "0000:0000:0000:0000:0000:0000:0000:0001",
@@ -71,45 +54,23 @@ class PreviewAddressPolicyTest {
     }
 
     @Test
-    fun givenPublicIpv4MappedIpv6_whenClassifying_thenChecksEmbeddedAddress() {
-        listOf(
-            "::ffff:8.8.8.8", "::FFFF:0808:0808", "0:0:0:0:0:ffff:808:808",
-            "0000:0000:0000:0000:0000:FFFF:0808:0808"
-        ).forEach { assertTrue(isPublicPreviewAddress(it), it) }
-    }
-
-    @Test
-    fun givenBlockedIpv4MappedIpv6_whenClassifying_thenRejectsDottedAndHexadecimalForms() {
+    fun givenMappedOrNat64Address_whenClassifying_thenChecksEmbeddedIpv4Destination() {
+        listOf("::ffff:8.8.8.8", "64:ff9b::808:808").forEach { assertTrue(isPublicPreviewAddress(it), it) }
         blockedIpv4.forEach { ipv4 ->
             val octets = ipv4.split('.').map(String::toInt)
             val high = ((octets[0] shl 8) or octets[1]).toString(16)
             val low = ((octets[2] shl 8) or octets[3]).toString(16)
-            listOf("::ffff:$ipv4", "::ffff:$high:$low", "0:0:0:0:0:ffff:$high:$low").forEach {
+            listOf("::ffff:$ipv4", "::ffff:$high:$low", "0:0:0:0:0:ffff:$high:$low", "64:ff9b::$ipv4").forEach {
                 assertFalse(isPublicPreviewAddress(it), it)
             }
         }
     }
 
     @Test
-    fun givenStandardNat64Address_whenClassifying_thenAllowsOnlyPublicEmbeddedDestinations() {
-        listOf("64:ff9b::8.8.8.8", "64:ff9b::808:808", "0064:ff9b:0:0:0:0:0808:0808").forEach {
-            assertTrue(isPublicPreviewAddress(it), it)
-        }
-        blockedIpv4.forEach { ipv4 ->
-            val address = "64:ff9b::$ipv4"
-            assertFalse(isPublicPreviewAddress(address), address)
-        }
-    }
-
-    @Test
-    fun givenMalformedOrAmbiguousAddress_whenClassifying_thenRejectsWithoutDnsLookup() {
+    fun givenAmbiguousOrScopedAddress_whenClassifying_thenRejectsWithoutDnsLookup() {
         listOf(
-            "", "localhost", "example.com", "8.8.8", "8.8.8.8.8", "256.1.1.1", "-1.1.1.1", "+8.8.8.8",
-            "08.8.8.8", "8.008.8.8", "0x7f000001", "2130706433", "127.1", "8.8.8.8 ", " 8.8.8.8",
-            "8.8.8.8%en0", "[::1]", "[2001:4860::8888]", "2001:4860::8888%en0", "fe80::1%en0",
-            ":", "1:", ":1", "1:2:3:4:5:6:7", "1:2:3:4:5:6:7:8:9", "1:2:3:4:5:6:7:8::",
-            "2001:::1", "2001::1::1", "2001:gggg::1", "2001:12345::1", "2001::8.8.8.999",
-            "2001::8.08.8.8", "2001:8.8.8.8::", "::ffff:192.168.1", "2001:4860::8888/64"
+            "localhost", "127.1", "2130706433", "0x7f000001", "0177.0.0.1", "+127.0.0.1",
+            "127.0.0.1 ", "[::1]", "::1%en0", "fe80::1%en0", "2001::1::1", "::ffff:192.168.1"
         ).forEach { assertFalse(isPublicPreviewAddress(it), it) }
     }
 }

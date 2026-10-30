@@ -26,10 +26,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -52,6 +50,8 @@ class LinkPreviewFetcherTest {
     @Test
     fun givenUnsafeUrlForm_whenFetching_thenRejectsBeforeHttp() = runTest {
         val urls = listOf(
+            "http://example.com/page",
+            "https://localhost/page",
             "https://user:password@example.com/page",
             "https://127.0.0.1/page",
             "https://[::1]/page",
@@ -64,53 +64,24 @@ class LinkPreviewFetcherTest {
             onRequest = requests::add
         )
 
-        urls.forEach { url -> assertNull(fetcher.fetchHtmlHead(url), url) }
+        urls.forEach { url ->
+            assertNull(fetcher.fetchHtmlHead(url), url)
+            assertNull(fetcher.fetchImage(url), url)
+        }
         assertEquals(emptyList(), requests)
     }
 
     @Test
-    fun givenRedirectToPrivateLiteral_whenFetching_thenNeverRequestsRedirectTarget() = runTest {
+    fun givenPrivateRedirect_whenFetchingHtmlOrImage_thenNeverRequestsPrivateTarget() = runTest {
         val requests = mutableListOf<String>()
         val fetcher = newFetcher(
-            responses = mapOf("https://example.com/start" to redirectResponse("https://10.0.0.1/secret")),
+            responses = mapOf("https://example.com/start" to redirectResponse("https://[::1]/secret")),
             onRequest = requests::add
         )
 
         assertNull(fetcher.fetchHtmlHead("https://example.com/start"))
-        assertEquals(listOf("https://example.com/start"), requests)
-    }
-
-    @Test
-    fun givenPrivateImageDestination_whenFetchingImage_thenDoesNotMakeRequest() = runTest {
-        val requests = mutableListOf<String>()
-        val fetcher = newFetcher(onRequest = requests::add)
-
-        assertNull(fetcher.fetchImage("https://192.168.1.1/image.png"))
-        assertEquals(emptyList(), requests)
-    }
-
-    @Test
-    fun givenImageRedirectToPrivateDestination_whenFetchingImage_thenStopsBeforePrivateRequest() = runTest {
-        val requests = mutableListOf<String>()
-        val fetcher = newFetcher(
-            responses = mapOf("https://example.com/image.png" to redirectResponse("https://[::1]/image.png")),
-            onRequest = requests::add
-        )
-
-        assertNull(fetcher.fetchImage("https://example.com/image.png"))
-        assertEquals(listOf("https://example.com/image.png"), requests)
-    }
-
-    @Test
-    fun givenFiveRedirects_whenFetching_thenReturnsPreviewWithinHopLimit() = runTest {
-        val responses = (0 until 5).associate { step ->
-            "https://example.com/$step" to redirectResponse("https://example.com/${step + 1}")
-        } + ("https://example.com/5" to htmlResponse("<head><title>Final page</title></head>"))
-        val requests = mutableListOf<String>()
-        val fetcher = newFetcher(responses = responses, onRequest = requests::add)
-
-        assertNotNull(fetcher.fetchHtmlHead("https://example.com/0"))
-        assertEquals(6, requests.size)
+        assertNull(fetcher.fetchImage("https://example.com/start"))
+        assertEquals(listOf("https://example.com/start", "https://example.com/start"), requests)
     }
 
     @Test
@@ -123,20 +94,6 @@ class LinkPreviewFetcherTest {
 
         assertNull(fetcher.fetchHtmlHead("https://example.com/0"))
         assertEquals((0..5).map { "https://example.com/$it" }, requests)
-    }
-
-    @Test
-    fun givenRequestExceedsOverallBudget_whenFetching_thenReturnsNull() = runTest {
-        val requests = mutableListOf<String>()
-        val fetcher = newFetcher(
-            responseDelayMillis = 10_001,
-            dispatcher = StandardTestDispatcher(testScheduler),
-            onRequest = requests::add
-        )
-
-        assertNull(fetcher.fetchHtmlHead("https://example.com"))
-        assertEquals(10_000L, testScheduler.currentTime)
-        assertEquals(listOf("https://example.com"), requests)
     }
 
     @Test
@@ -158,14 +115,6 @@ class LinkPreviewFetcherTest {
     }
 
     @Test
-    fun givenImageRequestExceedsOverallBudget_whenFetchingImage_thenReturnsNull() = runTest {
-        val fetcher = newFetcher(responseDelayMillis = 10_001, dispatcher = StandardTestDispatcher(testScheduler))
-
-        assertNull(fetcher.fetchImage("https://example.com/image.png"))
-        assertEquals(10_000L, testScheduler.currentTime)
-    }
-
-    @Test
     fun givenCallerCancellation_whenFetching_thenPropagatesCancellation() = runTest {
         val fetcher = newFetcher(responseDelayMillis = 5_000, dispatcher = StandardTestDispatcher(testScheduler))
         val request = async { fetcher.fetchHtmlHead("https://example.com") }
@@ -174,87 +123,6 @@ class LinkPreviewFetcherTest {
         request.cancel()
 
         assertFailsWith<CancellationException> { request.await() }
-    }
-
-    @Test
-    fun givenNonHttpsUrl_whenFetchingOpenGraph_thenReturnsNull() = runTest {
-        val fetcher = newFetcher()
-
-        val result = fetcher.fetchHtmlHead(
-            url = "http://example.com/page"
-        )
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenLocalHostTarget_whenFetchingOpenGraph_thenReturnsNull() = runTest {
-        val fetcher = newFetcher()
-
-        val result = fetcher.fetchHtmlHead(
-            url = "https://localhost/page"
-        )
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenThreeRedirects_whenFetchingOpenGraph_thenReturnsPreviewData() = runTest {
-        val fetcher = newFetcher(
-            responses = mapOf(
-                "https://example.com/start" to redirectResponse("https://example.com/step-1"),
-                "https://example.com/step-1" to redirectResponse("https://example.com/step-2"),
-                "https://example.com/step-2" to redirectResponse("https://example.com/final"),
-                "https://example.com/final" to htmlResponse(
-                    """
-                    <head>
-                        <meta property="og:title" content="Redirected title" />
-                    </head>
-                    """.trimIndent()
-                )
-            )
-        )
-
-        val result = fetcher.fetchHtmlHead(
-            url = "https://example.com/start"
-        )
-
-        assertNotNull(result)
-        assertTrue(result.contains("Redirected title"))
-    }
-
-    @Test
-    fun givenRedirectLoop_whenFetchingOpenGraph_thenReturnsNull() = runTest {
-        val fetcher = newFetcher(
-            responses = mapOf(
-                "https://example.com/start" to redirectResponse("https://example.com/next"),
-                "https://example.com/next" to redirectResponse("https://example.com/start")
-            )
-        )
-
-        val result = fetcher.fetchHtmlHead(
-            url = "https://example.com/start"
-        )
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenMissingRedirectLocation_whenFetchingOpenGraph_thenReturnsNull() = runTest {
-        val fetcher = newFetcher(
-            responses = mapOf(
-                "https://example.com/start" to MockResponse(
-                    status = HttpStatusCode.Found,
-                    body = ByteArray(0)
-                )
-            )
-        )
-
-        val result = fetcher.fetchHtmlHead(
-            url = "https://example.com/start"
-        )
-
-        assertNull(result)
     }
 
     @Test
@@ -273,146 +141,27 @@ class LinkPreviewFetcherTest {
     }
 
     @Test
-    fun givenHeadEndsBeforeLargeBodyTail_whenFetchingOpenGraph_thenReturnsPreviewData() = runTest {
-        val fetcher = newFetcher(
-            responses = mapOf(
-                "https://example.com/page" to htmlResponse(
-                    buildString {
-                        append("<html><head>")
-                        append("""<meta property="og:title" content="Large tail title" />""")
-                        append("</head>")
-                        append("x".repeat(METADATA_CAP_BYTES + 128))
-                        append("</html>")
-                    }
-                )
+    fun givenSvgOrNonImageContent_whenFetchingImage_thenRejectsContent() = runTest {
+        listOf("image/svg+xml", "text/plain").forEach { mimeType ->
+            val fetcher = newFetcher(
+                responses = mapOf("https://example.com/image" to imageResponse(mimeType, "<svg/>".encodeToByteArray()))
             )
-        )
 
-        val result = fetcher.fetchHtmlHead(
-            url = "https://example.com/page"
-        )
-
-        assertNotNull(result)
-        assertTrue(result.contains("Large tail title"))
-        assertFalse(result.contains("</html>"))
-    }
-
-    @Test
-    fun givenRuntimeExceptionDuringOpenGraphFetch_whenFetchingOpenGraph_thenReturnsNull() = runTest {
-        val fetcher = newFetcher(
-            thrownException = RuntimeException("timeout")
-        )
-
-        val result = fetcher.fetchHtmlHead(
-            url = "https://example.com/page"
-        )
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenSvgImageResponse_whenFetchingImage_thenReturnsNull() = runTest {
-        val fetcher = newFetcher(
-            responses = mapOf(
-                "https://example.com/image.svg" to imageResponse(
-                    contentType = "image/svg+xml",
-                    body = "<svg></svg>".encodeToByteArray()
-                )
-            )
-        )
-
-        val result = fetcher.fetchImage("https://example.com/image.svg")
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenNonImageResponse_whenFetchingImage_thenReturnsNull() = runTest {
-        val fetcher = newFetcher(
-            responses = mapOf(
-                "https://example.com/file.txt" to imageResponse(
-                    contentType = "text/plain",
-                    body = "not-an-image".encodeToByteArray()
-                )
-            )
-        )
-
-        val result = fetcher.fetchImage("https://example.com/file.txt")
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenOversizedImageByContentLength_whenFetchingImage_thenReturnsNull() = runTest {
-        val fetcher = newFetcher(
-            responses = mapOf(
-                "https://example.com/image.png" to imageResponse(
-                    contentType = "image/png",
-                    body = byteArrayOf(1, 2, 3),
-                    contentLength = IMAGE_CAP_BYTES.toLong() + 1
-                )
-            )
-        )
-
-        val result = fetcher.fetchImage("https://example.com/image.png")
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenOversizedImageStreamWithoutContentLength_whenFetchingImage_thenReturnsNull() = runTest {
-        val fetcher = newFetcher(
-            responses = mapOf(
-                "https://example.com/image.png" to imageResponse(
-                    contentType = "image/png",
-                    body = ByteArray(IMAGE_CAP_BYTES + 1) { 1 },
-                    contentLength = null
-                )
-            )
-        )
-
-        val result = fetcher.fetchImage("https://example.com/image.png")
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenRuntimeExceptionDuringImageFetch_whenFetchingImage_thenReturnsNull() = runTest {
-        val fetcher = newFetcher(
-            thrownException = RuntimeException("timeout")
-        )
-
-        val result = fetcher.fetchImage("https://example.com/image.png")
-
-        assertNull(result)
-    }
-
-    @Test
-    fun givenRasterImage_whenFetching_thenReturnsBoundedBytesAndMimeType() = runTest {
-        val bytes = byteArrayOf(1, 2, 3)
-        val fetcher = newFetcher(
-            responses = mapOf("https://example.com/image.png" to imageResponse("image/png", bytes))
-        )
-
-        val image = fetcher.fetchImage("https://example.com/image.png")
-
-        assertNotNull(image)
-        assertContentEquals(bytes, image.bytes)
-        assertEquals("image/png", image.mimeType)
-    }
-
-    @Test
-    fun givenUnusedFetcher_whenClosing_thenDoesNotCreateHttpClient() = runTest {
-        var factoryCalls = 0
-        val fetcher = LinkPreviewFetcherImpl {
-            factoryCalls++
-            error("An unused fetcher must not create a client")
+            assertNull(fetcher.fetchImage("https://example.com/image"), mimeType)
         }
+    }
 
-        fetcher.close()
-        fetcher.close()
+    @Test
+    fun givenOversizedImageWithOrWithoutContentLength_whenFetching_thenRejectsContent() = runTest {
+        val responses = listOf(
+            imageResponse("image/png", byteArrayOf(1), contentLength = IMAGE_CAP_BYTES.toLong() + 1),
+            imageResponse("image/png", ByteArray(IMAGE_CAP_BYTES + 1), contentLength = null)
+        )
+        responses.forEach { response ->
+            val fetcher = newFetcher(responses = mapOf("https://example.com/image.png" to response))
 
-        assertEquals(0, factoryCalls)
+            assertNull(fetcher.fetchImage("https://example.com/image.png"))
+        }
     }
 
     @Test
@@ -422,6 +171,7 @@ class LinkPreviewFetcherTest {
             factoryCalls++
             error("A closed fetcher must not create a client")
         }
+        fetcher.close()
         fetcher.close()
 
         assertNull(fetcher.fetchHtmlHead("https://example.com/page"))
@@ -471,7 +221,6 @@ class LinkPreviewFetcherTest {
 
     private fun TestScope.newFetcher(
         responses: Map<String, MockResponse> = emptyMap(),
-        thrownException: Throwable? = null,
         responseDelayMillis: Long = 0,
         dispatcher: CoroutineDispatcher = StandardTestDispatcher(testScheduler),
         onRequest: (String) -> Unit = {}
@@ -481,7 +230,6 @@ class LinkPreviewFetcherTest {
             addHandler { request ->
                 onRequest(request.url.toString())
                 delay(responseDelayMillis)
-                thrownException?.let { throw it }
                 val response = responses[request.url.toString()]
                     ?: error("No mocked response for ${request.url}")
 

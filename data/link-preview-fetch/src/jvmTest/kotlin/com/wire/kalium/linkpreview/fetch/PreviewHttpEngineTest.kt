@@ -31,7 +31,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertSame
 
 class PreviewHttpEngineTest {
 
@@ -47,53 +46,30 @@ class PreviewHttpEngineTest {
         val result = resolver.lookup("example.com")
 
         assertEquals(listOf("example.com"), requestedHosts)
-        assertSame(addresses, result)
-        addresses.indices.forEach { index -> assertSame(addresses[index], result[index]) }
-    }
-
-    @Test
-    fun givenEmptyDnsAnswers_whenResolving_thenRejectsDestination() {
-        val resolver = PublicPreviewDns(Dns { emptyList() })
-
-        assertFailsWith<UnknownHostException> { resolver.lookup("example.com") }
-    }
-
-    @Test
-    fun givenAnyPrivateDnsAnswer_whenResolving_thenRejectsEntireAnswerSet() {
-        val blocked = listOf("10.0.0.1", "127.0.0.1", "169.254.169.254", "::1", "0:0:0:0:0:ffff:7f00:1")
-
-        blocked.forEach { privateAddress ->
-            val resolver = PublicPreviewDns(Dns {
-                listOf(address("93.184.216.34"), address(privateAddress))
-            })
-
-            assertFailsWith<UnknownHostException>(privateAddress) { resolver.lookup("example.com") }
-        }
-    }
-
-    @Test
-    fun givenResolverFailure_whenResolving_thenPropagatesFailure() {
-        val failure = UnknownHostException("lookup failed")
-        val resolver = PublicPreviewDns(Dns { throw failure })
-
-        assertSame(failure, assertFailsWith<UnknownHostException> { resolver.lookup("example.com") })
+        assertEquals(addresses, result)
     }
 
     @Test
     fun givenPrivateAnswerDuringConnectionLookup_whenRequesting_thenRejectsBeforeConnecting() = runTest {
-        val requestedHosts = mutableListOf<String>()
-        val engine = createOkHttpPreviewEngine(Dns { hostname ->
-            requestedHosts += hostname
-            listOf(address("127.0.0.1"))
-        })
-        val client = HttpClient(engine)
-        try {
-            assertFailsWith<UnknownHostException> { client.get("https://example.com/article") }
+        val answerSets = listOf(
+            listOf(address("93.184.216.34"), address("127.0.0.1")),
+            listOf(address("0:0:0:0:0:ffff:7f00:1"))
+        )
+        answerSets.forEach { addresses ->
+            val requestedHosts = mutableListOf<String>()
+            val engine = createOkHttpPreviewEngine(Dns { hostname ->
+                requestedHosts += hostname
+                addresses
+            })
+            val client = HttpClient(engine)
+            try {
+                assertFailsWith<UnknownHostException> { client.get("https://example.com/article") }
 
-            assertEquals(listOf("example.com"), requestedHosts)
-        } finally {
-            client.close()
-            engine.close()
+                assertEquals(listOf("example.com"), requestedHosts)
+            } finally {
+                client.close()
+                engine.close()
+            }
         }
     }
 

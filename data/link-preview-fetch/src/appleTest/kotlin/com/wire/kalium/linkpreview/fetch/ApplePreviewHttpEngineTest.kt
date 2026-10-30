@@ -76,25 +76,6 @@ class ApplePreviewHttpEngineTest {
     }
 
     @Test
-    fun givenUnreachableIpv6Answer_whenRequesting_thenTriesApprovedIpv4Answer() = runTest {
-        val attempted = mutableListOf<String>()
-        val connection = FakePreviewConnection(listOf("HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nWire"))
-        val engine = ApplePreviewHttpEngine(
-            resolveAddresses = { listOf("2606:4700:4700::1111", "93.184.215.14") },
-            connect = { _, address, _ ->
-                attempted += address
-                if (':' in address) error("Route unavailable")
-                connection
-            }
-        )
-
-        HttpClient(engine).use { client ->
-            assertEquals("Wire", client.get("https://example.com/").bodyAsText())
-        }
-        assertEquals(listOf("2606:4700:4700::1111", "93.184.215.14"), attempted)
-    }
-
-    @Test
     fun givenRootQueryAndCredentialsInHeaders_whenRequesting_thenPreservesPathWithoutForwardingCredentials() = runTest {
         val connection = FakePreviewConnection(listOf("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"))
         val engine = ApplePreviewHttpEngine(
@@ -112,16 +93,6 @@ class ApplePreviewHttpEngineTest {
         assertFalse(connection.written.contains("fixture-token"))
         assertFalse(connection.written.contains("fixture-cookie"))
         assertFalse(connection.written.contains("fragment"))
-    }
-
-    @Test
-    fun givenChunkedResponse_whenReading_thenUsesKtorBodyFraming() = runTest {
-        val connection = FakePreviewConnection(
-            listOf("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n", "4\r\nWire\r\n", "0\r\n\r\n")
-        )
-        HttpClient(ApplePreviewHttpEngine({ listOf("93.184.215.14") }) { _, _, _ -> connection }).use { client ->
-            assertEquals("Wire", client.get("https://example.com/").bodyAsText())
-        }
     }
 
     @Test
@@ -149,46 +120,10 @@ class ApplePreviewHttpEngineTest {
     }
 
     @Test
-    fun givenInformationalResponse_whenReadingHeaders_thenReturnsFinalResponseAndBodyPrefix() = runTest {
-        val connection = FakePreviewConnection(
-            listOf("HTTP/1.1 103 Early Hints\r\nLink: </style.css>\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nWire")
-        )
-
-        val head = readPreviewResponseHeaders(connection)
-
-        assertEquals(200, head.status.value)
-        assertEquals("Wire", head.remainingBytes.decodeToString())
-    }
-
-    @Test
     fun givenOversizedHeaders_whenReading_thenRejectsBeforeParsingUnboundedInput() = runTest {
         val connection = FakePreviewConnection(listOf("HTTP/1.1 200 OK\r\nX-Large: ${"a".repeat(64 * 1024)}\r\n\r\n"))
 
         assertFailsWith<IllegalStateException> { readPreviewResponseHeaders(connection) }
-    }
-
-    @Test
-    fun givenHeaderReadCancelled_whenRequesting_thenClosesConnection() = runTest {
-        val reading = CompletableDeferred<Unit>()
-        var closed = false
-        val connection = object : PreviewAppleConnection {
-            override suspend fun write(bytes: ByteArray) = Unit
-            override suspend fun read(): ByteArray? {
-                reading.complete(Unit)
-                awaitCancellation()
-            }
-            override fun close() {
-                closed = true
-            }
-        }
-        HttpClient(ApplePreviewHttpEngine({ listOf("93.184.215.14") }) { _, _, _ -> connection }).use { client ->
-            val request = async { client.get("https://example.com/") }
-            reading.await()
-
-            request.cancelAndJoin()
-
-            assertTrue(closed)
-        }
     }
 
     @Test

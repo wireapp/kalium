@@ -26,45 +26,24 @@ import kotlin.test.assertTrue
 
 class PreviewUrlPolicyTest {
     @Test
-    fun givenRawRequestSeparators_whenValidating_thenRejectsUrl() {
+    fun givenRawRequestSeparators_whenValidating_thenRejectsPathAndHostnameInjection() {
         listOf('\r', '\n', '\t', ' ', '\u0000', '\u007f').forEach { separator ->
             val url = URLBuilder("https://example.com").apply { encodedPath = "/image${separator}Injected:secret" }.build()
-
             assertFalse(isAllowedPreviewUrl(url), separator.code.toString())
         }
-    }
-
-    @Test
-    fun givenRawControlInHostname_whenValidating_thenRejectsUrl() {
         listOf('\r', '\n', '\t', ' ').forEach { separator ->
             val url = URLBuilder("https://example.com").apply { host = "example.com${separator}Injected" }.build()
-
             assertFalse(isAllowedPreviewUrl(url), separator.code.toString())
         }
+        assertTrue(isAllowedPreviewUrl(Url("https://example.com/image%0d%0aInjected%3Asecret")))
     }
 
     @Test
-    fun givenPercentEncodedSeparators_whenValidating_thenKeepsEscapesSafe() {
-        assertTrue(isAllowedPreviewUrl(Url("https://example.com/image%0d%0aInjected%3Asecret?q=hello%20world")))
-    }
-
-    @Test
-    fun givenUnsafeSchemeOrCredentials_whenValidating_thenRejectsUrl() {
-        listOf("http://example.com", "ftp://example.com", "https://user:secret@example.com").forEach { url ->
-            assertFalse(isAllowedPreviewUrl(Url(url)), url)
-        }
-    }
-
-    @Test
-    fun givenPrivateNumericLiteral_whenValidating_thenRejectsWithoutDns() {
-        listOf("127.0.0.1", "[::1]", "[0:0:0:0:0:0:0:1]", "[::ffff:192.168.1.1]", "2130706433").forEach { host ->
-            assertFalse(isAllowedPreviewUrl(Url("https://$host/image")), host)
-        }
-    }
-
-    @Test
-    fun givenPublicNumericLiteral_whenValidating_thenAcceptsUrl() {
-        assertTrue(isAllowedPreviewUrl(Url("https://93.184.215.14/image")))
-        assertTrue(isAllowedPreviewUrl(Url("https://[2606:4700:4700::1111]/image")))
+    fun givenUnsafeUrl_whenValidating_thenRejectsSchemeCredentialsAndPrivateLiterals() {
+        listOf(
+            "http://example.com", "ftp://example.com", "https://user:secret@example.com",
+            "https://127.0.0.1/image", "https://[::1]/image", "https://[0:0:0:0:0:0:0:1]/image",
+            "https://[::ffff:192.168.1.1]/image", "https://2130706433/image"
+        ).forEach { url -> assertFalse(isAllowedPreviewUrl(Url(url)), url) }
     }
 }
