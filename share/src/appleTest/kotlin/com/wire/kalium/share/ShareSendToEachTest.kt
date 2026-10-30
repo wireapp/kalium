@@ -58,6 +58,19 @@ class ShareSendToEachTest {
         assertEquals(setOf(FIRST, SECOND, THIRD), outcomes.keys)
     }
 
+    @Test
+    fun aShareCutShortAfterStoringReportsEachConversation() {
+        val blocked = mapOf(SECOND to ShareOutcome(ShareStatus.OPEN_APP, "LEGAL_HOLD"))
+
+        // Nothing reached a conversation or was stored: the share failed as a whole.
+        assertEquals(null, timedOutOutcomes(listOf(FIRST, SECOND), blocked, emptyMap(), emptyMap()))
+        // The first conversation stored a message, then the budget ended while it sent.
+        assertEquals(
+            listOf(FIRST to ShareOutcome(ShareStatus.FAILED, TIMEOUT, "stored"), SECOND to blocked.getValue(SECOND)),
+            timedOutOutcomes(listOf(FIRST, SECOND), blocked, emptyMap(), mapOf(FIRST to "stored")),
+        )
+    }
+
     /** The budget ends while the second conversation sends. */
     private suspend fun kotlinx.coroutines.test.TestScope.cutShortWhileSendingTheSecond(
         secondStored: Boolean,

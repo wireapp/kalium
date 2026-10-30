@@ -122,6 +122,23 @@ internal suspend fun sendToEach(
     return outcomes.toMap()
 }
 
+/**
+ * How each conversation ended when the budget cut a share short: its outcome, why it was blocked, or failed, with the
+ * first message it [stored], if any. Null when the share reached no conversation and stored nothing: it failed as a
+ * whole.
+ */
+internal fun timedOutOutcomes(
+    conversationIds: List<ConversationId>,
+    blocked: Map<ConversationId, ShareOutcome>,
+    outcomes: Map<ConversationId, ShareOutcome>,
+    stored: Map<ConversationId, String>,
+): List<Pair<ConversationId, ShareOutcome>>? =
+    if (outcomes.isEmpty() && stored.isEmpty()) null
+    else conversationIds.map { id -> id to (outcomes[id] ?: blocked[id] ?: ShareOutcome(ShareStatus.FAILED, TIMEOUT, stored[id])) }
+
+/** The share ran past its budget. */
+internal const val TIMEOUT = "TIMEOUT"
+
 /** How a share ended. Content-free: [reason] is a diagnostic code. */
 internal data class ShareOutcome(val status: ShareStatus, val reason: String? = null, val messageId: String? = null)
 

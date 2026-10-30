@@ -418,24 +418,15 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         }
     }
 
-    /**
-     * Sending ran past the budget. Once it reached the conversations, each reports how it ended, one cut short with
-     * the message it stored; before, the share failed as a whole.
-     */
+    /** Sending ran past the budget; see [timedOutOutcomes]. */
     private fun timedOut(
         conversationIds: List<ConversationId>,
         blocked: Map<ConversationId, ShareOutcome>,
         outcomes: Map<ConversationId, ShareOutcome>,
         sending: ShareSending,
     ): KaliumShareResult {
-        val result = if (outcomes.isEmpty()) {
-            failure(TIMEOUT).copy(messageId = sending.firstStoredId)
-        } else {
-            val reached = conversationIds.map { id ->
-                id to (outcomes[id] ?: blocked[id] ?: ShareOutcome(ShareStatus.FAILED, TIMEOUT, sending.storedMessages[id]))
-            }
-            shareResult(reached)
-        }
+        val reached = timedOutOutcomes(conversationIds, blocked, outcomes, sending.storedMessages)
+        val result = reached?.let(::shareResult) ?: failure(TIMEOUT).copy(messageId = sending.firstStoredId)
         return result.copy(presentGenericAlert = true)
     }
 
@@ -629,7 +620,6 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         private const val MAX_BUDGET_MS = 60_000L
 
         private const val QUEUE_END = "QUEUE_END"
-        private const val TIMEOUT = "TIMEOUT"
 
         // Soft deadlines: connect, catch up, send, then close and process what arrived.
         private const val CONNECT_SHARE = 0.25
