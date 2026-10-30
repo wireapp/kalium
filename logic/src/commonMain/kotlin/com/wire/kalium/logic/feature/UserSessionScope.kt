@@ -622,6 +622,7 @@ import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
+import com.wire.kalium.logic.data.message.linkpreview.createLinkPreviewFetcher
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -674,6 +675,10 @@ public class UserSessionScope internal constructor(
     private val notificationEventsManager = NotificationEventsManagerImpl()
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
+
+    // The wrapper is cheap; its client initializes lazily under the fetcher's shutdown lock.
+    // Keeping the wrapper here prevents a late MessageScope access from recreating transport after close.
+    private val linkPreviewFetcher = createLinkPreviewFetcher()
 
     internal val userStorage = userStorageProvider.getOrCreate(
         userId,
@@ -935,6 +940,7 @@ public class UserSessionScope internal constructor(
 
     internal suspend fun closeAccountResources() {
         stopAccountWork()
+        linkPreviewFetcher.close()
         if (proteusClientProviderDelegate.isInitialized()) proteusClientProviderDelegate.value.close()
         if (mlsClientProviderDelegate.isInitialized()) mlsClientProviderDelegate.value.close()
         authenticatedNetworkContainer.close()
@@ -2759,6 +2765,7 @@ public class UserSessionScope internal constructor(
             userScopedLogger,
             KaliumDispatcherImpl,
             userStorage.database.messageTimelineDAO,
+            linkPreviewFetcher,
         )
     }
 

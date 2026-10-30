@@ -54,7 +54,7 @@ import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
-import com.wire.kalium.logic.data.message.linkpreview.createPreviewHttpClient
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewFetcher
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
@@ -189,6 +189,7 @@ public class MessageScope internal constructor(
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher,
     private val messageTimelineDAO: MessageTimelineDAO,
+    private val linkPreviewFetcher: LinkPreviewFetcher,
 ) {
 
     private val messageTimelineRepository = MessageTimelineRepository(messageTimelineDAO, selfUserId)
@@ -676,7 +677,7 @@ public class MessageScope internal constructor(
 
     private val linkPreviewRepository: LinkPreviewRepository by lazy {
         LinkPreviewRepositoryImpl(
-            httpClient = createPreviewHttpClient(),
+            fetcher = linkPreviewFetcher,
             kaliumFileSystem = kaliumFileSystem
         )
     }
