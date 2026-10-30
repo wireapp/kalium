@@ -18,6 +18,9 @@
 
 package com.wire.kalium.share
 
+import com.wire.kalium.cells.CellFileSharing
+import com.wire.kalium.cells.CellSharedFile
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
@@ -53,6 +56,9 @@ import io.ktor.http.Url
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
@@ -72,14 +78,15 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** A file the host prepared to share. Kalium reads [path] and never moves or deletes it. */
+@Serializable
 internal data class ShareFile(
-    val path: String,
-    val name: String,
-    val mimeType: String,
-    val sizeInBytes: Long,
-    val width: Int? = null,
-    val height: Int? = null,
-    val durationMs: Long? = null,
+    @SerialName("path") val path: String,
+    @SerialName("name") val name: String,
+    @SerialName("mimeType") val mimeType: String,
+    @SerialName("sizeInBytes") val sizeInBytes: Long,
+    @SerialName("width") val width: Int? = null,
+    @SerialName("height") val height: Int? = null,
+    @SerialName("durationMs") val durationMs: Long? = null,
 )
 
 /** A [ShareFile] the backend stored, encrypted with [otrKey]. */
@@ -138,17 +145,17 @@ internal fun SharePolicy?.refusal(name: String, mimeType: String, sizeInBytes: L
  * Checks [files] against the conversation and the account's rules, then uploads them. Sending checks the
  * conversation again after catching up; checking now avoids uploading for nothing.
  */
+@Suppress("ReturnCount")
 internal suspend fun AppleAccountRuntime.uploadSharedFiles(
     conversationId: ConversationId,
     files: List<ShareFile>,
     restriction: BuildFileRestrictionState,
     progress: (uploaded: Long, total: Long) -> Unit,
-): Either<ShareOutcome, List<UploadedFile>> {
+): Either<ShareOutcome, List<ShareItem>> {
     if (files.isEmpty()) return Either.Right(emptyList())
     val conversation = database.conversationDAO.getConversationDetailsById(conversationId.toDao())
     val block = when {
         conversation == null -> ShareBlock.UNAVAILABLE
-        conversation.wireCell != null -> ShareBlock.CELLS
         else -> database.shareBlock(conversation)
     }
     val policy = database.sharePolicy(prepared.userId, restriction)
@@ -156,7 +163,34 @@ internal suspend fun AppleAccountRuntime.uploadSharedFiles(
     return when {
         block != null -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, block.name))
         refused != null -> Either.Left(ShareOutcome(ShareStatus.FAILED, refused.name))
+        conversation?.wireCell != null && !database.cellsConfigured() ->
+            Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
+        conversation?.wireCell != null -> {
+            val sharing = CellFileSharing.create(
+                network.cellsHttpClient,
+                authenticatedSession,
+                network.accessTokenApi,
+                database.userConfigDAO,
+                database.publicLinks
+            )
+            try {
+                val cellName = database.conversationDAO.getCellName(conversationId.toDao())
+                    ?: return Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
+                when (val result = sharing.upload(cellName, files.map { it.cellFile() }, progress)) {
+                    is Either.Left -> Either.Left(
+                        ShareOutcome(
+                            if (result.value is NetworkFailure.NoNetworkConnection) ShareStatus.OFFLINE else ShareStatus.FAILED,
+                            "UPLOAD_FAILED"
+                        )
+                    )
+                    is Either.Right -> Either.Right(listOf(ShareItem.Cells(files, result.value, cellName)))
+                }
+            } finally {
+                sharing.close()
+            }
+        }
         else -> ShareUploads(network.assetApi, assetAuditLog()).upload(files, conversationId, progress)
+            .map { uploads -> uploads.map { ShareItem.File(it) } }
     }
 }
 
@@ -168,16 +202,27 @@ internal suspend fun AppleAccountRuntime.uploadSharedFiles(
 internal suspend fun <T> yieldingUploads(
     budget: Duration,
     accountWanted: Job,
+    discard: suspend (T) -> Unit = {},
     upload: suspend () -> Either<ShareOutcome, T>,
 ): Either<ShareOutcome, T> = coroutineScope {
+    var completed: Either<ShareOutcome, T>? = null
+    var delivered = false
     val uploads = async {
-        withTimeoutOrNull(budget) { upload() } ?: Either.Left(ShareOutcome(ShareStatus.OPEN_APP, UPLOAD_TIMEOUT))
+        withTimeoutOrNull(budget) { upload().also { completed = it } }
+            ?: Either.Left(ShareOutcome(ShareStatus.OPEN_APP, UPLOAD_TIMEOUT))
     }
-    select {
-        uploads.onAwait { it }
-        accountWanted.onJoin {
-            uploads.cancel()
-            Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ACCOUNT_WANTED))
+    try {
+        select {
+            uploads.onAwait {
+                delivered = it is Either.Right
+                it
+            }
+            accountWanted.onJoin { Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ACCOUNT_WANTED)) }
+        }
+    } finally {
+        withContext(NonCancellable) {
+            uploads.cancelAndJoin()
+            if (!delivered) (completed as? Either.Right)?.value?.let { discard(it) }
         }
     }
 }
@@ -203,19 +248,30 @@ private suspend fun AppleAccountRuntime.assetAuditLog(): Boolean {
         !ServerConfig.PRODUCTION.api.contains(Url(links.api).host)
 }
 
+internal fun ShareFile.metadata(): AssetContent.AssetMetadata? =
+    sharedFileMetadata(mimeType, width, height, durationMs)
+
+@com.wire.kalium.util.InternalKaliumApi
+public fun ShareOutboxFile.metadata(): AssetContent.AssetMetadata? =
+    sharedFileMetadata(mimeType, width, height, durationMs)
+
+private fun sharedFileMetadata(mimeType: String, width: Int?, height: Int?, durationMs: Long?): AssetContent.AssetMetadata? = when {
+    isDisplayableImageMimeType(mimeType) && width != null && height != null && width > 0 && height > 0 ->
+        AssetContent.AssetMetadata.Image(width, height)
+    isVideoMimeType(mimeType) -> AssetContent.AssetMetadata.Video(width, height, durationMs)
+    isAudioMimeType(mimeType) -> AssetContent.AssetMetadata.Audio(durationMs, normalizedLoudness = null)
+    else -> null
+}
+
+internal fun ShareFile.cellFile() = CellSharedFile(path.toPath(), name, mimeType, sizeInBytes, metadata())
+
 /** The asset content the app sends once an upload finished; metadata follows the app's mime type rules. */
 internal fun UploadedFile.content() = MessageContent.Asset(
     AssetContent(
         sizeInBytes = file.sizeInBytes,
         name = file.name,
         mimeType = file.mimeType,
-        metadata = when {
-            isDisplayableImageMimeType(file.mimeType) && file.width != null && file.height != null &&
-                file.width > 0 && file.height > 0 -> AssetContent.AssetMetadata.Image(file.width, file.height)
-            isVideoMimeType(file.mimeType) -> AssetContent.AssetMetadata.Video(file.width, file.height, file.durationMs)
-            isAudioMimeType(file.mimeType) -> AssetContent.AssetMetadata.Audio(file.durationMs, normalizedLoudness = null)
-            else -> null
-        },
+        metadata = file.metadata(),
         remoteData = AssetContent.RemoteData(
             otrKey = otrKey.data,
             sha256 = sha256.data,

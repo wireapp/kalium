@@ -188,7 +188,7 @@ class MPBackupRealCompressionIntegrationTest {
         val mixedContent = assertIs<MessageContent.Text>(restoredMixed.content)
         assertEquals("Alice Bob Carol", mixedContent.value)
         assertEquals(
-            validMentions.map { Triple(it.start, it.length, it.userId.copy(value = it.userId.value.lowercase())) },
+            validMentions.map { Triple(it.start, it.length, it.userId?.let { id -> id.copy(value = id.value.lowercase()) }) },
             mixedContent.mentions.map { Triple(it.start, it.length, it.userId) },
         )
         assertEquals("quoted-message", mixedContent.quotedMessageReference?.quotedMessageId)

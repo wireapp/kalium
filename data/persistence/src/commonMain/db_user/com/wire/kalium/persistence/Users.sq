@@ -45,6 +45,7 @@ insertUser:
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey message_sender_profile
 -- @NotifyCustomKey User
 INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -268,6 +269,7 @@ updateUserAsset:
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey message_sender_profile
 -- @NotifyCustomKey User
 UPDATE User SET complete_asset_id = ?, preview_asset_id = ? WHERE complete_asset_id = ?;
 
@@ -304,8 +306,14 @@ updateUserDisplayName:
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey message_sender_profile
 -- @NotifyCustomKey User
 UPDATE User SET name = ? WHERE qualified_id = ?;
+
+notifyMessageSenderProfileUpdated:
+-- This statement only emits the custom key; stored user data remains unchanged.
+-- @NotifyCustomKey message_sender_profile
+UPDATE User SET name = name WHERE qualified_id = ?;
 
 updateUserAccentColor:
 -- @NotifyCustomKey conversation_list_membership

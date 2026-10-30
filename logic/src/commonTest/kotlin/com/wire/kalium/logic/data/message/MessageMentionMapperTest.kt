@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Mention
 import com.wire.kalium.protobuf.messages.QualifiedUserId
+import pbandk.decodeFromByteArray
+import pbandk.encodeToByteArray
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -41,6 +43,35 @@ class MessageMentionMapperTest {
     private val messageMentionMapper: MessageMentionMapper = MessageMentionMapperImpl(idMapper, selfUserId)
 
     @Test
+    fun everyoneMentionSurvivesWireAndStorageRoundTripsWithoutAUserTarget() {
+        val model = MessageMention(start = 3, length = 4, userId = null, isSelfMention = true)
+        val encoded = messageMentionMapper.fromModelToProto(model)
+        assertEquals(true, encoded.everyone)
+        assertNull(encoded.qualifiedUserId)
+        assertNull(encoded.mentionType)
+        assertEquals(model, messageMentionMapper.fromProtoToModel(Mention.decodeFromByteArray(encoded.encodeToByteArray())))
+        assertEquals(model, messageMentionMapper.fromDaoToModel(messageMentionMapper.fromModelToDao(model)))
+    }
+
+    @Test
+    fun missingOrConflictingWireTargetsDoNotBecomeEveryoneMentions() {
+        assertNull(messageMentionMapper.fromProtoToModel(Mention(start = 0, length = 4)))
+        assertNull(messageMentionMapper.fromProtoToModel(Mention(start = 0, length = 4, everyone = false)))
+        assertNull(
+            messageMentionMapper.fromProtoToModel(
+                Mention(start = 0, length = 4, everyone = true, qualifiedUserId = QualifiedUserId("user", "domain"))
+            )
+        )
+        assertNull(
+            messageMentionMapper.fromProtoToModel(
+                Mention(start = 0, length = 4, everyone = true, mentionType = Mention.MentionType.UserId("user"))
+            )
+        )
+        assertNull(messageMentionMapper.fromProtoToModel(Mention(start = -1, length = 4, everyone = true)))
+        assertNull(messageMentionMapper.fromProtoToModel(Mention(start = 0, length = 0, everyone = true)))
+    }
+
+    @Test
     fun givenASelfMentionEntity_whenMappingFromDaoToModel_thenMessageMentionIsMappedAsASelfMention() {
         val mention = MessageEntity.Mention(
             start = 0,
@@ -52,8 +83,8 @@ class MessageMentionMapperTest {
 
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId.value, result.userId.value)
-        assertEquals(mention.userId.domain, result.userId.domain)
+        assertEquals(mention.userId?.value, result.userId?.value)
+        assertEquals(mention.userId?.domain, result.userId?.domain)
         assertTrue(result.isSelfMention)
     }
 
@@ -70,8 +101,8 @@ class MessageMentionMapperTest {
 
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId.value, result.userId.value)
-        assertEquals(mention.userId.domain, result.userId.domain)
+        assertEquals(mention.userId?.value, result.userId?.value)
+        assertEquals(mention.userId?.domain, result.userId?.domain)
         assertFalse(result.isSelfMention)
     }
 
@@ -88,8 +119,8 @@ class MessageMentionMapperTest {
 
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId.value, result.userId.value)
-        assertEquals(mention.userId.domain, result.userId.domain)
+        assertEquals(mention.userId?.value, result.userId?.value)
+        assertEquals(mention.userId?.domain, result.userId?.domain)
     }
 
     @Test
@@ -106,8 +137,8 @@ class MessageMentionMapperTest {
 
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId.value, result.userId.value)
-        assertEquals(mention.userId.domain, result.userId.domain)
+        assertEquals(mention.userId?.value, result.userId?.value)
+        assertEquals(mention.userId?.domain, result.userId?.domain)
     }
 
     @Test
@@ -124,8 +155,8 @@ class MessageMentionMapperTest {
         assertNotNull(result)
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(selfUserId.value, result.userId.value)
-        assertEquals(selfUserId.domain, result.userId.domain)
+        assertEquals(selfUserId.value, result.userId?.value)
+        assertEquals(selfUserId.domain, result.userId?.domain)
         assertTrue(result.isSelfMention)
     }
 
@@ -144,8 +175,8 @@ class MessageMentionMapperTest {
         assertNotNull(result)
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.qualifiedUserId?.id, result.userId.value)
-        assertEquals(mention.qualifiedUserId?.domain, result.userId.domain)
+        assertEquals(mention.qualifiedUserId?.id, result.userId?.value)
+        assertEquals(mention.qualifiedUserId?.domain, result.userId?.domain)
         assertFalse(result.isSelfMention)
     }
 
@@ -176,9 +207,9 @@ class MessageMentionMapperTest {
 
         assertEquals(mention.start, result.start)
         assertEquals(mention.length, result.length)
-        assertEquals(mention.userId.value, result.qualifiedUserId?.id)
-        assertEquals(mention.userId.domain, result.qualifiedUserId?.domain)
-        assertEquals(result.userId, mention.userId.value)
+        assertEquals(mention.userId?.value, result.qualifiedUserId?.id)
+        assertEquals(mention.userId?.domain, result.qualifiedUserId?.domain)
+        assertEquals(result.userId, mention.userId?.value)
     }
 
     @Test
@@ -193,8 +224,8 @@ class MessageMentionMapperTest {
         val result = messageMentionMapper.fromModelToProto(mention)
         assertEquals(result.start, mention.start)
         assertEquals(result.length, mention.length)
-        assertEquals(result.qualifiedUserId?.id, mention.userId.value)
-        assertEquals(result.qualifiedUserId?.domain, mention.userId.domain)
-        assertEquals(result.userId, mention.userId.value)
+        assertEquals(result.qualifiedUserId?.id, mention.userId?.value)
+        assertEquals(result.qualifiedUserId?.domain, mention.userId?.domain)
+        assertEquals(result.userId, mention.userId?.value)
     }
 }

@@ -77,7 +77,7 @@ CREATE TABLE MessageMention (
 
       start INTEGER AS Int NOT NULL,
       length INTEGER AS Int NOT NULL,
-      user_id TEXT AS QualifiedIDEntity NOT NULL,
+      user_id TEXT AS QualifiedIDEntity, -- NULL is an explicit everyone mention
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id, start) -- there should not be any overlapping mentions
@@ -214,13 +214,14 @@ needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT
     (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
-    IFNULL(Mention.user_id IS NOT NULL, 0) == 1 AS isMentioningSelfUser,
+    EXISTS (SELECT 1 FROM MessageMention
+        WHERE message_id = Message.id AND conversation_id = Message.conversation_id
+            AND (user_id = SelfUser.id OR (user_id IS NULL AND Conversation.type IN ('GROUP', 'CHANNEL', 'MEETING')))) AS isMentioningSelfUser,
     IFNULL(TextContent.is_quoting_self, 0) == 1 AS isQuotingSelfUser,
     Conversation.muted_status AS mutedStatus
 FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN Conversation ON Message.conversation_id = Conversation.qualified_id
-LEFT JOIN MessageMention AS Mention ON Message.id = Mention.message_id AND SelfUser.id = Mention.user_id
 LEFT JOIN MessageTextContent AS TextContent
     ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 WHERE Message.id = ? AND Message.conversation_id = ?)
@@ -646,6 +647,7 @@ SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? AND s
 selectByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey message_sender_profile
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 selectPendingByConversationIdAndVisibility:

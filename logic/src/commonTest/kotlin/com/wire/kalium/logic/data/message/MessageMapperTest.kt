@@ -61,7 +61,11 @@ internal class MessageMapperTest {
         assertEquals("secret", text.text)
         assertEquals("Sender", text.author.name)
         assertEquals(true, text.isQuotingSelfUser)
-        for (type in listOf(MessageEntity.ContentType.TEXT, MessageEntity.ContentType.ASSET)) {
+        val caption = assertIs<LocalNotificationMessage.Text>(
+            mapper.fromMessageToLocalNotificationMessage(row.copy(contentType = MessageEntity.ContentType.MULTIPART))
+        )
+        assertEquals("secret", caption.text)
+        for (type in listOf(MessageEntity.ContentType.TEXT, MessageEntity.ContentType.ASSET, MessageEntity.ContentType.MULTIPART)) {
             val hidden = assertIs<LocalNotificationMessage.SelfDeleteMessage>(
                 mapper.fromMessageToLocalNotificationMessage(row.copy(contentType = type, isSelfDelete = true))
             )

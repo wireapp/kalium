@@ -171,6 +171,28 @@ class ShareFilesTest {
     }
 
     @Test
+    fun completedDraftsAreDiscardedWhenAccountHandoffWins() = runTest {
+        val wanted = Job()
+        val started = CompletableDeferred<Unit>()
+        val discarded = mutableListOf<String>()
+        val result = async {
+            yieldingUploads(1.minutes, wanted, discard = { value: String -> discarded += value }) {
+                started.complete(Unit)
+                try {
+                    awaitCancellation()
+                } catch (_: kotlinx.coroutines.CancellationException) {
+                    // The server completed the upload just as the account was handed off.
+                    Either.Right("draft")
+                }
+            }
+        }
+        started.await()
+        wanted.complete()
+        assertIs<Either.Left<ShareOutcome>>(result.await())
+        assertEquals(listOf("draft"), discarded)
+    }
+
+    @Test
     fun uploadsThatOutliveTheirBudgetGoToTheApp() = runTest {
         val result = yieldingUploads<Unit>(30.seconds, Job()) { awaitCancellation() }
 
