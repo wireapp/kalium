@@ -618,6 +618,10 @@ class NotificationProcessor(
                 users.markDeleted(id)
                 listOf(ReceivedPayload.UserDeleted(id))
             }
+            is EventContentDTO.Team.MemberJoin -> {
+                val memberId = UserId(content.teamMember.nonQualifiedUserId, selfUserId.domain)
+                listOf(ReceivedPayload.Profiles(users.load(setOf(memberId))))
+            }
             is EventContentDTO.Team.MemberLeave -> {
                 val event = Event.Team.MemberLeave(
                     metadataSystemMessageId(eventId, index),

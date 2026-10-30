@@ -87,6 +87,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.authenticated.userDetails.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
@@ -1415,6 +1416,68 @@ class NotificationProcessorNativeTest {
     }
 
     private fun localIdentity(mls: Boolean) = runTest { localIdentityWork(mls) }
+
+    @Test
+    fun teamMemberJoinPersistsNewContactAndReplaysIdempotently() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(false) { fixture ->
+                fixture.seedIdentityState()
+                val member = UserId("new-team-member", SELF.domain)
+                val event = fixture.teamJoin(member)
+                fixture.releasePrepared()
+
+                assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertNull(runtime.database.userDAO.getUserDetailsByQualifiedID(member.toDao()))
+                })
+
+                var profileFetches = 0
+                var teamMemberFetches = 0
+                suspend fun receive() = fixture.receive(
+                    listOf(event),
+                    event.id,
+                    fetchProfilesRequest = { request ->
+                        profileFetches++
+                        assertEquals(
+                            listOf(member.toApi()),
+                            assertIs<QualifiedUserIdListRequest>(request).qualifiedIds,
+                        )
+                        ListUsersDTO(
+                            usersFound = listOf(fixture.connectionProfile(member.toApi()).copy(teamId = "fixture-team"))
+                        )
+                    },
+                    fetchTeamMembers = {
+                        teamMemberFetches++
+                        com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated(
+                            hasMore = false,
+                            members = listOf(
+                                com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO(
+                                    nonQualifiedUserId = member.value,
+                                    createdBy = null,
+                                    legalHoldStatus = null,
+                                    createdAt = null,
+                                    permissions = null,
+                                )
+                            ),
+                        )
+                    },
+                )
+
+                repeat(2) { assertIs<Either.Right<*>>(receive()) }
+                assertEquals(1, profileFetches)
+                assertEquals(1, teamMemberFetches)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    val contact = checkNotNull(runtime.database.userDAO.getUserDetailsByQualifiedID(member.toDao()))
+                    assertEquals("fixture-team", contact.team)
+                    assertEquals(ConnectionEntity.State.ACCEPTED, contact.connectionStatus)
+                    assertEquals(UserTypeEntity.STANDARD, contact.userType)
+                    assertFalse(contact.deleted)
+                })
+            }
+        }
+    }
 
     private suspend fun localIdentityWork(mls: Boolean, stage: Interruption? = null, sqlFailure: String? = null) =
         withContext(Dispatchers.Default) {
@@ -12050,6 +12113,9 @@ class NotificationProcessorNativeTest {
 
         fun legalHoldRequest(user: UserId, client: String) = plainEvent("request-$client",
             """{"type":"user.legalhold-request","id":"${user.value}","client":{"id":"$client"},"last_prekey":{"id":65535,"key":"key"}}""")
+
+         fun teamJoin(user: UserId) = plainEvent("team-join",
+            """{"type":"team.member-join","team":"fixture-team","time":"$TIME","data":{"user":"${user.value}"}}""")
 
         fun teamLeave(user: UserId = THIRD) = plainEvent("team-leave",
             """{"type":"team.member-leave","team":"fixture-team","time":"$TIME","data":{"user":"${user.value}"}}""")

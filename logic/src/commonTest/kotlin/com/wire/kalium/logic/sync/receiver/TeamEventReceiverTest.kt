@@ -23,6 +23,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
@@ -36,8 +37,33 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertIs
 
 class TeamEventReceiverTest {
+
+    @Test
+    fun givenMemberJoinEventUnknownUserIsFetched() = runTest {
+        val event = TestEvent.teamMemberJoin()
+        val memberId = UserId(event.memberId, TestUser.USER_ID.domain)
+        val (arrangement, eventReceiver) = Arrangement()
+            .arrange {
+                withFetchUsersIfUnknownByIdsReturning(
+                    result = Either.Right(Unit),
+                    userIdList = { it == setOf(memberId) },
+                )
+            }
+
+        val result = eventReceiver.onEvent(
+            arrangement.transactionContext,
+            event,
+            TestEvent.liveDeliveryInfo,
+        )
+
+        assertIs<Either.Right<Unit>>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.fetchUsersIfUnknownByIds(setOf(memberId))
+        }
+    }
 
     @Test
     fun givenMemberLeaveEvent_RepoAndPersisMessageAreInvoked() = runTest {
