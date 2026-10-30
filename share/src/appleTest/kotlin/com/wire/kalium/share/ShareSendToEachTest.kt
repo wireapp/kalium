@@ -32,7 +32,7 @@ class ShareSendToEachTest {
     fun eachConversationIsSentInTurnAndReportsItsOutcome() = runTest {
         val outcomes = mutableMapOf<ConversationId, ShareOutcome>()
 
-        val sent = sendToEach(items(FIRST, SECOND), outcomes, shouldStop = { false }) { conversationId, _, _ ->
+        val sent = sendToEach(items(FIRST, SECOND), outcomes, shouldStop = { false }, stored = { true }) { conversationId, _, _ ->
             if (conversationId == FIRST) ShareOutcome(ShareStatus.OPEN_APP, "LEGAL_HOLD") else ShareOutcome(ShareStatus.SENT)
         }
 
@@ -42,10 +42,35 @@ class ShareSendToEachTest {
 
     @Test
     fun conversationsNotReachedWhenSendingIsCutShortKeepTheirMessagesAsFailed() = runTest {
+        // The second conversation stored a message before the budget ended, so it keeps its own rest.
+        val (calls, outcomes) = cutShortWhileSendingTheSecond(secondStored = true)
+
+        assertEquals(listOf(FIRST to false, SECOND to false, THIRD to true), calls)
+        assertEquals(setOf(FIRST, THIRD), outcomes.keys)
+        assertEquals(ShareStatus.FAILED, outcomes.getValue(THIRD).status)
+    }
+
+    @Test
+    fun aConversationCutShortBeforeItStoredAnythingKeepsItsMessagesAsFailedToo() = runTest {
+        val (calls, outcomes) = cutShortWhileSendingTheSecond(secondStored = false)
+
+        assertEquals(listOf(FIRST to false, SECOND to false, SECOND to true, THIRD to true), calls)
+        assertEquals(setOf(FIRST, SECOND, THIRD), outcomes.keys)
+    }
+
+    /** The budget ends while the second conversation sends. */
+    private suspend fun kotlinx.coroutines.test.TestScope.cutShortWhileSendingTheSecond(
+        secondStored: Boolean,
+    ): Pair<List<Pair<ConversationId, Boolean>>, Map<ConversationId, ShareOutcome>> {
         val outcomes = mutableMapOf<ConversationId, ShareOutcome>()
         val calls = mutableListOf<Pair<ConversationId, Boolean>>()
         val sending = launch {
-            sendToEach(items(FIRST, SECOND, THIRD), outcomes, shouldStop = { false }) { conversationId, _, shouldStop ->
+            sendToEach(
+                items(FIRST, SECOND, THIRD),
+                outcomes,
+                shouldStop = { false },
+                stored = { it == SECOND && secondStored },
+            ) { conversationId, _, shouldStop ->
                 calls += conversationId to shouldStop()
                 when {
                     shouldStop() -> ShareOutcome(ShareStatus.FAILED, "OUT_OF_TIME", "kept-$conversationId")
@@ -55,13 +80,8 @@ class ShareSendToEachTest {
             }
         }
         runCurrent()
-
-        // The budget ends while the second conversation sends.
         sending.cancelAndJoin()
-
-        assertEquals(listOf(FIRST to false, SECOND to false, THIRD to true), calls)
-        assertEquals(setOf(FIRST, THIRD), outcomes.keys)
-        assertEquals(ShareStatus.FAILED, outcomes.getValue(THIRD).status)
+        return calls to outcomes
     }
 
     private fun items(vararg conversationIds: ConversationId) =

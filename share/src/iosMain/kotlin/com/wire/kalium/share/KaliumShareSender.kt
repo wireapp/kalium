@@ -528,7 +528,9 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             // Unapplied events can carry consent or membership changes; sending would ignore them.
             unfinished != null -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, "PROCESSING_$unfinished"))
             // One conversation not taking the share does not keep the next from it.
-            else -> Either.Right(sendToEach(items, outcomes, shouldStopSending, sending::send))
+            else -> Either.Right(
+                sendToEach(items, outcomes, shouldStopSending, stored = { it in sending.storedMessages }, send = sending::send)
+            )
         }
         return sent to unnotified
     }

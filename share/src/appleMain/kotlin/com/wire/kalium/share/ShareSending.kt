@@ -95,12 +95,14 @@ internal fun sharedItems(uploads: List<ShareItem>, text: String): List<ShareItem
 /**
  * Sends to each conversation in turn with [send], recording each outcome in [outcomes] as it ends. Cancelled, for
  * example by the budget, the conversations not reached keep their messages as failed, as the rest of a conversation
- * cut short does: [send] whose deadline already passed only stores.
+ * cut short does: [send] whose deadline already passed only stores. The conversation cut short is one of them until
+ * it [stored] a message; from then on it keeps the rest itself.
  */
 internal suspend fun sendToEach(
     items: Map<ConversationId, List<ShareItem>>,
     outcomes: MutableMap<ConversationId, ShareOutcome>,
     shouldStop: () -> Boolean,
+    stored: (ConversationId) -> Boolean,
     send: suspend (ConversationId, List<ShareItem>, shouldStop: () -> Boolean) -> ShareOutcome,
 ): Map<ConversationId, ShareOutcome> {
     var current: ConversationId? = null
@@ -111,7 +113,7 @@ internal suspend fun sendToEach(
         }
     } catch (cancelled: CancellationException) {
         withContext(NonCancellable) {
-            for ((conversationId, conversationItems) in items.filterKeys { it !in outcomes && it != current }) {
+            for ((conversationId, conversationItems) in items.filterKeys { it !in outcomes && (it != current || !stored(it)) }) {
                 outcomes[conversationId] = send(conversationId, conversationItems) { true }
             }
         }
