@@ -96,6 +96,13 @@ internal interface MessageRepository : OutgoingMessages, MessageTransport {
 
     suspend fun claimFailedMessageForRetry(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean>
 
+    suspend fun updatePendingTextPolicy(
+        conversationId: ConversationId,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ): Either<CoreFailure, Unit>
+
     suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -417,6 +424,15 @@ internal class MessageDataSource internal constructor(
 
     override suspend fun claimFailedMessageForRetry(conversationId: ConversationId, messageUuid: String) = wrapStorageRequest {
         messageDAO.claimFailedMessageForRetry(messageUuid, conversationId.toDao())
+    }
+
+    override suspend fun updatePendingTextPolicy(
+        conversationId: ConversationId,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updatePendingTextPolicy(conversationId.toDao(), messageId, expireAfterMillis, expectsReadConfirmation)
     }
 
     override suspend fun updateMessagesStatus(

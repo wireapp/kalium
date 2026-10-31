@@ -104,7 +104,12 @@ class MessageSenderImpl(
             messages.getMessageById(conversationId, messageUuid).flatMap { message ->
                 val result =
                     if (message is Message.Regular) {
-                        sendMessage(message)
+                        // A recovery snapshot may have been sent by another coroutine already.
+                        if (message.status == Message.Status.Pending && message.visibility == Message.Visibility.VISIBLE) {
+                            sendMessage(message)
+                        } else {
+                            Either.Right(Unit)
+                        }
                     } else {
                         Either.Left(
                             StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages"))
@@ -146,15 +151,21 @@ class MessageSenderImpl(
         )
     }
 
-    private suspend fun shouldSend(message: Message.Sendable): Either<CoreFailure, Boolean> {
-        if (message !is Message.Regular || message.status != Message.Status.Pending) return Either.Right(true)
+    private suspend fun messageToSend(message: Message.Sendable): Either<CoreFailure, Message.Sendable?> {
+        if (message !is Message.Regular || message.status != Message.Status.Pending) return Either.Right(message)
         return messages.getMessageById(message.conversationId, message.id).fold(
             { failure ->
-                if (failure == StorageFailure.DataNotFound) Either.Right(false) else Either.Left(failure)
+                if (failure == StorageFailure.DataNotFound) Either.Right(null) else Either.Left(failure)
             },
             { current ->
-                val isVisible = current is Message.Regular && current.visibility == Message.Visibility.VISIBLE
-                Either.Right(isVisible && current.status == Message.Status.Pending)
+                when {
+                    current !is Message.Regular || current.visibility != Message.Visibility.VISIBLE ||
+                        current.status != Message.Status.Pending -> Either.Right(null)
+                    // Keep prepared asset metadata and other caller-specific fields, but do not send stale text.
+                    message.content is MessageContent.Text && current.content is MessageContent.Text ->
+                        Either.Right(message.copy(content = current.content))
+                    else -> Either.Right(message)
+                }
             }
         )
     }
@@ -163,61 +174,60 @@ class MessageSenderImpl(
         sendMessageWithOutcome(message, messageTarget).map { Unit }
 
     override suspend fun sendMessageWithOutcome(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Boolean> =
-        prepareMessage(message)
-            .flatMap { processedMessage -> sendPreparedMessage(message, processedMessage, messageTarget, remainingAttempts = 1) }
-            .onSuccess { sent ->
-                if (sent) startSelfDeletionIfNeeded(message)
-            }.onFailure {
+        sendPreparedMessage(message, messageTarget, remainingAttempts = 1)
+            .onSuccess { sentMessage -> sentMessage?.let(::startSelfDeletionIfNeeded) }
+            .map { it != null }
+            .onFailure {
                 logger.e("Failed to send message ${message::class.simpleName}. Failure = $it")
             }
 
     /**
-     * Sends [processedMessage] in one crypto transaction and returns whether it was sent.
-     * A stale MLS send is retried after that transaction ends: catch-up processes the missed commits in its own transaction.
+     * Rechecks and prepares the message inside the same crypto transaction as cancellation and competing sends.
+     * A stale MLS send retries after catch-up, outside the transaction, then rechecks the stored state again.
      */
     private suspend fun sendPreparedMessage(
         message: Message.Sendable,
-        processedMessage: Message.Sendable,
         messageTarget: MessageTarget,
         remainingAttempts: Int
-    ): Either<CoreFailure, Boolean> =
+    ): Either<CoreFailure, Message.Sendable?> =
         session.transaction("sendMessage") { transactionContext ->
-            // Cancellation uses this same transaction queue. Recheck after entering it, not before waiting.
-            shouldSend(message).flatMap { send ->
-                if (!send) return@flatMap Either.Right(false)
-                attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
-                    val localDate = message.date
-                    val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
-                    // If it was the "edit" message type, we need to update the id before we promote it to "sent"
-                    val isEditMessage = when (message.content) {
-                        is MessageContent.MultipartEdited -> {
-                            messages.updateMultipartMessage(
-                                conversationId = processedMessage.conversationId,
-                                messageContent = processedMessage.content as MessageContent.MultipartEdited,
-                                newMessageId = processedMessage.id,
-                                editInstant = processedMessage.date
-                            )
-                            true
+            messageToSend(message).flatMap { current ->
+                if (current == null) return@flatMap Either.Right(null)
+                prepareMessage(current).flatMap { processedMessage ->
+                    attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
+                        val localDate = message.date
+                        val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                        // If it was the "edit" message type, we need to update the id before we promote it to "sent"
+                        val isEditMessage = when (message.content) {
+                            is MessageContent.MultipartEdited -> {
+                                messages.updateMultipartMessage(
+                                    conversationId = processedMessage.conversationId,
+                                    messageContent = processedMessage.content as MessageContent.MultipartEdited,
+                                    newMessageId = processedMessage.id,
+                                    editInstant = processedMessage.date
+                                )
+                                true
+                            }
+                            is MessageContent.TextEdited -> {
+                                messages.updateTextMessage(
+                                    conversationId = processedMessage.conversationId,
+                                    messageContent = processedMessage.content as MessageContent.TextEdited,
+                                    newMessageId = processedMessage.id,
+                                    editInstant = processedMessage.date
+                                )
+                                true
+                            }
+                            else -> false
                         }
-                        is MessageContent.TextEdited -> {
-                            messages.updateTextMessage(
-                                conversationId = processedMessage.conversationId,
-                                messageContent = processedMessage.content as MessageContent.TextEdited,
-                                newMessageId = processedMessage.id,
-                                editInstant = processedMessage.date
-                            )
-                            true
-                        }
-                        else -> false
+                        messages.promoteMessageToSentUpdatingServerTime(
+                            conversationId = processedMessage.conversationId,
+                            messageUuid = processedMessage.id,
+                            // if it's edit then we don't want to change the original message creation time, it's already a server date
+                            serverDate = if (!isEditMessage) serverDate else null,
+                            millis = millis
+                        )
+                        processedMessage
                     }
-                    messages.promoteMessageToSentUpdatingServerTime(
-                        conversationId = processedMessage.conversationId,
-                        messageUuid = processedMessage.id,
-                        // if it's edit then we don't want to change the original message creation time, it's already a server date
-                        serverDate = if (!isEditMessage) serverDate else null,
-                        millis = millis
-                    )
-                    true
                 }
             }
         }.fold({ failure ->
@@ -225,7 +235,7 @@ class MessageSenderImpl(
                 failure !is StaleUntilLive -> Either.Left(failure)
                 remainingAttempts <= 0 -> Either.Left(failure.cause)
                 else -> session.waitUntilLiveOrFailure().flatMap {
-                    sendPreparedMessage(message, processedMessage, messageTarget, remainingAttempts - 1)
+                    sendPreparedMessage(message, messageTarget, remainingAttempts - 1)
                 }
             }
         }, { sent -> Either.Right(sent) })
