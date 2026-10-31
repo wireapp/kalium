@@ -97,6 +97,10 @@ internal interface ConnectionRepository {
     suspend fun ignoreConnectionRequest(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Unit>
 }
 
+internal fun interface AcceptedConnectionEventPersistence {
+    suspend fun persist(connection: ConnectionEntity)
+}
+
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ConnectionDataSource(
     private val conversationDAO: ConversationDAO,
@@ -106,6 +110,7 @@ internal class ConnectionDataSource(
     private val userDAO: UserDAO,
     private val conversationRepository: ConversationRepository,
     private val persistConversations: PersistConversationsUseCase,
+    private val acceptedConnectionEventPersistence: AcceptedConnectionEventPersistence,
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper()
 ) : ConnectionRepository {
@@ -249,7 +254,13 @@ internal class ConnectionDataSource(
         transactionContext: CryptoTransactionContext,
         event: Event.User.NewConnection
     ): Either<CoreFailure, Unit> =
-        handleUserConnectionStatusPersistence(transactionContext, event.connection)
+        if (event.connection.status == ACCEPTED) {
+            wrapStorageRequest {
+                acceptedConnectionEventPersistence.persist(connectionMapper.modelToDao(event.connection))
+            }
+        } else {
+            handleUserConnectionStatusPersistence(transactionContext, event.connection)
+        }
 
     override fun observeConnectionList(): Flow<List<Connection>> {
         return connectionDAO.getConnections().map { connections ->

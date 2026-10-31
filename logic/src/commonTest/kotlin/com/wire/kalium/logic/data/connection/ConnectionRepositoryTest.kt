@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConnection
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
@@ -65,9 +66,9 @@ import com.wire.kalium.util.ConversationPersistenceApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matches
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -81,6 +82,49 @@ import kotlin.time.Instant
 
 @OptIn(ConversationPersistenceApi::class)
 class ConnectionRepositoryTest {
+
+    @Test
+    fun acceptedEventPersistsStatusAndWarningTogether() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
+
+        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.acceptedConnectionEventPersistence.persist(ConnectionMapperImpl().modelToDao(event.connection))
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.userDAO.upsertConnectionStatuses(any())
+            arrangement.connectionDAO.updateConnectionStatus(any(), any())
+        }
+    }
+
+    @Test
+    fun failedAcceptedEventPersistenceIsPropagatedAndRetried() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
+        everySuspend { arrangement.acceptedConnectionEventPersistence.persist(any()) } throws
+            IllegalStateException("warning write failed")
+
+        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldFail()
+        everySuspend { arrangement.acceptedConnectionEventPersistence.persist(any()) } returns Unit
+        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.acceptedConnectionEventPersistence.persist(any())
+        }
+    }
+
+    @Test
+    fun pendingEventDoesNotPersistAnAcceptanceWarning() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val event = TestEvent.newConnection(status = ConnectionState.PENDING)
+
+        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.acceptedConnectionEventPersistence.persist(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.connectionDAO.insertConnection(any()) }
+    }
 
     @Test
     fun givenConnections_whenFetchingConnections_thenConnectionsAreInsertedOrUpdatedIntoDatabase() = runTest {
@@ -539,6 +583,7 @@ class ConnectionRepositoryTest {
         val userDAO = mock<UserDAO>(mode = MockMode.autoUnit)
         val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
         val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
+        val acceptedConnectionEventPersistence = mock<AcceptedConnectionEventPersistence>(mode = MockMode.autoUnit)
 
         val connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,
@@ -547,7 +592,8 @@ class ConnectionRepositoryTest {
             userDAO = userDAO,
             memberDAO = memberDAO,
             conversationRepository = conversationRepository,
-            persistConversations = persistConversations
+            persistConversations = persistConversations,
+            acceptedConnectionEventPersistence = acceptedConnectionEventPersistence
         )
 
 

@@ -402,6 +402,16 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun getConversationStartedUnverifiedWarning(conversationId: ConversationIDEntity): MessageEntity? =
+        withContext(readDispatcher.value) {
+            queries.selectByConversationIdAndSenderIdAndType(
+                conversationId,
+                selfUserId,
+                MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING,
+                mapper::toEntityMessageFromView
+            ).awaitAsList().firstOrNull()
+        }
+
     override suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity> = withContext(readDispatcher.value) {
         queries.selectConversationIdsByMessageId(id).awaitAsList()
     }

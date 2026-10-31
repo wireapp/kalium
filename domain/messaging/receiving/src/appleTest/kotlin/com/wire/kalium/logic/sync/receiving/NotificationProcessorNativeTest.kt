@@ -705,7 +705,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun acceptedConnectionConsentHistoryDoesNotBlockReplay() = runTest {
+    fun acceptedConnectionConsentSuppressionSurvivesReplayAndLaterStatuses() = runTest {
         withContext(Dispatchers.Default) {
             for (restoreMode in listOf("none", "before", "after")) {
                 for (stage in listOf(null, Interruption.BEFORE_COMMIT, Interruption.AFTER_COMMIT, Interruption.MARKER)) {
@@ -730,7 +730,8 @@ class NotificationProcessorNativeTest {
                                 runtime.database.connectionDAO.getConnection(CONVERSATION_ID)?.status)
                             val warnings = runtime.database.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first()
                                 .filter { it.content == MessageEntityContent.ConversationStartedUnverifiedWarning }
-                            assertEquals(if (restoreMode == "none" && stage != null) 1 else 0, warnings.size)
+                            // Replaying after IGNORED must preserve the original legal-hold suppression.
+                            assertEquals(0, warnings.size)
                         })
                         fixture.verifyStoredAndNext(next, "tail", listOf("first", "tail"))
                     }
