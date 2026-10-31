@@ -2179,13 +2179,14 @@ class MessageDAOTest : BaseDatabaseTest() {
             senderName = otherUser.name!!,
             date = Instant.parse("2022-03-30T15:36:00.000Z")
         )
-        val selfDeleting = (2..3).map { index ->
+        // More than the app's initial page: an under-count would omit the live target entirely.
+        val selfDeleting = (2..101).map { index ->
             newRegularMessageEntity(
                 "$index",
                 conversationId = conversationEntity1.id,
                 senderUserId = otherUser.id,
                 senderName = otherUser.name,
-                date = Instant.parse("2022-03-30T15:36:0$index.000Z"),
+                date = Instant.parse("2022-03-30T15:36:00.000Z") + index.seconds,
                 expireAfterMs = 1.seconds.inWholeMilliseconds
             )
         }
@@ -2196,8 +2197,8 @@ class MessageDAOTest : BaseDatabaseTest() {
         val selfDeletingPosition = messageDAO.getSearchedConversationMessagePosition(conversationEntity1.id, selfDeleting.first().id)
 
         // then
-        assertEquals(3, targetPosition)
-        assertEquals(2, selfDeletingPosition)
+        assertEquals(101, targetPosition)
+        assertEquals(100, selfDeletingPosition)
     }
 
     @Test
