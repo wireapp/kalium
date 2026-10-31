@@ -114,6 +114,8 @@ internal object TableMapper {
         mls_cipher_suiteAdapter = EnumColumnAdapter(),
         receipt_modeAdapter = EnumColumnAdapter(),
         last_read_dateAdapter = InstantTypeAdapter,
+        manual_unread_dateAdapter = InstantTypeAdapter,
+        manual_unread_updated_atAdapter = InstantTypeAdapter,
         last_modified_dateAdapter = InstantTypeAdapter,
         last_notified_dateAdapter = InstantTypeAdapter,
         mls_last_keying_material_update_dateAdapter = InstantTypeAdapter,

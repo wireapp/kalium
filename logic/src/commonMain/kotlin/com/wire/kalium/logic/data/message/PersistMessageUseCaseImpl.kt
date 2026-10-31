@@ -20,9 +20,11 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
@@ -36,6 +38,7 @@ internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId,
     private val notificationEventsManager: NotificationEventsManager,
+    private val conversationRepository: ConversationRepository,
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
@@ -44,7 +47,14 @@ internal class PersistMessageUseCaseImpl(
         return messageRepository.persistMessage(
             message = modifiedMessage,
             updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
-        ).onSuccess {
+        ).flatMap { result ->
+            if (isSelfSender && message is Message.Regular && message.visibility == Message.Visibility.VISIBLE) {
+                conversationRepository.clearManualUnreadMarker(message.conversationId, message.date, message.date)
+                    .map { result }
+            } else {
+                Either.Right(result)
+            }
+        }.onSuccess {
             val isConversationMuted = it == InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
 
             if (!isConversationMuted && !isSelfSender && message.content.shouldNotifyUser()) {

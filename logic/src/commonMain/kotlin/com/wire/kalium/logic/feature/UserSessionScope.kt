@@ -1241,6 +1241,7 @@ public class UserSessionScope internal constructor(
             messageRepository = messageRepository,
             selfUserId = userId,
             notificationEventsManager = notificationEventsManager,
+            conversationRepository = conversationRepository,
         )
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase

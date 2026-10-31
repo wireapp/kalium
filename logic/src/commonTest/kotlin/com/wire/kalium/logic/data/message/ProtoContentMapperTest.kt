@@ -43,6 +43,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.time.Instant
 
 class ProtoContentMapperTest {
 
@@ -53,6 +54,25 @@ class ProtoContentMapperTest {
     @BeforeTest
     fun setup() {
         protoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId)
+    }
+
+    @Test
+    fun givenUnreadControls_whenMappingToProtoAndBack_thenPreservesBoundariesAndActionTimes() {
+        val boundary = Instant.parse("2026-02-10T11:00:00.123Z")
+        val operationTime = Instant.parse("2026-02-10T12:00:00.456Z")
+        val controls = listOf(
+            MessageContent.MarkUnread(TestConversation.CONVERSATION.id, boundary, operationTime),
+            MessageContent.LastRead(TEST_MESSAGE_UUID, TestConversation.CONVERSATION.id, boundary, operationTime),
+            MessageContent.LastRead(TEST_MESSAGE_UUID, TestConversation.CONVERSATION.id, boundary)
+        )
+
+        controls.forEach { content ->
+            val readable = ProtoContent.Readable(TEST_MESSAGE_UUID, content, false, Conversation.LegalHoldStatus.UNKNOWN)
+            val encoded = protoContentMapper.encodeToProtobuf(readable)
+
+            assertEquals(readable, protoContentMapper.decodeFromProtobuf(encoded))
+            assertEquals(UnknownStrategy.IGNORE, GenericMessage.decodeFromByteArray(encoded.data).unknownStrategy ?: UnknownStrategy.IGNORE)
+        }
     }
 
     @Test

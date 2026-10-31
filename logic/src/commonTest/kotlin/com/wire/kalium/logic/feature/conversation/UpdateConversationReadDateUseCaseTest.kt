@@ -61,6 +61,89 @@ import kotlin.time.Duration.Companion.seconds
 class UpdateConversationReadDateUseCaseTest {
 
     @Test
+    fun givenReadQueuedBeforeManualUnread_whenWorkRuns_thenDoesNotClearMarkerOrSync() = runTest {
+        val operationTime = Instant.parse("2026-02-10T12:00:00Z")
+        val conversation = TestConversation.CONVERSATION.copy(lastReadDate = operationTime - 10.seconds)
+        lateinit var queuedWork: suspend () -> Unit
+        val (arrangement, subject) = arrange {
+            withConversationReturning(conversation)
+            clock = fixedClock(operationTime)
+            workQueue = ConversationWorkQueue { input, worker -> queuedWork = { worker.doWork(input) } }
+        }
+
+        subject(conversation.id, operationTime)
+        arrangement.withConversationReturning(conversation.copy(
+            manualUnreadDate = operationTime - 5.seconds,
+            manualUnreadUpdatedAt = operationTime + 1.milliseconds,
+        ))
+        queuedWork()
+
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.clearManualUnreadMarker(any(), any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.updateConversationReadDate(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.sendConfirmation(any(), any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenManualUnreadWithEqualCanonicalRead_whenReadingAgain_thenClearsAndSyncsWithoutRepeatingReceipts() = runTest {
+        val operationTime = Instant.parse("2026-02-10T12:00:00Z")
+        val conversation = TestConversation.CONVERSATION.copy(
+            lastReadDate = operationTime - 1.seconds,
+            manualUnreadDate = operationTime - 10.seconds,
+            manualUnreadUpdatedAt = operationTime - 1.milliseconds,
+        )
+        val (arrangement, subject) = arrange {
+            withConversationReturning(conversation)
+            clock = fixedClock(operationTime)
+        }
+
+        subject(conversation.id, conversation.lastReadDate)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.clearManualUnreadMarker(conversation.id, conversation.lastReadDate, operationTime)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(matches {
+                val content = it.content
+                content is MessageContent.LastRead && content.conversationId == conversation.id &&
+                    content.time == conversation.lastReadDate && content.operationTime == operationTime
+            }, any())
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.updateConversationReadDate(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.sendConfirmation(any(), any(), any()) }
+    }
+
+    @Test
+    fun givenReadThroughManualBoundaryBelowCanonical_whenReadingAgain_thenClearsAndSyncsWithoutRegressingCanonical() = runTest {
+        val operationTime = Instant.parse("2026-02-10T12:00:00Z")
+        val boundary = operationTime - 10.seconds
+        val conversation = TestConversation.CONVERSATION.copy(
+            lastReadDate = operationTime - 1.seconds,
+            manualUnreadDate = boundary,
+            manualUnreadUpdatedAt = operationTime - 1.milliseconds,
+        )
+        val (arrangement, subject) = arrange {
+            withConversationReturning(conversation)
+            clock = fixedClock(operationTime)
+        }
+
+        subject(conversation.id, boundary)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.clearManualUnreadMarker(conversation.id, boundary, operationTime)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(matches {
+                val content = it.content
+                content is MessageContent.LastRead && content.conversationId == conversation.id &&
+                    content.time == boundary && content.operationTime == operationTime
+            }, any())
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.updateConversationReadDate(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.sendConfirmation(any(), any(), any()) }
+    }
+
+    @Test
     fun givenCurrentStoredLastReadDateIsNewerThanEnqueued_whenWorking_thenShouldNotTryToDoAnyWork() = runTest {
         val persistedLastRead = Clock.System.now()
         val conversationId = TestConversation.CONVERSATION.id
@@ -254,6 +337,7 @@ class UpdateConversationReadDateUseCaseTest {
         lateinit var enqueuedInstant: Instant
         var enqueuedTimes = 0
         val (_, updateConversationReadDateUseCase) = arrange {
+            withLastReadDateReturning(expectedId, expectedTime)
             workQueue = ConversationWorkQueue { input, _ ->
                 enqueuedTimes += 1
                 enqueuedInstant = input.eventTime
@@ -308,6 +392,7 @@ class UpdateConversationReadDateUseCaseTest {
         var sendConfirmation: SendConfirmationUseCase = mock<SendConfirmationUseCase>(mode = MockMode.autoUnit)
 
         var workQueue: ConversationWorkQueue = InstantConversationWorkQueue()
+        var clock: Clock = Clock.System
 
         suspend fun arrange(): Pair<Arrangement, UpdateConversationReadDateUseCase> = run {
             everySuspend {
@@ -315,6 +400,9 @@ class UpdateConversationReadDateUseCaseTest {
             } returns MessageOperationResult.Success
             everySuspend {
                 conversationRepository.updateConversationReadDate(any(), any())
+            } returns Either.Right(Unit)
+            everySuspend {
+                conversationRepository.clearManualUnreadMarker(any(), any(), any())
             } returns Either.Right(Unit)
             everySuspend {
                 messageSender.sendMessage(any(), any())
@@ -329,7 +417,8 @@ class UpdateConversationReadDateUseCaseTest {
                 selfConversationIdProvider,
                 sendConfirmation,
                 workQueue,
-                kaliumLogger
+                logger = kaliumLogger,
+                clock = clock,
             )
         }
 
@@ -337,6 +426,13 @@ class UpdateConversationReadDateUseCaseTest {
             everySuspend {
                 conversationRepository.getConversationLastReadDate(conversationId)
             } returns Either.Right(lastReadDate)
+            everySuspend {
+                conversationRepository.getConversationById(conversationId)
+            } returns Either.Right(TestConversation.CONVERSATION.copy(id = conversationId, lastReadDate = lastReadDate))
+        }
+
+        suspend fun withConversationReturning(conversation: Conversation) {
+            everySuspend { conversationRepository.getConversationById(conversation.id) } returns Either.Right(conversation)
         }
 
         suspend fun withRealSendConfirmation(conversation: Conversation) {
@@ -361,5 +457,9 @@ class UpdateConversationReadDateUseCaseTest {
 
     private companion object {
         suspend fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
+
+        fun fixedClock(instant: Instant) = object : Clock {
+            override fun now() = instant
+        }
     }
 }

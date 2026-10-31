@@ -140,6 +140,8 @@ internal class ConversationMapperImpl(
             lastNotificationDate = lastNotificationDate,
             lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDateEntity,
+            manualUnreadDate = manualUnreadDate,
+            manualUnreadUpdatedAt = manualUnreadUpdatedAt,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
             creatorId = creatorId,
@@ -176,6 +178,8 @@ internal class ConversationMapperImpl(
             lastNotificationDate = lastNotificationDate,
             lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDateEntity,
+            manualUnreadDate = manualUnreadDate,
+            manualUnreadUpdatedAt = manualUnreadUpdatedAt,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
             creatorId = creatorId,
@@ -205,6 +209,8 @@ internal class ConversationMapperImpl(
             lastNotificationDate = lastNotificationDate,
             lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDateEntity,
+            manualUnreadDate = manualUnreadDate,
+            manualUnreadUpdatedAt = manualUnreadUpdatedAt,
             access = access.map { it.toDAO() },
             accessRole = accessRole.map { it.toDAO() },
             creatorId = creatorId,
@@ -352,7 +358,14 @@ internal class ConversationMapperImpl(
         }
         val muted = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus)
         val legalHold = legalHoldStatusFromEntity(legalHoldStatus)
-        val unread = ConversationListUnreadState(unreadMessages, unreadMentions, unreadReplies, unreadMissedCalls, unreadKnocks)
+        val unread = ConversationListUnreadState(
+            unreadMessages,
+            unreadMentions,
+            unreadReplies,
+            unreadMissedCalls,
+            unreadKnocks,
+            isManuallyUnread,
+        )
         val draftText = draftText
         val lastMessage = lastMessage
         val preview = when {

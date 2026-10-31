@@ -8,6 +8,7 @@ SELECT
     UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
     UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
     CASE
+        WHEN ConversationDetails.manualUnreadDate IS NOT NULL THEN 1
         WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
            CASE
                 WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top

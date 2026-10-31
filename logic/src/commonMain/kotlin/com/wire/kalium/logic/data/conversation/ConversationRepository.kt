@@ -230,6 +230,16 @@ internal interface ConversationRepository : SendingConversations {
     ): Either<StorageFailure, Unit>
 
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
+    suspend fun markConversationAsUnread(
+        conversationId: ConversationId,
+        unreadFrom: Instant,
+        operationTime: Instant,
+    ): Either<StorageFailure, Unit>
+    suspend fun clearManualUnreadMarker(
+        conversationId: ConversationId,
+        readUntil: Instant,
+        operationTime: Instant,
+    ): Either<StorageFailure, Unit>
     suspend fun updateAccessInfo(
         conversationID: ConversationId,
         access: Set<Conversation.Access>,
@@ -765,6 +775,22 @@ internal class ConversationDataSource internal constructor(
      */
     override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationReadDate(qualifiedID.toDao(), date) }
+
+    override suspend fun markConversationAsUnread(
+        conversationId: ConversationId,
+        unreadFrom: Instant,
+        operationTime: Instant,
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        conversationDAO.markConversationAsUnread(conversationId.toDao(), unreadFrom, operationTime)
+    }
+
+    override suspend fun clearManualUnreadMarker(
+        conversationId: ConversationId,
+        readUntil: Instant,
+        operationTime: Instant,
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        conversationDAO.clearManualUnreadMarker(conversationId.toDao(), readUntil, operationTime)
+    }
 
     /**
      * Fetches a list of all recipients for a given conversation including this very client

@@ -43,6 +43,45 @@ import kotlin.test.Test
 class LastReadContentHandlerTest {
 
     @Test
+    fun givenMarkUnreadFromAnotherUser_whenHandling_thenDoesNotChangeUnreadState() = runTest {
+        val (arrangement, handler) = Arrangement().arrange()
+        val message = Arrangement.otherUserSignalingMessage()
+
+        handler.handle(message, MessageContent.MarkUnread(CONVERSATION_ID, message.date, message.date))
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.markConversationAsUnread(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenMarkUnreadOutsideSelfConversation_whenHandling_thenDoesNotChangeUnreadState() = runTest {
+        val (arrangement, handler) = Arrangement().withIsMessageSentInSelfConversation(false).arrange()
+        val message = Arrangement.selfSignalingMessage()
+
+        handler.handle(message, MessageContent.MarkUnread(CONVERSATION_ID, message.date, message.date))
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.markConversationAsUnread(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenAuthorizedMarkUnread_whenHandling_thenUsesActionTimeRatherThanDeliveryTime() = runTest {
+        val (arrangement, handler) = Arrangement().withIsMessageSentInSelfConversation(true).arrange()
+        everySuspend { arrangement.conversationRepository.markConversationAsUnread(any(), any(), any()) } returns Either.Right(Unit)
+        val message = Arrangement.selfSignalingMessage()
+        val boundary = Instant.parse("2026-02-10T11:00:00Z")
+        val operationTime = Instant.parse("2026-02-10T11:59:00Z")
+
+        handler.handle(message, MessageContent.MarkUnread(CONVERSATION_ID, boundary, operationTime))
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.markConversationAsUnread(CONVERSATION_ID, boundary, operationTime)
+        }
+    }
+
+    @Test
     fun givenSameConversationAndOlderLastRead_whenFlushing_thenShouldUseOnlyNewestTimestamp() = runTest {
         val newer = Instant.parse("2026-02-10T12:00:00Z")
         val older = Instant.parse("2026-02-10T11:59:59Z")
@@ -207,6 +246,7 @@ class LastReadContentHandlerTest {
 
         suspend fun withIsMessageSentInSelfConversation(isSelfConversation: Boolean) = apply {
             everySuspend { isMessageSentInSelfConversation.invoke(any()) } returns isSelfConversation
+            everySuspend { conversationRepository.clearManualUnreadMarker(any(), any(), any()) } returns Either.Right(Unit)
         }
 
         suspend fun withUpdateReadDatesAndGetHasUnreadEvents(result: Either<StorageFailure, Map<ConversationId, Boolean>>) = apply {

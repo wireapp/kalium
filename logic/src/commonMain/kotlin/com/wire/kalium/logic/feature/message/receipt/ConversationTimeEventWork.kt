@@ -27,7 +27,9 @@ import kotlin.time.Instant
  */
 internal data class ConversationTimeEventInput(
     val conversationId: ConversationId,
-    val eventTime: Instant
+    val eventTime: Instant,
+    val operationTime: Instant? = null,
+    val readStateVersion: Instant? = null,
 )
 
 /**

@@ -49,7 +49,9 @@ CREATE TABLE Conversation (
     channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL,
     wire_cell TEXT,
     deleted_locally INTEGER AS Boolean NOT NULL DEFAULT 0,
-    history_sharing_retention_seconds INTEGER NOT NULL DEFAULT 0 CHECK (history_sharing_retention_seconds >= 0)
+    history_sharing_retention_seconds INTEGER NOT NULL DEFAULT 0 CHECK (history_sharing_retention_seconds >= 0),
+    manual_unread_date INTEGER AS Instant,
+    manual_unread_updated_at INTEGER AS Instant
 );
 
 CREATE TABLE ConversationLegalHoldStatusChangeNotified (
@@ -268,11 +270,33 @@ WHERE qualified_id = :targetConversationId;
 getConversationLastReadDate:
 SELECT last_read_date FROM Conversation WHERE qualified_id = ?;
 
+getConversationReadState:
+SELECT last_read_date, manual_unread_date, manual_unread_updated_at
+FROM Conversation WHERE qualified_id = ?;
+
+markConversationAsUnread:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_unread
+UPDATE Conversation
+SET manual_unread_date = :unreadFrom, manual_unread_updated_at = :operationTime
+WHERE qualified_id = :conversationId
+    AND (manual_unread_updated_at IS NULL OR manual_unread_updated_at < :operationTime);
+
+clearManualUnreadMarker:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_unread
+UPDATE Conversation
+SET manual_unread_date = NULL, manual_unread_updated_at = :operationTime
+WHERE qualified_id = :conversationId
+    AND (manual_unread_date IS NULL OR manual_unread_date <= :readUntil)
+    AND (manual_unread_updated_at IS NULL OR manual_unread_updated_at < :operationTime);
+
 updateConversationReadDate:
 -- @NotifyCustomKey Conversation
 UPDATE Conversation
 SET last_read_date = :last_read_date
-WHERE qualified_id = :qualified_id;
+WHERE qualified_id = :qualified_id
+    AND (manual_unread_date IS NULL OR last_read_date < :last_read_date);
 
 advanceConversationReadDate:
 -- @NotifyCustomKey Conversation

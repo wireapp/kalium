@@ -529,6 +529,42 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun markConversationAsUnread(
+        conversationId: QualifiedIDEntity,
+        unreadFrom: Instant,
+        operationTime: Instant,
+    ) = withContext(writeDispatcher.value) {
+        conversationQueries.transaction {
+            val state = conversationQueries.getConversationReadState(conversationId).awaitAsOneOrNull()
+                ?: return@transaction
+            val persistedOperationTime = Instant.fromEpochMilliseconds(operationTime.toEpochMilliseconds())
+            if (state.manual_unread_updated_at?.let { it >= persistedOperationTime } == true) return@transaction
+
+            conversationQueries.markConversationAsUnread(unreadFrom, persistedOperationTime, conversationId)
+            unreadEventsQueries.deleteConversationUnreadEvents(conversationId)
+            unreadEventsQueries.restoreManualUnreadEvents(conversationId, unreadFrom)
+        }
+    }
+
+    override suspend fun clearManualUnreadMarker(
+        conversationId: QualifiedIDEntity,
+        readUntil: Instant,
+        operationTime: Instant,
+    ) = withContext(writeDispatcher.value) {
+        conversationQueries.transaction {
+            val state = conversationQueries.getConversationReadState(conversationId).awaitAsOneOrNull()
+                ?: return@transaction
+            val persistedOperationTime = Instant.fromEpochMilliseconds(operationTime.toEpochMilliseconds())
+            if (state.manual_unread_updated_at?.let { it >= persistedOperationTime } == true) return@transaction
+            if (state.manual_unread_date?.let { it > readUntil } == true) return@transaction
+
+            conversationQueries.clearManualUnreadMarker(persistedOperationTime, conversationId, readUntil)
+            if (state.manual_unread_date != null) {
+                unreadEventsQueries.deleteUnreadEvents(maxOf(state.last_read_date, readUntil), conversationId)
+            }
+        }
+    }
+
     override suspend fun updateConversationReadDates(conversationDates: Map<QualifiedIDEntity, Instant>): Int =
         withContext(writeDispatcher.value) {
             if (conversationDates.isEmpty()) {
@@ -798,7 +834,7 @@ internal class ConversationDAOImpl internal constructor(
     ): Boolean = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
             unreadEventsQueries.deleteUnreadEvents(date, conversationID)
-            conversationQueries.updateConversationReadDate(date, conversationID)
+            conversationQueries.advanceConversationReadDate(date, conversationID)
             unreadEventsQueries.getHasUnreadEventsForConversation(conversationID).awaitAsOneOrNull() ?: false
         }
     }

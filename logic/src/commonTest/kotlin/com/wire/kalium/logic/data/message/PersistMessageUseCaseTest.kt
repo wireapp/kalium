@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
@@ -116,11 +117,17 @@ class PersistMessageUseCaseTest {
     private class Arrangement {
         val messageRepository = mock<MessageRepository>()
         val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>()
+
+        init {
+            everySuspend { conversationRepository.clearManualUnreadMarker(any(), any(), any()) } returns Either.Right(Unit)
+        }
 
         fun arrange() = this to PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = TestUser.USER_ID,
-            notificationEventsManager = notificationEventsManager
+            notificationEventsManager = notificationEventsManager,
+            conversationRepository = conversationRepository,
         )
 
         fun withPersistMessageSuccess() = apply {

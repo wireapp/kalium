@@ -80,6 +80,8 @@ data class ConversationViewEntity(
     val channelAddPermission: ChannelAddPermission?,
     val wireCell: String?,
     val historySharingRetentionSeconds: Long,
+    val manualUnreadDate: Instant? = null,
+    val manualUnreadUpdatedAt: Instant? = null,
     val adminlessGroupDeletionTimestamp: Instant? = null,
 ) {
     val isMember: Boolean get() = selfRole != null

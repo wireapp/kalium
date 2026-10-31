@@ -132,7 +132,11 @@ public data class ConversationListUnreadState(
     public val replies: Int = 0,
     public val missedCalls: Int = 0,
     public val knocks: Int = 0,
-)
+    public val isManuallyUnread: Boolean = false,
+) {
+    public val hasUnread: Boolean
+        get() = isManuallyUnread || messages > 0 || mentions > 0 || replies > 0 || missedCalls > 0 || knocks > 0
+}
 
 public data class ConversationListPreview(
     public val content: MessagePreviewContent,

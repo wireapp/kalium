@@ -1073,6 +1073,10 @@ abstract interface com.wire.kalium.logic.feature.conversation/MarkConversationAs
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant): com.wire.kalium.logic.feature.conversation/MarkConversationAsReadResult // com.wire.kalium.logic.feature.conversation/MarkConversationAsReadLocallyUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadUseCase { // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String): com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.conversation/MigrateConversationToMLSUseCase { // com.wire.kalium.logic.feature.conversation/MigrateConversationToMLSUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.conversation/MigrateConversationToMLSUseCase.Result // com.wire.kalium.logic.feature.conversation/MigrateConversationToMLSUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 
@@ -3070,6 +3074,27 @@ sealed interface com.wire.kalium.logic.feature.conversation/ConversationUpdateRe
     }
 }
 
+sealed interface com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult { // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult|null[0]
+    final class Failure : com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult { // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val failure // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure.failure|{}failure[0]
+            final fun <get-failure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+
+        final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Failure.toString|toString(){}[0]
+    }
+
+    final object Success : com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult { // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Success|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadResult.Success.toString|toString(){}[0]
+    }
+}
+
 sealed interface com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult { // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult { // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure|null[0]
         constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
@@ -3402,8 +3427,12 @@ final class com.wire.kalium.logic.data.conversation/ConversationListQuery { // c
 }
 
 final class com.wire.kalium.logic.data.conversation/ConversationListUnreadState { // com.wire.kalium.logic.data.conversation/ConversationListUnreadState|null[0]
-    constructor <init>(kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...) // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.<init>|<init>(kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
+    constructor <init>(kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Boolean = ...) // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.<init>|<init>(kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Boolean){}[0]
 
+    final val hasUnread // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.hasUnread|{}hasUnread[0]
+        final fun <get-hasUnread>(): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.hasUnread.<get-hasUnread>|<get-hasUnread>(){}[0]
+    final val isManuallyUnread // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.isManuallyUnread|{}isManuallyUnread[0]
+        final fun <get-isManuallyUnread>(): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.isManuallyUnread.<get-isManuallyUnread>|<get-isManuallyUnread>(){}[0]
     final val knocks // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.knocks|{}knocks[0]
         final fun <get-knocks>(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.knocks.<get-knocks>|<get-knocks>(){}[0]
     final val mentions // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.mentions|{}mentions[0]
@@ -3420,7 +3449,8 @@ final class com.wire.kalium.logic.data.conversation/ConversationListUnreadState 
     final fun component3(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.component3|component3(){}[0]
     final fun component4(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.component4|component4(){}[0]
     final fun component5(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.component5|component5(){}[0]
-    final fun copy(kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): com.wire.kalium.logic.data.conversation/ConversationListUnreadState // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.copy|copy(kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
+    final fun component6(): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.component6|component6(){}[0]
+    final fun copy(kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.conversation/ConversationListUnreadState // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.copy|copy(kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Boolean){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationListUnreadState.toString|toString(){}[0]
@@ -4939,6 +4969,8 @@ final class com.wire.kalium.logic.feature.conversation/ConversationScope { // co
         final fun <get-markConversationAsDeletedLocallyUseCase>(): com.wire.kalium.logic.feature.conversation.delete/MarkConversationAsDeletedLocallyUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.markConversationAsDeletedLocallyUseCase.<get-markConversationAsDeletedLocallyUseCase>|<get-markConversationAsDeletedLocallyUseCase>(){}[0]
     final val markConversationAsReadLocally // com.wire.kalium.logic.feature.conversation/ConversationScope.markConversationAsReadLocally|{}markConversationAsReadLocally[0]
         final fun <get-markConversationAsReadLocally>(): com.wire.kalium.logic.feature.conversation/MarkConversationAsReadLocallyUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.markConversationAsReadLocally.<get-markConversationAsReadLocally>|<get-markConversationAsReadLocally>(){}[0]
+    final val markConversationAsUnread // com.wire.kalium.logic.feature.conversation/ConversationScope.markConversationAsUnread|{}markConversationAsUnread[0]
+        final fun <get-markConversationAsUnread>(): com.wire.kalium.logic.feature.conversation/MarkConversationAsUnreadUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.markConversationAsUnread.<get-markConversationAsUnread>|<get-markConversationAsUnread>(){}[0]
     final val moveConversationToFolder // com.wire.kalium.logic.feature.conversation/ConversationScope.moveConversationToFolder|{}moveConversationToFolder[0]
         final fun <get-moveConversationToFolder>(): com.wire.kalium.logic.feature.conversation.folder/MoveConversationToFolderUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.moveConversationToFolder.<get-moveConversationToFolder>|<get-moveConversationToFolder>(){}[0]
     final val notifyConversationIsOpen // com.wire.kalium.logic.feature.conversation/ConversationScope.notifyConversationIsOpen|{}notifyConversationIsOpen[0]

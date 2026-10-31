@@ -402,22 +402,25 @@ public final class com/wire/kalium/logic/data/conversation/ConversationListSourc
 
 public final class com/wire/kalium/logic/data/conversation/ConversationListUnreadState {
 	public fun <init> ()V
-	public fun <init> (IIIII)V
-	public synthetic fun <init> (IIIIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (IIIIIZ)V
+	public synthetic fun <init> (IIIIIZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component2 ()I
 	public final fun component3 ()I
 	public final fun component4 ()I
 	public final fun component5 ()I
-	public final fun copy (IIIII)Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;IIIIIILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;
+	public final fun component6 ()Z
+	public final fun copy (IIIIIZ)Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;IIIIIZILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHasUnread ()Z
 	public final fun getKnocks ()I
 	public final fun getMentions ()I
 	public final fun getMessages ()I
 	public final fun getMissedCalls ()I
 	public final fun getReplies ()I
 	public fun hashCode ()I
+	public final fun isManuallyUnread ()Z
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -4032,6 +4035,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 	public final fun getMarkConnectionRequestAsNotified ()Lcom/wire/kalium/logic/feature/connection/MarkConnectionRequestAsNotifiedUseCase;
 	public final fun getMarkConversationAsDeletedLocallyUseCase ()Lcom/wire/kalium/logic/feature/conversation/delete/MarkConversationAsDeletedLocallyUseCase;
 	public final fun getMarkConversationAsReadLocally ()Lcom/wire/kalium/logic/feature/conversation/MarkConversationAsReadLocallyUseCase;
+	public final fun getMarkConversationAsUnread ()Lcom/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadUseCase;
 	public final fun getMoveConversationToFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/MoveConversationToFolderUseCase;
 	public final fun getNotifyConversationIsOpen ()Lcom/wire/kalium/logic/feature/conversation/NotifyConversationIsOpenUseCase;
 	public final fun getObserveArchivedUnreadConversationsCount ()Lcom/wire/kalium/logic/feature/conversation/ObserveArchivedUnreadConversationsCountUseCase;
@@ -4415,6 +4419,31 @@ public final class com/wire/kalium/logic/feature/conversation/MarkConversationAs
 	public final fun getHasUnreadEvents ()Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadResult {
+}
+
+public final class com/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadResult$Failure : com/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadResult$Success : com/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/MarkConversationAsUnreadUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/conversation/MembersToMentionUseCase {

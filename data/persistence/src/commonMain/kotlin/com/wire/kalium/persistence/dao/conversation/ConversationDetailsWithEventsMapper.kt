@@ -32,7 +32,7 @@ import kotlin.time.Instant
 
 data object ConversationDetailsWithEventsMapper {
     // suppressed because the method cannot be shortened and there are unused parameters because sql view returns some duplicated fields
-    @Suppress("LongParameterList", "LongMethod", "FunctionParameterNaming")
+    @Suppress("LongParameterList", "LongMethod", "FunctionParameterNaming", "CyclomaticComplexMethod")
     fun fromViewToModel(
         qualifiedId: QualifiedIDEntity,
         name: String?,
@@ -86,6 +86,8 @@ data object ConversationDetailsWithEventsMapper {
         historySharingRetentionSeconds: Long,
         deletedLocally: Boolean,
         adminlessGroupDeletionTimestamp: Instant?,
+        manualUnreadDate: Instant? = null,
+        manualUnreadUpdatedAt: Instant? = null,
         unreadKnocksCount: Long?,
         unreadMissedCallsCount: Long?,
         unreadMentionsCount: Long?,
@@ -123,6 +125,8 @@ data object ConversationDetailsWithEventsMapper {
             teamId = teamId,
             lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDate,
+            manualUnreadDate = manualUnreadDate,
+            manualUnreadUpdatedAt = manualUnreadUpdatedAt,
             userAvailabilityStatus = userAvailabilityStatus,
             userType = userType,
             botService = botService,
@@ -203,7 +207,7 @@ data object ConversationDetailsWithEventsMapper {
                     isQuotingSelfUser = lastMessageIsQuotingSelfUser,
                     text = lastMessageText,
                     assetMimeType = lastMessageAssetMimeType,
-                    isUnread = lastMessageDate > lastReadDate,
+                    isUnread = manualUnreadDate?.let { lastMessageDate >= it } ?: (lastMessageDate > lastReadDate),
                     shouldNotify = if (lastNotifiedMessageDate?.let { lastMessageDate > it } ?: false) 1
                         else 0, // TODO: write unit test for this
                     mutedStatus = mutedStatus,
