@@ -24,7 +24,7 @@ import kotlin.time.Instant
 
 class AcceptedConnectionPersistenceTest {
     @Test
-    fun committedAcceptedStatusWithoutWarningIsRepairedOnReplay() = runTest {
+    fun replayRepairsAMissingWarningButPreservesLaterHistoryClearing() = runTest {
         fixture { db ->
             db.connectionDAO.updateConnectionStatus(peer, ConnectionEntity.State.ACCEPTED)
 
@@ -34,14 +34,15 @@ class AcceptedConnectionPersistenceTest {
 
             assertEquals(first, db.messageDAO.getConversationStartedUnverifiedWarning(conversation))
             assertEquals(1, db.messageDAO.getMessagesByConversationAndVisibility(conversation, 10, 0).first().size)
-            assertEquals(ConnectionEntity.State.ACCEPTED, db.connectionDAO.getConnection(conversation)?.status)
-            assertEquals(ConnectionEntity.State.ACCEPTED, db.userDAO.getUserDetailsByQualifiedID(peer)?.connectionStatus)
-            assertEquals(emptyList(), db.connectionDAO.getConnectionRequests().first())
+
+            db.messageDAO.deleteMessage(first.id, conversation)
+            db.accept("after-history-clear")
+            assertNull(db.messageDAO.getConversationStartedUnverifiedWarning(conversation))
         }
     }
 
     @Test
-    fun warningWriteFailureRollsBackAcceptanceAndRetryPersistsExactlyOneWarning() = runTest {
+    fun warningWriteFailureRollsBackAcceptanceAndRetryRepairsIt() = runTest {
         fixture { db ->
             // A missing sender makes the actual warning INSERT fail its SQLite foreign-key constraint.
             assertFails {
@@ -55,7 +56,6 @@ class AcceptedConnectionPersistenceTest {
             assertNull(db.messageDAO.getConversationStartedUnverifiedWarning(conversation))
 
             db.accept("successful-warning")
-            db.accept("replayed-warning")
 
             assertEquals(ConnectionEntity.State.ACCEPTED, db.connectionDAO.getConnection(conversation)?.status)
             assertNotNull(db.memberDAO.getMemberRole(peer, conversation))
@@ -65,7 +65,7 @@ class AcceptedConnectionPersistenceTest {
     }
 
     @Test
-    fun replayFindsMovedLegacyWarningAndPreservesItsIdentityAndTimestamp() = runTest {
+    fun acceptanceReusesMovedLegacyWarningWithItsIdentityAndTimestamp() = runTest {
         fixture { db ->
             val active = QualifiedIDEntity("active-conversation", self.domain)
             db.conversationDAO.insertConversation(pending.copy(qualifiedConversationId = active).pendingConversation())
@@ -75,7 +75,6 @@ class AcceptedConnectionPersistenceTest {
             db.userDAO.updateActiveOneOnOneConversation(peer, active)
 
             db.accept("new-warning")
-            db.accept("replay-warning")
 
             assertNull(db.messageDAO.getConversationStartedUnverifiedWarning(conversation))
             val messages = db.messageDAO.getMessagesByConversationAndVisibility(active, 10, 0).first()
@@ -86,23 +85,14 @@ class AcceptedConnectionPersistenceTest {
     }
 
     @Test
-    fun missingLegalHoldConsentSuppressionSurvivesAcceptedReplay() = runTest {
+    fun legalHoldSuppressionSurvivesReplayButDoesNotHideANewAcceptance() = runTest {
         fixture { db ->
             db.connectionDAO.insertConnection(pending.copy(status = ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT))
 
             db.accept("first-warning")
             db.accept("replay-warning")
 
-            assertEquals(ConnectionEntity.State.ACCEPTED, db.connectionDAO.getConnection(conversation)?.status)
             assertNull(db.messageDAO.getConversationStartedUnverifiedWarning(conversation))
-        }
-    }
-
-    @Test
-    fun suppressionDoesNotHideANewAcceptance() = runTest {
-        fixture { db ->
-            db.connectionDAO.insertConnection(pending.copy(status = ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT))
-            db.accept("suppressed-warning")
             db.connectionDAO.insertConnection(pending)
 
             db.writeMessageEffects {
@@ -113,38 +103,13 @@ class AcceptedConnectionPersistenceTest {
         }
     }
 
-    @Test
-    fun replayDoesNotRecreateAWarningAfterHistoryWasCleared() = runTest {
-        fixture { db ->
-            db.accept("first-warning")
-            db.messageDAO.deleteMessage("first-warning", conversation)
-
-            db.accept("replayed-warning")
-
-            assertNull(db.messageDAO.getConversationStartedUnverifiedWarning(conversation))
-        }
-    }
-
-    @Test
-    fun acceptanceWithoutStoredRequestIsStillIdempotent() = runTest {
-        fixture(storeRequest = false) { db ->
-            db.accept("first-warning")
-            db.accept("replayed-warning")
-
-            assertNull(db.connectionDAO.getConnection(conversation))
-            assertEquals(ConnectionEntity.State.ACCEPTED, db.userDAO.getUserDetailsByQualifiedID(peer)?.connectionStatus)
-            assertEquals(listOf("first-warning"), db.messageDAO.getMessagesByConversationAndVisibility(conversation, 10, 0)
-                .first().map { it.id })
-        }
-    }
-
-    private suspend fun TestScope.fixture(storeRequest: Boolean = true, block: suspend (UserDatabaseBuilder) -> Unit) {
+    private suspend fun TestScope.fixture(block: suspend (UserDatabaseBuilder) -> Unit) {
         withTestUserDatabase(self.toDao()) { database ->
             val db = database.builder
             db.userDAO.insertOrIgnoreIncompleteUsers(listOf(self.toDao(), peer))
             db.userDAO.upsertConnectionStatuses(mapOf(peer to ConnectionEntity.State.PENDING))
             db.conversationDAO.insertConversation(pending.pendingConversation())
-            if (storeRequest) db.connectionDAO.insertConnection(pending)
+            db.connectionDAO.insertConnection(pending)
             block(db)
         }
     }

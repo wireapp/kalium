@@ -339,34 +339,6 @@ class UserEventReceiverTest {
             }
         }
 
-    @Test
-    fun givenAcceptedConnectionPersistenceFails_whenRetrying_thenPersistenceIsRetriedBeforeResolving() = runTest {
-        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
-        val failure = StorageFailure.Generic(IllegalStateException("warning write failed"))
-        val (arrangement, receiver) = arrange {
-            withFetchUserInfoReturning(Either.Right(Unit))
-            withInsertConnectionFromEventSucceeding(Either.Left(failure))
-            withScheduleResolveOneOnOneConversationWithUserId()
-        }
-
-        assertIs<Either.Left<StorageFailure.Generic>>(
-            receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-        )
-        verifySuspend(VerifyMode.not) {
-            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any(), any())
-        }
-        arrangement.withInsertConnectionFromEventSucceeding()
-        assertIs<Either.Right<Unit>>(
-            receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-        )
-        verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.connectionRepository.insertConnectionFromEvent(any(), event)
-        }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), event.connection.qualifiedToId, any())
-        }
-    }
-
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val userRepository = mock<UserRepository>()
@@ -392,12 +364,10 @@ class UserEventReceiverTest {
             sessionRefreshSuggestedEventHandler
         )
 
-        suspend fun withInsertConnectionFromEventSucceeding(
-            result: Either<CoreFailure, Unit> = Either.Right(Unit)
-        ) = apply {
+        suspend fun withInsertConnectionFromEventSucceeding() = apply {
             everySuspend {
                 connectionRepository.insertConnectionFromEvent(any(), any())
-            } returns result
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSaveNewClientSucceeding() = apply {

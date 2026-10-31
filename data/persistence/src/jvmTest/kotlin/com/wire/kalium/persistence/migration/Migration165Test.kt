@@ -26,7 +26,7 @@ class Migration165Test {
                 Case("incoming", "ACCEPTED", "PENDING", "ONE_ON_ONE", "ACCEPTED"),
                 Case("outgoing", "ACCEPTED", "SENT", "ONE_ON_ONE", "ACCEPTED"),
                 Case("ignored", "ACCEPTED", "IGNORED", "ONE_ON_ONE", "ACCEPTED"),
-                Case("pending", "PENDING", "PENDING", "CONNECTION_PENDING", "PENDING"),
+                Case("pending", "PENDING", "PENDING", "ONE_ON_ONE", "PENDING"),
                 Case("teammate", "ACCEPTED", "PENDING", "CONNECTION_PENDING", "PENDING"),
                 Case("blocked", "ACCEPTED", "BLOCKED", "ONE_ON_ONE", "BLOCKED"),
                 Case("unknown", null, "PENDING", null, "PENDING"),

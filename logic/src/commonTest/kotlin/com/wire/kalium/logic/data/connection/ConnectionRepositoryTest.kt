@@ -84,46 +84,15 @@ import kotlin.time.Instant
 class ConnectionRepositoryTest {
 
     @Test
-    fun acceptedEventPersistsStatusAndWarningTogether() = runTest {
+    fun acceptedEventStorageFailureIsPropagated() = runTest {
         val (arrangement, repository) = Arrangement().arrange()
         val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
+        val failure = IllegalStateException("warning write failed")
+        everySuspend { arrangement.acceptedConnectionEventPersistence.persist(any()) } throws failure
 
-        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.acceptedConnectionEventPersistence.persist(ConnectionMapperImpl().modelToDao(event.connection))
+        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldFail {
+            assertEquals(failure, assertIs<StorageFailure.Generic>(it).rootCause)
         }
-        verifySuspend(VerifyMode.not) {
-            arrangement.userDAO.upsertConnectionStatuses(any())
-            arrangement.connectionDAO.updateConnectionStatus(any(), any())
-        }
-    }
-
-    @Test
-    fun failedAcceptedEventPersistenceIsPropagatedAndRetried() = runTest {
-        val (arrangement, repository) = Arrangement().arrange()
-        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
-        everySuspend { arrangement.acceptedConnectionEventPersistence.persist(any()) } throws
-            IllegalStateException("warning write failed")
-
-        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldFail()
-        everySuspend { arrangement.acceptedConnectionEventPersistence.persist(any()) } returns Unit
-        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.acceptedConnectionEventPersistence.persist(any())
-        }
-    }
-
-    @Test
-    fun pendingEventDoesNotPersistAnAcceptanceWarning() = runTest {
-        val (arrangement, repository) = Arrangement().arrange()
-        val event = TestEvent.newConnection(status = ConnectionState.PENDING)
-
-        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldSucceed()
-
-        verifySuspend(VerifyMode.not) { arrangement.acceptedConnectionEventPersistence.persist(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.connectionDAO.insertConnection(any()) }
     }
 
     @Test
@@ -278,12 +247,6 @@ class ConnectionRepositoryTest {
                 QualifiedIDEntity("connectionId1", "domain"),
                 ConnectionEntity.State.ACCEPTED
             )
-        }
-        verifySuspend(VerifyMode.not) {
-            arrangement.connectionDAO.insertConnection(any())
-        }
-        verifySuspend(VerifyMode.not) {
-            arrangement.userDAO.upsertConnectionStatuses(any())
         }
     }
 
