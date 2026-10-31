@@ -2168,6 +2168,40 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenNewerSelfDeletingMessages_whenMessageIsSelected_thenPositionCountsThemAsTheListShowsThem() = runTest {
+        // given
+        insertInitialData()
+        val otherUser = userEntity2
+        val target = newRegularMessageEntity(
+            "1",
+            conversationId = conversationEntity1.id,
+            senderUserId = otherUser.id,
+            senderName = otherUser.name!!,
+            date = Instant.parse("2022-03-30T15:36:00.000Z")
+        )
+        // More than the app's initial page: an under-count would omit the live target entirely.
+        val selfDeleting = (2..101).map { index ->
+            newRegularMessageEntity(
+                "$index",
+                conversationId = conversationEntity1.id,
+                senderUserId = otherUser.id,
+                senderName = otherUser.name,
+                date = Instant.parse("2022-03-30T15:36:00.000Z") + index.seconds,
+                expireAfterMs = 1.seconds.inWholeMilliseconds
+            )
+        }
+        messageDAO.insertOrIgnoreMessages(listOf(target) + selfDeleting)
+
+        // when
+        val targetPosition = messageDAO.getSearchedConversationMessagePosition(conversationEntity1.id, target.id)
+        val selfDeletingPosition = messageDAO.getSearchedConversationMessagePosition(conversationEntity1.id, selfDeleting.first().id)
+
+        // then
+        assertEquals(101, targetPosition)
+        assertEquals(100, selfDeletingPosition)
+    }
+
+    @Test
     fun givenMessagesAreInserted_whenGettingLastMessagesByConversations_thenOnlyLastMessagesForEachConversationAreReturned() = runTest {
         // given
         insertInitialData()
