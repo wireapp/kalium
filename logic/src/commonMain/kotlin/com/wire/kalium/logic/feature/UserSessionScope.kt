@@ -3055,7 +3055,8 @@ public class UserSessionScope internal constructor(
             oneOnOneResolver,
             newGroupConversationSystemMessagesCreator,
             fetchConversationUseCase,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            pendingActionsRepository
         )
 
     public val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
