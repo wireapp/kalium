@@ -28,6 +28,37 @@ class DetectLinkPreviewTargetUseCaseTest {
     private val useCase = DetectLinkPreviewTargetUseCaseImpl()
 
     @Test
+    fun givenClaudeArticle_whenDetecting_thenReturnsCompleteUrlAndPosition() {
+        val url = "https://claude.dev/blog/solving-code-review-at-anthropic/"
+
+        assertEquals(LinkPreviewTarget(url, 6), useCase("hello $url world"))
+    }
+
+    @Test
+    fun givenModernDomainInMarkdownLink_whenDetecting_thenReturnsNextEligibleUrl() {
+        val markdown = "[Claude](https://claude.dev/blog/solving-code-review-at-anthropic/)"
+        val url = "https://www.bbc.com/news"
+
+        assertEquals(LinkPreviewTarget(url, markdown.length + 1), useCase("$markdown $url"))
+    }
+
+    @Test
+    fun givenMentionContainingModernDomain_whenDetecting_thenReturnsNextEligibleUrl() {
+        val mentionedUrl = "https://claude.dev/blog/solving-code-review-at-anthropic/"
+        val url = "https://www.bbc.com/news"
+        val mentions = listOf(
+            MessageMention(
+                start = 0,
+                length = mentionedUrl.length,
+                userId = UserId("user", "wire.com"),
+                isSelfMention = false
+            )
+        )
+
+        assertEquals(LinkPreviewTarget(url, mentionedUrl.length + 1), useCase("$mentionedUrl $url", mentions))
+    }
+
+    @Test
     fun givenTextWithLink_whenDetecting_thenReturnsFirstLinkAndPosition() {
         val result = useCase("hello https://wire.com world")
 
