@@ -108,6 +108,22 @@ class AppleAvsCallNotificationProcessorTest {
         assertEquals(listOf("closed"), callbacks.closed)
     }
 
+    // AVS 10.5.35 stepped twice per unmatched queued event while looking for the
+    // incoming call to end, so one unmatched event crashed the NSE (fixed in 10.5.41).
+    @Test
+    fun givenUnmatchedQueuedEvent_whenConferenceEnds_thenReportsEveryCall() {
+        val callbacks = Callbacks()
+        val processor = processor("unmatched-end", callbacks)
+
+        assertSuccess(processor.process(listOf(event("ringing"), event("ended", type = "CONFEND"))))
+        assertSuccess(processor.process(listOf(event("first", type = "CONFEND"), event("second", type = "CONFEND"))))
+        processor.close()
+
+        assertEquals(listOf("ringing"), callbacks.incoming)
+        assertEquals(emptyList(), callbacks.missed)
+        assertEquals(listOf("ended", "first", "second"), callbacks.closed)
+    }
+
     @Test
     fun givenFailedBatch_whenNextRequestProcesses_thenCallbacksAreRebound() {
         val failedCallbacks = Callbacks()
