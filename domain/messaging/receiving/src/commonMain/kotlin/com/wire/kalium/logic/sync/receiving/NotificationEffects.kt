@@ -134,7 +134,7 @@ internal class NotificationEffects(
             val membership = ReceivedMembershipHandler(this, persistMessage, selfUserId, options.drivePermissionsEnabled)
             val team = ReceivedTeamHandler(this, selfUserId, persistMessage)
             val federation = ReceivedFederationHandler(this, selfUserId, persistMessage, deleteFile)
-            val connection = ReceivedConnectionHandler(this, selfUserId, persistMessage, deleteFile)
+            val connection = ReceivedConnectionHandler(this, selfUserId, deleteFile)
             val replayedFederation = payload.filterIsInstance<ReceivedPayload.Federation>()
                 .associate { it.event to federation.previousMessages(it.event) }
             val replayedConnectionWarnings = payload.filterIsInstance<ReceivedPayload.Connection>()

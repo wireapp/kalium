@@ -90,6 +90,10 @@ interface MessageDAO {
 
     suspend fun updateMessagesStatus(status: MessageEntity.Status, id: List<String>, conversationId: QualifiedIDEntity)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
+
+    /** Finds the self-authored initial warning, including legacy local IDs and hidden messages. */
+    suspend fun getConversationStartedUnverifiedWarning(conversationId: ConversationIDEntity): MessageEntity?
+
     suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity>
     fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     fun getMessagesByConversationAndVisibility(
