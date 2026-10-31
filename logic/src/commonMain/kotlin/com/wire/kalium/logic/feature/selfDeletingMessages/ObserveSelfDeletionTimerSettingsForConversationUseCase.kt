@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.selfDeletingMessages
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -41,6 +42,14 @@ public interface ObserveSelfDeletionTimerSettingsForConversationUseCase {
      *          otherwise only the team and conversation settings will be considered
      */
     public suspend operator fun invoke(conversationId: ConversationId, considerSelfUserSettings: Boolean): Flow<SelfDeletionTimer>
+
+    /** Reads current settings once. Unlike observation, an absent conversation completes with a failure. */
+    public suspend fun getSnapshot(conversationId: ConversationId, considerSelfUserSettings: Boolean): Snapshot
+
+    public sealed interface Snapshot {
+        public data class Success(val timer: SelfDeletionTimer) : Snapshot
+        public data class Failure(val cause: StorageFailure) : Snapshot
+    }
 }
 
 internal class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constructor(
@@ -48,6 +57,27 @@ internal class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl intern
     private val conversationRepository: ConversationRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveSelfDeletionTimerSettingsForConversationUseCase {
+
+    override suspend fun getSnapshot(
+        conversationId: ConversationId,
+        considerSelfUserSettings: Boolean
+    ): ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot = withContext(dispatcher.io) {
+        conversationRepository.getConversationById(conversationId).fold({
+            ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure(it)
+        }, { conversation ->
+            val timer = conversationRepository.isCellEnabled(conversationId).fold({
+                SelfDeletionTimer.Disabled
+            }, { enabled ->
+                if (enabled) SelfDeletionTimer.Disabled else outgoingSelfDeletionTimer(
+                    teamTimer = userConfigRepository.getTeamSettingsSelfDeletionStatus().getOrNull()?.enforcedSelfDeletionTimer,
+                    groupTimer = conversation.messageTimer,
+                    userTimer = conversation.userMessageTimer,
+                    considerSelfUserSettings = considerSelfUserSettings,
+                )
+            })
+            ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success(timer)
+        })
+    }
 
     override suspend fun invoke(conversationId: ConversationId, considerSelfUserSettings: Boolean): Flow<SelfDeletionTimer> =
         withContext(dispatcher.io) {
