@@ -20,9 +20,14 @@ package com.wire.kalium.persistence.message
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
+import app.cash.sqldelight.Query
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.KaliumPager
@@ -51,6 +56,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.fail
 import kotlin.test.assertTrue
 
@@ -58,6 +64,7 @@ import kotlin.test.assertTrue
 class MessageExtensionsTest : BaseDatabaseTest() {
 
     private lateinit var messageExtensions: MessageExtensions
+    private lateinit var messagesQueries: MessagesQueries
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
@@ -70,7 +77,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
 
-        val messagesQueries = db.database.messagesQueries
+        messagesQueries = db.database.messagesQueries
         val messageAttachmentsQueries = db.database.messageAttachmentsQueries
         val messageAssetViewQueries = db.database.messageAssetViewQueries
         messageDAO = db.messageDAO
@@ -384,18 +391,109 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessageListPageLoaded_whenSenderNameIsUpdated_thenPagingSourceShouldNotBeInvalidated() = runTest {
+    fun givenMessageListPageLoaded_whenMissingSenderMetadataIsUpdated_thenPagingSourceShouldBeInvalidated() = runTest {
         populateMessageData()
+        val sender = newUserEntity(qualifiedID = USER_ID)
+        userDAO.upsertUser(sender.copy(name = null, hasIncompleteMetadata = true))
         val pagingSource = getPager().pagingSource
 
-        pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        val initialPage = assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(pagingSource.refresh())
+        assertNull(initialPage.data.first().sender?.name)
+        assertFalse { pagingSource.invalid }
+
+        userDAO.upsertUser(sender)
+
+        assertTrue { pagingSource.invalid }
+        val updatedPage = assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(getPager().pagingSource.refresh())
+        assertEquals(sender.name, updatedPage.data.first().sender?.name)
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenSenderNameIsUpdated_thenPagingSourceShouldBeInvalidated() = runTest {
+        val pagingSource = loadedPagingSource()
+        val updatedName = "Updated User"
+
+        userDAO.updateUser(PartialUserEntity(id = USER_ID, name = updatedName))
+
+        assertTrue { pagingSource.invalid }
+        val updatedPage = assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(getPager().pagingSource.refresh())
+        assertEquals(updatedName, updatedPage.data.first().sender?.name)
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenSenderProfilePictureIsUpdated_thenPagingSourceShouldBeInvalidated() = runTest {
+        val pagingSource = loadedPagingSource()
+        val updatedAssetId = UserIDEntity("updated-asset", "domain")
+
+        userDAO.upsertUser(newUserEntity(qualifiedID = USER_ID).copy(previewAssetId = updatedAssetId))
+
+        assertTrue { pagingSource.invalid }
+        val updatedPage = assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(getPager().pagingSource.refresh())
+        assertEquals(updatedAssetId, updatedPage.data.first().sender?.previewAssetId)
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenSenderAccentIsUpdated_thenPagingSourceShouldNotBeInvalidated() = runTest {
+        val pagingSource = loadedPagingSource()
+
+        userDAO.updateUser(PartialUserEntity(id = USER_ID, accentId = 2))
+
+        assertFalse { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenSenderConnectionStateIsUpdated_thenPagingSourceShouldNotBeInvalidated() = runTest {
+        val pagingSource = loadedPagingSource()
+
+        userDAO.upsertConnectionStatuses(mapOf(USER_ID to ConnectionEntity.State.BLOCKED))
+
+        assertFalse { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenSenderAvailabilityIsUpdated_thenPagingSourceShouldNotBeInvalidated() = runTest {
+        val pagingSource = loadedPagingSource()
+
+        userDAO.updateUserAvailabilityStatus(USER_ID, UserAvailabilityStatusEntity.BUSY)
+
+        assertFalse { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenMultipleSenderProfilesUpdatedInOneBatch_thenMessageQueryShouldBeNotifiedOnce() = runTest {
+        populateMessageData()
+        val otherUserId = UserIDEntity("other-user", "domain")
+        userDAO.upsertUser(newUserEntity(qualifiedID = otherUserId))
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "other-user-message",
+                conversationId = CONVERSATION_ID,
+                senderUserId = otherUserId
+            )
+        )
+        val query = messagesQueries.selectByConversationIdAndVisibility(
+            CONVERSATION_ID,
+            MessageEntity.Visibility.entries.toList(),
+            PAGE_SIZE.toLong(),
+            0,
+            MessageMapper::toEntityMessageFromView
+        )
+        var notificationCount = 0
+        val listener = Query.Listener { notificationCount++ }
+        query.addListener(listener)
+
+        try {
+            userDAO.updateUser(
+                listOf(
+                    PartialUserEntity(id = USER_ID, name = "Updated User"),
+                    PartialUserEntity(id = otherUserId, name = "Updated Other User")
+                )
+            )
+
+            assertEquals(1, notificationCount)
+        } finally {
+            query.removeListener(listener)
         }
-        assertFalse { pagingSource.invalid }
-
-        userDAO.updateUserDisplayName(USER_ID, "Updated User")
-
-        assertFalse { pagingSource.invalid }
     }
 
     @Test
@@ -460,6 +558,14 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     private suspend fun PagingSource<Int, MessageEntity>.nextPageForOffset(key: Int) = load(
         PagingSource.LoadParams.Append<Int>(key, PAGE_SIZE, true)
     )
+
+    private suspend fun loadedPagingSource(): PagingSource<Int, MessageEntity> {
+        populateMessageData()
+        return getPager().pagingSource.also { pagingSource ->
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(pagingSource.refresh())
+            assertFalse { pagingSource.invalid }
+        }
+    }
 
     private suspend fun populateMessageData(prefix: String = "") {
         userDAO.upsertUser(newUserEntity(qualifiedID = USER_ID))
