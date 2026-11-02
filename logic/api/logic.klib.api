@@ -6136,6 +6136,31 @@ final class com.wire.kalium.logic.feature.user/ObserveSelfUserWithTeamUseCaseImp
     final suspend fun invoke(): kotlinx.coroutines.flow/Flow<kotlin/Pair<com.wire.kalium.logic.data.user/SelfUser, com.wire.kalium.logic.data.team/Team?>> // com.wire.kalium.logic.feature.user/ObserveSelfUserWithTeamUseCaseImpl.invoke|invoke(){}[0]
 }
 
+final class com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase { // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase|null[0]
+    final suspend fun invoke(): com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.invoke|invoke(){}[0]
+
+    sealed class Result { // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result { // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result { // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 final class com.wire.kalium.logic.feature.user/SetMessageContentPreferenceUseCase { // com.wire.kalium.logic.feature.user/SetMessageContentPreferenceUseCase|null[0]
     final suspend fun invoke(kotlin/Boolean): com.wire.kalium.common.functional/Either<com.wire.kalium.common.error/StorageFailure, kotlin/Unit> // com.wire.kalium.logic.feature.user/SetMessageContentPreferenceUseCase.invoke|invoke(kotlin.Boolean){}[0]
 }
@@ -6193,6 +6218,36 @@ final class com.wire.kalium.logic.feature.user/UpdateEmailUseCase { // com.wire.
 
 final class com.wire.kalium.logic.feature.user/UpdateSelfAvailabilityStatusUseCase { // com.wire.kalium.logic.feature.user/UpdateSelfAvailabilityStatusUseCase|null[0]
     final suspend fun invoke(com.wire.kalium.logic.data.user/UserAvailabilityStatus) // com.wire.kalium.logic.feature.user/UpdateSelfAvailabilityStatusUseCase.invoke|invoke(com.wire.kalium.logic.data.user.UserAvailabilityStatus){}[0]
+}
+
+final class com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase { // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase|null[0]
+    final suspend fun invoke(kotlin/String?): com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.invoke|invoke(kotlin.String?){}[0]
+
+    sealed class Result { // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result { // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result { // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+
+    final object Companion { // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Companion|null[0]
+        final const val MAX_LENGTH // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Companion.MAX_LENGTH|{}MAX_LENGTH[0]
+            final fun <get-MAX_LENGTH>(): kotlin/Int // com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase.Companion.MAX_LENGTH.<get-MAX_LENGTH>|<get-MAX_LENGTH>(){}[0]
+    }
 }
 
 final class com.wire.kalium.logic.feature.user/UserScope { // com.wire.kalium.logic.feature.user/UserScope|null[0]
@@ -6266,6 +6321,8 @@ final class com.wire.kalium.logic.feature.user/UserScope { // com.wire.kalium.lo
         final fun <get-persistSelfUserEmail>(): com.wire.kalium.logic.feature.auth/PersistSelfUserEmailUseCase // com.wire.kalium.logic.feature.user/UserScope.persistSelfUserEmail.<get-persistSelfUserEmail>|<get-persistSelfUserEmail>(){}[0]
     final val persistTypingIndicatorStatusConfig // com.wire.kalium.logic.feature.user/UserScope.persistTypingIndicatorStatusConfig|{}persistTypingIndicatorStatusConfig[0]
         final fun <get-persistTypingIndicatorStatusConfig>(): com.wire.kalium.logic.feature.user.typingIndicator/PersistTypingIndicatorStatusConfigUseCase // com.wire.kalium.logic.feature.user/UserScope.persistTypingIndicatorStatusConfig.<get-persistTypingIndicatorStatusConfig>|<get-persistTypingIndicatorStatusConfig>(){}[0]
+    final val refreshSelfUser // com.wire.kalium.logic.feature.user/UserScope.refreshSelfUser|{}refreshSelfUser[0]
+        final fun <get-refreshSelfUser>(): com.wire.kalium.logic.feature.user/RefreshSelfUserUseCase // com.wire.kalium.logic.feature.user/UserScope.refreshSelfUser.<get-refreshSelfUser>|<get-refreshSelfUser>(){}[0]
     final val refreshUsersWithoutMetadata // com.wire.kalium.logic.feature.user/UserScope.refreshUsersWithoutMetadata|{}refreshUsersWithoutMetadata[0]
         final fun <get-refreshUsersWithoutMetadata>(): com.wire.kalium.logic.feature.publicuser/RefreshUsersWithoutMetadataUseCase // com.wire.kalium.logic.feature.user/UserScope.refreshUsersWithoutMetadata.<get-refreshUsersWithoutMetadata>|<get-refreshUsersWithoutMetadata>(){}[0]
     final val serverLinks // com.wire.kalium.logic.feature.user/UserScope.serverLinks|{}serverLinks[0]
@@ -6282,6 +6339,8 @@ final class com.wire.kalium.logic.feature.user/UserScope { // com.wire.kalium.lo
         final fun <get-updateEmail>(): com.wire.kalium.logic.feature.user/UpdateEmailUseCase // com.wire.kalium.logic.feature.user/UserScope.updateEmail.<get-updateEmail>|<get-updateEmail>(){}[0]
     final val updateSelfAvailabilityStatus // com.wire.kalium.logic.feature.user/UserScope.updateSelfAvailabilityStatus|{}updateSelfAvailabilityStatus[0]
         final fun <get-updateSelfAvailabilityStatus>(): com.wire.kalium.logic.feature.user/UpdateSelfAvailabilityStatusUseCase // com.wire.kalium.logic.feature.user/UserScope.updateSelfAvailabilityStatus.<get-updateSelfAvailabilityStatus>|<get-updateSelfAvailabilityStatus>(){}[0]
+    final val updateSelfTextStatus // com.wire.kalium.logic.feature.user/UserScope.updateSelfTextStatus|{}updateSelfTextStatus[0]
+        final fun <get-updateSelfTextStatus>(): com.wire.kalium.logic.feature.user/UpdateSelfTextStatusUseCase // com.wire.kalium.logic.feature.user/UserScope.updateSelfTextStatus.<get-updateSelfTextStatus>|<get-updateSelfTextStatus>(){}[0]
     final val updateSupportedProtocols // com.wire.kalium.logic.feature.user/UserScope.updateSupportedProtocols|{}updateSupportedProtocols[0]
         final fun <get-updateSupportedProtocols>(): com.wire.kalium.logic.feature.user/UpdateSelfUserSupportedProtocolsUseCase // com.wire.kalium.logic.feature.user/UserScope.updateSupportedProtocols.<get-updateSupportedProtocols>|<get-updateSupportedProtocols>(){}[0]
     final val uploadUserAvatar // com.wire.kalium.logic.feature.user/UserScope.uploadUserAvatar|{}uploadUserAvatar[0]

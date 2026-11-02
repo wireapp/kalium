@@ -7671,6 +7671,31 @@ public abstract interface class com/wire/kalium/logic/feature/user/ObserveValidA
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class com/wire/kalium/logic/feature/user/RefreshSelfUserUseCase {
+	public final fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract class com/wire/kalium/logic/feature/user/RefreshSelfUserUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/user/RefreshSelfUserUseCase$Result$Failure : com/wire/kalium/logic/feature/user/RefreshSelfUserUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/user/RefreshSelfUserUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/user/RefreshSelfUserUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/user/RefreshSelfUserUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/user/RefreshSelfUserUseCase$Result$Success : com/wire/kalium/logic/feature/user/RefreshSelfUserUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/user/RefreshSelfUserUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/user/SelfServerConfigUseCase {
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -7881,6 +7906,36 @@ public final class com/wire/kalium/logic/feature/user/UpdateSelfAvailabilityStat
 	public final fun invoke (Lcom/wire/kalium/logic/data/user/UserAvailabilityStatus;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class com/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase {
+	public static final field Companion Lcom/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Companion;
+	public static final field MAX_LENGTH I
+	public final fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Companion {
+}
+
+public abstract class com/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Result$Failure : com/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Result$Success : com/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract class com/wire/kalium/logic/feature/user/UpdateSelfUserSupportedProtocolsResult {
 }
 
@@ -7960,6 +8015,7 @@ public final class com/wire/kalium/logic/feature/user/UserScope {
 	public final fun getPersistReadReceiptsStatusConfig ()Lcom/wire/kalium/logic/feature/user/readReceipts/PersistReadReceiptsStatusConfigUseCase;
 	public final fun getPersistSelfUserEmail ()Lcom/wire/kalium/logic/feature/auth/PersistSelfUserEmailUseCase;
 	public final fun getPersistTypingIndicatorStatusConfig ()Lcom/wire/kalium/logic/feature/user/typingIndicator/PersistTypingIndicatorStatusConfigUseCase;
+	public final fun getRefreshSelfUser ()Lcom/wire/kalium/logic/feature/user/RefreshSelfUserUseCase;
 	public final fun getRefreshUsersWithoutMetadata ()Lcom/wire/kalium/logic/feature/publicuser/RefreshUsersWithoutMetadataUseCase;
 	public final fun getServerLinks ()Lcom/wire/kalium/logic/feature/user/SelfServerConfigUseCase;
 	public final fun getSetMessageContentPreference ()Lcom/wire/kalium/logic/feature/user/SetMessageContentPreferenceUseCase;
@@ -7968,6 +8024,7 @@ public final class com/wire/kalium/logic/feature/user/UserScope {
 	public final fun getUpdateDisplayName ()Lcom/wire/kalium/logic/feature/user/UpdateDisplayNameUseCase;
 	public final fun getUpdateEmail ()Lcom/wire/kalium/logic/feature/user/UpdateEmailUseCase;
 	public final fun getUpdateSelfAvailabilityStatus ()Lcom/wire/kalium/logic/feature/user/UpdateSelfAvailabilityStatusUseCase;
+	public final fun getUpdateSelfTextStatus ()Lcom/wire/kalium/logic/feature/user/UpdateSelfTextStatusUseCase;
 	public final fun getUpdateSupportedProtocols ()Lcom/wire/kalium/logic/feature/user/UpdateSelfUserSupportedProtocolsUseCase;
 	public final fun getUploadUserAvatar ()Lcom/wire/kalium/logic/feature/user/UploadUserAvatarUseCase;
 	public final fun isPasswordRequired ()Lcom/wire/kalium/logic/feature/user/IsPasswordRequiredUseCase;

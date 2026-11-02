@@ -73,6 +73,8 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 @Suppress("TooManyFunctions")
 internal interface UserRepository : SelfUserObservationProvider {
@@ -172,9 +174,14 @@ internal class UserDataSource internal constructor(
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
+    private val selfProfileMutationMutex: Mutex = Mutex(),
 ) : UserRepository {
 
-    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
+    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = selfProfileMutationMutex.withLock {
+        fetchSelfUserLocked()
+    }
+
+    private suspend fun fetchSelfUserLocked(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { selfUserDTO ->
             selfUserDTO.teamId.let { selfUserTeamId ->
                 if (selfUserTeamId.isNullOrEmpty()) Either.Right(null)
@@ -228,7 +235,7 @@ internal class UserDataSource internal constructor(
         return fetchResult.map { }
     }
 
-    override suspend fun fetchUserInfo(userId: UserId) =
+    override suspend fun fetchUserInfo(userId: UserId) = withSelfProfileMutationLock(userId == selfUserId) {
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO ->
                 fetchTeamMembersByIds(listOf(userProfileDTO))
@@ -237,8 +244,14 @@ internal class UserDataSource internal constructor(
             .onFailure {
                 userDAO.insertOrIgnoreIncompleteUsers(listOf(userId.toDao()))
             }
+    }
 
     private suspend fun fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, ListUsersDTO> =
+        withSelfProfileMutationLock(selfUserId in qualifiedUserIdList) {
+            fetchUsersByIdsFromRemote(qualifiedUserIdList)
+        }
+
+    private suspend fun fetchUsersByIdsFromRemote(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, ListUsersDTO> =
         if (qualifiedUserIdList.isEmpty()) {
             Either.Right(ListUsersDTO(emptyList(), emptyList()))
         } else {
@@ -253,6 +266,9 @@ internal class UserDataSource internal constructor(
                         .map { listUserProfileDTO }
                 }
         }
+
+    private suspend fun <T> withSelfProfileMutationLock(containsSelf: Boolean, block: suspend () -> T): T =
+        if (containsSelf) selfProfileMutationMutex.withLock { block() } else block()
 
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean> =
         fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { it.usersFound.isNotEmpty() }
