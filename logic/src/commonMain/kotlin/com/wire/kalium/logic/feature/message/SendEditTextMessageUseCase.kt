@@ -19,6 +19,11 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
@@ -53,6 +58,7 @@ public class SendEditTextMessageUseCase internal constructor(
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
+    private val transactionProvider: CryptoTransactionProvider,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val pendingMessagesEnabled: Boolean = true,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
@@ -85,20 +91,13 @@ public class SendEditTextMessageUseCase internal constructor(
                 MessageOperationResult.Failure(it)
             },
             { originalMessage ->
-                if (originalMessage.status == Message.Status.Pending) {
-                    // Message is PENDING, so only update the text
-                    messageRepository.updateTextMessage(
-                        conversationId = conversationId,
-                        messageId = originalMessageId,
-                        messageContent = MessageContent.Text(
-                            value = text,
-                            mentions = mentions,
-                        ),
-                    ).fold(
-                        { MessageOperationResult.Failure(it) },
-                        { MessageOperationResult.Success }
-                    )
+                val updatedPending = if (originalMessage.status == Message.Status.Pending) {
+                    updatePendingText(conversationId, originalMessageId, MessageContent.Text(value = text, mentions = mentions))
                 } else {
+                    Either.Right(false)
+                }
+                updatedPending.fold({ MessageOperationResult.Failure(it) }) pendingEdit@{ updated ->
+                    if (updated) return@pendingEdit MessageOperationResult.Success
                     val content = MessageContent.TextEdited(
                         editMessageId = originalMessageId,
                         newContent = text,
@@ -123,6 +122,23 @@ public class SendEditTextMessageUseCase internal constructor(
                 }
             }
         )
+    }
+
+    /** Serialize the local edit with sending; a send that won must receive a normal edit signal. */
+    private suspend fun updatePendingText(
+        conversationId: ConversationId,
+        messageId: String,
+        content: MessageContent.Text,
+    ): Either<CoreFailure, Boolean> = transactionProvider.transaction("editPendingText") {
+        messageRepository.getMessageById(conversationId, messageId).flatMap { current ->
+            when {
+                current !is Message.Regular || current.visibility != Message.Visibility.VISIBLE ->
+                    Either.Left(StorageFailure.DataNotFound)
+                current.status == Message.Status.Pending ->
+                    messageRepository.updateTextMessage(conversationId, messageId, content).map { true }
+                else -> Either.Right(false)
+            }
+        }
     }
 
     private suspend fun sendEditMessage(
