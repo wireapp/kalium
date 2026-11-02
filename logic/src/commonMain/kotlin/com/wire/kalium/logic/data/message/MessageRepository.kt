@@ -135,7 +135,7 @@ internal interface MessageRepository : OutgoingMessages, MessageTransport {
         afterDateTime: Instant,
         untilDateTime: Instant,
         visibility: List<Message.Visibility> = Message.Visibility.entries
-    ): Either<CoreFailure, List<String>>
+    ): Either<CoreFailure, Map<UserId, List<String>>>
 
     suspend fun updateTextMessage(
         conversationId: ConversationId,
@@ -470,13 +470,13 @@ internal class MessageDataSource internal constructor(
         afterDateTime: Instant,
         untilDateTime: Instant,
         visibility: List<Message.Visibility>
-    ): Either<CoreFailure, List<String>> = wrapStorageRequest {
+    ): Either<CoreFailure, Map<UserId, List<String>>> = wrapStorageRequest {
         messageDAO.getMessageIdsThatExpectReadConfirmationWithinDates(
             conversationId.toDao(),
             afterDateTime,
             untilDateTime,
             visibility.map { it.toEntityVisibility() }
-        )
+        ).mapKeys { (senderUserId, _) -> senderUserId.toModel() }
     }
 
     override suspend fun updateTextMessage(

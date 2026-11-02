@@ -1129,7 +1129,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationInQuestion.id,
             initialDate,
             finalDate
-        ).sorted()
+        ).values.flatten().sorted()
         assertContentEquals(expectedMessages.map { it.id }.sorted(), result)
     }
 
@@ -1175,8 +1175,58 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationInQuestion.id,
             initialDate,
             finalDate
-        )
+        ).values.flatten()
         assertEquals(expectedMessages.size, result.size)
+    }
+
+    @Test
+    fun givenMessagesFromMultipleSenders_whenGettingConfirmableMessageIds_thenMessageIdsAreGroupedBySender() = runTest {
+        insertInitialData()
+
+        val conversationInQuestion = conversationEntity1
+        val initialDate = Instant.parse("2022-03-30T15:41:00.000Z")
+        val finalDate = initialDate + 60.seconds
+        val messages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                date = initialDate + 1.seconds,
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = true
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity2.id,
+                date = initialDate + 2.seconds,
+                senderName = userEntity2.name!!,
+                expectsReadConfirmation = true
+            ),
+            newRegularMessageEntity(
+                "3",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                date = initialDate + 3.seconds,
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = true
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(messages)
+        val result = messageDAO.getMessageIdsThatExpectReadConfirmationWithinDates(
+            conversationInQuestion.id,
+            initialDate,
+            finalDate
+        )
+
+        assertEquals(
+            mapOf(
+                userEntity1.id to listOf("1", "3"),
+                userEntity2.id to listOf("2")
+            ),
+            result.mapValues { (_, messageIds) -> messageIds.sorted() }
+        )
     }
 
     @Test

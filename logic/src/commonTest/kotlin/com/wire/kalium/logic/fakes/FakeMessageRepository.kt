@@ -150,7 +150,7 @@ internal open class FakeMessageRepository : MessageRepository {
         afterDateTime: Instant,
         untilDateTime: Instant,
         visibility: List<Message.Visibility>
-    ): Either<CoreFailure, List<String>> = emptyList<String>().right()
+    ): Either<CoreFailure, Map<UserId, List<String>>> = emptyMap<UserId, List<String>>().right()
 
     override suspend fun updateTextMessage(
         conversationId: ConversationId,
