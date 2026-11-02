@@ -150,6 +150,7 @@ kotlin {
         val appleMain by getting {
             kotlin.exclude("com/wire/kalium/logic/feature/call/**")
             dependencies {
+                implementation(libs.ktor.httpCio)
                 implementation(libs.coreCryptoKmp)
                 // The app answers the share extension through its outbox (ADR 13).
                 implementation(projects.share)
@@ -170,6 +171,7 @@ kotlin {
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
+                implementation(libs.ktor.okHttp)
                 implementation(libs.jna)
                 implementation(libs.coreCryptoJvm)
             }
@@ -182,6 +184,7 @@ kotlin {
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
+                implementation(libs.ktor.okHttp)
                 implementation(libs.work)
                 implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
                     exclude("androidx.core")

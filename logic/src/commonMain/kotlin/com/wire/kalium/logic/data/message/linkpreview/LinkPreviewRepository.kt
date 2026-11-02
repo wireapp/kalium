@@ -31,6 +31,7 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readAvailable
+import kotlinx.coroutines.withTimeoutOrNull
 import okio.Buffer
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
@@ -63,13 +64,14 @@ internal interface LinkPreviewRepository {
 @Suppress("TooGenericExceptionCaught", "MagicNumber", "CyclomaticComplexMethod", "ComplexCondition")
 internal class LinkPreviewRepositoryImpl(
     private val httpClient: HttpClient,
-    private val kaliumFileSystem: KaliumFileSystem,
-    private val resolveHostAddresses: suspend (String) -> List<String> = ::resolvePreviewHostAddresses
+    private val kaliumFileSystem: KaliumFileSystem
 ) : LinkPreviewRepository {
     override suspend fun fetchOpenGraph(url: String, originalUrl: String): Either<CoreFailure, OpenGraphData?> {
         return try {
-            val htmlHead = fetchHead(url) ?: return Either.Right(null)
-            val ogData = OpenGraphScanner.scan(htmlHead, originalUrl)
+            val ogData = withTimeoutOrNull(MAX_PREVIEW_FETCH_MILLIS) {
+                val htmlHead = fetchHead(url) ?: return@withTimeoutOrNull null
+                OpenGraphScanner.scan(htmlHead, originalUrl)
+            }
             Either.Right(ogData)
         } catch (e: CancellationException) {
             throw e
@@ -80,8 +82,11 @@ internal class LinkPreviewRepositoryImpl(
 
     override suspend fun fetchImage(imageUrl: String): Either<CoreFailure, LinkPreviewAsset?> {
         return try {
-            val downloadedImage = fetchImageData(imageUrl) ?: return Either.Right(null)
-            Either.Right(downloadedImage.toLinkPreviewAsset(imageUrl))
+            val image = withTimeoutOrNull(MAX_PREVIEW_FETCH_MILLIS) {
+                val downloadedImage = fetchImageData(imageUrl) ?: return@withTimeoutOrNull null
+                downloadedImage.toLinkPreviewAsset(imageUrl)
+            }
+            Either.Right(image)
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -170,6 +175,7 @@ internal class LinkPreviewRepositoryImpl(
         return executeGetRequest(
             currentUrl = validatedInitialUrl,
             visitedUrls = mutableSetOf(validatedInitialUrl.toString()),
+            redirectsRemaining = MAX_PREVIEW_REDIRECTS,
             onSuccess = onSuccess
         )
     }
@@ -177,12 +183,14 @@ internal class LinkPreviewRepositoryImpl(
     private suspend fun <T> executeGetRequest(
         currentUrl: Url,
         visitedUrls: MutableSet<String>,
+        redirectsRemaining: Int,
         onSuccess: suspend (HttpResponse) -> T?
     ): T? {
         val outcome = try {
             httpClient.prepareGet(currentUrl.toString()).execute { response ->
                 when {
-                    response.status.value in HTTP_REDIRECT_STATUS_RANGE -> {
+                    response.status.value in HTTP_REDIRECT_STATUS_CODES -> {
+                        if (redirectsRemaining == 0) return@execute PreviewRequestOutcome.Failure
                         val location = response.headers[HttpHeaders.Location]
                             ?: return@execute PreviewRequestOutcome.Failure
                         val redirectUrl = validateRedirectTarget(currentUrl, location)
@@ -207,6 +215,7 @@ internal class LinkPreviewRepositoryImpl(
                 executeGetRequest(
                     currentUrl = redirectUrl,
                     visitedUrls = visitedUrls,
+                    redirectsRemaining = redirectsRemaining - 1,
                     onSuccess = onSuccess
                 )
             }
@@ -215,29 +224,22 @@ internal class LinkPreviewRepositoryImpl(
         }
     }
 
-    private suspend fun validateRedirectTarget(currentUrl: Url, location: String): Url? {
+    private fun validateRedirectTarget(currentUrl: Url, location: String): Url? {
         val resolvedUrl = resolveRedirectUrl(currentUrl, location) ?: return null
         return validatePreviewTarget(resolvedUrl.toString())
     }
 
-    private suspend fun validatePreviewTarget(url: String): Url? {
+    private fun validatePreviewTarget(url: String): Url? {
         val parsedUrl = try {
             Url(url)
         } catch (_: Exception) {
             return null
         }
 
-        if (parsedUrl.protocol.name != HTTPS_PROTOCOL) return null
+        if (!isAllowedPreviewUrl(parsedUrl)) return null
 
-        val host = parsedUrl.host.trim().lowercase()
-        if (host.isEmpty() || host == LOCALHOST || host.endsWith(LOCAL_DOMAIN_SUFFIX)) {
-            return null
-        }
-
-        val resolvedAddresses = resolveHostAddresses(host)
-        if (resolvedAddresses.isEmpty()) return null
-        if (resolvedAddresses.any { !isAllowedResolvedAddress(it) }) return null
-
+        // The platform transport validates the exact DNS answers used by its socket. Resolving
+        // here would duplicate DNS work without enforcing which address the connection uses.
         return parsedUrl
     }
 
@@ -334,111 +336,6 @@ internal class LinkPreviewRepositoryImpl(
         return contentBuffer.readByteArray()
     }
 
-    /**
-     * Rejects resolved destinations that fall into special-use address space which must never be
-     * contacted by the link-preview fetcher.
-     *
-     * Blocked categories:
-     * - loopback
-     * - private/internal
-     * - link-local
-     * - multicast
-     * - unspecified
-     * - documentation / benchmark / other reserved special-use ranges
-     *
-     * References:
-     * RFC 1122, RFC 1918, RFC 3927, RFC 4193, RFC 4291, RFC 5737, RFC 3849, RFC 6598,
-     * RFC 6890, RFC 7526, plus the IANA IPv4/IPv6 Special-Purpose Address Registries.
-     */
-    private fun isAllowedResolvedAddress(address: String): Boolean {
-        val normalized = address.substringBefore('%')
-        return when {
-            normalized.contains('.') -> isAllowedIpv4Address(normalized)
-            normalized.contains(':') -> isAllowedIpv6Address(normalized)
-            else -> false
-        }
-    }
-
-    /**
-     * IPv4 filter for special-use ranges that must not be reachable from preview fetching.
-     *
-     * Rejected ranges currently include:
-     * - `0.0.0.0/8` unspecified (RFC 1122)
-     * - `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` private-use (RFC 1918)
-     * - `100.64.0.0/10` shared carrier-grade NAT space (RFC 6598)
-     * - `127.0.0.0/8` loopback (RFC 1122)
-     * - `169.254.0.0/16` link-local (RFC 3927)
-     * - `192.0.0.0/24` IETF protocol assignments (RFC 6890)
-     * - `192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24` documentation/test (RFC 5737)
-     * - `192.88.99.0/24` deprecated 6to4 relay anycast (RFC 7526)
-     * - `198.18.0.0/15` benchmark testing (RFC 2544)
-     * - `224.0.0.0/4` multicast and higher special-use space
-     */
-    private fun isAllowedIpv4Address(address: String): Boolean {
-        val octets = address.split('.')
-        if (octets.size != IPV4_OCTET_COUNT) return false
-
-        val values = octets.map { it.toIntOrNull() ?: return false }
-        if (values.any { it !in IPV4_OCTET_RANGE }) return false
-
-        val first = values[0]
-        val second = values[1]
-        val third = values[2]
-
-        return when (first) {
-            0 -> false
-            10 -> false
-            100 if second in 64..127 -> false
-            127 -> false
-            169 if second == 254 -> false
-            172 if second in 16..31 -> false
-            192 if second == 0 && third == 0 -> false
-            192 if second == 0 && third == 2 -> false
-            192 if second == 88 && third == 99 -> false
-            192 if second == 168 -> false
-            198 if second in 18..19 -> false
-            198 if second == 51 && third == 100 -> false
-            203 if second == 0 && third == 113 -> false
-            in 224..255 -> false
-            else -> true
-        }
-    }
-
-    /**
-     * IPv6 filter for special-use ranges that must not be reachable from preview fetching.
-     *
-     * Rejected ranges currently include:
-     * - `::/128` unspecified (RFC 4291)
-     * - `::1/128` loopback (RFC 4291)
-     * - `fe80::/10` link-local unicast (RFC 4291)
-     * - `fc00::/7` unique local / private-use (RFC 4193)
-     * - `ff00::/8` multicast (RFC 4291)
-     * - `2001:db8::/32` documentation/examples (RFC 3849)
-     * - IPv4-mapped IPv6 addresses are delegated to the IPv4 filter
-     */
-    private fun isAllowedIpv6Address(address: String): Boolean {
-        val normalized = address.lowercase()
-        if (normalized == "::" || normalized == "::1") return false
-        if (normalized.startsWith("ff")) return false
-        if (normalized.startsWith("fe8") ||
-            normalized.startsWith("fe9") ||
-            normalized.startsWith("fea") ||
-            normalized.startsWith("feb")
-        ) {
-            return false
-        }
-        if (normalized.startsWith("fc") || normalized.startsWith("fd")) return false
-        if (normalized.startsWith("fec") || normalized.startsWith("fed")) return false
-        if (normalized.startsWith("2001:db8")) return false
-
-        val ipv4MappedPrefix = "::ffff:"
-        if (normalized.startsWith(ipv4MappedPrefix)) {
-            return isAllowedIpv4Address(normalized.removePrefix(ipv4MappedPrefix))
-        }
-
-        return true
-    }
-
     private sealed interface PreviewRequestOutcome<out T> {
         data class Success<T>(val value: T?) : PreviewRequestOutcome<T>
         data class Redirect(val url: Url) : PreviewRequestOutcome<Nothing>
@@ -446,18 +343,15 @@ internal class LinkPreviewRepositoryImpl(
     }
 
     private companion object {
-        const val HTTPS_PROTOCOL = "https"
-        const val LOCALHOST = "localhost"
-        const val LOCAL_DOMAIN_SUFFIX = ".local"
+        const val MAX_PREVIEW_FETCH_MILLIS = 10_000L
+        const val MAX_PREVIEW_REDIRECTS = 5
         const val MAX_PREVIEW_METADATA_BYTES = 64 * 1024
         const val MAX_PREVIEW_IMAGE_BYTES = 5 * 1024 * 1024
         const val PREVIEW_READ_BUFFER_SIZE = 8 * 1024
         const val HTTP_ERROR_STATUS_CODE = 400
-        val HTTP_REDIRECT_STATUS_RANGE = 300..399
+        val HTTP_REDIRECT_STATUS_CODES = setOf(301, 302, 303, 307, 308)
         const val HTML_HEAD_START_MARKER = "<head"
         const val HTML_HEAD_END_MARKER = "</head>"
-        const val IPV4_OCTET_COUNT = 4
-        val IPV4_OCTET_RANGE = 0..255
     }
 }
 
