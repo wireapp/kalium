@@ -23,9 +23,6 @@ import com.wire.crypto.CommitBundle
 import com.wire.crypto.ClientId
 import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
-import com.wire.crypto.CoreCryptoCommand
-import com.wire.crypto.CoreCryptoException
-import com.wire.crypto.CoreCryptoFfiInterface
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.CoreCryptoLogger
@@ -100,7 +97,6 @@ class CoreCryptoCentralImpl(
         val coreCryptoClientId = clientId.toCoreCryptoClientId()
         val coreCryptoTransport = mlsTransporter.toCoreCryptoTransport()
 
-        clearConversationCache()
         cc.transaction("mlsInit") { context ->
             context.mlsInit(coreCryptoClientId, coreCryptoTransport)
         }
@@ -240,7 +236,6 @@ class CoreCryptoCentralImpl(
             closeFailure?.let { throw it }
             if (ownedResourcesClosed) return@withLock
             try {
-                clearConversationCache()
                 cc.close()
                 pkiEnvironment?.close()
                 pkiEnvironment = null
@@ -256,27 +251,7 @@ class CoreCryptoCentralImpl(
         }
     }
 
-    private suspend fun clearConversationCache() {
-        // CoreCrypto 10.5.1 caches conversations that retain their owning MLS session.
-        // Clear the cache before replacing or closing a session; persisted groups stay unchanged.
-        val nativeClient: CoreCryptoFfiInterface = cc
-        try {
-            nativeClient.transactionFfi(object : CoreCryptoCommand {
-                override suspend fun execute(context: CoreCryptoContext) {
-                    context.close()
-                    throw IllegalStateException(CLOSE_CACHE_ROLLBACK)
-                }
-            })
-            error("Expected the cache cleanup transaction to roll back")
-        } catch (failure: CoreCryptoException.TransactionFailed) {
-            // Use the raw API: the high-level wrapper hides native rollback failures behind
-            // the original callback exception, which cannot prove cleanup succeeded.
-            if (!failure.error.contains(CLOSE_CACHE_ROLLBACK)) throw failure
-        }
-    }
-
     companion object {
-        private const val CLOSE_CACHE_ROLLBACK = "kalium-clear-conversation-cache"
         const val KEYSTORE_NAME = "keystore"
     }
 }

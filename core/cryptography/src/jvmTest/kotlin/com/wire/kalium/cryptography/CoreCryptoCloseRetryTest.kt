@@ -13,9 +13,6 @@ package com.wire.kalium.cryptography
 import com.wire.crypto.CipherSuite
 import com.wire.crypto.ClientId
 import com.wire.crypto.CoreCrypto
-import com.wire.crypto.CoreCryptoCommand
-import com.wire.crypto.CoreCryptoContext
-import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CoreCryptoFfi
 import com.wire.crypto.Database
 import com.wire.crypto.NoPointer
@@ -32,18 +29,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 
 class CoreCryptoCloseRetryTest {
-
-    @Test
-    fun rollbackFailureKeepsNativeResourcesOwnedAndCannotBecomeSuccessOnRetry() = runTest {
-        val coreCrypto = RecordingCoreCryptoFfi(rollbackFailure = true)
-        val database = RecordingDatabase()
-        val central = central(coreCrypto, database)
-
-        val failure = assertFailsWith<CoreCryptoException.Other> { central.close() }
-        assertEquals(failure, assertFailsWith<CoreCryptoException.Other> { central.close() })
-        assertEquals(0, coreCrypto.closeCount)
-        assertEquals(0, database.closeCount)
-    }
 
     @Test
     fun databaseCloseFailureNeverBecomesASuccessfulClose() = runTest {
@@ -172,22 +157,10 @@ class CoreCryptoCloseRetryTest {
         onClose = onClose,
     )
 
-    private class RecordingCoreCryptoFfi(failures: Int = 0, private val rollbackFailure: Boolean = false) : CoreCryptoFfi(NoPointer) {
+    private class RecordingCoreCryptoFfi(failures: Int = 0) : CoreCryptoFfi(NoPointer) {
         private var remainingFailures = failures
         var closeCount = 0
             private set
-
-        override suspend fun transactionFfi(command: CoreCryptoCommand) {
-            val context = object : CoreCryptoContext(NoPointer) {
-                override fun close() = Unit
-            }
-            try {
-                command.execute(context)
-            } catch (failure: IllegalStateException) {
-                if (rollbackFailure) throw CoreCryptoException.Other("Native rollback failed")
-                throw CoreCryptoException.TransactionFailed(failure.toString())
-            }
-        }
 
         override fun close() {
             closeCount++
