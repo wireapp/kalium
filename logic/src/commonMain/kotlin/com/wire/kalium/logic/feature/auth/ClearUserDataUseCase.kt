@@ -22,6 +22,9 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.userstorage.di.UserStorage
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 import okio.Path.Companion.toPath
 
 /**
@@ -36,13 +39,16 @@ internal interface ClearUserDataUseCase {
 internal class ClearUserDataUseCaseImpl internal constructor(
     private val userStorage: UserStorage,
     private val dataStoragePaths: DataStoragePaths,
-    private val kaliumFileSystem: KaliumFileSystem
+    private val kaliumFileSystem: KaliumFileSystem,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ClearUserDataUseCase {
 
     override suspend operator fun invoke() {
         clearUserStorage()
-        deleteFolder(dataStoragePaths.assetStoragePath.value)
-        deleteFolder(dataStoragePaths.cachePath.value)
+        withContext(dispatchers.io) {
+            deleteFolder(dataStoragePaths.assetStoragePath.value)
+            deleteFolder(dataStoragePaths.cachePath.value)
+        }
     }
 
     private fun clearUserStorage() {

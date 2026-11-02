@@ -29,7 +29,10 @@ import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.userstorage.di.UserStorage
+import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -37,7 +40,9 @@ import okio.buffer
 import okio.use
 import java.io.File
 import java.nio.file.Files
+import java.util.concurrent.Executors
 import kotlin.test.AfterTest
+import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -88,8 +93,21 @@ class ClearUserDataUseCaseTest {
 
         useCase()
 
+        assertNull(arrangement.userDatabase.dbFileLocation())
         assertTrue(arrangement.fileSystem.exists(ASSET_FOLDER.toPath()))
         assertFalse(arrangement.fileSystem.exists(CACHE_FOLDER.toPath()))
+    }
+
+    @Test
+    fun givenUserFilesOnDisk_whenClearingUserData_thenFoldersAreDeletedOnTheIoDispatcher() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withFileIn(ASSET_FOLDER, "attachment.pdf")
+            .withFileIn(CACHE_FOLDER, "image_attachment.jpg")
+            .arrange()
+
+        useCase()
+
+        assertEquals(listOf(IO_THREAD_NAME, IO_THREAD_NAME), arrangement.deletionThreadNames)
     }
 
     private inner class Arrangement {
@@ -99,6 +117,8 @@ class ClearUserDataUseCaseTest {
         )
         val fileSystem = FakeKaliumFileSystem()
         private var failingFolder: String? = null
+        val deletionThreadNames = mutableListOf<String>()
+        private val ioDispatcher = Executors.newSingleThreadExecutor { Thread(it, IO_THREAD_NAME) }.asCoroutineDispatcher()
 
         init {
             assertNotNull(userDatabase.dbFileLocation())
@@ -120,6 +140,7 @@ class ClearUserDataUseCaseTest {
             val failing = failingFolder
             val kaliumFileSystem: KaliumFileSystem = object : KaliumFileSystem by fileSystem {
                 override fun deleteContents(dir: Path, mustExist: Boolean) {
+                    deletionThreadNames += Thread.currentThread().name
                     if (dir.toString() == failing) throw IllegalStateException("Cannot delete $dir")
                     fileSystem.deleteContents(dir, mustExist)
                 }
@@ -127,7 +148,13 @@ class ClearUserDataUseCaseTest {
             val useCase = ClearUserDataUseCaseImpl(
                 userStorage = UserStorage(userDatabase),
                 dataStoragePaths = DataStoragePaths(AssetsStorageFolder(ASSET_FOLDER), CacheFolder(CACHE_FOLDER), DBFolder(DB_FOLDER)),
-                kaliumFileSystem = kaliumFileSystem
+                kaliumFileSystem = kaliumFileSystem,
+                dispatchers = object : KaliumDispatcher {
+                    override val default: CoroutineDispatcher = ioDispatcher
+                    override val main: CoroutineDispatcher = ioDispatcher
+                    override val unconfined: CoroutineDispatcher = ioDispatcher
+                    override val io: CoroutineDispatcher = ioDispatcher
+                }
             )
             return this to useCase
         }
@@ -137,5 +164,6 @@ class ClearUserDataUseCaseTest {
         const val ASSET_FOLDER = "/Users/me/testApp/files"
         const val CACHE_FOLDER = "/Users/me/testApp/cache"
         const val DB_FOLDER = "/Users/me/testApp/database"
+        const val IO_THREAD_NAME = "clear-user-data-io"
     }
 }
