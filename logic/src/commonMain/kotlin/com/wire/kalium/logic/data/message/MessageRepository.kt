@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapFlowStorageRequest
+import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -96,6 +97,13 @@ internal interface MessageRepository : OutgoingMessages, MessageTransport {
 
     suspend fun claimFailedMessageForRetry(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean>
 
+    suspend fun updatePendingTextPolicy(
+        conversationId: ConversationId,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ): Either<CoreFailure, Unit>
+
     suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -135,7 +143,7 @@ internal interface MessageRepository : OutgoingMessages, MessageTransport {
         afterDateTime: Instant,
         untilDateTime: Instant,
         visibility: List<Message.Visibility> = Message.Visibility.entries
-    ): Either<CoreFailure, List<String>>
+    ): Either<CoreFailure, Map<UserId, List<String>>>
 
     suspend fun updateTextMessage(
         conversationId: ConversationId,
@@ -419,6 +427,15 @@ internal class MessageDataSource internal constructor(
         messageDAO.claimFailedMessageForRetry(messageUuid, conversationId.toDao())
     }
 
+    override suspend fun updatePendingTextPolicy(
+        conversationId: ConversationId,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updatePendingTextPolicy(conversationId.toDao(), messageId, expireAfterMillis, expectsReadConfirmation)
+    }
+
     override suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -470,13 +487,13 @@ internal class MessageDataSource internal constructor(
         afterDateTime: Instant,
         untilDateTime: Instant,
         visibility: List<Message.Visibility>
-    ): Either<CoreFailure, List<String>> = wrapStorageRequest {
+    ): Either<CoreFailure, Map<UserId, List<String>>> = wrapStorageRequest {
         messageDAO.getMessageIdsThatExpectReadConfirmationWithinDates(
             conversationId.toDao(),
             afterDateTime,
             untilDateTime,
             visibility.map { it.toEntityVisibility() }
-        )
+        ).mapKeys { (senderUserId, _) -> senderUserId.toModel() }
     }
 
     override suspend fun updateTextMessage(
@@ -575,7 +592,7 @@ internal class MessageDataSource internal constructor(
 
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(
         conversationId: ConversationId
-    ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
+    ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageNullableRequest {
         messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())
             ?.let { receiptModeMapper.fromEntityToModel(it) }
     }

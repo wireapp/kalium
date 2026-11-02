@@ -84,6 +84,13 @@ internal open class FakeMessageRepository : MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Boolean> = true.right()
 
+    override suspend fun updatePendingTextPolicy(
+        conversationId: ConversationId,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ): Either<CoreFailure, Unit> = Unit.right()
+
     override suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -150,7 +157,7 @@ internal open class FakeMessageRepository : MessageRepository {
         afterDateTime: Instant,
         untilDateTime: Instant,
         visibility: List<Message.Visibility>
-    ): Either<CoreFailure, List<String>> = emptyList<String>().right()
+    ): Either<CoreFailure, Map<UserId, List<String>>> = emptyMap<UserId, List<String>>().right()
 
     override suspend fun updateTextMessage(
         conversationId: ConversationId,

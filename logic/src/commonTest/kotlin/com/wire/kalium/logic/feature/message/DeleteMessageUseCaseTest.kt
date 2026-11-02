@@ -56,6 +56,10 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
+import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -64,6 +68,38 @@ import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
 class DeleteMessageUseCaseTest {
+    @Test
+    fun givenSyncPending_whenDeletingSentText_thenWaitBeforeSendingDeletionSignal() = runTest {
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withTextMessage(Message.Status.Sent)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
+            .withSendMessageSucceed()
+            .withMessageRepositoryMarkMessageAsDeletedSucceed()
+            .arrange()
+        val sync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
+        every { arrangement.slowSyncRepository.slowSyncStatus } returns sync.asStateFlow()
+        val deleting = launch { useCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).toEither().shouldSucceed() }
+        runCurrent()
+        assertFalse(deleting.isCompleted)
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+        sync.value = SlowSyncStatus.Complete
+        deleting.join()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenSyncPending_whenDeletingOwnPendingText_thenCancelBeforeSyncCompletes() = runTest {
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher).withOwnPendingMessage().arrange()
+        val sync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
+        every { arrangement.slowSyncRepository.slowSyncStatus } returns sync.asStateFlow()
+        val deleting = launch { useCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).toEither().shouldSucceed() }
+        runCurrent()
+        assertTrue(deleting.isCompleted)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.cancelPendingMessage(any(), any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
     @Test
     fun givenOfflineEditOfSentMessage_whenDeletingForMe_thenRequireDeletionSignal() = runTest {
         val (arrangement, useCase) = Arrangement(testKaliumDispatcher)

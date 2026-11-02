@@ -62,6 +62,42 @@ import kotlin.time.Duration.Companion.seconds
 class MessageDAOTest : BaseDatabaseTest() {
 
     @Test
+    fun pendingPolicyRefreshUpdatesOnlyVisibleUneditedPendingTextAndNeverRecreatesDeletedMessages() = runTest {
+        insertInitialData()
+        val pending = newRegularMessageEntity(
+            id = "policy-pending", conversationId = conversationEntity1.id, senderUserId = userEntity1.id,
+            status = MessageEntity.Status.PENDING,
+        )
+        val protected = listOf(
+            pending.copy(id = "policy-sent", status = MessageEntity.Status.SENT),
+            pending.copy(id = "policy-failed", status = MessageEntity.Status.FAILED),
+            pending.copy(id = "policy-edited", editStatus = MessageEntity.EditStatus.Edited(Instant.fromEpochSeconds(1))),
+            pending.copy(id = "policy-started", selfDeletionEndDate = Instant.fromEpochSeconds(100)),
+        )
+        messageDAO.insertOrIgnoreMessages(protected + listOf(
+            pending, pending.copy(id = "policy-deleted"), pending.copy(id = "policy-hidden"),
+        ))
+        messageDAO.deleteMessage("policy-deleted", conversationEntity1.id)
+        messageDAO.markMessageAsDeleted("policy-hidden", conversationEntity1.id)
+        val ids = protected.map { it.id } + listOf(pending.id, "policy-deleted", "policy-hidden")
+        for (id in ids) messageDAO.updatePendingTextPolicy(conversationEntity1.id, id, 60_000L, true)
+
+        val refreshed = assertIs<MessageEntity.Regular>(messageDAO.getMessageById(pending.id, conversationEntity1.id))
+        assertEquals(60_000L, refreshed.expireAfterMs)
+        assertTrue(refreshed.expectsReadConfirmation)
+        assertNull(messageDAO.getMessageById("policy-deleted", conversationEntity1.id))
+        for (id in protected.map { it.id } + "policy-hidden") {
+            val unchanged = assertIs<MessageEntity.Regular>(messageDAO.getMessageById(id, conversationEntity1.id))
+            assertNull(unchanged.expireAfterMs)
+            assertFalse(unchanged.expectsReadConfirmation)
+        }
+        messageDAO.updatePendingTextPolicy(conversationEntity1.id, pending.id, null, false)
+        val disabled = assertIs<MessageEntity.Regular>(messageDAO.getMessageById(pending.id, conversationEntity1.id))
+        assertNull(disabled.expireAfterMs)
+        assertFalse(disabled.expectsReadConfirmation)
+    }
+
+    @Test
     fun givenRestorePageWithDuplicates_whenImporting_thenKeepExistingContentAndInsertNewKeysAcrossConversations() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
@@ -1129,7 +1165,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationInQuestion.id,
             initialDate,
             finalDate
-        ).sorted()
+        ).values.flatten().sorted()
         assertContentEquals(expectedMessages.map { it.id }.sorted(), result)
     }
 
@@ -1175,8 +1211,58 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationInQuestion.id,
             initialDate,
             finalDate
-        )
+        ).values.flatten()
         assertEquals(expectedMessages.size, result.size)
+    }
+
+    @Test
+    fun givenMessagesFromMultipleSenders_whenGettingConfirmableMessageIds_thenMessageIdsAreGroupedBySender() = runTest {
+        insertInitialData()
+
+        val conversationInQuestion = conversationEntity1
+        val initialDate = Instant.parse("2022-03-30T15:41:00.000Z")
+        val finalDate = initialDate + 60.seconds
+        val messages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                date = initialDate + 1.seconds,
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = true
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity2.id,
+                date = initialDate + 2.seconds,
+                senderName = userEntity2.name!!,
+                expectsReadConfirmation = true
+            ),
+            newRegularMessageEntity(
+                "3",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                date = initialDate + 3.seconds,
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = true
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(messages)
+        val result = messageDAO.getMessageIdsThatExpectReadConfirmationWithinDates(
+            conversationInQuestion.id,
+            initialDate,
+            finalDate
+        )
+
+        assertEquals(
+            mapOf(
+                userEntity1.id to listOf("1", "3"),
+                userEntity2.id to listOf("2")
+            ),
+            result.mapValues { (_, messageIds) -> messageIds.sorted() }
+        )
     }
 
     @Test

@@ -59,7 +59,7 @@ internal class PersistMessageUseCaseImpl(
         if (message is Message.Regular) {
             messageRepository
                 .getReceiptModeFromGroupConversationByQualifiedID(message.conversationId)
-                .fold({ message }, { message.withGroupReceiptMode(it) })
+                .fold({ message }, { mode -> mode?.let { message.withGroupReceiptMode(it) } ?: message })
         } else {
             message
         }

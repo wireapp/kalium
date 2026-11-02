@@ -19,11 +19,12 @@
 package com.wire.kalium.logic.feature.message.receipt
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -82,38 +83,61 @@ internal fun SendConfirmationUseCase(
     ): MessageOperationResult {
         syncManager.waitUntilLive()
 
-        val messageIds = getPendingUnreadMessagesIds(
+        val messageIdsBySender = getPendingUnreadMessagesIds(
             conversationId,
             afterDateTime,
             untilDateTime
         )
-        if (messageIds.isEmpty()) {
+        if (messageIdsBySender.isEmpty()) {
             logConfirmationNothingToSend(conversationId)
             return MessageOperationResult.Success
         }
 
-        return currentClientIdProvider().flatMap { currentClientId ->
-            val message = Message.Signaling(
-                id = Uuid.random().toString(),
-                content = MessageContent.Receipt(ReceiptType.READ, messageIds),
-                conversationId = conversationId,
-                date = Clock.System.now(),
-                senderUserId = selfUserId,
-                senderClientId = currentClientId,
-                status = Message.Status.Pending,
-                isSelfMessage = true,
-                expirationData = null
-            )
+        return currentClientIdProvider().fold(
+            { failure ->
+                logConfirmationError(conversationId, messageIdsBySender.values.flatten(), failure)
+                MessageOperationResult.Failure(failure)
+            },
+            { currentClientId ->
+                // Receipts are only sent to the original sender of the messages, so one receipt is sent per sender.
+                val failures = messageIdsBySender.mapNotNull { (senderUserId, messageIds) ->
+                    sendReceipt(conversationId, currentClientId, senderUserId, messageIds)
+                }
+                failures.firstOrNull()?.let { MessageOperationResult.Failure(it) } ?: MessageOperationResult.Success
+            }
+        )
+    }
 
-            messageSender.sendMessage(message, messageTarget = MessageTarget.Conversation(setOf(selfUserId)))
-        }.fold(
+    /**
+     * Sends a [ReceiptType.READ] receipt for [messageIds] to [senderUserId] only.
+     * @return the failure, or null if the receipt was sent successfully.
+     */
+    private suspend fun sendReceipt(
+        conversationId: ConversationId,
+        currentClientId: ClientId,
+        senderUserId: UserId,
+        messageIds: List<String>
+    ): CoreFailure? {
+        val message = Message.Signaling(
+            id = Uuid.random().toString(),
+            content = MessageContent.Receipt(ReceiptType.READ, messageIds),
+            conversationId = conversationId,
+            date = Clock.System.now(),
+            senderUserId = selfUserId,
+            senderClientId = currentClientId,
+            status = Message.Status.Pending,
+            isSelfMessage = true,
+            expirationData = null
+        )
+
+        return messageSender.sendMessage(message, messageTarget = MessageTarget.Users(senderUserId)).nullableFold(
             {
                 logConfirmationError(conversationId, messageIds, it)
-                MessageOperationResult.Failure(it)
+                it
             },
             {
                 logConfirmationSuccess(conversationId, messageIds)
-                MessageOperationResult.Success
+                null
             }
         )
     }
@@ -122,7 +146,7 @@ internal fun SendConfirmationUseCase(
         conversationId: ConversationId,
         afterDateTime: Instant,
         untilDateTime: Instant
-    ): List<String> =
+    ): Map<UserId, List<String>> =
         if (isReceiptsEnabledForConversation(conversationId)) {
             messageRepository.getPendingConfirmationMessagesByConversationAfterDate(
                 conversationId,
@@ -130,9 +154,9 @@ internal fun SendConfirmationUseCase(
                 untilDateTime,
             ).fold({
                 logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
-                emptyList()
+                emptyMap()
             }, { it })
-        } else emptyList()
+        } else emptyMap()
 
     private suspend fun isReceiptsEnabledForConversation(conversationId: ConversationId) =
         conversationRepository.getConversationById(conversationId).fold({
