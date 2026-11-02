@@ -63,6 +63,8 @@ class MessageTimelineMigrationTest {
                         UserDatabase.Schema.awaitMigrate(driver, 124, 147)
                     }
                 } else UserDatabase.Schema.awaitCreate(driver)
+                // Current generated queries require the latest schema when seeding.
+                if (upgrade) UserDatabase.Schema.awaitMigrate(driver, 147, UserDatabase.Schema.version)
                 val self = newUserEntity("timeline-migration-self")
                 val conversation = newConversationEntity("timeline-migration")
                 val builder = UserDatabaseBuilder(
@@ -78,7 +80,6 @@ class MessageTimelineMigrationTest {
                     )
                 }
                 builder.messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = false)
-                if (upgrade) UserDatabase.Schema.awaitMigrate(driver, 147, UserDatabase.Schema.version)
 
                 definitions += driver.strings(
                     "SELECT sql FROM sqlite_master " +

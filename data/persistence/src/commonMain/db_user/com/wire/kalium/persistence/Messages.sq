@@ -653,6 +653,7 @@ SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visi
 selectPendingByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey message_sender_profile
 SELECT *
 FROM MessageDetailsView
 WHERE conversationId = :conversationId
@@ -664,6 +665,7 @@ LIMIT :limit OFFSET :offset;
 selectNonPendingByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey message_sender_profile
 SELECT *
 FROM MessageDetailsView
 WHERE conversationId = :conversationId
@@ -694,6 +696,7 @@ WHERE LastMessage.conversation_id IN :conversationIds;
 selectMessagesByConversationIdAndVisibilityAfterDate:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey message_sender_profile
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;
 
 selectMessagesFromUserByStatus:
@@ -774,6 +777,7 @@ WHERE conversation_id = :from;
 selectConversationMessagesFromSearch:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
+-- @CustomKey message_sender_profile
 SELECT MessageDetailsView.*
 FROM MessageTextContent AS TextContent
 JOIN MessageDetailsView

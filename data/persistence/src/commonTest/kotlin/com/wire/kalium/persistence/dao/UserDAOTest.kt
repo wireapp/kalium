@@ -44,6 +44,44 @@ import kotlinx.coroutines.test.runTest
 
 class UserDAOTest : BaseDatabaseTest() {
 
+    @Test
+    fun singlePartialUpdatesPreserveNonblankStatusWhitespace() = runTest(dispatcher) {
+        val user = newUserEntity(id = "padded-status-user").copy(textStatus = "Original")
+        db.userDAO.upsertUser(user)
+        val status = "  Out sick  "
+
+        db.userDAO.updateUser(PartialUserEntity(id = user.id, textStatus = status))
+
+        assertEquals(status, db.userDAO.getUserDetailsByQualifiedID(user.id)?.textStatus)
+    }
+
+    @Test
+    fun batchedPartialUpdatesPreserveNonblankStatusWhitespace() = runTest(dispatcher) {
+        val user = newUserEntity(id = "padded-status-user").copy(textStatus = "Original")
+        db.userDAO.upsertUser(user)
+        val status = "  Out sick  "
+
+        db.userDAO.updateUser(listOf(PartialUserEntity(id = user.id, textStatus = status)))
+
+        assertEquals(status, db.userDAO.getUserDetailsByQualifiedID(user.id)?.textStatus)
+    }
+
+    @Test
+    fun partialProfileUpdatesPreserveAbsentStatusAndClearExplicitBlankStatus() = runTest(dispatcher) {
+        val user = newUserEntity(id = "status-user").copy(textStatus = "🎧 In a meeting")
+        db.userDAO.upsertUser(user)
+        db.userDAO.updateUser(PartialUserEntity(id = user.id, name = "Updated name"))
+        assertEquals(user.textStatus, db.userDAO.getUserDetailsByQualifiedID(user.id)?.textStatus)
+
+        db.userDAO.updateUser(PartialUserEntity(id = user.id, textStatus = " \t\n"))
+        assertNull(db.userDAO.getUserDetailsByQualifiedID(user.id)?.textStatus)
+
+        db.userDAO.updateUser(listOf(PartialUserEntity(id = user.id, textStatus = "Out sick")))
+        assertEquals("Out sick", db.userDAO.getUserDetailsByQualifiedID(user.id)?.textStatus)
+        db.userDAO.updateUser(listOf(PartialUserEntity(id = user.id, textStatus = " ")))
+        assertNull(db.userDAO.getUserDetailsByQualifiedID(user.id)?.textStatus)
+    }
+
     private val user1 = newUserEntity(id = "1")
     private val user2 = newUserEntity(id = "2")
     private val user3 = newUserEntity(id = "3")

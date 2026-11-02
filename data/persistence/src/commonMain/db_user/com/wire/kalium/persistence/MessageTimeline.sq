@@ -123,7 +123,7 @@ FROM MessageAttachments ma JOIN CellFile cf ON cf.uuid = ma.asset_id
 WHERE ma.conversation_id = :conversationId AND ma.message_id IN :ids ORDER BY ma.message_id, ma.asset_index, ma.asset_id;
 
 timelineUsers:
-SELECT u.qualified_id, u.name, u.accent_id, u.preview_asset_id, u.user_availability_status, u.user_type,
+SELECT u.qualified_id, u.name, u.accent_id, u.preview_asset_id, u.user_availability_status, u.text_status, u.user_type,
        u.connection_status, u.deleted, u.defederated, u.expires_at, u.bot_service,
        (u.deleted = 0 AND IFNULL(u.name, '') = '') AS unavailable,
        EXISTS(SELECT 1 FROM Client c WHERE c.user_id = u.qualified_id AND c.device_type = 'LegalHold') AS legal_hold

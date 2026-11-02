@@ -54,6 +54,7 @@ data class UserProfileDTO(
     @SerialName("service") override val service: ServiceDTO?,
     @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO>?,
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusDTO,
+    @SerialName("text_status") val textStatus: String? = null,
     @SerialName("type") val type: UserTypeDTO?,
     @SerialName("app") val app: AppDTO?
 ) : UserDTO()
@@ -81,7 +82,8 @@ data class SelfUserDTO(
     @SerialName("locale") val locale: String,
     @SerialName("managed_by") val managedByDTO: ManagedByDTO?,
     @SerialName("phone") val phone: String?,
-    @SerialName("sso_id") val ssoID: UserSsoIdDTO?
+    @SerialName("sso_id") val ssoID: UserSsoIdDTO?,
+    @SerialName("text_status") val textStatus: String? = null
 ) : UserDTO()
 
 @Serializable

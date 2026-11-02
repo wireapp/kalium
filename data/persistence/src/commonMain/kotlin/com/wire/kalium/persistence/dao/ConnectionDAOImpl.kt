@@ -75,7 +75,8 @@ private class ConnectionMapper {
         expires_at: Instant?,
         defederated: Boolean?,
         supportedProtocols: Set<SupportedProtocolEntity>?,
-        oneToOneConversationId: QualifiedIDEntity?
+        oneToOneConversationId: QualifiedIDEntity?,
+        text_status: String?
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
@@ -104,7 +105,8 @@ private class ConnectionMapper {
             expiresAt = expires_at,
             defederated = defederated.requireField("defederated"),
             supportedProtocols = supportedProtocols,
-            activeOneOnOneConversationId = oneToOneConversationId
+            activeOneOnOneConversationId = oneToOneConversationId,
+            textStatus = text_status?.takeUnless { it.isBlank() }
         ) else null
     )
 }

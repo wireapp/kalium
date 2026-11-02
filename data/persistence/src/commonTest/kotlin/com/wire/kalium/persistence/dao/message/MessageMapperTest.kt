@@ -227,6 +227,7 @@ class MessageMapperTest {
                 senderPreviewAssetId,
                 senderCompleteAssetId,
                 senderAvailabilityStatus,
+                null, // text status
                 senderUserType,
                 senderBotService,
                 senderIsDeleted,

@@ -28,7 +28,8 @@ CREATE TABLE User (
     expires_at INTEGER AS Instant,
     defederated INTEGER AS Boolean NOT NULL DEFAULT 0,
     supported_protocols TEXT AS Set<SupportedProtocolEntity> DEFAULT 'PROTEUS',
-    active_one_on_one_conversation_id TEXT AS QualifiedIDEntity
+    active_one_on_one_conversation_id TEXT AS QualifiedIDEntity,
+    text_status TEXT
 );
 CREATE INDEX user_team_index ON User(team);
 CREATE INDEX user_service_id ON User(bot_service);
@@ -47,8 +48,8 @@ insertUser:
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey message_sender_profile
 -- @NotifyCustomKey User
-INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, text_status, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
     name = excluded.name,
     handle = excluded.handle,
@@ -58,6 +59,7 @@ ON CONFLICT(qualified_id) DO UPDATE SET
     team = excluded.team,
     preview_asset_id = excluded.preview_asset_id,
     complete_asset_id = excluded.complete_asset_id,
+    text_status = excluded.text_status,
     user_type = excluded.user_type,
     bot_service = excluded.bot_service,
     deleted = excluded.deleted,
@@ -74,6 +76,7 @@ WHERE -- execute the update only if any of the fields changed
     OR User.team IS NOT excluded.team
     OR User.preview_asset_id IS NOT excluded.preview_asset_id
     OR User.complete_asset_id IS NOT excluded.complete_asset_id
+    OR User.text_status IS NOT excluded.text_status
     OR User.user_type IS NOT excluded.user_type
     OR User.bot_service IS NOT excluded.bot_service
     OR User.deleted IS NOT excluded.deleted
@@ -86,12 +89,13 @@ selectChanges:
 SELECT changes();
 
 insertOrIgnoreUser:
+-- @NotifyCustomKey message_sender_profile
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
-INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, text_status, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateUser:
 -- @NotifyCustomKey conversation_list_membership
@@ -106,6 +110,7 @@ email = coalesce(:email, email),
 accent_id = coalesce(:accent_id, accent_id),
 preview_asset_id = :preview_asset_id, preview_asset_id = coalesce(:preview_asset_id, preview_asset_id),
 complete_asset_id = :complete_asset_id, complete_asset_id = coalesce(:complete_asset_id, complete_asset_id),
+text_status = CASE WHEN :text_status IS NULL THEN text_status ELSE NULLIF(:text_status, ' ') END,
 supported_protocols = :supported_protocols, supported_protocols = coalesce(:supported_protocols, supported_protocols)
 WHERE qualified_id = ?;
 
@@ -122,6 +127,7 @@ email = coalesce(:email, email),
 accent_id = coalesce(:accent_id, accent_id),
 preview_asset_id = :preview_asset_id, preview_asset_id = coalesce(:preview_asset_id, preview_asset_id),
 complete_asset_id = :complete_asset_id, complete_asset_id = coalesce(:complete_asset_id, complete_asset_id),
+text_status = CASE WHEN :text_status IS NULL THEN text_status ELSE NULLIF(:text_status, ' ') END,
 supported_protocols = :supported_protocols, supported_protocols = coalesce(:supported_protocols, supported_protocols)
 WHERE qualified_id = ?;
 
@@ -207,6 +213,7 @@ User.connection_status,
 User.preview_asset_id,
 User.complete_asset_id,
 User.user_availability_status,
+User.text_status,
 User.user_type,
 User.bot_service,
 User.deleted,
@@ -279,6 +286,11 @@ updateUserAvailabilityStatus:
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
 UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
+
+updateUserTextStatus:
+-- @NotifyCustomKey message_sender_profile
+-- @NotifyCustomKey User
+UPDATE User SET text_status = ? WHERE qualified_id = ?;
 
 getUsersNotInConversationByNameOrHandleOrEmail:
 SELECT * FROM UserDetails AS user

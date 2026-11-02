@@ -67,6 +67,7 @@ public data class MessageListUser(
     public val guestExpiresAt: Instant?,
     public val botService: BotService?,
     public val isMissing: Boolean,
+    public val textStatus: String? = null,
 )
 
 public sealed interface MessageListContent {
