@@ -1,0 +1,1 @@
+CoreCrypto transactions that have started run to their end again when their caller is cancelled, as they did before CoreCrypto 11. CoreCrypto 11's Kotlin wrapper rolls them back and resumes the caller early, which could undo encryption state for a message the backend already received.

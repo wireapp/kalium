@@ -84,7 +84,10 @@ private suspend fun <T> CoreCrypto.transactionWithRollbackPolicy(block: suspend 
     if (currentCoroutineContext()[RequireConfirmedCryptoRollback.Key] != null) {
         transactionWithConfirmedRollback(block)
     } else {
-        transaction(block)
+        // CoreCrypto 11 rolls a transaction back when its caller is cancelled, and resumes the caller before it ends.
+        // A message send's request may already have reached the backend by then, so a started transaction runs to
+        // its end, as it did before CoreCrypto 11.
+        withContext(NonCancellable) { transaction(block) }
     }
 
 @Suppress("TooGenericExceptionCaught", "UNCHECKED_CAST")
