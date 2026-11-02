@@ -145,7 +145,11 @@ class UrlDetectorTest {
             Triple("\uD83D\uDCAC (", "https://example.dev/path_(details)", ")."),
             Triple("\uD83D\uDCAC [", "https://example.dev/query?value=[one]", "]!"),
             Triple("**", "https://example.dev/path", "**"),
-            Triple("'", "https://example.dev", "'")
+            Triple("'", "https://example.dev", "'"),
+            Triple("Read \u201C", "https://www.bbc.com/news", "\u201D."),
+            Triple("\u2018", "https://example.dev", "\u2019"),
+            Triple("\u201E", "https://example.dev/path", "\u201C"),
+            Triple("\u00AB", "https://example.dev", "\u00BB")
         )
 
         cases.forEach { (prefix, url, suffix) ->

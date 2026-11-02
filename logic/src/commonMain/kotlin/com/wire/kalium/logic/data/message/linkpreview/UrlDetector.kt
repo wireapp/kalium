@@ -27,6 +27,10 @@ internal object UrlDetector {
     private const val MAX_PORT = 65535
     private const val OPENING_BRACKETS = "([{"
     private const val CLOSING_BRACKETS = ")]}"
+
+    // Smart punctuation (on by default on iOS) turns typed quotes into these.
+    private const val TYPOGRAPHIC_OPENING_QUOTES = "\u201C\u2018\u201E\u00AB"
+    private const val TYPOGRAPHIC_CLOSING_QUOTES = "\u201D\u2019\u201C\u00BB"
     private val prefixes = listOf("https://", "http://", "www.")
 
     data class UrlMatch(val url: String, val start: Int, val end: Int)
@@ -64,7 +68,7 @@ internal object UrlDetector {
     }
 
     private fun hasStartBoundary(text: String, start: Int): Boolean =
-        start == 0 || text[start - 1].isWhitespace() || text[start - 1] in "([{<\"'*_~"
+        start == 0 || text[start - 1].isWhitespace() || text[start - 1] in "([{<\"'*_~$TYPOGRAPHIC_OPENING_QUOTES"
 
     private fun isDelimiter(character: Char): Boolean = character.isWhitespace() || character in "<>\""
 
@@ -119,7 +123,7 @@ internal object UrlDetector {
             val closing = CLOSING_BRACKETS.indexOf(last)
             val matchingWrapper = last in "*_~'" && start > 0 && text[start - 1] == last
             when {
-                last in ".,;:!?" || matchingWrapper -> trimmedEnd--
+                last in ".,;:!?$TYPOGRAPHIC_CLOSING_QUOTES" || matchingWrapper -> trimmedEnd--
                 closing >= 0 && balance[closing] < 0 -> {
                     trimmedEnd--
                     balance[closing]++
