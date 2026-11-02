@@ -895,6 +895,8 @@ public class UserSessionScope internal constructor(
 
     /** The host must first cancel/join public account operations and account/global observers. */
     internal suspend fun stopAccountWork() {
+        // Stop request-local previews even if later resource draining reaches its deadline.
+        this@UserSessionScope.coroutineContext.job.cancel()
         withTimeout(LogoutUseCaseImpl.SCOPE_DRAIN_TIMEOUT_MS) {
             if (isCellsInitialized) {
                 val uploadCoordinator = cells.uploadCoordinator

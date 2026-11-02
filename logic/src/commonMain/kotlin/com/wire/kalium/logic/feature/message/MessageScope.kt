@@ -55,7 +55,6 @@ import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
-import com.wire.kalium.logic.data.message.linkpreview.createPreviewHttpClient
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
@@ -684,7 +683,6 @@ public class MessageScope internal constructor(
 
     private val linkPreviewRepository: LinkPreviewRepository by lazy {
         LinkPreviewRepositoryImpl(
-            httpClient = createPreviewHttpClient(),
             kaliumFileSystem = kaliumFileSystem
         )
     }
@@ -693,7 +691,8 @@ public class MessageScope internal constructor(
         get() = GenerateLinkPreviewUseCaseImpl(
             repository = linkPreviewRepository,
             userPropertyRepository = userPropertyRepository,
-            linkPreviewEnabled = linkPreviewEnabled
+            linkPreviewEnabled = linkPreviewEnabled,
+            scope = scope
         )
 
     public val detectLinkPreviewTarget: DetectLinkPreviewTargetUseCase

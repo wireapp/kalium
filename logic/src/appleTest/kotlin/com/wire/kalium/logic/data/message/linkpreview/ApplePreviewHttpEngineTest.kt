@@ -37,7 +37,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlinx.coroutines.CancellationException
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ApplePreviewHttpEngineTest {
@@ -182,19 +182,18 @@ class ApplePreviewHttpEngineTest {
     }
 
     @Test
-    fun givenStalledConnectionOrBody_whenRequesting_thenTimesOutAsTransportFailure() = runBlocking {
+    fun givenStalledConnectionOrBody_whenFetching_thenTimesOutAsFailureNotCancellation() = runBlocking {
         val stalledConnect = ApplePreviewHttpEngine({ listOf("93.184.215.14") }) { _, _, _ -> awaitCancellation() }
         val stalledBody = ApplePreviewHttpEngine({ listOf("93.184.215.14") }) { _, _, _ ->
             StalledAfterPrefixConnection("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 100\r\n\r\nab")
         }
 
         listOf(stalledConnect, stalledBody).forEach { engine ->
-            previewTestClient(engine).use { client ->
-                val result = runCatching { client.get("https://example.com/image.png").bodyAsText() }
+            val fetcher = LinkPreviewFetcherImpl { previewTestClient(engine) }
+            val result = runCatching { fetcher.fetchImage("https://example.com/image.png") }
 
-                assertTrue(result.isFailure)
-                assertFalse(result.exceptionOrNull() is CancellationException)
-            }
+            assertNull(result.exceptionOrNull())
+            assertNull(result.getOrNull())
         }
     }
 
