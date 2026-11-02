@@ -18,7 +18,7 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.withTestUserDatabase
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import dev.mokkery.answering.returns
@@ -26,7 +26,6 @@ import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -50,8 +49,7 @@ class RefreshPendingTextPolicyIntegrationTest {
     }
 
     private suspend fun TestScope.checkPolicy(type: ConversationEntity.Type, personal: Boolean, expected: Boolean) {
-        val database = TestUserDatabase(TestUser.ENTITY_ID, StandardTestDispatcher(testScheduler))
-        try {
+        withTestUserDatabase(TestUser.ENTITY_ID) { database ->
             database.builder.conversationDAO.insertConversation(TestConversation.ENTITY.copy(type = type))
             database.builder.userDAO.upsertUser(TestUser.ENTITY)
             // The receipt query, nullable result mapping and policy UPDATE all use the real SQLite DAO and repository.
@@ -82,8 +80,6 @@ class RefreshPendingTextPolicyIntegrationTest {
             assertEquals(expected, assertIs<Message.Regular>(result.value).expectsReadConfirmation)
             val persisted = database.builder.messageDAO.getMessageById(pending.id, TestConversation.ENTITY_ID)
             assertEquals(expected, assertIs<MessageEntity.Regular>(persisted).expectsReadConfirmation)
-        } finally {
-            database.delete()
         }
     }
 }
