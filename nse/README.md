@@ -36,8 +36,8 @@ For each push, create `KaliumNSERequest` with the qualified user identity, targe
 notification ID, an additional host `showMessageContent` restriction and a budget
 between 1 and 25,000 milliseconds. Optionally pass this account's currently delivered
 message alerts in `deliveredNotifications`, and set `appPresentsAlerts` while the app is in
-the foreground and presents alerts itself: a busy or unprepared account then asks for no
-generic alert.
+the foreground and presents alerts itself: a busy or unprepared account, or legal-hold work
+left for the app, then asks for no generic alert.
 Call `process` from Swift async code. Like
 the app, the NSE first catches up over the WebSocket: it opens it, stores the REST pages
 fetched once it is open and closes it at live, then processes the stored queue to its
@@ -103,7 +103,8 @@ Supported, with the app's authorization, mapping and replay rules:
 - Connections: pending, sent, accepted, cancelled, blocked, ignored and
   missing-consent states, with the pending-request alert.
 - Users and clients: profile and availability updates, user properties, added
-  clients, removal of other clients, user deletion and team leave.
+  clients, removal of other clients, user deletion, team leave and the self user's
+  legal-hold request.
 - Feature configuration, E2EI and MLS settings, MLS migration settings and
   noninteractive X.509 credential checks.
 - MLS proposals, buffered future messages and wrong-epoch recovery by external join
@@ -116,15 +117,18 @@ messages, but does not delete them when that deadline passes; the app's expirati
 executor does.
 
 Ignored, as in the app or because the NSE has no live UI or call: typing, remote
-mute, in-call emoji and hand raises, legal-hold events and configuration, history-client signaling,
+mute, in-call emoji and hand raises, legal-hold configuration, history-client signaling,
 explicitly ignored content and unknown event types. Typing preference properties
 are still stored.
 
 Handed to the app with `appWorkPending`, leaving the event and the later queue for
 the app's incremental sync:
 
-- `LEGAL_HOLD` when app legal-hold transitions are pending, or a membership change
-  or fetched profile disagrees with the stored legal-hold status.
+- `LEGAL_HOLD` when a user's legal hold is enabled or disabled, when app legal-hold
+  transitions are pending, or when a membership change or fetched profile disagrees
+  with the stored legal-hold status. Every later attempt stops at the same event until
+  the app runs, so a push whose event waits behind it sets `presentGenericAlert`
+  unless `appPresentsAlerts`.
 - `ACCOUNT_INVALIDATION` when any stored pending row removes this client or deletes
   the account. The NSE processes no row, writes a per-client invalidation marker and
   revokes readiness, without deleting stores. Later NSE opens are `NOT_PREPARED`;

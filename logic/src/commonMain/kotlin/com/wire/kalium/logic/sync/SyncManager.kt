@@ -110,13 +110,14 @@ internal class SyncStateObserverImpl(
             incrementalSyncRepository.incrementalSyncState
         ) { slowStatus, incrementalStatus ->
             when (slowStatus) {
-                is SlowSyncStatus.Failed -> SyncState.Failed(slowStatus.failure, slowStatus.retryDelay)
+                is SlowSyncStatus.Failed -> SyncState.Failed(slowStatus.failure, slowStatus.retryDelay, slowStatus.retryStatus)
                 is SlowSyncStatus.Ongoing -> SyncState.SlowSync
                 SlowSyncStatus.Pending -> SyncState.Waiting
                 SlowSyncStatus.Complete -> {
                     when (incrementalStatus) {
                         IncrementalSyncStatus.Live -> SyncState.Live
-                        is IncrementalSyncStatus.Failed -> SyncState.Failed(incrementalStatus.failure, incrementalStatus.retryDelay)
+                        is IncrementalSyncStatus.Failed ->
+                            SyncState.Failed(incrementalStatus.failure, incrementalStatus.retryDelay, incrementalStatus.retryStatus)
                         IncrementalSyncStatus.FetchingPendingEvents -> SyncState.GatheringPendingEvents
                         IncrementalSyncStatus.Pending -> SyncState.GatheringPendingEvents
                     }

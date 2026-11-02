@@ -121,7 +121,7 @@ private fun Message.backupMessageContent(): BackupMessageContent? = when (this) 
 }
 
 private fun MessageMention.toBackupModel() = BackupMessageContent.Text.Mention(
-    userId = userId.toBackupQualifiedId(),
+    userId = userId?.toBackupQualifiedId(),
     start = start,
     length = length
 )

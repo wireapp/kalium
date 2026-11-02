@@ -402,6 +402,16 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun getConversationStartedUnverifiedWarning(conversationId: ConversationIDEntity): MessageEntity? =
+        withContext(readDispatcher.value) {
+            queries.selectByConversationIdAndSenderIdAndType(
+                conversationId,
+                selfUserId,
+                MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING,
+                mapper::toEntityMessageFromView
+            ).awaitAsList().firstOrNull()
+        }
+
     override suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity> = withContext(readDispatcher.value) {
         queries.selectConversationIdsByMessageId(id).awaitAsList()
     }
@@ -628,8 +638,12 @@ internal class MessageDAOImpl internal constructor(
             )
         }
 
-        val selfMention = newTextContent.mentions.firstOrNull { it.userId == selfUserId }
-        if (selfMention != null) {
+        val isMentioningSelf = newTextContent.mentions.any { it.userId == selfUserId } ||
+            (
+                newTextContent.mentions.any { it.isEveryone } &&
+                    conversationsQueries.selectConversationByQualifiedId(conversationId).awaitAsOneOrNull()?.type?.isGroup == true
+            )
+        if (isMentioningSelf) {
             unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
         } else {
             unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MESSAGE, currentMessageId, conversationId)
@@ -702,13 +716,16 @@ internal class MessageDAOImpl internal constructor(
         afterDate: Instant,
         untilDate: Instant,
         visibility: List<MessageEntity.Visibility>
-    ): List<String> = withContext(readDispatcher.value) {
+    ): Map<UserIDEntity, List<String>> = withContext(readDispatcher.value) {
         queries.selectMessageIdsThatExpectReadConfirmationWithinDates(
             conversation_id = conversationId,
             visibility = visibility,
             creation_date = afterDate,
             creation_date_ = untilDate
-        ).awaitAsList()
+        ).awaitAsList().groupBy(
+            keySelector = { it.sender_user_id },
+            valueTransform = { it.id }
+        )
     }
 
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode? =
@@ -743,6 +760,16 @@ internal class MessageDAOImpl internal constructor(
         return withContext(readDispatcher.value) {
             withMultipartAttachments(queries.selectAlreadyEndedEphemeralMessages(mapper::toEntityMessageFromView).awaitAsList())
         }
+    }
+
+    override suspend fun updatePendingTextPolicy(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ) = withContext(writeDispatcher.value) {
+        queries.updatePendingTextPolicy(expireAfterMillis, expectsReadConfirmation, messageId, conversationId)
+        Unit
     }
 
     override suspend fun updateSelfDeletionEndDate(

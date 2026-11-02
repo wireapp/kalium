@@ -207,6 +207,9 @@ message Mention {
     }
     // only optional to maintain backwards compatibility.
     optional QualifiedUserId qualified_user_id = 4;
+    // Explicit group-wide mention. Send without user_id or qualified_user_id.
+    // Older clients ignore this field and continue to display the literal text.
+    optional bool everyone = 5;
 }
 
 message LastRead {

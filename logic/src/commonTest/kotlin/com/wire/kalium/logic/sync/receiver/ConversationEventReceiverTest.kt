@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -240,6 +241,18 @@ class ConversationEventReceiverTest {
         receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
         receiver.onEvent(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
             .shouldFail { assertEquals(failure, it) }
+    }
+
+    @Test
+    fun givenMLSWelcomeHandlerFailsWithNoNetwork_whenStandardReceive_thenFailureIsPropagated() = runTest {
+        val event = TestEvent.newMLSWelcomeEvent()
+        val networkFailure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, receiver) = Arrangement().arrange {
+            everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(networkFailure)
+        }
+
+        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+            .shouldFail { assertEquals(networkFailure, it) }
     }
 
     @Test

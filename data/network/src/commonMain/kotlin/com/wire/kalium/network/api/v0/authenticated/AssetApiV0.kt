@@ -160,13 +160,21 @@ internal class StreamAssetContent internal constructor(
     private val encryptedDataSize: Long,
     private val fileContentStream: () -> Source,
 ) : OutgoingContent.WriteChannelContent() {
-    private val openingData: String by lazy {
+    // Content-Length must be the UTF-8 byte count, not the character count, as non-ASCII
+    // filenames would otherwise make the backend read truncated metadata JSON.
+    private val metadataBytes: ByteArray by lazy { metadata.encodeToByteArray() }
+
+    private val metadataPartHeader: String by lazy {
         buildString {
             // Part 1: Metadata
             append("--frontier\r\n")
             append("Content-Type: application/json;charset=utf-8\r\n")
-            append("Content-Length: ${metadata.length}\r\n\r\n")
-            append(metadata)
+            append("Content-Length: ${metadataBytes.size}\r\n\r\n")
+        }
+    }
+
+    private val contentPartHeader: String by lazy {
+        buildString {
             append("\r\n")
 
             // Part 2: Asset content
@@ -180,7 +188,9 @@ internal class StreamAssetContent internal constructor(
     private val closingArray = "\r\n--frontier--\r\n"
 
     override suspend fun writeTo(channel: ByteWriteChannel) {
-        channel.writeStringUtf8(openingData)
+        channel.writeStringUtf8(metadataPartHeader)
+        channel.writeFully(metadataBytes)
+        channel.writeStringUtf8(contentPartHeader)
         fileContentStream().use { source ->
             val buffer = Buffer()
             while (source.read(buffer, BUFFER_SIZE) != -1L) {

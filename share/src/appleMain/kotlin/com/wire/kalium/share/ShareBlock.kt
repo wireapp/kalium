@@ -50,8 +50,6 @@ internal enum class ShareBlock {
     /** This client has no established MLS group; joining or resetting it is app work. */
     MLS_GROUP,
 
-    /** Files only: a Cells conversation takes files through Cells, which only the app uploads to. */
-    CELLS,
 }
 
 /**

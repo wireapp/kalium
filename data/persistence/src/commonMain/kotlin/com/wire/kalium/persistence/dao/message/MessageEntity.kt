@@ -227,8 +227,10 @@ sealed interface MessageEntity {
     data class Mention(
         @SerialName("start") val start: Int,
         @SerialName("length") val length: Int,
-        @SerialName("userId") val userId: QualifiedIDEntity
-    )
+        @SerialName("userId") val userId: QualifiedIDEntity?
+    ) {
+        val isEveryone: Boolean get() = userId == null
+    }
 
     @Serializable
     data class LinkPreview(

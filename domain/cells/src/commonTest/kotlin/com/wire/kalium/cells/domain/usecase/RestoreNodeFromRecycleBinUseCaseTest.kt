@@ -24,8 +24,6 @@ import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import com.wire.kalium.logic.data.message.CellAssetContent
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
@@ -37,35 +35,20 @@ import kotlin.test.Test
 class RestoreNodeFromRecycleBinUseCaseTest {
 
     @Test
-    fun givenRestoreSuccessAndLocalFileAvailable_whenRestoreNode_thenLocalFileStatusIsUpdated() = runTest {
+    fun givenRestoreSuccess_whenRestoreNode_thenAttachmentStatusIsRefreshed() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withNodeRestoreSuccess()
-            .withLocalAttachment()
             .arrange()
 
         useCase("assetId")
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.attachmentsRepository.setAssetTransferStatus("assetId", AssetTransferStatus.SAVED_INTERNALLY)
+            arrangement.attachmentsRepository.refreshRestoredAttachmentStatus(listOf("assetId"))
         }
     }
 
     @Test
-    fun givenRestoreSuccessAndLocalFileNotAvailable_whenRestoreNode_thenLocalFileStatusIsUpdated() = runTest {
-        val (arrangement, useCase) = Arrangement()
-            .withNodeRestoreSuccess()
-            .withLocalAttachment(testAttachment.copy(localPath = null))
-            .arrange()
-
-        useCase("assetId")
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.attachmentsRepository.setAssetTransferStatus("assetId", AssetTransferStatus.NOT_DOWNLOADED)
-        }
-    }
-
-    @Test
-    fun givenRestoreFailure_whenRestoreNode_thenLocalFileStatusIsNotUpdated() = runTest {
+    fun givenRestoreFailure_whenRestoreNode_thenAttachmentStatusIsNotRefreshed() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withNodeRestoreFailure()
             .arrange()
@@ -73,7 +56,7 @@ class RestoreNodeFromRecycleBinUseCaseTest {
         useCase("assetId")
 
         verifySuspend(VerifyMode.not) {
-            arrangement.attachmentsRepository.setAssetTransferStatus(any(), any())
+            arrangement.attachmentsRepository.refreshRestoredAttachmentStatus(any())
         }
     }
 
@@ -90,13 +73,9 @@ class RestoreNodeFromRecycleBinUseCaseTest {
             everySuspend { cellsRepository.restoreNode(any()) } returns NetworkFailure.NoNetworkConnection(null).left()
         }
 
-        suspend fun withLocalAttachment(attachment: CellAssetContent = testAttachment) = apply {
-            everySuspend { attachmentsRepository.getAttachment(any()) }.returns(attachment.right())
-        }
-
         suspend fun arrange(): Pair<Arrangement, RestoreNodeFromRecycleBinUseCase> {
 
-            everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) } returns Unit.right()
+            everySuspend { attachmentsRepository.refreshRestoredAttachmentStatus(any()) } returns Unit.right()
 
             return this to RestoreNodeFromRecycleBinUseCaseImpl(
                 cellsRepository = cellsRepository,
@@ -105,17 +84,3 @@ class RestoreNodeFromRecycleBinUseCaseTest {
         }
     }
 }
-
-private val testAttachment = CellAssetContent(
-    id = "assetId",
-    versionId = "versionId",
-    mimeType = "image/png",
-    assetPath = "assetPath",
-    assetSize = 1024,
-    contentHash = "contentHash",
-    localPath = "localPath",
-    contentUrl = "http://contentUrl",
-    previewUrl = "http://previewUrl",
-    metadata = null,
-    transferStatus = AssetTransferStatus.SAVED_INTERNALLY
-)

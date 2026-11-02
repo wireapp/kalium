@@ -68,8 +68,12 @@ Once the extension stored a message, the send finishes within its budget: stoppi
 message twice.
 Nothing is stored until every upload succeeded; each file then becomes an uploaded asset
 message, so a message that fails to send is retried in the app without uploading again. The extension
-follows the app's file rules: file sharing, allowed types, size limits, and Cells conversations, whose
-files only the app uploads.
+follows the app's file rules: file sharing, allowed types and size limits. Cells files use the app's
+Cells transport as unpublished drafts. One multipart message is stored with its caption before publication.
+Before storage, cancellation or rejection cancels those draft versions. After storage, the message owns
+publication and retry; a failed publish keeps the message retryable. Publication checks server state so
+retrying a sent-but-unacknowledged publish does not publish the same version again.
+This path takes explicit files and never reads or consumes the conversation's composer draft.
 
 ## Implementation
 

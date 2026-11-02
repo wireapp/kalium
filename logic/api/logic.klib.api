@@ -3239,6 +3239,7 @@ abstract class com.wire.kalium.logic.sync/SyncExecutor { // com.wire.kalium.logi
 
     abstract fun startAndStopSyncAsNeeded() // com.wire.kalium.logic.sync/SyncExecutor.startAndStopSyncAsNeeded|startAndStopSyncAsNeeded(){}[0]
     abstract suspend fun <#A1: kotlin/Any?> request(kotlin.coroutines/SuspendFunction1<com.wire.kalium.logic.sync/SyncRequest, #A1>): #A1 // com.wire.kalium.logic.sync/SyncExecutor.request|request(kotlin.coroutines.SuspendFunction1<com.wire.kalium.logic.sync.SyncRequest,0:0>){0§<kotlin.Any?>}[0]
+    abstract suspend fun retryNow() // com.wire.kalium.logic.sync/SyncExecutor.retryNow|retryNow(){}[0]
     abstract suspend fun stopForRestart() // com.wire.kalium.logic.sync/SyncExecutor.stopForRestart|stopForRestart(){}[0]
 }
 
@@ -6789,16 +6790,19 @@ sealed class com.wire.kalium.logic.data.conversation/ResetMLSConversationResult 
 
 sealed class com.wire.kalium.logic.data.sync/SyncState { // com.wire.kalium.logic.data.sync/SyncState|null[0]
     final class Failed : com.wire.kalium.logic.data.sync/SyncState { // com.wire.kalium.logic.data.sync/SyncState.Failed|null[0]
-        constructor <init>(com.wire.kalium.common.error/CoreFailure, kotlin.time/Duration) // com.wire.kalium.logic.data.sync/SyncState.Failed.<init>|<init>(com.wire.kalium.common.error.CoreFailure;kotlin.time.Duration){}[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure, kotlin.time/Duration, com.wire.kalium.logic.data.sync/SyncRetryStatus = ...) // com.wire.kalium.logic.data.sync/SyncState.Failed.<init>|<init>(com.wire.kalium.common.error.CoreFailure;kotlin.time.Duration;com.wire.kalium.logic.data.sync.SyncRetryStatus){}[0]
 
         final val cause // com.wire.kalium.logic.data.sync/SyncState.Failed.cause|{}cause[0]
             final fun <get-cause>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.data.sync/SyncState.Failed.cause.<get-cause>|<get-cause>(){}[0]
         final val retryDelay // com.wire.kalium.logic.data.sync/SyncState.Failed.retryDelay|{}retryDelay[0]
             final fun <get-retryDelay>(): kotlin.time/Duration // com.wire.kalium.logic.data.sync/SyncState.Failed.retryDelay.<get-retryDelay>|<get-retryDelay>(){}[0]
+        final val retryStatus // com.wire.kalium.logic.data.sync/SyncState.Failed.retryStatus|{}retryStatus[0]
+            final fun <get-retryStatus>(): com.wire.kalium.logic.data.sync/SyncRetryStatus // com.wire.kalium.logic.data.sync/SyncState.Failed.retryStatus.<get-retryStatus>|<get-retryStatus>(){}[0]
 
         final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.data.sync/SyncState.Failed.component1|component1(){}[0]
         final fun component2(): kotlin.time/Duration // com.wire.kalium.logic.data.sync/SyncState.Failed.component2|component2(){}[0]
-        final fun copy(com.wire.kalium.common.error/CoreFailure = ..., kotlin.time/Duration = ...): com.wire.kalium.logic.data.sync/SyncState.Failed // com.wire.kalium.logic.data.sync/SyncState.Failed.copy|copy(com.wire.kalium.common.error.CoreFailure;kotlin.time.Duration){}[0]
+        final fun component3(): com.wire.kalium.logic.data.sync/SyncRetryStatus // com.wire.kalium.logic.data.sync/SyncState.Failed.component3|component3(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ..., kotlin.time/Duration = ..., com.wire.kalium.logic.data.sync/SyncRetryStatus = ...): com.wire.kalium.logic.data.sync/SyncState.Failed // com.wire.kalium.logic.data.sync/SyncState.Failed.copy|copy(com.wire.kalium.common.error.CoreFailure;kotlin.time.Duration;com.wire.kalium.logic.data.sync.SyncRetryStatus){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.sync/SyncState.Failed.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.sync/SyncState.Failed.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.data.sync/SyncState.Failed.toString|toString(){}[0]
@@ -9245,6 +9249,6 @@ final fun (kotlin/String).com.wire.kalium.logic.util/splitFileExtension(): kotli
 final fun (kotlin/String).com.wire.kalium.logic.util/splitFileExtensionAndCopyCounter(): kotlin/Triple<kotlin/String, kotlin/Int, kotlin/String?> // com.wire.kalium.logic.util/splitFileExtensionAndCopyCounter|splitFileExtensionAndCopyCounter@kotlin.String(){}[0]
 final fun com.wire.kalium.logic.util/ExponentialDurationHelper(kotlin.time/Duration, kotlin.time/Duration): com.wire.kalium.logic.util/ExponentialDurationHelper // com.wire.kalium.logic.util/ExponentialDurationHelper|ExponentialDurationHelper(kotlin.time.Duration;kotlin.time.Duration){}[0]
 final fun com.wire.kalium.logic.util/buildFileName(kotlin/String, kotlin/String? = ..., kotlin/Int = ...): kotlin/String // com.wire.kalium.logic.util/buildFileName|buildFileName(kotlin.String;kotlin.String?;kotlin.Int){}[0]
-final suspend fun (com.wire.kalium.logic.feature/UserSessionScope).com.wire.kalium.logic.feature.share/serveShareExtension(kotlinx.coroutines.flow/Flow<kotlin/Unit>) // com.wire.kalium.logic.feature.share/serveShareExtension|serveShareExtension@com.wire.kalium.logic.feature.UserSessionScope(kotlinx.coroutines.flow.Flow<kotlin.Unit>){}[0]
+final suspend fun (com.wire.kalium.logic.feature/UserSessionScope).com.wire.kalium.logic.feature.share/serveShareExtension(kotlinx.coroutines.flow/Flow<kotlin/Unit>, kotlin.coroutines/SuspendFunction3<com.wire.kalium.logic.data.id/QualifiedID, kotlin/String?, kotlin/String, kotlin/Unit>) // com.wire.kalium.logic.feature.share/serveShareExtension|serveShareExtension@com.wire.kalium.logic.feature.UserSessionScope(kotlinx.coroutines.flow.Flow<kotlin.Unit>;kotlin.coroutines.SuspendFunction3<com.wire.kalium.logic.data.id.QualifiedID,kotlin.String?,kotlin.String,kotlin.Unit>){}[0]
 final suspend fun (com.wire.kalium.logic.feature/UserSessionScope).com.wire.kalium.logic.feature/attachLocalVideoPreview(com.wire.kalium.logic.util/PlatformView): com.wire.kalium.logic.feature/LocalVideoPreviewAttachment // com.wire.kalium.logic.feature/attachLocalVideoPreview|attachLocalVideoPreview@com.wire.kalium.logic.feature.UserSessionScope(com.wire.kalium.logic.util.PlatformView){}[0]
 final suspend fun (com.wire.kalium.logic.feature/UserSessionScope).com.wire.kalium.logic.feature/attachRemoteVideoView(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, com.wire.kalium.logic.util/PlatformView): com.wire.kalium.logic.feature/RemoteVideoViewAttachment // com.wire.kalium.logic.feature/attachRemoteVideoView|attachRemoteVideoView@com.wire.kalium.logic.feature.UserSessionScope(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;com.wire.kalium.logic.util.PlatformView){}[0]

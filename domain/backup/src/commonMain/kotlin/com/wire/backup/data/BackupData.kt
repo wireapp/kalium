@@ -159,7 +159,7 @@ public sealed class BackupMessageContent {
      * Represents a text message with possible user mentions and serves as a part of the backup message content.
      *
      * @property text The content of the text message.
-     * @property mentions A list of mentions within the text. Each mention identifies a specific user and its position in the text.
+     * @property mentions Mentions of a specific user or everyone and their positions within the text.
      * @property quotedMessageId The ID of a message that is being quoted by this one, if any.
      *
      * @throws IllegalArgumentException if any mention's range exceeds the length of the text.
@@ -173,7 +173,7 @@ public sealed class BackupMessageContent {
         /**
          * Represents a mention of a user in a text.
          *
-         * @property userId The identifier of the user being mentioned.
+         * @property userId The mentioned user, or null for everyone in a group conversation.
          * @property start The starting position of the mention in the text. Must be non-negative.
          * @property length The length of the mention. Must be a positive value.
          *
@@ -181,7 +181,7 @@ public sealed class BackupMessageContent {
          */
         @Serializable
         public data class Mention(
-            @SerialName("userId") val userId: BackupQualifiedId,
+            @SerialName("userId") val userId: BackupQualifiedId?,
             @SerialName("start") val start: Int,
             @SerialName("length") val length: Int
         ) {

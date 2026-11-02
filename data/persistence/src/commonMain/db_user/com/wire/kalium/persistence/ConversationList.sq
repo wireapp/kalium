@@ -94,7 +94,7 @@ SELECT
     CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
     CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
     CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS updateConversationName,
-    EXISTS (SELECT 1 FROM MessageMention WHERE message_id = Message.id AND conversation_id = P.qualified_id AND user_id = P.selfUserId) AS isMentioningSelfUser,
+    EXISTS (SELECT 1 FROM MessageMention WHERE message_id = Message.id AND conversation_id = P.qualified_id AND (user_id = P.selfUserId OR (user_id IS NULL AND C.type IN ('GROUP', 'CHANNEL', 'MEETING')))) AS isMentioningSelfUser,
     TextContent.is_quoting_self AS isQuotingSelfUser,
     TextContent.text_body AS messageText,
     AssetContent.asset_mime_type AS assetMimeType
@@ -203,7 +203,7 @@ SELECT
     CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
     CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
     CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS updateConversationName,
-    EXISTS (SELECT 1 FROM MessageMention WHERE message_id = Message.id AND conversation_id = P.qualified_id AND user_id = P.selfUserId) AS isMentioningSelfUser,
+    EXISTS (SELECT 1 FROM MessageMention WHERE message_id = Message.id AND conversation_id = P.qualified_id AND (user_id = P.selfUserId OR (user_id IS NULL AND C.type IN ('GROUP', 'CHANNEL', 'MEETING')))) AS isMentioningSelfUser,
     TextContent.is_quoting_self AS isQuotingSelfUser,
     TextContent.text_body AS messageText,
     AssetContent.asset_mime_type AS assetMimeType

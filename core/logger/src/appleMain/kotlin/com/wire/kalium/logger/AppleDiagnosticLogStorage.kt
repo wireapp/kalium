@@ -38,6 +38,7 @@ import platform.posix.O_RDWR
 import platform.posix.S_IRUSR
 import platform.posix.S_IWUSR
 import platform.posix.close
+import platform.posix.errno
 import platform.posix.flock
 import platform.posix.open
 
@@ -63,7 +64,7 @@ internal class AppleDiagnosticLogStorage(
         require(maxFileBytes > 0 && rolledFiles > 0) { "Diagnostic retention limits must be positive" }
     }
 
-    fun append(timestamp: String, severity: Severity, message: String, tag: String, throwable: Throwable?) = coordinated {
+    fun append(timestamp: String, severity: Severity, message: String, tag: String, throwable: Throwable?) = coordinated("append") {
         prepareDirectory()
         requireRegularOrMissing(active)
         if ((fileSystem.metadataOrNull(active)?.size ?: 0) >= maxFileBytes) rotate()
@@ -74,9 +75,9 @@ internal class AppleDiagnosticLogStorage(
         }
     }
 
-    fun checkAccess() = coordinated { prepareDirectory() }
+    fun checkAccess() = coordinated("maintenance") { prepareDirectory() }
 
-    fun checkpoint(coverage: String) = coordinated {
+    fun checkpoint(coverage: String) = coordinated("checkpoint") {
         prepareDirectory()
         writeCheckpoint(coverage)
     }
@@ -89,7 +90,7 @@ internal class AppleDiagnosticLogStorage(
         fileSystem.atomicMove(temporary, coverageFile)
     }
 
-    fun snapshot(destinationPath: String, coverage: String) = coordinated {
+    fun snapshot(destinationPath: String, coverage: String) = coordinated("snapshot") {
         prepareDirectory()
         val destination = destinationPath.toPath(normalize = true)
         require(destination.isAbsolute && !destination.toString().startsWith("$directory/")) {
@@ -106,7 +107,7 @@ internal class AppleDiagnosticLogStorage(
         }
     }
 
-    fun delete() = coordinated {
+    fun delete() = coordinated("delete") {
         prepareDirectory()
         logFiles().forEach { fileSystem.delete(it) }
     }
@@ -140,17 +141,23 @@ internal class AppleDiagnosticLogStorage(
         fileSystem.atomicMove(active, directory / "$baseName-1.log")
     }
 
-    private inline fun <T> coordinated(block: () -> T): T {
+    private inline fun <T> coordinated(operation: String, block: () -> T): T {
         fileSystem.createDirectories(root)
         // Never delete or export this inode: every participating process must lock the same file.
         val descriptor = open((root / LOCK_FILE_NAME).toString(), O_CREAT or O_RDWR or O_CLOEXEC or O_NOFOLLOW, S_IRUSR or S_IWUSR)
         if (descriptor < 0) throw IOException("Diagnostic lock is unavailable")
+        val trace = AppleSuspensionDiagnostics.beginLock("kalium_diagnostic_logging", operation, descriptor)
         try {
-            if (flock(descriptor, LOCK_EX or LOCK_NB) != 0) throw IOException("Diagnostic logs are busy")
+            val result = flock(descriptor, LOCK_EX or LOCK_NB)
+            val error = if (result == 0) 0 else errno
+            AppleSuspensionDiagnostics.acquired(trace, result, error)
+            if (result != 0) throw IOException("Diagnostic logs are busy")
             return block()
         } finally {
             // close releases flock. An interrupted close must not be retried with a potentially reused descriptor.
-            close(descriptor)
+            val result = close(descriptor)
+            val error = if (result == 0) 0 else errno
+            AppleSuspensionDiagnostics.closed(trace, result, error)
         }
     }
 

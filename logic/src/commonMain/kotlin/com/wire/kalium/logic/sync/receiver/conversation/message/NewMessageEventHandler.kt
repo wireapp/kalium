@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.util.EventProcessingLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
 
@@ -78,6 +79,7 @@ internal class NewMessageEventHandlerImpl(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val resetMLSConversation: ResetMLSConversationUseCase,
     private val receiveRecovery: MLSReceiveRecoveryHandler? = null,
+    private val bufferedMLSMessageRecoveryTracker: BufferedMLSMessageRecoveryTracker = BufferedMLSMessageRecoveryTracker(),
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -149,7 +151,8 @@ internal class NewMessageEventHandlerImpl(
         )
     }
 
-    @Suppress("ReturnCount") // Receipt replay and successful recovery terminate before normal message effects.
+    @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod")
+    // Receipt replay and successful recovery terminate before normal message effects.
     override suspend fun handleNewMLSMessage(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMLSMessage,
@@ -171,6 +174,11 @@ internal class NewMessageEventHandlerImpl(
                         Either.Right(Unit)
                     }
 
+                    is MLSMessageFailureResolution.Buffered -> {
+                        handleBufferedMLSMessage(transactionContext, event, failure, eventLogger)
+                        Either.Right(Unit)
+                    }
+
                     is MLSMessageFailureResolution.InformUser -> {
                         eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
                         persistMLSDecryptionFailure(event)
@@ -178,6 +186,7 @@ internal class NewMessageEventHandlerImpl(
                     }
 
                     is MLSMessageFailureResolution.OutOfSync -> {
+                        bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
                         eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
                         staleEpochVerifier.verifyEpoch(
                             transactionContext,
@@ -188,6 +197,7 @@ internal class NewMessageEventHandlerImpl(
                     }
 
                     MLSMessageFailureResolution.ResetConversation -> {
+                        bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
                         eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
                         resetMLSConversation(event.conversationId, transactionContext).toEither()
                     }
@@ -195,6 +205,7 @@ internal class NewMessageEventHandlerImpl(
             }
             is Either.Right -> {
                 val batchResult = unpackResult.value
+                bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
                 batchResult.forEach { message ->
                     if (message is MessageUnpackResult.ApplicationMessage) {
                         processApplicationMessage(transactionContext, message, deliveryInfo)
@@ -228,6 +239,38 @@ internal class NewMessageEventHandlerImpl(
                     senderUserId = event.senderUserId
                 )
             )
+        }
+    }
+
+    private suspend fun handleBufferedMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.NewMLSMessage,
+        failure: CoreFailure,
+        eventLogger: EventProcessingLogger
+    ) {
+        val shouldRecover = bufferedMLSMessageRecoveryTracker.observeBufferedMessage(
+            event.conversationId,
+            event.subconversationId,
+            event.messageInstant
+        )
+        if (shouldRecover) {
+            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED_RECOVERY")
+            staleEpochVerifier.verifyEpoch(
+                transactionContext,
+                event.conversationId,
+                event.subconversationId,
+                event.messageInstant
+            ).onSuccess {
+                bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
+            }.onFailure { recoveryFailure ->
+                // Tracking window is kept, so the next buffered message retries the recovery.
+                logger.w(
+                    "Buffered MLS message recovery failed for conversation ${event.conversationId.toLogString()}, " +
+                        "will retry on next buffered message: $recoveryFailure"
+                )
+            }
+        } else {
+            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED")
         }
     }
 

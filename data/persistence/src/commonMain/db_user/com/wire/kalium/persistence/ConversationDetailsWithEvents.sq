@@ -41,7 +41,10 @@ SELECT
     CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS lastMessageMemberChangeList,
     CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS lastMessageMemberChangeType,
     CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS lastMessageUpdateConversationName,
-    COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
+    EXISTS (SELECT 1 FROM MessageMention
+        WHERE message_id = Message.id AND conversation_id = Message.conversation_id
+            AND (user_id = ConversationDetails.selfUserId
+                OR (user_id IS NULL AND ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING')))) AS lastMessageIsMentioningSelfUser,
     TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
     COALESCE(TextContent.text_body, PollContent.question) AS lastMessageText,
     AssetContent.asset_mime_type AS lastMessageAssetMimeType
@@ -58,8 +61,6 @@ LEFT JOIN User
     ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageSystemContent AS SystemContent
     ON LastMessage.message_id = SystemContent.message_id AND LastMessage.conversation_id = SystemContent.conversation_id
-LEFT JOIN MessageMention AS Mention
-    ON LastMessage.message_id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
 LEFT JOIN MessageAssetContent AS AssetContent
     ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent

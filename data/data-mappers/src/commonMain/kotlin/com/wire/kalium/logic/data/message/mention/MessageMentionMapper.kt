@@ -45,43 +45,38 @@ class MessageMentionMapperImpl(
         return mention.toDao()
     }
 
-    override fun fromProtoToModel(mention: Mention): MessageMention? = mention.qualifiedUserId?.let {
-        MessageMention(
-            start = mention.start,
-            length = mention.length,
-            userId = idMapper.fromProtoUserId(it),
-            isSelfMention = idMapper.fromProtoUserId(it) == selfUserId
-        )
-    } ?: run {
-        mention.mentionType?.let { mentionType ->
-            val userId = UserId(mentionType.value as String, selfUserId.domain)
-            MessageMention(
-                start = mention.start,
-                length = mention.length,
-                userId = userId,
-                isSelfMention = userId == selfUserId
-            )
-
-        } ?: run { null }
+    override fun fromProtoToModel(mention: Mention): MessageMention? {
+        if (mention.everyone == true) {
+            // Conflicting targets must never turn a malformed mention into a broadcast.
+            val hasUserTarget = mention.qualifiedUserId != null || mention.mentionType != null
+            val hasInvalidRange = mention.start < 0 || mention.length <= 0
+            return if (hasUserTarget || hasInvalidRange) null else {
+                MessageMention(mention.start, mention.length, userId = null, isSelfMention = true)
+            }
+        }
+        val userId = mention.qualifiedUserId?.let(idMapper::fromProtoUserId)
+            ?: (mention.mentionType as? Mention.MentionType.UserId)?.value?.let { UserId(it, selfUserId.domain) }
+        return userId?.let { MessageMention(mention.start, mention.length, it, isSelfMention = it == selfUserId) }
     }
 
     override fun fromModelToProto(mention: MessageMention): Mention = Mention(
         start = mention.start,
         length = mention.length,
-        qualifiedUserId = idMapper.toProtoUserId(mention.userId),
-        mentionType = Mention.MentionType.UserId(mention.userId.value)
+        qualifiedUserId = mention.userId?.let(idMapper::toProtoUserId),
+        mentionType = mention.userId?.let { Mention.MentionType.UserId(it.value) },
+        everyone = true.takeIf { mention.isEveryone }
     )
 }
 
 fun MessageEntity.Mention.toModel(selfUserId: UserId?): MessageMention = MessageMention(
     start = start,
     length = length,
-    userId = userId.toModel(),
-    isSelfMention = userId.toModel() == selfUserId
+    userId = userId?.toModel(),
+    isSelfMention = isEveryone || userId?.toModel() == selfUserId
 )
 
 fun MessageMention.toDao(): MessageEntity.Mention = MessageEntity.Mention(
     start = start,
     length = length,
-    userId = userId.toDao()
+    userId = userId?.toDao()
 )

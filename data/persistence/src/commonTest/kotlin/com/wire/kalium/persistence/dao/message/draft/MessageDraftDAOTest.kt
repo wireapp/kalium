@@ -71,6 +71,14 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun everyoneMentionSurvivesDraftPersistence() = runTest {
+        insertInitialData()
+        val draft = MESSAGE_DRAFT.copy(text = "@all hello", selectedMentionList = listOf(MessageEntity.Mention(0, 4, null)))
+        messageDraftDAO.upsertMessageDraft(draft)
+        assertEquals(draft, messageDraftDAO.getMessageDraft(draft.conversationId))
+    }
+
+    @Test
     fun givenAlreadyExistingMessageDraft_whenUpsertingTextChange_thenItShouldBeProperlyUpdatedInDb() = runTest {
         // Given
         insertInitialData()

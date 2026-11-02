@@ -481,12 +481,27 @@ internal class MessageInsertExtensionImpl(
                     message.content as MessageEntityContent.Text
                 )
 
+                is MessageEntityContent.Multipart -> {
+                    val caption = message.content as MessageEntityContent.Multipart
+                    if (caption.mentions.any { it.isEveryone } && !caption.messageBody.isNullOrBlank()) {
+                        insertUnreadTextContent(
+                            message,
+                            MessageEntityContent.Text(
+                                messageBody = caption.messageBody.orEmpty(),
+                                mentions = caption.mentions,
+                                quotedMessageId = caption.quotedMessageId
+                            )
+                        )
+                    } else {
+                        unreadEventsQueries.insertEvent(message.id, UnreadEventTypeEntity.MESSAGE, message.conversationId, message.date)
+                    }
+                }
+
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.Composite,
                 is MessageEntityContent.Poll,
                 is MessageEntityContent.Location,
-                is MessageEntityContent.Multipart,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MESSAGE,
@@ -552,7 +567,12 @@ internal class MessageInsertExtensionImpl(
                 message.date
             )
 
-            textContent.mentions.map { it.userId }.contains(selfUserIDEntity) ->
+            textContent.mentions.any { it.userId == selfUserIDEntity } ||
+                (
+                    textContent.mentions.any { it.isEveryone } &&
+                        conversationsQueries.selectConversationByQualifiedId(message.conversationId)
+                            .awaitAsOneOrNull()?.type?.isGroup == true
+                ) ->
                 unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MENTION,

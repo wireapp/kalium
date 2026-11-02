@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.data
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadAttempt
 import com.wire.kalium.cells.domain.CellUploadInfo
@@ -25,7 +24,6 @@ import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.CellNode
-import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -52,7 +50,8 @@ internal class CellUploadManagerImpl internal constructor(
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
 ) : CellUploadManager {
 
-    private val uploads = mutableMapOf<String, UploadInfo>()
+    // Uploads are registered and completed on concurrent workers, including native draft owners.
+    private val uploads = MutableStateFlow<Map<String, UploadInfo>>(emptyMap())
     private val outcomes = CellUploadOutcomes()
 
     override suspend fun upload(
@@ -60,22 +59,8 @@ internal class CellUploadManagerImpl internal constructor(
         assetSize: Long,
         destNodePath: String,
     ): Either<NetworkFailure, CellNode> =
-        repository.preCheck(destNodePath).map { result ->
-
-            val path = when (result) {
-                is PreCheckResult.FileExists -> result.nextPath
-                is PreCheckResult.Success -> destNodePath
-            }
-
-            CellNode(
-                uuid = Uuid.random().toString(),
-                versionId = Uuid.random().toString(),
-                path = path,
-                size = assetSize,
-                isDraft = true,
-            ).also {
-                startUpload(localPath, it)
-            }
+        repository.prepareUploadNode(destNodePath, assetSize).map { node ->
+            node.also { startUpload(localPath, it) }
         }
 
     private fun startUpload(localPath: Path, node: CellNode) {
@@ -91,7 +76,7 @@ internal class CellUploadManagerImpl internal constructor(
             )
                 .onSuccess {
                     outcomes.record(node.uuid, CellUploadEvent.UploadCompleted)
-                    uploads.remove(node.uuid)
+                    uploads.update { it - node.uuid }
                     uploadEventsFlow.emit(CellUploadEvent.UploadCompleted)
                 }
                 .onFailure { failure ->
@@ -103,17 +88,18 @@ internal class CellUploadManagerImpl internal constructor(
                 }
         }
 
-        uploads[node.uuid] = UploadInfo(
+        val info = UploadInfo(
             node = node,
             job = uploadJob,
             localPath = localPath,
             events = uploadEventsFlow,
         )
+        uploads.update { it + (node.uuid to info) }
         uploadJob.start()
     }
 
     override fun retryUpload(nodeUuid: String) {
-        uploads[nodeUuid]?.let { uploadInfo ->
+        uploads.value[nodeUuid]?.let { uploadInfo ->
             if (fileSystem.exists(uploadInfo.localPath)) {
                 startUpload(uploadInfo.localPath, uploadInfo.node)
             } else {
@@ -127,7 +113,7 @@ internal class CellUploadManagerImpl internal constructor(
 
     override fun retryDraftUpload(draft: AttachmentDraft): Boolean {
         val path = draft.localFilePath.toPath()
-        val retained = uploads[draft.uuid]
+        val retained = uploads.value[draft.uuid]
         if (draft.versionId.isBlank() || !fileSystem.exists(path) || retained?.uploadFailed == false) return false
         val node = retained?.node ?: CellNode(
             uuid = draft.uuid,
@@ -141,7 +127,7 @@ internal class CellUploadManagerImpl internal constructor(
     }
 
     private fun updateUploadProgress(nodeUuid: String, uploaded: Long) {
-        uploads[nodeUuid]?.let { info ->
+        uploads.value[nodeUuid]?.let { info ->
             val progress = info.node.size?.let { uploaded.toFloat() / it } ?: 0f
             updateJobInfo(info.node.uuid) { copy(progress = progress) }
             uploadScope.launch {
@@ -151,10 +137,10 @@ internal class CellUploadManagerImpl internal constructor(
     }
 
     override suspend fun cancelUpload(nodeUuid: String) {
-        uploads[nodeUuid]?.let { cancelAttempt(nodeUuid, it) }
+        uploads.value[nodeUuid]?.let { cancelAttempt(nodeUuid, it) }
     }
 
-    override fun captureUploadAttempt(nodeUuid: String): CellUploadAttempt? = uploads[nodeUuid]?.let { captured ->
+    override fun captureUploadAttempt(nodeUuid: String): CellUploadAttempt? = uploads.value[nodeUuid]?.let { captured ->
         object : CellUploadAttempt {
             override suspend fun awaitStopped() { captured.job.join() }
             override suspend fun cancelAndAwait() { cancelAttempt(nodeUuid, captured) }
@@ -162,20 +148,22 @@ internal class CellUploadManagerImpl internal constructor(
     }
 
     private suspend fun cancelAttempt(nodeUuid: String, captured: UploadInfo) {
-        if (uploads[nodeUuid]?.job === captured.job) outcomes.record(nodeUuid, CellUploadEvent.UploadCancelled)
+        if (uploads.value[nodeUuid]?.job === captured.job) outcomes.record(nodeUuid, CellUploadEvent.UploadCancelled)
         captured.events.emit(CellUploadEvent.UploadCancelled)
         captured.job.cancelAndJoin()
-        if (uploads[nodeUuid]?.job === captured.job) uploads.remove(nodeUuid)
+        uploads.update { current ->
+            if (current[nodeUuid]?.job === captured.job) current - nodeUuid else current
+        }
     }
 
     override fun consumeUploadOutcome(nodeUuid: String): CellUploadEvent? = outcomes.consume(nodeUuid)
 
     override fun observeUpload(nodeUuid: String): Flow<CellUploadEvent>? {
-        return uploads[nodeUuid]?.events?.asSharedFlow()
+        return uploads.value[nodeUuid]?.events?.asSharedFlow()
     }
 
     override fun getUploadInfo(nodeUuid: String): CellUploadInfo? {
-        return uploads[nodeUuid]?.run {
+        return uploads.value[nodeUuid]?.run {
             CellUploadInfo(
                 progress = progress,
                 uploadFailed = uploadFailed,
@@ -185,11 +173,13 @@ internal class CellUploadManagerImpl internal constructor(
     }
 
     override fun isUploading(nodeUuid: String): Boolean {
-        return uploads.containsKey(nodeUuid)
+        return uploads.value.containsKey(nodeUuid)
     }
 
     private fun updateJobInfo(uuid: String, block: UploadInfo.() -> UploadInfo) {
-        uploads[uuid]?.let { uploads[uuid] = block(it) }
+        uploads.update { current ->
+            current[uuid]?.let { current + (uuid to block(it)) } ?: current
+        }
     }
 }
 

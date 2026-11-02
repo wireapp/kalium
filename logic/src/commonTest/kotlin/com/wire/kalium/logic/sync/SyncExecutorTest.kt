@@ -18,18 +18,22 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
+import com.wire.kalium.logic.data.sync.SyncRetryStatus
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.fakes.sync.FakeIncrementalSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSlowSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSyncStateObserver
+import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
@@ -42,14 +46,32 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 class SyncExecutorTest {
+    @Test
+    fun refreshResetsBothBackoffsWithoutReplacingActiveExecution() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, executor) = Arrangement(backgroundScope).arrange()
+        executor.startAndStopSyncAsNeeded()
+        val owner = backgroundScope.launch { executor.request { awaitCancellation() } }
+        runCurrent()
+        val starts = arrangement.slowSyncManager.performSyncFlowCount
+        assertEquals(1, starts)
+        executor.retryNow()
+        runCurrent()
+        assertEquals(1, arrangement.slowSyncManager.resetRetryBackoffCount)
+        assertEquals(1, arrangement.incrementalSyncManager.resetRetryBackoffCount)
+        assertEquals(starts, arrangement.slowSyncManager.performSyncFlowCount)
+        assertEquals(0, arrangement.slowSyncManager.cancelledSyncFlowCount)
+        owner.cancel()
+    }
 
     @Test
     fun givenNoRequests_whenStartingAsNeeded_thenShouldNotStartAnySync() = runTest(TestKaliumDispatcher.default) {
@@ -586,7 +608,7 @@ class SyncExecutorTest {
         }
 
     @Test
-    fun givenSyncFailed_whenNewRequestStarts_thenShouldRestartSyncImmediately() =
+    fun givenSyncFailed_whenNewRequestStarts_thenShouldWakeRetryWithFreshBackoffWithoutRestartingSync() =
         runTest(TestKaliumDispatcher.default) {
             val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
             val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
@@ -601,15 +623,17 @@ class SyncExecutorTest {
                 arrangement.syncStateObserver.mutableSyncState.emit(
                     SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds)
                 )
+                val retry = arrangement.awaitRetry()
                 advanceUntilIdle()
 
                 syncExecutor.request {
                     advanceUntilIdle()
-                    assertEquals(2, arrangement.incrementalSyncManager.performSyncFlowCount)
-                    assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+                    assertEquals(RetryTrigger.USER_REQUESTED, retry.await())
+                    assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+                    assertEquals(0, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
                     assertEquals(1, arrangement.incrementalSyncManager.fakeSyncFlow.subscriptionCount.value)
-                    assertEquals(0, arrangement.slowSyncManager.resetRetryBackoffCount)
-                    assertEquals(0, arrangement.incrementalSyncManager.resetRetryBackoffCount)
+                    assertEquals(1, arrangement.slowSyncManager.resetRetryBackoffCount)
+                    assertEquals(1, arrangement.incrementalSyncManager.resetRetryBackoffCount)
                 }
             }
             syncScope.cancel()
@@ -643,7 +667,7 @@ class SyncExecutorTest {
         }
 
     @Test
-    fun givenFailedSync_whenNewRequestWaitsForLive_thenShouldRestartSyncExactlyOnce() =
+    fun givenFailedSync_whenNewRequestWaitsForLive_thenShouldWakeRetryExactlyOnce() =
         runTest(TestKaliumDispatcher.default) {
             val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
             val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
@@ -666,14 +690,16 @@ class SyncExecutorTest {
                 advanceUntilIdle()
 
                 assertIs<SyncRequestResult.Failure>(result)
-                assertEquals(2, arrangement.incrementalSyncManager.performSyncFlowCount)
-                assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+                assertEquals(0, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+                assertEquals(1, arrangement.slowSyncManager.resetRetryBackoffCount)
+                assertEquals(1, arrangement.incrementalSyncManager.resetRetryBackoffCount)
             }
             syncScope.cancel()
         }
 
     @Test
-    fun givenFailedStateNotYetDeliveredToCollectors_whenNewRequestStarts_thenShouldRestartSyncImmediately() =
+    fun givenFailedStateNotYetDeliveredToCollectors_whenNewRequestStarts_thenShouldWakeRetryImmediately() =
         runTest(TestKaliumDispatcher.default) {
             val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
             val syncStateObserver = PausableSyncStateObserver()
@@ -690,11 +716,14 @@ class SyncExecutorTest {
                 syncStateObserver.mutableSyncState.pauseDelivery()
                 syncStateObserver.mutableSyncState.value =
                     SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds)
+                val retry = arrangement.awaitRetry()
+                runCurrent()
 
                 syncExecutor.request {
                     advanceUntilIdle()
-                    assertEquals(2, arrangement.incrementalSyncManager.performSyncFlowCount)
-                    assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+                    assertEquals(RetryTrigger.USER_REQUESTED, retry.await())
+                    assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+                    assertEquals(0, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
                 }
             }
             syncScope.cancel()
@@ -729,6 +758,151 @@ class SyncExecutorTest {
         }
 
     @Test
+    fun givenRetryEnteredItsWorkerBeforeObserverForwardedIt_whenNewRequestStarts_thenShouldNotCancelTheAttempt() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val retryController = SyncRetryController()
+            val retryDelayElapsed = CompletableDeferred<Boolean>()
+            val attemptStarted = CompletableDeferred<Unit>()
+            var attempts = 0
+            var attemptCancelled = false
+            val incrementalSyncManager = object : IncrementalSyncManager {
+                override fun performSyncFlow(): Flow<IncrementalSyncStatus> = flow {
+                    retryController.awaitRetry(retryController.generation(), {}) { retryDelayElapsed.await() }
+                    attempts++
+                    attemptStarted.complete(Unit)
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        attemptCancelled = true
+                    }
+                }
+
+                override fun resetRetryBackoff() = Unit
+            }
+            val syncStateObserver = FakeSyncStateObserver()
+            val slowSyncManager = FakeSlowSyncManager()
+            val syncExecutor = SyncExecutorImpl(
+                syncStateObserver,
+                slowSyncManager,
+                incrementalSyncManager,
+                syncScope,
+                retryController = retryController,
+            )
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                syncStateObserver.mutableSyncState.value =
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds, scheduledRetry("retry"))
+                advanceUntilIdle()
+
+                // The retry enters its worker, but the observer still forwards the schedule it replaced.
+                retryDelayElapsed.complete(false)
+                attemptStarted.await()
+
+                syncExecutor.request {
+                    advanceUntilIdle()
+                    assertEquals(1, attempts)
+                    assertFalse(attemptCancelled)
+                }
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenRetryAttemptInFlight_whenItFailsBeforeAnyProgress_thenNextLiveWaitShouldReturnItsFailure() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+            val expectedFailure = CoreFailure.Unknown(RuntimeException("retry failed"))
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.syncStateObserver.mutableSyncState.value =
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds, SyncRetryStatus.Attempting("retry"))
+                advanceUntilIdle()
+
+                val result = syncScope.async { syncExecutor.request { waitUntilNextLiveOrFailure() } }
+                advanceUntilIdle()
+                assertFalse(result.isCompleted)
+
+                arrangement.syncStateObserver.mutableSyncState.value = SyncState.Failed(expectedFailure, 1.seconds)
+                advanceUntilIdle()
+
+                assertEquals(SyncRequestResult.Failure(expectedFailure), result.await())
+                assertEquals(1, arrangement.slowSyncManager.performSyncFlowCount)
+                assertEquals(0, arrangement.slowSyncManager.cancelledSyncFlowCount)
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenScheduledRetry_whenWaitMissesTheAttemptStates_thenNextLiveWaitShouldReturnFailureOnTheNextSchedule() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+            val expectedFailure = CoreFailure.Unknown(RuntimeException("retry failed"))
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.syncStateObserver.mutableSyncState.value =
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds, scheduledRetry("first"))
+                advanceUntilIdle()
+
+                val result = syncScope.async { syncExecutor.request { waitUntilNextLiveOrFailure() } }
+                advanceUntilIdle()
+                assertFalse(result.isCompleted)
+
+                // A state collector is conflated, so it can skip the attempt and its failure before the next schedule.
+                arrangement.syncStateObserver.mutableSyncState.value =
+                    SyncState.Failed(expectedFailure, 1.seconds, scheduledRetry("second"))
+                advanceUntilIdle()
+
+                assertEquals(SyncRequestResult.Failure(expectedFailure), result.await())
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenFailureBeforeItsRetryIsScheduled_whenThatRetryFails_thenNextLiveWaitShouldReturnOnlyTheRetryFailure() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+            val staleFailure = CoreFailure.SyncEventOrClientNotFound
+            val expectedFailure = CoreFailure.Unknown(RuntimeException("retry failed"))
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.syncStateObserver.mutableSyncState.value = SyncState.Failed(staleFailure, 10.seconds)
+                advanceUntilIdle()
+
+                val result = syncScope.async { syncExecutor.request { waitUntilNextLiveOrFailure() } }
+                advanceUntilIdle()
+
+                arrangement.syncStateObserver.mutableSyncState.value =
+                    SyncState.Failed(staleFailure, 10.seconds, scheduledRetry("retry"))
+                advanceUntilIdle()
+                assertFalse(result.isCompleted)
+
+                arrangement.syncStateObserver.mutableSyncState.value =
+                    SyncState.Failed(staleFailure, 10.seconds, SyncRetryStatus.Attempting("retry"))
+                advanceUntilIdle()
+                assertFalse(result.isCompleted)
+
+                arrangement.syncStateObserver.mutableSyncState.value = SyncState.Failed(expectedFailure, 1.seconds)
+                advanceUntilIdle()
+
+                assertEquals(SyncRequestResult.Failure(expectedFailure), result.await())
+            }
+            syncScope.cancel()
+        }
+
+    @Test
     fun givenActiveSync_whenStoppedForRestart_thenNewRequestsCannotRestartIt() = runTest(TestKaliumDispatcher.default) {
         val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
         val (arrangement, executor) = Arrangement(syncScope).arrange()
@@ -748,6 +922,8 @@ class SyncExecutorTest {
         syncScope.cancel()
     }
 
+    private fun scheduledRetry(id: String) = SyncRetryStatus.Scheduled(id, TimeSource.Monotonic.markNow() + 10.seconds)
+
     private class Arrangement(
         val syncScope: CoroutineScope,
         syncStateObserverOverride: SyncStateObserver? = null,
@@ -755,14 +931,21 @@ class SyncExecutorTest {
         val syncStateObserver = FakeSyncStateObserver()
         val slowSyncManager = FakeSlowSyncManager()
         val incrementalSyncManager = FakeIncrementalSyncManager()
+        val retryController = SyncRetryController()
         private val observedSyncState = syncStateObserverOverride ?: syncStateObserver
 
         fun arrange() = this to SyncExecutorImpl(
             observedSyncState,
             slowSyncManager,
             incrementalSyncManager,
-            syncScope
+            syncScope,
+            retryController = retryController,
         )
+
+        /** A retry wait as registered by a backing-off sync manager. */
+        suspend fun awaitRetry() = retryController.generation().let { generation ->
+            syncScope.async { retryController.awaitRetry(generation, {}) { awaitCancellation() } }
+        }
     }
 
     private class PausableSyncStateObserver(

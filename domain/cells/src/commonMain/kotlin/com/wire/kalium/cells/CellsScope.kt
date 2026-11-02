@@ -54,6 +54,8 @@ import com.wire.kalium.cells.domain.usecase.DeleteCellAssetsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.EmptyRecycleBinUseCase
+import com.wire.kalium.cells.domain.usecase.EmptyRecycleBinUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCase
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
@@ -102,6 +104,8 @@ import com.wire.kalium.cells.domain.usecase.RenameNodeUseCase
 import com.wire.kalium.cells.domain.usecase.RenameNodeUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RestoreNodeFromRecycleBinUseCase
 import com.wire.kalium.cells.domain.usecase.RestoreNodeFromRecycleBinUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RestoreNodesFromRecycleBinUseCase
+import com.wire.kalium.cells.domain.usecase.RestoreNodesFromRecycleBinUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCase
 import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCase
@@ -270,6 +274,8 @@ public class CellsScope(
         CellFileDataSource(dao.cellFileDao)
     }
 
+    public val fileSharing: CellFileSharing by lazy { CellFileSharing(cellsRepository) }
+
     public val uploadManager: CellUploadManager by lazy {
         CellUploadManagerImpl(
             repository = cellsRepository,
@@ -389,6 +395,12 @@ public class CellsScope(
     }
     public val restoreNodeFromRecycleBin: RestoreNodeFromRecycleBinUseCase by lazy {
         RestoreNodeFromRecycleBinUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+    public val restoreNodesFromRecycleBin: RestoreNodesFromRecycleBinUseCase by lazy {
+        RestoreNodesFromRecycleBinUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+    public val emptyRecycleBin: EmptyRecycleBinUseCase by lazy {
+        EmptyRecycleBinUseCaseImpl(cellsRepository)
     }
     public val getAllTags: GetAllTagsUseCase by lazy {
         GetAllTagsUseCaseImpl(cellsRepository)

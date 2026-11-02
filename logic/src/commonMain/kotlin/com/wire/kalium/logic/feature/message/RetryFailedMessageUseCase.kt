@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.feature.asset.upload.uploadPreviewIfNeeded
 import com.wire.kalium.logic.feature.asset.upload.deleteTemporaryPreview
-import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -44,10 +43,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.isSuccessfullySent
-import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -71,7 +68,6 @@ public class RetryFailedMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
     private val conversationRepository: ConversationRepository,
-    private val attachmentsRepository: MessageAttachmentDraftRepository,
     private val persistMessage: PersistMessageUseCase,
     private val publishAttachments: PublishAttachmentsUseCase,
     private val scope: CoroutineScope,
@@ -332,21 +328,8 @@ public class RetryFailedMessageUseCase internal constructor(
             .getOrElse(false)
 
         return if (isCellEnabled) {
-            val attachments: List<MessageAttachment> = attachmentsRepository.getAll(message.conversationId)
-                .getOrElse { emptyList() }
-                .map {
-                    CellAssetContent(
-                        id = it.uuid,
-                        versionId = it.versionId,
-                        mimeType = it.mimeType,
-                        assetPath = it.remoteFilePath,
-                        assetSize = it.fileSize,
-                        localPath = it.localFilePath,
-                        previewUrl = null,
-                        metadata = it.metadata(),
-                        transferStatus = AssetTransferStatus.SAVED_INTERNALLY,
-                    )
-                }
+            // Retry the persisted message, not unrelated files the user has since added to the composer.
+            val attachments = (message.content as MessageContent.Multipart).attachments
 
             publishAttachments(attachments).flatMap { send(message) }
         } else {

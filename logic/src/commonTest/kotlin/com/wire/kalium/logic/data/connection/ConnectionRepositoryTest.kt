@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConnection
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
@@ -65,9 +66,9 @@ import com.wire.kalium.util.ConversationPersistenceApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matches
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -81,6 +82,18 @@ import kotlin.time.Instant
 
 @OptIn(ConversationPersistenceApi::class)
 class ConnectionRepositoryTest {
+
+    @Test
+    fun acceptedEventStorageFailureIsPropagated() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
+        val failure = IllegalStateException("warning write failed")
+        everySuspend { arrangement.acceptedConnectionEventPersistence.persist(any()) } throws failure
+
+        repository.insertConnectionFromEvent(arrangement.transactionContext, event).shouldFail {
+            assertEquals(failure, assertIs<StorageFailure.Generic>(it).rootCause)
+        }
+    }
 
     @Test
     fun givenConnections_whenFetchingConnections_thenConnectionsAreInsertedOrUpdatedIntoDatabase() = runTest {
@@ -228,6 +241,12 @@ class ConnectionRepositoryTest {
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.connectionDAO.updateConnectionStatus(
+                QualifiedIDEntity("connectionId1", "domain"),
+                ConnectionEntity.State.ACCEPTED
+            )
         }
     }
 
@@ -527,6 +546,7 @@ class ConnectionRepositoryTest {
         val userDAO = mock<UserDAO>(mode = MockMode.autoUnit)
         val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
         val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
+        val acceptedConnectionEventPersistence = mock<AcceptedConnectionEventPersistence>(mode = MockMode.autoUnit)
 
         val connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,
@@ -535,7 +555,8 @@ class ConnectionRepositoryTest {
             userDAO = userDAO,
             memberDAO = memberDAO,
             conversationRepository = conversationRepository,
-            persistConversations = persistConversations
+            persistConversations = persistConversations,
+            acceptedConnectionEventPersistence = acceptedConnectionEventPersistence
         )
 
 

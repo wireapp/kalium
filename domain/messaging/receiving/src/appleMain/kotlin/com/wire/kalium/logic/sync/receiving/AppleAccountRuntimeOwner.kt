@@ -27,6 +27,7 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logger.AppleSuspensionDiagnostics
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.string.toHexString
 import kotlin.concurrent.atomics.AtomicInt
@@ -114,22 +115,23 @@ public class AppleAccountRuntimeOwner internal constructor(
             is Either.Left -> return result
             is Either.Right -> result.value
         }
+        val trace = AppleSuspensionDiagnostics.beginLock("account_runtime", "ownership", descriptor)
         var lease: AccountRuntimeLease? = null
         val result = try {
             coroutineContext.ensureActive()
             val lockFile = paths.filePath(accountId)
-            val failure = lock(descriptor, lockFile, waitFor, waitForThisProcess)
+            val failure = lock(descriptor, lockFile, waitFor, waitForThisProcess, trace)
             if (failure == null) {
                 recordHolder(descriptor)
                 onLockAcquired()
-                val acquiredLease = AccountRuntimeLease(accountId, descriptor, rootPath, lockFile)
+                val acquiredLease = AccountRuntimeLease(accountId, descriptor, rootPath, lockFile, trace)
                 lease = acquiredLease
                 Either.Right(acquiredLease)
             } else {
                 Either.Left(failure)
             }
         } finally {
-            if (lease == null) close(descriptor)
+            if (lease == null) closeAccountLock(descriptor, trace)
         }
         return when (result) {
             is Either.Left -> result
@@ -144,23 +146,24 @@ public class AppleAccountRuntimeOwner internal constructor(
         lockFile: String,
         waitFor: Duration,
         waitForThisProcess: Boolean,
+        trace: Long,
     ): AccountRuntimeFailure? {
-        var failure = tryLock(descriptor)
+        var failure = tryLock(descriptor, trace)
         // Elapsed time bounds the window, so slow wake-ups do not stretch it.
         withTimeoutOrNull(waitFor) {
-            while (failure == AccountRuntimeFailure.BUSY) failure = retryLock(descriptor)
+            while (failure == AccountRuntimeFailure.BUSY) failure = retryLock(descriptor, trace)
         }
         // flock refuses this process's other descriptors too. Unlike another owner, an attempt of this process ends.
         val waitsForThisProcess = waitForThisProcess && waitFor > Duration.ZERO
         while (failure == AccountRuntimeFailure.BUSY && waitsForThisProcess && lockFile in heldLockFiles.value) {
-            failure = retryLock(descriptor)
+            failure = retryLock(descriptor, trace)
         }
         return failure
     }
 
-    private suspend fun retryLock(descriptor: Int): AccountRuntimeFailure? {
+    private suspend fun retryLock(descriptor: Int, trace: Long): AccountRuntimeFailure? {
         delay(LOCK_RETRY_DELAY)
-        return tryLock(descriptor)
+        return tryLock(descriptor, trace)
     }
 
     /** Diagnostics only: which process took the account, and when. Locking never reads the file body. */
@@ -184,10 +187,11 @@ public class AppleAccountRuntimeOwner internal constructor(
         }
     }
 
-    private fun tryLock(descriptor: Int): AccountRuntimeFailure? = if (flock(descriptor, LOCK_EX or LOCK_NB) == 0) {
-        null
-    } else {
-        when (val error = errno) {
+    private fun tryLock(descriptor: Int, trace: Long): AccountRuntimeFailure? {
+        val result = flock(descriptor, LOCK_EX or LOCK_NB)
+        val error = if (result == 0) 0 else errno
+        AppleSuspensionDiagnostics.acquired(trace, result, error)
+        return if (result == 0) null else when (error) {
             EWOULDBLOCK, EAGAIN -> AccountRuntimeFailure.BUSY
             else -> error.toAccountRuntimeFailure()
         }
@@ -229,6 +233,7 @@ public class AccountRuntimeLease internal constructor(
     private val descriptor: Int,
     private val rootPath: String,
     private val lockFile: String,
+    private val trace: Long = 0L,
 ) {
     private val released = AtomicInt(0)
 
@@ -245,9 +250,15 @@ public class AccountRuntimeLease internal constructor(
         if (released.compareAndSet(expectedValue = 0, newValue = 1)) {
             heldLockFiles.update { it - lockFile }
             // close releases flock. Never retry an interrupted close: the fd number may be reused.
-            close(descriptor)
+            closeAccountLock(descriptor, trace)
         }
     }
+}
+
+private fun closeAccountLock(descriptor: Int, trace: Long) {
+    val result = close(descriptor)
+    val error = if (result == 0) 0 else errno
+    AppleSuspensionDiagnostics.closed(trace, result, error)
 }
 
 internal class AccountRuntimeLockPaths(rootPath: String) {

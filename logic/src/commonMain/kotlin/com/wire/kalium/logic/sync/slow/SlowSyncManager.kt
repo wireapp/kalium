@@ -31,6 +31,8 @@ import com.wire.kalium.logic.sync.SyncTelemetryComponent
 import com.wire.kalium.logic.sync.SyncTelemetryEvent
 import com.wire.kalium.logic.sync.SyncType
 import com.wire.kalium.logic.sync.delayBeforeSyncRetry
+import com.wire.kalium.logic.sync.SyncRetryController
+import kotlinx.coroutines.CancellationException
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.logSyncTelemetry
 import com.wire.kalium.logic.sync.telemetryData
@@ -106,6 +108,7 @@ internal fun SlowSyncManager(
     syncMigrationStepsProvider: () -> SyncMigrationStepsProvider,
     userScopedLogger: KaliumLogger,
     apiVersion: Int,
+    retryController: SyncRetryController = SyncRetryController(),
     exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelper(
         SlowSyncManager.MIN_RETRY_DELAY,
         SlowSyncManager.MAX_RETRY_DELAY
@@ -135,23 +138,36 @@ internal fun SlowSyncManager(
             }
         },
         onFailure = { failure ->
-            val delay = exponentialDurationHelper.next()
-            logger.logSyncTelemetry(
-                event = SyncTelemetryEvent.SYNC_FAILED,
-                component = SyncTelemetryComponent.SLOW,
-                level = KaliumLogLevel.WARN,
-                data = failure.telemetryData() +
-                    ("retryDelayInMillis" to delay.inWholeMilliseconds)
-            )
-            slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay))
-            slowSyncRecoveryHandler.recover(failure) {
-                networkStateObserver.delayBeforeSyncRetry(
-                    retryDelay = delay,
-                    exponentialDurationHelper = exponentialDurationHelper,
-                    logger = logger,
-                    syncType = SyncType.SLOW,
+            try {
+                val failureGeneration = retryController.generation()
+                val delay = exponentialDurationHelper.next()
+                logger.logSyncTelemetry(
+                    event = SyncTelemetryEvent.SYNC_FAILED,
+                    component = SyncTelemetryComponent.SLOW,
+                    level = KaliumLogLevel.WARN,
+                    data = failure.telemetryData() +
+                        ("retryDelayInMillis" to delay.inWholeMilliseconds)
                 )
-                onRetry()
+                slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay))
+                slowSyncRecoveryHandler.recover(failure) {
+                    networkStateObserver.delayBeforeSyncRetry(
+                        retryDelay = delay,
+                        retryController = retryController,
+                        failureGeneration = failureGeneration,
+                        exponentialDurationHelper = exponentialDurationHelper,
+                        logger = logger,
+                        syncType = SyncType.SLOW,
+                        onRetryStateChanged = { retry ->
+                            slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay, retry))
+                        },
+                    )
+                    onRetry()
+                }
+            } catch (cancelled: CancellationException) {
+                withContext(NonCancellable) {
+                    slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
+                }
+                throw cancelled
             }
         }
     )

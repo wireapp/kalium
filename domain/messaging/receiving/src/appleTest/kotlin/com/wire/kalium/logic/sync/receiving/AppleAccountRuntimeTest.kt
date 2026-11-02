@@ -182,6 +182,47 @@ class AppleAccountRuntimeTest {
     }
 
     @Test
+    fun `database-only runtime reads SQLite without opening crypto and releases ownership`() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture { fixture ->
+                fixture.prepareReadiness()
+                fixture.prepareCredentials()
+                // A full runtime fails opening this store and retains the lease.
+                fixture.corruptCryptoFile()
+                val database = fixture.prepareDatabase()
+                ClientRegistrationStorageImpl(database.metadataDAO).setRegisteredClientId("abc123")
+                database.close()
+                assertEquals(Either.Right("abc123"), AppleAccountRuntime.useDatabase(fixture.root, userId, fixture.config) { opened, prepared ->
+                    assertEquals(userId, prepared.userId)
+                    ClientRegistrationStorageImpl(opened.metadataDAO).getRegisteredClientId()
+                })
+                assertEquals("invalid crypto", FileSystem.SYSTEM.read("${fixture.account}/proteus/keystore".toPath()) { readUtf8() })
+            }
+        }
+    }
+
+    @Test
+    fun `database-only runtime refuses what the full runtime refuses before crypto`() = runTest {
+        withFixture { fixture ->
+            assertEquals(Either.Left(AccountRuntimeFailure.NOT_PREPARED), fixture.refusedDatabase())
+            fixture.prepareReadiness()
+            val lease = fixture.acquire()
+            try {
+                assertEquals(Either.Left(AccountRuntimeFailure.BUSY), fixture.refusedDatabase())
+            } finally {
+                lease.release()
+            }
+            assertEquals(Either.Left(AccountRuntimeFailure.STORAGE), fixture.refusedDatabase())
+            fixture.prepareCredentials()
+            fixture.corruptCryptoFile()
+            assertEquals(Either.Left(AccountRuntimeFailure.STORAGE), fixture.refusedDatabase())
+            assertFalse(FileSystem.SYSTEM.exists("${fixture.account}/storage".toPath()))
+            fixture.prepareDatabase().close()
+            assertEquals(Either.Left(AccountRuntimeFailure.STORAGE), fixture.refusedDatabase())
+        }
+    }
+
+    @Test
     fun `caller cancellation drains owned work and allows a real crypto reopen`() = runTest {
         withContext(Dispatchers.Default) {
             withFixture { fixture ->
@@ -281,6 +322,9 @@ class AppleAccountRuntimeTest {
         suspend fun refused() = AppleAccountRuntime.use(root, userId, config, "runtime-test", emptyMap()) {
             error("Unprepared runtime reached caller work")
         }
+
+        // Caller work that throws maps to STORAGE too, so reaching the block returns Right instead.
+        suspend fun refusedDatabase() = AppleAccountRuntime.useDatabase(root, userId, config) { _, _ -> Unit }
 
         suspend fun prepareReadiness() {
             val lease = acquire()

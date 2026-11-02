@@ -25,8 +25,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -34,8 +32,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.framework.TestConnection
-import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -229,7 +225,6 @@ class UserEventReceiverTest {
         val (arrangement, eventReceiver) = arrange {
             withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
-            withPersistUnverifiedWarningMessageSuccess()
         }
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
@@ -278,7 +273,6 @@ class UserEventReceiverTest {
         val (arrangement, eventReceiver) = arrange {
             withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
-            withPersistUnverifiedWarningMessageSuccess()
         }
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
@@ -295,7 +289,6 @@ class UserEventReceiverTest {
             withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
             withScheduleResolveOneOnOneConversationWithUserId()
-            withPersistUnverifiedWarningMessageSuccess()
         }
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
@@ -314,7 +307,6 @@ class UserEventReceiverTest {
                 withFetchUserInfoReturning(Either.Right(Unit))
                 withInsertConnectionFromEventSucceeding()
                 withScheduleResolveOneOnOneConversationWithUserId()
-                withPersistUnverifiedWarningMessageSuccess()
             }
 
             eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
@@ -330,50 +322,6 @@ class UserEventReceiverTest {
         }
 
     @Test
-    fun givenNewConnectionEventWithStatusAccepted_whenHandlingEvent_thenCreateUnverifiedWarningMessage() =
-        runTest(TestKaliumDispatcher.default) {
-            // given
-            val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
-            val (arrangement, eventReceiver) = arrange {
-                withFetchUserInfoReturning(Either.Right(Unit))
-                withInsertConnectionFromEventSucceeding()
-                withScheduleResolveOneOnOneConversationWithUserId()
-                withPersistUnverifiedWarningMessageSuccess()
-            }
-            // when
-            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-            // then
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                    event.connection.qualifiedConversationId,
-                    any()
-                )
-            }
-        }
-
-    @Test
-    fun givenNewConnectionEventWithStatusCancelled_whenHandlingEvent_thenDoNotCreateUnverifiedWarningMessage() =
-        runTest(TestKaliumDispatcher.default) {
-            // given
-            val event = TestEvent.newConnection(status = ConnectionState.CANCELLED)
-            val (arrangement, eventReceiver) = arrange {
-                withFetchUserInfoReturning(Either.Right(Unit))
-                withInsertConnectionFromEventSucceeding()
-                withScheduleResolveOneOnOneConversationWithUserId()
-                withPersistUnverifiedWarningMessageSuccess()
-            }
-            // when
-            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-            // then
-            verifySuspend(VerifyMode.not) {
-                arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                    event.connection.qualifiedConversationId,
-                    any()
-                )
-            }
-        }
-
-    @Test
     fun givenNewConnectionEvent_whenHandlingEvent_thenHandlePotentialLegalHoldChange() =
         runTest(TestKaliumDispatcher.default) {
             // given
@@ -382,7 +330,6 @@ class UserEventReceiverTest {
                 withFetchUserInfoReturning(Either.Right(Unit))
                 withInsertConnectionFromEventSucceeding()
                 withScheduleResolveOneOnOneConversationWithUserId()
-                withPersistUnverifiedWarningMessageSuccess()
             }
             // when
             eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
@@ -392,54 +339,6 @@ class UserEventReceiverTest {
             }
         }
 
-    @Test
-    fun givenNewConnectionEventWithStatusAcceptedAndPreviousStatusWasMissingConsent_thenDoNotCreateUnverifiedWarningMessage() = runTest {
-        // given
-        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Right(Unit))
-            withInsertConnectionFromEventSucceeding()
-            withScheduleResolveOneOnOneConversationWithUserId()
-            withPersistUnverifiedWarningMessageSuccess()
-            withGetConnectionResult(
-                Either.Right(
-                    TestConversationDetails.CONNECTION.copy(
-                        conversationId = event.connection.qualifiedConversationId,
-                        connection = TestConnection.CONNECTION.copy(status = ConnectionState.MISSING_LEGALHOLD_CONSENT)
-                    )
-                )
-            )
-        }
-        // when
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-        // then
-        verifySuspend(VerifyMode.not) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-        }
-    }
-
-    @Test
-    fun givenNewConnectionEventWithStatusAcceptedAndPreviousStatusWasNotMissingConsent_thenCreateUnverifiedWarningMessage() = runTest {
-        // given
-        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Right(Unit))
-            withInsertConnectionFromEventSucceeding()
-            withScheduleResolveOneOnOneConversationWithUserId()
-            withPersistUnverifiedWarningMessageSuccess()
-            withGetConnectionResult(Either.Left(StorageFailure.DataNotFound))
-        }
-        // when
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-        // then
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                event.connection.qualifiedConversationId,
-                any()
-            )
-        }
-    }
-
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val userRepository = mock<UserRepository>()
@@ -448,7 +347,6 @@ class UserEventReceiverTest {
         val logoutUseCase = mock<LogoutUseCase>()
         private val currentClientIdProvider = mock<CurrentClientIdProvider>()
         val clientRepository = mock<ClientRepository>()
-        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>()
         val legalHoldRequestHandler = mock<LegalHoldRequestHandler>()
         val legalHoldHandler = mock<LegalHoldHandler>()
         val sessionRefreshSuggestedEventHandler = mock<SessionRefreshSuggestedEventHandler>()
@@ -461,7 +359,6 @@ class UserEventReceiverTest {
             oneOnOneResolver,
             SELF_USER_ID,
             currentClientIdProvider,
-            lazy { newGroupConversationSystemMessagesCreator },
             legalHoldRequestHandler,
             legalHoldHandler,
             sessionRefreshSuggestedEventHandler
@@ -470,12 +367,6 @@ class UserEventReceiverTest {
         suspend fun withInsertConnectionFromEventSucceeding() = apply {
             everySuspend {
                 connectionRepository.insertConnectionFromEvent(any(), any())
-            } returns Either.Right(Unit)
-        }
-
-        suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
-            everySuspend {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
             } returns Either.Right(Unit)
         }
 
@@ -506,12 +397,6 @@ class UserEventReceiverTest {
         suspend fun withSessionRefreshSuggestedHandlerResult(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
                 sessionRefreshSuggestedEventHandler.handle(any())
-            } returns result
-        }
-
-        suspend fun withGetConnectionResult(result: Either<StorageFailure, ConversationDetails.Connection>) = apply {
-            everySuspend {
-                connectionRepository.getConnection(any())
             } returns result
         }
 
@@ -549,7 +434,6 @@ class UserEventReceiverTest {
             withSaveNewClientSucceeding()
             withHandleLegalHoldNewConnectionSucceeding()
             withSessionRefreshSuggestedHandlerResult(Either.Right(Unit))
-            withGetConnectionResult(Either.Left(StorageFailure.DataNotFound))
             block()
             this@Arrangement to userEventReceiver
         }

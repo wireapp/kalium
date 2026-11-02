@@ -134,7 +134,7 @@ internal class NotificationEffects(
             val membership = ReceivedMembershipHandler(this, persistMessage, selfUserId, options.drivePermissionsEnabled)
             val team = ReceivedTeamHandler(this, selfUserId, persistMessage)
             val federation = ReceivedFederationHandler(this, selfUserId, persistMessage, deleteFile)
-            val connection = ReceivedConnectionHandler(this, selfUserId, persistMessage, deleteFile)
+            val connection = ReceivedConnectionHandler(this, selfUserId, deleteFile)
             val replayedFederation = payload.filterIsInstance<ReceivedPayload.Federation>()
                 .associate { it.event to federation.previousMessages(it.event) }
             val replayedConnectionWarnings = payload.filterIsInstance<ReceivedPayload.Connection>()
@@ -256,6 +256,11 @@ internal class NotificationEffects(
                     is ReceivedPayload.UserDeleted -> users.markUserAsDeletedAndRemoveFromGroupConv(received.userId.toDao())
                     is ReceivedPayload.TeamLeave -> team.leave(received.event)
                     is ReceivedPayload.UserProperty -> userProperties.handle(received.event).orThrow()
+                    is ReceivedPayload.LegalHoldRequest -> userConfigRepository.setLegalHoldRequest(
+                        received.clientId,
+                        received.lastPreKeyId,
+                        received.lastPreKey
+                    ).orThrow()
                     is ReceivedPayload.Configuration -> persistConfiguration(received, userConfigRepository, persistMessage, messageHandler)
                     is ReceivedPayload.Metadata -> persistMetadata(
                         received.event,
@@ -525,6 +530,7 @@ internal sealed interface ReceivedPayload {
     data class Metadata(val event: Event.Conversation) : ReceivedPayload
     data class UserUpdate(val event: Event.User.Update) : ReceivedPayload
     data class UserProperty(val event: Event.UserProperty) : ReceivedPayload
+    data class LegalHoldRequest(val clientId: String, val lastPreKeyId: Int, val lastPreKey: String) : ReceivedPayload
     data class Configuration(
         val event: Event.FeatureConfig,
         val selfClients: List<com.wire.kalium.persistence.dao.client.InsertClientParam>? = null,

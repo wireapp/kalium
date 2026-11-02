@@ -56,9 +56,12 @@ import kotlin.uuid.Uuid
 /**
  * An account's outbox in the App Group: shares the extension hands to the app while the app owns the account (ADR 13).
  * The extension publishes an entry by renaming it from `staging/` into `ready/`, and the app claims it by renaming it
- * into `claimed/`; a rename within one file system is atomic. Once the app stored the share, it leaves a result. The
- * host rings the other side with a Darwin notification; these files say what is there.
+ * into `claimed/`; a rename within one file system is atomic. Once the app stored the share, it leaves a result. An
+ * extension that stops waiting for the result marks the entry in `unwatched/`, and the app then reports the result
+ * itself. The host rings the other side with a Darwin notification; these files say what is there.
  */
+// Both sides of the file protocol stay in one place.
+@Suppress("TooManyFunctions")
 internal class ShareOutbox(rootPath: String, accountId: UserId) {
     private val fileSystem = FileSystem.SYSTEM
     private val outboxes = rootPath.trimEnd('/').toPath() / DIRECTORY
@@ -67,6 +70,7 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
     private val ready = directory / "ready"
     private val claimed = directory / "claimed"
     private val results = directory / "results"
+    private val unwatched = directory / "unwatched"
     private val conversationsRequest = directory / "conversations-request"
     private val conversations = directory / "conversations.json"
 
@@ -95,6 +99,19 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
         else -> HandOffState.Finished(take(results / id) ?: MISSING)
     }
 
+    /**
+     * The extension stops waiting for entry [id], so the app reports its result instead (see [finish]). Returns the
+     * result if the app finished meanwhile and left it to the extension, once.
+     */
+    fun stopWaiting(id: String): HandOffState.Finished? {
+        create(unwatched)
+        fileSystem.write(unwatched / id) {}
+        // Each side marks, then looks for the other's mark, so at least one sees the result, and only one takes it.
+        val finished = state(id) as? HandOffState.Finished ?: return null
+        fileSystem.delete(unwatched / id)
+        return finished.takeIf { it.result != MISSING }
+    }
+
     /** Asks the app for the account's conversations; an earlier answer is dropped. */
     fun askForConversations() {
         fileSystem.delete(conversations)
@@ -114,7 +131,7 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
     /** Answers [askForConversations] with [picker]. Conversation names are readable only while the device is unlocked. */
     suspend fun answerIfAsked(picker: suspend () -> SharePicker) {
         if (!fileSystem.exists(conversationsRequest)) return
-        write(conversations, json.encodeToString(picker()), whileUnlocked = true)
+        writeShareOutboxFile(conversations, json.encodeToString(picker()), whileUnlocked = true)
         fileSystem.delete(conversationsRequest)
     }
 
@@ -147,11 +164,17 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
         return target.toString()
     }
 
-    /** Leaves [result] for the extension, then drops the entry, including files the import did not take. */
-    fun finish(id: String, result: String) {
+    /**
+     * Leaves [result] for the extension, then drops the entry, including files the import did not take. Returns true
+     * when the extension stopped waiting without the result: the app then reports it.
+     */
+    fun finish(id: String, result: String): Boolean {
         create(results)
-        write(results / id, result, whileUnlocked = false)
+        writeShareOutboxFile(results / id, result, whileUnlocked = false)
         fileSystem.deleteRecursively(claimed / id)
+        if (!fileSystem.exists(unwatched / id)) return false
+        fileSystem.delete(unwatched / id)
+        return take(results / id) != null
     }
 
     /** Drops entries an interrupted extension left in `staging/`, and results no extension read. */
@@ -168,14 +191,13 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
     /** Drops every entry, result and answer of the account. */
     fun delete() = fileSystem.deleteRecursively(directory)
 
-    private fun take(path: Path): String? {
-        val content = try {
-            fileSystem.read(path) { readUtf8() }
-        } catch (_: IOException) {
-            return null
-        }
-        fileSystem.delete(path)
-        return content
+    /** Only one reader takes a file: the extension and the app may both try to take a result. */
+    private fun take(path: Path): String? = try {
+        val content = fileSystem.read(path) { readUtf8() }
+        fileSystem.delete(path, mustExist = true)
+        content
+    } catch (_: IOException) {
+        null
     }
 
     /** Shares stay on this device: the outboxes are excluded from backups. */
@@ -220,7 +242,7 @@ private fun copy(source: String, target: Path) {
 }
 
 /** Replaces [path] at once, so the other side never reads half of it. */
-private fun write(path: Path, text: String, whileUnlocked: Boolean) {
+internal fun writeShareOutboxFile(path: Path, text: String, whileUnlocked: Boolean) {
     val data = NSString.create(string = text).dataUsingEncoding(NSUTF8StringEncoding) ?: throw IOException("Cannot encode")
     val options = if (whileUnlocked) NSDataWritingAtomic or readableWhileUnlocked else NSDataWritingAtomic
     if (!data.writeToFile(path.toString(), options, null)) throw IOException("Cannot write to the share outbox")
@@ -238,6 +260,9 @@ internal data class OutboxRequest(
     @SerialName("files") val files: List<OutboxFile>,
     @SerialName("text") val text: String,
     @SerialName("textMessageId") val textMessageId: String,
+    @SerialName("preparedDraftIds") val preparedDraftIds: List<String> = emptyList(),
+    @SerialName("draftAction") val draftAction: String? = null,
+    @SerialName("draftId") val draftId: String? = null,
 )
 
 /** Each item keeps the message ID the extension gave it, so importing it again stores nothing twice. */

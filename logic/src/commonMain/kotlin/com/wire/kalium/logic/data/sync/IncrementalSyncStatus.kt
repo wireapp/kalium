@@ -35,7 +35,11 @@ internal sealed interface IncrementalSyncStatus {
         override fun toString() = "LIVE"
     }
 
-    data class Failed(val failure: CoreFailure, val retryDelay: Duration) : IncrementalSyncStatus {
+    data class Failed(
+        val failure: CoreFailure,
+        val retryDelay: Duration,
+        val retryStatus: SyncRetryStatus = SyncRetryStatus.None,
+    ) : IncrementalSyncStatus {
         override fun toString() = "FAILED, cause: '$failure' retry in: $retryDelay"
     }
 

@@ -41,6 +41,28 @@ import kotlin.time.TestTimeSource
 
 class UnnotifiedMessageAlertsTest {
     @Test
+    fun everyoneCaptionIsDeliveredOnceAndSurvivesPendingReplayAsText() = runTest {
+        fixture { database, alerts, _ ->
+            database.builder.messageDAO.deleteMessage("first", conversation.id)
+            database.builder.conversationDAO.insertConversations(listOf(conversation.copy(type = ConversationEntity.Type.GROUP)))
+            database.builder.messageDAO.insertOrIgnoreMessage(
+                message("multipart", time).copy(
+                    content = MessageEntityContent.Multipart("@all caption", mentions = listOf(MessageEntity.Mention(0, 4, null)))
+                )
+            )
+            val shown = alerts.take().single()
+            assertEquals("multipart", shown.messageId)
+            assertEquals("@all caption", shown.text)
+            assertEquals(NotificationMessageKind.TEXT, shown.messageKind)
+            assertTrue(shown.isGroupConversation)
+            assertEquals(emptyList(), alerts.take())
+            val reopened = UnnotifiedMessageAlerts(database.builder, self) { time + 2.seconds }
+            assertEquals("@all caption", reopened.pending.read().single().text)
+            assertNull(reopened.pending.read(showContent = false).single().text)
+        }
+    }
+
+    @Test
     fun preparationAndExpiryLeaveMessagesAvailableForRetry() = runTest {
         fixture { database, alerts, clock ->
             val prepared = alerts.prepare()

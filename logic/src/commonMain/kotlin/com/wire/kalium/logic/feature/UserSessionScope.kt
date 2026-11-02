@@ -84,6 +84,7 @@ import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
 import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.connection.AcceptedConnectionEventPersistence
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -462,6 +463,7 @@ import com.wire.kalium.logic.sync.SendPendingMessagesUseCase
 import com.wire.kalium.logic.sync.SendPendingMessagesUseCaseImpl
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
+import com.wire.kalium.logic.sync.SyncRetryController
 import com.wire.kalium.logic.sync.SyncSuspension
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncShutdownCoordinator
@@ -588,6 +590,7 @@ import com.wire.kalium.logic.sync.receiving.CallPresentationRecord
 import com.wire.kalium.logic.sync.receiving.CallSignalJournal
 import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
 import com.wire.kalium.logic.sync.receiving.PendingConversationCleanup
+import com.wire.kalium.logic.sync.receiving.persistAcceptedConnection
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1194,7 +1197,10 @@ public class UserSessionScope internal constructor(
             authenticatedNetworkContainer.connectionApi,
             userStorage.database.userDAO,
             conversationRepository,
-            persistConversationsUseCase
+            persistConversationsUseCase,
+            AcceptedConnectionEventPersistence { connection ->
+                userStorage.database.writeMessageEffects { persistAcceptedConnection(connection, userId) }
+            }
         )
 
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
@@ -1348,6 +1354,8 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    private val syncRetryController = SyncRetryController()
+
     private val syncExecutorImpl: SyncExecutorImpl by lazy {
         SyncExecutorImpl(
             syncStateObserver.value,
@@ -1355,7 +1363,8 @@ public class UserSessionScope internal constructor(
             incrementalSyncManager,
             this,
             userScopedLogger = userScopedLogger,
-            shutdownCoordinator = syncShutdownCoordinator
+            shutdownCoordinator = syncShutdownCoordinator,
+            retryController = syncRetryController,
         )
     }
 
@@ -1580,6 +1589,7 @@ public class UserSessionScope internal constructor(
             syncMigrationStepsProvider = syncMigrationStepsProvider,
             userScopedLogger = userScopedLogger,
             apiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version,
+            retryController = syncRetryController,
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
@@ -1727,6 +1737,7 @@ public class UserSessionScope internal constructor(
             networkStateObserver,
             userScopedLogger,
             userSessionWorkScheduler,
+            retryController = syncRetryController,
         )
     }
 
@@ -2334,7 +2345,6 @@ public class UserSessionScope internal constructor(
             oneOnOneResolver,
             userId,
             clientIdProvider,
-            lazy { newGroupConversationSystemMessagesCreator },
             legalHoldRequestHandler,
             legalHoldHandler,
             sessionRefreshSuggestedEventHandler
@@ -3049,7 +3059,8 @@ public class UserSessionScope internal constructor(
             oneOnOneResolver,
             newGroupConversationSystemMessagesCreator,
             fetchConversationUseCase,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            pendingActionsRepository
         )
 
     public val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase

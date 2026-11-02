@@ -29,7 +29,11 @@ sealed interface SlowSyncStatus {
 
     data class Ongoing(val currentStep: SlowSyncStep, val progress: SlowSyncProgress? = null) : SlowSyncStatus
 
-    data class Failed(val failure: CoreFailure, val retryDelay: Duration) : SlowSyncStatus
+    data class Failed(
+        val failure: CoreFailure,
+        val retryDelay: Duration,
+        val retryStatus: SyncRetryStatus = SyncRetryStatus.None,
+    ) : SlowSyncStatus
 }
 
 /** Conversations processed in this attempt, including recoveries deferred by the existing join policy. */

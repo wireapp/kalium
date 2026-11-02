@@ -21,6 +21,7 @@ package com.wire.kalium.logic.configuration
 import com.wire.kalium.cells.domain.model.WireCellsConfig
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapFlowStorageRequest
+import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
@@ -342,7 +343,7 @@ class UserConfigDataSource constructor(
         wrapStorageRequest { userConfigDAO.setE2EIRotationCheckpoint(Base64.encode(checkpoint)) }
 
     override suspend fun getE2EIRotationCheckpoint(): Either<StorageFailure, ByteArray?> =
-        wrapStorageRequest { userConfigDAO.getE2EIRotationCheckpoint()?.let(Base64::decode) }
+        wrapStorageNullableRequest { userConfigDAO.getE2EIRotationCheckpoint()?.let(Base64::decode) }
 
     override suspend fun deleteE2EIRotationCheckpoint(): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigDAO.deleteE2EIRotationCheckpoint() }

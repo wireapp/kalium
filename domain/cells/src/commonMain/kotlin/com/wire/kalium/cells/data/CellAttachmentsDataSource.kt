@@ -21,6 +21,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CellAssetContent
@@ -69,6 +70,23 @@ internal class CellAttachmentsDataSource(
             messageAttachments.setTransferStatus(assetId, status.name)
         }
     }
+
+    override suspend fun refreshRestoredAttachmentStatus(assetIds: List<String>): Either<StorageFailure, Unit> =
+        getAttachmentsByIds(assetIds).map { attachments ->
+            attachments
+                .filterIsInstance<CellAssetContent>()
+                // One row is returned per message referencing the asset.
+                .distinctBy { it.id }
+                .forEach { attachment ->
+                    val status = if (attachment.localPath.isNullOrEmpty()) {
+                        AssetTransferStatus.NOT_DOWNLOADED
+                    } else {
+                        AssetTransferStatus.SAVED_INTERNALLY
+                    }
+
+                    setAssetTransferStatus(attachment.id, status)
+                }
+        }
 
     override suspend fun saveLocalPath(assetId: String, path: String?) = withContext(dispatchers.io) {
         wrapStorageRequest {

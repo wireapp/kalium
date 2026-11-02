@@ -56,5 +56,9 @@ public sealed class SyncState {
      * Sync was not completed due to a failure.
      * [retryDelay] specifies the duration in which next try will happen
      */
-    public data class Failed(val cause: CoreFailure, val retryDelay: Duration) : SyncState()
+    public data class Failed(
+        val cause: CoreFailure,
+        val retryDelay: Duration,
+        val retryStatus: SyncRetryStatus = SyncRetryStatus.None,
+    ) : SyncState()
 }

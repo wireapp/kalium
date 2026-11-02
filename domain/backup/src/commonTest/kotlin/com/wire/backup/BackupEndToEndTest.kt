@@ -54,6 +54,20 @@ class BackupEndToEndTest {
     }
 
     @Test
+    fun everyoneMentionsSurviveEncryptedBackupAndRestore() = runTest {
+        shouldBackupAndRestoreSameContent(
+            BackupMessageContent.Text(
+                "@all @bob",
+                listOf(
+                    BackupMessageContent.Text.Mention(null, 0, 4),
+                    BackupMessageContent.Text.Mention(BackupQualifiedId("bob", "domain"), 5, 4)
+                )
+            ),
+            "somePassword"
+        )
+    }
+
+    @Test
     fun givenEncryptedBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
         shouldBackupAndRestoreSameContent(
             BackupMessageContent.Text("Hello from the backup!", listOf(TEST_MENTION), "quoted!"),

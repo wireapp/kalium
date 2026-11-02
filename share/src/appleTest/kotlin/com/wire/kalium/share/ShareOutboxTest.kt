@@ -21,6 +21,9 @@ package com.wire.kalium.share
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.message.CellAssetContent
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.RegularMessageMapper
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
@@ -47,6 +50,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
@@ -60,6 +64,64 @@ class ShareOutboxTest {
 
     @AfterTest
     fun deleteRoot() = FileSystem.SYSTEM.deleteRecursively(root)
+
+    @Test
+    fun restartingAfterStoringACellsShareDoesNotUploadOrStoreItAgain() = runTest {
+        withDatabase { database ->
+            seed(database)
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val id = outbox.handOff(request(PHOTO, VIDEO), listOf(file("photo"), file("video")))
+            val interrupted = RecordingSending(database, cancelOn = "t")
+            assertFailsWith<CancellationException> { server(database, interrupted).importShares() }
+            val restarted = RecordingSending(database)
+            server(database, restarted).importShares()
+            assertEquals(emptyList(), restarted.stored)
+            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
+        }
+    }
+
+    @Test
+    fun cellsShareIsVisibleAndImportedAsOneBatchWithCaption() = runTest {
+        withDatabase { database ->
+            seed(database)
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val unavailable = database.sharePicker(SELF, BuildFileRestrictionState.NoRestriction)
+            assertEquals(false, unavailable.conversations.single { it.value == "group" }.acceptsFiles)
+            database.userConfigDAO.setWireCellsConfig(
+                com.wire.kalium.persistence.config.WireCellsConfigEntity("https://cells.test", "none", null)
+            )
+            val picker = database.sharePicker(SELF, BuildFileRestrictionState.NoRestriction)
+            assertEquals(true, picker.conversations.single { it.value == "group" }.acceptsFiles)
+            val id = outbox.handOff(request(PHOTO, VIDEO), listOf(file("photo"), file("video")))
+            val sending = RecordingSending(database)
+            server(database, sending).importShares()
+            assertEquals(listOf("Cells:photo.jpg,video.mp4:Hello as t"), sending.stored)
+            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
+        }
+    }
+
+    @Test
+    fun appPreparesDraftWithoutSendingThenConsumesItWithoutReupload() = runTest {
+        withDatabase { database ->
+            seed(database)
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val store = ShareDraftStore(root.toString(), SELF)
+            val path = file("photo")
+            val draft = store.create(ConversationId("group", SELF.domain), ShareFile(path, PHOTO.name, PHOTO.mimeType, PHOTO.sizeInBytes, PHOTO.width, PHOTO.height))
+            val preparation = request(PHOTO).copy(draftAction = "prepare", draftId = draft)
+            outbox.handOff(preparation, listOf(path))
+            val sending = RecordingSending(database)
+            server(database, sending).importShares()
+            assertEquals(1, sending.prepared)
+            assertEquals(emptyList(), sending.stored)
+            assertEquals("version", store.read(draft)?.asset?.version)
+            outbox.handOff(request(PHOTO).copy(preparedDraftIds = listOf(draft)), listOf(path))
+            server(database, sending).importShares()
+            assertEquals(1, sending.prepared)
+            assertEquals(listOf("Prepared:1:Hello"), sending.stored)
+            assertNull(store.read(draft))
+        }
+    }
 
     @Test
     fun theAppStoresAHandedOffShareFilesFirstAndReportsItOnce() = runTest {
@@ -117,7 +179,7 @@ class ShareOutboxTest {
             val id = outbox.handOff(request(), emptyList())
 
             server(database, object : ShareOutboxSending by RecordingSending(database) {
-                override suspend fun text(conversationId: ConversationId, text: String, messageId: String): String? =
+                        override suspend fun text(conversationId: ConversationId, text: String, messageId: String): String? =
                     error("The app failed")
             }).importShares()
 
@@ -189,6 +251,113 @@ class ShareOutboxTest {
     }
 
     @Test
+    fun aShareHandedOffWhileAnImportWaitsForTheAccountIsClaimedAtOnce() = runTest {
+        withDatabase { database ->
+            seed(database)
+            val doorbell = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+            val synced = CompletableDeferred<Unit>()
+            val sending = RecordingSending(database, synced = synced)
+            val first = outbox.handOff(request(PHOTO), listOf(file("photo")))
+            val serving = launch { server(database, sending).serve(doorbell) }
+            runCurrent()
+            assertTrue(sending.waitingForSync.isCompleted)
+
+            val second = outbox.handOff(request(textMessageId = "t2"), emptyList())
+            doorbell.emit(Unit)
+            runCurrent()
+            assertEquals(HandOffState.Claimed, outbox.state(second))
+
+            // The account catches up, and the app stores both, in order.
+            synced.complete(Unit)
+            assertEquals(HandOffState.Finished(ShareOutbox.STORED), awaitResult(first))
+            assertEquals(HandOffState.Finished(ShareOutbox.STORED), awaitResult(second))
+            assertEquals(listOf("photo.jpg=photo as m1", "Hello as t", "Hello as t2"), sending.stored)
+            serving.cancelAndJoin()
+        }
+    }
+
+    @Test
+    fun theAppReportsARefusalOnlyOnceTheSheetStoppedWaiting() = runTest {
+        withDatabase { database ->
+            seed(database)
+            val refused = outbox.handOff(request(PHOTO, conversation = "left"), listOf(file("photo")))
+            val stored = outbox.handOff(request(textMessageId = "t2"), emptyList())
+            // The sheet waited only seconds for the app.
+            assertNull(outbox.stopWaiting(refused))
+            assertNull(outbox.stopWaiting(stored))
+            val reports = mutableListOf<Triple<ConversationId, String?, String>>()
+
+            server(database, RecordingSending(database)) { conversation, name, reason -> reports += Triple(conversation, name, reason) }
+                .importShares()
+
+            val expected = Triple<ConversationId, String?, String>(ConversationId("left", DOMAIN), "left", ShareBlock.UNAVAILABLE.name)
+            assertEquals(listOf(expected), reports)
+            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(refused), "The app took the result")
+            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(stored), "The app took the result")
+        }
+    }
+
+    @Test
+    fun anUnwatchedDraftPreparationDoesNotReportAMessageSendFailure() = runTest {
+        withDatabase { database ->
+            seed(database)
+            val id = outbox.handOff(
+                request(PHOTO, conversation = "left").copy(draftAction = "prepare"),
+                listOf(file("photo")),
+            )
+            assertNull(outbox.stopWaiting(id))
+            val reports = mutableListOf<String>()
+
+            server(database, RecordingSending(database)) { _, _, reason -> reports += reason }.importShares()
+
+            assertTrue(reports.isEmpty())
+            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(id))
+        }
+    }
+
+    @Test
+    fun aRefusalIsReportedEvenWhenTheAppStopsServingMeanwhile() = runTest {
+        withDatabase { database ->
+            seed(database)
+            val id = outbox.handOff(request(PHOTO, conversation = "left"), listOf(file("photo")))
+            assertNull(outbox.stopWaiting(id))
+            val reporting = CompletableDeferred<Unit>()
+            val goOn = CompletableDeferred<Unit>()
+            val reported = CompletableDeferred<Unit>()
+
+            val importing = launch {
+                server(database, RecordingSending(database)) { _, _, _ ->
+                    reporting.complete(Unit)
+                    goOn.await()
+                    reported.complete(Unit)
+                }.importShares()
+            }
+            withContext(Dispatchers.Default) { withTimeout(10.seconds) { reporting.await() } }
+            // The app goes to the background while it reports.
+            importing.cancel()
+            goOn.complete(Unit)
+            importing.join()
+
+            assertTrue(reported.isCompleted)
+        }
+    }
+
+    @Test
+    fun aResultTheAppLeftBeforeTheSheetStoppedWaitingIsTheSheets() = runTest {
+        withDatabase { database ->
+            seed(database)
+            val id = outbox.handOff(request(PHOTO, conversation = "left"), listOf(file("photo")))
+            var reports = 0
+
+            server(database, RecordingSending(database)) { _, _, _ -> reports++ }.importShares()
+
+            assertEquals(HandOffState.Finished(ShareBlock.UNAVAILABLE.name), outbox.stopWaiting(id))
+            assertEquals(0, reports)
+            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(id), "A result is reported once")
+        }
+    }
+
+    @Test
     fun loggingOutDropsWhatTheOutboxHolds() = runTest {
         withDatabase { database ->
             seed(database)
@@ -207,6 +376,18 @@ class ShareOutboxTest {
         }
     }
 
+    /** The database stores on its own thread, so this waits in real time for the app's result. */
+    private suspend fun awaitResult(id: String): HandOffState = withContext(Dispatchers.Default) {
+        withTimeout(10.seconds) {
+            var state = outbox.state(id)
+            while (state !is HandOffState.Finished) {
+                delay(10.milliseconds)
+                state = outbox.state(id)
+            }
+            state
+        }
+    }
+
     /** The database answers on its own thread, so this waits in real time for the app's answer. */
     private suspend fun awaitConversations(): SharePicker = withContext(Dispatchers.Default) {
         withTimeout(10.seconds) {
@@ -219,8 +400,11 @@ class ShareOutboxTest {
         }
     }
 
-    private fun server(database: UserDatabaseBuilder, sending: ShareOutboxSending) =
-        ShareOutboxServer(root.toString(), SELF, database, BuildFileRestrictionState.NoRestriction, sending)
+    private fun server(
+        database: UserDatabaseBuilder,
+        sending: ShareOutboxSending,
+        refused: suspend (ConversationId, String?, String) -> Unit = { _, _, _ -> },
+    ) = ShareOutboxServer(root.toString(), SELF, database, BuildFileRestrictionState.NoRestriction, sending, refused)
 
     /** Stores each item as a message, as the app's use cases would, and records it. */
     private class RecordingSending(
@@ -243,6 +427,34 @@ class ShareOutboxTest {
             }
             val content = FileSystem.SYSTEM.read(file.path.toPath()) { readUtf8() }
             store(conversationId, messageId, "${file.name}=$content as $messageId")
+            return null
+        }
+
+        override suspend fun cells(
+            conversationId: ConversationId, files: List<ShareOutboxFile>, text: String, messageId: String,
+        ): String? {
+            files.forEach { assertEquals(true, FileSystem.SYSTEM.exists(it.path.toPath())) }
+            store(conversationId, messageId, "Cells:${files.joinToString(",") { it.name }}:$text as $messageId")
+            if (messageId == cancelOn) throw CancellationException("Backgrounded after storage")
+            return null
+        }
+
+        var prepared = 0
+        override suspend fun prepareCells(
+            conversationId: ConversationId, files: List<ShareOutboxFile>, progress: (Long, Long) -> Unit,
+        ): Either<String, List<CellAssetContent>> {
+            prepared++
+            progress(1, 2)
+            return Either.Right(files.map {
+                CellAssetContent("node", "version", it.mimeType, "cell/${it.name}", it.sizeInBytes,
+                    metadata = it.metadata(), transferStatus = AssetTransferStatus.NOT_DOWNLOADED)
+            })
+        }
+        override suspend fun discardCells(attachments: List<CellAssetContent>) = Unit
+        override suspend fun storeCells(
+            conversationId: ConversationId, attachments: List<CellAssetContent>, text: String, messageId: String,
+        ): String? {
+            store(conversationId, messageId, "Prepared:${attachments.size}:$text")
             return null
         }
 
@@ -280,7 +492,7 @@ class ShareOutboxTest {
         val PHOTO = OutboxFile("m1", "photo.jpg", "image/jpeg", sizeInBytes = 5, width = 4, height = 3)
         val VIDEO = OutboxFile("m2", "video.mp4", "video/mp4", sizeInBytes = 5, durationMs = 1_000)
 
-        fun request(vararg files: OutboxFile, conversation: String = "group") =
-            OutboxRequest(conversation, DOMAIN, files.toList(), text = "Hello", textMessageId = "t")
+        fun request(vararg files: OutboxFile, conversation: String = "group", textMessageId: String = "t") =
+            OutboxRequest(conversation, DOMAIN, files.toList(), text = "Hello", textMessageId = textMessageId)
     }
 }
