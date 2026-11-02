@@ -290,7 +290,8 @@ class LogoutWipesUserFilesTest {
                     CacheFolder(cacheFolder.toString()),
                     DBFolder(kaliumFileSystem.rootDBPath.toString())
                 ),
-                kaliumFileSystem = kaliumFileSystem
+                kaliumFileSystem = kaliumFileSystem,
+                dispatchers = TestKaliumDispatcher
             )
             return LogoutUseCaseImpl(
                 logoutRepository = logoutRepository,
