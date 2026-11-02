@@ -11,6 +11,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoCancellationToken
 import com.wire.crypto.CoreCryptoCommand
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
@@ -174,6 +175,12 @@ class CoreCryptoConfirmedRollbackTest {
             private set
         var callbackFailure: Throwable? = null
             private set
+
+        // CoreCrypto 11 uses this entry point for ordinary transactions.
+        override suspend fun transactionFfiCancellable(
+            command: CoreCryptoCommand,
+            cancellationToken: CoreCryptoCancellationToken
+        ) = transactionFfi(command)
 
         @Suppress("TooGenericExceptionCaught")
         override suspend fun transactionFfi(command: CoreCryptoCommand) {
