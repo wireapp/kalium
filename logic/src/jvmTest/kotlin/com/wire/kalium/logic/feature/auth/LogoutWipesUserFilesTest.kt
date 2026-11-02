@@ -322,7 +322,10 @@ class LogoutWipesUserFilesTest {
         override suspend fun getReactions(pageSize: Int): Flow<PagedData<MessageReactions>> = flowOf(PagedData(emptyList(), 1))
         override suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit> = Unit.right()
         override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> = Unit.right()
-        override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
+        override suspend fun insertMessages(
+            messages: List<Message.Standalone>,
+            conversationsWithReadDate: Set<QualifiedID>,
+        ): Either<CoreFailure, Unit> = Unit.right()
         override suspend fun insertReactions(reactions: List<MessageReactions>): Either<CoreFailure, Unit> = Unit.right()
     }
 
