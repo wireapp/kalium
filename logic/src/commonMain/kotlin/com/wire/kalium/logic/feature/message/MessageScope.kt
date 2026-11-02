@@ -681,6 +681,7 @@ public class MessageScope internal constructor(
     public val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
         get() = UpdateAudioMessageNormalizedLoudnessUseCaseImpl(messageRepository = messageRepository)
 
+    @OptIn(InternalKaliumApi::class)
     private val linkPreviewRepository: LinkPreviewRepository by lazy {
         LinkPreviewRepositoryImpl(
             kaliumFileSystem = kaliumFileSystem
