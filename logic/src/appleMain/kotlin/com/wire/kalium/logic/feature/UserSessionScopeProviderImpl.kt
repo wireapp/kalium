@@ -297,8 +297,9 @@ internal actual open class UserSessionScopeProviderImpl(
 
     /**
      * A message send keeps its crypto transaction while its request waits on a bad network, up to the request
-     * timeout, which is longer than iOS keeps the app running; stopping sync can wait behind it too. After a
-     * short grace, fail the account's requests as offline until closing starts, so the account is still released.
+     * timeout, which is longer than iOS keeps the app running; stopping sync can wait behind it too. After
+     * [STALLED_REQUEST_GRACE], fail the account's requests as offline until closing starts, so the account is still
+     * released.
      */
     private suspend fun pauseForBackground(
         account: OwnedAccount,
@@ -588,4 +589,9 @@ internal actual open class UserSessionScopeProviderImpl(
  * work behind an extension that iOS suspended with its host; callers fail or retry instead.
  */
 private val OWNERSHIP_TIMEOUT = 15.seconds
-private val STALLED_REQUEST_GRACE = 5.seconds
+
+/**
+ * Long enough for a send on a working network to finish, short enough that the release still ends while iOS keeps
+ * the app running: a 0xdead10cc report showed iOS suspending the app about 4.8 s after it entered the background.
+ */
+private val STALLED_REQUEST_GRACE = 1.seconds
