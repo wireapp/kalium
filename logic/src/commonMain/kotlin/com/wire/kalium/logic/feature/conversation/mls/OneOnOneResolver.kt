@@ -58,6 +58,16 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
+/**
+ * Whether a failed 1:1 resolution may succeed later, for example once the other user has key packages again,
+ * so it is worth retrying on the next foreground.
+ */
+internal fun CoreFailure.isRetryableOnForeground(): Boolean =
+    this is CoreFailure.MissingKeyPackages ||
+        this is NoClientsForUser ||
+        this is NetworkFailure.FederatedBackendFailure.RetryableFailure ||
+        (this is MLSFailure.MessageRejected && cause == NetworkFailure.MlsMessageRejectedFailure.StaleMessage)
+
 internal interface OneOnOneResolver {
     suspend fun resolveAllOneOnOneConversations(
         transactionContext: CryptoTransactionContext,
@@ -191,18 +201,13 @@ internal class OneOnOneResolverImpl(
             Either.Left(failure)
         }
 
-        failure is CoreFailure.MissingKeyPackages || failure is NoClientsForUser -> {
+        failure.isRetryableOnForeground() -> {
             enqueueForForegroundRecovery(user.id, failure)
             Either.Right(Unit)
         }
 
         failure is CoreFailure.NoCommonProtocolFound -> {
             kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
-            Either.Right(Unit)
-        }
-
-        failure is NetworkFailure.FederatedBackendFailure.RetryableFailure -> {
-            enqueueForForegroundRecovery(user.id, failure)
             Either.Right(Unit)
         }
 
@@ -222,11 +227,7 @@ internal class OneOnOneResolverImpl(
         }
 
         failure is MLSFailure.MessageRejected -> {
-            if (failure.cause == NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
-                enqueueForForegroundRecovery(user.id, failure)
-            } else {
-                kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
-            }
+            kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
             Either.Right(Unit)
         }
 

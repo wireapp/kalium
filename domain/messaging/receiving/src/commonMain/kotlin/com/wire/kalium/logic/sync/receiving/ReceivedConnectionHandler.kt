@@ -6,14 +6,9 @@
 package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.dao.member.MemberEntity
-import com.wire.kalium.logic.data.conversation.unverifiedConversationMessage
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.data.conversation.pendingConversation
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -32,7 +27,6 @@ internal fun ConnectionDTO.toEntity() = ConnectionEntity(
 internal class ReceivedConnectionHandler(
     private val data: MessageEffectDAOs,
     private val self: UserId,
-    private val persistMessage: PersistMessageUseCase,
     private val deleteFile: (String) -> Unit,
 ) {
     suspend fun previousWarning(received: ReceivedPayload.Connection): MessageEntity? {
@@ -53,8 +47,9 @@ internal class ReceivedConnectionHandler(
         val id = connection.qualifiedConversationId
         data.users.insertOrIgnoreIncompleteUsers(listOf(connection.qualifiedToId))
         received.profiles.persist(data.users, data.apps)
-        val previousStatus = data.connections.getConnection(id)?.status
-        data.users.upsertConnectionStatuses(mapOf(connection.qualifiedToId to connection.status))
+        if (connection.status != ConnectionEntity.State.ACCEPTED) {
+            data.users.upsertConnectionStatuses(mapOf(connection.qualifiedToId to connection.status))
+        }
         when (connection.status) {
             ConnectionEntity.State.CANCELLED -> {
                 check(id !in requiredEarlier && id !in recreatedLater) {
@@ -64,25 +59,7 @@ internal class ReceivedConnectionHandler(
                 data.connections.deleteConnectionDataAndConversation(id)
             }
             ConnectionEntity.State.ACCEPTED -> {
-                data.members.updateOrInsertOneOnOneMember(
-                    MemberEntity(connection.qualifiedToId, MemberEntity.Role.Member),
-                    id,
-                )
-                if (previousStatus != ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT || previousWarning != null) {
-                    val active = data.users.getUserDetailsByQualifiedID(connection.qualifiedToId)?.activeOneOnOneConversationId
-                    check(previousWarning == null || previousWarning.conversationId in listOf(id, active)) {
-                        "Accepted warning belongs to another conversation"
-                    }
-                    persistMessage(
-                        unverifiedConversationMessage(
-                            received.warningId,
-                            (previousWarning?.conversationId ?: id).toModel(),
-                            previousWarning?.date ?: DateTimeUtil.currentInstant(),
-                            self,
-                        )
-                    ).orThrow()
-                }
-                // The app retains the previous connection row on acceptance.
+                data.persistAcceptedConnection(connection, self, received.warningId, previousWarning)
             }
             else -> {
                 if (connection.status == ConnectionEntity.State.PENDING) {

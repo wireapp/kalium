@@ -58,9 +58,9 @@ internal actual fun createPlatformAvsCallNotificationProcessor(
     }
 }
 
-// AVS retains the original context for each identity. There is no event-handle destroy API:
-// end evaluates a batch, it does not free the handle. Match wire-ios feat/avs_for_nse by
-// retaining one handle/context per account and client until the process exits.
+// AVS retains the original context for each identity, and end evaluates a batch without
+// freeing the handle. Match wire-ios feat/avs_for_nse by retaining one handle/context per
+// account and client until the process exits, so wcall_event_destroy is never called.
 private val eventAccounts = mutableMapOf<Pair<String, String>, AppleAvsEventAccount>()
 private val eventLock = NSRecursiveLock()
 

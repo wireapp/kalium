@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
@@ -116,6 +117,58 @@ class AcceptConnectionRequestUseCaseTest {
                 true
             )
         }
+        verifySuspend(VerifyMode.not) {
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(mokkeryAny())
+        }
+    }
+
+    @Test
+    fun givenResolvingOneOnOneFails_whenInvokingUseCase_thenShouldReturnSuccessAndRetryOnNextForeground() = runTest {
+        // given
+        val failure = CoreFailure.MissingKeyPackages(setOf(CONNECTION.qualifiedToId))
+        val (arrangement, acceptConnectionRequestUseCase) = arrange {
+            withUpdateConnectionStatus(Either.Right(CONNECTION))
+            withFetchConversationSucceeding()
+            withUpdateConversationModifiedDate(Either.Right(Unit))
+            withPersistUnverifiedWarningMessageSuccess()
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Left(failure))
+        }
+
+        // when
+        val result = acceptConnectionRequestUseCase(USER_ID)
+
+        // then
+        assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(CONNECTION.qualifiedToId)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
+                CONNECTION.qualifiedConversationId,
+                mokkeryAny()
+            )
+        }
+    }
+
+    @Test
+    fun givenResolvingOneOnOneFailsPermanently_whenInvokingUseCase_thenShouldReturnSuccessWithoutRetrying() = runTest {
+        // given
+        val (arrangement, acceptConnectionRequestUseCase) = arrange {
+            withUpdateConnectionStatus(Either.Right(CONNECTION))
+            withFetchConversationSucceeding()
+            withUpdateConversationModifiedDate(Either.Right(Unit))
+            withPersistUnverifiedWarningMessageSuccess()
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Left(CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate))
+        }
+
+        // when
+        val result = acceptConnectionRequestUseCase(USER_ID)
+
+        // then
+        assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(mokkeryAny())
+        }
     }
 
     @Test
@@ -147,6 +200,7 @@ class AcceptConnectionRequestUseCaseTest {
         val oneOnOneResolver = mock<OneOnOneResolver>(mode = MockMode.autoUnit)
         val fetchConversation = mock<FetchConversationUseCase>(mode = MockMode.autoUnit)
         val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>(mode = MockMode.autoUnit)
+        val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = run {
             block()
@@ -157,7 +211,8 @@ class AcceptConnectionRequestUseCaseTest {
                 oneOnOneResolver = oneOnOneResolver,
                 newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
                 fetchConversation = fetchConversation,
-                transactionProvider = cryptoTransactionProvider
+                transactionProvider = cryptoTransactionProvider,
+                pendingActionsRepository = pendingActionsRepository
             )
         }
 

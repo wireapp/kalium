@@ -88,8 +88,19 @@ interface MessageDAO {
 
     suspend fun claimFailedMessageForRetry(id: String, conversationId: QualifiedIDEntity): Boolean
 
+    suspend fun updatePendingTextPolicy(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    )
+
     suspend fun updateMessagesStatus(status: MessageEntity.Status, id: List<String>, conversationId: QualifiedIDEntity)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
+
+    /** Finds the self-authored initial warning, including legacy local IDs and hidden messages. */
+    suspend fun getConversationStartedUnverifiedWarning(conversationId: ConversationIDEntity): MessageEntity?
+
     suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity>
     fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     fun getMessagesByConversationAndVisibility(
@@ -149,12 +160,15 @@ interface MessageDAO {
         clientId: String,
     )
 
+    /**
+     * Returns the ids of messages expecting a read confirmation within the given dates, grouped by their sender.
+     */
     suspend fun getMessageIdsThatExpectReadConfirmationWithinDates(
         conversationId: QualifiedIDEntity,
         afterDate: Instant,
         untilDate: Instant,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
-    ): List<String>
+    ): Map<UserIDEntity, List<String>>
 
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
 

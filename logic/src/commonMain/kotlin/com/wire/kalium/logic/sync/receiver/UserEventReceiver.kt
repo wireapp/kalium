@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -33,7 +32,6 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -64,7 +62,6 @@ internal class UserEventReceiverImpl internal constructor(
     private val oneOnOneResolver: OneOnOneResolver,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val legalHoldRequestHandler: LegalHoldRequestHandler,
     private val legalHoldHandler: LegalHoldHandler,
     private val sessionRefreshSuggestedEventHandler: SessionRefreshSuggestedEventHandler,
@@ -125,23 +122,14 @@ internal class UserEventReceiverImpl internal constructor(
                 }
             }
             .flatMap {
-                val previousStatus = connectionRepository.getConnection(event.connection.qualifiedConversationId)
-                    .map { it.connection.status }.getOrNull()
                 connectionRepository.insertConnectionFromEvent(transactionContext, event)
-                    .flatMap {
+                    .onSuccess {
                         if (event.connection.status == ConnectionState.ACCEPTED) {
                             oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
                                 transactionContext,
                                 event.connection.qualifiedToId,
                                 delay = if (deliveryInfo.source == EventSource.LIVE) 3.seconds else ZERO
                             )
-                            if (previousStatus != ConnectionState.MISSING_LEGALHOLD_CONSENT) {
-                                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                                    event.connection.qualifiedConversationId
-                                )
-                            } else Either.Right(Unit)
-                        } else {
-                            Either.Right(Unit)
                         }
                     }
                     .flatMap { legalHoldHandler.handleNewConnection(event) }

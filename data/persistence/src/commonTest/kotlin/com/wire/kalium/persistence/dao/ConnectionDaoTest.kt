@@ -86,6 +86,19 @@ class ConnectionDaoTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenRequests_WhenOneUserIsAccepted_ThenTheUserAndOnlyTheirRequestAreAccepted() = runTest {
+        val otherRequest = connection2.copy(qualifiedToId = QualifiedIDEntity("other", "wire.com"), toId = "other")
+        db.connectionDAO.insertConnection(connection1)
+        db.connectionDAO.insertConnection(otherRequest)
+
+        db.connectionDAO.updateConnectionStatus(connection1.qualifiedToId, ConnectionEntity.State.ACCEPTED)
+
+        assertEquals(listOf(otherRequest.qualifiedToId), db.connectionDAO.getConnectionRequests().first().map { it.qualifiedToId })
+        assertEquals(ConnectionEntity.State.ACCEPTED, db.connectionDAO.getConnection(connection1.qualifiedConversationId)?.status)
+        assertEquals(ConnectionEntity.State.ACCEPTED, db.userDAO.getUserDetailsByQualifiedID(connection1.qualifiedToId)?.connectionStatus)
+    }
+
+    @Test
     fun givenFewConnections_WhenUpdateNotifyFlagForAll_ThenItIsUpdated() = runTest {
         db.connectionDAO.insertConnection(connection1)
         db.connectionDAO.insertConnection(connection2)
