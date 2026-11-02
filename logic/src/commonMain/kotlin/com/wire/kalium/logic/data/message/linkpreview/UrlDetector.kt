@@ -27,6 +27,7 @@ internal object UrlDetector {
     private const val MAX_PORT = 65535
     private const val OPENING_BRACKETS = "([{"
     private const val CLOSING_BRACKETS = ")]}"
+    private const val SENTENCE_PUNCTUATION = ".,;:!?"
 
     // Smart punctuation (on by default on iOS) turns typed quotes into these.
     private const val TYPOGRAPHIC_OPENING_QUOTES = "\u201C\u2018\u201E\u00AB"
@@ -45,9 +46,10 @@ internal object UrlDetector {
                 var end = start + prefix.length
                 while (end < limit && !isDelimiter(text[end])) end++
                 if (!endsWithinBudget(text, end, limit)) break
-                val trimmedEnd = trimPunctuation(text, start, end)
+                val authorityOffset = if (prefix == "www.") 0 else prefix.length
+                val trimmedEnd = trimPunctuation(text, start, end, authorityOffset)
                 val candidate = text.substring(start, trimmedEnd)
-                if (isCompleteUrl(candidate, if (prefix == "www.") 0 else prefix.length) &&
+                if (isCompleteUrl(candidate, authorityOffset) &&
                     excluded.none { start <= it.last && it.first < trimmedEnd }
                 ) {
                     matches.add(UrlMatch(candidate, start, trimmedEnd))
@@ -109,7 +111,8 @@ internal object UrlDetector {
         '[' !in host && ']' !in host && '.' in host
     }
 
-    private fun trimPunctuation(text: String, start: Int, end: Int): Int {
+    private fun trimPunctuation(text: String, start: Int, end: Int, authorityOffset: Int): Int {
+        val hasResource = (start + authorityOffset until end).any { text[it] in "/?#" }
         val balance = IntArray(OPENING_BRACKETS.length)
         for (index in start until end) {
             val opening = OPENING_BRACKETS.indexOf(text[index])
@@ -120,17 +123,31 @@ internal object UrlDetector {
         var trimmedEnd = end
         while (trimmedEnd > start) {
             val last = text[trimmedEnd - 1]
-            val closing = CLOSING_BRACKETS.indexOf(last)
-            val matchingWrapper = last in "*_~'" && start > 0 && text[start - 1] == last
             when {
-                last in ".,;:!?$TYPOGRAPHIC_CLOSING_QUOTES" || matchingWrapper -> trimmedEnd--
-                closing >= 0 && balance[closing] < 0 -> {
+                last in SENTENCE_PUNCTUATION -> {
+                    var punctuationStart = trimmedEnd - 1
+                    while (punctuationStart > start && text[punctuationStart - 1] in SENTENCE_PUNCTUATION) punctuationStart--
+                    // Path, query, and fragment punctuation belongs to the URL unless it follows a closing prose wrapper.
+                    if (hasResource && !isClosingWrapper(text, start, punctuationStart - 1, balance)) break
+                    trimmedEnd = punctuationStart
+                }
+                isClosingWrapper(text, start, trimmedEnd - 1, balance) -> {
                     trimmedEnd--
-                    balance[closing]++
+                    val closing = CLOSING_BRACKETS.indexOf(last)
+                    if (closing >= 0) balance[closing]++
                 }
                 else -> return trimmedEnd
             }
         }
         return trimmedEnd
+    }
+
+    private fun isClosingWrapper(text: String, start: Int, index: Int, balance: IntArray): Boolean {
+        if (index < start) return false
+        val character = text[index]
+        val closing = CLOSING_BRACKETS.indexOf(character)
+        return character in TYPOGRAPHIC_CLOSING_QUOTES ||
+            (character in "*_~'" && start > 0 && text[start - 1] == character) ||
+            (closing >= 0 && balance[closing] < 0)
     }
 }

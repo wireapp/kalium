@@ -142,6 +142,14 @@ class UrlDetectorTest {
     @Test
     fun givenSurroundingPunctuation_whenDetecting_thenPreservesBalancedUrlAndUtf16Offsets() {
         val cases = listOf(
+            Triple("", "https://example.com/path!", ""),
+            Triple("", "https://example.com/query?value=hello!", ""),
+            Triple("", "https://example.com/path.,;:!?", ""),
+            Triple("", "https://example.com/query?value=hello.,;:!?", ""),
+            Triple("", "https://example.com/path#section!", ""),
+            Triple("See ", "https://example.com", "!"),
+            Triple("(", "https://example.com/path!", ")!"),
+            Triple("Read \u201C", "https://example.com/query?value=hello!", "\u201D."),
             Triple("\uD83D\uDCAC (", "https://example.dev/path_(details)", ")."),
             Triple("\uD83D\uDCAC [", "https://example.dev/query?value=[one]", "]!"),
             Triple("**", "https://example.dev/path", "**"),
