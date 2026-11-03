@@ -82,7 +82,7 @@ public class DeleteMessageUseCase internal constructor(
         withContext(dispatcher.io) {
             messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
                 if (message.isCancellablePending() && !deleteForEveryone) {
-                    cancelPendingMessage(conversationId, messageId)
+                    cancelPendingMessage(conversationId, messageId, deleteForEveryone)
                 } else {
                     awaitSlowSyncCompletion()
                     // Sync can change the stored message while we wait. Keep the normal fresh-read boundary.
@@ -113,7 +113,7 @@ public class DeleteMessageUseCase internal constructor(
     ) = when {
         // Remove a locally queued message without requiring a network signal for Delete for Me.
         message.isCancellablePending() ->
-            cancelPendingMessage(conversationId, messageId)
+            cancelPendingMessage(conversationId, messageId, deleteForEveryone)
 
         // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
         // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
