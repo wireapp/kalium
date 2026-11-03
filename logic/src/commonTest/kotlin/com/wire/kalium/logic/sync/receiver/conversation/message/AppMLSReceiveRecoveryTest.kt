@@ -30,6 +30,7 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.utils.NetworkResponse
@@ -210,6 +211,40 @@ class AppMLSReceiveRecoveryTest {
 
     @Test
     fun verificationFlagFailureCanBeRetriedBeforeStatusChanges() = verificationRetry(true)
+
+    @Test
+    fun selfConversationRecoveryDoesNotPersistVerificationMessageNorStatus() = withArrangement { arrangement ->
+        arrangement.completeRecovery()
+        everySuspend { arrangement.api.fetchConversationDetails(any()) } returns NetworkResponse.Success(
+            TestConversation.CONVERSATION_RESPONSE.copy(
+                id = arrangement.event.conversationId.toApi(), protocol = ConvProtocol.MLS,
+                type = ConversationResponse.Type.SELF,
+                groupId = GROUP_ID, epoch = 1uL, mlsCipherSuiteTag = 1,
+            ), emptyMap(), 200,
+        )
+        everySuspend { arrangement.conversations.persistConversations(any()) } returns Either.Right(Unit)
+        everySuspend { arrangement.conversations.updateConversationMembers(any(), any(), any()) } returns Either.Right(Unit)
+        everySuspend { arrangement.mlsConversations.updateGroupIdAndState(any(), any(), any(), any()) } returns Either.Right(Unit)
+        everySuspend { arrangement.mlsContext.getGroupState(GROUP_ID) } returns E2EIConversationState.NOT_VERIFIED
+        everySuspend { arrangement.conversations.getGroupStatusMembersNamesAndHandles(any()) } returns
+                Either.Right(EpochChangesData(arrangement.event.conversationId, Conversation.VerificationStatus.VERIFIED, emptyMap()))
+        everySuspend { arrangement.conversations.updateMlsVerificationStatus(any(), any()) } returns Either.Right(Unit)
+        everySuspend { arrangement.conversations.setDegradedConversationNotifiedFlag(any(), any()) } returns Either.Right(Unit)
+        val messages = mutableListOf<Message.Standalone>()
+        everySuspend { arrangement.persistMessage.invoke(any()) } calls {
+            messages += it.args[0] as Message.Standalone
+            Either.Right(Unit)
+        }
+
+        assertTrue(arrangement.adapter.handle(arrangement.transactionContext, arrangement.event, false))
+
+        verifySuspend(VerifyMode.not) { arrangement.conversations.updateMlsVerificationStatus(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.conversations.setDegradedConversationNotifiedFlag(any(), any()) }
+        assertEquals(
+            0,
+            messages.filterIsInstance<Message.System>().count { it.content == MessageContent.ConversationDegradedMLS }
+        )
+    }
 
     private fun verificationRetry(failFlag: Boolean) = withArrangement { arrangement ->
         arrangement.completeRecovery()

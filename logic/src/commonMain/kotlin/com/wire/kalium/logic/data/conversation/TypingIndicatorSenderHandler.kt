@@ -98,11 +98,18 @@ internal class TypingIndicatorSenderHandlerImpl(
     private suspend fun sendTypingIndicatorStatus(
         conversationId: ConversationId,
         typingStatus: Conversation.TypingIndicatorMode
-    ): Boolean = conversationRepository.sendTypingIndicatorStatus(conversationId, typingStatus).fold({
-        kaliumLogger.w("Skipping failed to send typing indicator status: $typingStatus")
-        false
-    }) {
-        kaliumLogger.i("Successfully sent typing started indicator status: $typingStatus")
-        true
+    ): Boolean {
+        // Nobody else is in the self conversation (Notes), so there is nobody to notify
+        val isSelfConversation = conversationRepository.getConversationById(conversationId)
+            .fold({ false }, { it.type == Conversation.Type.Self })
+        if (isSelfConversation) return false
+
+        return conversationRepository.sendTypingIndicatorStatus(conversationId, typingStatus).fold({
+            kaliumLogger.w("Skipping failed to send typing indicator status: $typingStatus")
+            false
+        }) {
+            kaliumLogger.i("Successfully sent typing started indicator status: $typingStatus")
+            true
+        }
     }
 }

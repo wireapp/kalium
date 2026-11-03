@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.selfDeletingMessages
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
@@ -61,12 +62,17 @@ internal class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl intern
                         conversationRepository.observeConversationById(conversationId)
                     ) { teamSettings, conversationDetailsEither ->
                         val conversation = conversationDetailsEither.getOrNull()
-                        outgoingSelfDeletionTimer(
-                            teamTimer = teamSettings.getOrNull()?.enforcedSelfDeletionTimer,
-                            groupTimer = conversation?.messageTimer,
-                            userTimer = conversation?.userMessageTimer,
-                            considerSelfUserSettings = considerSelfUserSettings,
-                        )
+                        if (conversation?.type == Conversation.Type.Self) {
+                            // Notes never self-delete, not even when the team enforces a timer
+                            SelfDeletionTimer.Disabled
+                        } else {
+                            outgoingSelfDeletionTimer(
+                                teamTimer = teamSettings.getOrNull()?.enforcedSelfDeletionTimer,
+                                groupTimer = conversation?.messageTimer,
+                                userTimer = conversation?.userMessageTimer,
+                                considerSelfUserSettings = considerSelfUserSettings,
+                            )
+                        }
                     }
                 }
             })

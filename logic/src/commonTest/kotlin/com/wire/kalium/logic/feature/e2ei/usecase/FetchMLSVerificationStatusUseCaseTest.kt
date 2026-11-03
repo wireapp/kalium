@@ -113,6 +113,31 @@ class FetchMLSVerificationStatusUseCaseTest {
     }
 
     @Test
+    fun givenSelfConversation_whenNotVerifiedStatusComes_thenNoStatusUpdateNorSystemMessage() = runTest {
+        val selfConversation = TestConversation.SELF(TestConversation.MLS_PROTOCOL_INFO).copy(
+            mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED
+        )
+        val (arrangement, handler) = arrange {
+            withGetMLSClientSuccess()
+            withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
+            withConversationByMLSGroupId(Either.Right(selfConversation))
+        }
+
+        handler(TestConversation.GROUP_ID)
+        advanceUntilIdle()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.updateMlsVerificationStatus(any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessageUseCase.invoke(any<Message.System>())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), any())
+        }
+    }
+
+    @Test
     fun givenDegradedConversation_whenNotVerifiedStatusComes_thenNothingChanged() = runTest {
         val conversationDetails = TestConversation.GROUP().copy(
             mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED
@@ -285,6 +310,8 @@ class FetchMLSVerificationStatusUseCaseTest {
             withUpdateVerificationStatus(Either.Right(Unit))
             withPersistingMessage(Either.Right(Unit))
             withSetDegradedConversationNotifiedFlag(Either.Right(Unit))
+            // by default the conversation is a regular one, tests can override it
+            withConversationByMLSGroupId(Either.Right(TestConversation.MLS_CONVERSATION))
             block()
             this to FetchMLSVerificationStatusUseCaseImpl(
                 mlsClientProvider = mlsClientProvider,

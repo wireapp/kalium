@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
@@ -31,6 +32,7 @@ import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -77,6 +79,11 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
     private val logger = kaliumLogger.withTextTag("FetchMLSVerificationStatusUseCaseImpl")
 
     override suspend fun invoke(groupId: GroupID) {
+        // The self conversation (Notes) has no verification state to show, nor system messages to add
+        val isSelfConversation = conversationRepository.getConversationByMLSGroupId(groupId)
+            .fold({ false }, { it.type == Conversation.Type.Self })
+        if (isSelfConversation) return
+
         mlsClientProvider.getMLSClient()
             .onFailure { logger.w("Could not fetch MLS client for verification refresh: $it") }
             .onSuccess { mlsClient -> refreshVerificationStatus(mlsClient, groupId) }

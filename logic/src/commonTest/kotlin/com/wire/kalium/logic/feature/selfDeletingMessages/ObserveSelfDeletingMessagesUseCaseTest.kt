@@ -234,6 +234,52 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         assertEquals(SelfDeletionTimer.Disabled, result.first())
     }
 
+    @Test
+    fun givenSelfConversationAndEnforcedTeamTimer_whenObserving_thenTimerIsDisabled() = runTest {
+        val storedTeamSettingsFlow = flowOf(
+            Either.Right(
+                TeamSettingsSelfDeletionStatus(
+                    hasFeatureChanged = null,
+                    enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enforced(7.toDuration(DurationUnit.DAYS))
+                )
+            )
+        )
+        val selfConversation = TestConversation.SELF().copy(messageTimer = 1.toDuration(DurationUnit.HOURS))
+
+        val (_, observeSelfDeletionTimer) = Arrangement(testKaliumDispatcher)
+            .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
+            .withStoredConversation(selfConversation)
+            .withCellEnabled(false)
+            .arrange()
+
+        val result = observeSelfDeletionTimer(selfConversation.id, true)
+
+        assertEquals(SelfDeletionTimer.Disabled, result.first())
+    }
+
+    @Test
+    fun givenRegularConversationAndEnforcedTeamTimer_whenObserving_thenTimerIsStillEnforced() = runTest {
+        val teamDuration = 7.toDuration(DurationUnit.DAYS)
+        val storedTeamSettingsFlow = flowOf(
+            Either.Right(
+                TeamSettingsSelfDeletionStatus(
+                    hasFeatureChanged = null,
+                    enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enforced(teamDuration)
+                )
+            )
+        )
+
+        val (_, observeSelfDeletionTimer) = Arrangement(testKaliumDispatcher)
+            .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
+            .withStoredConversation(TEST_CONVERSION)
+            .withCellEnabled(false)
+            .arrange()
+
+        val result = observeSelfDeletionTimer(TEST_CONVERSION.id, true)
+
+        assertEquals(teamDuration, result.first().duration)
+    }
+
     private companion object {
         val TEST_CONVERSION = TestConversation.CONVERSATION
     }

@@ -80,6 +80,86 @@ class LegalHoldSystemMessagesHandlerTest {
     }
 
     @Test
+    fun givenSelfConversationAmongTheUserConversations_whenHandlingEnableForUser_thenNoSystemMessageIsCreatedForIt() = runTest {
+        // given
+        val selfConversation = TestConversation.SELF(TestConversation.MLS_PROTOCOL_INFO)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(selfConversation))
+            .arrange()
+        // when
+        handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
+        // then
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.messageRepository.updateLegalHoldMessageMembers(any(), any(), any()) }
+    }
+
+    @Test
+    fun givenSelfAndRegularConversations_whenHandlingDisableForUser_thenOnlyTheRegularOneGetsASystemMessage() = runTest {
+        // given
+        val selfConversation = TestConversation.SELF(TestConversation.MLS_PROTOCOL_INFO)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(selfConversation, TestConversation.CONVERSATION))
+            .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
+            .arrange()
+        // when
+        handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
+        // then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matches { it.conversationId == TestConversation.CONVERSATION.id })
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage.invoke(matches { it.conversationId == selfConversation.id })
+        }
+    }
+
+    @Test
+    fun givenSelfConversation_whenHandlingEnableForConversation_thenNoSystemMessageIsCreated() = runTest {
+        // given
+        val selfConversation = TestConversation.SELF(TestConversation.MLS_PROTOCOL_INFO)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationById(selfConversation)
+            .arrange()
+        // when
+        handler.handleEnabledForConversation(selfConversation.id, Instant.UNIX_FIRST_DATE, null)
+        // then
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+    }
+
+    @Test
+    fun givenRegularConversation_whenHandlingEnableForConversation_thenSystemMessageIsCreated() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationById(TestConversation.CONVERSATION)
+            .arrange()
+        // when
+        handler.handleEnabledForConversation(TestConversation.CONVERSATION.id, Instant.UNIX_FIRST_DATE, null)
+        // then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Enabled })
+        }
+    }
+
+    @Test
+    fun givenNoticeForSelfConversation_whenHandlingUserTransition_thenNoSystemMessageIsCreatedNorUpdated() = runTest {
+        // given
+        val selfConversation = TestConversation.SELF(TestConversation.MLS_PROTOCOL_INFO)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationById(selfConversation)
+            .arrange()
+        val notice = LegalHoldUserTransitionJournal.Notice(
+            conversation = selfConversation.id,
+            messageId = "new-id",
+            members = listOf(TestUser.OTHER_USER_ID),
+            update = false
+        )
+        // when
+        handler.handleUserTransition(TestUser.OTHER_USER_ID, true, listOf(notice), Instant.UNIX_FIRST_DATE, "new-id")
+        // then
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.messageRepository.updateLegalHoldMessageMembers(any(), any(), any()) }
+    }
+
+    @Test
     fun givenNoLastLegalHoldEnabledMessageForConversation_whenHandlingEnableForUser_thenCreateNewSystemMessage() = runTest {
         // given
         val (arrangement, handler) = Arrangement()
@@ -202,6 +282,7 @@ class LegalHoldSystemMessagesHandlerTest {
         init {
             runBlocking {
                 withGetConversationsByUserIdSuccess(emptyList())
+                withGetConversationById(TestConversation.CONVERSATION)
                 withGetLastMessagesForConversationIdsSuccess(mapOf())
                 withUpdateLegalHoldMessageMembersSuccess()
                 withPersistMessageSuccess()
@@ -220,6 +301,12 @@ class LegalHoldSystemMessagesHandlerTest {
             everySuspend {
                 conversationRepository.getConversationsByUserId(any())
             } returns Either.Right(conversations)
+        }
+
+        suspend fun withGetConversationById(conversation: Conversation) = apply {
+            everySuspend {
+                conversationRepository.getConversationById(any())
+            } returns Either.Right(conversation)
         }
 
         suspend fun withGetLastMessagesForConversationIdsSuccess(result: Map<ConversationId, Message>) = apply {

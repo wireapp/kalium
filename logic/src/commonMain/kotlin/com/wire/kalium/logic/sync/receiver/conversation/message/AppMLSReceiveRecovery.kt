@@ -72,7 +72,10 @@ internal class AppMLSReceiveRecovery(
             result.epoch.toLong(),
             ConversationEntity.GroupState.ESTABLISHED
         ).recoveryOrThrow()
-        persistVerification(mls, event, result.operation.groupId, result.warningId)
+        // The self conversation (Notes) has no verification state or verification system messages
+        if (entity.type != ConversationEntity.Type.SELF) {
+            persistVerification(mls, event, result.operation.groupId, result.warningId)
+        }
         persistMessage(mlsEpochWarningMessage(result.warningId, event.conversationId, selfUserId, event.messageInstant)).recoveryOrThrow()
         return true
     }

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.common.functional.map
@@ -98,6 +99,7 @@ internal class LegalHoldSystemMessagesHandlerImpl(
         noticeId: String,
     ) {
         for (notice in notices) {
+            if (isSelfConversation(notice.conversation)) continue
             val members = (notice.members + userId).distinct()
             if (notice.update) {
                 messageRepository.updateLegalHoldMessageMembers(notice.messageId, notice.conversation, members).getOrFail {
@@ -140,6 +142,8 @@ internal class LegalHoldSystemMessagesHandlerImpl(
         instant: Instant = Clock.System.now(),
         noticeId: String? = null
     ) {
+        if (isSelfConversation(conversationId)) return
+
         when (newStatus) {
             Conversation.LegalHoldStatus.DISABLED -> persistMessage(
                 createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversationId, instant, noticeId)
@@ -169,7 +173,9 @@ internal class LegalHoldSystemMessagesHandlerImpl(
         crossinline createNew: () -> T,
     ) {
         // get all conversations where the given user is a member
-        conversationRepository.getConversationsByUserId(userId).map { conversations ->
+        conversationRepository.getConversationsByUserId(userId).map { allConversations ->
+            // the self conversation (Notes) never gets legal hold notices
+            val conversations = allConversations.filter { it.type != Conversation.Type.Self }
             // get last legal hold messages for the given conversations
             getLastLegalHoldMessagesForConversations<T>(userId, conversations).map { lastMessagesMap ->
                 conversations.forEach { conversation ->
@@ -181,6 +187,9 @@ internal class LegalHoldSystemMessagesHandlerImpl(
             }
         }
     }
+
+    private suspend fun isSelfConversation(conversationId: ConversationId): Boolean =
+        conversationRepository.getConversationById(conversationId).fold({ false }, { it.type == Conversation.Type.Self })
 
     private fun createSystemMessage(
         content: MessageContent.LegalHold,
