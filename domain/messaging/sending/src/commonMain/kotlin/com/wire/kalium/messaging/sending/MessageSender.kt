@@ -79,7 +79,7 @@ interface MessageSender {
 
     /**
      * Returns true only when this attempt sent the message; false when the persisted message is no longer eligible.
-     * Like [sendMessage], propagates failures without scheduling retries. Uses the same transaction and storage check.
+     * Like [sendMessage], propagates failures without scheduling retries. Uses the same storage check.
      */
     suspend fun sendMessageWithOutcome(
         message: Message.Sendable,
