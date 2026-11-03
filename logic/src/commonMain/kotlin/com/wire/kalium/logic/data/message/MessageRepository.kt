@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapFlowStorageRequest
+import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -95,6 +96,13 @@ internal interface MessageRepository : OutgoingMessages, MessageTransport {
     ): Either<CoreFailure, Unit>
 
     suspend fun claimFailedMessageForRetry(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean>
+
+    suspend fun updatePendingTextPolicy(
+        conversationId: ConversationId,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ): Either<CoreFailure, Unit>
 
     suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
@@ -419,6 +427,15 @@ internal class MessageDataSource internal constructor(
         messageDAO.claimFailedMessageForRetry(messageUuid, conversationId.toDao())
     }
 
+    override suspend fun updatePendingTextPolicy(
+        conversationId: ConversationId,
+        messageId: String,
+        expireAfterMillis: Long?,
+        expectsReadConfirmation: Boolean,
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updatePendingTextPolicy(conversationId.toDao(), messageId, expireAfterMillis, expectsReadConfirmation)
+    }
+
     override suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -575,7 +592,7 @@ internal class MessageDataSource internal constructor(
 
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(
         conversationId: ConversationId
-    ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
+    ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageNullableRequest {
         messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())
             ?.let { receiptModeMapper.fromEntityToModel(it) }
     }
