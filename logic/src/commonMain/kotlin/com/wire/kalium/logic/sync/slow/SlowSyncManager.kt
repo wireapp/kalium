@@ -140,7 +140,7 @@ internal fun SlowSyncManager(
         onFailure = { failure ->
             try {
                 val failureGeneration = retryController.generation()
-                val delay = exponentialDurationHelper.next()
+                val delay = retryController.capRetryDelay(exponentialDurationHelper.next())
                 logger.logSyncTelemetry(
                     event = SyncTelemetryEvent.SYNC_FAILED,
                     component = SyncTelemetryComponent.SLOW,

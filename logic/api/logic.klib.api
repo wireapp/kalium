@@ -2173,6 +2173,7 @@ abstract interface com.wire.kalium.logic.sync/SendPendingMessagesUseCase { // co
 
 abstract interface com.wire.kalium.logic.sync/SyncRequest { // com.wire.kalium.logic.sync/SyncRequest|null[0]
     abstract fun keepSyncAlwaysOn() // com.wire.kalium.logic.sync/SyncRequest.keepSyncAlwaysOn|keepSyncAlwaysOn(){}[0]
+    abstract fun limitRetryDelay(kotlin.time/Duration) // com.wire.kalium.logic.sync/SyncRequest.limitRetryDelay|limitRetryDelay(kotlin.time.Duration){}[0]
     abstract suspend fun waitUntilLiveOrFailure(): com.wire.kalium.logic.sync/SyncRequestResult // com.wire.kalium.logic.sync/SyncRequest.waitUntilLiveOrFailure|waitUntilLiveOrFailure(){}[0]
     abstract suspend fun waitUntilNextLiveOrFailure(): com.wire.kalium.logic.sync/SyncRequestResult // com.wire.kalium.logic.sync/SyncRequest.waitUntilNextLiveOrFailure|waitUntilNextLiveOrFailure(){}[0]
     abstract suspend fun waitUntilOrFailure(com.wire.kalium.logic.data.sync/SyncState): com.wire.kalium.logic.sync/SyncRequestResult // com.wire.kalium.logic.sync/SyncRequest.waitUntilOrFailure|waitUntilOrFailure(com.wire.kalium.logic.data.sync.SyncState){}[0]

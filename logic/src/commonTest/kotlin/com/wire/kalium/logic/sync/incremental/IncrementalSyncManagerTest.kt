@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SyncRetryStatus
 import kotlinx.coroutines.awaitCancellation
 import com.wire.kalium.logic.fakes.network.FakeNetworkStateObserver
+import com.wire.kalium.logic.sync.SyncRetryController
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
@@ -335,6 +336,23 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
+    fun givenRetryDelayIsLimited_whenSyncFails_thenShouldScheduleTheRetryWithinTheLimit() = runTest {
+        val (arrangement, incrementalSyncManager) = Arrangement(configureDefaultExponentialDuration = false)
+            .withWorkerReturning(flow { throw IOException("offline") })
+            .withRecoveringFromFailure()
+            .withNextExponentialDuration(10.minutes)
+            .arrange()
+        arrangement.retryController.limitRetryDelay(30.seconds)
+
+        val syncJob = incrementalSyncManager.performSyncFlow().launchIn(backgroundScope)
+        runCurrent()
+
+        val failedState = assertIs<IncrementalSyncStatus.Failed>(arrangement.incrementalSyncRepository.incrementalSyncState.first())
+        assertEquals(30.seconds, failedState.retryDelay)
+        syncJob.cancel()
+    }
+
+    @Test
     fun givenDefaultState_whenStartingSync_thenShouldResetExponentialDuration() = runTest {
         val sourceFlow = Channel<EventSource>(Channel.UNLIMITED)
 
@@ -434,6 +452,7 @@ class IncrementalSyncManagerTest {
         val incrementalSyncRecoveryHandler = mock<IncrementalSyncRecoveryHandler>()
         val networkStateObserver = FakeNetworkStateObserver()
         val userSessionWorkScheduler: UserSessionWorkScheduler = mock(mode = MockMode.autoUnit)
+        val retryController = SyncRetryController()
 
         init {
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
@@ -475,6 +494,7 @@ class IncrementalSyncManagerTest {
             exponentialDurationHelper = exponentialDurationHelper,
             userScopedLogger = kaliumLogger,
             userSessionWorkScheduler = userSessionWorkScheduler,
+            retryController = retryController,
         )
     }
 }

@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Duration
 
 public abstract class SyncExecutor {
     /** Reset backoff and wake any scheduled retry. Foreground ownership retains the running sync request. */
@@ -72,7 +73,8 @@ public abstract class SyncExecutor {
     internal inner class Request internal constructor(
         private val syncStateFlow: StateFlow<SyncState>,
         private val job: Job,
-        private val logger: KaliumLogger
+        private val logger: KaliumLogger,
+        private val retryController: SyncRetryController,
     ) : SyncRequest {
 
         private var isEndless = false
@@ -135,6 +137,11 @@ public abstract class SyncExecutor {
 
         override fun keepSyncAlwaysOn() {
             isEndless = true
+        }
+
+        override fun limitRetryDelay(maxDelay: Duration) {
+            val limit = retryController.limitRetryDelay(maxDelay)
+            job.invokeOnCompletion { limit.dispose() }
         }
     }
 }
@@ -384,7 +391,7 @@ internal class SyncExecutorImpl(
         val syncJob = scope.launch {
             syncRequestDemandFlow.collect()
         }
-        return Request(syncStateObserver.syncState, syncJob, logger)
+        return Request(syncStateObserver.syncState, syncJob, logger, retryController)
     }
 
     override suspend fun <T> request(

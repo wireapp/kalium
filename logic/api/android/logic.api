@@ -8381,6 +8381,7 @@ public abstract class com/wire/kalium/logic/sync/SyncExecutor {
 
 public abstract interface class com/wire/kalium/logic/sync/SyncRequest {
 	public abstract fun keepSyncAlwaysOn ()V
+	public abstract fun limitRetryDelay-LRDsOJo (J)V
 	public abstract fun waitUntilLiveOrFailure (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun waitUntilNextLiveOrFailure (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun waitUntilOrFailure (Lcom/wire/kalium/logic/data/sync/SyncState;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;

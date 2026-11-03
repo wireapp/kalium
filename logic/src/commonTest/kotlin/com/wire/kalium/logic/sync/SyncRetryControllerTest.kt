@@ -11,6 +11,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SyncRetryControllerTest {
@@ -55,6 +57,22 @@ class SyncRetryControllerTest {
         val generation = controller.generation()
         val result = controller.awaitRetry(generation, { controller.retryNow {} }) { awaitCancellation() }
         assertEquals(RetryTrigger.USER_REQUESTED, result)
+    }
+
+    @Test
+    fun retryDelayIsCappedByTheSmallestActiveLimit() {
+        val controller = SyncRetryController()
+        assertEquals(10.minutes, controller.capRetryDelay(10.minutes))
+
+        val wide = controller.limitRetryDelay(1.minutes)
+        val narrow = controller.limitRetryDelay(30.seconds)
+        assertEquals(30.seconds, controller.capRetryDelay(10.minutes))
+        assertEquals(5.seconds, controller.capRetryDelay(5.seconds))
+
+        narrow.dispose()
+        assertEquals(1.minutes, controller.capRetryDelay(10.minutes))
+        wide.dispose()
+        assertEquals(10.minutes, controller.capRetryDelay(10.minutes))
     }
 
     @Test

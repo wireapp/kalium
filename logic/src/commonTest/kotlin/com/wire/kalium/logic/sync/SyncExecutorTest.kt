@@ -52,6 +52,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
@@ -71,6 +72,20 @@ class SyncExecutorTest {
         assertEquals(starts, arrangement.slowSyncManager.performSyncFlowCount)
         assertEquals(0, arrangement.slowSyncManager.cancelledSyncFlowCount)
         owner.cancel()
+    }
+
+    @Test
+    fun givenRequestLimitsRetryDelay_whenRequestIsReleased_thenLimitShouldBeRemoved() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, executor) = Arrangement(backgroundScope).arrange()
+        executor.startAndStopSyncAsNeeded()
+
+        executor.request {
+            limitRetryDelay(30.seconds)
+            assertEquals(30.seconds, arrangement.retryController.capRetryDelay(10.minutes))
+        }
+        runCurrent()
+
+        assertEquals(10.minutes, arrangement.retryController.capRetryDelay(10.minutes))
     }
 
     @Test

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.util.DelicateKaliumApi
+import kotlin.time.Duration
 
 public interface SyncRequest {
 
@@ -56,6 +57,12 @@ public interface SyncRequest {
      */
     @DelicateKaliumApi("By calling this, Sync will run indefinitely.")
     public fun keepSyncAlwaysOn()
+
+    /**
+     * While this request is active, a failed sync waits at most [maxDelay] before retrying,
+     * instead of backing off for up to several minutes. Useful while the user has the app open.
+     */
+    public fun limitRetryDelay(maxDelay: Duration)
 }
 
 public sealed class SyncRequestResult {
