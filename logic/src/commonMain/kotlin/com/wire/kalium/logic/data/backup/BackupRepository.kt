@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -56,7 +57,13 @@ internal interface BackupRepository {
     suspend fun getReactions(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedData<MessageReactions>>
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
-    suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
+
+    /** Marks restored history read up to its newest message, except in [conversationsWithReadDate]. */
+    suspend fun insertMessages(
+        messages: List<Message.Standalone>,
+        conversationsWithReadDate: Set<ConversationId> = emptySet(),
+    ): Either<CoreFailure, Unit>
+
     suspend fun insertReactions(reactions: List<MessageReactions>): Either<CoreFailure, Unit>
 
     private companion object {
@@ -149,25 +156,33 @@ internal class BackupDataSource(
 
     override suspend fun insertConversations(conversations: List<Conversation>) = wrapStorageRequest {
         conversationDAO.insertOrUpdateLastModified(conversations.map { conversationMapper.fromMigrationModel(it) })
+        // Existing rows keep their read date on insert. Advance it, as a read on another device would.
+        conversationDAO.updateReadDatesAndGetHasUnreadEvents(conversations.associate { it.id.toDao() to it.lastReadDate })
+        Unit
     }
 
-    override suspend fun insertMessages(messages: List<Message.Standalone>) = wrapStorageRequest {
+    override suspend fun insertMessages(
+        messages: List<Message.Standalone>,
+        conversationsWithReadDate: Set<ConversationId>,
+    ) = wrapStorageRequest {
         // Backups may reference senders missing from the users page (for example deleted users).
         // Keep existing profiles intact and create incomplete users before enforcing message FKs.
         userDAO.insertOrIgnoreIncompleteUsers(messages.map { idMapper.fromDomainToDao(it.senderUserId) }.distinct())
-        val newestDates = messages.groupBy { idMapper.fromDomainToDao(it.conversationId) }
+        val newestDates = messages.groupBy { it.conversationId }
             .mapValues { (_, conversationMessages) -> conversationMessages.maxOf { it.date } }
         // Web backups can also contain messages whose conversation metadata is missing.
         // Reuse incomplete records so history survives without inventing membership or overwriting metadata.
-        conversationDAO.insertIncompleteConversationsOrBumpLastModified(newestDates)
+        conversationDAO.insertIncompleteConversationsOrBumpLastModified(newestDates.mapKeys { it.key.toDao() })
         messageDAO.insertOrIgnoreMessages(
             messages = messages.map { messageMapper.fromMessageToEntity(it) },
             withUnreadEvents = false,
             checkAssetUpdate = false,
         )
-        // Restored history is read. Synced conversations start with an epoch read date, which would
-        // otherwise make the oldest restored message the first unread one.
-        conversationDAO.updateReadDatesAndGetHasUnreadEvents(newestDates)
+        // Without a saved read time, restored history counts as read. Synced conversations start with an
+        // epoch read date, which would otherwise make the oldest restored message the first unread one.
+        conversationDAO.updateReadDatesAndGetHasUnreadEvents(
+            newestDates.filterKeys { it !in conversationsWithReadDate }.mapKeys { it.key.toDao() }
+        )
         Unit
     }
 

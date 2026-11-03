@@ -52,6 +52,7 @@ message ExportedConversation {
     required ExportedQualifiedId id = 1;
     required string name = 2;
     optional int64 lastModifiedTime = 3;
+    optional int64 lastReadTime = 4;
 }
 
 message ExportedMessage {

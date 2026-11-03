@@ -184,6 +184,29 @@ class BackupDataSourceTest {
     }
 
     @Test
+    fun givenBackupReadDate_whenRestoring_thenKeepItAndLeaveLaterRestoredMessagesUnread() = runTest {
+        val dao = testDatabase.builder.conversationDAO
+        val conversation = createTestConversation("synced")
+        val id = QualifiedIDEntity(conversation.id.value, conversation.id.domain)
+        // Synced first with an epoch read date, then restored with the read date saved in the backup.
+        subject.insertConversations(listOf(conversation.copy(lastReadDate = Instant.UNIX_FIRST_DATE)))
+        val backupReadDate = TestMessage.TEST_DATE - 5.seconds
+        subject.insertConversations(listOf(conversation.copy(lastReadDate = backupReadDate)))
+        assertEquals(backupReadDate, dao.getConversationLastReadDate(id))
+
+        val messages = listOf(
+            createTestMessage(conversation.id, "read", userId).copy(date = TestMessage.TEST_DATE - 10.seconds),
+            createTestMessage(conversation.id, "unread", userId),
+        )
+        assertIs<Either.Right<Unit>>(subject.insertMessages(messages, conversationsWithReadDate = setOf(conversation.id)))
+        assertEquals(backupReadDate, dao.getConversationLastReadDate(id))
+
+        // An older backup read date never moves the saved one back.
+        subject.insertConversations(listOf(conversation.copy(lastReadDate = Instant.UNIX_FIRST_DATE + 1.seconds)))
+        assertEquals(backupReadDate, dao.getConversationLastReadDate(id))
+    }
+
+    @Test
     fun givenSelfDeletingMessages_whenGettingMessages_thenShouldNotExportThem() = runTest {
         // Given
         val conversation = createTestConversation("1")
