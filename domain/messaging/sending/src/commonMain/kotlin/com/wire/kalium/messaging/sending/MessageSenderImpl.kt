@@ -64,6 +64,9 @@ import kotlin.time.Instant
  * repair and reports whether legal hold became enabled for the conversation; [verifyEpoch] and
  * [handleGroupOutOfSync] recover from MLS rejections; [broadcastRecipients] lists the team and other recipients
  * of a broadcast; [enqueueSelfDeletion] starts the timer of a sent self-deleting message.
+ *
+ * Crypto transactions are kept short: one is open only while preparing recipients and encrypting, or while repairing
+ * crypto state after a rejection, never while a message is in transit.
  */
 // TODO(refactor): Split MLS and Proteus logic.
 //                 The Envelope Creation, Sending and Retry mechanisms are tailored to each protocol
@@ -182,52 +185,50 @@ class MessageSenderImpl(
             }
 
     /**
-     * Rechecks and prepares the message inside the same crypto transaction as cancellation and competing sends.
-     * A stale MLS send retries after catch-up, outside the transaction, then rechecks the stored state again.
+     * Rechecks, prepares and sends the message. A crypto transaction is open only while encrypting, never while the
+     * message is in transit. A stale MLS send retries after catch-up, then rechecks the stored state again.
      */
     private suspend fun sendPreparedMessage(
         message: Message.Sendable,
         messageTarget: MessageTarget,
         remainingAttempts: Int
     ): Either<CoreFailure, Message.Sendable?> =
-        session.transaction("sendMessage") { transactionContext ->
-            messageToSend(message).flatMap { current ->
-                if (current == null) return@flatMap Either.Right(null)
-                prepareMessage(current).flatMap { processedMessage ->
-                    attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
-                        val localDate = message.date
-                        val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
-                        // If it was the "edit" message type, we need to update the id before we promote it to "sent"
-                        val isEditMessage = when (message.content) {
-                            is MessageContent.MultipartEdited -> {
-                                messages.updateMultipartMessage(
-                                    conversationId = processedMessage.conversationId,
-                                    messageContent = processedMessage.content as MessageContent.MultipartEdited,
-                                    newMessageId = processedMessage.id,
-                                    editInstant = processedMessage.date
-                                )
-                                true
-                            }
-                            is MessageContent.TextEdited -> {
-                                messages.updateTextMessage(
-                                    conversationId = processedMessage.conversationId,
-                                    messageContent = processedMessage.content as MessageContent.TextEdited,
-                                    newMessageId = processedMessage.id,
-                                    editInstant = processedMessage.date
-                                )
-                                true
-                            }
-                            else -> false
+        messageToSend(message).flatMap { current ->
+            if (current == null) return@flatMap Either.Right(null)
+            prepareMessage(current).flatMap { processedMessage ->
+                attemptToSend(processedMessage, messageTarget).map { serverDate ->
+                    val localDate = message.date
+                    val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                    // If it was the "edit" message type, we need to update the id before we promote it to "sent"
+                    val isEditMessage = when (message.content) {
+                        is MessageContent.MultipartEdited -> {
+                            messages.updateMultipartMessage(
+                                conversationId = processedMessage.conversationId,
+                                messageContent = processedMessage.content as MessageContent.MultipartEdited,
+                                newMessageId = processedMessage.id,
+                                editInstant = processedMessage.date
+                            )
+                            true
                         }
-                        messages.promoteMessageToSentUpdatingServerTime(
-                            conversationId = processedMessage.conversationId,
-                            messageUuid = processedMessage.id,
-                            // if it's edit then we don't want to change the original message creation time, it's already a server date
-                            serverDate = if (!isEditMessage) serverDate else null,
-                            millis = millis
-                        )
-                        processedMessage
+                        is MessageContent.TextEdited -> {
+                            messages.updateTextMessage(
+                                conversationId = processedMessage.conversationId,
+                                messageContent = processedMessage.content as MessageContent.TextEdited,
+                                newMessageId = processedMessage.id,
+                                editInstant = processedMessage.date
+                            )
+                            true
+                        }
+                        else -> false
                     }
+                    messages.promoteMessageToSentUpdatingServerTime(
+                        conversationId = processedMessage.conversationId,
+                        messageUuid = processedMessage.id,
+                        // if it's edit then we don't want to change the original message creation time, it's already a server date
+                        serverDate = if (!isEditMessage) serverDate else null,
+                        millis = millis
+                    )
+                    processedMessage
                 }
             }
         }.fold({ failure ->
@@ -245,13 +246,10 @@ class MessageSenderImpl(
         target: BroadcastMessageTarget
     ): Either<CoreFailure, Unit> =
         withContext(scope.coroutineContext) {
-            session.transaction("broadcastMessage") {
-                attemptToBroadcastWithProteus(it, message, target, remainingAttempts = 2).map { }
-            }
+            attemptToBroadcastWithProteus(message, target, remainingAttempts = 2).map { }
         }
 
     private suspend fun attemptToSend(
-        transactionContext: CryptoTransactionContext,
         message: Message.Sendable,
         messageTarget: MessageTarget = MessageTarget.Conversation()
     ): Either<CoreFailure, Instant> {
@@ -267,13 +265,13 @@ class MessageSenderImpl(
                             logger.i("Skipping calling message while MLS reset is pending")
                             Either.Right(message.date)
                         } else {
-                            attemptToSendWithMLS(transactionContext, protocolInfo, message)
+                            attemptToSendWithMLS(protocolInfo, message)
                         }
                     }
 
                     is Conversation.ProtocolInfo.Proteus, is Conversation.ProtocolInfo.Mixed -> {
                         // TODO(messaging): make this thread safe (per user)
-                        attemptToSendWithProteus(transactionContext, message, messageTarget, remainingAttempts = 1)
+                        attemptToSendWithProteus(message, messageTarget, remainingAttempts = 1)
                     }
                 }
             }
@@ -286,7 +284,6 @@ class MessageSenderImpl(
     }
 
     private suspend fun attemptToSendWithProteus(
-        transactionContext: CryptoTransactionContext,
         message: Message.Sendable,
         messageTarget: MessageTarget,
         remainingAttempts: Int
@@ -300,23 +297,25 @@ class MessageSenderImpl(
 
         return target
             .flatMap { recipients ->
-                sessionEstablisher
-                    .prepareRecipientsForNewOutgoingMessage(transactionContext.proteus, recipients)
-                    .flatMap { handleUsersWithNoClientsToDeliver(conversationId, message.id, it) }
-                    .map { recipients to it }
-            }.flatMap { (recipients, usersWithoutSessions) ->
-                messageEnvelopeCreator
-                    .createOutgoingEnvelope(transactionContext.proteus, recipients, message)
-                    .flatMap { envelope: MessageEnvelope ->
-                        val updatedMessageTarget = when (messageTarget) {
-                            is MessageTarget.Client,
-                            is MessageTarget.Users -> messageTarget
-
-                            is MessageTarget.Conversation ->
-                                MessageTarget.Conversation((messageTarget.usersToIgnore + usersWithoutSessions.users).toSet())
+                session.transaction("encryptProteusMessage") { transactionContext ->
+                    sessionEstablisher
+                        .prepareRecipientsForNewOutgoingMessage(transactionContext.proteus, recipients)
+                        .flatMap { handleUsersWithNoClientsToDeliver(conversationId, message.id, it) }
+                        .flatMap { usersWithoutSessions ->
+                            messageEnvelopeCreator
+                                .createOutgoingEnvelope(transactionContext.proteus, recipients, message)
+                                .map { envelope -> envelope to usersWithoutSessions }
                         }
-                        trySendingProteusEnvelope(transactionContext, envelope, message, updatedMessageTarget, remainingAttempts)
-                    }
+                }
+            }.flatMap { (envelope: MessageEnvelope, usersWithoutSessions) ->
+                val updatedMessageTarget = when (messageTarget) {
+                    is MessageTarget.Client,
+                    is MessageTarget.Users -> messageTarget
+
+                    is MessageTarget.Conversation ->
+                        MessageTarget.Conversation((messageTarget.usersToIgnore + usersWithoutSessions.users).toSet())
+                }
+                trySendingProteusEnvelope(envelope, message, updatedMessageTarget, remainingAttempts)
             }
     }
 
@@ -332,7 +331,6 @@ class MessageSenderImpl(
     }
 
     private suspend fun attemptToBroadcastWithProteus(
-        transactionContext: CryptoTransactionContext,
         message: BroadcastMessage,
         target: BroadcastMessageTarget,
         remainingAttempts: Int,
@@ -346,47 +344,43 @@ class MessageSenderImpl(
                 otherRecipients
             )
 
-            sessionEstablisher
-                .prepareRecipientsForNewOutgoingMessage(transactionContext.proteus, recipients)
-                .flatMap { _ ->
-                    messageEnvelopeCreator
-                        .createOutgoingBroadcastEnvelope(transactionContext.proteus, recipients, message)
-                        .flatMap { envelope ->
-                            tryBroadcastProteusEnvelope(
-                                transactionContext,
-                                envelope,
-                                message,
-                                option,
-                                target,
-                                remainingAttempts
-                            )
-                        }
-                }
+            session.transaction("encryptBroadcastMessage") { transactionContext ->
+                sessionEstablisher
+                    .prepareRecipientsForNewOutgoingMessage(transactionContext.proteus, recipients)
+                    .flatMap { _ ->
+                        messageEnvelopeCreator.createOutgoingBroadcastEnvelope(transactionContext.proteus, recipients, message)
+                    }
+            }.flatMap { envelope ->
+                tryBroadcastProteusEnvelope(envelope, message, option, target, remainingAttempts)
+            }
         }
     }
 
     /**
      * Attempts to send a MLS application message
      *
-     * On "mls-stale-message" it verifies the epoch and returns [StaleUntilLive], so [sendPreparedMessage] can retry once the
-     * transaction ends and we are live again.
+     * On "mls-stale-message" it verifies the epoch and returns [StaleUntilLive], so [sendPreparedMessage] can retry once
+     * we are live again.
      */
     private suspend fun attemptToSendWithMLS(
-        transactionContext: CryptoTransactionContext,
         protocolInfo: Conversation.ProtocolInfo.MLS,
         message: Message.Sendable
     ): Either<CoreFailure, Instant> =
-        mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
+        session.transaction("encryptMlsMessage") { transactionContext ->
+            mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
+        }
             .flatMap { mlsMessage ->
                 transport.sendMLSMessage(mlsMessage).fold({
                     when (val mlsRejectionCause = (it.wrapNetworkMlsFailureIfApplicable() as? MLSFailure.MessageRejected)?.cause) {
                         is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> {
-                            handleGroupOutOfSync(
-                                transactionContext,
-                                message.conversationId,
-                                protocolInfo.groupId,
-                                mlsRejectionCause
-                            ).flatMap { attemptToSend(transactionContext, message) }
+                            session.transaction("handleGroupOutOfSync") { transactionContext ->
+                                handleGroupOutOfSync(
+                                    transactionContext,
+                                    message.conversationId,
+                                    protocolInfo.groupId,
+                                    mlsRejectionCause
+                                )
+                            }.flatMap { attemptToSend(message) }
                         }
                         is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
                             logger.logStructuredJson(
@@ -400,7 +394,9 @@ class MessageSenderImpl(
                                 )
                             )
                             val stale = StaleUntilLive(it)
-                            verifyEpoch(transactionContext, message.conversationId).flatMap { Either.Left(stale) }
+                            session.transaction("verifyEpoch") { transactionContext ->
+                                verifyEpoch(transactionContext, message.conversationId)
+                            }.flatMap { Either.Left(stale) }
                         }
                         else -> Either.Left(it)
                     }
@@ -439,7 +435,6 @@ class MessageSenderImpl(
      * Will handle the failure and retry in case of [ProteusSendMessageFailure].
      */
     private suspend fun trySendingProteusEnvelope(
-        transactionContext: CryptoTransactionContext,
         envelope: MessageEnvelope,
         message: Message.Sendable,
         messageTarget: MessageTarget,
@@ -449,7 +444,6 @@ class MessageSenderImpl(
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
                 handleProteusError(
-                    transactionContext = transactionContext,
                     failure = it,
                     action = "Send",
                     messageLogString = message.toLogString(),
@@ -458,7 +452,7 @@ class MessageSenderImpl(
                     conversationId = message.conversationId,
                     remainingAttempts = remainingAttempts
                 ) { remainingAttempts ->
-                    attemptToSendWithProteus(transactionContext, message, messageTarget, remainingAttempts)
+                    attemptToSendWithProteus(message, messageTarget, remainingAttempts)
                 }
             }, { messageSent ->
                 handleRecipientsDeliveryFailure(envelope, message, messageSent).flatMap {
@@ -480,7 +474,6 @@ class MessageSenderImpl(
      * Will handle the failure and retry in case of [ProteusSendMessageFailure].
      */
     private suspend fun tryBroadcastProteusEnvelope(
-        transactionContext: CryptoTransactionContext,
         envelope: MessageEnvelope,
         message: BroadcastMessage,
         option: BroadcastMessageOption,
@@ -491,7 +484,6 @@ class MessageSenderImpl(
             .broadcastEnvelope(envelope, option)
             .fold({
                 handleProteusError(
-                    transactionContext,
                     it,
                     "Broadcast",
                     message.toLogString(),
@@ -501,7 +493,6 @@ class MessageSenderImpl(
                     remainingAttempts = 1
                 ) {
                     attemptToBroadcastWithProteus(
-                        transactionContext,
                         message,
                         target,
                         remainingAttempts
@@ -521,7 +512,6 @@ class MessageSenderImpl(
             }
 
     private suspend fun handleProteusError(
-        transactionContext: CryptoTransactionContext,
         failure: CoreFailure,
         action: String, // Send or Broadcast
         messageLogString: String,
@@ -537,8 +527,10 @@ class MessageSenderImpl(
                     "Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
                 )
                 handleLegalHoldChanges(conversationId, messageInstant) {
-                    messageSendFailureHandler
-                        .handleClientsHaveChangedFailure(transactionContext, failure, conversationId)
+                    session.transaction("handleClientsHaveChanged") { transactionContext ->
+                        messageSendFailureHandler
+                            .handleClientsHaveChangedFailure(transactionContext, failure, conversationId)
+                    }
                 }
                     .flatMap { legalHoldEnabled ->
                         when {
