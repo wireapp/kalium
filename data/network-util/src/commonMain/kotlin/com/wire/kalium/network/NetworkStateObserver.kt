@@ -19,8 +19,11 @@ package com.wire.kalium.network
 
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 
@@ -30,20 +33,23 @@ interface NetworkStateObserver {
     fun observeCurrentNetwork(): StateFlow<CurrentNetwork?>
 
     /**
-     * Delays for [delay], completing earlier if a newly validated network becomes available.
+     * Delays for [delay], completing earlier if a newly validated network becomes available: either internet
+     * access comes back, or a validated network other than [previousNetworkId] becomes the current one.
      *
+     * @param previousNetworkId the network the caller last used, the current one by default.
      * @return `true` when a reconnection ended the wait, or `false` when [delay] elapsed.
      */
-    suspend fun delayUntilConnectedWithInternetAgain(delay: Duration): Boolean {
-        // Delay for given amount but break it if reconnected again.
-        return withTimeoutOrNull(delay) {
-            // Drop the current value, so it will complete only if the connection changed again to connected during that time.
-            observeNetworkState()
-                .drop(1)
-                .filterIsInstance<NetworkState.ConnectedWithInternet>()
-                .first()
-        } != null
-    }
+    suspend fun delayUntilConnectedWithInternetAgain(
+        delay: Duration,
+        previousNetworkId: String? = observeCurrentNetwork().value?.id,
+    ): Boolean = withTimeoutOrNull(delay) {
+        merge(
+            // Drop the current value, so it only completes if the state changes back to connected.
+            observeNetworkState().drop(1).filterIsInstance<NetworkState.ConnectedWithInternet>().map { },
+            // Switching between validated networks, e.g. from Wi-Fi to mobile data, keeps the state above unchanged.
+            observeCurrentNetwork().filter { it != null && it.hasInternetAccess && it.id != previousNetworkId }.map { },
+        ).first()
+    } != null
 
     companion object {
         const val TAG = "NetworkStateObserver"

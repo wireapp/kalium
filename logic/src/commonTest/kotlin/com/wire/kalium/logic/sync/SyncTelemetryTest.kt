@@ -120,7 +120,7 @@ class SyncTelemetryTest {
 
             override fun observeNetworkState(): StateFlow<NetworkState> = networkState
             override fun observeCurrentNetwork(): StateFlow<CurrentNetwork?> = currentNetwork
-            override suspend fun delayUntilConnectedWithInternetAgain(delay: Duration): Boolean = false
+            override suspend fun delayUntilConnectedWithInternetAgain(delay: Duration, previousNetworkId: String?): Boolean = false
         }
 
         observer.delayBeforeSyncRetry(
