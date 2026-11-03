@@ -472,7 +472,14 @@ fun ConversationDetails.interactionAvailability(): InteractionAvailability {
             else -> InteractionAvailability.ENABLED
         }
 
-        is ConversationDetails.Self, is ConversationDetails.Team -> InteractionAvailability.DISABLED
+        // The MLS self conversation hosts "Notes to self", so the user can send messages there.
+        // The Proteus self conversation is only a signaling channel between own devices.
+        is ConversationDetails.Self -> when (conversation.protocol) {
+            is Conversation.ProtocolInfo.MLS -> InteractionAvailability.ENABLED
+            is Conversation.ProtocolInfo.Mixed, Conversation.ProtocolInfo.Proteus -> InteractionAvailability.DISABLED
+        }
+
+        is ConversationDetails.Team -> InteractionAvailability.DISABLED
     }
     return availability
 }

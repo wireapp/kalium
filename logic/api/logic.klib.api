@@ -1134,6 +1134,10 @@ abstract interface com.wire.kalium.logic.feature.conversation/ObserveIsSelfUserM
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.feature.conversation/IsSelfUserMemberResult> // com.wire.kalium.logic.feature.conversation/ObserveIsSelfUserMemberUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.conversation/ObserveNotesConversationUseCase { // com.wire.kalium.logic.feature.conversation/ObserveNotesConversationUseCase|null[0]
+    abstract fun invoke(): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.conversation/ConversationDetails.Self?> // com.wire.kalium.logic.feature.conversation/ObserveNotesConversationUseCase.invoke|invoke(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.conversation/ObserveOtherUserSecurityClassificationLabelUseCase { // com.wire.kalium.logic.feature.conversation/ObserveOtherUserSecurityClassificationLabelUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.feature.conversation/SecurityClassificationType> // com.wire.kalium.logic.feature.conversation/ObserveOtherUserSecurityClassificationLabelUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
@@ -4977,6 +4981,8 @@ final class com.wire.kalium.logic.feature.conversation/ConversationScope { // co
         final fun <get-observeInformAboutVerificationBeforeMessagingFlagUseCase>(): com.wire.kalium.logic.feature.conversation/ObserveDegradedConversationNotifiedUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeInformAboutVerificationBeforeMessagingFlagUseCase.<get-observeInformAboutVerificationBeforeMessagingFlagUseCase>|<get-observeInformAboutVerificationBeforeMessagingFlagUseCase>(){}[0]
     final val observeIsSelfUserMemberUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeIsSelfUserMemberUseCase|{}observeIsSelfUserMemberUseCase[0]
         final fun <get-observeIsSelfUserMemberUseCase>(): com.wire.kalium.logic.feature.conversation/ObserveIsSelfUserMemberUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeIsSelfUserMemberUseCase.<get-observeIsSelfUserMemberUseCase>|<get-observeIsSelfUserMemberUseCase>(){}[0]
+    final val observeNotesConversation // com.wire.kalium.logic.feature.conversation/ConversationScope.observeNotesConversation|{}observeNotesConversation[0]
+        final fun <get-observeNotesConversation>(): com.wire.kalium.logic.feature.conversation/ObserveNotesConversationUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeNotesConversation.<get-observeNotesConversation>|<get-observeNotesConversation>(){}[0]
     final val observePendingConnectionRequests // com.wire.kalium.logic.feature.conversation/ConversationScope.observePendingConnectionRequests|{}observePendingConnectionRequests[0]
         final fun <get-observePendingConnectionRequests>(): com.wire.kalium.logic.feature.connection/ObservePendingConnectionRequestsUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observePendingConnectionRequests.<get-observePendingConnectionRequests>|<get-observePendingConnectionRequests>(){}[0]
     final val observeUnreadConversationBadgeCount // com.wire.kalium.logic.feature.conversation/ConversationScope.observeUnreadConversationBadgeCount|{}observeUnreadConversationBadgeCount[0]

@@ -2650,6 +2650,8 @@ public class UserSessionScope internal constructor(
             authenticationScope.serverConfigRepository,
             userStorage,
             userPropertyRepository,
+            isMLSEnabled,
+            kaliumConfigs.notesToSelfEnabled,
             messages.deleteEphemeralMessageEndDate,
             oneOnOneResolver,
             this,

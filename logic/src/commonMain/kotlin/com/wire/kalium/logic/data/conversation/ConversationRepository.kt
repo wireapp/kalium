@@ -108,6 +108,11 @@ internal interface ConversationRepository : SendingConversations {
     @DelicateKaliumApi("This function does not get values from cache")
     suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId>
 
+    /**
+     * Observes the id of the MLS self conversation. Emits `null` while it doesn't exist locally yet.
+     */
+    fun observeMLSSelfConversationId(): Flow<ConversationId?>
+
     @ConversationPersistenceApi
     suspend fun fetchConversations(lastPagingState: String?): Either<CoreFailure, ConversationBatch>
 
@@ -520,6 +525,9 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId> =
         wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS) }
             .map { it.toModel() }
+
+    override fun observeMLSSelfConversationId(): Flow<ConversationId?> =
+        conversationDAO.observeSelfConversationId(ConversationEntity.Protocol.MLS).map { it?.toModel() }
 
     override fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
         observeConversationList()

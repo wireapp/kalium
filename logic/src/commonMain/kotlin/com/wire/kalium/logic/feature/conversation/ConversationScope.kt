@@ -104,6 +104,7 @@ import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.ObserveSelfUserUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
@@ -136,7 +137,9 @@ public class ConversationScope internal constructor(
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
-    userPropertyRepository: UserPropertyRepository,
+    private val userPropertyRepository: UserPropertyRepository,
+    private val isMLSEnabled: IsMLSEnabledUseCase,
+    private val notesToSelfEnabled: Boolean,
     private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val scope: CoroutineScope,
@@ -191,6 +194,14 @@ public class ConversationScope internal constructor(
 
     public val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
+
+    public val observeNotesConversation: ObserveNotesConversationUseCase
+        get() = ObserveNotesConversationUseCaseImpl(
+            notesToSelfEnabled = notesToSelfEnabled,
+            userPropertyRepository = userPropertyRepository,
+            conversationRepository = conversationRepository,
+            isMLSEnabled = isMLSEnabled,
+        )
 
     public val observeConversationRoleForUser: ObserveConversationRoleForUserUseCase
         get() = ObserveConversationRoleForUserUseCase(

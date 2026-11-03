@@ -222,6 +222,53 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         )
     }
 
+    @Test
+    fun givenMlsSelfConversationAndUserSupportsMls_whenObserving_thenShouldReturnEnabled() = runTest {
+        testSelfConversation(
+            conversationProtocolInfo = TestConversation.MLS_PROTOCOL_INFO,
+            isMlsCapable = true.right(),
+            expectedResult = InteractionAvailability.ENABLED
+        )
+    }
+
+    @Test
+    fun givenMlsSelfConversationAndUserDoesNotSupportMls_whenObserving_thenShouldReturnUnsupportedProtocol() = runTest {
+        testSelfConversation(
+            conversationProtocolInfo = TestConversation.MLS_PROTOCOL_INFO,
+            isMlsCapable = false.right(),
+            expectedResult = InteractionAvailability.UNSUPPORTED_PROTOCOL
+        )
+    }
+
+    @Test
+    fun givenProteusSelfConversation_whenObserving_thenShouldReturnDisabled() = runTest {
+        testSelfConversation(
+            conversationProtocolInfo = TestConversation.PROTEUS_PROTOCOL_INFO,
+            isMlsCapable = true.right(),
+            expectedResult = InteractionAvailability.DISABLED
+        )
+    }
+
+    private suspend fun CoroutineScope.testSelfConversation(
+        conversationProtocolInfo: Conversation.ProtocolInfo,
+        isMlsCapable: Either<StorageFailure, Boolean>,
+        expectedResult: InteractionAvailability
+    ) {
+        val selfConversation = TestConversation.SELF(conversationProtocolInfo)
+        val (_, observeConversationInteractionAvailabilityUseCase) = arrange {
+            withIsClientMlsCapable(isMlsCapable)
+            dispatcher = testKaliumDispatcher
+            withObserveConversationDetailsByIdReturning(Either.Right(ConversationDetails.Self(selfConversation)))
+        }
+
+        observeConversationInteractionAvailabilityUseCase(selfConversation.id).test {
+            val result = awaitItem()
+            assertIs<IsInteractionAvailableResult.Success>(result)
+            assertEquals(expectedResult, result.interactionAvailability)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private suspend fun CoroutineScope.testProtocolSupport(
         conversationProtocolInfo: Conversation.ProtocolInfo,
         isMlsCapable: Either<StorageFailure, Boolean>,

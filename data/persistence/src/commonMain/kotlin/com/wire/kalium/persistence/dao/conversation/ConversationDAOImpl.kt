@@ -146,6 +146,12 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.selfConversationId(protocol).awaitAsOneOrNull()
     }
 
+    override fun observeSelfConversationId(protocol: ConversationEntity.Protocol): Flow<QualifiedIDEntity?> =
+        conversationQueries.selfConversationId(protocol)
+            .asFlow()
+            .mapToOneOrNull()
+            .flowOn(readDispatcher.value)
+
     override suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity? =
         withContext(readDispatcher.value) {
             conversationQueries.getMLSGroupIdAndUserIdByClientId(clientId, conversationMapper::toE2EIConversationClient)

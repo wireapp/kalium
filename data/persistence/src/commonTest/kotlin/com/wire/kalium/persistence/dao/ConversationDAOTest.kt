@@ -278,6 +278,33 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenNoSelfConversation_whenObservingMlsSelfConversationId_thenShouldEmitNull() = runTest {
+        conversationDAO.insertConversation(conversationEntity1.copy(type = ConversationEntity.Type.SELF))
+
+        conversationDAO.observeSelfConversationId(ConversationEntity.Protocol.MLS).test {
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenMlsSelfConversationIsInserted_whenObservingMlsSelfConversationId_thenShouldEmitItsIdOnlyForMlsProtocol() = runTest {
+        val proteusSelf = conversationEntity1.copy(type = ConversationEntity.Type.SELF)
+        val mlsSelf = conversationEntity2.copy(type = ConversationEntity.Type.SELF)
+        conversationDAO.insertConversation(proteusSelf)
+
+        conversationDAO.observeSelfConversationId(ConversationEntity.Protocol.MLS).test {
+            assertNull(awaitItem())
+
+            conversationDAO.insertConversation(mlsSelf)
+
+            assertEquals(mlsSelf.id, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertEquals(proteusSelf.id, conversationDAO.observeSelfConversationId(ConversationEntity.Protocol.PROTEUS).first())
+    }
+
+    @Test
     fun givenExistingMLSConversation_ThenConversationCanBeRetrievedByGroupState() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.insertConversation(conversationEntity3)

@@ -52,6 +52,12 @@ interface ConversationDAO {
     // endregion
 
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
+
+    /**
+     * Observes the id of the self conversation using the given [protocol].
+     * Emits `null` while the conversation doesn't exist locally yet.
+     */
+    fun observeSelfConversationId(protocol: ConversationEntity.Protocol): Flow<QualifiedIDEntity?>
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
