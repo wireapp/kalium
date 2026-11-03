@@ -155,17 +155,20 @@ internal class BackupDataSource(
         // Backups may reference senders missing from the users page (for example deleted users).
         // Keep existing profiles intact and create incomplete users before enforcing message FKs.
         userDAO.insertOrIgnoreIncompleteUsers(messages.map { idMapper.fromDomainToDao(it.senderUserId) }.distinct())
+        val newestDates = messages.groupBy { idMapper.fromDomainToDao(it.conversationId) }
+            .mapValues { (_, conversationMessages) -> conversationMessages.maxOf { it.date } }
         // Web backups can also contain messages whose conversation metadata is missing.
         // Reuse incomplete records so history survives without inventing membership or overwriting metadata.
-        conversationDAO.insertIncompleteConversationsOrBumpLastModified(
-            messages.groupBy { idMapper.fromDomainToDao(it.conversationId) }
-                .mapValues { (_, conversationMessages) -> conversationMessages.maxOf { it.date } }
-        )
+        conversationDAO.insertIncompleteConversationsOrBumpLastModified(newestDates)
         messageDAO.insertOrIgnoreMessages(
             messages = messages.map { messageMapper.fromMessageToEntity(it) },
             withUnreadEvents = false,
             checkAssetUpdate = false,
         )
+        // Restored history is read. Synced conversations start with an epoch read date, which would
+        // otherwise make the oldest restored message the first unread one.
+        conversationDAO.updateReadDatesAndGetHasUnreadEvents(newestDates)
+        Unit
     }
 
     override suspend fun insertReactions(reactions: List<MessageReactions>) = wrapStorageRequest {

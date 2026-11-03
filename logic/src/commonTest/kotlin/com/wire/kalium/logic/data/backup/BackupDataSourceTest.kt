@@ -148,7 +148,10 @@ class BackupDataSourceTest {
         assertTrue(testDatabase.builder.memberDAO.getConversationMembers(placeholder.id).isEmpty())
         assertEquals(messages[1].date, placeholder.lastModifiedDate)
         val knownAfter = assertNotNull(dao.getConversationById(knownId))
-        assertEquals(knownBefore.copy(lastModifiedDate = knownAfter.lastModifiedDate), knownAfter)
+        assertEquals(
+            knownBefore.copy(lastModifiedDate = knownAfter.lastModifiedDate, lastReadDate = messages[0].date),
+            knownAfter
+        )
 
         // The regular sync write must be able to replace the incomplete metadata later.
         val hydrated = knownBefore.copy(id = placeholder.id)
@@ -157,6 +160,27 @@ class BackupDataSourceTest {
             hydrated.copy(lastModifiedDate = placeholder.lastModifiedDate, lastReadDate = placeholder.lastReadDate),
             dao.getConversationById(placeholder.id)
         )
+    }
+
+    @Test
+    fun givenSyncedConversationWithEpochReadDate_whenRestoringHistory_thenRestoredMessagesAreRead() = runTest {
+        // Conversations fetched during sync start with an epoch read date.
+        val synced = createTestConversation("synced").copy(lastReadDate = Instant.UNIX_FIRST_DATE)
+        val readLater = createTestConversation("read-later").copy(lastReadDate = TestMessage.TEST_DATE + 1.seconds)
+        subject.insertConversations(listOf(synced, readLater))
+        val newest = createTestMessage(synced.id, "newest", userId)
+        val messages = listOf(
+            createTestMessage(synced.id, "oldest", userId).copy(date = TestMessage.TEST_DATE - 10.seconds),
+            newest,
+            createTestMessage(readLater.id, "already-read", userId),
+        )
+
+        assertIs<Either.Right<Unit>>(subject.insertMessages(messages))
+
+        val dao = testDatabase.builder.conversationDAO
+        assertEquals(newest.date, dao.getConversationLastReadDate(QualifiedIDEntity(synced.id.value, synced.id.domain)))
+        // The read date only moves forward.
+        assertEquals(readLater.lastReadDate, dao.getConversationLastReadDate(QualifiedIDEntity(readLater.id.value, readLater.id.domain)))
     }
 
     @Test
