@@ -129,11 +129,24 @@ public actual class CoreLogic(
         userSessionScopeProvider.value.prepareReceiving(userId, scope)
 
     /**
-     * Pause account writes and native crypto while retaining the session and database readers.
+     * Pause account database access and native crypto while retaining the session.
      * The host must stop foreground sync and exclude accounts with active calls first.
+     * Call resumeSessionScope or resumeSuspendedSessionScopes when execution is authorized again.
      */
     public suspend fun suspendSessionScope(userId: UserId) {
         (userSessionScopeProvider.value as UserSessionScopeProviderImpl).suspendForBackground(userId)
+    }
+
+    /**
+     * Resume a background-paused account before foreground work or a system-authorized background operation.
+     * Ordinary openSessionScope calls wait while paused and cannot reacquire the shared file lock.
+     */
+    public suspend fun resumeSessionScope(userId: UserId): UserSessionScope =
+        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).resumeForExecution(userId)
+
+    /** Resume retained accounts before restarting foreground observers that may request them. */
+    public suspend fun resumeSuspendedSessionScopes() {
+        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).resumeSuspendedAccounts()
     }
 
     /**
