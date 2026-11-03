@@ -364,10 +364,7 @@ class MessageSenderImpl(
     }
 
     /**
-     * Attempts to send a MLS application message
-     *
-     * On "mls-stale-message" it verifies the epoch and returns [StaleUntilLive], so [sendPreparedMessage] can retry once
-     * we are live again.
+     * Attempts to send a MLS application message, recovering from rejections in [handleMlsRejection].
      */
     private suspend fun attemptToSendWithMLS(
         protocolInfo: Conversation.ProtocolInfo.MLS,
@@ -378,35 +375,7 @@ class MessageSenderImpl(
         }
             .flatMap { mlsMessage ->
                 transport.sendMLSMessage(mlsMessage).fold({
-                    when (val mlsRejectionCause = (it.wrapNetworkMlsFailureIfApplicable() as? MLSFailure.MessageRejected)?.cause) {
-                        is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> {
-                            session.transaction("handleGroupOutOfSync") { transactionContext ->
-                                handleGroupOutOfSync(
-                                    transactionContext,
-                                    message.conversationId,
-                                    protocolInfo.groupId,
-                                    mlsRejectionCause
-                                )
-                            }.flatMap { attemptToSend(message) }
-                        }
-                        is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
-                            logger.logStructuredJson(
-                                level = KaliumLogLevel.WARN,
-                                leadingMessage = "Message Send Stale",
-                                jsonStringKeyValues = mapOf(
-                                    "message" to message.toLogString(),
-                                    "protocolInfo" to protocolInfo.toLogMap(),
-                                    "protocol" to CreateConversationParam.Protocol.MLS.name,
-                                    "errorInfo" to "$it"
-                                )
-                            )
-                            val stale = StaleUntilLive(it)
-                            session.transaction("verifyEpoch") { transactionContext ->
-                                verifyEpoch(transactionContext, message.conversationId)
-                            }.flatMap { Either.Left(stale) }
-                        }
-                        else -> Either.Left(it)
-                    }
+                    handleMlsRejection(it, protocolInfo, message)
                 }, { messageSent ->
                     handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
                         Either.Right(messageSent.time)
@@ -436,6 +405,45 @@ class MessageSenderImpl(
                     )
                 )
             }
+
+    /**
+     * Recovers from a rejected MLS send. On "mls-stale-message" it verifies the epoch and returns [StaleUntilLive],
+     * so [sendPreparedMessage] can retry once we are live again.
+     */
+    private suspend fun handleMlsRejection(
+        failure: CoreFailure,
+        protocolInfo: Conversation.ProtocolInfo.MLS,
+        message: Message.Sendable
+    ): Either<CoreFailure, Instant> =
+        when (val mlsRejectionCause = (failure.wrapNetworkMlsFailureIfApplicable() as? MLSFailure.MessageRejected)?.cause) {
+            is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> {
+                session.transaction("handleGroupOutOfSync") { transactionContext ->
+                    handleGroupOutOfSync(
+                        transactionContext,
+                        message.conversationId,
+                        protocolInfo.groupId,
+                        mlsRejectionCause
+                    )
+                }.flatMap { attemptToSend(message) }
+            }
+            is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.WARN,
+                    leadingMessage = "Message Send Stale",
+                    jsonStringKeyValues = mapOf(
+                        "message" to message.toLogString(),
+                        "protocolInfo" to protocolInfo.toLogMap(),
+                        "protocol" to CreateConversationParam.Protocol.MLS.name,
+                        "errorInfo" to "$failure"
+                    )
+                )
+                val stale = StaleUntilLive(failure)
+                session.transaction("verifyEpoch") { transactionContext ->
+                    verifyEpoch(transactionContext, message.conversationId)
+                }.flatMap { Either.Left(stale) }
+            }
+            else -> Either.Left(failure)
+        }
 
     /**
      * Attempts to send a Proteus envelope
