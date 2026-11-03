@@ -63,8 +63,13 @@ socket and the backend see the close asynchronously, so events in that short
 window may still reach the closing socket instead of APNs. A message send keeps its
 crypto transaction until its request ends; on a bad network that can outlast the time
 iOS gives the app in the background, and stopping sync can wait behind it. If the
-release still waits after 5 seconds, it fails the account's HTTP requests as offline
-until it starts closing.
+release still waits after 1 second, it fails the account's HTTP requests as offline
+until it starts closing. iOS has suspended the app about 4.8 seconds after it entered
+the background, so the release must end well before that. A failed MLS commit request
+counts as rejected, so CoreCrypto drops the commit even if the backend already accepted
+it. The client then lags the group until its next incoming message (wrong epoch, then
+rejoin) or its next send (stale message, then epoch check and rejoin), the same as when
+the process dies during that request.
 
 NSE opening retries a busy lease for up to 3 seconds, which covers the app's background
 handoff, and waits for another attempt of the same process to finish: that attempt presents

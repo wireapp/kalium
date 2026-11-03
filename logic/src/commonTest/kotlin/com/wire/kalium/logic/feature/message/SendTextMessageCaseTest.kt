@@ -71,6 +71,76 @@ import kotlin.test.assertIs
 class SendTextMessageCaseTest {
 
     @Test
+    fun pendingTextUsesPolicySyncedAfterLocalPersistence() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .arrange()
+        val sync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
+        every { arrangement.slowSyncRepository.slowSyncStatus } returns sync.asStateFlow()
+        val messages = mock<com.wire.kalium.logic.data.message.MessageRepository>()
+        everySuspend { messages.updatePendingTextPolicy(any(), any(), any(), any()) } returns Either.Right(Unit)
+        everySuspend { messages.getReceiptModeFromGroupConversationByQualifiedID(any()) } returns Either.Right(null)
+        val refresh = RefreshPendingTextPolicy(messages, arrangement.userPropertyRepository,
+            arrangement.observeSelfDeletionTimerSettingsForConversation)
+        var prepared: com.wire.kalium.logic.data.message.Message.Sendable? = null
+        everySuspend { arrangement.messageSender.sendMessage(any(), any()) } calls { args ->
+            // Same policy preparation used by MessageScope for initial sends and retries.
+            refresh(args.args[0] as com.wire.kalium.logic.data.message.Message.Sendable).also {
+                prepared = (it as Either.Right).value
+            }
+            Either.Right(Unit)
+        }
+        val sending = launch { sendTextMessage(TestConversation.ID, "timer refresh") }
+        runCurrent()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matches { it.expirationData == null })
+        }
+        arrangement.withMessageTimer(SelfDeletionTimer.Enabled(kotlin.time.Duration.parse("60s")))
+        everySuspend { arrangement.userPropertyRepository.getReadReceiptsStatus() } returns true
+        sync.value = SlowSyncStatus.Complete
+        sending.join()
+        kotlin.test.assertEquals(kotlin.time.Duration.parse("60s"), prepared?.expirationData?.expireAfter)
+        kotlin.test.assertTrue((prepared as com.wire.kalium.logic.data.message.Message.Regular).expectsReadConfirmation)
+        verifySuspend(VerifyMode.exactly(1)) {
+            messages.updatePendingTextPolicy(TestConversation.ID, any(), 60_000L, true)
+        }
+        // Refresh never inserts the text a second time.
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+    }
+
+    @Test
+    fun pendingMessageIsPersistedBeforeSyncCompletesAndTransportStillWaits() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        val sync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
+        every { arrangement.slowSyncRepository.slowSyncStatus } returns sync.asStateFlow()
+        val sending = launch { sendTextMessage(TestConversation.ID, "pending during crypto", draftRevision = 42L) }
+        runCurrent()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matches {
+                it is com.wire.kalium.logic.data.message.Message.Regular &&
+                    it.status == com.wire.kalium.logic.data.message.Message.Status.Pending
+            })
+            arrangement.messageDraftRepository.consumePlainText(TestConversation.ID, 42L)
+        }
+        verifySuspend(VerifyMode.not) { arrangement.messageSender.sendMessage(any(), any()) }
+        kotlin.test.assertFalse(sending.isCompleted)
+        sync.value = SlowSyncStatus.Complete
+        sending.join()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.sendMessage(any(), any()) }
+        // Mokkery consumes verified calls; no second persistence is allowed after sync resumes.
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+    }
+
+    @Test
     fun givenAValidMessage_whenSendingSomeText_thenShouldReturnASuccessResult() = runTest {
         // Given
         val (arrangement, sendTextMessage) = Arrangement(this)

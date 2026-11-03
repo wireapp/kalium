@@ -1,0 +1,1 @@
+On Apple, background account release now fails an account's stalled HTTP requests as offline after 1 second instead of 5. iOS can suspend the app sooner than 5 seconds after it enters the background, which left the account lease held and got the app killed (`0xdead10cc`).

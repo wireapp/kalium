@@ -167,6 +167,13 @@ internal object TestEvent {
         Instant.UNIX_FIRST_DATE,
     )
 
+    fun teamMemberJoin(eventId: String = "eventId") = Event.Team.MemberJoin(
+        eventId,
+        teamId = "teamId",
+        memberId = "memberId",
+        Instant.UNIX_FIRST_DATE,
+    )
+
     fun timerChanged(eventId: String = "eventId") = Event.Conversation.ConversationMessageTimer(
         id = eventId,
         conversationId = TestConversation.ID,
