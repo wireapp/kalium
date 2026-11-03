@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.E2EI
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CLASSIFIED_DOMAINS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CONFERENCE_CALLING
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_LINK_PREVIEWS
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.SHOW_NOTES
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_MLS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_READ_RECEIPTS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_SCREENSHOT_CENSORING
@@ -195,6 +196,16 @@ interface UserConfigStorage {
     fun isLinkPreviewsEnabled(): Flow<Boolean>
     suspend fun persistLinkPreviews(enabled: Boolean)
 
+    /**
+     * Get the saved flag to know whether the user chose to show the "Notes to self" conversation. Disabled by default.
+     */
+    fun isShowNotesEnabled(): Flow<Boolean>
+
+    /**
+     * Persist the flag to indicate whether the user chose to show the "Notes to self" conversation.
+     */
+    suspend fun persistShowNotes(enabled: Boolean)
+
     suspend fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     suspend fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
@@ -226,6 +237,7 @@ interface UserConfigStorage {
         ENABLE_SCREENSHOT_CENSORING("enable_screenshot_censoring"),
         ENABLE_TYPING_INDICATOR("enable_typing_indicator"),
         ENABLE_LINK_PREVIEWS("enable_link_previews"),
+        SHOW_NOTES("show_notes"),
         APP_LOCK("app_lock"),
         DEFAULT_PROTOCOL("default_protocol")
     }
@@ -349,6 +361,12 @@ class UserConfigStorageImpl constructor(
         )
 
     private val isTypingIndicatorEnabledFlow =
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
+
+    private val isShowNotesEnabledFlow =
         MutableSharedFlow<Unit>(
             extraBufferCapacity = 1,
             onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -633,6 +651,17 @@ class UserConfigStorageImpl constructor(
     override suspend fun persistLinkPreviews(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_LINK_PREVIEWS.key, enabled).also {
             isLinkPreviewsEnabledFlow.tryEmit(Unit)
+        }
+    }
+
+    override fun isShowNotesEnabled(): Flow<Boolean> = isShowNotesEnabledFlow
+        .map { kaliumPreferences.getBoolean(SHOW_NOTES.key, false) }
+        .onStart { emit(kaliumPreferences.getBoolean(SHOW_NOTES.key, false)) }
+        .distinctUntilChanged()
+
+    override suspend fun persistShowNotes(enabled: Boolean) {
+        kaliumPreferences.putBoolean(SHOW_NOTES.key, enabled).also {
+            isShowNotesEnabledFlow.tryEmit(Unit)
         }
     }
 

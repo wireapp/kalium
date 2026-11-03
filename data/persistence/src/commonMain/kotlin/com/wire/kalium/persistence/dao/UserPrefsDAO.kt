@@ -39,6 +39,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENAB
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.FILE_SHARING
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.GUEST_ROOM_LINK
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.SHOW_NOTES
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.USE_SFT_FOR_ONE_ON_ONE_CALLS
 import com.wire.kalium.util.time.Second
 import kotlinx.coroutines.flow.Flow
@@ -222,6 +223,16 @@ internal class UserPrefsDAO(
 
     override suspend fun persistLinkPreviews(enabled: Boolean) {
         metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_LINK_PREVIEWS.key)
+    }
+
+    override fun isShowNotesEnabled(): Flow<Boolean> {
+        return metadataDAO.valueByKeyFlow(SHOW_NOTES.key).map {
+            it?.toBoolean() ?: false
+        }
+    }
+
+    override suspend fun persistShowNotes(enabled: Boolean) {
+        metadataDAO.insertValue(value = enabled.toString(), key = SHOW_NOTES.key)
     }
 
     override suspend fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?) {

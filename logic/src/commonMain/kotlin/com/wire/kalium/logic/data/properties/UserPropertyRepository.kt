@@ -58,6 +58,13 @@ internal interface LinkPreviewsPropertyRepository {
     suspend fun deleteLinkPreviewsProperty(): Either<CoreFailure, Unit>
 }
 
+internal interface ShowNotesPropertyRepository {
+    suspend fun getShowNotesStatus(): Boolean
+    fun observeShowNotesStatus(): Flow<Either<CoreFailure, Boolean>>
+    suspend fun setShowNotesEnabled(): Either<CoreFailure, Unit>
+    suspend fun deleteShowNotesProperty(): Either<CoreFailure, Unit>
+}
+
 internal interface ScreenshotCensoringPropertyRepository {
     suspend fun setScreenshotCensoringEnabled(): Either<CoreFailure, Unit>
     suspend fun deleteScreenshotCensoringProperty(): Either<CoreFailure, Unit>
@@ -75,6 +82,7 @@ internal interface UserPropertyRepository :
     ReadReceiptsPropertyRepository,
     TypingIndicatorPropertyRepository,
     LinkPreviewsPropertyRepository,
+    ShowNotesPropertyRepository,
     ScreenshotCensoringPropertyRepository,
     UserPropertiesSyncRepository,
     ConversationFoldersPropertyRepository
@@ -83,6 +91,7 @@ internal class UserPropertyDataSource(
     readReceipts: ReadReceiptsPropertyRepository,
     typingIndicator: TypingIndicatorPropertyRepository,
     linkPreviews: LinkPreviewsPropertyRepository,
+    showNotes: ShowNotesPropertyRepository,
     screenshotCensoring: ScreenshotCensoringPropertyRepository,
     userPropertiesSync: UserPropertiesSyncRepository,
     conversationFolders: ConversationFoldersPropertyRepository,
@@ -90,6 +99,7 @@ internal class UserPropertyDataSource(
     ReadReceiptsPropertyRepository by readReceipts,
     TypingIndicatorPropertyRepository by typingIndicator,
     LinkPreviewsPropertyRepository by linkPreviews,
+    ShowNotesPropertyRepository by showNotes,
     ScreenshotCensoringPropertyRepository by screenshotCensoring,
     UserPropertiesSyncRepository by userPropertiesSync,
     ConversationFoldersPropertyRepository by conversationFolders
@@ -171,6 +181,32 @@ internal class LinkPreviewsPropertyDataSource(
     }
 }
 
+internal class ShowNotesPropertyDataSource(
+    private val propertiesApi: PropertiesApi,
+    private val userConfigRepository: UserConfigRepository,
+) : ShowNotesPropertyRepository {
+
+    override suspend fun getShowNotesStatus(): Boolean =
+        userConfigRepository.observeShowNotesEnabled()
+            .firstOrNull()
+            ?.fold({ false }, { it }) ?: false
+
+    override fun observeShowNotesStatus(): Flow<Either<CoreFailure, Boolean>> =
+        userConfigRepository.observeShowNotesEnabled()
+
+    override suspend fun setShowNotesEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.setProperty(PropertyKey.WIRE_SHOW_NOTES, 1)
+    }.flatMap {
+        userConfigRepository.setShowNotesStatus(true)
+    }
+
+    override suspend fun deleteShowNotesProperty(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.deleteProperty(PropertyKey.WIRE_SHOW_NOTES)
+    }.flatMap {
+        userConfigRepository.setShowNotesStatus(false)
+    }
+}
+
 internal class ScreenshotCensoringPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
@@ -201,11 +237,13 @@ internal class UserPropertiesSyncDataSource(
             val readReceiptsEnabled = properties.findIntValue(PropertyKey.WIRE_RECEIPT_MODE)?.let { it == 1 } ?: true
             val typingIndicatorEnabled = properties.findIntValue(PropertyKey.WIRE_TYPING_INDICATOR_MODE)?.let { it != 0 } ?: true
             val linkPreviewsEnabled = properties.findIntValue(PropertyKey.WIRE_LINK_PREVIEWS) == 1
+            val showNotesEnabled = properties.findIntValue(PropertyKey.WIRE_SHOW_NOTES)?.let { it != 0 } ?: false
             val screenshotCensoringEnabled = properties.findIntValue(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE) == 1
 
             userConfigRepository.setReadReceiptsStatus(readReceiptsEnabled)
                 .flatMap { userConfigRepository.setTypingIndicatorStatus(typingIndicatorEnabled) }
                 .flatMap { userConfigRepository.setLinkPreviewsStatus(linkPreviewsEnabled) }
+                .flatMap { userConfigRepository.setShowNotesStatus(showNotesEnabled) }
                 .flatMap { userConfigRepository.setScreenshotCensoringConfig(screenshotCensoringEnabled) }
         }
 }

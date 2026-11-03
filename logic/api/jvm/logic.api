@@ -7951,11 +7951,13 @@ public final class com/wire/kalium/logic/feature/user/UserScope {
 	public final fun getObserveReadReceiptsEnabled ()Lcom/wire/kalium/logic/feature/user/readReceipts/ObserveReadReceiptsEnabledUseCase;
 	public final fun getObserveSelfUser ()Lcom/wire/kalium/logic/feature/user/ObserveSelfUserUseCase;
 	public final fun getObserveSelfUserWithTeam ()Lcom/wire/kalium/logic/feature/user/ObserveSelfUserWithTeamUseCase;
+	public final fun getObserveShowNotesEnabled ()Lcom/wire/kalium/logic/feature/user/showNotes/ObserveShowNotesEnabledUseCase;
 	public final fun getObserveTypingIndicatorEnabled ()Lcom/wire/kalium/logic/feature/user/typingIndicator/ObserveTypingIndicatorEnabledUseCase;
 	public final fun getObserveUserInfo ()Lcom/wire/kalium/logic/feature/user/ObserveUserInfoUseCase;
 	public final fun getPersistLinkPreviewsStatusConfig ()Lcom/wire/kalium/logic/feature/user/linkPreviews/PersistLinkPreviewsStatusConfigUseCase;
 	public final fun getPersistReadReceiptsStatusConfig ()Lcom/wire/kalium/logic/feature/user/readReceipts/PersistReadReceiptsStatusConfigUseCase;
 	public final fun getPersistSelfUserEmail ()Lcom/wire/kalium/logic/feature/auth/PersistSelfUserEmailUseCase;
+	public final fun getPersistShowNotesStatusConfig ()Lcom/wire/kalium/logic/feature/user/showNotes/PersistShowNotesStatusConfigUseCase;
 	public final fun getPersistTypingIndicatorStatusConfig ()Lcom/wire/kalium/logic/feature/user/typingIndicator/PersistTypingIndicatorStatusConfigUseCase;
 	public final fun getRefreshUsersWithoutMetadata ()Lcom/wire/kalium/logic/feature/publicuser/RefreshUsersWithoutMetadataUseCase;
 	public final fun getServerLinks ()Lcom/wire/kalium/logic/feature/user/SelfServerConfigUseCase;
@@ -8160,6 +8162,35 @@ public abstract interface class com/wire/kalium/logic/feature/user/screenshotCen
 	public abstract fun invoke (ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/user/showNotes/ObserveShowNotesEnabledUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/user/showNotes/PersistShowNotesStatusConfigUseCase {
+	public abstract fun invoke (ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract class com/wire/kalium/logic/feature/user/showNotes/ShowNotesConfigResult {
+}
+
+public final class com/wire/kalium/logic/feature/user/showNotes/ShowNotesConfigResult$Failure : com/wire/kalium/logic/feature/user/showNotes/ShowNotesConfigResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/user/showNotes/ShowNotesConfigResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/user/showNotes/ShowNotesConfigResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/user/showNotes/ShowNotesConfigResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/user/showNotes/ShowNotesConfigResult$Success : com/wire/kalium/logic/feature/user/showNotes/ShowNotesConfigResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/user/showNotes/ShowNotesConfigResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/user/typingIndicator/ObserveTypingIndicatorEnabledUseCase {
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -8257,8 +8288,8 @@ public abstract interface class com/wire/kalium/logic/feature/user/webSocketStat
 
 public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
 	public fun <init> ()V
-	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;ZIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Z
 	public final fun component10 ()Z
 	public final fun component11 ()Z
@@ -8285,14 +8316,15 @@ public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
 	public final fun component30 ()Lkotlin/jvm/functions/Function1;
 	public final fun component31 ()Z
 	public final fun component32 ()Lcom/wire/kalium/network/HttpTrafficObserver;
+	public final fun component33 ()Z
 	public final fun component4 ()Z
 	public final fun component5 ()Z
 	public final fun component6 ()Z
 	public final fun component7 ()Z
 	public final fun component8 ()Z
 	public final fun component9 ()Z
-	public final fun copy-XTMmhTg (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
-	public static synthetic fun copy-XTMmhTg$default (Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;ILjava/lang/Object;)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
+	public final fun copy-ndcfkGA (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;Z)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
+	public static synthetic fun copy-ndcfkGA$default (Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;ZIILjava/lang/Object;)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBlockCrossBackendLogin ()Z
 	public final fun getCallConfigTransformer ()Lkotlin/jvm/functions/Function1;
@@ -8317,6 +8349,7 @@ public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
 	public final fun getMockNetworkStateObserver ()Lcom/wire/kalium/network/NetworkStateObserver;
 	public final fun getMockedRequests ()Ljava/util/List;
 	public final fun getMockedWebSocket ()Lcom/wire/kalium/logic/util/KaliumMockWebsocket;
+	public final fun getNotesToSelfEnabled ()Z
 	public final fun getPendingMessages ()Z
 	public final fun getSecurePublicLinkSettings ()Z
 	public final fun getSelfDeletingMessages ()Z

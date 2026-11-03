@@ -22,6 +22,7 @@ enum class PropertyKey(val key: String) {
     WIRE_TYPING_INDICATOR_MODE("WIRE_TYPING_INDICATOR_MODE"),
     WIRE_SCREENSHOT_CENSORING_MODE("WIRE_SCREENSHOT_CENSORING_MODE"),
     WIRE_LINK_PREVIEWS("WIRE_LINK_PREVIEWS"),
+    WIRE_SHOW_NOTES("WIRE_SHOW_NOTES"),
     WIRE_LABELS("labels"),
     // TODO map other event like -ie. 'labels'-
 }

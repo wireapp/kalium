@@ -95,6 +95,17 @@ class UserConfigStorageTest {
     }
 
     @Test
+    fun givenShowNotesConfigIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        userConfigStorage.persistShowNotes(true)
+        assertTrue(userConfigStorage.isShowNotesEnabled().first())
+    }
+
+    @Test
+    fun givenShowNotesConfigIsNotSet_whenGettingItsValue_thenItShouldBeFalseByDefault() = runTest {
+        assertFalse(userConfigStorage.isShowNotesEnabled().first())
+    }
+
+    @Test
     fun whenMarkingFileSharingAsNotified_thenIsChangedIsSetToFalse() = runTest {
         userConfigStorage.persistFileSharingStatus(true, true)
         userConfigStorage.setFileSharingAsNotified()

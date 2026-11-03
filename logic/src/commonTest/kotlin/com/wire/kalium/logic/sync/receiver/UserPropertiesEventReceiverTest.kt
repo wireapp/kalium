@@ -100,6 +100,36 @@ class UserPropertiesEventReceiverTest {
         }
     }
 
+    @Test
+    fun givenShowNotesUpdateSucceeds_whenHandling_thenSuccessIsReturned() = runTest {
+        val event = Event.UserProperty.ShowNotesModeSet(id = "event-id", value = true)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateShowNotes(Either.Right(Unit))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        result.shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.persistShowNotes(event.value)
+        }
+    }
+
+    @Test
+    fun givenShowNotesUpdateFails_whenHandling_thenFailureIsReturned() = runTest {
+        val event = Event.UserProperty.ShowNotesModeSet(id = "event-id", value = false)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateShowNotes(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        result.shouldFail()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.persistShowNotes(event.value)
+        }
+    }
+
     private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
         val userConfigRepository = mock<UserConfigStorage>()
@@ -127,6 +157,16 @@ class UserPropertiesEventReceiverTest {
             } else {
                 everySuspend {
                     userConfigRepository.persistTypingIndicator(any())
+                } throws IllegalStateException("required preference write failed")
+            }
+        }
+
+        suspend fun withUpdateShowNotes(result: Either<StorageFailure, Unit>) = apply {
+            if (result is Either.Right) {
+                everySuspend { userConfigRepository.persistShowNotes(any()) } returns Unit
+            } else {
+                everySuspend {
+                    userConfigRepository.persistShowNotes(any())
                 } throws IllegalStateException("required preference write failed")
             }
         }

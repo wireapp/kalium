@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.data.conversation.folders.toFolder
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
+import com.wire.kalium.logic.data.event.Event.UserProperty.ShowNotesModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.toModel
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_RECEIPT_MODE
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_SHOW_NOTES
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
@@ -52,6 +54,11 @@ fun updateUserProperties(
                 )
 
                 WIRE_TYPING_INDICATOR_MODE.key -> TypingIndicatorModeSet(
+                    id,
+                    fieldKeyValue.value != 0
+                )
+
+                WIRE_SHOW_NOTES.key -> ShowNotesModeSet(
                     id,
                     fieldKeyValue.value != 0
                 )
@@ -84,6 +91,7 @@ fun deleteUserProperties(
     return when (eventContentDTO.key) {
         WIRE_RECEIPT_MODE.key -> ReadReceiptModeSet(id, false)
         WIRE_TYPING_INDICATOR_MODE.key -> TypingIndicatorModeSet(id, true)
+        WIRE_SHOW_NOTES.key -> ShowNotesModeSet(id, false)
         else -> unknown(
             id = id,
             eventContentDTO = eventContentDTO,

@@ -113,6 +113,7 @@ class UserPropertyRepositoryTest {
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
             .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -135,6 +136,7 @@ class UserPropertyRepositoryTest {
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
             .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -155,6 +157,7 @@ class UserPropertyRepositoryTest {
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
             .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -176,6 +179,7 @@ class UserPropertyRepositoryTest {
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
             .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -197,6 +201,7 @@ class UserPropertyRepositoryTest {
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
             .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -223,6 +228,7 @@ class UserPropertyRepositoryTest {
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
             .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -245,6 +251,7 @@ class UserPropertyRepositoryTest {
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
             .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -270,6 +277,7 @@ class UserPropertyRepositoryTest {
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
             .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -352,6 +360,66 @@ class UserPropertyRepositoryTest {
     }
 
     @Test
+    fun whenUserEnablingShowNotes_thenShouldCallApiAndLocalStorageWithCorrectArgs() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withSetShowNotesEnabledSuccess()
+            .withUpdateShowNotesLocallySuccess()
+            .arrange()
+
+        val result = repository.setShowNotesEnabled()
+
+        result.shouldSucceed()
+        verifySuspend { arrangement.propertiesApi.setProperty(PropertyKey.WIRE_SHOW_NOTES, 1) }
+        verifySuspend { arrangement.userConfigRepository.setShowNotesStatus(true) }
+    }
+
+    @Test
+    fun whenUserDisablingShowNotes_thenShouldCallApiAndLocalStorageWithCorrectArgs() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withDeleteShowNotesSuccess()
+            .withUpdateShowNotesLocallySuccess()
+            .arrange()
+
+        val result = repository.deleteShowNotesProperty()
+
+        result.shouldSucceed()
+        verifySuspend { arrangement.propertiesApi.deleteProperty(PropertyKey.WIRE_SHOW_NOTES) }
+        verifySuspend { arrangement.userConfigRepository.setShowNotesStatus(false) }
+    }
+
+    @Test
+    fun whenSyncingPropertiesStatusesAndShowNotesIsSet_thenShouldPersistItAsEnabled() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesReturning(JsonObject(mapOf(PropertyKey.WIRE_SHOW_NOTES.key to JsonPrimitive(1))))
+            .withUpdateReadReceiptsLocallySuccess()
+            .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
+            .withUpdateScreenshotCensoringLocallySuccess()
+            .arrange()
+
+        repository.syncPropertiesStatuses().shouldSucceed()
+
+        verifySuspend { arrangement.userConfigRepository.setShowNotesStatus(true) }
+    }
+
+    @Test
+    fun whenSyncingPropertiesStatusesAndShowNotesIsMissing_thenShouldPersistItAsDisabled() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesReturning(JsonObject(emptyMap()))
+            .withUpdateReadReceiptsLocallySuccess()
+            .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
+            .withUpdateShowNotesLocallySuccess()
+            .withUpdateScreenshotCensoringLocallySuccess()
+            .arrange()
+
+        repository.syncPropertiesStatuses().shouldSucceed()
+
+        verifySuspend { arrangement.userConfigRepository.setShowNotesStatus(false) }
+    }
+
+    @Test
     fun whenUserEnablingScreenshotCensoring_thenShouldCallApiAndLocalStorageWithCorrectArgs() = runTest {
         val (arrangement, repository) = Arrangement()
             .withSetScreenshotCensoringEnabledSuccess()
@@ -395,6 +463,7 @@ class UserPropertyRepositoryTest {
             readReceipts = ReadReceiptsPropertyDataSource(propertiesApi, userConfigRepository),
             typingIndicator = TypingIndicatorPropertyDataSource(propertiesApi, userConfigRepository),
             linkPreviews = LinkPreviewsPropertyDataSource(propertiesApi, userConfigRepository),
+            showNotes = ShowNotesPropertyDataSource(propertiesApi, userConfigRepository),
             screenshotCensoring = ScreenshotCensoringPropertyDataSource(propertiesApi, userConfigRepository),
             userPropertiesSync = UserPropertiesSyncDataSource(propertiesApi, userConfigRepository),
             conversationFolders = ConversationFoldersPropertyDataSource(propertiesApi, TestUser.SELF.id),
@@ -469,6 +538,24 @@ class UserPropertyRepositoryTest {
         suspend fun withUpdateLinkPreviewsLocallySuccess() = apply {
             everySuspend {
                 userConfigRepository.setLinkPreviewsStatus(any())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withSetShowNotesEnabledSuccess() = apply {
+            everySuspend {
+                propertiesApi.setProperty(PropertyKey.WIRE_SHOW_NOTES, 1)
+            } returns NetworkResponse.Success(Unit, mapOf(), 200)
+        }
+
+        suspend fun withDeleteShowNotesSuccess() = apply {
+            everySuspend {
+                propertiesApi.deleteProperty(PropertyKey.WIRE_SHOW_NOTES)
+            } returns NetworkResponse.Success(Unit, mapOf(), 200)
+        }
+
+        suspend fun withUpdateShowNotesLocallySuccess() = apply {
+            everySuspend {
+                userConfigRepository.setShowNotesStatus(any())
             } returns Either.Right(Unit)
         }
 

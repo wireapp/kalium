@@ -19,6 +19,7 @@ class UserPropertiesEventHandler(
         when (event) {
             is Event.UserProperty.ReadReceiptModeSet -> userConfigStorage.persistReadReceipts(event.value)
             is Event.UserProperty.TypingIndicatorModeSet -> userConfigStorage.persistTypingIndicator(event.value)
+            is Event.UserProperty.ShowNotesModeSet -> userConfigStorage.persistShowNotes(event.value)
             is Event.UserProperty.FoldersUpdate -> conversationFolderDAO.updateConversationFolders(event.folders.map { it.toDao() })
         }
     }

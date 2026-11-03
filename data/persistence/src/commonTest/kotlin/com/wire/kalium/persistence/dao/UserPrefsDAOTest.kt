@@ -129,6 +129,24 @@ internal class UserPrefsDAOTest {
     }
 
     @Test
+    fun givenShowNotesConfigIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        val (_, userConfigStorage) = Arrangement()
+            .withMetadataInserted()
+            .withValueByKeyFlowSucceeding("show_notes", "true")
+            .arrange()
+        userConfigStorage.persistShowNotes(true)
+        assertTrue(userConfigStorage.isShowNotesEnabled().first())
+    }
+
+    @Test
+    fun givenShowNotesConfigIsNotSet_whenGettingItsValue_thenItShouldBeFalseByDefault() = runTest {
+        val (_, userConfigStorage) = Arrangement()
+            .withValueByKeyFlowSucceeding("show_notes", null)
+            .arrange()
+        assertFalse(userConfigStorage.isShowNotesEnabled().first())
+    }
+
+    @Test
     fun whenMarkingFileSharingAsNotified_thenIsChangedIsSetToFalse() = runTest {
         val statusWithChanged = IsFileSharingEnabledEntity(true, true)
         val statusWithoutChanged = IsFileSharingEnabledEntity(true, false)

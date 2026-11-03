@@ -194,6 +194,7 @@ import com.wire.kalium.logic.data.properties.ConversationFoldersPropertyDataSour
 import com.wire.kalium.logic.data.properties.LinkPreviewsPropertyDataSource
 import com.wire.kalium.logic.data.properties.ReadReceiptsPropertyDataSource
 import com.wire.kalium.logic.data.properties.ScreenshotCensoringPropertyDataSource
+import com.wire.kalium.logic.data.properties.ShowNotesPropertyDataSource
 import com.wire.kalium.logic.data.properties.TypingIndicatorPropertyDataSource
 import com.wire.kalium.logic.data.properties.UserPropertiesSyncDataSource
 import com.wire.kalium.logic.data.properties.UserPropertyDataSource
@@ -841,6 +842,7 @@ public class UserSessionScope internal constructor(
             readReceipts = ReadReceiptsPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             typingIndicator = TypingIndicatorPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             linkPreviews = LinkPreviewsPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            showNotes = ShowNotesPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             screenshotCensoring = ScreenshotCensoringPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             userPropertiesSync = UserPropertiesSyncDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             conversationFolders = ConversationFoldersPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userId),

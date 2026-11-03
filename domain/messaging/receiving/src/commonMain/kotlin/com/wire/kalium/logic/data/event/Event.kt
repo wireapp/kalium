@@ -830,6 +830,17 @@ sealed class Event(open val id: String) {
             )
         }
 
+        data class ShowNotesModeSet(
+            override val id: String,
+            val value: Boolean,
+        ) : UserProperty(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserProperty.ShowNotesModeSet",
+                idKey to id,
+                "value" to "$value"
+            )
+        }
+
         data class FoldersUpdate(
             override val id: String,
             val folders: List<FolderWithConversations>,

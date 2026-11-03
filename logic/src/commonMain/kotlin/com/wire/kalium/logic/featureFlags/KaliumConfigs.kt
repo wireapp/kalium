@@ -80,4 +80,6 @@ public data class KaliumConfigs(
     // Opt-in hook to observe real HTTP traffic (including bodies) for debugging purposes.
     // See HttpTrafficObserver's documentation for how this differs from KaliumHttpLogger.
     val httpTrafficObserver: HttpTrafficObserver? = null,
+    // Enables "Notes to self" (user-visible conversation with yourself, built on top of the MLS self conversation).
+    val notesToSelfEnabled: Boolean = false,
 )

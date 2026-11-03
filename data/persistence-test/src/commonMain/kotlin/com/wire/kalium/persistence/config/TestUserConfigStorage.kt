@@ -165,6 +165,14 @@ class FakeUserConfigStorage(
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
+    override fun isShowNotesEnabled(): Flow<Boolean> {
+        throw NotImplementedError("Implement your fake logic if needed using the map provided.")
+    }
+
+    override suspend fun persistShowNotes(enabled: Boolean) {
+        throw NotImplementedError("Implement your fake logic if needed using the map provided.")
+    }
+
     override suspend fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?) {
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
