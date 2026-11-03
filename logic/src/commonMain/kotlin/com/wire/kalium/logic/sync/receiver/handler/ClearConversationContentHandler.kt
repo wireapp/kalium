@@ -71,7 +71,8 @@ internal class ClearConversationContentHandlerImpl(
             if (it != StorageFailure.DataNotFound) throw KaliumSyncException("Conversation target lookup failed", it)
             null
         }
-        if (target?.type == Conversation.Type.Self) return
+        // The content of a self conversation (Notes) can be cleared, but the conversation itself is never removed
+        if (target?.type == Conversation.Type.Self && action != ConversationClear.CONTENT) return
         // Recovery must also work after the NSE has already removed the target conversation.
         if (recoverNSEClear(message, messageContent)) return
         if (target == null) return

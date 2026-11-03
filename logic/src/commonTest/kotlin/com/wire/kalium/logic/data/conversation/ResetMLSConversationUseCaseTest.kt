@@ -345,6 +345,23 @@ class ResetMLSConversationUseCaseTest {
     }
 
     @Test
+    fun givenTheSelfConversation_whenUseCaseInvoked_thenGroupIsEstablishedOnlyWithTheSelfUser() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withConversation(TestConversation.SELF(TestConversation.MLS_PROTOCOL_INFO))
+            .arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), listOf(UserId("testUser", "domain")), any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.getConversationMembers(any())
+        }
+    }
+
+    @Test
     fun givenMLSProtocol_whenUseCaseCalled_thenSuccess() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withFeatureEnabled()

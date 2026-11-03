@@ -167,16 +167,30 @@ public class DeleteMessageUseCase internal constructor(
         deleteForEveryone: Boolean,
     ) = currentClientIdProvider().flatMap { currentClientId ->
         selfConversationIdProvider().flatMap { selfConversationIds ->
-            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+            if (deleteForEveryone && conversationId in selfConversationIds) {
+                // The note lives in a self conversation: a single message to it reaches all own devices,
+                // sending it once per self conversation would deliver the same deletion twice.
                 messageSender.sendMessage(
                     createDeleteMessage(
                         messageId = messageId,
                         conversationId = conversationId,
-                        selfConversationId = selfConversationId,
+                        selfConversationId = conversationId,
                         currentClientId = currentClientId,
-                        deleteForEveryone = deleteForEveryone
+                        deleteForEveryone = true
                     )
                 )
+            } else {
+                selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                    messageSender.sendMessage(
+                        createDeleteMessage(
+                            messageId = messageId,
+                            conversationId = conversationId,
+                            selfConversationId = selfConversationId,
+                            currentClientId = currentClientId,
+                            deleteForEveryone = deleteForEveryone
+                        )
+                    )
+                }
             }
         }
     }

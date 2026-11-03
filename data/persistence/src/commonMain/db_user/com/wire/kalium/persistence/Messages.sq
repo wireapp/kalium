@@ -637,7 +637,13 @@ SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 countByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversation_id
 -- @CustomKey message_list
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ?;
+-- The self conversation (Notes) only counts user content, to match selectByConversationIdAndVisibility.
+SELECT count(*) FROM Message
+WHERE conversation_id = :conversation_id AND visibility IN :visibility
+AND (
+    content_type IN ('TEXT', 'ASSET', 'COMPOSITE', 'LOCATION', 'MULTIPART', 'POLL')
+    OR NOT EXISTS (SELECT 1 FROM Conversation c WHERE c.qualified_id = :conversation_id AND c.type = 'SELF')
+);
 
 countPendingByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversation_id
@@ -648,7 +654,14 @@ selectByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
 -- @CustomKey message_sender_profile
-SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
+-- The self conversation (Notes) only shows user content, system rows and legacy leftovers are hidden there.
+SELECT * FROM MessageDetailsView
+WHERE conversationId = :conversationId AND visibility IN :visibility
+AND (
+    contentType IN ('TEXT', 'ASSET', 'COMPOSITE', 'LOCATION', 'MULTIPART', 'POLL')
+    OR NOT EXISTS (SELECT 1 FROM Conversation c WHERE c.qualified_id = :conversationId AND c.type = 'SELF')
+)
+ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 selectPendingByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId

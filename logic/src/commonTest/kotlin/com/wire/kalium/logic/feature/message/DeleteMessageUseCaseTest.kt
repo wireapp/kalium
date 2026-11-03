@@ -47,6 +47,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -58,6 +59,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -301,6 +303,54 @@ class DeleteMessageUseCaseTest {
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
+        }
+    }
+
+    @Test
+    fun givenANoteInTheMlsSelfConversation_WhenDeleteForEveryoneIsTrue_TheDeleteMessageIsSentOnlyOnce() = runTest {
+        val sentMessages = mutableListOf<Message>()
+        val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
+            .withSelfUser(TestUser.SELF)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID, MLS_SELF_CONVERSATION_ID))
+            .withCompletedSlowSync()
+            .withMessageRepositoryMarkMessageAsDeletedSucceed()
+            .withTextMessage(Message.Status.Sent)
+            .arrange()
+        everySuspend { arrangement.messageSender.sendMessage(any(), any()) } calls {
+            sentMessages += it.args[0] as Message
+            Either.Right(Unit)
+        }
+
+        deleteMessageUseCase(MLS_SELF_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone = true).toEither().shouldSucceed()
+
+        val sent = sentMessages.single()
+        assertEquals(MLS_SELF_CONVERSATION_ID, sent.conversationId)
+        assertEquals(deletedMessageContent, sent.content)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.markMessageAsDeleted(TEST_MESSAGE_UUID, MLS_SELF_CONVERSATION_ID)
+        }
+    }
+
+    @Test
+    fun givenARegularMessage_WhenDeleteForEveryoneIsTrueWithTwoSelfConversations_TheDeleteMessageIsStillSentForEachOfThem() = runTest {
+        val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
+            .withSendMessageSucceed()
+            .withSelfUser(TestUser.SELF)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID, MLS_SELF_CONVERSATION_ID))
+            .withCompletedSlowSync()
+            .withMessageRepositoryMarkMessageAsDeletedSucceed()
+            .withTextMessage(Message.Status.Sent)
+            .arrange()
+
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone = true).toEither().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.messageSender.sendMessage(
+                matches { message -> message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent },
+                any()
+            )
         }
     }
 
@@ -581,6 +631,7 @@ class DeleteMessageUseCaseTest {
     companion object {
         val TEST_CONVERSATION_ID = TestConversation.ID
         val SELF_CONVERSATION_ID = TestConversation.SELF().id
+        val MLS_SELF_CONVERSATION_ID = ConversationId("mls-self-conversation", "domain")
         const val TEST_MESSAGE_UUID = "messageUuid"
         val SELF_CLIENT_ID: ClientId = ClientId("client_self")
         val deletedMessageContent = MessageContent.DeleteMessage(TEST_MESSAGE_UUID)

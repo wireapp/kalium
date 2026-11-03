@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.call.CallHandIdentity
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.common.functional.getOrElse
@@ -109,6 +110,7 @@ internal class ApplicationMessageHandlerImpl(
     private val callingMessageHandler: CallingMessageHandler,
     private val resolveLinkPreviewImages: LinkPreviewImagesResolver,
     private val pollVoteHandler: PollVoteHandler,
+    private val selfConversationIdProvider: SelfConversationIdProvider,
     private val selfUserId: UserId,
     baseLogger: KaliumLogger = kaliumLogger,
 ) : ApplicationMessageHandler {
@@ -124,6 +126,10 @@ internal class ApplicationMessageHandlerImpl(
         senderClientId: ClientId,
         content: ProtoContent.Readable
     ) {
+        if (shouldDropForeignContentInSelfConversation(conversationId, senderUserId, content.messageContent)) {
+            logger.w("Dropping ${content.messageContent.getType()} from a different user in a self conversation")
+            return
+        }
         when (content.messageContent) {
             is MessageContent.Regular -> {
                 val message = MessageUnpackResult.ApplicationMessage(
@@ -212,6 +218,18 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.History -> logUnsupportedHistoryMessage(content)
         }
     }
+
+    /**
+     * The self conversations only carry content from the user's own clients, apart from the availability broadcast
+     * (the backend also delivers other users' broadcasts there). Anything else from someone else is not accepted.
+     */
+    private suspend fun shouldDropForeignContentInSelfConversation(
+        conversationId: ConversationId,
+        senderUserId: UserId,
+        content: MessageContent,
+    ): Boolean = senderUserId != selfUserId &&
+            content !is MessageContent.Availability &&
+            selfConversationIdProvider().getOrElse(emptyList()).contains(conversationId)
 
     private fun logUnsupportedHistoryMessage(content: MessageContent.History) {
         logger.logStructuredJson(

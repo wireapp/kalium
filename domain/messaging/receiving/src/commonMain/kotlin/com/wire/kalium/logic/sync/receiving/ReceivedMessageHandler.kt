@@ -159,6 +159,12 @@ internal class ReceivedMessageHandler(
         // Like the app, accept decryptable content until conversation lifecycle processing
         // removes access. Notification.sq also does not require a self-member row.
         // Legal-hold state and embedded legal-hold effects are deliberately app-only.
+        // The self conversations only carry content from the user's own clients, apart from the availability
+        // broadcast. Anything else coming from someone else is dropped, and must neither show up nor notify.
+        if (conversation.type == ConversationEntity.Type.SELF &&
+            unpacked.senderUserId != selfUserId &&
+            unpacked.content.messageContent !is MessageContent.Availability
+        ) return
         when (val content = unpacked.content.messageContent) {
             is MessageContent.Text, is MessageContent.Knock, is MessageContent.Location, is MessageContent.Unknown,
             is MessageContent.Composite, is MessageContent.Poll, is MessageContent.Asset, is MessageContent.Multipart ->
@@ -314,7 +320,8 @@ internal class ReceivedMessageHandler(
         val targetId = content.conversationId.toDao()
         if (targetId == carrier.id) return
         val target = data.conversations.getConversationById(targetId)
-        if (target?.type == ConversationEntity.Type.SELF) return
+        // The content of a self conversation (Notes) can be cleared, but the conversation itself is never removed
+        if (target?.type == ConversationEntity.Type.SELF && action != ConversationClear.CONTENT) return
         val replayKey = clearReplayKey(carrier.id, unpacked.content.messageUid, targetId)
         // An earlier attempt may already have removed the target. Only its exact snapshot can replay.
         if (target == null && data.metadata.valueByKey(replayKey) == null) return

@@ -141,11 +141,16 @@ internal class ResetMLSConversationUseCaseImpl(
             .flatMap {
                 fetchConversation(this, conversationId)
             }
-            .flatMap { getMlsProtocolInfo(conversationId) }
-            .map { updatedProtocolInfo ->
-                val members = conversationRepository.getConversationMembers(conversationId).getOrFail {
-                    logger.e("Failed to get members for conversation: $it")
-                    return it.left()
+            .flatMap { getMlsProtocolInfoAndIfSelfConversation(conversationId) }
+            .map { (updatedProtocolInfo, isSelfConversation) ->
+                // The self conversation (Notes) only ever has the self user, as when it is first established
+                val members = if (isSelfConversation) {
+                    listOf(selfUserId)
+                } else {
+                    conversationRepository.getConversationMembers(conversationId).getOrFail {
+                        logger.e("Failed to get members for conversation: $it")
+                        return it.left()
+                    }
                 }
                 mlsConversationRepository.establishMLSGroup(
                     mlsContext = mlsContext,
@@ -159,6 +164,15 @@ internal class ResetMLSConversationUseCaseImpl(
         transaction: CryptoTransactionContext,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> = fetchConversationUseCase(transaction, conversationId, ConversationSyncReason.ConversationReset)
+
+    private suspend fun getMlsProtocolInfoAndIfSelfConversation(
+        conversationId: ConversationId
+    ): Either<CoreFailure, Pair<Conversation.ProtocolInfo.MLSCapable, Boolean>> {
+        return conversationRepository.getConversationById(conversationId)
+            .map {
+                (it.mlsProtocolInfo() ?: return errorNotMlsConversation()) to (it.type == Conversation.Type.Self)
+            }
+    }
 
     private suspend fun getMlsProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo.MLSCapable> {
         return conversationRepository.getConversationById(conversationId)

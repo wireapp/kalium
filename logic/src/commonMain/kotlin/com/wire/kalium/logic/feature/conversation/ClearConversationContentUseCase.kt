@@ -66,13 +66,18 @@ internal class ClearConversationContentUseCaseImpl(
     ): ClearConversationContentUseCase.Result =
         currentClientIdProvider().flatMap { currentClientId ->
             selfConversationIdProvider().flatMap { selfConversationIds ->
-                selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                // Clearing a self conversation (Notes) is signaled once, through the other self conversation,
+                // so the receivers get a single event. The self conversation itself is never removed.
+                val isSelfTarget = conversationId in selfConversationIds
+                val carriers = if (isSelfTarget) selfConversationIds.filter { it != conversationId } else selfConversationIds
+                val removeLocally = needToRemoveConversation && !isSelfTarget
+                carriers.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
                     val regularMessage = Message.Signaling(
                         id = Uuid.random().toString(),
                         content = MessageContent.Cleared(
                             conversationId = conversationId,
                             time = DateTimeUtil.currentInstant(),
-                            needToRemoveLocally = needToRemoveConversation
+                            needToRemoveLocally = removeLocally
                         ),
                         // sending the message to clear this conversation
                         conversationId = selfConversationId,

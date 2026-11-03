@@ -1,3 +1,4 @@
+-- In the self conversation (Notes) the timeline only shows user content, system rows and legacy leftovers are hidden.
 CREATE VIEW MessageTimelineKey AS
 SELECT m.id, m.conversation_id, m.creation_date, m.visibility
 FROM Message m
@@ -19,6 +20,13 @@ AND NOT EXISTS (
     WHERE s.message_id = m.id AND s.conversation_id = m.conversation_id
       AND m.content_type = 'MEMBER_CHANGE' AND s.enum_1 = 'USER_PROMOTED_TO_ADMIN'
       AND instr(',' || s.list_1 || ',', ',' || (SELECT id FROM SelfUser) || ',') = 0
+)
+AND (
+    m.content_type IN ('TEXT', 'ASSET', 'COMPOSITE', 'LOCATION', 'MULTIPART', 'POLL')
+    OR NOT EXISTS (
+        SELECT 1 FROM Conversation c
+        WHERE c.qualified_id = m.conversation_id AND c.type = 'SELF'
+    )
 );
 
 timelineLatest:

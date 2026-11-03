@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.logic.di.MapperProvider
@@ -41,6 +42,7 @@ import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
@@ -469,6 +471,74 @@ class ApplicationMessageHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.updateOtherUserAvailabilityStatus(event.senderUserId, content.status)
         }
+    }
+
+    @Test
+    fun givenTextFromAnotherUserInASelfConversation_whenHandling_thenItIsDropped() = runTest {
+        val selfConversationId = TestEvent.newMessageEvent("content").conversationId
+        val (arrangement, handler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withSelfConversationIds(listOf(selfConversationId))
+            .arrange()
+
+        dispatch(arrangement, handler, MessageContent.Text("not a note"), senderUserId = TestUser.OTHER_USER_ID)
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+    }
+
+    @Test
+    fun givenDeleteForMeFromAnotherUserInASelfConversation_whenHandling_thenItIsDropped() = runTest {
+        val selfConversationId = TestEvent.newMessageEvent("content").conversationId
+        val (arrangement, handler) = Arrangement()
+            .withSelfConversationIds(listOf(selfConversationId))
+            .arrange()
+
+        dispatch(
+            arrangement, handler, MessageContent.DeleteForMe("victim-message", selfConversationId),
+            senderUserId = TestUser.OTHER_USER_ID
+        )
+
+        verifySuspend(VerifyMode.not) { arrangement.deleteForMeHandler.handle(any(), any()) }
+    }
+
+    @Test
+    fun givenAvailabilityFromAnotherUserInASelfConversation_whenHandling_thenItIsStillApplied() = runTest {
+        val selfConversationId = TestEvent.newMessageEvent("content").conversationId
+        val content = MessageContent.Availability(UserAvailabilityStatus.AWAY)
+        val (arrangement, handler) = Arrangement()
+            .withUserAvailabilityUpdate()
+            .withSelfConversationIds(listOf(selfConversationId))
+            .arrange()
+
+        dispatch(arrangement, handler, content, senderUserId = TestUser.OTHER_USER_ID)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateOtherUserAvailabilityStatus(TestUser.OTHER_USER_ID, content.status)
+        }
+    }
+
+    @Test
+    fun givenTextFromTheSelfUserInASelfConversation_whenHandling_thenItIsPersisted() = runTest {
+        val selfConversationId = TestEvent.newMessageEvent("content").conversationId
+        val (arrangement, handler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withSelfConversationIds(listOf(selfConversationId))
+            .arrange()
+
+        dispatch(arrangement, handler, MessageContent.Text("a note"), senderUserId = TestUser.SELF.id)
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage.invoke(any()) }
+    }
+
+    @Test
+    fun givenTextFromAnotherUserInARegularConversation_whenHandling_thenItIsPersisted() = runTest {
+        val (arrangement, handler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        dispatch(arrangement, handler, MessageContent.Text("hello"), senderUserId = TestUser.OTHER_USER_ID)
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage.invoke(any()) }
     }
 
     @Test
@@ -907,6 +977,9 @@ class ApplicationMessageHandlerTest {
         val callingMessageHandler = mock<CallingMessageHandler>(MockMode.autoUnit)
         val linkPreviewImagesResolver = mock<LinkPreviewImagesResolver>(MockMode.autoUnit)
         val pollVoteHandler = mock<PollVoteHandler>(MockMode.autoUnit)
+        val selfConversationIdProvider = mock<SelfConversationIdProvider>().also { provider ->
+            everySuspend { provider.invoke() } returns Either.Right(emptyList())
+        }
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -931,9 +1004,14 @@ class ApplicationMessageHandlerTest {
             callingMessageHandler,
             linkPreviewImagesResolver,
             pollVoteHandler,
+            selfConversationIdProvider,
             TestUser.SELF.id,
             kaliumLogger,
         )
+
+        fun withSelfConversationIds(conversationIds: List<ConversationId>) = apply {
+            everySuspend { selfConversationIdProvider.invoke() } returns Either.Right(conversationIds)
+        }
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {

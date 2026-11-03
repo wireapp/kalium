@@ -23,19 +23,24 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.messaging.sending.MessageSender
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class ClearConversationContentUseCaseTest {
@@ -150,8 +155,67 @@ class ClearConversationContentUseCaseTest {
         }
     }
 
+    @Test
+    fun givenAMlsSelfConversationTarget_whenInvoking_thenTheClearIsSentOnceThroughTheOtherSelfConversationAndNeverRemoves() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withClearConversationContent(true)
+            .withCurrentClientId(true)
+            .withClearConversationAssetsLocally(true)
+            .withSelfConversationIds(listOf(selfConversationId, mlsSelfConversationId))
+            .arrange()
+        val sentMessages = arrangement.captureSentMessages()
+
+        val result = useCase(mlsSelfConversationId, needToRemoveConversation = true)
+
+        assertIs<ClearConversationContentUseCase.Result.Success>(result)
+        val sent = sentMessages.single()
+        val content = assertIs<MessageContent.Cleared>(sent.content)
+        assertEquals(selfConversationId, sent.conversationId)
+        assertEquals(mlsSelfConversationId, content.conversationId)
+        assertEquals(false, content.needToRemoveLocally)
+        with(arrangement) {
+            verifySuspend(VerifyMode.exactly(1)) { clearConversationAssetsLocally(mlsSelfConversationId) }
+            verifySuspend(VerifyMode.exactly(1)) { conversationRepository.clearContent(mlsSelfConversationId) }
+        }
+    }
+
+    @Test
+    fun givenARegularTargetAndTwoSelfConversations_whenInvoking_thenTheClearIsSentThroughBothAsBefore() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withClearConversationContent(true)
+            .withCurrentClientId(true)
+            .withClearConversationAssetsLocally(true)
+            .withSelfConversationIds(listOf(selfConversationId, mlsSelfConversationId))
+            .arrange()
+        val sentMessages = arrangement.captureSentMessages()
+
+        val result = useCase(ConversationId("someValue", "someDomain"), needToRemoveConversation = true)
+
+        assertIs<ClearConversationContentUseCase.Result.Success>(result)
+        assertEquals(listOf(selfConversationId, mlsSelfConversationId), sentMessages.map { it.conversationId })
+        assertEquals(listOf(true, true), sentMessages.map { (it.content as MessageContent.Cleared).needToRemoveLocally })
+    }
+
+    @Test
+    fun givenTheProteusSelfConversationAsTarget_whenInvoking_thenNoSignalIsSentButTheContentIsClearedLocally() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withClearConversationContent(true)
+            .withCurrentClientId(true)
+            .withMessageSending(true)
+            .withClearConversationAssetsLocally(true)
+            .withSelfConversationIds(listOf(selfConversationId))
+            .arrange()
+
+        val result = useCase(selfConversationId)
+
+        assertIs<ClearConversationContentUseCase.Result.Success>(result)
+        verifySuspend(VerifyMode.not) { arrangement.messageSender.sendMessage(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(selfConversationId) }
+    }
+
     private companion object {
         val selfConversationId = ConversationId("self_conversation_id", "self_domain")
+        val mlsSelfConversationId = ConversationId("mls_self_conversation_id", "self_domain")
     }
 
     private class Arrangement {
@@ -186,6 +250,16 @@ class ClearConversationContentUseCaseTest {
             everySuspend {
                 messageSender.sendMessage(any(), any())
             } returns (if (isSuccessFull) Either.Right(Unit) else Either.Left(CoreFailure.Unknown(Throwable("an error"))))
+        }
+
+        /** Records every message sent, so tests can assert on all of them at once. */
+        suspend fun captureSentMessages(): List<Message> {
+            val sent = mutableListOf<Message>()
+            everySuspend { messageSender.sendMessage(any(), any()) } calls {
+                sent += it.args[0] as Message
+                Either.Right(Unit)
+            }
+            return sent
         }
 
         suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) = apply {

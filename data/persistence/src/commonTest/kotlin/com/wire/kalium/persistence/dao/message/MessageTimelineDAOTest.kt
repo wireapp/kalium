@@ -26,6 +26,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlPreparedStatement
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
@@ -92,6 +93,29 @@ class MessageTimelineDAOTest : BaseDatabaseTest() {
         request: MessageTimelineRequestEntity = MessageTimelineRequestEntity.Latest,
         limit: Int = 20,
     ) = assertIs<MessageTimelineLoadResultEntity.Success>(load(request, limit)).page
+
+    @Test
+    fun selfConversationTimelineOnlyShowsUserContent() = runTest(dispatcher) {
+        val notes = newConversationEntity("notes").copy(type = ConversationEntity.Type.SELF)
+        seed()
+        db.conversationDAO.insertConversations(listOf(notes))
+        fun rowsFor(conversationId: QualifiedIDEntity) = listOf(
+            newRegularMessageEntity("text", MessageEntityContent.Text("t"), conversationId, self.id, date = Instant.fromEpochMilliseconds(1_000)),
+            newRegularMessageEntity("knock", MessageEntityContent.Knock(false), conversationId, self.id, date = Instant.fromEpochMilliseconds(1_001)),
+            newRegularMessageEntity(
+                "failed", MessageEntityContent.FailedDecryption(null, 1, false, other.id, "client"), conversationId, other.id,
+                date = Instant.fromEpochMilliseconds(1_002)
+            ),
+            newSystemMessageEntity("history", MessageEntityContent.HistoryLost, conversationId, other.id, date = Instant.fromEpochMilliseconds(1_003)),
+        )
+        db.messageDAO.insertOrIgnoreMessages(rowsFor(notes.id) + rowsFor(conversation.id), withUnreadEvents = false)
+
+        val notesIds = open(conversationId = notes.id).page().rows.map { it.id }.toSet()
+        val regularIds = open(conversationId = conversation.id).page().rows.map { it.id }.toSet()
+
+        assertEquals(setOf("text"), notesIds)
+        assertEquals(setOf("text", "knock", "failed", "history"), regularIds)
+    }
 
     @Test
     fun emptyAndBoundedLoads() = runTest(dispatcher) {

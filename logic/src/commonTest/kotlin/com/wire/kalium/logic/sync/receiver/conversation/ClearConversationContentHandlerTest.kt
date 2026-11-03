@@ -108,7 +108,7 @@ class ClearConversationContentHandlerTest {
     }
 
     @Test
-    fun selfConversationTargetIsRejected() = runTest {
+    fun selfConversationIsNeverDeleted() = runTest {
         val (arrangement, handler) = Arrangement().arrange(recoverNSEClear = { _, _ ->
             error("Self-conversation target must not trigger recovery")
         }) {
@@ -116,12 +116,42 @@ class ClearConversationContentHandlerTest {
             everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns
                 Either.Right(TestConversation.SELF().copy(id = CONVERSATION_ID))
         }
-        for (target in listOf(SELF_CONVERSATION_ID, CONVERSATION_ID)) {
-            for (removeLocally in listOf(false, true)) {
-                handler.handle(arrangement.transactionContext, OWN_MESSAGE,
-                    MessageContent.Cleared(target, Instant.DISTANT_PAST, removeLocally))
-            }
+        // the carrier can never be cleared, and a self conversation target is never removed
+        handler.handle(arrangement.transactionContext, OWN_MESSAGE, MessageContent.Cleared(SELF_CONVERSATION_ID, Instant.DISTANT_PAST, false))
+        handler.handle(arrangement.transactionContext, OWN_MESSAGE, MessageContent.Cleared(SELF_CONVERSATION_ID, Instant.DISTANT_PAST, true))
+        handler.handle(arrangement.transactionContext, OWN_MESSAGE, MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, true))
+        assertNoCleanup(arrangement)
+    }
+
+    @Test
+    fun selfConversationContentCanBeCleared() = runTest {
+        val (arrangement, handler) = Arrangement().arrange {
+            withMessageSentInSelfConversation(true)
+            everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns
+                Either.Right(TestConversation.SELF(TestConversation.MLS_PROTOCOL_INFO).copy(id = CONVERSATION_ID))
         }
+
+        handler.handle(arrangement.transactionContext, OWN_MESSAGE, MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, false))
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationAssetsLocally(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+    }
+
+    @Test
+    fun selfConversationContentIsNotClearedWhenSentByAnotherUser() = runTest {
+        val (arrangement, handler) = Arrangement().arrange {
+            withMessageSentInSelfConversation(true)
+            everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns
+                Either.Right(TestConversation.SELF(TestConversation.MLS_PROTOCOL_INFO).copy(id = CONVERSATION_ID))
+        }
+
+        handler.handle(
+            arrangement.transactionContext,
+            OWN_MESSAGE.copy(senderUserId = OTHER_USER_ID),
+            MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, false)
+        )
+
         assertNoCleanup(arrangement)
     }
 

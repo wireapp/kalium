@@ -2075,6 +2075,7 @@ public class UserSessionScope internal constructor(
             callingMessageHandler,
             linkPreviewsResolver,
             PollVoteHandlerImpl(pollMessageRepository),
+            selfConversationIdProvider,
             userId
         )
 

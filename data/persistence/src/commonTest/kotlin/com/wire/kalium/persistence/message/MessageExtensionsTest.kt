@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -43,6 +44,7 @@ import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -537,12 +539,41 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         assertEquals(null, second.nextKey)
     }
 
-    private fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
-        conversationId = CONVERSATION_ID,
-        visibilities = MessageEntity.Visibility.entries.toList(),
-        pagingConfig = PagingConfig(PAGE_SIZE),
-        startingOffset = 0
-    )
+    @Test
+    fun givenSelfConversation_whenGettingPage_thenOnlyUserContentIsListedAndCounted() = runTest {
+        val notesId = ConversationIDEntity("notes", "domain")
+        userDAO.upsertUser(newUserEntity(qualifiedID = USER_ID))
+        conversationDAO.insertConversation(newConversationEntity(id = notesId).copy(type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
+        fun rowsFor(conversationId: ConversationIDEntity) = listOf(
+            newRegularMessageEntity("text", MessageEntityContent.Text("t"), conversationId, USER_ID, date = Instant.fromEpochSeconds(4)),
+            newRegularMessageEntity("knock", MessageEntityContent.Knock(false), conversationId, USER_ID, date = Instant.fromEpochSeconds(3)),
+            newSystemMessageEntity("history", MessageEntityContent.HistoryLost, conversationId, USER_ID, date = Instant.fromEpochSeconds(2)),
+            newRegularMessageEntity(
+                "failed", MessageEntityContent.FailedDecryption(null, 1, false, USER_ID, "client"), conversationId, USER_ID,
+                date = Instant.fromEpochSeconds(1)
+            ),
+        )
+        messageDAO.insertOrIgnoreMessages(rowsFor(notesId) + rowsFor(CONVERSATION_ID))
+
+        val notesPage = getPager(notesId).pagingSource.refresh()
+        val regularPage = getPager(CONVERSATION_ID).pagingSource.refresh()
+
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(notesPage)
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(regularPage)
+        assertEquals(listOf("text"), notesPage.data.map { it.id })
+        assertEquals(0, notesPage.itemsAfter)
+        assertEquals(listOf("text", "knock", "history", "failed"), regularPage.data.map { it.id })
+        assertEquals(0, regularPage.itemsAfter)
+    }
+
+    private fun getPager(conversationId: ConversationIDEntity = CONVERSATION_ID): KaliumPager<MessageEntity> =
+        messageExtensions.getPagerForConversation(
+            conversationId = conversationId,
+            visibilities = MessageEntity.Visibility.entries.toList(),
+            pagingConfig = PagingConfig(PAGE_SIZE),
+            startingOffset = 0
+        )
 
     private fun getSearchMessagesPager(searchQuery: String): KaliumPager<MessageEntity> = messageExtensions.getPagerForMessagesSearch(
         searchQuery = searchQuery,
