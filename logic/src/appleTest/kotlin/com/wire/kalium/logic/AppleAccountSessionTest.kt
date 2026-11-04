@@ -161,14 +161,19 @@ class AppleAccountSessionTest {
             try {
                 logic.suspendSessionScope(userId)
                 kotlin.test.assertSame(first, logic.getSessionScope(userId))
-                assertEquals("before", metadata.valueByKey("handoff-test"))
+                val pendingRead = async(start = CoroutineStart.UNDISPATCHED) { metadata.valueByKey("handoff-test") }
+                assertFalse(pendingRead.isCompleted)
+                val ordinaryOpen = async(start = CoroutineStart.UNDISPATCHED) { logic.openSessionScope(userId) }
+                assertFalse(ordinaryOpen.isCompleted)
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
                 val pending = async(start = CoroutineStart.UNDISPATCHED) { metadata.insertValue("after", "handoff-test") }
                 assertFalse(pending.isCompleted)
                 lease.release()
-                val second = logic.openSessionScope(userId)
+                val second = logic.resumeSessionScope(userId)
                 kotlin.test.assertSame(first, second)
+                kotlin.test.assertSame(first, ordinaryOpen.await())
+                pendingRead.await()
                 pending.await()
                 assertEquals("after", metadata.valueByKey("handoff-test"))
             } finally {
@@ -187,13 +192,13 @@ class AppleAccountSessionTest {
                 logic.suspendSessionScope(userId)
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-                val reopening = async { logic.openSessionScope(userId) }
+                val reopening = async { logic.resumeSessionScope(userId) }
                 delay(200)
                 assertFalse(reopening.isCompleted)
                 // The wait used to run inside the non-cancellable restore and outlived its caller.
                 withTimeout(5.seconds) { reopening.cancelAndJoin() }
                 lease.release()
-                kotlin.test.assertSame(first, logic.openSessionScope(userId))
+                kotlin.test.assertSame(first, logic.resumeSessionScope(userId))
             } finally {
                 logic.releaseSessionScope(userId)
             }
@@ -210,10 +215,10 @@ class AppleAccountSessionTest {
                 logic.suspendSessionScope(userId)
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-                val busy = assertFailsWith<AccountBusyException> { logic.openSessionScope(userId) }
+                val busy = assertFailsWith<AccountBusyException> { logic.resumeSessionScope(userId) }
                 assertTrue(busy.holder.orEmpty().contains("pid=${getpid()}"), busy.holder)
                 lease.release()
-                kotlin.test.assertSame(first, logic.openSessionScope(userId))
+                kotlin.test.assertSame(first, logic.resumeSessionScope(userId))
             } finally {
                 logic.releaseSessionScope(userId)
             }
@@ -473,7 +478,7 @@ class AppleAccountSessionTest {
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
                 lease.release()
-                kotlin.test.assertSame(scope, logic.openSessionScope(userId))
+                kotlin.test.assertSame(scope, logic.resumeSessionScope(userId))
                 assertEquals("committed", scope.userStorage.database.metadataDAO.valueByKey("crypto-callback"))
                 // The retained client must lazily open a new native generation after the handoff.
                 assertTrue(proteus.newPreKeysAuto(1).isNotEmpty())
@@ -516,7 +521,7 @@ class AppleAccountSessionTest {
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
                 lease.release()
-                kotlin.test.assertSame(scope, logic.openSessionScope(userId))
+                kotlin.test.assertSame(scope, logic.resumeSessionScope(userId))
                 assertTrue(proteus.newPreKeysAuto(1).isNotEmpty())
             } finally {
                 // Unblock the worker if the release missed the deadline, so the test ends.
