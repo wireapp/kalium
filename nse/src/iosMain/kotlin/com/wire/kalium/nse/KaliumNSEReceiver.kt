@@ -196,6 +196,13 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     public suspend fun processAndDeliver(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery): KaliumNSEResult =
         processOwned(request, delivery)
 
+    /** Adds meeting alert delivery and native reminder synchronization without changing legacy result constructors. */
+    @Throws(CancellationException::class)
+    public suspend fun processAndDeliverNotifications(
+        request: KaliumNSERequest,
+        delivery: KaliumNSENotificationDelivery,
+    ): KaliumNSEResult = processOwned(request, delivery)
+
     private suspend fun processOwned(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
         // An extension has a bounded host budget; this flag controls diagnostic verbosity only.
         AppleSuspensionDiagnostics.setBackgrounded(true)
@@ -277,6 +284,13 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         val result = reconcileNotifications(runtime, received, unnotified, request)
         if (delivery != null) deliverMessageAlerts(result.alerts, delivery) { key ->
             claims.pending.acknowledge(listOf(key))
+        }
+        if (delivery is KaliumNSENotificationDelivery) {
+            val meetings = com.wire.kalium.logic.sync.receiving.PendingMeetingAlerts(runtime.database)
+            // Reflect every committed edit/cancellation even if unrelated later work stops this attempt.
+            val reminders = meetings.reminders()
+            awaitNativeAcceptance { delivery.synchronizeMeetingReminders(reminders) }
+            deliverMeetingAlerts(meetings.read(), delivery) { alert -> meetings.acknowledge(alert.eventId, alert.meetingId) }
         }
         return result.copy(
             stoppedReason = received.stoppedReason,

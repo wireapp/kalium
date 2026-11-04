@@ -240,8 +240,12 @@ internal class NotificationEffects(
                             listOf(received.meeting),
                             GenerationLimit.Window(occurrenceOutdatedThreshold(), occurrenceGenerationUntil())
                         )
+                        recordMeetingAlert(received.event, received.meeting)
                     }
-                    is ReceivedPayload.MeetingDelete -> meetings.deleteMeeting(received.meetingId.toDao())
+                    is ReceivedPayload.MeetingDelete -> {
+                        recordMeetingAlert(received.event, meetings.getMeeting(received.meetingId.toDao()))
+                        meetings.deleteMeeting(received.meetingId.toDao())
+                    }
                     is ReceivedPayload.UserUpdate -> userUpdate.handle(received.event).orThrow()
                     is ReceivedPayload.NewClient -> newClients.insertNewClient(received.client.newClientParameters(selfUserId))
                     is ReceivedPayload.Connection -> {
@@ -490,8 +494,12 @@ internal sealed interface ReceivedPayload {
     data class MeetingUpsert(
         val meeting: com.wire.kalium.persistence.dao.meeting.MeetingEntity,
         val profiles: com.wire.kalium.logic.data.user.UserProfiles,
+        val event: Event.Meeting? = null,
     ) : ReceivedPayload
-    data class MeetingDelete(val meetingId: com.wire.kalium.logic.data.id.MeetingId) : ReceivedPayload
+    data class MeetingDelete(
+        val meetingId: com.wire.kalium.logic.data.id.MeetingId,
+        val event: Event.Meeting.Delete? = null,
+    ) : ReceivedPayload
     data class NewClient(val client: com.wire.kalium.logic.data.client.Client) : ReceivedPayload
     data class UserDeleted(val userId: UserId) : ReceivedPayload
     data class TeamLeave(val event: Event.Team.MemberLeave) : ReceivedPayload

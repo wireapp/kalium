@@ -639,9 +639,20 @@ class NotificationProcessor(
                 ReceivedPayload.Federation(Event.Federation.ConnectionRemoved(metadataSystemMessageId(eventId, index), content.domains))
             )
             is EventContentDTO.Meeting.MeetingCreateDTO -> fetchReceivedMeeting(content.qualifiedMeetingId, meetingApi, users)
-            is EventContentDTO.Meeting.MeetingUpdateDTO -> fetchReceivedMeeting(content.qualifiedMeetingId, meetingApi, users)
-            is EventContentDTO.Meeting.MeetingMemberAddDTO -> fetchReceivedMeeting(content.qualifiedMeetingId, meetingApi, users)
-            is EventContentDTO.Meeting.MeetingDeleteDTO -> listOf(ReceivedPayload.MeetingDelete(content.qualifiedMeetingId.toModel()))
+            is EventContentDTO.Meeting.MeetingUpdateDTO -> fetchReceivedMeeting(
+                content.qualifiedMeetingId, meetingApi, users,
+                Event.Meeting.Update(eventId, content.qualifiedMeetingId.toModel(), content.time, content.qualifiedFrom?.toModel()),
+            )
+            is EventContentDTO.Meeting.MeetingMemberAddDTO -> fetchReceivedMeeting(
+                content.qualifiedMeetingId, meetingApi, users,
+                Event.Meeting.MemberAdd(eventId, content.qualifiedMeetingId.toModel(), content.time, content.qualifiedFrom?.toModel()),
+            )
+            is EventContentDTO.Meeting.MeetingDeleteDTO -> listOf(
+                ReceivedPayload.MeetingDelete(
+                    content.qualifiedMeetingId.toModel(),
+                    Event.Meeting.Delete(eventId, content.qualifiedMeetingId.toModel(), content.time, content.qualifiedFrom?.toModel()),
+                )
+            )
             is EventContentDTO.UserProperty.PropertiesSetDTO -> listOfNotNull(
                 (updateUserProperties(selfUserId, eventId, content) as? Event.UserProperty)?.let { ReceivedPayload.UserProperty(it) }
             )

@@ -108,6 +108,9 @@ internal class ReceivedMessageHandler(
             "Deletion after earlier conversation effects requires replayable conversation metadata"
         }
         val sender = event.senderUserId?.let { data.users.getNameAndHandle(it.toDao()) }
+        if (conversation.type == ConversationEntity.Type.MEETING && event.senderUserId != selfUserId) {
+            data.recordMeetingCancellations(event.id, id, event.dateTime, event.senderUserId)
+        }
         data.assets.deleteConversationFiles(id, deleteFile)
         (conversation.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.let {
             data.conversations.clearProposalTimer(it.groupId)

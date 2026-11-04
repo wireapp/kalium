@@ -171,6 +171,90 @@ import platform.Foundation.NSUUID
 
 class NotificationProcessorNativeTest {
     @Test
+    fun deletingAMeetingConversationRetainsCancellationBeforeCascadeAndSkipsSelfDeletion() = runTest {
+        withContext(Dispatchers.Default) {
+            for (deletedBySelf in listOf(false, true)) withFixture(false) { fixture ->
+                fixture.releasePrepared()
+                val time = Clock.System.now()
+                val meetingId = com.wire.kalium.network.api.model.MeetingId("deleted-meeting", SELF.domain)
+                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
+                    val conversation = assertNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+                    runtime.database.conversationDAO.insertConversations(listOf(conversation.copy(type = ConversationEntity.Type.MEETING)))
+                })
+                val meeting = com.wire.kalium.network.api.authenticated.meeting.MeetingDTO(
+                    meetingId, CONVERSATION_ID.toModel().toApi(), SENDER.toApi(), time, null, "Cancelled planning",
+                    time + 3600.seconds, time + 7200.seconds, "UTC", null,
+                )
+                val create = fixture.plainEvent("create-meeting", kotlinx.serialization.json.Json.encodeToString(
+                    EventContentDTO.serializer(), EventContentDTO.Meeting.MeetingCreateDTO(meetingId, time, SENDER.toApi()),
+                ))
+                assertIs<Either.Right<ReceivedNotificationResult>>(fixture.receive(listOf(create), create.id, fetchMeeting = { meeting }))
+                val delete = fixture.plainEvent("delete-meeting-conversation", kotlinx.serialization.json.Json.encodeToString(
+                    EventContentDTO.serializer(), EventContentDTO.Conversation.DeletedMeetingConversationDTO(
+                        CONVERSATION_ID.toModel().toApi(), (if (deletedBySelf) SELF else SENDER).toApi(), time.toString(),
+                    ),
+                ))
+                assertIs<Either.Right<ReceivedNotificationResult>>(fixture.receive(listOf(delete), delete.id))
+                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
+                    val alerts = PendingMeetingAlerts(runtime.database).read()
+                    if (deletedBySelf) assertEquals(emptyList(), alerts)
+                    else assertEquals("Cancelled planning",
+                        assertIs<com.wire.kalium.logic.data.notification.LocalNotification.Meeting.Cancel>(alerts.single()).meetingTitle)
+                    assertNull(runtime.database.meetingDao.getMeeting(meetingId.toModel().toDao()))
+                })
+            }
+        }
+    }
+
+    @Test
+    fun meetingEventsPersistSharedAlertsBeforeTheirProcessedMarkerAndRetainCancellationContent() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(false) { fixture ->
+                fixture.releasePrepared()
+                val time = Clock.System.now()
+                val meetingId = com.wire.kalium.network.api.model.MeetingId("meeting", SELF.domain)
+                val meeting = com.wire.kalium.network.api.authenticated.meeting.MeetingDTO(
+                    meetingId, CONVERSATION_ID.toModel().toApi(), SENDER.toApi(), time, null, "Planning",
+                    time + 3600.seconds, time + 7200.seconds, "UTC", null,
+                )
+                fun event(id: String, content: EventContentDTO) = fixture.plainEvent(
+                    id, kotlinx.serialization.json.Json.encodeToString(EventContentDTO.serializer(), content),
+                )
+                val create = event("create-meeting", EventContentDTO.Meeting.MeetingCreateDTO(meetingId, time, SENDER.toApi()))
+                val created = fixture.receive(listOf(create), create.id, fetchMeeting = { meeting })
+                assertIs<Either.Right<*>>(created, created.toString())
+                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
+                    assertEquals(emptyList(), PendingMeetingAlerts(runtime.database).read())
+                })
+                val events = listOf(
+                    event("invite-meeting", EventContentDTO.Meeting.MeetingMemberAddDTO(meetingId, time, SENDER.toApi())),
+                    event("update-meeting", EventContentDTO.Meeting.MeetingUpdateDTO(meetingId, time, SENDER.toApi())),
+                    event("cancel-meeting", EventContentDTO.Meeting.MeetingDeleteDTO(meetingId, time, SENDER.toApi())),
+                )
+                val received = fixture.receive(events, events.last().id, fetchMeeting = { meeting.copy(title = "Updated planning") })
+                assertIs<Either.Right<*>>(received, received.toString())
+                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
+                    val alerts = PendingMeetingAlerts(runtime.database).read()
+                    assertEquals(events.map { it.id }, alerts.map { it.eventId })
+                    assertIs<com.wire.kalium.logic.data.notification.LocalNotification.Meeting.Invite>(alerts[0])
+                    assertIs<com.wire.kalium.logic.data.notification.LocalNotification.Meeting.Update>(alerts[1])
+                    val cancelled = assertIs<com.wire.kalium.logic.data.notification.LocalNotification.Meeting.Cancel>(alerts[2])
+                    assertEquals("Updated planning", cancelled.meetingTitle)
+                    assertNotNull(cancelled.author?.name)
+                    assertNull(runtime.database.meetingDao.getMeeting(meetingId.toModel().toDao()))
+                    events.forEach { assertEquals(true, runtime.database.eventDAO.getEventById(it.id)?.isProcessed) }
+                })
+                // Reopening and replaying the processed notification cannot duplicate its durable alert.
+                assertIs<Either.Right<*>>(fixture.receive(events, events.last().id,
+                    fetchMeeting = { error("Processed events must not fetch again") }))
+                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
+                    assertEquals(3, PendingMeetingAlerts(runtime.database).read().size)
+                })
+            }
+        }
+    }
+
+    @Test
     fun isolatedNSEDoesNotAlertAcrossAnOpaqueSelfAvailabilityPayload() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->

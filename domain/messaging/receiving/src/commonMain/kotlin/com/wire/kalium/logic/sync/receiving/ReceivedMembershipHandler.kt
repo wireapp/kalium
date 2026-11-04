@@ -175,6 +175,7 @@ internal class ReceivedMembershipHandler(
             (conversation.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.let {
                 data.conversations.clearProposalTimer(it.groupId)
             }
+            data.recordMeetingCancellations(event.id, conversationId, event.dateTime, event.removedBy)
             data.meetings.deleteMeetingsByConversationId(conversationId)
         }
         if (current == null && deleted > 0) {

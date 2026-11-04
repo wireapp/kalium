@@ -3003,6 +3003,11 @@ public class UserSessionScope internal constructor(
         UnnotifiedMessageAlerts(userStorage.database, userId)
     }
 
+    /** Resume meeting alerts committed by the lightweight Apple receiver using this session's account owner. */
+    public val meetingNotificationAlerts: com.wire.kalium.logic.sync.receiving.PendingMeetingAlerts by lazy {
+        com.wire.kalium.logic.sync.receiving.PendingMeetingAlerts(userStorage.database)
+    }
+
     /** Register the identities of delivered Apple alerts before observing their canonical state. */
     public suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>): Unit =
         userStorage.database.messageDAO.rememberNotificationMessages(messages)
