@@ -80,10 +80,8 @@ class PendingMeetingAlerts(
     fun observeChanges() = database.metadataDAO.valueByKeyFlow(KEY).map { Unit }
 
     suspend fun read(): List<LocalNotification.Meeting> = database.writeMessageEffects {
-        val records = read(metadata)
-        val current = records.filter { now() - it.time <= UnnotifiedMessageAlerts.MAX_AGE }
-        if (current != records) write(metadata, current)
-        current.sortedBy { it.time }.map { it.notification() }
+        // An old invitation may describe a future meeting. Retain it until acceptance, as the shared handlers do.
+        read(metadata).sortedBy { it.time }.map { it.notification() }
     }
 
     /** Call only after native enqueue succeeded, or the same event identity is already delivered. */

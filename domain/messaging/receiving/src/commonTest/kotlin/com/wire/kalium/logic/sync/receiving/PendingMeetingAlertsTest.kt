@@ -113,7 +113,7 @@ class PendingMeetingAlertsTest {
     }
 
     @Test
-    fun failedTransactionDoesNotLeaveAnAlertAndExpiredEventsAreRetired() = runTest {
+    fun failedTransactionDoesNotLeaveAnAlertAndOldInvitationsWaitForAcceptance() = runTest {
         withTestUserDatabase(self) { database ->
             val db = database.builder
             assertFailsWith<IllegalStateException> {
@@ -124,9 +124,12 @@ class PendingMeetingAlertsTest {
             }
             assertEquals(emptyList(), PendingMeetingAlerts(db) { time }.read())
             db.writeMessageEffects {
-                recordMeetingAlert(Event.Meeting.Update("old", meeting.meetingId.toModel(), time, null), meeting)
+                recordMeetingAlert(Event.Meeting.MemberAdd("old", meeting.meetingId.toModel(), time, null), meeting)
             }
-            assertEquals(emptyList(), PendingMeetingAlerts(db) { Instant.DISTANT_FUTURE }.read())
+            val pending = PendingMeetingAlerts(db) { Instant.DISTANT_FUTURE }
+            assertEquals("old", pending.read().single().eventId)
+            pending.acknowledge("old", meeting.meetingId.toModel())
+            assertEquals(emptyList(), pending.read())
         }
     }
 
