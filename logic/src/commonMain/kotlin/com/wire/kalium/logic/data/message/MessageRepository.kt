@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapFlowStorageRequest
+import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -591,7 +592,7 @@ internal class MessageDataSource internal constructor(
 
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(
         conversationId: ConversationId
-    ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
+    ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageNullableRequest {
         messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())
             ?.let { receiptModeMapper.fromEntityToModel(it) }
     }
