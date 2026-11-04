@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.data.conversation.folders.toFolder
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
+import com.wire.kalium.logic.data.event.Event.UserProperty.ScreenshotCensoringModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.toModel
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_RECEIPT_MODE
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
@@ -56,6 +58,11 @@ fun updateUserProperties(
                     fieldKeyValue.value != 0
                 )
 
+                WIRE_SCREENSHOT_CENSORING_MODE.key -> ScreenshotCensoringModeSet(
+                    id,
+                    fieldKeyValue.value == 1
+                )
+
                 else -> unknown(
                     id = id,
                     eventContentDTO = eventContentDTO,
@@ -69,11 +76,22 @@ fun updateUserProperties(
             folders = fieldKeyValue.value.labels.map { it.toFolder(selfUserId.domain) }
         )
 
-        is EventContentDTO.FieldUnknownValue -> unknown(
-            id = id,
-            eventContentDTO = eventContentDTO,
-            cause = "Unknown value type for key: ${eventContentDTO.key} "
-        )
+        is EventContentDTO.FieldUnknownValue -> {
+            // Some clients store the value as a JSON string (e.g. "1"), which deserializes to FieldUnknownValue
+            val numberValue = fieldKeyValue.value.toIntOrNull()
+            when {
+                key == WIRE_SCREENSHOT_CENSORING_MODE.key && numberValue != null -> ScreenshotCensoringModeSet(
+                    id,
+                    numberValue == 1
+                )
+
+                else -> unknown(
+                    id = id,
+                    eventContentDTO = eventContentDTO,
+                    cause = "Unknown value type for key: ${eventContentDTO.key} "
+                )
+            }
+        }
     }
 }
 
@@ -84,6 +102,7 @@ fun deleteUserProperties(
     return when (eventContentDTO.key) {
         WIRE_RECEIPT_MODE.key -> ReadReceiptModeSet(id, false)
         WIRE_TYPING_INDICATOR_MODE.key -> TypingIndicatorModeSet(id, true)
+        WIRE_SCREENSHOT_CENSORING_MODE.key -> ScreenshotCensoringModeSet(id, false)
         else -> unknown(
             id = id,
             eventContentDTO = eventContentDTO,
