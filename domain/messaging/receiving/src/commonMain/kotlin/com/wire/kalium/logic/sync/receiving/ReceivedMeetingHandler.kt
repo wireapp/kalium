@@ -26,6 +26,9 @@ internal suspend fun fetchReceivedMeeting(
     if (result is Either.Left && (result.value is NetworkFailure.FeatureNotSupported || result.value.isMeetingNotFound())) {
         return emptyList()
     }
+    if (result is Either.Left && result.value.canDeferNotification()) {
+        throw MeetingFetchUnavailable(com.wire.kalium.logic.sync.KaliumSyncException("Meeting fetch unavailable", result.value))
+    }
     return result.orThrow().toMeetingEntity()?.let { meeting ->
         val creatorId = meeting.creatorId.toModel()
         val profiles = if (users.user(creatorId)?.name.isNullOrBlank()) users.refresh(creatorId) else UserProfiles()

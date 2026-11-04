@@ -21,6 +21,13 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class KaliumNSEPresentationTest {
+    @Test
+    fun failedMeetingFetchCanLeaveTheTargetUnseenAfterReconcilingCommittedReminders() = runTest {
+        val received = ReceivedNotificationResult(null, stoppedReason = "MEETING_FETCH_UNAVAILABLE")
+        assertTrue(receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received, true) { false })
+        assertFalse(receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received, true) { true })
+    }
+
     private val receiver = KaliumNSEReceiver(KaliumNSEConfiguration(
         rootPath = "unused", keychainService = "unused", keychainAccessGroup = null,
         keychainAccessibility = KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK,

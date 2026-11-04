@@ -17,6 +17,7 @@ internal suspend fun <T> withConfirmedNotificationRollback(block: suspend () -> 
             if (wrappedCallback && callback is DeferredNotification) throw callback
             if (wrappedCallback && callback is NotificationOrderingBarrier) throw callback
             if (wrappedCallback && callback is NotificationAppHandoff) throw callback
+            if (wrappedCallback && callback is MeetingFetchUnavailable) throw callback
             throw failure
         }
     }

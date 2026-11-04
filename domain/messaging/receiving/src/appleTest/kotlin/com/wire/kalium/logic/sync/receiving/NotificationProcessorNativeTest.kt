@@ -171,6 +171,43 @@ import platform.Foundation.NSUUID
 
 class NotificationProcessorNativeTest {
     @Test
+    fun committedMeetingDeletionCanReconcileRemindersWhenALaterMeetingFetchFails() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(false) { fixture ->
+                fixture.releasePrepared()
+                val time = Clock.System.now()
+                val meetingId = com.wire.kalium.network.api.model.MeetingId("meeting-a", SELF.domain)
+                val laterId = com.wire.kalium.network.api.model.MeetingId("meeting-b", SELF.domain)
+                val meeting = com.wire.kalium.network.api.authenticated.meeting.MeetingDTO(
+                    meetingId, CONVERSATION_ID.toModel().toApi(), SENDER.toApi(), time, null, "Planning",
+                    time + 3600.seconds, time + 7200.seconds, "UTC", null,
+                )
+                fun event(id: String, content: EventContentDTO) = fixture.plainEvent(
+                    id, kotlinx.serialization.json.Json.encodeToString(EventContentDTO.serializer(), content),
+                )
+                val create = event("create-a", EventContentDTO.Meeting.MeetingCreateDTO(meetingId, time, SENDER.toApi()))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(create), create.id, fetchMeeting = { meeting }))
+                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
+                    runtime.database.userConfigDAO.setMeetingsEnabled(true)
+                    assertEquals(1, PendingMeetingAlerts(runtime.database).reminders().size)
+                })
+                val delete = event("delete-a", EventContentDTO.Meeting.MeetingDeleteDTO(meetingId, time, SENDER.toApi()))
+                val later = event("update-b", EventContentDTO.Meeting.MeetingUpdateDTO(laterId, time, SENDER.toApi()))
+                val result = fixture.receive(listOf(delete, later), later.id, fetchMeeting = { throw KaliumException.NoNetwork() })
+                assertIs<Either.Right<*>>(result, result.toString())
+                assertEquals("MEETING_FETCH_UNAVAILABLE", fixture.receivedStop)
+                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
+                    val meetings = PendingMeetingAlerts(runtime.database)
+                    assertEquals(emptyList(), meetings.reminders())
+                    assertEquals(meetingId.toModel(), meetings.read().single().meetingId)
+                    assertEquals(true, runtime.database.eventDAO.getEventById(delete.id)?.isProcessed)
+                    assertEquals(false, runtime.database.eventDAO.getEventById(later.id)?.isProcessed)
+                })
+            }
+        }
+    }
+
+    @Test
     fun deletingAMeetingConversationRetainsCancellationBeforeCascadeAndSkipsSelfDeletion() = runTest {
         withContext(Dispatchers.Default) {
             for (deletedBySelf in listOf(false, true)) withFixture(false) { fixture ->

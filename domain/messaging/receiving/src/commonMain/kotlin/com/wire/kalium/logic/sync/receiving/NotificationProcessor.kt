@@ -189,6 +189,10 @@ class NotificationProcessor(
                 return queueEnd.stopped("DEFERRED_ORDERING_BARRIER")
             } catch (handoff: NotificationAppHandoff) {
                 return queueEnd.stopped("LEGAL_HOLD_REQUIRES_APP", handoff.work)
+            } catch (unavailable: MeetingFetchUnavailable) {
+                // A confirmed rollback leaves earlier committed meetings safe to reconcile within this attempt's budget.
+                diagnostics?.failed(unavailable.failure)
+                return queueEnd.stopped("MEETING_FETCH_UNAVAILABLE")
             }
             currentCoroutineContext().ensureActive()
             diagnostics?.stage = "MARK_PROCESSED"

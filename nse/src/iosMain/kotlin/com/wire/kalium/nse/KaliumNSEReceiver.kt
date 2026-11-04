@@ -314,7 +314,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         targetProcessed: suspend () -> Boolean,
     ): Boolean = caughtUp == CatchUpOutcome.BUDGET || caughtUp == CatchUpOutcome.NEEDS_SLOW_SYNC || (
         (
-            received.stoppedReason == BUDGET || caughtUp == CatchUpOutcome.FAILED ||
+            received.stoppedReason == BUDGET || received.stoppedReason == "MEETING_FETCH_UNAVAILABLE" ||
+                caughtUp == CatchUpOutcome.FAILED ||
                 (received.appWorkPending == NotificationAppWork.LEGAL_HOLD && !appPresentsAlerts)
             ) && !targetProcessed()
         )
