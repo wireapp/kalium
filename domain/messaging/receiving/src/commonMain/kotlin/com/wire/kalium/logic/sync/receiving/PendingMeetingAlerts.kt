@@ -33,11 +33,12 @@ internal data class PendingMeetingAlert(
     @SerialName("time") val time: Instant,
     @SerialName("start") val start: Instant,
     @SerialName("end") val end: Instant,
+    @SerialName("authorImage") val authorImage: QualifiedIDEntity? = null,
 ) {
     enum class Kind { INVITE, UPDATE, CANCEL }
 
     fun notification(): LocalNotification.Meeting {
-        val author = author?.let { LocalNotificationMessageAuthor(it, null) }
+        val author = author?.let { LocalNotificationMessageAuthor(it, authorImage?.toModel()) }
         return when (kind) {
             Kind.INVITE -> LocalNotification.Meeting.Invite(
                 eventId,
@@ -129,7 +130,7 @@ internal suspend fun MessageEffectDAOs.recordMeetingAlert(event: Event.Meeting?,
         is Event.Meeting.Delete -> Triple(PendingMeetingAlert.Kind.CANCEL, event.dateTime, event.senderUserId)
         is Event.Meeting.Create -> return
     }
-    val author = sender?.let { users.getUserDetailsByQualifiedID(QualifiedIDEntity(it.value, it.domain))?.name }
+    val author = sender?.let { users.getUserDetailsByQualifiedID(QualifiedIDEntity(it.value, it.domain)) }
     PendingMeetingAlerts.append(
         metadata,
         PendingMeetingAlert(
@@ -138,10 +139,11 @@ internal suspend fun MessageEffectDAOs.recordMeetingAlert(event: Event.Meeting?,
             meeting = meeting.meetingId,
             conversation = meeting.conversationId,
             title = meeting.title,
-            author = author,
+            author = author?.let { it.name.orEmpty() },
             time = time,
             start = meeting.startTime,
             end = meeting.endTime,
+            authorImage = author?.previewAssetId,
         ),
     )
 }

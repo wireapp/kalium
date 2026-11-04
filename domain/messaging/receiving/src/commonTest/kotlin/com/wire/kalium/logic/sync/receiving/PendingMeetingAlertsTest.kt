@@ -4,6 +4,8 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
+import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity
@@ -21,6 +23,29 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 class PendingMeetingAlertsTest {
+    @Test
+    fun authorSnapshotKeepsQualifiedAvatarAndKnownAuthorsWithoutAName() = runTest {
+        withTestUserDatabase(self) { database ->
+            val db = database.builder
+            val image = QualifiedIDEntity("avatar", "assets.example.com")
+            db.userDAO.insertOrIgnoreIncompleteUsers(listOf(self))
+            db.userDAO.updateUser(PartialUserEntity(self, previewAssetId = image))
+            db.writeMessageEffects {
+                recordMeetingAlert(Event.Meeting.MemberAdd("unnamed", meeting.meetingId.toModel(), time, self.toModel()), meeting)
+            }
+            val expectedUnnamed = LocalNotificationMessageAuthor("", image.toModel())
+            assertEquals(expectedUnnamed, PendingMeetingAlerts(db) { time }.read().single().author)
+            db.userDAO.updateUser(PartialUserEntity(self, name = "Alex"))
+            db.writeMessageEffects {
+                recordMeetingAlert(Event.Meeting.Update("named", meeting.meetingId.toModel(), time, self.toModel()), meeting)
+                recordMeetingAlert(Event.Meeting.Delete("cancel", meeting.meetingId.toModel(), time, self.toModel()), meeting)
+            }
+            val reopened = PendingMeetingAlerts(db) { time }.read()
+            assertEquals(expectedUnnamed, reopened[0].author)
+            assertEquals(List(2) { LocalNotificationMessageAuthor("Alex", image.toModel()) }, reopened.drop(1).map { it.author })
+        }
+    }
+
     @Test
     fun conversationRemovalKeepsEachCancelledMeetingAndLeavesOtherConversationsAlone() = runTest {
         withTestUserDatabase(self) { database ->
