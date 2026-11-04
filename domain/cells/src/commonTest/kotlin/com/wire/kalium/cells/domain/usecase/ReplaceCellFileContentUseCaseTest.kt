@@ -62,6 +62,22 @@ class ReplaceCellFileContentUseCaseTest {
     }
 
     @Test
+    fun givenEmptyOrNegativeSize_whenReplacing_thenRejectWithoutReadingOrUploading() = runTest {
+        val operation = ReplaceCellFileContentUseCaseImpl(mock<CellsRepository>(), mock<CellConversationRepository>())
+        for (size in listOf(0L, -1L)) {
+            val result = operation(ConversationId("conversation", "example.com"), "file-id", "replacement.pdf".toPath(), size)
+            assertEquals(ReplaceCellFileContentFailure.InvalidFile.left(), result)
+        }
+    }
+
+    @Test
+    fun givenOneByteReplacement_whenReplacing_thenPublishSmallestNonEmptyFile() = runTest {
+        val fixture = Fixture()
+        assertTrue(fixture.replace(assetSize = 1L) is Either.Right)
+        assertEquals(1L, assertNotNull(fixture.uploaded).size)
+    }
+
+    @Test
     fun givenUploadStillRunning_whenReplacing_thenDoNotPublishOrReturn() = runTest {
         val fixture = Fixture()
         fixture.uploadGate = CompletableDeferred()
@@ -210,8 +226,8 @@ class ReplaceCellFileContentUseCaseTest {
             everySuspend { conversations.getCellName(QualifiedIDEntity("conversation", "example.com")) } returns name.right()
         }
 
-        suspend fun replace() = ReplaceCellFileContentUseCaseImpl(repository, conversations)(
-            ConversationId("conversation", "example.com"), "file-id", "replacement.pdf".toPath(), 42L,
+        suspend fun replace(assetSize: Long = 42L) = ReplaceCellFileContentUseCaseImpl(repository, conversations)(
+            ConversationId("conversation", "example.com"), "file-id", "replacement.pdf".toPath(), assetSize,
         )
     }
 

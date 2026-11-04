@@ -37,6 +37,7 @@ import kotlin.uuid.Uuid
 public interface ReplaceCellFileContentUseCase {
     /**
      * Replaces an existing file in the qualified conversation's Drive, preserving its UUID and full path.
+     * [assetSize] must be greater than zero; empty replacements are rejected before any upload.
      * The caller owns [assetPath] and must keep it available until this suspending operation returns.
      * Success means the new version is published, is the current head and has a download URL.
      * Failures after uploading may leave a draft or an already published version; callers must not blindly retry.
@@ -61,7 +62,7 @@ internal class ReplaceCellFileContentUseCaseImpl(
         assetPath: Path,
         assetSize: Long,
     ): Either<ReplaceCellFileContentFailure, NodeIdAndVersion> {
-        if (assetSize < 0) return ReplaceCellFileContentFailure.InvalidFile.left()
+        if (assetSize <= 0) return ReplaceCellFileContentFailure.InvalidFile.left()
         val cellName = conversationRepository.getCellName(QualifiedIDEntity(conversationId.value, conversationId.domain))
             .getOrElse { return ReplaceCellFileContentFailure.Other(it).left() }
         if (cellName.isNullOrBlank()) return ReplaceCellFileContentFailure.ConversationHasNoCell.left()
