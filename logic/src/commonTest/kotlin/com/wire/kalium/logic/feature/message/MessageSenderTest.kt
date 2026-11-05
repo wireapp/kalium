@@ -601,6 +601,22 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenReconnectRetry_whenNetworkDisappearsAgain_thenKeepMessagePending() {
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(sendEnvelopeWithResult = Either.Left(failure))
+        }
+        arrangement.testScope.runTest {
+            messageSender.sendPendingMessage(
+                Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID, keepPendingOnNetworkFailure = true,
+            ).shouldFail()
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+            }
+        }
+    }
+
+    @Test
     fun givenSendingOfEnvelopeFailsDueToLackOfConnection_whenSendingOutgoingMessage_thenFailureShouldBeHandledProperly() {
         // given
         val failure = NetworkFailure.NoNetworkConnection(null)

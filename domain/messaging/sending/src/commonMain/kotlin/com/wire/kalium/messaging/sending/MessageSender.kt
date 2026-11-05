@@ -45,8 +45,13 @@ interface MessageSender {
      *
      * @param conversationId
      * @param messageUuid
+     * @param keepPendingOnNetworkFailure leaves reconnect retries to the caller without marking offline failures as failed.
      */
-    suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
+    suspend fun sendPendingMessage(
+        conversationId: ConversationId,
+        messageUuid: String,
+        keepPendingOnNetworkFailure: Boolean = false,
+    ): Either<CoreFailure, Unit>
 
     /**
      * Removes an own, unedited Pending message from the persisted sending queue, serialized with sending.

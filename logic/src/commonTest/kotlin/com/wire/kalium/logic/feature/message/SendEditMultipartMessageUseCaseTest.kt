@@ -177,7 +177,9 @@ class SendEditMultipartMessageUseCaseTest {
 
             override suspend fun cancelPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean> =
                 error("Not used by edit tests")
-            override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String) = Unit.right()
+            override suspend fun sendPendingMessage(
+                conversationId: ConversationId, messageUuid: String, keepPendingOnNetworkFailure: Boolean,
+            ) = Unit.right()
             override suspend fun sendMessage(
                 message: Message.Sendable,
                 messageTarget: MessageTarget

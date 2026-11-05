@@ -353,6 +353,48 @@ class SendPendingMessagesUseCaseTest {
         }
     }
 
+    @Test
+    fun givenReconnectRetry_whenSendingText_thenPreservePendingOnNetworkFailure() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(TEXT_MESSAGE)))
+            .arrange()
+        everySuspend { arrangement.messageSender.sendPendingMessage(any(), any(), true) } returns Either.Right(Unit)
+
+        useCase(keepPendingOnNetworkFailure = true)
+
+        verifySuspend {
+            arrangement.messageSender.sendPendingMessage(TEXT_MESSAGE.conversationId, TEXT_MESSAGE.id, true)
+        }
+    }
+
+    @Test
+    fun givenReconnectRetry_whenSendingAsset_thenForwardRetryPolicy() = runTest {
+        val message = assetMessage()
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(message)))
+            .arrange()
+        everySuspend { arrangement.sendPendingAssetMessage(message, true) } returns Either.Right(Unit)
+
+        useCase(keepPendingOnNetworkFailure = true)
+
+        verifySuspend { arrangement.sendPendingAssetMessage(message, true) }
+    }
+
+    @Test
+    fun givenReconnectRetry_whenSendingEditLosesNetwork_thenKeepPending() = runTest {
+        val message = TEXT_MESSAGE.copy(editStatus = Message.EditStatus.Edited(TEST_DATE))
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(message)))
+            .withSendMessageResult(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            .arrange()
+
+        useCase(keepPendingOnNetworkFailure = true)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }
+    }
+
     private class Arrangement {
         val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)

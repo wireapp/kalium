@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -40,7 +41,8 @@ import kotlin.time.Duration.Companion.days
  * Expiry is checked only when this automatic retry runs.
  */
 public interface SendPendingMessagesUseCase {
-    public suspend operator fun invoke(): Result
+    /** When true, a reconnecting host retains messages if connectivity disappears again during retry. */
+    public suspend operator fun invoke(keepPendingOnNetworkFailure: Boolean = false): Result
 
     public sealed interface Result {
         public data object Success : Result
@@ -57,7 +59,7 @@ internal class SendPendingMessagesUseCaseImpl(
     private val clock: Clock = Clock.System,
 ) : SendPendingMessagesUseCase {
 
-    override suspend operator fun invoke(): SendPendingMessagesUseCase.Result {
+    override suspend operator fun invoke(keepPendingOnNetworkFailure: Boolean): SendPendingMessagesUseCase.Result {
         var result: SendPendingMessagesUseCase.Result = SendPendingMessagesUseCase.Result.Success
 
         messageRepository.getAllPendingMessagesFromUser(userId)
@@ -76,14 +78,16 @@ internal class SendPendingMessagesUseCaseImpl(
                         }
 
                         when (message.content) {
-                            is MessageContent.Asset -> sendPendingAssetMessage(message)
+                            is MessageContent.Asset -> sendPendingAssetMessage(message, keepPendingOnNetworkFailure)
                             is MessageContent.Text if message.editStatus is Message.EditStatus.Edited ->
-                                resendPendingTextEdit(message, message.content as MessageContent.Text)
+                                resendPendingTextEdit(message, message.content as MessageContent.Text, keepPendingOnNetworkFailure)
 
                             is MessageContent.Location,
                             is MessageContent.Multipart,
                             is MessageContent.Poll,
-                            is MessageContent.Text -> messageSender.sendPendingMessage(message.conversationId, message.id)
+                            is MessageContent.Text -> messageSender.sendPendingMessage(
+                                message.conversationId, message.id, keepPendingOnNetworkFailure,
+                            )
 
                             else -> {
                                 val contentType = message.content::class.simpleName
@@ -103,10 +107,14 @@ internal class SendPendingMessagesUseCaseImpl(
     private suspend fun resendPendingTextEdit(
         originalMessage: Message.Regular,
         originalContent: MessageContent.Text,
+        keepPendingOnNetworkFailure: Boolean,
     ) {
         val signaling = EditMessageBuilder.buildTextEditSignaling(originalMessage, originalContent)
         messageSender.sendMessage(signaling)
             .onFailure { failure ->
+                if (keepPendingOnNetworkFailure && failure is NetworkFailure.NoNetworkConnection) {
+                    return@onFailure
+                }
                 kaliumLogger.withFeatureId(SYNC)
                     .i("Failed to resend pending text edit for message ${originalMessage.id}. Failure = $failure")
                 messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
