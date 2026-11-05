@@ -134,11 +134,9 @@ internal class NotificationEffects(
             val membership = ReceivedMembershipHandler(this, persistMessage, selfUserId, options.drivePermissionsEnabled)
             val team = ReceivedTeamHandler(this, selfUserId, persistMessage)
             val federation = ReceivedFederationHandler(this, selfUserId, persistMessage, deleteFile)
-            val connection = ReceivedConnectionHandler(this, selfUserId, deleteFile)
+            val connection = ReceivedConnectionHandler(this, deleteFile)
             val replayedFederation = payload.filterIsInstance<ReceivedPayload.Federation>()
                 .associate { it.event to federation.previousMessages(it.event) }
-            val replayedConnectionWarnings = payload.filterIsInstance<ReceivedPayload.Connection>()
-                .associateWith { connection.previousWarning(it) }
             val replayedAccess = payload.filterIsInstance<ReceivedPayload.Metadata>()
                 .mapNotNull { it.event as? Event.Conversation.AccessUpdate }.associateWith { access.previous(it) }
             val replayedPromotions = payload.filterIsInstance<ReceivedPayload.MemberRole>()
@@ -161,7 +159,7 @@ internal class NotificationEffects(
                     is ReceivedPayload.DecryptionFailure -> messageHandler.failedDecryption(received.message)
                     is ReceivedPayload.Creation -> received.creation.persist(this, selfUserId, persistMessage)
                     is ReceivedPayload.OneOnOne -> {
-                        if (received.resolution.persist(this, selfUserId, persistMessage)) {
+                        if (received.resolution.persist(this, persistMessage)) {
                             messageHandler.moved(received.resolution.sources, received.resolution.target)
                         }
                     }
@@ -249,7 +247,6 @@ internal class NotificationEffects(
                             received = received,
                             requiredEarlier = requiredEarlier,
                             recreatedLater = lastCreationIndex.filterValues { it > index }.keys,
-                            previousWarning = replayedConnectionWarnings[received],
                         )
                         messageHandler.connection(received.connection)
                     }
@@ -290,7 +287,7 @@ internal class NotificationEffects(
             }
             received.profiles.persist(users, apps)
             received.resolutions.forEach { resolution ->
-                if (resolution.persist(this, selfUserId, persistMessage)) {
+                if (resolution.persist(this, persistMessage)) {
                     messageHandler.moved(resolution.sources, resolution.target)
                 }
             }
@@ -484,7 +481,6 @@ internal sealed interface ReceivedPayload {
     data class Connection(
         val connection: com.wire.kalium.persistence.dao.ConnectionEntity,
         val profiles: com.wire.kalium.logic.data.user.UserProfiles,
-        val warningId: String,
     ) : ReceivedPayload
     data class Federation(val event: Event.Federation) : ReceivedPayload
     data class MeetingUpsert(

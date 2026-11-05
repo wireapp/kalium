@@ -98,7 +98,7 @@ internal data class OneOnOneResolution(
     val protocol: SupportedProtocol,
     val payloadId: String,
 ) {
-    suspend fun persist(data: MessageEffectDAOs, self: UserId, persistMessage: PersistMessageUseCase): Boolean {
+    suspend fun persist(data: MessageEffectDAOs, persistMessage: PersistMessageUseCase): Boolean {
         // This is the app's active-conversation rule, not a receiving completion marker.
         if (checkNotNull(data.users.getUserDetailsByQualifiedID(peer.toDao())).activeOneOnOneConversationId == target) return false
         if (protocol == SupportedProtocol.MLS) {
@@ -107,22 +107,18 @@ internal data class OneOnOneResolution(
         }
         data.users.updateActiveOneOnOneConversation(peer.toDao(), target)
         if (protocol == SupportedProtocol.MLS) {
-            listOf(
-                self to MessageContent.ConversationStartedUnverifiedWarning,
-                peer to MessageContent.ConversationProtocolChanged(Conversation.Protocol.MLS)
-            ).forEachIndexed { index, (sender, content) ->
-                val message = Message.System(
-                    id = "$payloadId:one-to-one:$index",
-                    content = content,
-                    conversationId = target.toModel(),
-                    date = DateTimeUtil.currentInstant(),
-                    senderUserId = sender,
-                    status = Message.Status.Sent,
-                    visibility = Message.Visibility.VISIBLE,
-                    expirationData = null,
-                )
-                persistMessage(message).orThrow()
-            }
+            val message = Message.System(
+                // Index 1 keeps the ID that earlier versions stored after their encryption notice.
+                id = "$payloadId:one-to-one:1",
+                content = MessageContent.ConversationProtocolChanged(Conversation.Protocol.MLS),
+                conversationId = target.toModel(),
+                date = DateTimeUtil.currentInstant(),
+                senderUserId = peer,
+                status = Message.Status.Sent,
+                visibility = Message.Visibility.VISIBLE,
+                expirationData = null,
+            )
+            persistMessage(message).orThrow()
         }
         return true
     }

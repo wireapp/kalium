@@ -368,7 +368,6 @@ private fun TimelineRows.systemContent(): MessageEntityContent.System? = when (c
     MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessageEntityContent.ConversationVerifiedMLS
     MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessageEntityContent.ConversationVerifiedProteus
     MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> MessageEntityContent.ConversationProtocolChangedDuringACall
-    MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessageEntityContent.ConversationStartedUnverifiedWarning
     MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessageEntityContent.NewConversationWithCellMessage
     MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED ->
         MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage

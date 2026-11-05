@@ -268,7 +268,6 @@ class MessageTimelineTest {
             MessageEntityContent.ConversationDegradedProteus,
             MessageEntityContent.ConversationVerifiedProteus,
             MessageEntityContent.ConversationProtocolChangedDuringACall,
-            MessageEntityContent.ConversationStartedUnverifiedWarning,
             MessageEntityContent.NewConversationWithCellMessage,
             MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage,
             MessageEntityContent.CellEditorAccessMessage,

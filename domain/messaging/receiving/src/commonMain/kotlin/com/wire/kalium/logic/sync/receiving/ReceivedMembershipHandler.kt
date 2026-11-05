@@ -89,10 +89,8 @@ internal class ReceivedMembershipHandler(
             data.users.updateActiveOneOnOneConversationIfNotSet(event.members.single().id.toDao(), conversationId)
         }
         if (conversation.type.isGroup) persistMessage(event.memberAddedMessage()).orThrow()
-        if ((conversation.type.isGroup || conversation.type == ConversationEntity.Type.ONE_ON_ONE) &&
-            event.members.any { it.id == selfUserId }
-        ) {
-            if (conversation.type.isGroup && drivePermissionsEnabled && conversation.wireCell != null) {
+        if (conversation.type.isGroup && event.members.any { it.id == selfUserId }) {
+            if (drivePermissionsEnabled && conversation.wireCell != null) {
                 val selfTeam = data.users.getUserDetailsByQualifiedID(selfUserId.toDao())?.team
                 persistMessage(
                     membershipMessage(
@@ -106,23 +104,12 @@ internal class ReceivedMembershipHandler(
                     )
                 ).orThrow()
             }
-            persistMessage(
-                membershipMessage(
-                    "${event.systemMessageId}:unverified",
-                    event.conversationId,
-                    selfUserId,
-                    event.dateTime,
-                    MessageContent.ConversationStartedUnverifiedWarning
-                )
-            ).orThrow()
         }
         data.requireUnchangedLegalHold(conversationId, selfUserId.toDao())
     }
 
-    @Suppress("ReturnCount")
     private suspend fun validateCanonicalJoin(event: Event.Conversation.MemberJoin) {
-        val conversationId = event.conversationId.toDao()
-        data.messages.getMessageById(event.systemMessageId, conversationId)?.let { existing ->
+        data.messages.getMessageById(event.systemMessageId, event.conversationId.toDao())?.let { existing ->
             check(
                 existing.matchesSystemMessage(
                     event.addedBy.toDao(),
@@ -131,15 +118,6 @@ internal class ReceivedMembershipHandler(
             ) {
                 "Member join identity conflicts with stored state"
             }
-            return
-        }
-        data.messages.getMessageById("${event.systemMessageId}:unverified", conversationId)?.let { existing ->
-            check(
-                existing.matchesSystemMessage(selfUserId.toDao(), MessageEntityContent.ConversationStartedUnverifiedWarning)
-            ) {
-                "Self join identity conflicts with stored state"
-            }
-            return
         }
     }
 
