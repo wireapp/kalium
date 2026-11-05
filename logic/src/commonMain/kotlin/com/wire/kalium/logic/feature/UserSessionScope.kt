@@ -1609,6 +1609,7 @@ public class UserSessionScope internal constructor(
             incrementalSyncRepository,
             userConfigRepository,
             joinExistingMLSConversations,
+            keyPackageManager,
             userScopedLogger
         )
     }

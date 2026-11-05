@@ -24,6 +24,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -44,6 +45,7 @@ internal class JoinPendingMLSConversationsManagerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val userConfigRepository: UserConfigRepository,
     private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase,
+    private val keyPackageManager: KeyPackageManager,
     kaliumLogger: KaliumLogger,
 ) : JoinPendingMLSConversationsManager {
 
@@ -61,15 +63,19 @@ internal class JoinPendingMLSConversationsManagerImpl(
 
     private suspend fun joinPendingConversations() {
         logger.i("Joining pending MLS conversations by external commit")
+        var pendingConversations = 0
         joinExistingMLSConversations(
             keepRetryingOnFailure = true,
             allowJoinByExternalCommit = true,
             includePendingWelcome = true,
+            onProgress = { pendingConversations = it.total },
         ).flatMap {
             userConfigRepository.setShouldJoinPendingMLSConversations(false)
         }.fold(
             { logger.w("Failed to join pending MLS conversations, retrying when sync is live again: $it") },
             { logger.i("Joined pending MLS conversations") }
         )
+        // This client was left out of a group, maybe because other clients had claimed all its key packages.
+        if (pendingConversations > 0) keyPackageManager.checkKeyPackageCount()
     }
 }

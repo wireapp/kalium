@@ -45,7 +45,10 @@ internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 1.hours
 /**
  * Observes the MLS key package count and uploads new key packages when necessary.
  */
-internal interface KeyPackageManager
+internal interface KeyPackageManager {
+    /** Checks the backend key package count now, without waiting for the hourly check, and refills if needed. */
+    suspend fun checkKeyPackageCount()
+}
 
 @Suppress("LongParameterList")
 internal class KeyPackageManagerImpl(
@@ -82,7 +85,9 @@ internal class KeyPackageManagerImpl(
         }
     }
 
-    private suspend fun refillKeyPackagesIfNeeded() {
+    override suspend fun checkKeyPackageCount() = refillKeyPackagesIfNeeded(force = true)
+
+    private suspend fun refillKeyPackagesIfNeeded(force: Boolean = false) {
         timestampKeyRepository.value.hasPassed(LAST_KEY_PACKAGE_COUNT_CHECK, KEY_PACKAGE_COUNT_CHECK_DURATION)
             .flatMap { lastKeyPackageCountCheckHasPassed ->
                 val forceRefill = keyPackageCountUseCase.value(fromAPI = false).let {
@@ -92,7 +97,7 @@ internal class KeyPackageManagerImpl(
                         else -> false
                     }
                 }
-                if (lastKeyPackageCountCheckHasPassed || forceRefill) {
+                if (force || lastKeyPackageCountCheckHasPassed || forceRefill) {
                     kaliumLogger.i("Checking if we need to refill key packages")
                     transactionProvider.mlsTransaction("KeyPackageManager") { mlsContext ->
                         when (val result = refillKeyPackagesUseCase.value(mlsContext)) {

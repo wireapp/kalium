@@ -140,6 +140,23 @@ class KeyPackageManagerTests {
             }
         }
 
+    @Test
+    fun givenLastCheckWithinDuration_whenCheckingKeyPackageCount_refillKeyPackagesIsPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, keyPackageManager) = Arrangement()
+                .withLastKeyPackageCountCheck(false)
+                .withKeyPackageCountFailed()
+                .withRefillKeyPackagesUseCaseSuccessful()
+                .withUpdateLastKeyPackageCountCheckSuccessful()
+                .arrange()
+
+            keyPackageManager.checkKeyPackageCount()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.refillKeyPackagesUseCase.invoke(any())
+            }
+        }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()

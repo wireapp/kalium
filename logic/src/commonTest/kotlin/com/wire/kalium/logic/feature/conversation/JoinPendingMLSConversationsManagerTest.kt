@@ -25,7 +25,10 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.data.sync.SlowSyncProgress
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -64,6 +67,20 @@ class JoinPendingMLSConversationsManagerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(false)
         }
+        verifySuspend(VerifyMode.not) { arrangement.keyPackageManager.checkKeyPackageCount() }
+    }
+
+    @Test
+    fun givenJoinFindsPendingConversations_whenObserving_thenKeyPackageCountIsChecked() = runTest {
+        val (arrangement, manager) = Arrangement()
+            .withIncrementalSyncState(flowOf(IncrementalSyncStatus.Live))
+            .withShouldJoinPendingMLSConversations(flowOf(true))
+            .withJoinResult(Either.Right(Unit), pendingConversations = 1)
+            .arrange()
+
+        manager()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.keyPackageManager.checkKeyPackageCount() }
     }
 
     @Test
@@ -133,6 +150,7 @@ class JoinPendingMLSConversationsManagerTest {
         val incrementalSyncRepository: IncrementalSyncRepository = mock()
         val userConfigRepository: UserConfigRepository = mock(MockMode.autoUnit)
         val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase = mock()
+        val keyPackageManager: KeyPackageManager = mock(MockMode.autoUnit)
 
         fun withIncrementalSyncState(state: Flow<IncrementalSyncStatus>) = apply {
             every { incrementalSyncRepository.incrementalSyncState } returns state
@@ -142,8 +160,12 @@ class JoinPendingMLSConversationsManagerTest {
             every { userConfigRepository.observeShouldJoinPendingMLSConversations() } returns shouldJoin
         }
 
-        suspend fun withJoinResult(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend { joinExistingMLSConversations(any(), any(), any(), any()) } returns result
+        @Suppress("UNCHECKED_CAST")
+        suspend fun withJoinResult(result: Either<CoreFailure, Unit>, pendingConversations: Int = 0) = apply {
+            everySuspend { joinExistingMLSConversations(any(), any(), any(), any()) } calls {
+                (it.args[3] as suspend (SlowSyncProgress) -> Unit)(SlowSyncProgress(0, pendingConversations))
+                result
+            }
         }
 
         suspend fun arrange() = apply {
@@ -153,6 +175,7 @@ class JoinPendingMLSConversationsManagerTest {
                 incrementalSyncRepository = incrementalSyncRepository,
                 userConfigRepository = userConfigRepository,
                 joinExistingMLSConversations = joinExistingMLSConversations,
+                keyPackageManager = keyPackageManager,
                 kaliumLogger = kaliumLogger,
             )
         }
