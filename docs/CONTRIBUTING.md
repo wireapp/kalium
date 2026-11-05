@@ -70,10 +70,10 @@ make doc/test-kdocs
 ```
 
 API documentation uses Dokka 2.2.0 and is written to `build/dokka/html`. Generate it on macOS
-to resolve Apple platform types. This fork does not deploy API documentation from CI.
-Affected common documentation sets in `cryptography`, `logic`, and `cli` use JVM-backed analysis,
-retaining their declarations and display labels without changing SDK source sets or dependencies.
-Persistence's intermediate Apple documentation sets use native target artifacts to resolve the SQLite bindings of Wire's SQLDelight fork (`com.wire.sqldelight`).
+to resolve Apple platform types. The documentation Make targets temporarily enable
+`kotlin.mpp.enableCInteropCommonization` for their Gradle invocation to resolve shared Apple bindings.
+Only `cryptography/nonJsMain` uses JVM-backed documentation analysis to resolve CoreCrypto bindings.
+SDK source sets and dependencies are unchanged. CI runs the documentation check before deployment.
 
 ## Build Configuration
 
