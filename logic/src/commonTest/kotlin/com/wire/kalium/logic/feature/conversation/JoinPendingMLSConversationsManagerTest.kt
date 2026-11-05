@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import kotlin.test.Test
 
 class JoinPendingMLSConversationsManagerTest {
@@ -71,16 +72,29 @@ class JoinPendingMLSConversationsManagerTest {
     }
 
     @Test
-    fun givenJoinFindsPendingConversations_whenObserving_thenKeyPackageCountIsChecked() = runTest {
+    fun givenJoinFindsPendingConversations_whenTheCheckRaisesTheRequestAgain_thenItIsClearedWithoutAnotherPass() = runTest {
+        val shouldJoin = MutableStateFlow(true)
         val (arrangement, manager) = Arrangement()
-            .withIncrementalSyncState(flowOf(IncrementalSyncStatus.Live))
-            .withShouldJoinPendingMLSConversations(flowOf(true))
+            .withIncrementalSyncState(MutableStateFlow(IncrementalSyncStatus.Live))
+            .withShouldJoinPendingMLSConversations(shouldJoin)
             .withJoinResult(Either.Right(Unit), pendingConversations = 1)
             .arrange()
+        var checks = 0
+        // The first check finds no key packages and raises the request again.
+        everySuspend { arrangement.keyPackageManager.checkKeyPackageCount() } calls {
+            yield()
+            if (checks++ == 0) shouldJoin.value = true
+        }
+        everySuspend { arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(any()) } calls {
+            shouldJoin.value = it.args[0] as Boolean
+            Either.Right(Unit)
+        }
+        val job = launch { manager() }
+        advanceUntilIdle()
 
-        manager()
-
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.joinExistingMLSConversations(any(), any(), any(), any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.keyPackageManager.checkKeyPackageCount() }
+        job.cancel()
     }
 
     @Test
@@ -116,7 +130,7 @@ class JoinPendingMLSConversationsManagerTest {
         val (arrangement, manager) = Arrangement()
             .withIncrementalSyncState(flowOf(IncrementalSyncStatus.Live))
             .withShouldJoinPendingMLSConversations(flowOf(true))
-            .withJoinResult(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            .withJoinResult(Either.Left(NetworkFailure.NoNetworkConnection(null)), pendingConversations = 1)
             .arrange()
 
         manager()
@@ -124,6 +138,7 @@ class JoinPendingMLSConversationsManagerTest {
         verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(any())
         }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.keyPackageManager.checkKeyPackageCount() }
     }
 
     @Test

@@ -64,18 +64,20 @@ internal class JoinPendingMLSConversationsManagerImpl(
     private suspend fun joinPendingConversations() {
         logger.i("Joining pending MLS conversations by external commit")
         var pendingConversations = 0
-        joinExistingMLSConversations(
+        val joined = joinExistingMLSConversations(
             keepRetryingOnFailure = true,
             allowJoinByExternalCommit = true,
             includePendingWelcome = true,
             onProgress = { pendingConversations = it.total },
-        ).flatMap {
+        )
+        // This client was left out of a group, maybe because other clients had claimed all its key packages. Check
+        // before clearing the request: finding no key packages raises it again, and this pass has already run.
+        if (pendingConversations > 0) keyPackageManager.checkKeyPackageCount()
+        joined.flatMap {
             userConfigRepository.setShouldJoinPendingMLSConversations(false)
         }.fold(
             { logger.w("Failed to join pending MLS conversations, retrying when sync is live again: $it") },
             { logger.i("Joined pending MLS conversations") }
         )
-        // This client was left out of a group, maybe because other clients had claimed all its key packages.
-        if (pendingConversations > 0) keyPackageManager.checkKeyPackageCount()
     }
 }

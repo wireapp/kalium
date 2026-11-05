@@ -141,11 +141,9 @@ class KeyPackageManagerTests {
         }
 
     @Test
-    fun givenLastCheckWithinDuration_whenCheckingKeyPackageCount_refillKeyPackagesIsPerformed() =
+    fun whenCheckingKeyPackageCount_refillKeyPackagesIsPerformedWithoutLookingAtTheLastCheck() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, keyPackageManager) = Arrangement()
-                .withLastKeyPackageCountCheck(false)
-                .withKeyPackageCountFailed()
                 .withRefillKeyPackagesUseCaseSuccessful()
                 .withUpdateLastKeyPackageCountCheckSuccessful()
                 .arrange()
