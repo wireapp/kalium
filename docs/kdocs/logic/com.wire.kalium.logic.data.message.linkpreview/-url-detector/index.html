@@ -38,7 +38,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">8d1b12f
+        <div class="library-version" id="library-version">dbc2fbf
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
@@ -93,7 +93,7 @@
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.data.message.linkpreview</a><span class="delimiter">/</span><span class="current">UrlDetector</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Url</span><wbr><span><span>Detector</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="index.html">UrlDetector</a></div><p class="paragraph">Detects URLs in text using the AOSP Patterns.WEB_URL regex, ported to commonMain for iOS parity.</p><p class="paragraph">The regex pattern is vendored from Android Open Source Project (AOSP) to ensure byte-identical detection results across Android and iOS platforms. See docs/adr/ for source URL and revision.</p><p class="paragraph">Reference: android.util.Patterns.WEB_URL (Apache License 2.0) https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/util/Patterns.java</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="index.html">UrlDetector</a></div><p class="paragraph">Detects URLs in text using a shared regex based on AOSP Patterns.WEB_URL.</p><p class="paragraph">Uses the same pattern on Android and iOS, accepting alphabetic top-level domains without a fixed allowlist so modern domains are not truncated to a shorter hostname.</p><p class="paragraph">Reference: android.util.Patterns.WEB_URL (Apache License 2.0) https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/util/Patterns.java</p></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
