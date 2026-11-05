@@ -39,6 +39,32 @@ import kotlin.test.assertNull
 class GenerateLinkPreviewUseCaseTest {
 
     @Test
+    fun givenClaudeArticle_whenGeneratingPreview_thenFetchesCompleteUrl() = runTest {
+        val url = "https://claude.dev/blog/solving-code-review-at-anthropic/"
+        val repository = mock<LinkPreviewRepository>()
+        val userPropertyRepository = mock<UserPropertyRepository>()
+        everySuspend { repository.fetchOpenGraph(url, url) } returns Either.Right(
+            OpenGraphData(
+                title = "How the Claude Code team does code review",
+                url = url,
+                description = "Code review at Anthropic",
+                imageUrls = emptyList(),
+                siteName = "claude.dev Blog"
+            )
+        )
+        everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns true
+
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
+            .invoke("read $url")
+
+        assertNotNull(result)
+        assertEquals(url, result.url)
+        assertEquals(url, result.permanentUrl)
+        assertEquals(5, result.urlOffset)
+        verifySuspend { repository.fetchOpenGraph(url, url) }
+    }
+
+    @Test
     fun givenOpenGraphImage_whenGeneratingPreview_thenImageIsAttached() = runTest {
         val repository = mock<LinkPreviewRepository>()
         val userPropertyRepository = mock<UserPropertyRepository>()

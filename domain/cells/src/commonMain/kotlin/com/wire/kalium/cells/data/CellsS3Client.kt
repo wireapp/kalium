@@ -66,8 +66,9 @@ internal class CellsS3Client(
     private val config: CellsS3ClientConfig = CellsS3ClientConfig(),
 ) : CellsAwsClient {
 
-    // Keyed by node.uuid, which stays stable across retries of the same logical upload (see
-    // CellUploadManagerImpl.retryUpload). Lets a multipart upload resume from its last completed part
+    // Keyed by node UUID and version, which stay stable across retries of the same logical upload (see
+    // CellUploadManagerImpl.retryUpload). Different versions of one file must never reuse uploaded parts.
+    // Lets a multipart upload resume from its last completed part
     // instead of restarting after a connectivity failure. Mutex-guarded since multiple uploads can run
     // concurrently, same pattern as CellsScope's nodeServiceApiMutex.
     private val multipartUploadsMutex = Mutex()
@@ -173,13 +174,14 @@ internal class CellsS3Client(
         node: CellNodeDTO,
         onProgressUpdate: (Long) -> Unit,
     ) {
-        val resumed = multipartState(node.uuid)
+        val uploadKey = "${node.uuid}:${node.versionId}"
+        val resumed = multipartState(uploadKey)
         val uploadId = resumed?.uploadId ?: createMultipartUpload(node).also {
-            recordMultipartProgress(node.uuid, it, emptyList())
+            recordMultipartProgress(uploadKey, it, emptyList())
         }
         try {
             val completedParts = uploadParts(
-                nodeUuid = node.uuid,
+                uploadKey = uploadKey,
                 alreadyCompleted = resumed?.completedParts.orEmpty(),
                 path = path,
                 length = length,
@@ -188,34 +190,36 @@ internal class CellsS3Client(
                 onProgressUpdate = onProgressUpdate,
             )
             completeMultipartUpload(node.path, uploadId, completedParts)
-            clearMultipartState(node.uuid)
+            clearMultipartState(uploadKey)
         } catch (cause: Throwable) {
             // A connectivity failure leaves the multipart upload open server-side, with the parts already
             // sent recorded in inProgressMultipartUploads, so the next attempt resumes instead of
             // restarting. Anything else (bad request, server error, local file problem, cancellation) is
             // terminal: release the server-side upload and forget the recorded progress.
             if (!cause.isConnectivityFailure()) {
-                clearMultipartState(node.uuid)
+                clearMultipartState(uploadKey)
                 abortMultipartUpload(node.path, uploadId)
             }
             throw cause
         }
     }
 
-    private suspend fun multipartState(nodeUuid: String): MultipartUploadState? =
-        multipartUploadsMutex.withLock { inProgressMultipartUploads[nodeUuid] }
+    private suspend fun multipartState(uploadKey: String): MultipartUploadState? =
+        multipartUploadsMutex.withLock { inProgressMultipartUploads[uploadKey] }
 
-    private suspend fun recordMultipartProgress(nodeUuid: String, uploadId: String, completedParts: List<CompletedS3Part>) {
-        multipartUploadsMutex.withLock { inProgressMultipartUploads[nodeUuid] = MultipartUploadState(uploadId, completedParts) }
+    private suspend fun recordMultipartProgress(uploadKey: String, uploadId: String, completedParts: List<CompletedS3Part>) {
+        multipartUploadsMutex.withLock {
+            inProgressMultipartUploads[uploadKey] = MultipartUploadState(uploadId, completedParts)
+        }
     }
 
-    private suspend fun clearMultipartState(nodeUuid: String) {
-        multipartUploadsMutex.withLock { inProgressMultipartUploads.remove(nodeUuid) }
+    private suspend fun clearMultipartState(uploadKey: String) {
+        multipartUploadsMutex.withLock { inProgressMultipartUploads.remove(uploadKey) }
     }
 
     @Suppress("LongParameterList")
     private suspend fun uploadParts(
-        nodeUuid: String,
+        uploadKey: String,
         alreadyCompleted: List<CompletedS3Part>,
         path: Path,
         length: Long,
@@ -245,7 +249,7 @@ internal class CellsS3Client(
                 uploaded += partData.size
                 onProgressUpdate(uploaded)
                 completedParts += CompletedS3Part(partNumber, eTag)
-                recordMultipartProgress(nodeUuid, uploadId, completedParts.toList())
+                recordMultipartProgress(uploadKey, uploadId, completedParts.toList())
                 partNumber++
             }
         }

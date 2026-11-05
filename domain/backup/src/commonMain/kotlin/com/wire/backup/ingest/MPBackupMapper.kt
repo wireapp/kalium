@@ -151,6 +151,7 @@ internal class MPBackupMapper {
         id = it.id.toProtoModel(),
         name = it.name,
         lastModifiedTime = it.lastModifiedTime?.toLongMilliseconds(),
+        lastReadTime = it.lastReadTime?.toLongMilliseconds(),
     )
 
     fun mapReactionToProtobuf(it: BackupReaction): ExportedReaction = ExportedReaction(
@@ -290,7 +291,8 @@ internal class MPBackupMapper {
         BackupConversation(
             id = conversation.id.toModel(),
             name = conversation.name,
-            lastModifiedTime = conversation.lastModifiedTime?.let { BackupDateTime(it) }
+            lastModifiedTime = conversation.lastModifiedTime?.let { BackupDateTime(it) },
+            lastReadTime = conversation.lastReadTime?.let { BackupDateTime(it) },
         )
 
     private fun fromUserProtoToBackupModel(user: ExportUser) =

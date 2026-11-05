@@ -27,6 +27,7 @@ import kotlin.time.Duration
 
 internal class FakeNetworkStateObserver(
     var networkStateFlow: StateFlow<NetworkState> = MutableStateFlow(NetworkState.ConnectedWithInternet),
+    var currentNetworkFlow: StateFlow<CurrentNetwork?> = MutableStateFlow(null),
 ) : NetworkStateObserver {
 
     var reconnectWaitOverride: (suspend (Duration) -> Boolean)? = null
@@ -34,15 +35,13 @@ internal class FakeNetworkStateObserver(
     var reconnectWaitCallCount: Int = 0
         private set
 
-    private val currentNetworkFlow = MutableStateFlow<CurrentNetwork?>(null)
-
     override fun observeNetworkState(): StateFlow<NetworkState> = networkStateFlow
 
     override fun observeCurrentNetwork(): StateFlow<CurrentNetwork?> = currentNetworkFlow
 
-    override suspend fun delayUntilConnectedWithInternetAgain(delay: Duration): Boolean {
+    override suspend fun delayUntilConnectedWithInternetAgain(delay: Duration, previousNetworkId: String?): Boolean {
         reconnectWaitCallCount++
         return reconnectWaitOverride?.invoke(delay)
-            ?: super<NetworkStateObserver>.delayUntilConnectedWithInternetAgain(delay)
+            ?: super<NetworkStateObserver>.delayUntilConnectedWithInternetAgain(delay, previousNetworkId)
     }
 }

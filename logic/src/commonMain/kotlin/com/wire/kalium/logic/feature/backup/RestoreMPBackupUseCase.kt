@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.UserId
@@ -38,6 +39,7 @@ import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -50,6 +52,7 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.use
+import kotlin.time.Instant
 
 public interface RestoreMPBackupUseCase {
     /**
@@ -180,9 +183,10 @@ internal class RestoreMPBackupUseCaseImpl(
                 onProgress(processedPageCount, pager.totalPagesCount)
             }
 
+            val conversationsWithReadDate = mutableSetOf<ConversationId>()
             val failure = pager.persistUsers(onPageProcessed)
-                ?: pager.persistConversations(onPageProcessed)
-                ?: pager.persistMessages(onPageProcessed)
+                ?: pager.persistConversations(conversationsWithReadDate, onPageProcessed)
+                ?: pager.persistMessages(conversationsWithReadDate, onPageProcessed)
                 ?: pager.persistReactions(onPageProcessed)
             if (failure == null) {
                 currentCoroutineContext().ensureActive()
@@ -210,7 +214,10 @@ internal class RestoreMPBackupUseCaseImpl(
         return null
     }
 
-    private suspend fun ImportResultPager.persistConversations(onPageProcessed: suspend () -> Unit): CoreFailure? {
+    private suspend fun ImportResultPager.persistConversations(
+        conversationsWithReadDate: MutableSet<ConversationId>,
+        onPageProcessed: suspend () -> Unit,
+    ): CoreFailure? {
         while (true) {
             currentCoroutineContext().ensureActive()
             if (!conversationsPager.hasMorePages()) break
@@ -222,19 +229,23 @@ internal class RestoreMPBackupUseCaseImpl(
             }
             currentCoroutineContext().ensureActive()
             result.fold({ return it }, {})
+            conversations.filter { it.lastReadDate > Instant.UNIX_FIRST_DATE }.mapTo(conversationsWithReadDate) { it.id }
             onPageProcessed()
         }
         return null
     }
 
-    private suspend fun ImportResultPager.persistMessages(onPageProcessed: suspend () -> Unit): CoreFailure? {
+    private suspend fun ImportResultPager.persistMessages(
+        conversationsWithReadDate: Set<ConversationId>,
+        onPageProcessed: suspend () -> Unit,
+    ): CoreFailure? {
         while (true) {
             currentCoroutineContext().ensureActive()
             if (!messagesPager.hasMorePages()) break
             currentCoroutineContext().ensureActive()
             val page = messagesPager.nextPage()
             val result = withContext(NonCancellable) {
-                backupRepository.insertMessages(page.mapNotNull { it.toMessage(selfUserId) })
+                backupRepository.insertMessages(page.mapNotNull { it.toMessage(selfUserId) }, conversationsWithReadDate)
             }
             currentCoroutineContext().ensureActive()
             result.fold({ return it }, {})
