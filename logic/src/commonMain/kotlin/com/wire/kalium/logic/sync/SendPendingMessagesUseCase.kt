@@ -86,7 +86,9 @@ internal class SendPendingMessagesUseCaseImpl(
                             is MessageContent.Multipart,
                             is MessageContent.Poll,
                             is MessageContent.Text -> messageSender.sendPendingMessage(
-                                message.conversationId, message.id, keepPendingOnNetworkFailure,
+                                message.conversationId,
+                                message.id,
+                                keepPendingOnNetworkFailure,
                             )
 
                             else -> {
