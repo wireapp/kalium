@@ -39,6 +39,20 @@ import kotlin.test.assertTrue
 class BackupImportPagerTest {
 
     @Test
+    fun givenConversationTimes_whenConsuming_thenReadAndModifiedTimesSurvive() {
+        val withTimes = fakeConversation(0).copy(lastModifiedTime = BackupDateTime(42L), lastReadTime = BackupDateTime(41L))
+        val pager = BackupImportPager(
+            listOf(
+                fakeBackupPage(BackupPage.CONVERSATIONS_PREFIX + "0", withTimes),
+                fakeBackupPage(BackupPage.CONVERSATIONS_PREFIX + "1", fakeConversation(1)),
+            )
+        )
+
+        assertEquals(withTimes, pager.conversationsPager.nextPage().first())
+        assertEquals(null, pager.conversationsPager.nextPage().first().lastReadTime)
+    }
+
+    @Test
     fun givenMultiplePages_whenConsuming_thenShouldSplitBetweenDifferentContentCorrectly() {
         val expectedConversations = listOf(
             fakeConversation(0),
