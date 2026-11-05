@@ -25,7 +25,9 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCa
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.transformLatest
@@ -69,6 +71,8 @@ internal class JoinPendingMLSConversationsManagerImpl(
                     emit(Unit)
                 }
             }
+            // Without a buffer, a trigger that waits for a running join is dropped once sync stops being live.
+            .buffer(Channel.RENDEZVOUS)
             .collect { joinPendingConversations() }
     }
 
