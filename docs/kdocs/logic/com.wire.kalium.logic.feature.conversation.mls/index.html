@@ -38,11 +38,11 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">f586e8c
+        <div class="library-version" id="library-version">8d1b12f
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
-                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":logic/commonMain">common</button>
+                <button class="platform-tag platform-selector common-like" data-active="" aria-pressed="true" data-filter=":logic/commonMain">common</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
                 <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
@@ -51,7 +51,7 @@
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
-                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
                             <label class="checkbox">
                                 <input type="checkbox" class="checkbox--input" id=":logic/commonMain" data-filter=":logic/commonMain">
                                 <span class="checkbox--icon"></span>
@@ -89,182 +89,181 @@
         </nav>
         <div id="resizer" class="resizer" data-item-type="BAR"></div>
         <div id="main" data-item-type="SECTION" role="main">
-<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.feature.conversation.mls////PointingToDeclaration//-642582577">
+<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.feature.conversation.mls////PointingToDeclaration//1670827543">
   <div class="breadcrumbs"><a href="../index.html">logic</a><span class="delimiter">/</span><span class="current">com.wire.kalium.logic.feature.conversation.mls</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button><button class="section-tab" data-togglable="FUNCTION,EXTENSION_FUNCTION">Functions</button></div>
     <div class="tabs-section-body">
       <div data-togglable="TYPE">
         <h2 class="tableheader">Types</h2>
-        <div class="table"><a data-name="317283978%2FClasslikes%2F-642582577" anchor-label="MLSOneOnOneConversationResolver" id="317283978%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+        <div class="table"><a data-name="317283978%2FClasslikes%2F1670827543" anchor-label="MLSOneOnOneConversationResolver" id="317283978%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-m-l-s-one-on-one-conversation-resolver/index.html"><span>MLSOne</span><wbr><span>On</span><wbr><span>One</span><wbr><span>Conversation</span><wbr><span><span>Resolver</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="317283978%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="317283978%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-m-l-s-one-on-one-conversation-resolver/index.html">MLSOneOnOneConversationResolver</a></div><div class="brief "><p class="paragraph">Attempts to find an existing MLS-capable one-on-one conversation, or creates a new one if none is found. In case the conversation already exists, but it's not established yet (see <a href="../../logic/com.wire.kalium.logic.data.conversation/-conversation/-protocol-info/-m-l-s-capable/-group-state/-e-s-t-a-b-l-i-s-h-e-d/index.html">GroupState.ESTABLISHED</a>), it will attempt to join it, returning failure if it fails.</p></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-m-l-s-one-on-one-conversation-resolver/index.html">MLSOneOnOneConversationResolver</a></div><div class="brief "><p class="paragraph">Attempts to find an existing MLS-capable one-on-one conversation, or creates a new one if none is found. In case the conversation already exists, but it's not established yet (see <a href="../../logic/com.wire.kalium.logic.data.conversation/-conversation/-protocol-info/-m-l-s-capable/-group-state/-e-s-t-a-b-l-i-s-h-e-d/index.html">GroupState.ESTABLISHED</a>), it will attempt to join it, returning failure if it fails.</p></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="486161354%2FClasslikes%2F-642582577" anchor-label="MLSOneOnOneConversationResolverImpl" id="486161354%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+<a data-name="486161354%2FClasslikes%2F1670827543" anchor-label="MLSOneOnOneConversationResolverImpl" id="486161354%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-m-l-s-one-on-one-conversation-resolver-impl/index.html"><span>MLSOne</span><wbr><span>On</span><wbr><span>One</span><wbr><span>Conversation</span><wbr><span>Resolver</span><wbr><span><span>Impl</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="486161354%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="486161354%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-m-l-s-one-on-one-conversation-resolver-impl/index.html">MLSOneOnOneConversationResolverImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">joinExistingMLSConversationUseCase<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-join-existing-m-l-s-conversation-use-case/index.html">JoinExistingMLSConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">fetchMLSOneToOneConversation<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-fetch-m-l-s-one-to-one-conversation-use-case/index.html">FetchMLSOneToOneConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">mlsConversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-m-l-s-conversation-repository/index.html">MLSConversationRepository</a></span></span><span class="token punctuation">)</span> : <a href="-m-l-s-one-on-one-conversation-resolver/index.html">MLSOneOnOneConversationResolver</a></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-m-l-s-one-on-one-conversation-resolver-impl/index.html">MLSOneOnOneConversationResolverImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">joinExistingMLSConversationUseCase<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-join-existing-m-l-s-conversation-use-case/index.html">JoinExistingMLSConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">fetchMLSOneToOneConversation<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-fetch-m-l-s-one-to-one-conversation-use-case/index.html">FetchMLSOneToOneConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">mlsConversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-m-l-s-conversation-repository/index.html">MLSConversationRepository</a></span></span><span class="token punctuation">)</span> : <a href="-m-l-s-one-on-one-conversation-resolver/index.html">MLSOneOnOneConversationResolver</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-2116527332%2FClasslikes%2F-642582577" anchor-label="OneOnOneMigrator" id="-2116527332%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+<a data-name="-2116527332%2FClasslikes%2F1670827543" anchor-label="OneOnOneMigrator" id="-2116527332%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-one-on-one-migrator/index.html"><span>One</span><wbr><span>On</span><wbr><span>One</span><wbr><span><span>Migrator</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2116527332%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2116527332%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-one-on-one-migrator/index.html">OneOnOneMigrator</a></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-one-on-one-migrator/index.html">OneOnOneMigrator</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1276419932%2FClasslikes%2F-642582577" anchor-label="OneOnOneMigratorImpl" id="1276419932%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+<a data-name="1276419932%2FClasslikes%2F1670827543" anchor-label="OneOnOneMigratorImpl" id="1276419932%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-one-on-one-migrator-impl/index.html"><span>One</span><wbr><span>On</span><wbr><span>One</span><wbr><span>Migrator</span><wbr><span><span>Impl</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1276419932%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1276419932%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-one-on-one-migrator-impl/index.html">OneOnOneMigratorImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">getResolvedMLSOneOnOne<span class="token operator">: </span><a href="-m-l-s-one-on-one-conversation-resolver/index.html">MLSOneOnOneConversationResolver</a><span class="token punctuation">, </span></span><span class="parameter ">conversationGroupRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-group-repository/index.html">ConversationGroupRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">userRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">systemMessageInserter<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-system-message-inserter/index.html">SystemMessageInserter</a><span class="token punctuation">, </span></span><span class="parameter ">clientRemoteRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client.remote/-client-remote-repository/index.html">ClientRemoteRepository</a></span></span><span class="token punctuation">)</span> : <a href="-one-on-one-migrator/index.html">OneOnOneMigrator</a></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-one-on-one-migrator-impl/index.html">OneOnOneMigratorImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">getResolvedMLSOneOnOne<span class="token operator">: </span><a href="-m-l-s-one-on-one-conversation-resolver/index.html">MLSOneOnOneConversationResolver</a><span class="token punctuation">, </span></span><span class="parameter ">conversationGroupRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-group-repository/index.html">ConversationGroupRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">userRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">systemMessageInserter<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-system-message-inserter/index.html">SystemMessageInserter</a><span class="token punctuation">, </span></span><span class="parameter ">clientRemoteRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client.remote/-client-remote-repository/index.html">ClientRemoteRepository</a></span></span><span class="token punctuation">)</span> : <a href="-one-on-one-migrator/index.html">OneOnOneMigrator</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="974626963%2FClasslikes%2F-642582577" anchor-label="OneOnOneResolver" id="974626963%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+<a data-name="974626963%2FClasslikes%2F1670827543" anchor-label="OneOnOneResolver" id="974626963%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-one-on-one-resolver/index.html"><span>One</span><wbr><span>On</span><wbr><span>One</span><wbr><span><span>Resolver</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="974626963%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="974626963%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-one-on-one-resolver/index.html">OneOnOneResolver</a></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-one-on-one-resolver/index.html">OneOnOneResolver</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1615441581%2FClasslikes%2F-642582577" anchor-label="OneOnOneResolverImpl" id="-1615441581%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+<a data-name="-1615441581%2FClasslikes%2F1670827543" anchor-label="OneOnOneResolverImpl" id="-1615441581%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-one-on-one-resolver-impl/index.html"><span>One</span><wbr><span>On</span><wbr><span>One</span><wbr><span>Resolver</span><wbr><span><span>Impl</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1615441581%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1615441581%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-one-on-one-resolver-impl/index.html">OneOnOneResolverImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">oneOnOneProtocolSelector<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.protocol/-one-on-one-protocol-selector/index.html">OneOnOneProtocolSelector</a><span class="token punctuation">, </span></span><span class="parameter ">oneOnOneMigrator<span class="token operator">: </span><a href="-one-on-one-migrator/index.html">OneOnOneMigrator</a><span class="token punctuation">, </span></span><span class="parameter ">incrementalSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">pendingActionsRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation.mls/-pending-actions-repository/index.html">PendingActionsRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">mlsConversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-m-l-s-conversation-repository/index.html">MLSConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">maxConcurrentResolutions<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span>DEFAULT_MAX_CONCURRENT_RESOLUTIONS<span class="token punctuation">, </span></span><span class="parameter ">maxThrottleRetries<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span>DEFAULT_MAX_THROTTLE_RETRIES<span class="token punctuation">, </span></span><span class="parameter ">throttleRetryDelayMs<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator"> = </span>DEFAULT_THROTTLE_RETRY_DELAY_MS<span class="token punctuation">, </span></span><span class="parameter ">kaliumDispatcher<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.util/KaliumDispatcher///PointingToDeclaration/">KaliumDispatcher</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span> : <a href="-one-on-one-resolver/index.html">OneOnOneResolver</a></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-one-on-one-resolver-impl/index.html">OneOnOneResolverImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">oneOnOneProtocolSelector<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.protocol/-one-on-one-protocol-selector/index.html">OneOnOneProtocolSelector</a><span class="token punctuation">, </span></span><span class="parameter ">oneOnOneMigrator<span class="token operator">: </span><a href="-one-on-one-migrator/index.html">OneOnOneMigrator</a><span class="token punctuation">, </span></span><span class="parameter ">incrementalSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">pendingActionsRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation.mls/-pending-actions-repository/index.html">PendingActionsRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">mlsConversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-m-l-s-conversation-repository/index.html">MLSConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">maxConcurrentResolutions<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span>DEFAULT_MAX_CONCURRENT_RESOLUTIONS<span class="token punctuation">, </span></span><span class="parameter ">maxThrottleRetries<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span>DEFAULT_MAX_THROTTLE_RETRIES<span class="token punctuation">, </span></span><span class="parameter ">throttleRetryDelayMs<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator"> = </span>DEFAULT_THROTTLE_RETRY_DELAY_MS<span class="token punctuation">, </span></span><span class="parameter ">kaliumDispatcher<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.util/KaliumDispatcher///PointingToDeclaration/">KaliumDispatcher</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span> : <a href="-one-on-one-resolver/index.html">OneOnOneResolver</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-122359858%2FClasslikes%2F-642582577" anchor-label="RecoverPendingMLSGroupJoinsUseCase" id="-122359858%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+<a data-name="-122359858%2FClasslikes%2F1670827543" anchor-label="RecoverPendingMLSGroupJoinsUseCase" id="-122359858%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-recover-pending-m-l-s-group-joins-use-case/index.html"><span>Recover</span><wbr><span>Pending</span><wbr><span>MLSGroup</span><wbr><span>Joins</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-122359858%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-122359858%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-recover-pending-m-l-s-group-joins-use-case/index.html">RecoverPendingMLSGroupJoinsUseCase</a></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-recover-pending-m-l-s-group-joins-use-case/index.html">RecoverPendingMLSGroupJoinsUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="609454862%2FClasslikes%2F-642582577" anchor-label="RecoverPendingMLSGroupJoinsUseCaseImpl" id="609454862%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+<a data-name="609454862%2FClasslikes%2F1670827543" anchor-label="RecoverPendingMLSGroupJoinsUseCaseImpl" id="609454862%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-recover-pending-m-l-s-group-joins-use-case-impl/index.html"><span>Recover</span><wbr><span>Pending</span><wbr><span>MLSGroup</span><wbr><span>Joins</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="609454862%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="609454862%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-recover-pending-m-l-s-group-joins-use-case-impl/index.html">RecoverPendingMLSGroupJoinsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">pendingActionsRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation.mls/-pending-actions-repository/index.html">PendingActionsRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncStateObserver<span class="token operator">: </span><a href="../com.wire.kalium.logic.sync/-sync-state-observer/index.html">SyncStateObserver</a><span class="token punctuation">, </span></span><span class="parameter ">transactionProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-crypto-transaction-provider/index.html">CryptoTransactionProvider</a><span class="token punctuation">, </span></span><span class="parameter ">joinExistingMLSConversation<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-join-existing-m-l-s-conversation-use-case/index.html">JoinExistingMLSConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a></span></span><span class="token punctuation">)</span> : <a href="-recover-pending-m-l-s-group-joins-use-case/index.html">RecoverPendingMLSGroupJoinsUseCase</a></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-recover-pending-m-l-s-group-joins-use-case-impl/index.html">RecoverPendingMLSGroupJoinsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">pendingActionsRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation.mls/-pending-actions-repository/index.html">PendingActionsRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncStateObserver<span class="token operator">: </span><a href="../com.wire.kalium.logic.sync/-sync-state-observer/index.html">SyncStateObserver</a><span class="token punctuation">, </span></span><span class="parameter ">transactionProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-crypto-transaction-provider/index.html">CryptoTransactionProvider</a><span class="token punctuation">, </span></span><span class="parameter ">joinExistingMLSConversation<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-join-existing-m-l-s-conversation-use-case/index.html">JoinExistingMLSConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a></span></span><span class="token punctuation">)</span> : <a href="-recover-pending-m-l-s-group-joins-use-case/index.html">RecoverPendingMLSGroupJoinsUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-968779402%2FClasslikes%2F-642582577" anchor-label="RecoverPendingOneOnOneResolutionsUseCase" id="-968779402%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+<a data-name="-968779402%2FClasslikes%2F1670827543" anchor-label="RecoverPendingOneOnOneResolutionsUseCase" id="-968779402%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-recover-pending-one-on-one-resolutions-use-case/index.html"><span>Recover</span><wbr><span>Pending</span><wbr><span>One</span><wbr><span>On</span><wbr><span>One</span><wbr><span>Resolutions</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-968779402%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-968779402%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-recover-pending-one-on-one-resolutions-use-case/index.html">RecoverPendingOneOnOneResolutionsUseCase</a></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-recover-pending-one-on-one-resolutions-use-case/index.html">RecoverPendingOneOnOneResolutionsUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1566367562%2FClasslikes%2F-642582577" anchor-label="RecoverPendingOneOnOneResolutionsUseCaseImpl" id="-1566367562%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+<a data-name="-1566367562%2FClasslikes%2F1670827543" anchor-label="RecoverPendingOneOnOneResolutionsUseCaseImpl" id="-1566367562%2FClasslikes%2F1670827543" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-recover-pending-one-on-one-resolutions-use-case-impl/index.html"><span>Recover</span><wbr><span>Pending</span><wbr><span>One</span><wbr><span>On</span><wbr><span>One</span><wbr><span>Resolutions</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1566367562%2FClasslikes%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1566367562%2FClasslikes%2F1670827543"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-recover-pending-one-on-one-resolutions-use-case-impl/index.html">RecoverPendingOneOnOneResolutionsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">pendingActionsRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation.mls/-pending-actions-repository/index.html">PendingActionsRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncStateObserver<span class="token operator">: </span><a href="../com.wire.kalium.logic.sync/-sync-state-observer/index.html">SyncStateObserver</a><span class="token punctuation">, </span></span><span class="parameter ">transactionProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-crypto-transaction-provider/index.html">CryptoTransactionProvider</a><span class="token punctuation">, </span></span><span class="parameter ">oneOnOneResolver<span class="token operator">: </span><a href="-one-on-one-resolver/index.html">OneOnOneResolver</a></span></span><span class="token punctuation">)</span> : <a href="-recover-pending-one-on-one-resolutions-use-case/index.html">RecoverPendingOneOnOneResolutionsUseCase</a></div></div>                  </div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-recover-pending-one-on-one-resolutions-use-case-impl/index.html">RecoverPendingOneOnOneResolutionsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">pendingActionsRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation.mls/-pending-actions-repository/index.html">PendingActionsRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncStateObserver<span class="token operator">: </span><a href="../com.wire.kalium.logic.sync/-sync-state-observer/index.html">SyncStateObserver</a><span class="token punctuation">, </span></span><span class="parameter ">transactionProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-crypto-transaction-provider/index.html">CryptoTransactionProvider</a><span class="token punctuation">, </span></span><span class="parameter ">oneOnOneResolver<span class="token operator">: </span><a href="-one-on-one-resolver/index.html">OneOnOneResolver</a></span></span><span class="token punctuation">)</span> : <a href="-recover-pending-one-on-one-resolutions-use-case/index.html">RecoverPendingOneOnOneResolutionsUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="EXTENSION_FUNCTION">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="1254988164%2FFunctions%2F1670827543" anchor-label="isRetryableOnForeground" id="1254988164%2FFunctions%2F1670827543" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-retryable-on-foreground.html"><span>is</span><wbr><span>Retryable</span><wbr><span>On</span><wbr><span><span>Foreground</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1254988164%2FFunctions%2F1670827543"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><span data-unresolved-link="com.wire.kalium.common.error/CoreFailure///PointingToDeclaration/">CoreFailure</span><span class="token punctuation">.</span><a href="is-retryable-on-foreground.html"><span class="token function">isRetryableOnForeground</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div><div class="brief "><p class="paragraph">Whether a failed 1:1 resolution may succeed later, for example once the other user has key packages again, so it is worth retrying on the next foreground.</p></div></div></div>
                 </div>
               </div>
             </div>

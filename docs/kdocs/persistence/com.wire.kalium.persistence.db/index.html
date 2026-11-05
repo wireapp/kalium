@@ -38,7 +38,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">f586e8c
+        <div class="library-version" id="library-version">8d1b12f
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
@@ -131,7 +131,24 @@
     <div class="tabs-section-body">
       <div data-togglable="TYPE">
         <h2 class="tableheader">Types</h2>
-        <div class="table"><a data-name="1052967551%2FClasslikes%2F1303495216" anchor-label="AppleWriteAccessSqlDriver" id="1052967551%2FClasslikes%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+        <div class="table"><a data-name="-1807508905%2FClasslikes%2F1303495216" anchor-label="AppleSuspensionSqlDriver" id="-1807508905%2FClasslikes%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-apple-suspension-sql-driver/index.html"><span>Apple</span><wbr><span>Suspension</span><wbr><span>Sql</span><wbr><span><span>Driver</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1807508905%2FClasslikes%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-apple-suspension-sql-driver/index.html">AppleSuspensionSqlDriver</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">, </span></span><span class="parameter ">databaseKind<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">diagnostics<span class="token operator">: </span><a href="-database-operation-diagnostics/index.html">DatabaseOperationDiagnostics</a><span class="token operator"> = </span>SuspensionDatabaseOperations</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span></div><div class="brief "><p class="paragraph">Observes API operations, including standalone reads outside account write admission. These are not VFS lock counts. Native synchronous results stay synchronous. Async results remain outstanding until await completes; a transaction stays outstanding until SQLDelight's commit/rollback callback, or an observed post-commit listener failure. If native transaction end fails, its missing end remains visible rather than claiming release.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1052967551%2FClasslikes%2F1303495216" anchor-label="AppleWriteAccessSqlDriver" id="1052967551%2FClasslikes%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
@@ -143,7 +160,24 @@
                 <div class="title">
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-apple-write-access-sql-driver/index.html">AppleWriteAccessSqlDriver</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">, </span></span><span class="parameter ">writes<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.util/AccountResourceAccess///PointingToDeclaration/">AccountResourceAccess</span></span></span><span class="token punctuation">)</span> : <span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span></div><div class="brief "><p class="paragraph">Keeps NativeSqliteDriver's WAL reader pool available while account writes are paused. Transactions keep admission until SQLDelight reports commit or rollback, including nested work. A failed native transaction end must not release ownership through a finally block.</p></div></div>                  </div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-apple-write-access-sql-driver/index.html">AppleWriteAccessSqlDriver</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">, </span></span><span class="parameter ">writes<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.util/AccountResourceAccess///PointingToDeclaration/">AccountResourceAccess</span></span></span><span class="token punctuation">)</span> : <span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span></div><div class="brief "><p class="paragraph">Keeps the driver alive while pausing database access before process suspension. Transactions keep admission until SQLDelight reports commit or rollback, including nested work. A failed native transaction end must not release ownership through a finally block.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="455494038%2FClasslikes%2F1303495216" anchor-label="DatabaseOperationDiagnostics" id="455494038%2FClasslikes%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-database-operation-diagnostics/index.html"><span>Database</span><wbr><span>Operation</span><wbr><span><span>Diagnostics</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="455494038%2FClasslikes%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-database-operation-diagnostics/index.html">DatabaseOperationDiagnostics</a></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -721,19 +755,19 @@
               </div>
             </div>
           </div>
-<a data-name="1908150559%2FFunctions%2F1303495216" anchor-label="nativeDatabaseDriver" id="1908150559%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+<a data-name="-1120825404%2FFunctions%2F1303495216" anchor-label="nativeDatabaseDriver" id="-1120825404%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="native-database-driver.html"><span>native</span><wbr><span>Database</span><wbr><span><span>Driver</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1908150559%2FFunctions%2F1303495216"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1120825404%2FFunctions%2F1303495216"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><a href="native-database-driver.html"><span class="token function">nativeDatabaseDriver</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">configuration<span class="token operator">: </span><span data-unresolved-link="co.touchlab.sqliter/DatabaseConfiguration///PointingToDeclaration/">DatabaseConfiguration</span><span class="token punctuation">, </span></span><span class="parameter ">maxReaderConnections<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span></div><div class="brief "><p class="paragraph">Track connection creation, including connections that fail before SQLDelight registers them.</p></div></div>                  </div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><a href="native-database-driver.html"><span class="token function">nativeDatabaseDriver</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">configuration<span class="token operator">: </span><span data-unresolved-link="co.touchlab.sqliter/DatabaseConfiguration///PointingToDeclaration/">DatabaseConfiguration</span><span class="token punctuation">, </span></span><span class="parameter ">maxReaderConnections<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">databaseKind<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator"> = </span><span class="token string">"user_database"</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span></div><div class="brief "><p class="paragraph">Track connection creation, including connections that fail before SQLDelight registers them.</p></div></div>                  </div>
                 </div>
               </div>
             </div>

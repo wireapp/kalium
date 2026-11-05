@@ -1,0 +1,281 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>AppleSuspensionDiagnostics</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../index.html" tabindex="1">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">8d1b12f
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector native-like" data-active="" aria-pressed="true" data-filter=":core:logger/appleMain">apple</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":core:logger/appleMain" data-filter=":core:logger/appleMain">
+                                <span class="checkbox--icon"></span>
+                                apple
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="logger::com.wire.kalium.logger/AppleSuspensionDiagnostics///PointingToDeclaration//-737479462">
+  <div class="breadcrumbs"><a href="../../index.html">logger</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logger</a><span class="delimiter">/</span><span class="current">AppleSuspensionDiagnostics</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Apple</span><wbr><span>Suspension</span><wbr><span><span>Diagnostics</span></span></h1>
+    <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+      <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">object </span><a href="index.html">AppleSuspensionDiagnostics</a></div><p class="paragraph">Bounded, process-local observations for investigating suspension with shared files open.</p><p class="paragraph">This writes directly to Apple's unified log, never through a file logger. Labels use a closed vocabulary; callers must not pass paths, SQL, account identities or exception messages. Unknown labels become <code class="lang-kotlin">other</code>. Database spans measure API operations, not SQLite VFS locks. A lifecycle stage does not establish that the process may execute, that it has suspended, or that its files are safe for suspension. Delivery is best effort.</p></div>    </div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="FUNCTION">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="325444238%2FFunctions%2F-737479462" anchor-label="abandoned" id="325444238%2FFunctions%2F-737479462" data-filterable-set=":core:logger/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="abandoned.html"><span><span>abandoned</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="325444238%2FFunctions%2F-737479462"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="abandoned.html"><span class="token function">abandoned</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">token<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Retire an unsuccessful attempt on a descriptor that stays open. Never clears HELD or UNKNOWN.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1005026924%2FFunctions%2F-737479462" anchor-label="acquired" id="1005026924%2FFunctions%2F-737479462" data-filterable-set=":core:logger/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="acquired.html"><span><span>acquired</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1005026924%2FFunctions%2F-737479462"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="acquired.html"><span class="token function">acquired</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">token<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token punctuation">, </span></span><span class="parameter ">result<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">error<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span><span class="token constant">0</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">POSIX result zero means acquired; a failed attempt never establishes ownership.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1175925617%2FFunctions%2F-737479462" anchor-label="beginDatabaseOperation" id="1175925617%2FFunctions%2F-737479462" data-filterable-set=":core:logger/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="begin-database-operation.html"><span>begin</span><wbr><span>Database</span><wbr><span><span>Operation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1175925617%2FFunctions%2F-737479462"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="begin-database-operation.html"><span class="token function">beginDatabaseOperation</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">databaseKind<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">operation<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="230357695%2FFunctions%2F-737479462" anchor-label="beginLock" id="230357695%2FFunctions%2F-737479462" data-filterable-set=":core:logger/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="begin-lock.html"><span>begin</span><wbr><span><span>Lock</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="230357695%2FFunctions%2F-737479462"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="begin-lock.html"><span class="token function">beginLock</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">kind<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">operation<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">descriptor<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span>-1</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2015581322%2FFunctions%2F-737479462" anchor-label="closed" id="2015581322%2FFunctions%2F-737479462" data-filterable-set=":core:logger/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="closed.html"><span><span>closed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2015581322%2FFunctions%2F-737479462"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="closed.html"><span class="token function">closed</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">token<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token punctuation">, </span></span><span class="parameter ">result<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">error<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span><span class="token constant">0</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">A failed or interrupted close leaves UNKNOWN; callers must not retry close for diagnostics.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-632567308%2FFunctions%2F-737479462" anchor-label="endDatabaseOperation" id="-632567308%2FFunctions%2F-737479462" data-filterable-set=":core:logger/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="end-database-operation.html"><span>end</span><wbr><span>Database</span><wbr><span><span>Operation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-632567308%2FFunctions%2F-737479462"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="end-database-operation.html"><span class="token function">endDatabaseOperation</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">token<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token punctuation">, </span></span><span class="parameter ">outcome<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-230460427%2FFunctions%2F-737479462" anchor-label="setBackgrounded" id="-230460427%2FFunctions%2F-737479462" data-filterable-set=":core:logger/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-backgrounded.html"><span>set</span><wbr><span><span>Backgrounded</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-230460427%2FFunctions%2F-737479462"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-backgrounded.html"><span class="token function">setBackgrounded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">backgrounded<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1133855859%2FFunctions%2F-737479462" anchor-label="snapshot" id="-1133855859%2FFunctions%2F-737479462" data-filterable-set=":core:logger/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="snapshot.html"><span><span>snapshot</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1133855859%2FFunctions%2F-737479462"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="snapshot.html"><span class="token function">snapshot</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">stage<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="518527681%2FFunctions%2F-737479462" anchor-label="unlocked" id="518527681%2FFunctions%2F-737479462" data-filterable-set=":core:logger/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="unlocked.html"><span><span>unlocked</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="518527681%2FFunctions%2F-737479462"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:logger/appleMain" data-filterable-set=":core:logger/appleMain" data-active="" data-toggle=":core:logger/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:logger/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="unlocked.html"><span class="token function">unlocked</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">token<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token punctuation">, </span></span><span class="parameter ">result<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">error<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span><span class="token constant">0</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
