@@ -38,8 +38,9 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
 
-// The duration in hours after which we should re-check key package count.
-internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
+// Other clients claim this client's key packages without the local count changing, so check the backend count at the
+// first live sync an hour after the last check.
+internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 1.hours
 
 /**
  * Observes the MLS key package count and uploads new key packages when necessary.
