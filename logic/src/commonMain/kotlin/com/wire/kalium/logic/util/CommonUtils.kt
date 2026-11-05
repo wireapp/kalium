@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.util
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.time.Duration
@@ -83,17 +82,4 @@ public fun Int?.isGreaterThan(other: Int?): Boolean {
         returns(true) implies (other != null)
     }
     return this is Int && other is Int && this > other
-}
-
-/**
- * Convenience method to compute a {K, Set<V>} map mutating the collection with f() if the key is present.
- */
-internal fun <K, V> ConcurrentMutableMap<K, MutableSet<V>>.safeComputeAndMutateSetValue(key: K, f: () -> V): MutableSet<V> {
-    return this.block {
-        val values = if (this.containsKey(key)) this[key]!! else mutableSetOf()
-
-        values.add(f())
-        this[key] = values
-        return@block values
-    }
 }
