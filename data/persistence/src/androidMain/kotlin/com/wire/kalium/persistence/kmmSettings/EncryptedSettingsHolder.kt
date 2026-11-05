@@ -20,10 +20,16 @@ package com.wire.kalium.persistence.kmmSettings
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
+import com.wire.kalium.persistence.kaliumLogger
+import java.io.IOException
+import java.security.GeneralSecurityException
+import java.security.ProviderException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
@@ -41,47 +47,71 @@ internal actual fun buildSettings(
 
 internal fun buildSharedPreferences(
     options: SettingOptions,
-    param: EncryptedSettingsPlatformParam
+    param: EncryptedSettingsPlatformParam,
+    masterKeyBuilder: (Context, String) -> MasterKey = { context, alias -> getOrCreateMasterKey(context, alias) },
+    preferencesBuilder: (Context, String, MasterKey) -> SharedPreferences = ::createEncryptedSharedPreferences
 ): SharedPreferences = synchronized(lock) {
     if (options.shouldEncryptData) {
-        encryptedSharedPref(options, param, false)
+        val masterKey = masterKeyBuilder(param.appContext, options.keyAlias())
+        encryptedSharedPref {
+            preferencesBuilder(param.appContext, options.fileName, masterKey)
+        }
     } else {
         param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
     }
 }
 
-private fun getOrCreateMasterKey(
+@Suppress("TooGenericExceptionCaught")
+internal fun getOrCreateMasterKey(
     context: Context,
-    keyAlias: String
-): MasterKey =
-    MasterKey
-        .Builder(context, keyAlias)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .setRequestStrongBoxBacked(true)
-        .build()
+    keyAlias: String,
+    strongBoxAvailable: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE),
+    keyBuilder: (Boolean) -> MasterKey = { requestStrongBox ->
+        MasterKey.Builder(context, keyAlias)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .setRequestStrongBoxBacked(requestStrongBox)
+            .build()
+    }
+): MasterKey {
+    if (!strongBoxAvailable) return keyBuilder(false)
 
-private fun encryptedSharedPref(
-    options: SettingOptions,
-    param: EncryptedSettingsPlatformParam,
-    isRetry: Boolean
-): SharedPreferences {
-    @Suppress("TooGenericExceptionCaught")
     return try {
-        val masterKey = getOrCreateMasterKey(param.appContext, options.keyAlias())
-        EncryptedSharedPreferences.create(
-            param.appContext,
-            options.fileName,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-    } catch (e: Exception) {
-        if (isRetry) {
-            throw e
-        } else runBlocking {
-            delay(RETRY_DELAY)
-            encryptedSharedPref(options, param, true)
+        keyBuilder(true)
+    } catch (strongBoxFailure: Exception) {
+        if (strongBoxFailure !is GeneralSecurityException &&
+            strongBoxFailure !is ProviderException &&
+            strongBoxFailure !is IOException
+        ) {
+            throw strongBoxFailure
         }
+        // Provider messages can contain aliases or other identifying information.
+        kaliumLogger.w("StrongBox master-key initialization failed; retrying with regular AndroidKeyStore")
+        try {
+            keyBuilder(false)
+        } catch (fallbackFailure: Exception) {
+            if (fallbackFailure !== strongBoxFailure) fallbackFailure.addSuppressed(strongBoxFailure)
+            throw fallbackFailure
+        }
+    }
+}
+
+private fun createEncryptedSharedPreferences(context: Context, fileName: String, masterKey: MasterKey): SharedPreferences =
+    EncryptedSharedPreferences.create(
+        context,
+        fileName,
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+@Suppress("TooGenericExceptionCaught")
+private fun encryptedSharedPref(createPreferences: () -> SharedPreferences): SharedPreferences = try {
+    createPreferences()
+} catch (_: Exception) {
+    runBlocking {
+        delay(RETRY_DELAY)
+        createPreferences()
     }
 }
 
