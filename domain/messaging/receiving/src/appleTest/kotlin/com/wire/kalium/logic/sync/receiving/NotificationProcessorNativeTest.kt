@@ -250,6 +250,7 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 val time = Clock.System.now()
                 val meetingId = com.wire.kalium.network.api.model.MeetingId("meeting", SELF.domain)
+                val avatar = QualifiedIDEntity("author-avatar", "assets.example.com")
                 val meeting = com.wire.kalium.network.api.authenticated.meeting.MeetingDTO(
                     meetingId, CONVERSATION_ID.toModel().toApi(), SENDER.toApi(), time, null, "Planning",
                     time + 3600.seconds, time + 7200.seconds, "UTC", null,
@@ -262,6 +263,9 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(created, created.toString())
                 assertIs<Either.Right<Unit>>(fixture.open { runtime ->
                     assertEquals(emptyList(), PendingMeetingAlerts(runtime.database).read())
+                    runtime.database.userDAO.updateUser(com.wire.kalium.persistence.dao.PartialUserEntity(
+                        SENDER.toDao(), previewAssetId = avatar,
+                    ))
                 })
                 val events = listOf(
                     event("invite-meeting", EventContentDTO.Meeting.MeetingMemberAddDTO(meetingId, time, SENDER.toApi())),
@@ -278,6 +282,7 @@ class NotificationProcessorNativeTest {
                     val cancelled = assertIs<com.wire.kalium.logic.data.notification.LocalNotification.Meeting.Cancel>(alerts[2])
                     assertEquals("Updated planning", cancelled.meetingTitle)
                     assertNotNull(cancelled.author?.name)
+                    assertEquals(avatar.toModel(), cancelled.author?.imageUri)
                     assertNull(runtime.database.meetingDao.getMeeting(meetingId.toModel().toDao()))
                     events.forEach { assertEquals(true, runtime.database.eventDAO.getEventById(it.id)?.isProcessed) }
                 })

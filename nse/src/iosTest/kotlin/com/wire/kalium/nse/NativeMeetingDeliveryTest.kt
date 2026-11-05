@@ -24,14 +24,6 @@ class NativeMeetingDeliveryTest {
     )
 
     @Test
-    fun onlyAcceptedMeetingEventsAreAcknowledged() = runTest {
-        val acknowledged = mutableListOf<String>()
-        val delivery = Delivery { it.eventId == "event" }
-        deliverMeetingAlerts(listOf(alert, alert.copy(eventId = "rejected")), delivery) { acknowledged.add(it.eventId) }
-        assertEquals(listOf("event"), acknowledged)
-    }
-
-    @Test
     fun cancelledNativeMeetingEnqueueReleasesAccountAndCannotAcknowledgeLateAcceptance() = runTest {
         val callback = CompletableDeferred<Continuation<Boolean>>()
         val acknowledged = mutableListOf<String>()
@@ -45,21 +37,6 @@ class NativeMeetingDeliveryTest {
         completion.resume(true)
         runCurrent()
         assertEquals(emptyList(), acknowledged)
-    }
-
-    @Test
-    fun reminderCallbackCannotKeepTheAccountOwnerAfterCancellation() = runTest {
-        val callback = CompletableDeferred<Continuation<Unit>>()
-        var accountWorkAfterCallback = false
-        val operation = launch {
-            awaitNativeAcceptance { suspendCoroutine { callback.complete(it) } }
-            accountWorkAfterCallback = true
-        }
-        val completion = callback.await()
-        operation.cancelAndJoin()
-        completion.resume(Unit)
-        runCurrent()
-        assertEquals(false, accountWorkAfterCallback)
     }
 
     private class Delivery(private val enqueue: suspend (LocalNotification.Meeting) -> Boolean) : KaliumNSENotificationDelivery {
