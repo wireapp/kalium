@@ -8543,7 +8543,7 @@ class NotificationProcessorNativeTest {
                             com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member), CONVERSATION_ID)
                     // An existing system message does not prove metadata or membership is complete.
                     runtime.database.messageDAO.insertOrIgnoreMessages(listOf(MessageEntity.System(
-                        id = "${CONVERSATION_ID.toModel()}:$TIME:creation:1",
+                        id = "${CONVERSATION_ID.toModel()}:$TIME:creation:0",
                         content = MessageEntityContent.ConversationCreated,
                         conversationId = CONVERSATION_ID,
                         date = TIME,

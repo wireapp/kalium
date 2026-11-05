@@ -108,8 +108,7 @@ internal data class OneOnOneResolution(
         data.users.updateActiveOneOnOneConversation(peer.toDao(), target)
         if (protocol == SupportedProtocol.MLS) {
             val message = Message.System(
-                // Index 1 keeps the ID that earlier versions stored after their encryption notice.
-                id = "$payloadId:one-to-one:1",
+                id = "$payloadId:one-to-one",
                 content = MessageContent.ConversationProtocolChanged(Conversation.Protocol.MLS),
                 conversationId = target.toModel(),
                 date = DateTimeUtil.currentInstant(),

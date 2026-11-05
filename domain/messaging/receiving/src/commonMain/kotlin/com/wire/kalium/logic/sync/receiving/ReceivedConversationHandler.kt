@@ -494,8 +494,7 @@ internal data class ConversationCreation(
         if (refreshMembers && conversation.type.isGroup) data.members.updateFullMemberList(members, conversation.id)
         else data.members.insertMembersWithQualifiedId(members, conversation.id)
         if (event != null && createMessages) {
-            // Index 0 was the stored encryption notice; later IDs stay as earlier versions stored them.
-            var index = 1
+            var index = 0
             val creator = NewGroupConversationSystemMessagesCreatorImpl(
                 PersistMessageUseCase { message ->
                     check(message is Message.System)
