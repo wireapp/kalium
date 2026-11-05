@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
@@ -55,7 +56,8 @@ internal class MemberJoinEventHandlerImpl(
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val selfUserId: UserId,
     private val fetchConversation: FetchConversationUseCase,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val userConfigRepository: UserConfigRepository,
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -108,6 +110,7 @@ internal class MemberJoinEventHandlerImpl(
                             }
                             addMemberAddedSystemMessage(event)
                             addUnverifiedWarningSystemMessageIfNeeded(event)
+                            requestPendingMLSJoinIfNeeded(event, conversation)
                         }
 
                         Conversation.Type.Self,
@@ -148,5 +151,19 @@ internal class MemberJoinEventHandlerImpl(
 
     private suspend fun addMemberAddedSystemMessage(event: Event.Conversation.MemberJoin) {
         persistMessage(event.memberAddedMessage())
+    }
+
+    /**
+     * The adder sends this client a Welcome after the member-join event, unless it had no key package for it.
+     * Flag the group so that, if no Welcome arrives, the app joins it by external commit instead of waiting for
+     * the next key package check.
+     */
+    private suspend fun requestPendingMLSJoinIfNeeded(event: Event.Conversation.MemberJoin, conversation: Conversation) {
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable ?: return
+        if (event.members.none { it.id == selfUserId } ||
+            protocol.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+        ) return
+        userConfigRepository.setShouldJoinPendingMLSConversations(true)
+            .onFailure { logger.w("Failed to request joining pending MLS conversations: $it") }
     }
 }

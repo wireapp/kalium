@@ -37,9 +37,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 class JoinPendingMLSConversationsManagerTest {
 
@@ -126,6 +128,28 @@ class JoinPendingMLSConversationsManagerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversations(any(), any(), any(), any())
         }
+        job.cancel()
+    }
+
+    @Test
+    fun givenSyncLeavesLiveDuringWelcomeGracePeriod_whenObserving_thenJoinWaitsForAFullGracePeriodAgain() = runTest {
+        val syncState = MutableStateFlow<IncrementalSyncStatus>(IncrementalSyncStatus.Live)
+        val (arrangement, manager) = Arrangement()
+            .withIncrementalSyncState(syncState)
+            .withShouldJoinPendingMLSConversations(flowOf(true))
+            .withJoinResult(Either.Right(Unit))
+            .arrange()
+        val job = launch { manager() }
+
+        advanceTimeBy(9.seconds)
+        syncState.value = IncrementalSyncStatus.FetchingPendingEvents
+        advanceTimeBy(1.seconds)
+        syncState.value = IncrementalSyncStatus.Live
+        advanceTimeBy(9.seconds)
+        verifySuspend(VerifyMode.not) { arrangement.joinExistingMLSConversations(any(), any(), any(), any()) }
+
+        advanceUntilIdle()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.joinExistingMLSConversations(any(), any(), any(), any()) }
         job.cancel()
     }
 
