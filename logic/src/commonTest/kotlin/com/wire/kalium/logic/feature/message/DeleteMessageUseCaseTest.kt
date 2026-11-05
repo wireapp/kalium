@@ -56,6 +56,10 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
+import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -64,6 +68,38 @@ import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
 class DeleteMessageUseCaseTest {
+    @Test
+    fun givenSyncPending_whenDeletingSentText_thenWaitBeforeSendingDeletionSignal() = runTest {
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withTextMessage(Message.Status.Sent)
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
+            .withSendMessageSucceed()
+            .withMessageRepositoryMarkMessageAsDeletedSucceed()
+            .arrange()
+        val sync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
+        every { arrangement.slowSyncRepository.slowSyncStatus } returns sync.asStateFlow()
+        val deleting = launch { useCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).toEither().shouldSucceed() }
+        runCurrent()
+        assertFalse(deleting.isCompleted)
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+        sync.value = SlowSyncStatus.Complete
+        deleting.join()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenSyncPending_whenDeletingOwnPendingText_thenCancelBeforeSyncCompletes() = runTest {
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher).withOwnPendingMessage().arrange()
+        val sync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
+        every { arrangement.slowSyncRepository.slowSyncStatus } returns sync.asStateFlow()
+        val deleting = launch { useCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).toEither().shouldSucceed() }
+        runCurrent()
+        assertTrue(deleting.isCompleted)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.cancelPendingMessage(any(), any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
     @Test
     fun givenOfflineEditOfSentMessage_whenDeletingForMe_thenRequireDeletionSignal() = runTest {
         val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
@@ -162,6 +198,81 @@ class DeleteMessageUseCaseTest {
             arrangement.messageRepository.markMessageAsDeleted(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
         }
         verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.deleteMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenOwnPendingMessage_whenDeletingForEveryone_thenRemoveFromQueueWithoutNetwork() = runTest {
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withCompletedSlowSync()
+            .withOwnPendingMessage()
+            .arrange()
+        everySuspend { arrangement.messageSender.sendMessage(any(), any()) } returns
+            Either.Left(NetworkFailure.NoNetworkConnection(null))
+
+        useCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).toEither().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.cancelPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageSender.sendMessage(any(), any())
+            arrangement.messageRepository.markMessageAsDeleted(any(), any())
+        }
+    }
+
+    @Test
+    fun givenSendingWonRace_whenCancellingPendingForEveryone_thenSendDeleteForEveryoneSignal() = runTest {
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withCompletedSlowSync()
+            .withOwnPendingMessage()
+            .withCurrentClientId(SELF_CLIENT_ID)
+            .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
+            .withSendMessageSucceed()
+            .withMessageRepositoryMarkMessageAsDeletedSucceed()
+            .arrange()
+        everySuspend { arrangement.messageSender.cancelPendingMessage(any(), any()) } returns Either.Right(false)
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } sequentiallyReturns listOf(
+            Either.Right(TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true)),
+            Either.Right(TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Sent, isSelfMessage = true))
+        )
+
+        useCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).toEither().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(
+                matches { message ->
+                    message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
+                },
+                any()
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.markMessageAsDeleted(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
+        }
+    }
+
+    @Test
+    fun givenSendingFailedDuringCancellation_whenCancellingPending_thenDeleteFailedMessageLocally() = runTest {
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withCompletedSlowSync()
+            .withOwnPendingMessage()
+            .withMessageRepositoryDeleteMessageSucceed()
+            .arrange()
+        everySuspend { arrangement.messageSender.cancelPendingMessage(any(), any()) } returns Either.Right(false)
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } sequentiallyReturns listOf(
+            Either.Right(TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true)),
+            Either.Right(TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Failed, isSelfMessage = true))
+        )
+
+        useCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).toEither().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.deleteMessage(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID)
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageSender.sendMessage(any(), any())
+            arrangement.messageRepository.markMessageAsDeleted(any(), any())
+        }
     }
 
     @Test

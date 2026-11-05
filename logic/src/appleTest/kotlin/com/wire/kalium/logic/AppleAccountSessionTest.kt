@@ -50,6 +50,7 @@ import com.wire.kalium.cryptography.MLSTransporter
 import com.wire.kalium.cryptography.MLSEpochObserver
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.logic.util.databaseSecurityHelper
@@ -59,11 +60,15 @@ import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.ktor.client.request.HttpSendPipeline
+import io.ktor.client.request.get
+import kotlinx.io.IOException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.job
@@ -156,14 +161,19 @@ class AppleAccountSessionTest {
             try {
                 logic.suspendSessionScope(userId)
                 kotlin.test.assertSame(first, logic.getSessionScope(userId))
-                assertEquals("before", metadata.valueByKey("handoff-test"))
+                val pendingRead = async(start = CoroutineStart.UNDISPATCHED) { metadata.valueByKey("handoff-test") }
+                assertFalse(pendingRead.isCompleted)
+                val ordinaryOpen = async(start = CoroutineStart.UNDISPATCHED) { logic.openSessionScope(userId) }
+                assertFalse(ordinaryOpen.isCompleted)
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
                 val pending = async(start = CoroutineStart.UNDISPATCHED) { metadata.insertValue("after", "handoff-test") }
                 assertFalse(pending.isCompleted)
                 lease.release()
-                val second = logic.openSessionScope(userId)
+                val second = logic.resumeSessionScope(userId)
                 kotlin.test.assertSame(first, second)
+                kotlin.test.assertSame(first, ordinaryOpen.await())
+                pendingRead.await()
                 pending.await()
                 assertEquals("after", metadata.valueByKey("handoff-test"))
             } finally {
@@ -182,13 +192,13 @@ class AppleAccountSessionTest {
                 logic.suspendSessionScope(userId)
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-                val reopening = async { logic.openSessionScope(userId) }
+                val reopening = async { logic.resumeSessionScope(userId) }
                 delay(200)
                 assertFalse(reopening.isCompleted)
                 // The wait used to run inside the non-cancellable restore and outlived its caller.
                 withTimeout(5.seconds) { reopening.cancelAndJoin() }
                 lease.release()
-                kotlin.test.assertSame(first, logic.openSessionScope(userId))
+                kotlin.test.assertSame(first, logic.resumeSessionScope(userId))
             } finally {
                 logic.releaseSessionScope(userId)
             }
@@ -205,10 +215,10 @@ class AppleAccountSessionTest {
                 logic.suspendSessionScope(userId)
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-                val busy = assertFailsWith<AccountBusyException> { logic.openSessionScope(userId) }
+                val busy = assertFailsWith<AccountBusyException> { logic.resumeSessionScope(userId) }
                 assertTrue(busy.holder.orEmpty().contains("pid=${getpid()}"), busy.holder)
                 lease.release()
-                kotlin.test.assertSame(first, logic.openSessionScope(userId))
+                kotlin.test.assertSame(first, logic.resumeSessionScope(userId))
             } finally {
                 logic.releaseSessionScope(userId)
             }
@@ -468,7 +478,7 @@ class AppleAccountSessionTest {
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
                 lease.release()
-                kotlin.test.assertSame(scope, logic.openSessionScope(userId))
+                kotlin.test.assertSame(scope, logic.resumeSessionScope(userId))
                 assertEquals("committed", scope.userStorage.database.metadataDAO.valueByKey("crypto-callback"))
                 // The retained client must lazily open a new native generation after the handoff.
                 assertTrue(proteus.newPreKeysAuto(1).isNotEmpty())
@@ -477,6 +487,48 @@ class AppleAccountSessionTest {
                 worker.await()
                 handoff.await()
                 logic.releaseSessionScope(userId)
+            }
+        }
+    }
+
+    @Test
+    fun `background handoff interrupts a request holding a crypto transaction within four seconds`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val scope = logic.openSessionScope(userId)
+            assertIs<Either.Right<*>>(logic.getGlobalScope().sessionRepository.storeSession(session()))
+            assertIs<Either.Right<*>>(scope.clientRepository.persistClientId(ClientId("abc123")))
+            val proteus = scope.proteusClientProvider.getOrCreate()
+            assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, scope))
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            val entered = CompletableDeferred<Unit>()
+            // A read receipt can wait for HTTP from inside a non-cancellable native crypto callback.
+            scope.cellsClient.sendPipeline.intercept(HttpSendPipeline.Before) {
+                entered.complete(Unit)
+                awaitCancellation()
+            }
+            val worker = async {
+                runCatching {
+                    proteus.transaction("background-request") { scope.cellsClient.get("handoff-test") }
+                }
+            }
+            try {
+                withTimeout(10.seconds) { entered.await() }
+                // iOS suspended the app about 4.8 s after backgrounding, while the release still waited on a request.
+                withTimeout(4.seconds) { logic.suspendSessionScope(userId) }
+                val failure = assertIs<ProteusException>(worker.await().exceptionOrNull())
+                assertIs<IOException>(failure.cause)
+                val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+                lease.release()
+                kotlin.test.assertSame(scope, logic.resumeSessionScope(userId))
+                assertTrue(proteus.newPreKeysAuto(1).isNotEmpty())
+            } finally {
+                // Unblock the worker if the release missed the deadline, so the test ends.
+                withContext(NonCancellable) {
+                    scope.failNetworkRequests { worker.await() }
+                    logic.releaseSessionScope(userId)
+                }
             }
         }
     }

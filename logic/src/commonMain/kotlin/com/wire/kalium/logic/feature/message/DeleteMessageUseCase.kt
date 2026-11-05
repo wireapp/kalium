@@ -80,18 +80,24 @@ public class DeleteMessageUseCase internal constructor(
         deleteForEveryone: Boolean,
     ): MessageOperationResult =
         withContext(dispatcher.io) {
-            awaitSlowSyncCompletion()
-
-            messageRepository.getMessageById(conversationId, messageId).fold(
-                { failure -> MessageOperationResult.Failure(failure) },
-                { message ->
-                    deleteMessage(message, conversationId, messageId, deleteForEveryone).fold(
-                        { MessageOperationResult.Failure(it) },
-                        { MessageOperationResult.Success }
-                    )
+            messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
+                if (message.isCancellablePending() && !deleteForEveryone) {
+                    cancelPendingMessage(conversationId, messageId, deleteForEveryone)
+                } else {
+                    awaitSlowSyncCompletion()
+                    // Sync can change the stored message while we wait. Keep the normal fresh-read boundary.
+                    messageRepository.getMessageById(conversationId, messageId).flatMap { current ->
+                        deleteMessage(current, conversationId, messageId, deleteForEveryone)
+                    }
                 }
+            }.fold(
+                { MessageOperationResult.Failure(it) },
+                { MessageOperationResult.Success }
             )
         }
+
+    private fun Message.isCancellablePending() = this is Message.Regular && isSelfMessage &&
+        status == Message.Status.Pending && editStatus == Message.EditStatus.NotEdited
 
     private suspend fun awaitSlowSyncCompletion() {
         slowSyncRepository.slowSyncStatus.first {
@@ -106,9 +112,8 @@ public class DeleteMessageUseCase internal constructor(
         deleteForEveryone: Boolean,
     ) = when {
         // Remove a locally queued message without requiring a network signal for Delete for Me.
-        message is Message.Regular && message.isSelfMessage &&
-            message.status == Message.Status.Pending && message.editStatus == Message.EditStatus.NotEdited && !deleteForEveryone ->
-            cancelPendingMessage(conversationId, messageId)
+        message.isCancellablePending() ->
+            cancelPendingMessage(conversationId, messageId, deleteForEveryone)
 
         // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
         // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
@@ -116,14 +121,21 @@ public class DeleteMessageUseCase internal constructor(
         else -> deletePersistedMessage(message, conversationId, messageId, deleteForEveryone)
     }
 
-    private suspend fun cancelPendingMessage(conversationId: ConversationId, messageId: String) =
+    private suspend fun cancelPendingMessage(
+        conversationId: ConversationId,
+        messageId: String,
+        deleteForEveryone: Boolean,
+    ): Either<CoreFailure, Unit> =
         messageSender.cancelPendingMessage(conversationId, messageId).flatMap { cancelled ->
             if (cancelled) {
                 Either.Right(Unit)
             } else {
-                // Sending won the race. Keep the normal Delete for Me signaling for the sent message.
+                // Sending finished first (sent or failed). Delete the current message as the user requested.
+                // Cancellation fails only when the message is no longer an unedited own pending message,
+                // so this takes the sent or failed message branch.
+                awaitSlowSyncCompletion()
                 messageRepository.getMessageById(conversationId, messageId).flatMap { current ->
-                    deletePersistedMessage(current, conversationId, messageId, deleteForEveryone = false)
+                    deleteMessage(current, conversationId, messageId, deleteForEveryone)
                 }
             }
         }

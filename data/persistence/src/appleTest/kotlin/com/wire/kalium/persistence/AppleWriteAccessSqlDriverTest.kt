@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class AppleWriteAccessSqlDriverTest {
     @Test
-    fun openReadersSeeOtherConnectionWritesWhileAppWritesWait() = runTest {
+    fun readsAndWritesWaitForForegroundWhileAnotherProcessOwnsStorage() = runTest {
         val root = NSTemporaryDirectory() + "wire-write-access-" + NSUUID().UUIDString
         val user = UserIDEntity("reader", "example.com")
         val database = userDatabaseBuilder(PlatformDatabaseData(StorageData.FileBacked(root)), user, UserDBSecret(TestDatabaseFile.KEY), testScheduler.let {
@@ -44,11 +44,14 @@ class AppleWriteAccessSqlDriverTest {
                 val pending = async { app.execute(null, "UPDATE AccessTest SET value = 3", 0).await() }
                 runCurrent()
                 assertFalse(pending.isCompleted)
-                assertEquals(1, app.readValue())
+                val pendingRead = async { app.readValue() }
+                runCurrent()
+                assertFalse(pendingRead.isCompleted)
                 extension.sqlDriver.execute(null, "UPDATE AccessTest SET value = 2", 0).await()
-                assertEquals(2, app.readValue())
+                assertEquals(2, extension.sqlDriver.readValue())
                 writes.resume {}
                 pending.await()
+                pendingRead.await()
                 assertEquals(3, app.readValue())
             } finally {
                 extension.close()
@@ -81,6 +84,7 @@ class AppleWriteAccessSqlDriverTest {
             }
             runCurrent()
             assertTrue(handedOff)
+            writes.resume {}
             assertEquals(2, app.readValue())
         } finally {
             database.close()

@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.notification.toLocalNotificationMessageAuthor
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.util.EventLoggingStatus
@@ -45,6 +46,7 @@ internal interface DeletedConversationEventHandler {
 
 @Suppress("LongParameterList")
 internal class DeletedConversationEventHandlerImpl(
+    private val selfUserId: UserId,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val meetingRepository: MeetingRepository,
@@ -73,6 +75,10 @@ internal class DeletedConversationEventHandlerImpl(
                     .onFailure {
                         logger.logFailure(it)
                     }.onSuccess {
+                        if (event.senderUserId == selfUserId) {
+                            logger.logSuccess("info" to "Conversation deleted by self user, skipping notification")
+                            return@onSuccess
+                        }
                         val senderUser = event.senderUserId?.let { userRepository.observeUser(it).firstOrNull() }
                         val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
                         if (conversation.type != Conversation.Type.Group.Meeting) {

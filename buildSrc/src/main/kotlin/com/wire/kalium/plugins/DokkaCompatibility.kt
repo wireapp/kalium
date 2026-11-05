@@ -27,34 +27,18 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 /** Applies documentation-only workarounds after Dokka has inferred source sets. */
 internal fun Project.configureDokkaCompatibility(dokka: DokkaExtension, kotlin: KotlinMultiplatformExtension) {
     val sourceSets = dokka.dokkaSourceSets.toList()
-    configurePlatformAnalysis(sourceSets)
+    configureCoreCryptoAnalysis(sourceSets)
     configureSharedSourceRoots(dokka, kotlin, sourceSets)
 }
 
-private fun Project.configurePlatformAnalysis(sourceSets: List<DokkaSourceSetSpec>) {
-    val usesCoreCrypto = path in setOf(":core:cryptography", ":logic", ":sample:cli")
-    if (!usesCoreCrypto && path != ":data:persistence") return
-    // Intermediate metadata can require compiling SDK source sets whose
-    // platform bindings are declared only on leaf targets. Analyze those
-    // documentation sets with a real leaf target's dependency artifacts.
-    // Persistence also needs native artifacts for the fork's SQLite bindings.
-    val jvmClasspath = sourceSets.find { it.name == "jvmMain" }?.classpath?.from?.toList()
-    val nativeClasspath = sourceSets.find { it.name == "macosArm64Main" }?.classpath?.from?.toList()
-    val iosClasspath = sourceSets.find { it.name == "iosArm64Main" }?.classpath?.from?.toList()
-    sourceSets.forEach { sourceSet ->
-        when (sourceSet.analysisPlatform.get()) {
-            KotlinPlatform.Common -> if (usesCoreCrypto && (project.path != ":core:cryptography" || sourceSet.name != "commonMain")) {
-                jvmClasspath?.let {
-                    sourceSet.classpath.setFrom(it)
-                    sourceSet.analysisPlatform.set(KotlinPlatform.JVM)
-                }
-            }
-            KotlinPlatform.Native -> if (sourceSet.name !in setOf("iosArm64Main", "iosSimulatorArm64Main", "macosArm64Main")) {
-                val targetClasspath = if (sourceSet.name.startsWith("ios")) iosClasspath else nativeClasspath
-                targetClasspath?.let { sourceSet.classpath.setFrom(it) }
-            }
-            else -> Unit
-        }
+private fun Project.configureCoreCryptoAnalysis(sourceSets: List<DokkaSourceSetSpec>) {
+    if (path != ":core:cryptography") return
+    // nonJsMain uses CoreCrypto bindings declared on platform source sets.
+    // Resolve its shared declarations with JVM artifacts for documentation only.
+    val jvmClasspath = sourceSets.find { it.name == "jvmMain" }?.classpath?.from?.toList() ?: return
+    sourceSets.find { it.name == "nonJsMain" }?.let { sourceSet ->
+        sourceSet.classpath.setFrom(jvmClasspath)
+        sourceSet.analysisPlatform.set(KotlinPlatform.JVM)
     }
 }
 

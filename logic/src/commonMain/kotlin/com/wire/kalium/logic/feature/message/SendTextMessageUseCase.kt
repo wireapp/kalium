@@ -139,9 +139,9 @@ public class SendTextMessageUseCase internal constructor(
         generatedMessageUuid: String = Uuid.random().toString(),
         sendLater: Boolean = false,
     ): MessageOperationResult {
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
-        }
+        // Extension storage keeps its existing preparation boundary. In-app sends must be
+        // visible locally even while foreground sync is resuming or waiting for crypto.
+        if (sendLater) awaitSlowSync()
 
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
         val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
@@ -187,6 +187,7 @@ public class SendTextMessageUseCase internal constructor(
                     }
                     Either.Right(Unit)
                 } else {
+                    awaitSlowSync()
                     messageSender.sendMessage(message)
                 }
             }
@@ -196,6 +197,10 @@ public class SendTextMessageUseCase internal constructor(
             { MessageOperationResult.Failure(it, persistedMessageId) },
             { MessageOperationResult.Success }
         )
+    }
+
+    private suspend fun awaitSlowSync() {
+        slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
     }
 
     private suspend fun markFailed(failure: CoreFailure, conversationId: ConversationId, messageId: String) {

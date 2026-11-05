@@ -193,6 +193,67 @@ class DeletedConversationEventHandlerTest {
         }
     }
 
+    @Test
+    fun givenDeletedConversationBySelfUser_whenHandlingIt_thenDeletesWithoutNotification() = runTest {
+        val event = TestEvent.deletedConversation()
+        val conversation = TestConversation.CONVERSATION
+        val (arrangement, eventHandler) = arrange {
+            selfUserId = requireNotNull(event.senderUserId)
+            withGetConversationByIdReturning(conversation)
+            withDeletingConversationSucceeding()
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        with(arrangement) {
+            verifySuspend(VerifyMode.exactly(1)) {
+                deleteConversation(any(), TestConversation.ID)
+            }
+            verifySuspend(VerifyMode.not) {
+                userRepository.observeUser(any())
+            }
+            verifySuspend(VerifyMode.not) {
+                notificationEventsManager.scheduleDeleteConversationNotification(any())
+            }
+        }
+    }
+
+    @Test
+    fun givenDeletedMeetingConversationBySelfUser_whenHandlingIt_thenDeletesWithoutMeetingNotification() = runTest {
+        val event = TestEvent.deletedConversation()
+        val conversation = MockConversation.group(event.conversationId).copy(type = Conversation.Type.Group.Meeting)
+        val meeting = Meeting(
+            meetingId = MeetingId("meetingId", conversation.id.domain),
+            conversationId = conversation.id,
+            creatorId = UserId(conversation.creatorId.orEmpty(), conversation.id.domain),
+            title = "Planning",
+            startTime = Instant.parse("2026-10-01T09:00:00Z"),
+            endTime = Instant.parse("2026-10-01T10:00:00Z"),
+            tzid = "UTC",
+            recurrence = null,
+        )
+        val (arrangement, eventHandler) = arrange {
+            selfUserId = requireNotNull(event.senderUserId)
+            withGetConversationByIdReturning(conversation)
+            withDeletingConversationSucceeding()
+            withGetMeetingsByConversationId(Either.Right(listOf(meeting)))
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        with(arrangement) {
+            verifySuspend(VerifyMode.exactly(1)) {
+                deleteConversation(any(), event.conversationId)
+            }
+            verifySuspend(VerifyMode.not) {
+                notificationEventsManager.scheduleMeetingNotification(any())
+            }
+            verifySuspend(VerifyMode.not) {
+                notificationEventsManager.scheduleDeleteConversationNotification(any())
+            }
+        }
+    }
+
     private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
@@ -204,6 +265,7 @@ class DeletedConversationEventHandlerTest {
         val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
         val deleteConversation = mock<DeleteConversationUseCase>()
         val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
+        var selfUserId: UserId = TestUser.OTHER_USER_ID_2
 
         suspend fun withGetConversationByIdReturning(conversation: Conversation?) {
             everySuspend { conversationRepository.getConversationById(any()) } returns if (conversation == null) {
@@ -233,6 +295,7 @@ class DeletedConversationEventHandlerTest {
             withGetMeetingsByConversationId(Either.Right(emptyList()))
             block()
             this@Arrangement to DeletedConversationEventHandlerImpl(
+                selfUserId = selfUserId,
                 conversationRepository = conversationRepository,
                 meetingRepository = meetingRepository,
                 userRepository = userRepository,

@@ -730,7 +730,7 @@ class MessageRepositoryTest {
                     any(),
                     any()
                 )
-            }.returns(messages.map { it.id })
+            }.returns(messages.groupBy(keySelector = { it.senderUserId }, valueTransform = { it.id }))
             return this
         }
 

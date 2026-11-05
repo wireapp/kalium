@@ -458,6 +458,21 @@ sealed class Event(open val id: String) {
         open val teamId: String,
     ) : Event(id) {
 
+        data class MemberJoin(
+            override val id: String,
+            override val teamId: String,
+            val memberId: String,
+            val dateTime: Instant,
+        ) : Team(id, teamId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Team.MemberJoin",
+                idKey to id,
+                teamIdKey to teamId.obfuscateId(),
+                timestampIsoKey to dateTime,
+                memberIdKey to memberId.obfuscateId(),
+            )
+        }
+
         data class MemberLeave(
             override val id: String,
             override val teamId: String,
@@ -810,6 +825,17 @@ sealed class Event(open val id: String) {
         ) : UserProperty(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.UserProperty.TypingIndicatorModeSet",
+                idKey to id,
+                "value" to "$value"
+            )
+        }
+
+        data class ScreenshotCensoringModeSet(
+            override val id: String,
+            val value: Boolean,
+        ) : UserProperty(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserProperty.ScreenshotCensoringModeSet",
                 idKey to id,
                 "value" to "$value"
             )

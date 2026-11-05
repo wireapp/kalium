@@ -219,10 +219,21 @@ internal actual open class UserSessionScopeProviderImpl(
         check(metadata?.isRegularFile == true && (metadata.size ?: 0) > 0) { "Prepared crypto store is missing" }
     }
 
+    actual override suspend fun open(userId: UserId): UserSessionScope = open(userId, resumePaused = false)
+
+    /** Only a host with foreground/background execution time may resume a suspended account. */
+    suspend fun resumeForExecution(userId: UserId): UserSessionScope = open(userId, resumePaused = true)
+
+    suspend fun resumeSuspendedAccounts() {
+        accounts.keys.toList().forEach { userId ->
+            if (get(userId) != null) resumeForExecution(userId)
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught")
-    actual override suspend fun open(userId: UserId): UserSessionScope {
+    private suspend fun open(userId: UserId, resumePaused: Boolean): UserSessionScope {
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return withOwnedAccount(account, userId) {
+        return withOwnedAccount(account, userId, resumePaused) {
             check(!account.unavailable) { "Account resources are unavailable until process exit" }
             super.get(userId)?.let {
                 if (!it.coroutineContext.job.isActive) {
@@ -297,8 +308,9 @@ internal actual open class UserSessionScopeProviderImpl(
 
     /**
      * A message send keeps its crypto transaction while its request waits on a bad network, up to the request
-     * timeout, which is longer than iOS keeps the app running; stopping sync can wait behind it too. After a
-     * short grace, fail the account's requests as offline until closing starts, so the account is still released.
+     * timeout, which is longer than iOS keeps the app running; stopping sync can wait behind it too. After
+     * [STALLED_REQUEST_GRACE], fail the account's requests as offline until closing starts, so the account is still
+     * released.
      */
     private suspend fun pauseForBackground(
         account: OwnedAccount,
@@ -462,6 +474,7 @@ internal actual open class UserSessionScopeProviderImpl(
     private suspend fun <T> withOwnedAccount(
         account: OwnedAccount,
         userId: UserId,
+        resumePaused: Boolean = true,
         operation: suspend () -> T,
     ): T {
         while (true) {
@@ -469,6 +482,7 @@ internal actual open class UserSessionScopeProviderImpl(
             var completed = false
             var result: T? = null
             access.withResumedAccess(
+                resumePaused = resumePaused,
                 // Another process may hold the lease for long: wait here, where cancellation still works and a
                 // failure keeps the account paused instead of unavailable.
                 acquireOwnership = {
@@ -588,4 +602,9 @@ internal actual open class UserSessionScopeProviderImpl(
  * work behind an extension that iOS suspended with its host; callers fail or retry instead.
  */
 private val OWNERSHIP_TIMEOUT = 15.seconds
-private val STALLED_REQUEST_GRACE = 5.seconds
+
+/**
+ * Long enough for a send on a working network to finish, short enough that the release still ends while iOS keeps
+ * the app running: a 0xdead10cc report showed iOS suspending the app about 4.8 s after it entered the background.
+ */
+private val STALLED_REQUEST_GRACE = 1.seconds
