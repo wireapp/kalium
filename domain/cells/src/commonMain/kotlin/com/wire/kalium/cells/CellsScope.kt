@@ -48,6 +48,8 @@ import com.wire.kalium.cells.domain.SelfTeamIdProvider
 import com.wire.kalium.cells.domain.SelfTeamIdProviderImpl
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.CheckCellNodeAvailabilityUseCase
+import com.wire.kalium.cells.domain.usecase.CheckCellNodeAvailabilityUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetsUseCase
@@ -100,6 +102,8 @@ import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveNodeTagsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveNodeTagsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.ReplaceCellFileContentUseCase
+import com.wire.kalium.cells.domain.usecase.ReplaceCellFileContentUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RenameNodeUseCase
 import com.wire.kalium.cells.domain.usecase.RenameNodeUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RestoreNodeFromRecycleBinUseCase
@@ -311,6 +315,10 @@ public class CellsScope(
         ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager, draftUploads = draftUploads)
     }
 
+    public val replaceFileContent: ReplaceCellFileContentUseCase by lazy {
+        ReplaceCellFileContentUseCaseImpl(cellsRepository, cellsConversationRepository)
+    }
+
     public val publishAttachments: PublishAttachmentsUseCase by lazy {
         PublishAttachmentsUseCaseImpl(cellsRepository)
     }
@@ -443,6 +451,9 @@ public class CellsScope(
 
     public val getCellFileUseCase: GetCellFileUseCase by lazy {
         GetCellFileUseCaseImpl(cellsRepository)
+    }
+    public val checkCellNodeAvailability: CheckCellNodeAvailabilityUseCase by lazy {
+        CheckCellNodeAvailabilityUseCaseImpl(cellsRepository, cellAttachmentsRepository)
     }
 
     public val createPublicLinkPasswordUseCase: CreatePublicLinkPasswordUseCase by lazy {

@@ -27,6 +27,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class NetworkStateObserverTest {
@@ -76,14 +77,69 @@ class NetworkStateObserverTest {
         assertFalse(result.await())
     }
 
+    @Test
+    fun givenValidatedNetwork_whenAnotherValidatedNetworkBecomesCurrent_thenShouldCompleteWithReconnectResult() = runTest {
+        // Switching between validated networks does not change the network state, only the current network.
+        val currentNetwork = MutableStateFlow<CurrentNetwork?>(WIFI)
+        val observer = TestNetworkStateObserver(MutableStateFlow(NetworkState.ConnectedWithInternet), currentNetwork)
+
+        val result = backgroundScope.async {
+            observer.delayUntilConnectedWithInternetAgain(10.minutes)
+        }
+        runCurrent()
+        assertFalse(result.isCompleted)
+
+        currentNetwork.value = CELLULAR
+        runCurrent()
+
+        assertTrue(result.await())
+    }
+
+    @Test
+    fun givenValidatedNetwork_whenAnotherNetworkWithoutInternetBecomesCurrent_thenShouldKeepWaiting() = runTest {
+        val currentNetwork = MutableStateFlow<CurrentNetwork?>(WIFI)
+        val observer = TestNetworkStateObserver(MutableStateFlow(NetworkState.ConnectedWithInternet), currentNetwork)
+
+        val result = backgroundScope.async {
+            observer.delayUntilConnectedWithInternetAgain(1.seconds)
+        }
+        runCurrent()
+
+        currentNetwork.value = CELLULAR.copy(hasInternetAccess = false)
+        runCurrent()
+        assertFalse(result.isCompleted)
+
+        advanceTimeBy(1.seconds)
+        runCurrent()
+        assertFalse(result.await())
+    }
+
+    @Test
+    fun givenPreviousNetwork_whenAnotherValidatedNetworkIsAlreadyCurrent_thenShouldCompleteImmediately() = runTest {
+        // The network changed while the failed attempt was running, before the wait started.
+        val observer = TestNetworkStateObserver(MutableStateFlow(NetworkState.ConnectedWithInternet), MutableStateFlow(CELLULAR))
+
+        val result = backgroundScope.async {
+            observer.delayUntilConnectedWithInternetAgain(10.minutes, previousNetworkId = WIFI.id)
+        }
+        runCurrent()
+
+        assertTrue(result.isCompleted)
+        assertTrue(result.await())
+    }
+
     private class TestNetworkStateObserver(
         private val networkState: StateFlow<NetworkState>,
+        private val currentNetwork: StateFlow<CurrentNetwork?> = MutableStateFlow(null),
     ) : NetworkStateObserver {
-
-        private val currentNetwork = MutableStateFlow<CurrentNetwork?>(null)
 
         override fun observeNetworkState(): StateFlow<NetworkState> = networkState
 
         override fun observeCurrentNetwork(): StateFlow<CurrentNetwork?> = currentNetwork
+    }
+
+    private companion object {
+        val WIFI = CurrentNetwork("wifi", CurrentNetwork.Type.WIFI, hasInternetAccess = true)
+        val CELLULAR = CurrentNetwork("cellular", CurrentNetwork.Type.CELLULAR, hasInternetAccess = true)
     }
 }

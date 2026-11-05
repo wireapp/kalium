@@ -657,7 +657,7 @@ public class UserSessionScope internal constructor(
     private val globalPreferences: GlobalPrefProvider,
     authenticationScopeProvider: AuthenticationScopeProvider,
     internal val rootPathsProvider: RootPathsProvider,
-    dataStoragePaths: DataStoragePaths,
+    private val dataStoragePaths: DataStoragePaths,
     internal val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val userStorageProvider: UserStorageProvider,
@@ -2833,7 +2833,7 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
+    private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage, dataStoragePaths, kaliumFileSystem)
 
     private val validateAssetMimeType: ValidateAssetFileTypeUseCase get() = ValidateAssetFileTypeUseCaseImpl()
 

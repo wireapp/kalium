@@ -78,9 +78,10 @@ internal class CreateMPBackupUseCaseImpl(
     ): CreateBackupResult = withContext(dispatchers.io) {
         try {
 
+            deletePreviousBackupWorkDirs()
             val selfUser = userRepository.getSelfUser().getOrNull() ?: error("Self user not found")
             val backupFileName = createBackupFileName(selfUser)
-            val backupWorkDir = kaliumFileSystem.tempFilePath("$backupFileName-create-workdir")
+            val backupWorkDir = kaliumFileSystem.tempFilePath("$backupFileName$BACKUP_WORK_DIR_SUFFIX")
             val mpBackupExporter = createBackupExporter(selfUser, backupFileName, backupWorkDir.toString())
             var pageIndex = 0
 
@@ -167,5 +168,22 @@ internal class CreateMPBackupUseCaseImpl(
     private fun deleteBackupFiles(backupFilePath: Path) {
         if (fileSystem.exists(backupFilePath))
             fileSystem.delete(backupFilePath)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun deletePreviousBackupWorkDirs() {
+        try {
+            val cacheRoot = kaliumFileSystem.rootCachePath
+            if (!fileSystem.exists(cacheRoot)) return
+            fileSystem.list(cacheRoot)
+                .filter { it.name.endsWith(BACKUP_WORK_DIR_SUFFIX) }
+                .forEach { fileSystem.deleteRecursively(it) }
+        } catch (exception: Exception) {
+            kaliumLogger.w("Failed to delete earlier backup work folders: ${exception.message}")
+        }
+    }
+
+    private companion object {
+        const val BACKUP_WORK_DIR_SUFFIX = "-create-workdir"
     }
 }

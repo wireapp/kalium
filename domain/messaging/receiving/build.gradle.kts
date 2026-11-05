@@ -27,17 +27,13 @@ plugins {
 
 val generatedAppleKotlinDir = layout.buildDirectory.dir("generated/receiving/appleMain/kotlin")
 val preparedCoreCryptoVersion = libs.coreCryptoKmp.get().versionConstraint.requiredVersion
-val generateReceivingCompatibility by tasks.registering {
-    inputs.property("coreCryptoVersion", preparedCoreCryptoVersion)
-    outputs.dir(generatedAppleKotlinDir)
-    doLast {
-        val output = generatedAppleKotlinDir.get().asFile.resolve("com/wire/kalium/logic/sync/receiving/ReceivingCompatibility.kt")
-        output.parentFile.mkdirs()
-        output.writeText(
-            "package com.wire.kalium.logic.sync.receiving\n\n" +
-                "internal const val PREPARED_CORE_CRYPTO_VERSION = \"$preparedCoreCryptoVersion\"\n"
-        )
-    }
+val generateReceivingCompatibility by tasks.registering(GenerateKotlinSourceTask::class) {
+    outputDirectory.set(generatedAppleKotlinDir)
+    relativePath.set("com/wire/kalium/logic/sync/receiving/ReceivingCompatibility.kt")
+    source.set(
+        "package com.wire.kalium.logic.sync.receiving\n\n" +
+            "internal const val PREPARED_CORE_CRYPTO_VERSION = \"$preparedCoreCryptoVersion\"\n"
+    )
 }
 
 kaliumLibrary {

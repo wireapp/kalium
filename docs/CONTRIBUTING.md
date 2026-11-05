@@ -70,10 +70,10 @@ make doc/test-kdocs
 ```
 
 API documentation uses Dokka 2.2.0 and is written to `build/dokka/html`. Generate it on macOS
-to resolve Apple platform types. This fork does not deploy API documentation from CI.
-Affected common documentation sets in `cryptography`, `logic`, and `cli` use JVM-backed analysis,
-retaining their declarations and display labels without changing SDK source sets or dependencies.
-Persistence's intermediate Apple documentation sets use native target artifacts to resolve the SQLite bindings of Wire's SQLDelight fork (`com.wire.sqldelight`).
+to resolve Apple platform types. The documentation Make targets temporarily enable
+`kotlin.mpp.enableCInteropCommonization` for their Gradle invocation to resolve shared Apple bindings.
+Only `cryptography/nonJsMain` uses JVM-backed documentation analysis to resolve CoreCrypto bindings.
+SDK source sets and dependencies are unchanged. CI runs the documentation check before deployment.
 
 ## Build Configuration
 
@@ -94,6 +94,24 @@ Use the same flag for any new provider-level cache:
 ```bash
 ./gradlew <task> -Pkalium.providerCacheScope=LOCAL
 ```
+
+### Generated Kotlin sources
+
+Provider cache configuration and receiving compatibility sources use typed, cacheable build tasks.
+Protobuf generation owns its raw output under `tools/protobuf-codegen/build/`; the protobuf module
+consumes the generated-source artifact and prepares its annotated Kotlin sources under
+`data/protobuf/build/generated/`. Do not move or edit the generator's raw output from another task.
+Compilation, source archives, and documentation consume the task-backed source directory.
+
+The JVM compilation graph supports configuration-cache reuse:
+
+```bash
+./gradlew :logic:compileKotlinJvm --configuration-cache --configuration-cache-problems=fail
+```
+
+Run the same command again to reuse the configured graph. This is a task-specific opt-in: it does not
+claim that all test, reporting, publishing, or native linking tasks support configuration caching.
+A build file or the `kalium.providerCacheScope` property changing should invalidate the relevant state.
 
 ## Testing Notes
 

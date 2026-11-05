@@ -16,7 +16,7 @@ import app.cash.sqldelight.db.SqlPreparedStatement
 import com.wire.kalium.util.AccountResourceAccess
 
 /**
- * Keeps NativeSqliteDriver's WAL reader pool available while account writes are paused.
+ * Keeps the driver alive while pausing database access before process suspension.
  * Transactions keep admission until SQLDelight reports commit or rollback, including nested work.
  * A failed native transaction end must not release ownership through a finally block.
  */
@@ -47,14 +47,7 @@ internal class AppleWriteAccessSqlDriver(
         mapper: (SqlCursor) -> QueryResult<R>,
         parameters: Int,
         binders: (SqlPreparedStatement.() -> Unit)?,
-    ): QueryResult<R> {
-        // Match NativeSqliteDriver's routing for DML RETURNING. All other queries outside a
-        // transaction use its query_only reader connections; SQLite rejects writes there.
-        val statement = sql.trimStart().uppercase()
-        return if (statement.startsWith("UPDATE") || statement.startsWith("INSERT") || statement.startsWith("DELETE")) {
-            write { delegate.executeQuery(identifier, sql, mapper, parameters, binders) }
-        } else delegate.executeQuery(identifier, sql, mapper, parameters, binders)
-    }
+    ): QueryResult<R> = write { delegate.executeQuery(identifier, sql, mapper, parameters, binders) }
 
     override fun newTransaction(): QueryResult<Transacter.Transaction> {
         if (delegate.currentTransaction() != null) return delegate.newTransaction()
