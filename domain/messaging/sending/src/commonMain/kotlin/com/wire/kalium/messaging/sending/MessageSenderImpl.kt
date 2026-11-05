@@ -209,7 +209,7 @@ class MessageSenderImpl(
         messageToSend(message).flatMap { current ->
             if (current == null) return@flatMap Either.Right(null)
             prepareMessage(current).flatMap { processedMessage ->
-                attemptToSend(processedMessage, messageTarget).map { serverDate ->
+                attemptToSend(processedMessage, messageTarget, transient).map { serverDate ->
                     val localDate = message.date
                     val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
                     // If it was the "edit" message type, we need to update the id before we promote it to "sent"

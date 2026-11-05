@@ -142,18 +142,18 @@ class MLSMessageCreatorTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.mlsConversationRepository.encryptTargetedMessage(any(), any(), eq(SENDER_CLIENT), any(), any())
+            arrangement.mlsConversationRepository.encryptTargetedMessage(any(), any(), SENDER_CLIENT, any(), any())
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.mlsConversationRepository.encryptTargetedMessage(any(), any(), eq(UNTARGETED_USER_CLIENT), any(), any())
+            arrangement.mlsConversationRepository.encryptTargetedMessage(any(), any(), UNTARGETED_USER_CLIENT, any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.encryptTargetedMessage(
-                eq(arrangement.mlsContext),
-                eq(GROUP_ID),
-                eq(OTHER_USER_CLIENT_1),
-                eq(plainData),
-                eq(false)
+                arrangement.mlsContext,
+                GROUP_ID,
+                OTHER_USER_CLIENT_1,
+                plainData,
+                false
             )
         }
     }
@@ -256,7 +256,7 @@ class MLSMessageCreatorTest {
             .shouldSucceed { assertContentEquals(encryptedData, it.value) }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.encryptTransientMessage(eq(arrangement.mlsContext), eq(GROUP_ID), eq(plainData))
+            arrangement.mlsConversationRepository.encryptTransientMessage(arrangement.mlsContext, GROUP_ID, plainData)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.encryptMessage(any(), any(), any())
@@ -286,10 +286,10 @@ class MLSMessageCreatorTest {
         }
 
         verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.mlsConversationRepository.encryptTargetedMessage(any(), eq(GROUP_ID), any(), eq(plainData), eq(true))
+            arrangement.mlsConversationRepository.encryptTargetedMessage(any(), GROUP_ID, any(), plainData, true)
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.mlsConversationRepository.encryptTargetedMessage(any(), any(), any(), any(), eq(false))
+            arrangement.mlsConversationRepository.encryptTargetedMessage(any(), any(), any(), any(), false)
         }
     }
 

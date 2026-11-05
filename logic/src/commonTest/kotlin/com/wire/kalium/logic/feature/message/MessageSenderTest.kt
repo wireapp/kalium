@@ -624,14 +624,14 @@ class MessageSenderTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
                     any(),
-                    eq(Arrangement.GROUP_ID),
+                    Arrangement.GROUP_ID,
                     any(),
-                    eq(messageTarget),
-                    eq(false)
+                    messageTarget,
+                    false
                 )
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSTargetedMessage(eq(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH))
+                arrangement.messageRepository.sendMLSTargetedMessage(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.messageRepository.sendMLSMessage(any())
@@ -656,14 +656,14 @@ class MessageSenderTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
                     any(),
-                    eq(Arrangement.GROUP_ID),
+                    Arrangement.GROUP_ID,
                     any(),
-                    eq(messageTarget),
-                    eq(false)
+                    messageTarget,
+                    false
                 )
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSTargetedMessage(eq(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH))
+                arrangement.messageRepository.sendMLSTargetedMessage(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
@@ -688,7 +688,7 @@ class MessageSenderTest {
 
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), any())
@@ -711,7 +711,7 @@ class MessageSenderTest {
 
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), any())
@@ -740,7 +740,7 @@ class MessageSenderTest {
 
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), any())
@@ -763,7 +763,7 @@ class MessageSenderTest {
 
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.messageRepository.sendMLSTransientMessage(any())
@@ -808,10 +808,10 @@ class MessageSenderTest {
 
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSTargetedMessage(eq(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH))
+                arrangement.messageRepository.sendMLSTargetedMessage(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH)
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
             }
         }
     }
@@ -840,8 +840,8 @@ class MessageSenderTest {
                     any(),
                     any(),
                     any(),
-                    eq(messageTarget),
-                    eq(false)
+                    messageTarget,
+                    false
                 )
             }
             verifySuspend(VerifyMode.exactly(2)) {
@@ -867,7 +867,7 @@ class MessageSenderTest {
 
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSTransientMessage(eq(Arrangement.TEST_MLS_TRANSIENT_MESSAGE))
+                arrangement.messageRepository.sendMLSTransientMessage(Arrangement.TEST_MLS_TRANSIENT_MESSAGE)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
@@ -900,14 +900,14 @@ class MessageSenderTest {
             verifySuspend(VerifyMode.exactly(2)) {
                 arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
                     any(),
-                    eq(Arrangement.GROUP_ID),
+                    Arrangement.GROUP_ID,
                     any(),
-                    eq(messageTarget),
-                    eq(true)
+                    messageTarget,
+                    true
                 )
             }
             verifySuspend(VerifyMode.exactly(2)) {
-                arrangement.messageRepository.sendMLSTransientTargetedMessage(eq(Arrangement.TEST_MLS_TRANSIENT_TARGETED_MESSAGE_BATCH))
+                arrangement.messageRepository.sendMLSTransientTargetedMessage(Arrangement.TEST_MLS_TRANSIENT_TARGETED_MESSAGE_BATCH)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.messageRepository.sendMLSTargetedMessage(any())
@@ -937,7 +937,7 @@ class MessageSenderTest {
                 arrangement.messageRepository.sendMLSTransientMessage(any())
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_MLS_MESSAGE))
+                arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
             }
         }
     }
@@ -1941,7 +1941,7 @@ class MessageSenderTest {
             batch: MLSMessageApi.TargetedMessageBatch = TEST_MLS_TARGETED_MESSAGE_BATCH
         ) = apply {
             everySuspend {
-                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), eq(false))
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), false)
             } returns Either.Right(batch)
         }
 
@@ -1969,7 +1969,7 @@ class MessageSenderTest {
 
         suspend fun withCreateOutgoingTransientTargetedMlsMessage() = apply {
             everySuspend {
-                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), eq(true))
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(any(), any(), any(), any(), true)
             } returns Either.Right(TEST_MLS_TRANSIENT_TARGETED_MESSAGE_BATCH)
         }
 
