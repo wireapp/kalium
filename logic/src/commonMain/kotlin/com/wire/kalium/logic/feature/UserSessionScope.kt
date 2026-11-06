@@ -1805,8 +1805,7 @@ public class UserSessionScope internal constructor(
         lazy { clientRepository },
         lazy { client.refillKeyPackages },
         lazy { client.mlsKeyPackageCountUseCase },
-        lazy { users.timestampKeyRepository },
-        cryptoTransactionProvider
+        lazy { users.timestampKeyRepository }
     )
 
     internal val keyingMaterialsManager: KeyingMaterialsManager
