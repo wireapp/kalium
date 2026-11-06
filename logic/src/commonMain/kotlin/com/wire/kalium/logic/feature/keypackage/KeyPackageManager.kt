@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.keypackage
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
@@ -45,7 +46,10 @@ internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 1.hours
 /**
  * Observes the MLS key package count and uploads new key packages when necessary.
  */
-internal interface KeyPackageManager
+internal interface KeyPackageManager {
+    /** Checks the backend key package count now, without waiting for the hourly check, and refills if needed. */
+    suspend fun checkKeyPackageCount()
+}
 
 @Suppress("LongParameterList")
 internal class KeyPackageManagerImpl(
@@ -82,6 +86,10 @@ internal class KeyPackageManagerImpl(
         }
     }
 
+    override suspend fun checkKeyPackageCount() {
+        refillKeyPackages().onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
+    }
+
     private suspend fun refillKeyPackagesIfNeeded() {
         timestampKeyRepository.value.hasPassed(LAST_KEY_PACKAGE_COUNT_CHECK, KEY_PACKAGE_COUNT_CHECK_DURATION)
             .flatMap { lastKeyPackageCountCheckHasPassed ->
@@ -92,22 +100,22 @@ internal class KeyPackageManagerImpl(
                         else -> false
                     }
                 }
-                if (lastKeyPackageCountCheckHasPassed || forceRefill) {
-                    kaliumLogger.i("Checking if we need to refill key packages")
-                    transactionProvider.mlsTransaction("KeyPackageManager") { mlsContext ->
-                        when (val result = refillKeyPackagesUseCase.value(mlsContext)) {
-                            is RefillKeyPackagesResult.Success -> {
-                                timestampKeyRepository.value.reset(LAST_KEY_PACKAGE_COUNT_CHECK)
-                                Either.Right(Unit)
-                            }
-                            is RefillKeyPackagesResult.Failure -> {
-                                Either.Left(result.failure)
-                            }
-                        }
-                    }
-                } else {
+                if (lastKeyPackageCountCheckHasPassed || forceRefill) refillKeyPackages() else Either.Right(Unit)
+            }.onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
+    }
+
+    private suspend fun refillKeyPackages(): Either<CoreFailure, Unit> {
+        kaliumLogger.i("Checking if we need to refill key packages")
+        return transactionProvider.mlsTransaction("KeyPackageManager") { mlsContext ->
+            when (val result = refillKeyPackagesUseCase.value(mlsContext)) {
+                is RefillKeyPackagesResult.Success -> {
+                    timestampKeyRepository.value.reset(LAST_KEY_PACKAGE_COUNT_CHECK)
                     Either.Right(Unit)
                 }
-            }.onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
+                is RefillKeyPackagesResult.Failure -> {
+                    Either.Left(result.failure)
+                }
+            }
+        }
     }
 }
