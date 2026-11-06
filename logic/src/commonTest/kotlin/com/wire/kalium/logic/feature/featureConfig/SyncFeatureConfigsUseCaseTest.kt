@@ -55,7 +55,6 @@ import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHand
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
-import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
@@ -1138,12 +1137,7 @@ class SyncFeatureConfigsUseCaseTest {
                 GuestRoomConfigHandler(userConfigRepository, kaliumConfigs.guestRoomLink),
                 FileSharingConfigHandler(userConfigRepository),
                 MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
-                MLSMigrationConfigHandler(
-                    userConfigRepository,
-                    updateSupportedProtocolsAndResolveOneOnOnes,
-                    cryptoTransactionProvider,
-                    lazy { mock<KeyPackageManager>(mode = MockMode.autoUnit) }
-                ),
+                MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
                 SecondFactorPasswordChallengeConfigHandler(userConfigRepository),

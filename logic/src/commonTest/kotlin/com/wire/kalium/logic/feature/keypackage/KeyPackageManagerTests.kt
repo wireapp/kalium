@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -142,62 +141,24 @@ class KeyPackageManagerTests {
         }
 
     @Test
-    fun givenActiveMigration_whenClientStartsWithRecentCheck_thenFullPoolRefillIsPerformed() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, _) = Arrangement()
-                .withIsMLSSupported(true)
-                .withHasRegisteredMLSClient(true)
-                .withExtendedPool(true)
-                .withLastKeyPackageCountCheck(false)
-                .withRefillKeyPackagesUseCaseSuccessful()
-                .withUpdateLastKeyPackageCountCheckSuccessful()
-                .arrange()
-
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            yield()
-
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.refillKeyPackagesUseCase.invoke(any(), true)
-            }
-        }
-
-    @Test
-    fun whenImmediateFullPoolRefillIsScheduled_thenTimestampDoesNotPreventTheCheck() =
+    fun whenRefillIsScheduled_thenRefillRunsWithoutWaitingForTheHourlyCheck() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, manager) = Arrangement()
-                .withExtendedPool(true)
                 .withRefillKeyPackagesUseCaseSuccessful()
                 .withUpdateLastKeyPackageCountCheckSuccessful()
                 .arrange()
 
-            manager.scheduleRefill(KeyPackageRefillTrigger.MIGRATION_ENABLED)
+            manager.scheduleRefill()
             yield()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.refillKeyPackagesUseCase.invoke(any(), true)
+                arrangement.refillKeyPackagesUseCase.invoke(any())
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.timestampKeyRepository.hasPassed(any(), any())
             }
-        }
-
-    @Test
-    fun givenActiveMigration_whenWelcomeRefillIsScheduled_thenRuntimeThresholdIsUsed() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, manager) = Arrangement()
-                .withExtendedPool(true)
-                .withRefillKeyPackagesUseCaseSuccessful()
-                .withUpdateLastKeyPackageCountCheckSuccessful()
-                .arrange()
-
-            manager.scheduleRefill(KeyPackageRefillTrigger.WELCOME_HANDLED)
-            yield()
-
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.refillKeyPackagesUseCase.invoke(any(), false)
-            }
             verifySuspend(VerifyMode.not) {
-                arrangement.timestampKeyRepository.hasPassed(any(), any())
+                arrangement.keyPackageCountUseCase.invoke(any())
             }
         }
 
@@ -209,10 +170,6 @@ class KeyPackageManagerTests {
         val timestampKeyRepository: TimestampKeyRepository = mock()
         val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock()
         val keyPackageCountUseCase: MLSKeyPackageCountUseCase = mock()
-        val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock()
-        private var extendedPool = false
-
-        fun withExtendedPool(value: Boolean) = apply { extendedPool = value }
 
         suspend fun withLastKeyPackageCountCheck(hasPassed: Boolean) = apply {
             everySuspend {
@@ -222,7 +179,7 @@ class KeyPackageManagerTests {
 
         suspend fun withRefillKeyPackagesUseCaseSuccessful() = apply {
             everySuspend {
-                refillKeyPackagesUseCase.invoke(any(), any())
+                refillKeyPackagesUseCase.invoke(any())
             } returns RefillKeyPackagesResult.Success
         }
 
@@ -268,10 +225,8 @@ class KeyPackageManagerTests {
             lazy { keyPackageCountUseCase },
             lazy { timestampKeyRepository },
             cryptoTransactionProvider,
-            keyPackageLimitsProvider,
             TestKaliumDispatcher
         ).also {
-            everySuspend { keyPackageLimitsProvider.usesExtendedPool() } returns extendedPool
             withMLSTransactionReturning(Either.Right(Unit))
         }
     }

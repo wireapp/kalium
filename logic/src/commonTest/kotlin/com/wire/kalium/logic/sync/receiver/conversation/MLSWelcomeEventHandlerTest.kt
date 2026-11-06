@@ -32,7 +32,6 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
-import com.wire.kalium.logic.feature.keypackage.KeyPackageRefillTrigger
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
@@ -103,7 +102,7 @@ class MLSWelcomeEventHandlerTest {
             arrangement.mlsContext.processWelcomeMessage(any())
         }
         verify(VerifyMode.not) {
-            arrangement.keyPackageManager.scheduleRefill(KeyPackageRefillTrigger.WELCOME_HANDLED)
+            arrangement.keyPackageManager.scheduleRefill()
         }
     }
 
@@ -221,7 +220,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
         verify(VerifyMode.not) {
-            arrangement.keyPackageManager.scheduleRefill(KeyPackageRefillTrigger.WELCOME_HANDLED)
+            arrangement.keyPackageManager.scheduleRefill()
         }
     }
 
@@ -237,7 +236,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
         verify(VerifyMode.exactly(1)) {
-            arrangement.keyPackageManager.scheduleRefill(KeyPackageRefillTrigger.WELCOME_HANDLED)
+            arrangement.keyPackageManager.scheduleRefill()
         }
     }
 

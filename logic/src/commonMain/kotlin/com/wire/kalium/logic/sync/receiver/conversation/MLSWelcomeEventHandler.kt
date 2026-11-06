@@ -46,7 +46,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
-import com.wire.kalium.logic.feature.keypackage.KeyPackageRefillTrigger
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.network.exceptions.KaliumException
@@ -148,11 +147,10 @@ internal class MLSWelcomeEventHandlerImpl(
                         arrayOf("welcomeOutcome" to welcomeOutcome)
                     )
                 } else {
-                    keyPackageManager.scheduleRefill(KeyPackageRefillTrigger.WELCOME_HANDLED)
+                    keyPackageManager.scheduleRefill()
                     eventLogger.logSuccess(
                         "info" to "Established mls conversation from welcome message",
-                        "welcomeOutcome" to welcomeOutcome,
-                        "didScheduleKeypackageRefill" to true
+                        "welcomeOutcome" to welcomeOutcome
                     )
                 }
             }

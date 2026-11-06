@@ -153,9 +153,9 @@ class MLSKeyPackageCountUseCaseTest {
             } returns result
         }
 
-        suspend fun withKeyPackageLimitSucceed() = apply {
-            everySuspend {
-                keyPackageLimitsProvider.needsRefill(any(), any())
+        fun withKeyPackageLimitSucceed() = apply {
+            every {
+                keyPackageLimitsProvider.needsRefill(any())
             } returns true
         }
 
