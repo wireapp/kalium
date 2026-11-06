@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -51,9 +52,11 @@ internal sealed class RefillKeyPackagesResult {
  * pending MLS conversations are flagged to be joined by external commit, before uploading, so the flag
  * survives a failed upload or a restart.
  *
- * Key packages are generated and uploaded in batches, each in its own MLS transaction, so other MLS work
- * isn't blocked for the whole refill and every uploaded batch is committed locally. Because of that, this
- * use case must not be called from inside another crypto transaction.
+ * Key packages are generated in batches, each in its own MLS transaction, and every batch is uploaded only
+ * after its transaction has committed. The backend never gets a key package whose private keys could still
+ * be rolled back, and no transaction is held while waiting on the network. If an upload fails, the batch
+ * just stays unused in the local keystore. Because of the transactions, this use case must not be called
+ * from inside another crypto transaction.
  */
 internal interface RefillKeyPackagesUseCase {
 
@@ -98,9 +101,9 @@ internal class RefillKeyPackagesUseCaseImpl(
         val batchSize = keyPackageLimitsProvider.refillAmount()
         return (0 until amount step batchSize).toList().foldToEitherWhileRight(Unit) { offset, _ ->
             if (offset > 0) delay(BATCH_DELAY)
-            transactionProvider.mlsTransaction("RefillKeyPackages") { mlsContext ->
-                keyPackageRepository.uploadNewKeyPackages(mlsContext, clientId, minOf(batchSize, amount - offset))
-            }
+            transactionProvider.mlsTransaction("GenerateKeyPackages") { mlsContext ->
+                wrapMLSRequest { mlsContext.generateKeyPackages(minOf(batchSize, amount - offset)) }
+            }.flatMap { keyPackages -> keyPackageRepository.uploadKeyPackages(clientId, keyPackages) }
         }
     }
 
