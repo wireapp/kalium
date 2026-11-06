@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
@@ -44,8 +45,11 @@ import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseAr
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.matches
+import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
@@ -210,6 +214,21 @@ class MemberJoinEventHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(conversation.id, any())
         }
+    }
+
+    @Test
+    fun givenSelfAddedToMLSGroupBeforeItsWelcome_whenHandlingIt_thenShouldRequestJoiningPendingMLSConversations() = runTest {
+        val conversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
+        val event = TestEvent.memberJoin(members = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member)))
+            .copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(true) }
     }
 
     @Test
@@ -441,6 +460,7 @@ class MemberJoinEventHandlerTest {
         NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
 
         private var kaliumConfigs = KaliumConfigs()
+        val userConfigRepository: UserConfigRepository = mock()
 
         suspend fun arrange() = run {
             withIsCellEnabledReturning(false.right())
@@ -453,6 +473,7 @@ class MemberJoinEventHandlerTest {
             withHandleConversationMembersChanged(Unit.right())
             withPersistUnverifiedWarningMessageSuccess()
             withPersistCellAccessMessageSuccess()
+            everySuspend { userConfigRepository.setShouldJoinPendingMLSConversations(any()) } returns Unit.right()
 
             this to MemberJoinEventHandlerImpl(
                 conversationRepository = conversationRepository,
@@ -462,7 +483,8 @@ class MemberJoinEventHandlerTest {
                 newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
                 selfUserId = TEST_SELF_USER_ID,
                 fetchConversation = fetchConversation,
-                kaliumConfigs = kaliumConfigs
+                kaliumConfigs = kaliumConfigs,
+                userConfigRepository = userConfigRepository,
             )
         }
 
