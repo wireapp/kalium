@@ -96,9 +96,61 @@ class SendConfirmationUseCaseTest {
     }
 
     @Test
-    fun givenMLSGroupConversation_whenSendingReadConfirmation_thenShouldNotSendConfirmation() = runTest {
-        val mlsGroupConversation = TestConversation.MLS_CONVERSATION.copy(type = Conversation.Type.Group.Regular)
+    fun givenMLSGroupConversationAndTargetedMLSMessagesEnabled_whenSendingReadConfirmation_thenShouldSendConfirmationToOriginalSender() =
+        runTest {
+            val mlsGroupConversation = TestConversation.MLS_CONVERSATION.copy(
+                type = Conversation.Type.Group.Regular,
+                receiptMode = Conversation.ReceiptMode.ENABLED
+            )
+            val (arrangement, sendConfirmation) = Arrangement()
+                .withTargetedMLSMessagesEnabled(true)
+                .withCurrentClientIdProvider()
+                .withGetConversationByIdSuccessful(mlsGroupConversation)
+                .withPendingMessagesResponse()
+                .withSendMessageSuccess()
+                .arrange()
+
+            val after = Instant.DISTANT_PAST
+            val until = after + 10.seconds
+
+            val result = sendConfirmation(TestConversation.ID, after, until)
+
+            result.toEither().shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageSender.sendMessage(any(), MessageTarget.Users(TestUser.OTHER_USER_ID))
+            }
+        }
+
+    @Test
+    fun givenMLSGroupConversationAndReceiptModeDisabled_whenSendingReadConfirmation_thenShouldNotSendConfirmation() = runTest {
+        val mlsGroupConversation = TestConversation.MLS_CONVERSATION.copy(
+            type = Conversation.Type.Group.Regular,
+            receiptMode = Conversation.ReceiptMode.DISABLED
+        )
         val (arrangement, sendConfirmation) = Arrangement()
+            .withTargetedMLSMessagesEnabled(true)
+            .withGetConversationByIdSuccessful(mlsGroupConversation)
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        result.toEither().shouldSucceed()
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenMLSGroupConversationAndTargetedMLSMessagesDisabled_whenSendingReadConfirmation_thenShouldNotSendConfirmation() = runTest {
+        val mlsGroupConversation = TestConversation.MLS_CONVERSATION.copy(
+            type = Conversation.Type.Group.Regular,
+            receiptMode = Conversation.ReceiptMode.ENABLED
+        )
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withTargetedMLSMessagesEnabled(false)
             .withGetConversationByIdSuccessful(mlsGroupConversation)
             .arrange()
 
@@ -264,6 +316,11 @@ class SendConfirmationUseCaseTest {
         private val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
         private val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
+        private var targetedMLSMessagesEnabled = false
+
+        fun withTargetedMLSMessagesEnabled(enabled: Boolean) = apply {
+            targetedMLSMessagesEnabled = enabled
+        }
 
         suspend fun withCurrentClientIdProvider() = apply {
             everySuspend {
@@ -312,7 +369,8 @@ class SendConfirmationUseCaseTest {
             TestUser.SELF.id,
             conversationRepository,
             messageRepository,
-            userPropertyRepository
+            userPropertyRepository,
+            targetedMLSMessagesEnabled
         )
     }
 
