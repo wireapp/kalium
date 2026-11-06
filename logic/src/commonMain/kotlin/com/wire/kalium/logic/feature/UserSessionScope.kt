@@ -2516,6 +2516,7 @@ public class UserSessionScope internal constructor(
             userId = userId,
             sendPendingAssetMessage = messages.sendPendingAssetMessage,
             messageSendFailureHandler = messages.messageSendFailureHandler,
+            pendingMessagesEnabled = kaliumConfigs.pendingMessages,
         )
     }
 

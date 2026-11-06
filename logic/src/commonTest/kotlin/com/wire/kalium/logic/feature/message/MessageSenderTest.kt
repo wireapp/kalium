@@ -601,6 +601,46 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenPendingMessagesEnabled_whenNetworkDisappearsAgain_thenKeepMessagePending() {
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, messageSender) = arrange {
+            pendingMessagesEnabled = true
+            withSendProteusMessage(sendEnvelopeWithResult = Either.Left(failure))
+        }
+        arrangement.testScope.runTest {
+            messageSender.sendPendingMessage(
+                Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID,
+            ).shouldFail()
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenPendingMessagesEnabled_whenNetworkReturnsAfterFailedRetry_thenNextRetrySendsMessage() {
+        val (arrangement, messageSender) = arrange {
+            pendingMessagesEnabled = true
+            withSendProteusMessage(sendEnvelopeWithResult = Either.Left(NetworkFailure.NoNetworkConnection(null)))
+        }
+        arrangement.testScope.runTest {
+            messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID).shouldFail()
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+            }
+
+            arrangement.withSendProteusMessage()
+            arrangement.withPromoteMessageToSentUpdatingServerTime()
+            messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID).shouldSucceed()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+            }
+        }
+    }
+
+    @Test
     fun givenSendingOfEnvelopeFailsDueToLackOfConnection_whenSendingOutgoingMessage_thenFailureShouldBeHandledProperly() {
         // given
         val failure = NetworkFailure.NoNetworkConnection(null)
@@ -1551,6 +1591,7 @@ class MessageSenderTest {
         val legalHoldHandler = mock<LegalHoldHandler>(mode = MockMode.autoUnit)
         val staleEpochVerifier = mock<StaleEpochVerifier>(mode = MockMode.autoUnit)
 
+        var pendingMessagesEnabled = false
         val testScope = TestScope()
 
         var preparedMessage: Message.Sendable? = null
@@ -1588,7 +1629,8 @@ class MessageSenderTest {
                         expirationData
                     )
                 },
-                scope = testScope
+                scope = testScope,
+                pendingMessagesEnabled = pendingMessagesEnabled,
             )
         }
 
