@@ -19,7 +19,7 @@ internal suspend fun deliverMessageAlerts(
 ) {
     for (alert in alerts) {
         currentCoroutineContext().ensureActive()
-        if (awaitNativeAcceptance { delivery.deliver(alert) }) {
+        if (delivery.awaitNativeAcceptance(alert)) {
             // Only the short database acknowledgement is protected, never the native callback.
             withContext(NonCancellable) {
                 acknowledge(
@@ -39,11 +39,12 @@ internal suspend fun deliverMessageAlerts(
  * a late completion cannot acknowledge against a closed database. The durable alert stays pending
  * and the host deduplicates its identity if native enqueue actually succeeded.
  */
-internal suspend fun <T> awaitNativeAcceptance(enqueue: suspend () -> T): T =
+private suspend fun KaliumNSEMessageDelivery.awaitNativeAcceptance(alert: KaliumNSEAlert): Boolean =
     suspendCancellableCoroutine { waiter ->
-        enqueue.startCoroutine(object : Continuation<T> {
+        val enqueue: suspend () -> Boolean = { deliver(alert) }
+        enqueue.startCoroutine(object : Continuation<Boolean> {
             override val context = waiter.context.minusKey(Job)
-            override fun resumeWith(result: Result<T>) {
+            override fun resumeWith(result: Result<Boolean>) {
                 waiter.resumeWith(result)
             }
         })

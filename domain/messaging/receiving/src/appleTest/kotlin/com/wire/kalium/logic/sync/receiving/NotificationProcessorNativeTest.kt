@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import kotlinx.cinterop.ByteVar
@@ -171,98 +172,23 @@ import platform.Foundation.NSUUID
 
 class NotificationProcessorNativeTest {
     @Test
-    fun committedMeetingDeletionCanReconcileRemindersWhenALaterMeetingFetchFails() = runTest {
-        withContext(Dispatchers.Default) {
-            withFixture(false) { fixture ->
-                fixture.releasePrepared()
-                val time = Clock.System.now()
-                val meetingId = com.wire.kalium.network.api.model.MeetingId("meeting-a", SELF.domain)
-                val laterId = com.wire.kalium.network.api.model.MeetingId("meeting-b", SELF.domain)
-                val meeting = com.wire.kalium.network.api.authenticated.meeting.MeetingDTO(
-                    meetingId, CONVERSATION_ID.toModel().toApi(), SENDER.toApi(), time, null, "Planning",
-                    time + 3600.seconds, time + 7200.seconds, "UTC", null,
-                )
-                fun event(id: String, content: EventContentDTO) = fixture.plainEvent(
-                    id, kotlinx.serialization.json.Json.encodeToString(EventContentDTO.serializer(), content),
-                )
-                val create = event("create-a", EventContentDTO.Meeting.MeetingCreateDTO(meetingId, time, SENDER.toApi()))
-                assertIs<Either.Right<*>>(fixture.receive(listOf(create), create.id, fetchMeeting = { meeting }))
-                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
-                    runtime.database.userConfigDAO.setMeetingsEnabled(true)
-                    assertEquals(1, PendingMeetingAlerts(runtime.database).reminders().size)
-                })
-                val delete = event("delete-a", EventContentDTO.Meeting.MeetingDeleteDTO(meetingId, time, SENDER.toApi()))
-                val later = event("update-b", EventContentDTO.Meeting.MeetingUpdateDTO(laterId, time, SENDER.toApi()))
-                val result = fixture.receive(listOf(delete, later), later.id, fetchMeeting = { throw KaliumException.NoNetwork() })
-                assertIs<Either.Right<*>>(result, result.toString())
-                assertEquals("MEETING_FETCH_UNAVAILABLE", fixture.receivedStop)
-                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
-                    val meetings = PendingMeetingAlerts(runtime.database)
-                    assertEquals(emptyList(), meetings.reminders())
-                    assertEquals(meetingId.toModel(), meetings.read().single().meetingId)
-                    assertEquals(true, runtime.database.eventDAO.getEventById(delete.id)?.isProcessed)
-                    assertEquals(false, runtime.database.eventDAO.getEventById(later.id)?.isProcessed)
-                })
-            }
-        }
-    }
-
-    @Test
-    fun deletingAMeetingConversationRetainsCancellationBeforeCascadeAndSkipsSelfDeletion() = runTest {
-        withContext(Dispatchers.Default) {
-            for (deletedBySelf in listOf(false, true)) withFixture(false) { fixture ->
-                fixture.releasePrepared()
-                val time = Clock.System.now()
-                val meetingId = com.wire.kalium.network.api.model.MeetingId("deleted-meeting", SELF.domain)
-                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
-                    val conversation = assertNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
-                    runtime.database.conversationDAO.insertConversations(listOf(conversation.copy(type = ConversationEntity.Type.MEETING)))
-                })
-                val meeting = com.wire.kalium.network.api.authenticated.meeting.MeetingDTO(
-                    meetingId, CONVERSATION_ID.toModel().toApi(), SENDER.toApi(), time, null, "Cancelled planning",
-                    time + 3600.seconds, time + 7200.seconds, "UTC", null,
-                )
-                val create = fixture.plainEvent("create-meeting", kotlinx.serialization.json.Json.encodeToString(
-                    EventContentDTO.serializer(), EventContentDTO.Meeting.MeetingCreateDTO(meetingId, time, SENDER.toApi()),
-                ))
-                assertIs<Either.Right<ReceivedNotificationResult>>(fixture.receive(listOf(create), create.id, fetchMeeting = { meeting }))
-                val delete = fixture.plainEvent("delete-meeting-conversation", kotlinx.serialization.json.Json.encodeToString(
-                    EventContentDTO.serializer(), EventContentDTO.Conversation.DeletedMeetingConversationDTO(
-                        CONVERSATION_ID.toModel().toApi(), (if (deletedBySelf) SELF else SENDER).toApi(), time.toString(),
-                    ),
-                ))
-                assertIs<Either.Right<ReceivedNotificationResult>>(fixture.receive(listOf(delete), delete.id))
-                assertIs<Either.Right<Unit>>(fixture.open { runtime ->
-                    val alerts = PendingMeetingAlerts(runtime.database).read()
-                    if (deletedBySelf) assertEquals(emptyList(), alerts)
-                    else assertEquals("Cancelled planning",
-                        assertIs<com.wire.kalium.logic.data.notification.LocalNotification.Meeting.Cancel>(alerts.single()).meetingTitle)
-                    assertNull(runtime.database.meetingDao.getMeeting(meetingId.toModel().toDao()))
-                })
-            }
-        }
-    }
-
-    @Test
-    fun meetingEventsPersistSharedAlertsBeforeTheirProcessedMarkerAndRetainCancellationContent() = runTest {
+    fun meetingEventsReturnTheAppAlertsAndRefreshReminders() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(false) { fixture ->
                 fixture.releasePrepared()
                 val time = Clock.System.now()
                 val meetingId = com.wire.kalium.network.api.model.MeetingId("meeting", SELF.domain)
+                val meeting = fixture.meetingDTO(meetingId)
                 val avatar = QualifiedIDEntity("author-avatar", "assets.example.com")
-                val meeting = com.wire.kalium.network.api.authenticated.meeting.MeetingDTO(
-                    meetingId, CONVERSATION_ID.toModel().toApi(), SENDER.toApi(), time, null, "Planning",
-                    time + 3600.seconds, time + 7200.seconds, "UTC", null,
-                )
                 fun event(id: String, content: EventContentDTO) = fixture.plainEvent(
                     id, kotlinx.serialization.json.Json.encodeToString(EventContentDTO.serializer(), content),
                 )
                 val create = event("create-meeting", EventContentDTO.Meeting.MeetingCreateDTO(meetingId, time, SENDER.toApi()))
-                val created = fixture.receive(listOf(create), create.id, fetchMeeting = { meeting })
-                assertIs<Either.Right<*>>(created, created.toString())
+                assertIs<Either.Right<*>>(fixture.receive(listOf(create), create.id, fetchMeeting = { meeting }))
+                assertEquals(emptyList(), fixture.receivedMeetings)
                 assertIs<Either.Right<Unit>>(fixture.open { runtime ->
-                    assertEquals(emptyList(), PendingMeetingAlerts(runtime.database).read())
+                    runtime.database.userConfigDAO.setMeetingsEnabled(true)
+                    assertTrue(runtime.database.upcomingMeetingReminders().isNotEmpty())
                     runtime.database.userDAO.updateUser(com.wire.kalium.persistence.dao.PartialUserEntity(
                         SENDER.toDao(), previewAssetId = avatar,
                     ))
@@ -274,24 +200,37 @@ class NotificationProcessorNativeTest {
                 )
                 val received = fixture.receive(events, events.last().id, fetchMeeting = { meeting.copy(title = "Updated planning") })
                 assertIs<Either.Right<*>>(received, received.toString())
+                val alerts = fixture.receivedMeetings
+                assertEquals(events.map { it.id }, alerts.map { it.eventId })
+                assertIs<LocalNotification.Meeting.Invite>(alerts[0])
+                assertIs<LocalNotification.Meeting.Update>(alerts[1])
+                // The cancellation keeps the deleted meeting's title and the sender's avatar.
+                val cancelled = assertIs<LocalNotification.Meeting.Cancel>(alerts[2])
+                assertEquals("Updated planning", cancelled.meetingTitle)
+                assertEquals(avatar.toModel(), cancelled.author?.imageUri)
                 assertIs<Either.Right<Unit>>(fixture.open { runtime ->
-                    val alerts = PendingMeetingAlerts(runtime.database).read()
-                    assertEquals(events.map { it.id }, alerts.map { it.eventId })
-                    assertIs<com.wire.kalium.logic.data.notification.LocalNotification.Meeting.Invite>(alerts[0])
-                    assertIs<com.wire.kalium.logic.data.notification.LocalNotification.Meeting.Update>(alerts[1])
-                    val cancelled = assertIs<com.wire.kalium.logic.data.notification.LocalNotification.Meeting.Cancel>(alerts[2])
-                    assertEquals("Updated planning", cancelled.meetingTitle)
-                    assertNotNull(cancelled.author?.name)
-                    assertEquals(avatar.toModel(), cancelled.author?.imageUri)
-                    assertNull(runtime.database.meetingDao.getMeeting(meetingId.toModel().toDao()))
-                    events.forEach { assertEquals(true, runtime.database.eventDAO.getEventById(it.id)?.isProcessed) }
+                    assertEquals(emptyList(), runtime.database.upcomingMeetingReminders())
                 })
-                // Reopening and replaying the processed notification cannot duplicate its durable alert.
-                assertIs<Either.Right<*>>(fixture.receive(events, events.last().id,
-                    fetchMeeting = { error("Processed events must not fetch again") }))
+            }
+        }
+    }
+
+    @Test
+    fun deletingAMeetingConversationCancelsItsMeetingsUnlessSelfDeletedIt() = runTest {
+        withContext(Dispatchers.Default) {
+            for (sender in listOf(SENDER, SELF)) withFixture(false) { fixture ->
+                fixture.releasePrepared()
                 assertIs<Either.Right<Unit>>(fixture.open { runtime ->
-                    assertEquals(3, PendingMeetingAlerts(runtime.database).read().size)
+                    val conversation = assertNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+                    runtime.database.conversationDAO.insertConversations(listOf(conversation.copy(type = ConversationEntity.Type.MEETING)))
                 })
+                val create = fixture.meetingEvent("create")
+                assertIs<Either.Right<*>>(fixture.receive(listOf(create), create.id, fetchMeeting = fixture::meetingDTO))
+                val delete = fixture.deletedConversationEvent(CONVERSATION_ID, meeting = true, sender = sender)
+                assertIs<Either.Right<*>>(fixture.receive(listOf(delete), delete.id))
+                val alerts = fixture.receivedMeetings
+                if (sender == SELF) assertEquals(emptyList(), alerts)
+                else assertEquals("Fixture meeting", assertIs<LocalNotification.Meeting.Cancel>(alerts.single()).meetingTitle)
             }
         }
     }
@@ -11351,6 +11290,7 @@ class NotificationProcessorNativeTest {
         var receivedCalls: List<ReceivedCallResult> = emptyList()
         var receivedAppWork: NotificationAppWork? = null
         var receivedStop: String? = null
+        var receivedMeetings: List<LocalNotification.Meeting> = emptyList()
         var receivedCallEvents: List<ReceivedCallEvent> = emptyList()
         private val config = ApplePersistenceConfig(keychainService, keychainAccessibility = null)
         val databaseSecret get() = checkNotNull(GlobalPrefProvider(config).passphraseStorage.existingUserDatabaseSecret(SELF.toDao()))
@@ -12914,7 +12854,10 @@ class NotificationProcessorNativeTest {
                 },
             ).let { processor ->
                 processor.processToLive(target, toLive)
-            }.also { receivedCalls = it.calls; receivedAppWork = it.appWorkPending; receivedStop = it.stoppedReason }.message
+            }.also {
+                receivedCalls = it.calls; receivedAppWork = it.appWorkPending; receivedStop = it.stoppedReason
+                receivedMeetings = it.meetings
+            }.message
         }
 
         suspend fun decryptAndCheck(cipher: ByteArray, value: String, protocolMLS: Boolean = mlsEnabled) = open { runtime ->

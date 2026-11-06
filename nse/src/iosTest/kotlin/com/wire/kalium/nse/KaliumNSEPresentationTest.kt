@@ -186,11 +186,10 @@ class KaliumNSEPresentationTest {
                 )
             }
         }
-        // Partial processing can leave an unseen event even while the app presents.
-        for (reason in listOf("BUDGET", "MEETING_FETCH_UNAVAILABLE")) for (processed in listOf(false, true)) {
-            val received = ReceivedNotificationResult(null, stoppedReason = reason)
-            assertEquals(!processed, receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received, true) { processed })
-        }
+        // Running out of time still asks even while the app presents.
+        assertTrue(receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, ReceivedNotificationResult(null, stoppedReason = "BUDGET"), true) {
+            false
+        })
     }
 
     private fun unnotified(id: String) = message(ReceivedNotificationType.MESSAGE).copy(messageId = id)

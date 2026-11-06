@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.logic.data.notification.classifyNotificationMessage
 import com.wire.kalium.common.error.CoreFailure
@@ -78,6 +79,7 @@ internal class ReceivedMessageHandler(
     private val deleteFile: (String) -> Unit,
     private val previewImages: ReceivedLinkPreviewImages,
     private val calls: MutableList<ReceivedCallEvent>,
+    private val meetingAlerts: MutableList<LocalNotification.Meeting>,
 ) {
     private val mapper = RegularMessageMapper(selfUserId)
     private val receiptMapper = ReceiptModeMapperImpl()
@@ -109,7 +111,7 @@ internal class ReceivedMessageHandler(
         }
         val sender = event.senderUserId?.let { data.users.getNameAndHandle(it.toDao()) }
         if (conversation.type == ConversationEntity.Type.MEETING && event.senderUserId != selfUserId) {
-            data.recordMeetingCancellations(event.id, id, event.dateTime, event.senderUserId)
+            meetingAlerts += data.meetingCancellations(event.id, id, event.dateTime, event.senderUserId)
         }
         data.assets.deleteConversationFiles(id, deleteFile)
         (conversation.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.let {

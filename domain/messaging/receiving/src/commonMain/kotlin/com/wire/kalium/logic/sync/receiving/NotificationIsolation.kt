@@ -38,7 +38,6 @@ internal fun notificationDependencies(payload: List<EventContentDTO>): Set<Notif
 /** Caught only outside the native transactions. Never wrap SQL writes or native commit failures. */
 internal class DeferredNotification(val failure: KaliumSyncException) : Exception("Notification dependency deferred", failure)
 internal class NotificationOrderingBarrier : Exception("Notification requires the complete event prefix")
-internal class MeetingFetchUnavailable(val failure: KaliumSyncException) : Exception("Meeting fetch unavailable", failure)
 
 internal fun CoreFailure.canDeferNotification(): Boolean = when (this) {
     is NetworkFailure.NoNetworkConnection, is NetworkFailure.FederatedBackendFailure -> true

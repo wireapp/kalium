@@ -23,6 +23,8 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.MessageContentPreference
+import com.wire.kalium.logic.data.meeting.MeetingReminder
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
@@ -39,6 +41,7 @@ import com.wire.kalium.logic.sync.receiving.ReceivingOptions
 import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
 import com.wire.kalium.logic.sync.receiving.notificationPreview
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
+import com.wire.kalium.logic.sync.receiving.upcomingMeetingReminders
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
@@ -135,6 +138,13 @@ public data class KaliumNSEResult(
     public val messageKind: NotificationMessageKind? = null,
     /** Absolute unread-conversation count after receiving; absent when receiving failed. */
     public val unreadConversationBadgeCount: Long? = null,
+    /**
+     * Invitations, updates and cancellations for meeting events received in this attempt, oldest first. Post each
+     * before completing the request; like the app's meeting alerts they are not replayed.
+     */
+    public val meetingAlerts: List<LocalNotification.Meeting> = emptyList(),
+    /** This account's upcoming meeting reminders after receiving; absent when receiving failed. Replaces native requests. */
+    public val meetingReminders: List<MeetingReminder>? = null,
 )
 
 /** A message alert beyond the request's own; text and names are present only when preview is allowed. */
@@ -195,13 +205,6 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     @Throws(CancellationException::class)
     public suspend fun processAndDeliver(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery): KaliumNSEResult =
         processOwned(request, delivery)
-
-    /** Adds meeting alert delivery and native reminder synchronization without changing legacy result constructors. */
-    @Throws(CancellationException::class)
-    public suspend fun processAndDeliverNotifications(
-        request: KaliumNSERequest,
-        delivery: KaliumNSENotificationDelivery,
-    ): KaliumNSEResult = processOwned(request, delivery)
 
     private suspend fun processOwned(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
         // An extension has a bounded host budget; this flag controls diagnostic verbosity only.
@@ -285,15 +288,10 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         if (delivery != null) deliverMessageAlerts(result.alerts, delivery) { key ->
             claims.pending.acknowledge(listOf(key))
         }
-        if (delivery is KaliumNSENotificationDelivery) {
-            val meetings = com.wire.kalium.logic.sync.receiving.PendingMeetingAlerts(runtime.database)
-            // Reflect every committed edit/cancellation even if unrelated later work stops this attempt.
-            val reminders = meetings.reminders()
-            awaitNativeAcceptance { delivery.synchronizeMeetingReminders(reminders) }
-            deliverMeetingAlerts(meetings.read(), delivery) { alert -> meetings.acknowledge(alert.eventId, alert.meetingId) }
-        }
         return result.copy(
             stoppedReason = received.stoppedReason,
+            meetingAlerts = received.meetings,
+            meetingReminders = runtime.database.upcomingMeetingReminders(),
             presentGenericAlert = !result.shouldNotify && result.alerts.isEmpty() &&
                 mayLeaveUnseenEvents(caughtUp, received, request.appPresentsAlerts) {
                     runtime.database.eventDAO.getEventById(request.notificationId)?.isProcessed == true
@@ -314,8 +312,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         targetProcessed: suspend () -> Boolean,
     ): Boolean = caughtUp == CatchUpOutcome.BUDGET || caughtUp == CatchUpOutcome.NEEDS_SLOW_SYNC || (
         (
-            received.stoppedReason == BUDGET || received.stoppedReason == "MEETING_FETCH_UNAVAILABLE" ||
-                caughtUp == CatchUpOutcome.FAILED ||
+            received.stoppedReason == BUDGET || caughtUp == CatchUpOutcome.FAILED ||
                 (received.appWorkPending == NotificationAppWork.LEGAL_HOLD && !appPresentsAlerts)
             ) && !targetProcessed()
         )

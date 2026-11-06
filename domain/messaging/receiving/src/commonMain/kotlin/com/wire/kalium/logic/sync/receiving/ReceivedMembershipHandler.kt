@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.toEntity
 import com.wire.kalium.logic.data.message.matchesSystemMessage
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserProfiles
 import com.wire.kalium.logic.sync.receiver.conversation.isPromotionToAdmin
@@ -34,6 +35,7 @@ internal class ReceivedMembershipHandler(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
     private val drivePermissionsEnabled: Boolean,
+    private val meetingAlerts: MutableList<LocalNotification.Meeting>,
 ) {
     suspend fun previousPromotion(event: Event.Conversation.MemberChanged.MemberChangedRole): MessageEntity? =
         data.messages.getMessageById(event.id, event.conversationId.toDao())?.also { existing ->
@@ -175,7 +177,7 @@ internal class ReceivedMembershipHandler(
             (conversation.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.let {
                 data.conversations.clearProposalTimer(it.groupId)
             }
-            data.recordMeetingCancellations(event.id, conversationId, event.dateTime, event.removedBy)
+            meetingAlerts += data.meetingCancellations(event.id, conversationId, event.dateTime, event.removedBy)
             data.meetings.deleteMeetingsByConversationId(conversationId)
         }
         if (current == null && deleted > 0) {

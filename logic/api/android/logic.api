@@ -1373,7 +1373,6 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getMarkNotifyForRevokedCertificateAsNotified ()Lcom/wire/kalium/logic/feature/user/e2ei/MarkNotifyForRevokedCertificateAsNotifiedUseCase;
 	public final fun getMarkSelfDeletingMessagesAsNotified ()Lcom/wire/kalium/logic/feature/user/MarkSelfDeletionStatusAsNotifiedUseCase;
 	public final fun getMarkTeamAppLockStatusAsNotified ()Lcom/wire/kalium/logic/feature/applock/MarkTeamAppLockStatusAsNotifiedUseCase;
-	public final fun getMeetingNotificationAlerts ()Lcom/wire/kalium/logic/sync/receiving/PendingMeetingAlerts;
 	public final fun getMeetings ()Lcom/wire/kalium/logic/feature/meeting/MeetingScope;
 	public final fun getMessages ()Lcom/wire/kalium/logic/feature/message/MessageScope;
 	public final fun getMigrateConversationToMLS ()Lcom/wire/kalium/logic/feature/conversation/MigrateConversationToMLSUseCase;
