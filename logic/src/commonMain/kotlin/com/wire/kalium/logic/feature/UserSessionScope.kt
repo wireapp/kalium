@@ -1807,8 +1807,7 @@ public class UserSessionScope internal constructor(
         lazy { clientRepository },
         lazy { client.refillKeyPackages },
         lazy { client.mlsKeyPackageCountUseCase },
-        lazy { users.timestampKeyRepository },
-        cryptoTransactionProvider
+        lazy { users.timestampKeyRepository }
     )
 
     internal val keyingMaterialsManager: KeyingMaterialsManager
@@ -2186,9 +2185,9 @@ public class UserSessionScope internal constructor(
         get() = MLSWelcomeEventHandlerImpl(
             conversationRepository = conversationRepository,
             oneOnOneResolver = oneOnOneResolver,
-            refillKeyPackages = client.refillKeyPackages,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
-            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
+            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
+            keyPackageManager = keyPackageManager
         )
 
     private val renamedConversationHandler: RenamedConversationEventHandler

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.keypackage
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -59,7 +60,7 @@ class RefillKeyPackageUseCaseTest {
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
             .arrange()
 
-        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+        val actual = refillKeyPackagesUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageRepository.uploadNewKeyPackages(
@@ -83,7 +84,7 @@ class RefillKeyPackageUseCaseTest {
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
             .arrange()
 
-        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+        val actual = refillKeyPackagesUseCase()
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
     }
@@ -99,7 +100,7 @@ class RefillKeyPackageUseCaseTest {
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
             .arrange()
 
-        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+        val actual = refillKeyPackagesUseCase()
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
         verifySuspend(VerifyMode.order) {
@@ -119,7 +120,7 @@ class RefillKeyPackageUseCaseTest {
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
             .arrange()
 
-        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+        val actual = refillKeyPackagesUseCase()
 
         assertIs<RefillKeyPackagesResult.Failure>(actual)
         assertEquals(failure, actual.failure)
@@ -138,7 +139,7 @@ class RefillKeyPackageUseCaseTest {
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
             .arrange()
 
-        refillKeyPackagesUseCase(arrangement.mlsContext)
+        refillKeyPackagesUseCase()
 
         verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(any())
@@ -156,10 +157,72 @@ class RefillKeyPackageUseCaseTest {
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
             .arrange()
 
-        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+        val actual = refillKeyPackagesUseCase()
 
         assertIs<RefillKeyPackagesResult.Failure>(actual)
         assertEquals(actual.failure, networkFailure)
+    }
+
+    @Test
+    fun givenThousandKeyPackagesMissing_whenRefilling_thenUploadsTenBatchesEachInItsOwnTransaction() = runTest {
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageLimits(true, 1000)
+            .withKeyPackageCount(1)
+            .withUploadKeyPackagesSuccessful()
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        val actual = refillKeyPackagesUseCase()
+
+        assertIs<RefillKeyPackagesResult.Success>(actual)
+        verifySuspend(VerifyMode.exactly(10)) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.BATCH_SIZE)
+        }
+        // One transaction to read the cipher suite, then one per batch.
+        verifySuspend(VerifyMode.exactly(11)) {
+            arrangement.cryptoTransactionProvider.mlsTransaction<Any?>(any(), any())
+        }
+    }
+
+    @Test
+    fun givenMissingAmountIsNotAMultipleOfTheBatchSize_whenRefilling_thenTheLastBatchUploadsTheRest() = runTest {
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageLimits(true, 501)
+            .withKeyPackageCount(499)
+            .withUploadKeyPackagesSuccessful()
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        refillKeyPackagesUseCase()
+
+        verifySuspend(VerifyMode.exactly(5)) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.BATCH_SIZE)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, 1)
+        }
+    }
+
+    @Test
+    fun givenBatchUploadFails_whenRefilling_thenStopsAndReturnsTheFailure() = runTest {
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageLimits(true, 1000)
+            .withKeyPackageCount(1)
+            .withUploadKeyPackagesFailing(failure)
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        val actual = refillKeyPackagesUseCase()
+
+        assertIs<RefillKeyPackagesResult.Failure>(actual)
+        assertEquals(failure, actual.failure)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+        }
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -173,6 +236,7 @@ class RefillKeyPackageUseCaseTest {
             keyPackageLimitsProvider,
             currentClientIdProvider,
             userConfigRepository,
+            cryptoTransactionProvider,
         )
 
         fun withDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
@@ -187,19 +251,28 @@ class RefillKeyPackageUseCaseTest {
             } returns Either.Right(TestClient.CLIENT_ID)
         }
 
-        fun withKeyPackageLimits(needRefill: Boolean, refillAmount: Int) = apply {
+        fun withKeyPackageLimits(needRefill: Boolean, refillAmount: Int, batchSize: Int = BATCH_SIZE) = apply {
             every {
                 keyPackageLimitsProvider.needsRefill(any())
             } returns needRefill
             every {
-                keyPackageLimitsProvider.refillAmount()
+                keyPackageLimitsProvider.missingKeyPackages(any())
             } returns refillAmount
+            every {
+                keyPackageLimitsProvider.refillAmount()
+            } returns batchSize
         }
 
         suspend fun withKeyPackageCount(count: Int) = apply {
             everySuspend {
                 keyPackageRepository.getAvailableKeyPackageCount(any(), any())
             } returns Either.Right(KeyPackageCountDTO(count))
+        }
+
+        suspend fun withUploadKeyPackagesFailing(failure: CoreFailure) = apply {
+            everySuspend {
+                keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, any())
+            } returns Either.Left(failure)
         }
 
         suspend fun withUploadKeyPackagesSuccessful() = apply {
@@ -229,6 +302,7 @@ class RefillKeyPackageUseCaseTest {
         companion object {
             const val KEY_PACKAGE_LIMIT = 100
             const val KEY_PACKAGE_THRESHOLD = 0.5F
+            const val BATCH_SIZE = 100
         }
 
     }

@@ -20,54 +20,43 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class KeyPackageLimitsProviderTests {
 
+    private val provider = KeyPackageLimitsProviderImpl(KaliumConfigs())
+    private val lowLimitsProvider = KeyPackageLimitsProviderImpl(KaliumConfigs(lowerKeyPackageLimits = true))
+
     @Test
-    fun givenKeyPackageCountIs50PercentBelowLimit_WhenCallNeedRefill_ReturnTrue() = runTest {
-        val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD - 1).toInt()
-        val (_, keyPackageLimitsProvide) = Arrangement()
-            .arrange()
-        val actual = keyPackageLimitsProvide.needsRefill(keyPackageCount)
-        assertTrue { actual }
+    fun givenCountBelowHalfOfTheTarget_whenCheckingNeedsRefill_thenReturnTrue() {
+        assertTrue(provider.needsRefill(499))
     }
 
     @Test
-    fun givenKeyPackageCountIs50PercentBelowLimit_WhenCallRefillAmount_ReturnCorrectAmount() = runTest {
-        val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD - 1).toInt()
-        val (_, keyPackageLimitsProvide) = Arrangement()
-            .arrange()
-        val actual = keyPackageLimitsProvide.refillAmount()
-        assertEquals(Arrangement.KEY_PACKAGE_LIMIT, actual)
+    fun givenCountAtHalfOfTheTarget_whenCheckingNeedsRefill_thenReturnFalse() {
+        assertFalse(provider.needsRefill(500))
     }
 
     @Test
-    fun givenKeyPackageCount50PercentAboveLimit_WhenCallNeedRefill_ThenReturnFalse() = runTest {
-        val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD).toInt()
-        val (_, keyPackageLimitsProvide) = Arrangement()
-            .arrange()
-        val actual = keyPackageLimitsProvide.needsRefill(keyPackageCount)
-        assertFalse { actual }
+    fun givenCount_whenGettingMissingKeyPackages_thenReturnDifferenceToTheTarget() {
+        assertEquals(1000, provider.missingKeyPackages(0))
+        assertEquals(501, provider.missingKeyPackages(499))
+        assertEquals(0, provider.missingKeyPackages(1200))
     }
 
-    private class Arrangement {
+    @Test
+    fun whenGettingRefillAmount_thenReturnTheSizeOfOneUploadRequest() {
+        assertEquals(100, provider.refillAmount())
+    }
 
-        val kaliumConfigs = KaliumConfigs()
-
-        fun arrange() = this to KeyPackageLimitsProviderImpl(
-            kaliumConfigs
-        )
-
-        companion object {
-            const val KEY_PACKAGE_LIMIT = 100
-            const val KEY_PACKAGE_THRESHOLD = 0.5F
-        }
+    @Test
+    fun givenLowerLimits_whenCheckingLimits_thenTargetIs10() {
+        assertTrue(lowLimitsProvider.needsRefill(4))
+        assertFalse(lowLimitsProvider.needsRefill(5))
+        assertEquals(10, lowLimitsProvider.refillAmount())
+        assertEquals(6, lowLimitsProvider.missingKeyPackages(4))
     }
 }

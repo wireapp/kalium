@@ -28,8 +28,7 @@ import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -37,9 +36,12 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class KeyPackageManagerTests {
 
@@ -57,7 +59,7 @@ class KeyPackageManagerTests {
             yield()
 
             verifySuspend(VerifyMode.not) {
-                arrangement.refillKeyPackagesUseCase.invoke(any())
+                arrangement.refillKeyPackagesUseCase.invoke()
             }
         }
 
@@ -72,7 +74,7 @@ class KeyPackageManagerTests {
             yield()
 
             verifySuspend(VerifyMode.not) {
-                arrangement.refillKeyPackagesUseCase.invoke(any())
+                arrangement.refillKeyPackagesUseCase.invoke()
             }
         }
 
@@ -88,7 +90,7 @@ class KeyPackageManagerTests {
             yield()
 
             verifySuspend(VerifyMode.not) {
-                arrangement.refillKeyPackagesUseCase.invoke(any())
+                arrangement.refillKeyPackagesUseCase.invoke()
             }
         }
 
@@ -108,7 +110,7 @@ class KeyPackageManagerTests {
             yield()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.refillKeyPackagesUseCase.invoke(any())
+                arrangement.refillKeyPackagesUseCase.invoke()
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -132,7 +134,7 @@ class KeyPackageManagerTests {
             yield()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.refillKeyPackagesUseCase.invoke(any())
+                arrangement.refillKeyPackagesUseCase.invoke()
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -140,7 +142,61 @@ class KeyPackageManagerTests {
             }
         }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    @Test
+    fun whenRefillIsScheduled_thenRefillRunsWithoutWaitingForTheHourlyCheck() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, manager) = Arrangement()
+                .withRefillKeyPackagesUseCaseSuccessful()
+                .withUpdateLastKeyPackageCountCheckSuccessful()
+                .arrange()
+
+            manager.scheduleRefill()
+            yield()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.refillKeyPackagesUseCase.invoke()
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.timestampKeyRepository.hasPassed(any(), any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.keyPackageCountUseCase.invoke(any())
+            }
+        }
+
+    @Test
+    fun givenRefillIsRunning_whenAnotherRefillIsScheduled_thenItWaitsForTheFirstOneToFinish() =
+        runTest(TestKaliumDispatcher.default) {
+            val firstRefillCanFinish = CompletableDeferred<Unit>()
+            var started = 0
+            var running = 0
+            var maxRunning = 0
+            val (arrangement, manager) = Arrangement()
+                .withUpdateLastKeyPackageCountCheckSuccessful()
+                .arrange()
+            everySuspend { arrangement.refillKeyPackagesUseCase.invoke() } calls {
+                started++
+                running++
+                maxRunning = maxOf(maxRunning, running)
+                firstRefillCanFinish.await()
+                running--
+                RefillKeyPackagesResult.Success
+            }
+
+            manager.scheduleRefill()
+            manager.scheduleRefill()
+            advanceUntilIdle()
+
+            assertEquals(1, started)
+
+            firstRefillCanFinish.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(2, started)
+            assertEquals(1, maxRunning)
+        }
+
+    private class Arrangement {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
         val clientRepository: ClientRepository = mock()
@@ -157,7 +213,7 @@ class KeyPackageManagerTests {
 
         suspend fun withRefillKeyPackagesUseCaseSuccessful() = apply {
             everySuspend {
-                refillKeyPackagesUseCase.invoke(any())
+                refillKeyPackagesUseCase.invoke()
             } returns RefillKeyPackagesResult.Success
         }
 
@@ -195,17 +251,14 @@ class KeyPackageManagerTests {
             } returns Either.Right(result)
         }
 
-        suspend fun arrange() = this to KeyPackageManagerImpl(
+        fun arrange() = this to KeyPackageManagerImpl(
             featureSupport,
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { refillKeyPackagesUseCase },
             lazy { keyPackageCountUseCase },
             lazy { timestampKeyRepository },
-            cryptoTransactionProvider,
             TestKaliumDispatcher
-        ).also {
-            withMLSTransactionReturning(Either.Right(Unit))
-        }
+        )
     }
 }

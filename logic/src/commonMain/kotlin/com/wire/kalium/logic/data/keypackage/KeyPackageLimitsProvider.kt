@@ -24,7 +24,15 @@ internal interface KeyPackageLimitsProvider {
 
     fun needsRefill(keyPackageCount: Int): Boolean
 
+    /**
+     * Number of key packages generated and uploaded in one request.
+     */
     fun refillAmount(): Int
+
+    /**
+     * Number of key packages missing from the target pool.
+     */
+    fun missingKeyPackages(keyPackageCount: Int): Int
 
 }
 
@@ -32,21 +40,21 @@ internal class KeyPackageLimitsProviderImpl(
     private val kaliumConfigs: KaliumConfigs
 ) : KeyPackageLimitsProvider {
 
-    private val keyPackageUploadLimit: Int
+    private val targetPoolSize: Int
         get() = if (kaliumConfigs.lowerKeyPackageLimits) KEY_PACKAGE_LIMIT_LOW else KEY_PACKAGE_LIMIT
 
-    private val keyPackageUploadThreshold: Float
-        get() = KEY_PACKAGE_THRESHOLD
+    override fun needsRefill(keyPackageCount: Int): Boolean =
+        keyPackageCount < targetPoolSize * KEY_PACKAGE_THRESHOLD
 
-    override fun needsRefill(keyPackageCount: Int): Boolean {
-        return keyPackageCount < (keyPackageUploadLimit * keyPackageUploadThreshold)
-    }
+    override fun refillAmount(): Int = minOf(targetPoolSize, KEY_PACKAGE_UPLOAD_BATCH_SIZE)
 
-    override fun refillAmount() = keyPackageUploadLimit
+    override fun missingKeyPackages(keyPackageCount: Int): Int =
+        (targetPoolSize - keyPackageCount).coerceAtLeast(0)
 
     internal companion object {
-        internal const val KEY_PACKAGE_LIMIT = 100
+        internal const val KEY_PACKAGE_LIMIT = 1000
         internal const val KEY_PACKAGE_LIMIT_LOW = 10
+        internal const val KEY_PACKAGE_UPLOAD_BATCH_SIZE = 100
         internal const val KEY_PACKAGE_THRESHOLD = 0.5F
     }
 }
