@@ -128,6 +128,18 @@ class ProtocolUpdateEventHandlerTest {
     }
 
     @Test
+    fun givenProtocolEventForInaccessibleConversation_whenBackendReturnsAccessDenied_thenEventIsSkipped() = runTest {
+        val event = TestEvent.newConversationProtocolEvent()
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied)
+
+        val (arrangement, useCase) = arrange {
+            withUpdateProtocolUpdateReturns(Either.Left(failure))
+        }
+
+        useCase.handle(arrangement.transactionContext, event).shouldSucceed()
+    }
+
+    @Test
     fun givenProtocolEvent_whenBackendReturnsOtherServerError_thenErrorIsPropagated() = runTest {
         val event = TestEvent.newConversationProtocolEvent()
         val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
