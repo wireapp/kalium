@@ -54,6 +54,10 @@ fun calcFileMd5(dataSource: Source): String? =
 fun calcSHA256(bytes: ByteArray): ByteArray =
     Buffer().use { it.write(bytes).sha256().toByteArray() }
 
+internal fun AES256Key.requireValidSize() {
+    require(data.size == AES256_KEY_SIZE_BYTES) { "AES-256 keys must contain exactly $AES256_KEY_SIZE_BYTES bytes" }
+}
+
 /**
  * Method used to calculate the digested SHA256 hash of a relatively small byte array
  *
@@ -81,6 +85,7 @@ fun calcFileSHA256(dataSource: Source): ByteArray? =
  * @param data the [PlainData] that needs to be encrypted
  * @param key the symmetric secret [AES256Key] that will be used for the encryption
  * @return the final [EncryptedData], on which the first 16 bytes belong to the initialisation vector
+ * @throws IllegalArgumentException if [key] is not exactly 32 bytes
  * @see encryptFileWithAES256
  */
 expect fun encryptDataWithAES256(
@@ -93,6 +98,7 @@ expect fun encryptDataWithAES256(
  *
  * @param data the [EncryptedData] that needs to be decrypted
  * @return the decrypted data as a byte array encapsulated in a [PlainData] object
+ * @throws IllegalArgumentException if [secretKey] is not exactly 32 bytes
  * @see decryptFileWithAES256
  */
 expect fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData
@@ -104,6 +110,7 @@ expect fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
  * @param key the symmetric secret [AES256Key] that will be used for the encryption
  * @param sink the [Sink] which the encrypted data will be written to
  * @return the size of the encrypted data in bytes if the encryption succeeded and 0 otherwise
+ * @throws IllegalArgumentException if [key] is not exactly 32 bytes
  * @see encryptDataWithAES256
  */
 expect fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long
@@ -115,6 +122,7 @@ expect fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Lo
  * @param sink the [Sink] to which the plain text data will be written to
  * @param secretKey the key used for the decryption
  * @return the size of the decrypted data in bytes if the decryption succeeded -1L otherwise
+ * @throws IllegalArgumentException if [secretKey] is not exactly 32 bytes
  * @see decryptDataWithAES256
  */
 expect fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long
@@ -124,3 +132,5 @@ expect fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Ke
  * @return the AES256 secret key encapsulated in a [AES256Key] object
  */
 expect fun generateRandomAES256Key(): AES256Key
+
+private const val AES256_KEY_SIZE_BYTES = 32
