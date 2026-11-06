@@ -100,14 +100,14 @@ class MasterKeyFallbackTest {
         val original = GeneralSecurityException("StrongBox failure")
         val fallback = IOException("fallback failure")
         val requests = mutableListOf<Boolean>()
-        val actual = assertFailsWith<IOException> {
+        val actual = assertFailsWith<MasterKeyInitializationException> {
             getOrCreateMasterKey(context, alias, strongBoxAvailable = true) {
                 requests += it
                 if (it) throw original else throw fallback
             }
         }
-        assertSame(fallback, actual)
-        assertEquals(listOf(original), actual.suppressed.toList())
+        assertSame(fallback, actual.cause)
+        assertEquals(listOf(original), actual.cause!!.suppressed.toList())
         assertEquals(listOf(true, false), requests)
     }
 
@@ -126,13 +126,23 @@ class MasterKeyFallbackTest {
     @Test
     fun regularKeystoreFailureIsNotRetried() {
         val requests = mutableListOf<Boolean>()
-        assertFailsWith<GeneralSecurityException> {
+        assertFailsWith<MasterKeyInitializationException> {
             getOrCreateMasterKey(context, alias, strongBoxAvailable = false) {
                 requests += it
                 throw GeneralSecurityException("test")
             }
         }
         assertEquals(listOf(false), requests)
+    }
+
+    @Test
+    fun terminalFailuresHaveTypedWrapperAndOriginalCause() {
+        listOf(GeneralSecurityException("test"), ProviderException("test"), IOException("test")).forEach { failure ->
+            val actual = assertFailsWith<MasterKeyInitializationException> {
+                getOrCreateMasterKey(context, alias, strongBoxAvailable = false) { throw failure }
+            }
+            assertSame(failure, actual.cause)
+        }
     }
 
     @Test

@@ -73,16 +73,24 @@ internal fun getOrCreateMasterKey(
             .setRequestStrongBoxBacked(requestStrongBox)
             .build()
     }
-): MasterKey {
+): MasterKey = try {
+    buildMasterKeyWithFallback(strongBoxAvailable, keyBuilder)
+} catch (failure: Exception) {
+    if (!failure.isKeyInitializationFailure()) throw failure
+    throw MasterKeyInitializationException(failure)
+}
+
+private fun Exception.isKeyInitializationFailure(): Boolean =
+    this is GeneralSecurityException || this is ProviderException || this is IOException
+
+@Suppress("TooGenericExceptionCaught")
+private fun buildMasterKeyWithFallback(strongBoxAvailable: Boolean, keyBuilder: (Boolean) -> MasterKey): MasterKey {
     if (!strongBoxAvailable) return keyBuilder(false)
 
     return try {
         keyBuilder(true)
     } catch (strongBoxFailure: Exception) {
-        if (strongBoxFailure !is GeneralSecurityException &&
-            strongBoxFailure !is ProviderException &&
-            strongBoxFailure !is IOException
-        ) {
+        if (!strongBoxFailure.isKeyInitializationFailure()) {
             throw strongBoxFailure
         }
         // Provider messages can contain aliases or other identifying information.
