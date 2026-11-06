@@ -90,7 +90,9 @@ class AssetMessageHandlerMutationTest {
         handler.handle(message)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessageUseCase.invoke(matches { it is Message.Regular && it.visibility == Message.Visibility.VISIBLE })
+            arrangement.persistMessageUseCase.invoke(
+                matches { it is Message.Regular && it.visibility == Message.Visibility.VISIBLE }
+            )
         }
     }
 
@@ -106,7 +108,9 @@ class AssetMessageHandlerMutationTest {
         handler.handle(message)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessageUseCase.invoke(matches { it is Message.Regular && it.visibility == Message.Visibility.HIDDEN })
+            arrangement.persistMessageUseCase.invoke(
+                matches { it is Message.Regular && it.visibility == Message.Visibility.HIDDEN }
+            )
         }
     }
 
@@ -335,8 +339,8 @@ class AssetMessageHandlerMutationTest {
         )
 
         fun validRemoteData(assetId: String) = AssetContent.RemoteData(
-            otrKey = byteArrayOf(1),
-            sha256 = byteArrayOf(2),
+            otrKey = ByteArray(32) { 1 },
+            sha256 = ByteArray(32) { 2 },
             assetId = assetId,
             assetToken = "token",
             assetDomain = "wire.com",
