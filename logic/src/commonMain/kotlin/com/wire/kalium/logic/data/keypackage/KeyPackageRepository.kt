@@ -27,6 +27,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
@@ -38,6 +39,7 @@ import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageLis
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
+import com.wire.kalium.network.exceptions.KaliumException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -90,6 +92,7 @@ internal class KeyPackageDataSource(
     private val keyPackageApi: KeyPackageApi,
     private val selfUserId: UserId,
     private val maxConcurrentClaims: Int = DEFAULT_MAX_CONCURRENT_CLAIMS,
+    private val uploadRetryPolicy: KeyPackageUploadRetryPolicy = KeyPackageUploadRetryPolicy(),
 ) : KeyPackageRepository {
 
     init {
@@ -166,14 +169,47 @@ internal class KeyPackageDataSource(
         mlsContext: MlsCoreCryptoContext,
         clientId: ClientId,
         amount: Int
-    ): Either<CoreFailure, Unit> =
-        wrapMLSRequest {
-            mlsContext.generateKeyPackages(amount)
-        }.flatMap { keyPackages ->
-            wrapApiRequest {
-                keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { Base64.encode(it) })
+    ): Either<CoreFailure, Unit> {
+        var remaining = amount
+        var result: Either<CoreFailure, Unit> = Either.Right(Unit)
+        while (remaining > 0 && result is Either.Right) {
+            val batchSize = minOf(remaining, KEY_PACKAGE_UPLOAD_BATCH_SIZE)
+            val generatedKeyPackages = wrapMLSRequest {
+                mlsContext.generateKeyPackages(batchSize)
+            }
+            result = when (generatedKeyPackages) {
+                is Either.Left -> generatedKeyPackages
+                is Either.Right -> uploadKeyPackageBatchWithRetry(
+                    clientId,
+                    generatedKeyPackages.value.map { Base64.encode(it) },
+                )
+            }
+            if (result is Either.Right) {
+                remaining -= batchSize
+                if (remaining > 0) uploadRetryPolicy.waitBeforeNextBatch()
             }
         }
+        return result
+    }
+
+    private suspend fun uploadKeyPackageBatchWithRetry(
+        clientId: ClientId,
+        keyPackages: List<String>,
+    ): Either<CoreFailure, Unit> {
+        var attempt = 1
+        var result: Either<NetworkFailure, Unit> = wrapApiRequest {
+            keyPackageApi.uploadKeyPackages(clientId.value, keyPackages)
+        }
+        while (result is Either.Left && result.value.isRetryableKeyPackageUpload() && attempt < uploadRetryPolicy.maxAttempts) {
+            kaliumLogger.w("Key package batch upload failed on attempt $attempt; retrying with backoff")
+            if (!uploadRetryPolicy.waitBeforeRetry(result.value, attempt)) break
+            attempt++
+            result = wrapApiRequest {
+                keyPackageApi.uploadKeyPackages(clientId.value, keyPackages)
+            }
+        }
+        return result
+    }
 
     override suspend fun uploadKeyPackages(
         clientId: ClientId,
@@ -210,6 +246,7 @@ internal class KeyPackageDataSource(
 
     private companion object {
         const val DEFAULT_MAX_CONCURRENT_CLAIMS = 8
+        const val KEY_PACKAGE_UPLOAD_BATCH_SIZE = 100
     }
 }
 
@@ -218,6 +255,20 @@ private fun UserKeyPackageClaim.hasFatalFailure(): Boolean =
 
 private fun NetworkFailure.isFatalClaimFailure(): Boolean =
     this is NetworkFailure.NoNetworkConnection || this is NetworkFailure.ProxyError
+
+private fun NetworkFailure.isRetryableKeyPackageUpload(): Boolean = when (this) {
+    is NetworkFailure.NoNetworkConnection, is NetworkFailure.ProxyError -> true
+    is NetworkFailure.ServerMiscommunication -> when (val exception = kaliumException) {
+        is KaliumException.InvalidRequestError ->
+            exception.errorResponse.code == HTTP_REQUEST_TIMEOUT || exception.errorResponse.code == HTTP_TOO_MANY_REQUESTS
+        else -> false
+    }
+
+    else -> false
+}
+
+private const val HTTP_REQUEST_TIMEOUT = 408
+private const val HTTP_TOO_MANY_REQUESTS = 429
 
 private data class UserKeyPackageClaim(
     val userId: UserId,

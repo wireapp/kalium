@@ -187,12 +187,12 @@ class RefillKeyPackageUseCaseTest {
             } returns Either.Right(TestClient.CLIENT_ID)
         }
 
-        fun withKeyPackageLimits(needRefill: Boolean, refillAmount: Int) = apply {
-            every {
-                keyPackageLimitsProvider.needsRefill(any())
+        suspend fun withKeyPackageLimits(needRefill: Boolean, refillAmount: Int) = apply {
+            everySuspend {
+                keyPackageLimitsProvider.needsRefill(any(), any())
             } returns needRefill
-            every {
-                keyPackageLimitsProvider.refillAmount()
+            everySuspend {
+                keyPackageLimitsProvider.refillAmount(any())
             } returns refillAmount
         }
 

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys.LAST_KEY_PACKAGE_COUNT_CHECK
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -45,7 +46,9 @@ internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 1.hours
 /**
  * Observes the MLS key package count and uploads new key packages when necessary.
  */
-internal interface KeyPackageManager
+internal interface KeyPackageManager {
+    fun scheduleRefill(trigger: KeyPackageRefillTrigger)
+}
 
 @Suppress("LongParameterList")
 internal class KeyPackageManagerImpl(
@@ -56,6 +59,7 @@ internal class KeyPackageManagerImpl(
     private val keyPackageCountUseCase: Lazy<MLSKeyPackageCountUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
     private val transactionProvider: CryptoTransactionProvider,
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : KeyPackageManager {
     /**
@@ -76,16 +80,28 @@ internal class KeyPackageManagerImpl(
                     featureSupport.isMLSSupported &&
                     clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
                 ) {
-                    refillKeyPackagesIfNeeded()
+                    refillKeyPackagesIfNeeded(KeyPackageRefillTrigger.STARTUP)
                 }
             }
         }
     }
 
-    private suspend fun refillKeyPackagesIfNeeded() {
-        timestampKeyRepository.value.hasPassed(LAST_KEY_PACKAGE_COUNT_CHECK, KEY_PACKAGE_COUNT_CHECK_DURATION)
+    override fun scheduleRefill(trigger: KeyPackageRefillTrigger) {
+        refillKeyPackagesScope.launch {
+            refillKeyPackagesIfNeeded(trigger)
+        }
+    }
+
+    private suspend fun refillKeyPackagesIfNeeded(trigger: KeyPackageRefillTrigger) {
+        val forceFullPool = trigger.refillFullMigrationPool && keyPackageLimitsProvider.usesExtendedPool()
+        val hasLastCheckPassed = if (trigger.forceCheck) {
+            Either.Right(false)
+        } else {
+            timestampKeyRepository.value.hasPassed(LAST_KEY_PACKAGE_COUNT_CHECK, KEY_PACKAGE_COUNT_CHECK_DURATION)
+        }
+        hasLastCheckPassed
             .flatMap { lastKeyPackageCountCheckHasPassed ->
-                val forceRefill = keyPackageCountUseCase.value(fromAPI = false).let {
+                val forceRefill = trigger.forceCheck || forceFullPool || keyPackageCountUseCase.value(fromAPI = false).let {
                     when (it) {
                         is MLSKeyPackageCountResult.Success -> it.needsRefill
                         // if that fails, during the next sync we will check again! so it doesn't matter to skip one time!
@@ -95,7 +111,7 @@ internal class KeyPackageManagerImpl(
                 if (lastKeyPackageCountCheckHasPassed || forceRefill) {
                     kaliumLogger.i("Checking if we need to refill key packages")
                     transactionProvider.mlsTransaction("KeyPackageManager") { mlsContext ->
-                        when (val result = refillKeyPackagesUseCase.value(mlsContext)) {
+                        when (val result = refillKeyPackagesUseCase.value(mlsContext, forceFullPool)) {
                             is RefillKeyPackagesResult.Success -> {
                                 timestampKeyRepository.value.reset(LAST_KEY_PACKAGE_COUNT_CHECK)
                                 Either.Right(Unit)
@@ -110,4 +126,13 @@ internal class KeyPackageManagerImpl(
                 }
             }.onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
     }
+}
+
+internal enum class KeyPackageRefillTrigger(
+    val forceCheck: Boolean,
+    val refillFullMigrationPool: Boolean,
+) {
+    STARTUP(forceCheck = false, refillFullMigrationPool = true),
+    WELCOME_HANDLED(forceCheck = true, refillFullMigrationPool = false),
+    MIGRATION_ENABLED(forceCheck = true, refillFullMigrationPool = true),
 }

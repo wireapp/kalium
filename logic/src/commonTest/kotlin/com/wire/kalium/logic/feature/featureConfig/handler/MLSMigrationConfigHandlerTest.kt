@@ -31,6 +31,9 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import dev.mokkery.verify
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
+import com.wire.kalium.logic.feature.keypackage.KeyPackageRefillTrigger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
@@ -112,10 +115,24 @@ class MLSMigrationConfigHandlerTest {
         }
     }
 
+    @Test
+    fun givenActiveMigration_whenHandling_thenSchedulesFullPoolRefill() = runTest {
+        val (arrangement, handler) = arrange {
+            withSetMigrationConfigurationSuccessful()
+        }
+
+        handler.handle(MIGRATION_CONFIG, duringSlowSync = false)
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.keyPackageManager.scheduleRefill(KeyPackageRefillTrigger.MIGRATION_ENABLED)
+        }
+    }
+
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
         val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>(mode = MockMode.autoUnit)
+        val keyPackageManager = mock<KeyPackageManager>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
             runBlocking {
@@ -125,7 +142,8 @@ class MLSMigrationConfigHandlerTest {
             this@Arrangement to MLSMigrationConfigHandler(
                 userConfigRepository = userConfigRepository,
                 updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes,
-                transactionProvider = cryptoTransactionProvider
+                transactionProvider = cryptoTransactionProvider,
+                keyPackageManager = lazy { keyPackageManager }
             )
         }
 

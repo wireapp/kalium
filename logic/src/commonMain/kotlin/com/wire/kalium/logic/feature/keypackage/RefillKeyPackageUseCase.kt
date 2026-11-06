@@ -48,7 +48,7 @@ internal sealed class RefillKeyPackagesResult {
  */
 internal interface RefillKeyPackagesUseCase {
 
-    suspend operator fun invoke(mlsContext: MlsCoreCryptoContext): RefillKeyPackagesResult
+    suspend operator fun invoke(mlsContext: MlsCoreCryptoContext, forceFullPool: Boolean = false): RefillKeyPackagesResult
 
 }
 
@@ -58,7 +58,7 @@ internal class RefillKeyPackagesUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userConfigRepository: UserConfigRepository,
 ) : RefillKeyPackagesUseCase {
-    override suspend operator fun invoke(mlsContext: MlsCoreCryptoContext): RefillKeyPackagesResult {
+    override suspend operator fun invoke(mlsContext: MlsCoreCryptoContext, forceFullPool: Boolean): RefillKeyPackagesResult {
         val selfClientId = currentClientIdProvider().getOrElse {
             return RefillKeyPackagesResult.Failure(it)
         }
@@ -67,9 +67,9 @@ internal class RefillKeyPackagesUseCaseImpl(
             .flatMap {
                 kaliumLogger.i("Key packages: Found ${it.count} available key packages")
                 flagPendingConversationsIfDepleted(it.count).flatMap { _ ->
-                    if (keyPackageLimitsProvider.needsRefill(it.count)) {
+                    if (keyPackageLimitsProvider.needsRefill(it.count, forceFullPool)) {
                         kaliumLogger.i("Key packages: Refilling key packages...")
-                        val amount = keyPackageLimitsProvider.refillAmount()
+                        val amount = keyPackageLimitsProvider.refillAmount(it.count)
                         keyPackageRepository.uploadNewKeyPackages(mlsContext, selfClientId, amount)
                             .flatMap { Either.Right(Unit) }
                     } else {

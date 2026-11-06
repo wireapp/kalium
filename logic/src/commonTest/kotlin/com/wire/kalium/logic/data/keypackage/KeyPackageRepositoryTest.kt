@@ -38,11 +38,13 @@ import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageRef
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
@@ -72,6 +74,151 @@ internal class KeyPackageRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageApi.uploadKeyPackages(Arrangement.SELF_CLIENT_ID.value, Arrangement.KEY_PACKAGES_BASE64)
         }
+    }
+
+    @Test
+    fun givenMoreThan100KeyPackages_whenUploading_thenGeneratesAndUploadsSequentialBatchesOfAtMost100() = runTest {
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withGeneratingKeyPackageBatchSuccessful(100)
+            .withGeneratingKeyPackageBatchSuccessful(50)
+            .withUploadingKeyPackagesSuccessful()
+            .arrange()
+
+        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 250)
+
+        verifySuspend(VerifyMode.order) {
+            arrangement.mlsContext.generateKeyPackages(100)
+            arrangement.keyPackageApi.uploadKeyPackages(Arrangement.SELF_CLIENT_ID.value, any())
+            arrangement.mlsContext.generateKeyPackages(100)
+            arrangement.keyPackageApi.uploadKeyPackages(Arrangement.SELF_CLIENT_ID.value, any())
+            arrangement.mlsContext.generateKeyPackages(50)
+            arrangement.keyPackageApi.uploadKeyPackages(Arrangement.SELF_CLIENT_ID.value, any())
+        }
+    }
+
+    @Test
+    fun given1000KeyPackages_whenUploading_thenGeneratesAndUploadsTenBatchesOf100() = runTest {
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withGeneratingKeyPackageBatchSuccessful(100)
+            .withUploadingKeyPackagesSuccessful()
+            .arrange()
+
+        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 1000)
+
+        verifySuspend(VerifyMode.exactly(10)) {
+            arrangement.mlsContext.generateKeyPackages(100)
+            arrangement.keyPackageApi.uploadKeyPackages(Arrangement.SELF_CLIENT_ID.value, any())
+        }
+    }
+
+    @Test
+    fun givenNoNetworkUploadFailure_whenUploading_thenRetriesTheSameGeneratedBatch() = runTest {
+        val retryPolicy = RecordingKeyPackageUploadRetryPolicy()
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withGeneratingKeyPackageBatchSuccessful(100)
+            .withUploadingKeyPackageResponses(
+                NetworkResponse.Error(KaliumException.NoNetwork()),
+                NetworkResponse.Success(Unit, mapOf(), 200),
+            )
+            .arrange(uploadRetryPolicy = retryPolicy)
+
+        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 100).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsContext.generateKeyPackages(100)
+        }
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.keyPackageApi.uploadKeyPackages(Arrangement.SELF_CLIENT_ID.value, Arrangement.KEY_PACKAGES_BASE64)
+        }
+        assertEquals(listOf(1), retryPolicy.failedAttempts)
+    }
+
+    @Test
+    fun givenPermanentClientFailure_whenUploading_thenDoesNotRetry() = runTest {
+        val retryPolicy = RecordingKeyPackageUploadRetryPolicy()
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withGeneratingKeyPackageBatchSuccessful(100)
+            .withUploadingKeyPackageResponses(clientErrorResponse(413))
+            .arrange(uploadRetryPolicy = retryPolicy)
+
+        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 100).shouldFail()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.keyPackageApi.uploadKeyPackages(any(), any())
+        }
+        assertEquals(emptyList(), retryPolicy.failedAttempts)
+    }
+
+    @Test
+    fun givenServerFailure_whenUploading_thenDoesNotRetry() = runTest {
+        val retryPolicy = RecordingKeyPackageUploadRetryPolicy()
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withGeneratingKeyPackageBatchSuccessful(100)
+            .withUploadingKeyPackageResponses(serverErrorResponse(500))
+            .arrange(uploadRetryPolicy = retryPolicy)
+
+        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 100).shouldFail()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.keyPackageApi.uploadKeyPackages(any(), any())
+        }
+        assertEquals(emptyList(), retryPolicy.failedAttempts)
+    }
+
+    @Test
+    fun givenRateLimitFailure_whenUploading_thenRetriesWithBackoff() = runTest {
+        val retryPolicy = RecordingKeyPackageUploadRetryPolicy()
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withGeneratingKeyPackageBatchSuccessful(100)
+            .withUploadingKeyPackageResponses(
+                clientErrorResponse(429),
+                NetworkResponse.Success(Unit, mapOf(), 200),
+            )
+            .arrange(uploadRetryPolicy = retryPolicy)
+
+        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 100).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.keyPackageApi.uploadKeyPackages(any(), any())
+        }
+        assertEquals(listOf(1), retryPolicy.failedAttempts)
+    }
+
+    @Test
+    fun givenTransientUploadFailuresExhaustRetries_whenUploading_thenStopsAfterMaxAttempts() = runTest {
+        val retryPolicy = RecordingKeyPackageUploadRetryPolicy(maxAttempts = 3)
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withGeneratingKeyPackageBatchSuccessful(100)
+            .withUploadingKeyPackageResponses(
+                clientErrorResponse(429),
+                clientErrorResponse(429),
+                clientErrorResponse(429),
+            )
+            .arrange(uploadRetryPolicy = retryPolicy)
+
+        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 100).shouldFail()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsContext.generateKeyPackages(100)
+        }
+        verifySuspend(VerifyMode.exactly(3)) {
+            arrangement.keyPackageApi.uploadKeyPackages(any(), any())
+        }
+        assertEquals(listOf(1, 2), retryPolicy.failedAttempts)
+    }
+
+    @Test
+    fun givenMultipleBatches_whenUploading_thenPacesOnlyBetweenBatches() = runTest {
+        val retryPolicy = RecordingKeyPackageUploadRetryPolicy()
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withGeneratingKeyPackageBatchSuccessful(100)
+            .withGeneratingKeyPackageBatchSuccessful(50)
+            .withUploadingKeyPackagesSuccessful()
+            .arrange(uploadRetryPolicy = retryPolicy)
+
+        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 250).shouldSucceed()
+
+        assertEquals(2, retryPolicy.batchWaitCount)
     }
 
     @Test
@@ -426,10 +573,22 @@ internal class KeyPackageRepositoryTest {
             }.returns(KEY_PACKAGES)
         }
 
+        suspend fun withGeneratingKeyPackageBatchSuccessful(amount: Int) = apply {
+            everySuspend {
+                mlsContext.generateKeyPackages(amount)
+            }.returns(KEY_PACKAGES)
+        }
+
         suspend fun withUploadingKeyPackagesSuccessful() = apply {
             everySuspend {
                 keyPackageApi.uploadKeyPackages(any(), any())
             }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
+        }
+
+        suspend fun withUploadingKeyPackageResponses(vararg responses: NetworkResponse<Unit>) = apply {
+            everySuspend {
+                keyPackageApi.uploadKeyPackages(any(), any())
+            } sequentiallyReturns responses.toList()
         }
 
         suspend fun withGetAvailableKeyPackageCountSuccessful() = apply {
@@ -500,8 +659,16 @@ internal class KeyPackageRepositoryTest {
             )
         }
 
-        fun arrange(maxConcurrentClaims: Int = 4) =
-            this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, SELF_USER_ID, maxConcurrentClaims)
+        fun arrange(
+            maxConcurrentClaims: Int = 4,
+            uploadRetryPolicy: KeyPackageUploadRetryPolicy = KeyPackageUploadRetryPolicy(),
+        ) = this to KeyPackageDataSource(
+            currentClientIdProvider,
+            keyPackageApi,
+            SELF_USER_ID,
+            maxConcurrentClaims,
+            uploadRetryPolicy,
+        )
 
         internal companion object {
             const val KEY_PACKAGE_COUNT = 100
@@ -529,4 +696,29 @@ internal class KeyPackageRepositoryTest {
             )
         }
     }
+
+    private class RecordingKeyPackageUploadRetryPolicy(
+        override val maxAttempts: Int = 3,
+        private val retryAllowed: Boolean = true,
+    ) : KeyPackageUploadRetryPolicy {
+        val failedAttempts = mutableListOf<Int>()
+        var batchWaitCount = 0
+
+        override suspend fun waitBeforeRetry(failure: NetworkFailure, failedAttempt: Int): Boolean {
+            failedAttempts += failedAttempt
+            return retryAllowed
+        }
+
+        override suspend fun waitBeforeNextBatch() {
+            batchWaitCount++
+        }
+    }
+
+    private fun serverErrorResponse(code: Int): NetworkResponse<Unit> = NetworkResponse.Error(
+        KaliumException.ServerError(GenericAPIErrorResponse(code, "server error", "server-error"))
+    )
+
+    private fun clientErrorResponse(code: Int): NetworkResponse<Unit> = NetworkResponse.Error(
+        KaliumException.InvalidRequestError(GenericAPIErrorResponse(code, "client error", "client-error"))
+    )
 }

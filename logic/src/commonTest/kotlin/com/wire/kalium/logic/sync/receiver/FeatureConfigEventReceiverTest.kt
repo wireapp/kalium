@@ -44,6 +44,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHand
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -454,13 +455,19 @@ class FeatureConfigEventReceiverTest {
         val userConfigRepository = mock<UserConfigRepository>()
         val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
         val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>()
+        val keyPackageManager = mock<KeyPackageManager>(mode = MockMode.autoUnit)
 
         private val featureConfigEventReceiver: FeatureConfigEventReceiver by lazy {
             FeatureConfigEventReceiverImpl(
                 GuestRoomConfigHandler(userConfigRepository, kaliumConfigs.guestRoomLink),
                 FileSharingConfigHandler(userConfigRepository),
                 MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
-                MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
+                MLSMigrationConfigHandler(
+                    userConfigRepository,
+                    updateSupportedProtocolsAndResolveOneOnOnes,
+                    cryptoTransactionProvider,
+                    lazy { keyPackageManager }
+                ),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
                 SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs.selfDeletingMessages),
