@@ -93,12 +93,16 @@ class MessageSenderImpl(
     ) -> Either<CoreFailure, Unit>,
     private val broadcastRecipients: suspend () -> Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val pendingMessagesEnabled: Boolean = false,
 ) : MessageSender {
 
     private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
 
-    override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
+    override suspend fun sendPendingMessage(
+        conversationId: ConversationId,
+        messageUuid: String,
+    ): Either<CoreFailure, Unit> {
         session.waitUntilLive()
         return withContext(scope.coroutineContext) {
             messages.getMessageById(conversationId, messageUuid).flatMap { message ->
@@ -117,6 +121,9 @@ class MessageSenderImpl(
                     }
                 result
                     .onFailure {
+                        // The main app owns reconnect retries; another network loss must not remove
+                        // this message from its persisted pending queue.
+                        if (pendingMessagesEnabled && it is NetworkFailure.NoNetworkConnection) return@onFailure
                         val type = message.content.getType()
                         logger.i("Failed to send message of type $type. Failure = $it")
                         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(

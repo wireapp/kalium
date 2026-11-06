@@ -17,111 +17,218 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
+import app.cash.turbine.test
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.testTimeSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.test.runTest
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TypingIndicatorIncomingRepositoryTest {
 
     @Test
-    fun givenUsersInOneConversation_whenTheyAreTyping_thenAddItToTheListOfUsersTypingInConversation() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, typingIndicatorRepository) = Arrangement()
-                .withTypingIndicatorStatus()
-                .arrange()
+    fun givenUsersInOneConversation_whenTheyAreTyping_thenAddItToTheListOfUsersTypingInConversation() = runTest {
+        val (arrangement, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
 
-            typingIndicatorRepository.addTypingUserInConversation(conversationOne, expectedUserTypingOne)
-            typingIndicatorRepository.addTypingUserInConversation(conversationOne, expectedUserTypingTwo)
+        repository.addTypingUserInConversation(conversationOne, userOne)
+        repository.addTypingUserInConversation(conversationOne, userTwo)
 
-            assertEquals(
-                setOf(expectedUserTypingOne, expectedUserTypingTwo),
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
-            )
-            verifySuspend(VerifyMode.atLeast(1)) {
-                arrangement.userPropertyRepository.getTypingIndicatorStatus()
-            }
+        assertEquals(setOf(userOne, userTwo), repository.observeUsersTyping(conversationOne).first())
+        verifySuspend(VerifyMode.atLeast(1)) {
+            arrangement.userPropertyRepository.getTypingIndicatorStatus()
         }
-
-    @Test
-    fun givenUsersOneAndTwoTypingInAConversation_whenOneStopped_thenShouldNotBePresentInTypingUsersInConversation() =
-        runTest(TestKaliumDispatcher.default) {
-            val expectedUserTyping = setOf(TestConversation.USER_2)
-            val (arrangement, typingIndicatorRepository) = Arrangement().withTypingIndicatorStatus().arrange()
-
-            typingIndicatorRepository.addTypingUserInConversation(conversationOne, TestConversation.USER_1)
-            typingIndicatorRepository.addTypingUserInConversation(conversationOne, TestConversation.USER_2)
-            typingIndicatorRepository.removeTypingUserInConversation(conversationOne, TestConversation.USER_1)
-
-            assertEquals(
-                expectedUserTyping,
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
-            )
-            verifySuspend(VerifyMode.atLeast(1)) {
-                arrangement.userPropertyRepository.getTypingIndicatorStatus()
-            }
-        }
-
-    @Test
-    fun givenMultipleUsersInDifferentConversations_whenTheyAreTyping_thenShouldBePresentInTypingUsersInEachConversation() =
-        runTest(TestKaliumDispatcher.default) {
-            val (arrangement, typingIndicatorRepository) = Arrangement().withTypingIndicatorStatus().arrange()
-            typingIndicatorRepository.addTypingUserInConversation(conversationOne, expectedUserTypingOne)
-            typingIndicatorRepository.addTypingUserInConversation(conversationTwo, expectedUserTypingTwo)
-
-            assertEquals(
-                setOf(expectedUserTypingOne),
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
-            )
-            assertEquals(
-                setOf(expectedUserTypingTwo),
-                typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull()?.map { it }?.toSet()
-            )
-            verifySuspend(VerifyMode.atLeast(1)) {
-                arrangement.userPropertyRepository.getTypingIndicatorStatus()
-            }
-        }
-
-    @Test
-    fun givenUsersTypingInAConversation_whenClearExpiredItsCalled_thenShouldNotBePresentAnyInCached() =
-        runTest(TestKaliumDispatcher.default) {
-            val expectedUserTyping = setOf<UserId>()
-            val (_, typingIndicatorRepository) = Arrangement().withTypingIndicatorStatus().arrange()
-
-            typingIndicatorRepository.addTypingUserInConversation(conversationOne, TestConversation.USER_1)
-            typingIndicatorRepository.addTypingUserInConversation(conversationOne, TestConversation.USER_2)
-
-            typingIndicatorRepository.clearExpiredTypingIndicators()
-
-            assertEquals(
-                expectedUserTyping,
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
-            )
-        }
-
-    @Test
-    fun disabledTypingStillRemovesExistingUsersButDoesNotAddNewUsers() = runTest(TestKaliumDispatcher.default) {
-        val (arrangement, repository) = Arrangement().withTypingIndicatorStatus().arrange()
-        repository.addTypingUserInConversation(conversationOne, expectedUserTypingOne)
-        arrangement.withTypingIndicatorStatus(false)
-        repository.addTypingUserInConversation(conversationOne, expectedUserTypingTwo)
-        assertEquals(setOf(expectedUserTypingOne), repository.observeUsersTyping(conversationOne).firstOrNull())
-        repository.removeTypingUserInConversation(conversationOne, expectedUserTypingOne)
-        assertEquals(emptySet(), repository.observeUsersTyping(conversationOne).firstOrNull())
     }
 
-    private class Arrangement {
+    @Test
+    fun givenUsersOneAndTwoTypingInAConversation_whenOneStopped_thenShouldNotBePresentInTypingUsersInConversation() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+
+        repository.addTypingUserInConversation(conversationOne, userOne)
+        repository.addTypingUserInConversation(conversationOne, userTwo)
+        repository.removeTypingUserInConversation(conversationOne, userOne)
+
+        assertEquals(setOf(userTwo), repository.observeUsersTyping(conversationOne).first())
+    }
+
+    @Test
+    fun givenMultipleUsersInDifferentConversations_whenTheyAreTyping_thenShouldBePresentInTypingUsersInEachConversation() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+
+        repository.addTypingUserInConversation(conversationOne, userOne)
+        repository.addTypingUserInConversation(conversationTwo, userTwo)
+
+        assertEquals(setOf(userOne), repository.observeUsersTyping(conversationOne).first())
+        assertEquals(setOf(userTwo), repository.observeUsersTyping(conversationTwo).first())
+    }
+
+    @Test
+    fun givenUsersTypingInAConversation_whenClearExpiredItsCalled_thenShouldNotBePresentAnyInCached() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+
+        repository.addTypingUserInConversation(conversationOne, userOne)
+        repository.addTypingUserInConversation(conversationTwo, userTwo)
+        repository.clearExpiredTypingIndicators()
+
+        assertEquals(emptySet(), repository.observeUsersTyping(conversationOne).first())
+        assertEquals(emptySet(), repository.observeUsersTyping(conversationTwo).first())
+    }
+
+    @Test
+    fun disabledTypingStillRemovesExistingUsersButDoesNotAddNewUsers() = runTest {
+        val (arrangement, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+        repository.addTypingUserInConversation(conversationOne, userOne)
+        arrangement.withTypingIndicatorStatus(false)
+        repository.addTypingUserInConversation(conversationOne, userTwo)
+        assertEquals(setOf(userOne), repository.observeUsersTyping(conversationOne).first())
+        repository.removeTypingUserInConversation(conversationOne, userOne)
+        assertEquals(emptySet(), repository.observeUsersTyping(conversationOne).first())
+    }
+
+    @Test
+    fun givenUserTyping_whenTimeoutElapses_thenEmitEmptySet() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+
+        repository.observeUsersTyping(conversationOne).test {
+            assertEquals(emptySet(), awaitItem())
+            repository.addTypingUserInConversation(conversationOne, userOne)
+            assertEquals(setOf(userOne), awaitItem())
+
+            advanceTimeBy(59_999)
+            runCurrent()
+            expectNoEvents()
+
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals(emptySet(), awaitItem())
+        }
+    }
+
+    @Test
+    fun givenUserTyping_whenStartedIsRefreshedAtFiftySeconds_thenExpireSixtySecondsAfterRefreshWithoutReEmitting() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+
+        repository.observeUsersTyping(conversationOne).test {
+            assertEquals(emptySet(), awaitItem())
+            repository.addTypingUserInConversation(conversationOne, userOne)
+            assertEquals(setOf(userOne), awaitItem())
+
+            advanceTimeBy(50_000)
+            repository.addTypingUserInConversation(conversationOne, userOne)
+            runCurrent()
+            expectNoEvents() // same set of users, so no duplicate emission
+
+            advanceTimeBy(59_999)
+            runCurrent()
+            expectNoEvents()
+
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals(emptySet(), awaitItem())
+        }
+    }
+
+    @Test
+    fun givenTwoUsersStartedAtDifferentTimes_whenTimeoutsElapse_thenExpireIndependently() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+
+        repository.observeUsersTyping(conversationOne).test {
+            assertEquals(emptySet(), awaitItem())
+            repository.addTypingUserInConversation(conversationOne, userOne)
+            assertEquals(setOf(userOne), awaitItem())
+
+            advanceTimeBy(20_000)
+            repository.addTypingUserInConversation(conversationOne, userTwo)
+            assertEquals(setOf(userOne, userTwo), awaitItem())
+
+            advanceTimeBy(40_000)
+            runCurrent()
+            assertEquals(setOf(userTwo), awaitItem())
+
+            advanceTimeBy(20_000)
+            runCurrent()
+            assertEquals(emptySet(), awaitItem())
+        }
+    }
+
+    @Test
+    fun givenUserTyping_whenStoppedBeforeTimeout_thenRemoveImmediatelyAndNothingIsEmittedLater() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+
+        repository.observeUsersTyping(conversationOne).test {
+            assertEquals(emptySet(), awaitItem())
+            repository.addTypingUserInConversation(conversationOne, userOne)
+            assertEquals(setOf(userOne), awaitItem())
+
+            advanceTimeBy(30_000)
+            repository.removeTypingUserInConversation(conversationOne, userOne)
+            assertEquals(emptySet(), awaitItem())
+
+            advanceTimeBy(60_000)
+            runCurrent()
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun givenUnobservedUserTyping_whenObservedAfterTimeout_thenEmitEmptySet() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+
+        repository.addTypingUserInConversation(conversationOne, userOne)
+        advanceTimeBy(60_000)
+
+        assertEquals(emptySet(), repository.observeUsersTyping(conversationOne).first())
+    }
+
+    @Test
+    fun givenUnobservedUserTyping_whenObservedMidTimeout_thenExpireAtOriginalDeadline() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+        repository.addTypingUserInConversation(conversationOne, userOne)
+        advanceTimeBy(30_000)
+
+        repository.observeUsersTyping(conversationOne).test {
+            assertEquals(setOf(userOne), awaitItem())
+
+            advanceTimeBy(29_999)
+            runCurrent()
+            expectNoEvents()
+
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals(emptySet(), awaitItem())
+        }
+    }
+
+    @Test
+    fun givenActiveObserver_whenSyncClearsIndicators_thenObserverKeepsReceivingNewUpdates() = runTest {
+        val (_, repository) = Arrangement(this).withTypingIndicatorStatus().arrange()
+
+        repository.observeUsersTyping(conversationOne).test {
+            assertEquals(emptySet(), awaitItem())
+            repository.addTypingUserInConversation(conversationOne, userOne)
+            assertEquals(setOf(userOne), awaitItem())
+
+            repository.clearExpiredTypingIndicators()
+            assertEquals(emptySet(), awaitItem())
+
+            repository.addTypingUserInConversation(conversationOne, userTwo)
+            assertEquals(setOf(userTwo), awaitItem())
+        }
+    }
+
+    private class Arrangement(private val testScope: TestScope) {
         val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
 
         suspend fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
@@ -131,8 +238,8 @@ class TypingIndicatorIncomingRepositoryTest {
         }
 
         fun arrange() = this to TypingIndicatorIncomingRepositoryImpl(
-            userTypingCache = ConcurrentMutableMap(),
-            userPropertyRepository = userPropertyRepository
+            userPropertyRepository = userPropertyRepository,
+            timeSource = testScope.testTimeSource
         )
     }
 
@@ -140,7 +247,7 @@ class TypingIndicatorIncomingRepositoryTest {
         val conversationOne = TestConversation.ID
         val conversationTwo = TestConversation.ID.copy(value = "convo-two")
 
-        val expectedUserTypingOne = TestConversation.USER_1
-        val expectedUserTypingTwo = TestConversation.USER_2
+        val userOne = TestConversation.USER_1
+        val userTwo = TestConversation.USER_2
     }
 }

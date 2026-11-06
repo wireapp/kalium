@@ -85,19 +85,30 @@ class AccountResourceAccess {
      * Admit a lifecycle operation atomically with resumption, before another pause can start.
      * When paused, [acquireOwnership] runs first and stays cancellable: if it fails, access stays paused and can
      * resume later. [openResources] then runs non-cancellably.
+     * With [resumePaused] false, wait for the host to resume instead of reopening from an ordinary account lookup.
      */
     suspend fun <T> withResumedAccess(
         acquireOwnership: suspend () -> Unit,
         openResources: suspend () -> Unit,
+        resumePaused: Boolean = true,
         operation: suspend () -> T,
     ): T {
         val parent = currentCoroutineContext()[Access]
         if (parent?.contains(this) == true) return withAccess(operation)
         checkOutsideOperation()
-        val permit = transition.withLock {
-            restore(acquireOwnership, openResources)
-            acquirePermit(trackCoroutine = false)
+        var admitted: Permit? = null
+        while (admitted == null) {
+            // Ordinary account lookups must not undo a background handoff. Wait outside
+            // the transition mutex so the host can explicitly resume the account.
+            if (!resumePaused) state.first { it.accepting || it.failure != null }
+            admitted = transition.withLock {
+                checkFailure()
+                if (!resumePaused && !state.value.accepting) return@withLock null
+                restore(acquireOwnership, openResources)
+                acquirePermit(trackCoroutine = false)
+            }
         }
+        val permit = admitted
         return try {
             withContext(Access(this, permit, parent)) { operation() }
         } finally {

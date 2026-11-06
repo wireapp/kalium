@@ -102,6 +102,8 @@ import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RemoveNodeTagsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveNodeTagsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.ReplaceCellFileContentUseCase
+import com.wire.kalium.cells.domain.usecase.ReplaceCellFileContentUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RenameNodeUseCase
 import com.wire.kalium.cells.domain.usecase.RenameNodeUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RestoreNodeFromRecycleBinUseCase
@@ -311,6 +313,10 @@ public class CellsScope(
 
     public val observeAttachments: ObserveAttachmentDraftsUseCase by lazy {
         ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager, draftUploads = draftUploads)
+    }
+
+    public val replaceFileContent: ReplaceCellFileContentUseCase by lazy {
+        ReplaceCellFileContentUseCaseImpl(cellsRepository, cellsConversationRepository)
     }
 
     public val publishAttachments: PublishAttachmentsUseCase by lazy {

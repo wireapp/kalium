@@ -126,7 +126,7 @@ internal fun SlowSyncManager(
         )
     }
 
-    private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
+    private fun coroutineExceptionHandler(attemptNetworkId: String?, onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
             logger.logSyncTelemetry(
                 event = SyncTelemetryEvent.EXECUTION_STOPPED,
@@ -160,6 +160,7 @@ internal fun SlowSyncManager(
                         onRetryStateChanged = { retry ->
                             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay, retry))
                         },
+                        previousNetworkId = attemptNetworkId,
                     )
                     onRetry()
                 }
@@ -171,8 +172,6 @@ internal fun SlowSyncManager(
             }
         }
     )
-
-    private val exceptionHandler = coroutineExceptionHandler { doSync() }
 
     private suspend fun isSlowSyncNeededFlow(): Flow<SlowSyncParam> =
         slowSyncRepository.observeLastSlowSyncCompletionInstant()
@@ -221,8 +220,11 @@ internal fun SlowSyncManager(
         }
     }
 
+    /** [attemptNetworkId]: the network this attempt starts on. If it fails, switching to another network wakes the retry. */
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun doSync(): Unit = try {
+    private suspend fun doSync(
+        attemptNetworkId: String? = networkStateObserver.observeCurrentNetwork().value?.id,
+    ): Unit = try {
         slowSyncCriteriaProvider
             .syncCriteriaFlow()
             .combine(isSlowSyncNeededFlow())
@@ -232,7 +234,7 @@ internal fun SlowSyncManager(
                 handleCriteriaResolution(syncCriteriaResolution, isSlowSyncNeeded)
             }
     } catch (t: Throwable) {
-        exceptionHandler.handleException(t)
+        coroutineExceptionHandler(attemptNetworkId) { doSync() }.handleException(t)
     }
 
     private suspend fun handleCriteriaResolution(

@@ -31,11 +31,14 @@ import kotlinx.coroutines.withContext
 
 /**
  * Waits for [retryDelay] before the next sync retry attempt, completing earlier
- * if internet connectivity comes back in the meantime.
+ * if internet connectivity comes back in the meantime, or if a validated network
+ * other than [previousNetworkId] becomes available.
  *
  * On reconnection, [exponentialDurationHelper] is reset: if the retry fails right away
  * (e.g. DNS is still catching up), the next failure backs off from the minimum delay
  * instead of inheriting the stale pre-reconnect backoff.
+ *
+ * @param previousNetworkId the network the failed attempt started on.
  */
 @Suppress("LongParameterList")
 internal suspend fun NetworkStateObserver.delayBeforeSyncRetry(
@@ -47,6 +50,7 @@ internal suspend fun NetworkStateObserver.delayBeforeSyncRetry(
     onRetryStateChanged: suspend (SyncRetryStatus) -> Unit = {},
     retryController: SyncRetryController = SyncRetryController(),
     failureGeneration: Long? = null,
+    previousNetworkId: String? = observeCurrentNetwork().value?.id,
 ) {
     val schedule = SyncRetryStatus.Scheduled(Uuid.random().toString(), timeSource.markNow() + retryDelay)
     val component = syncType.telemetryComponent()
@@ -61,7 +65,7 @@ internal suspend fun NetworkStateObserver.delayBeforeSyncRetry(
                     data = retryTelemetryData(retryDelay)
                 )
             },
-            waitForNetworkOrTimeout = { delayUntilConnectedWithInternetAgain(schedule.remainingDelay()) },
+            waitForNetworkOrTimeout = { delayUntilConnectedWithInternetAgain(schedule.remainingDelay(), previousNetworkId) },
         ).also { onRetryStateChanged(SyncRetryStatus.Attempting(schedule.id)) }
     } catch (cancelled: CancellationException) {
         withContext(NonCancellable) { onRetryStateChanged(SyncRetryStatus.None) }

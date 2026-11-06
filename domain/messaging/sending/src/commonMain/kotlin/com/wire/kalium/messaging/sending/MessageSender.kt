@@ -46,7 +46,10 @@ interface MessageSender {
      * @param conversationId
      * @param messageUuid
      */
-    suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
+    suspend fun sendPendingMessage(
+        conversationId: ConversationId,
+        messageUuid: String,
+    ): Either<CoreFailure, Unit>
 
     /**
      * Removes an own, unedited Pending message from the persisted sending queue, serialized with sending.

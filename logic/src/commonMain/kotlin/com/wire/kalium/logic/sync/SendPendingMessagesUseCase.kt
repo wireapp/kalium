@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -48,12 +49,14 @@ public interface SendPendingMessagesUseCase {
     }
 }
 
+@Suppress("LongParameterList")
 internal class SendPendingMessagesUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val messageSender: MessageSender,
     private val userId: UserId,
     private val sendPendingAssetMessage: SendPendingAssetMessageUseCase,
     private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val pendingMessagesEnabled: Boolean = false,
     private val clock: Clock = Clock.System,
 ) : SendPendingMessagesUseCase {
 
@@ -83,7 +86,10 @@ internal class SendPendingMessagesUseCaseImpl(
                             is MessageContent.Location,
                             is MessageContent.Multipart,
                             is MessageContent.Poll,
-                            is MessageContent.Text -> messageSender.sendPendingMessage(message.conversationId, message.id)
+                            is MessageContent.Text -> messageSender.sendPendingMessage(
+                                message.conversationId,
+                                message.id,
+                            )
 
                             else -> {
                                 val contentType = message.content::class.simpleName
@@ -107,6 +113,9 @@ internal class SendPendingMessagesUseCaseImpl(
         val signaling = EditMessageBuilder.buildTextEditSignaling(originalMessage, originalContent)
         messageSender.sendMessage(signaling)
             .onFailure { failure ->
+                if (pendingMessagesEnabled && failure is NetworkFailure.NoNetworkConnection) {
+                    return@onFailure
+                }
                 kaliumLogger.withFeatureId(SYNC)
                     .i("Failed to resend pending text edit for message ${originalMessage.id}. Failure = $failure")
                 messageSendFailureHandler.handleFailureAndUpdateMessageStatus(

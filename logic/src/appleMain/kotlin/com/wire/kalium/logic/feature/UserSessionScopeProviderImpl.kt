@@ -219,10 +219,21 @@ internal actual open class UserSessionScopeProviderImpl(
         check(metadata?.isRegularFile == true && (metadata.size ?: 0) > 0) { "Prepared crypto store is missing" }
     }
 
+    actual override suspend fun open(userId: UserId): UserSessionScope = open(userId, resumePaused = false)
+
+    /** Only a host with foreground/background execution time may resume a suspended account. */
+    suspend fun resumeForExecution(userId: UserId): UserSessionScope = open(userId, resumePaused = true)
+
+    suspend fun resumeSuspendedAccounts() {
+        accounts.keys.toList().forEach { userId ->
+            if (get(userId) != null) resumeForExecution(userId)
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught")
-    actual override suspend fun open(userId: UserId): UserSessionScope {
+    private suspend fun open(userId: UserId, resumePaused: Boolean): UserSessionScope {
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return withOwnedAccount(account, userId) {
+        return withOwnedAccount(account, userId, resumePaused) {
             check(!account.unavailable) { "Account resources are unavailable until process exit" }
             super.get(userId)?.let {
                 if (!it.coroutineContext.job.isActive) {
@@ -463,6 +474,7 @@ internal actual open class UserSessionScopeProviderImpl(
     private suspend fun <T> withOwnedAccount(
         account: OwnedAccount,
         userId: UserId,
+        resumePaused: Boolean = true,
         operation: suspend () -> T,
     ): T {
         while (true) {
@@ -470,6 +482,7 @@ internal actual open class UserSessionScopeProviderImpl(
             var completed = false
             var result: T? = null
             access.withResumedAccess(
+                resumePaused = resumePaused,
                 // Another process may hold the lease for long: wait here, where cancellation still works and a
                 // failure keeps the account paused instead of unavailable.
                 acquireOwnership = {

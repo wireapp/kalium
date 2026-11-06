@@ -100,6 +100,36 @@ class UserPropertiesEventReceiverTest {
         }
     }
 
+    @Test
+    fun givenScreenshotCensoringEnabledEvent_whenHandling_thenValueIsPersisted() = runTest {
+        val event = Event.UserProperty.ScreenshotCensoringModeSet(id = "event-id", value = true)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateScreenshotCensoringSuccess()
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        result.shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.persistScreenshotCensoring(true)
+        }
+    }
+
+    @Test
+    fun givenScreenshotCensoringDisabledEvent_whenHandling_thenValueIsPersisted() = runTest {
+        val event = Event.UserProperty.ScreenshotCensoringModeSet(id = "event-id", value = false)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateScreenshotCensoringSuccess()
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        result.shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.persistScreenshotCensoring(false)
+        }
+    }
+
     private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
         val userConfigRepository = mock<UserConfigStorage>()
@@ -129,6 +159,10 @@ class UserPropertiesEventReceiverTest {
                     userConfigRepository.persistTypingIndicator(any())
                 } throws IllegalStateException("required preference write failed")
             }
+        }
+
+        suspend fun withUpdateScreenshotCensoringSuccess() = apply {
+            everySuspend { userConfigRepository.persistScreenshotCensoring(any()) } returns Unit
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {

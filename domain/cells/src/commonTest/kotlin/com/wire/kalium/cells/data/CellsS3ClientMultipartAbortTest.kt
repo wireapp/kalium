@@ -326,6 +326,29 @@ class CellsS3ClientMultipartAbortTest {
         assertTrue(recorder.abortedUploadIds.isEmpty())
     }
 
+    @Test
+    fun givenInterruptedVersion_whenUploadingNewVersionOfSameFile_thenDoNotResumeOldParts() = runTest {
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        var failPart2 = true
+        val client = multipartClient(
+            recorder = recorder,
+            fileSystem = fileSystem,
+            failPart = { part -> SocketTimeoutException("connection drop").takeIf { part == 2 && failPart2 } },
+        )
+        val node = cellNode(path = "report.pdf")
+        assertFailsWith<NoNetworkConnectionException> {
+            client.upload(uploadPath, node, onProgressUpdate = {})
+        }
+
+        failPart2 = false
+        client.upload(uploadPath, node.copy(versionId = "new-version"), onProgressUpdate = {})
+
+        assertEquals(2, recorder.createCount)
+        assertEquals(listOf(1, 1, 2), recorder.partNumbers)
+        assertEquals(1, recorder.completeCount)
+    }
+
     private fun createMultipartUploadFile() = createUploadFile(ByteArray(UPLOAD_SIZE) { it.toByte() })
 
     private fun TestScope.multipartClient(
