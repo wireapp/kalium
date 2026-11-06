@@ -58,7 +58,7 @@ import kotlinx.coroutines.withContext
  * in [Message.Status.Pending] state after an upload failure caused by [com.wire.kalium.common.error.NetworkFailure.NoNetworkConnection].
  */
 internal interface SendPendingAssetMessageUseCase {
-    suspend operator fun invoke(message: Message.Regular, keepPendingOnNetworkFailure: Boolean = false): Either<CoreFailure, Unit>
+    suspend operator fun invoke(message: Message.Regular): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -74,7 +74,7 @@ internal class SendPendingAssetMessageUseCaseImpl(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : SendPendingAssetMessageUseCase {
 
-    override suspend fun invoke(message: Message.Regular, keepPendingOnNetworkFailure: Boolean): Either<CoreFailure, Unit> {
+    override suspend fun invoke(message: Message.Regular): Either<CoreFailure, Unit> {
         val content = message.content as? MessageContent.Asset
             ?: return Either.Left(CoreFailure.Unknown(IllegalStateException("Not an asset message: ${message.id}")))
 
@@ -83,7 +83,6 @@ internal class SendPendingAssetMessageUseCaseImpl(
             AssetTransferStatus.UPLOADED -> messageSender.sendPendingMessage(
                 message.conversationId,
                 message.id,
-                keepPendingOnNetworkFailure,
             )
             else -> {
                 kaliumLogger.i("Skipping pending asset message ${message.id} with transfer status $status")

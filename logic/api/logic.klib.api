@@ -2154,7 +2154,7 @@ abstract interface com.wire.kalium.logic.sync/ObserveSyncStateUseCase { // com.w
 }
 
 abstract interface com.wire.kalium.logic.sync/SendPendingMessagesUseCase { // com.wire.kalium.logic.sync/SendPendingMessagesUseCase|null[0]
-    abstract suspend fun invoke(kotlin/Boolean = ...): com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.invoke|invoke(kotlin.Boolean){}[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.invoke|invoke(){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result|null[0]
         final object Failure : com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result { // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result.Failure|null[0]

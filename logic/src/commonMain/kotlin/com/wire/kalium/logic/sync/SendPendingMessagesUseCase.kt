@@ -41,8 +41,7 @@ import kotlin.time.Duration.Companion.days
  * Expiry is checked only when this automatic retry runs.
  */
 public interface SendPendingMessagesUseCase {
-    /** When true, a reconnecting host retains messages if connectivity disappears again during retry. */
-    public suspend operator fun invoke(keepPendingOnNetworkFailure: Boolean = false): Result
+    public suspend operator fun invoke(): Result
 
     public sealed interface Result {
         public data object Success : Result
@@ -50,16 +49,18 @@ public interface SendPendingMessagesUseCase {
     }
 }
 
+@Suppress("LongParameterList")
 internal class SendPendingMessagesUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val messageSender: MessageSender,
     private val userId: UserId,
     private val sendPendingAssetMessage: SendPendingAssetMessageUseCase,
     private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val pendingMessagesEnabled: Boolean = false,
     private val clock: Clock = Clock.System,
 ) : SendPendingMessagesUseCase {
 
-    override suspend operator fun invoke(keepPendingOnNetworkFailure: Boolean): SendPendingMessagesUseCase.Result {
+    override suspend operator fun invoke(): SendPendingMessagesUseCase.Result {
         var result: SendPendingMessagesUseCase.Result = SendPendingMessagesUseCase.Result.Success
 
         messageRepository.getAllPendingMessagesFromUser(userId)
@@ -78,9 +79,9 @@ internal class SendPendingMessagesUseCaseImpl(
                         }
 
                         when (message.content) {
-                            is MessageContent.Asset -> sendPendingAssetMessage(message, keepPendingOnNetworkFailure)
+                            is MessageContent.Asset -> sendPendingAssetMessage(message)
                             is MessageContent.Text if message.editStatus is Message.EditStatus.Edited ->
-                                resendPendingTextEdit(message, message.content as MessageContent.Text, keepPendingOnNetworkFailure)
+                                resendPendingTextEdit(message, message.content as MessageContent.Text)
 
                             is MessageContent.Location,
                             is MessageContent.Multipart,
@@ -88,7 +89,6 @@ internal class SendPendingMessagesUseCaseImpl(
                             is MessageContent.Text -> messageSender.sendPendingMessage(
                                 message.conversationId,
                                 message.id,
-                                keepPendingOnNetworkFailure,
                             )
 
                             else -> {
@@ -109,12 +109,11 @@ internal class SendPendingMessagesUseCaseImpl(
     private suspend fun resendPendingTextEdit(
         originalMessage: Message.Regular,
         originalContent: MessageContent.Text,
-        keepPendingOnNetworkFailure: Boolean,
     ) {
         val signaling = EditMessageBuilder.buildTextEditSignaling(originalMessage, originalContent)
         messageSender.sendMessage(signaling)
             .onFailure { failure ->
-                if (keepPendingOnNetworkFailure && failure is NetworkFailure.NoNetworkConnection) {
+                if (pendingMessagesEnabled && failure is NetworkFailure.NoNetworkConnection) {
                     return@onFailure
                 }
                 kaliumLogger.withFeatureId(SYNC)

@@ -294,7 +294,8 @@ public class MessageScope internal constructor(
             enqueueSelfDeletion = { message, expirationData ->
                 ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData)
             },
-            scope = scope
+            scope = scope,
+            pendingMessagesEnabled = kaliumConfigs.pendingMessages,
         )
 
     internal val persistMessage: PersistMessageUseCase

@@ -333,25 +333,6 @@ class SendPendingAssetMessageUseCaseTest {
 
 
     @Test
-    fun givenUploadedAssetReconnectRetry_whenInvoked_thenRetainsPendingOnNetworkFailure() = runTest {
-        val message = assetMessage()
-        val (arrangement, useCase) = Arrangement()
-            .withGetAssetMessageTransferStatus(AssetTransferStatus.UPLOADED)
-            .arrange()
-        everySuspend { arrangement.messageSender.sendPendingMessage(any(), any(), true) } returns
-            Either.Left(NetworkFailure.NoNetworkConnection(null))
-
-        useCase(message, keepPendingOnNetworkFailure = true)
-
-        verifySuspend {
-            arrangement.messageSender.sendPendingMessage(message.conversationId, message.id, true)
-        }
-        verifySuspend(VerifyMode.not) {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
-        }
-    }
-
-    @Test
     fun givenUploadedStatus_whenInvoked_thenCallsSendPendingMessageDirectly() = runTest {
         val message = assetMessage()
 

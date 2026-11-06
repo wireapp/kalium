@@ -1,1 +1,1 @@
-Allow main-app pending-message retries to retain texts, edits and uploaded assets when connectivity disappears again, without changing the default retry policy.
+Retain pending messages after another network loss during retry when the existing pending-messages feature is enabled, including texts, edits and uploaded assets.

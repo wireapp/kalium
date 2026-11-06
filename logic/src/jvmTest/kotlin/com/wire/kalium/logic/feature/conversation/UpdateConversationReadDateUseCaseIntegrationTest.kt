@@ -200,7 +200,7 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
             error("Not used by read-receipt tests")
 
         override suspend fun sendPendingMessage(
-            conversationId: ConversationId, messageUuid: String, keepPendingOnNetworkFailure: Boolean,
+            conversationId: ConversationId, messageUuid: String,
         ): Either<CoreFailure, Unit> =
             Either.Right(Unit)
 
