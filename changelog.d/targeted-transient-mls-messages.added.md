@@ -1,0 +1,6 @@
+Added support for sending and receiving targeted and transient MLS messages (API v19). Sending is controlled by the new `KaliumConfigs.targetedAndTransientMLSMessagesEnabled` flag, which defaults to `false`. When the flag is off, MLS messages addressed to specific users or clients, or marked as transient, are sent as persistent application messages to the whole conversation. `Message.Sendable` exposes `targeted` and `transient` to show how a message was received.
+
+  - ABI: `KaliumConfigs` constructor and copy signatures change. `Message.Sendable` gains `targeted` and `transient` getters, and the `Message.Regular` and `Message.Signaling` constructor and copy signatures change. Recompile Kotlin/JVM consumers and rebuild Apple frameworks.
+  - Source: new parameters are optional and default to `false`. They are appended after existing parameters, except in `KaliumConfigs`, where the flag comes before `httpTrafficObserver`, so pass that argument by name. Custom `Message.Sendable` implementations must implement `targeted` and `transient`.
+  - Behavior: received targeted or transient MLS messages are rejected and not processed until a feature explicitly allows them. Other message handling is unchanged.
+  - Migration: no action required. Set `targetedAndTransientMLSMessagesEnabled = true` only when targeted and transient MLS sending is wanted.
