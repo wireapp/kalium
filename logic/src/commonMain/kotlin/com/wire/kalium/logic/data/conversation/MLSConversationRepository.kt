@@ -113,6 +113,20 @@ internal interface MLSConversationRepository : MLSMemberAdder {
         content: ByteArray
     ): Either<CoreFailure, ByteArray>
 
+    suspend fun encryptTransientMessage(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        content: ByteArray
+    ): Either<CoreFailure, ByteArray>
+
+    suspend fun encryptTargetedMessage(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        recipient: CryptoQualifiedClientId,
+        content: ByteArray,
+        transient: Boolean
+    ): Either<CoreFailure, ByteArray>
+
     /**
      * Establishes an MLS (Messaging Layer Security) group with the specified group ID and members.
      *
@@ -340,6 +354,30 @@ internal class MLSConversationDataSource(
         logger.d("Encrypting message for group ${groupID.toLogString()}")
         return wrapMLSRequest {
             mlsContext.encryptMessage(idMapper.toCryptoModel(groupID), content)
+        }
+    }
+
+    override suspend fun encryptTransientMessage(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        content: ByteArray
+    ): Either<CoreFailure, ByteArray> {
+        logger.d("Encrypting transient message for group ${groupID.toLogString()}")
+        return wrapMLSRequest {
+            mlsContext.encryptTransientMessage(idMapper.toCryptoModel(groupID), content)
+        }
+    }
+
+    override suspend fun encryptTargetedMessage(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        recipient: CryptoQualifiedClientId,
+        content: ByteArray,
+        transient: Boolean
+    ): Either<CoreFailure, ByteArray> {
+        logger.d("Encrypting targeted message (transient = $transient) for group ${groupID.toLogString()}")
+        return wrapMLSRequest {
+            mlsContext.encryptTargetedMessage(idMapper.toCryptoModel(groupID), recipient, content, transient)
         }
     }
 

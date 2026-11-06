@@ -62,6 +62,10 @@ import kotlin.time.Instant
 
 internal interface ApplicationMessageHandler {
 
+    /**
+     * Processes decrypted [content]. Content received as a targeted and/or transient MLS message is rejected
+     * unless [isAcceptedDelivery] allows it.
+     */
     @Suppress("LongParameterList")
     suspend fun handleContent(
         transactionContext: CryptoTransactionContext,
@@ -70,6 +74,8 @@ internal interface ApplicationMessageHandler {
         senderUserId: UserId,
         senderClientId: ClientId,
         content: ProtoContent.Readable,
+        targeted: Boolean = false,
+        transient: Boolean = false,
     )
 
     @Suppress("LongParameterList")
@@ -122,31 +128,41 @@ internal class ApplicationMessageHandlerImpl(
         messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
-        content: ProtoContent.Readable
+        content: ProtoContent.Readable,
+        targeted: Boolean,
+        transient: Boolean
     ) {
+        val applicationMessage = MessageUnpackResult.ApplicationMessage(
+            conversationId,
+            messageInstant,
+            senderUserId,
+            senderClientId,
+            content,
+            targeted,
+            transient
+        )
         when (content.messageContent) {
             is MessageContent.Regular -> {
-                val message = MessageUnpackResult.ApplicationMessage(
-                    conversationId,
-                    messageInstant,
-                    senderUserId,
-                    senderClientId,
-                    content
-                ).toRegularMessage(selfUserId)
-                processMessage(message)
+                val message = applicationMessage.toRegularMessage(selfUserId)
+                if (message.isAcceptedDelivery()) processMessage(message) else rejectDelivery(message)
             }
 
             is MessageContent.Signaling -> {
-                val signalingMessage = MessageUnpackResult.ApplicationMessage(
-                    conversationId,
-                    messageInstant,
-                    senderUserId,
-                    senderClientId,
-                    content
-                ).toSignalingMessage(selfUserId)
-                processSignaling(transactionContext, signalingMessage)
+                val signalingMessage = applicationMessage.toSignalingMessage(selfUserId)
+                if (signalingMessage.isAcceptedDelivery()) {
+                    processSignaling(transactionContext, signalingMessage)
+                } else {
+                    rejectDelivery(signalingMessage)
+                }
             }
         }
+    }
+
+    private fun rejectDelivery(message: Message.Sendable) {
+        logger.w(
+            "Rejected ${message.content.getType()} message received as targeted = ${message.targeted}, " +
+                "transient = ${message.transient}: ${message.toLogString()}"
+        )
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")

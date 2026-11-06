@@ -84,10 +84,16 @@ data class CommitBundle(
 sealed interface DecryptedMessageBundle {
     val identity: WireIdentity?
 
+    /**
+     * @param targeted true if the sender encrypted the message for specific clients rather than the whole group
+     * @param transient true if the sender marked the message as not to be persisted by the backend
+     */
     data class Text(
         val message: ByteArray,
         val senderClientId: CryptoQualifiedClientId,
-        override val identity: WireIdentity?
+        override val identity: WireIdentity?,
+        val targeted: Boolean = false,
+        val transient: Boolean = false
     ) : DecryptedMessageBundle {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -97,6 +103,8 @@ sealed interface DecryptedMessageBundle {
 
             if (!message.contentEquals(other.message)) return false
             if (senderClientId != other.senderClientId) return false
+            if (targeted != other.targeted) return false
+            if (transient != other.transient) return false
             return identity == other.identity
         }
 
@@ -104,6 +112,8 @@ sealed interface DecryptedMessageBundle {
             var result = message.contentHashCode()
             result = 31 * result + senderClientId.hashCode()
             result = 31 * result + (identity?.hashCode() ?: 0)
+            result = 31 * result + targeted.hashCode()
+            result = 31 * result + transient.hashCode()
             return result
         }
     }

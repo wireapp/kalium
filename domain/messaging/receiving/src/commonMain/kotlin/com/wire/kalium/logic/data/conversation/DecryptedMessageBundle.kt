@@ -52,10 +52,16 @@ sealed interface DecryptedMessageBundle {
     val groupID: GroupID
     val identity: WireIdentity?
 
+    /**
+     * @param targeted true if the sender encrypted the message for specific clients rather than the whole group
+     * @param transient true if the sender marked the message as not to be persisted by the backend
+     */
     data class Text(
         override val groupID: GroupID,
         val applicationMessage: ApplicationMessage,
-        override val identity: WireIdentity?
+        override val identity: WireIdentity?,
+        val targeted: Boolean = false,
+        val transient: Boolean = false
     ) : DecryptedMessageBundle
 
     data class Commit(

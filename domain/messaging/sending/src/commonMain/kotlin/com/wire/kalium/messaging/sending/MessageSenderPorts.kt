@@ -106,6 +106,30 @@ interface MessageTransport {
     ): Either<CoreFailure, Instant>
 
     suspend fun sendMLSMessage(message: MLSMessageApi.Message): Either<CoreFailure, MessageSent>
+
+    /**
+     * Send a batch of persistent targeted MLS messages.
+     *
+     * @return [Either.Left] of [com.wire.kalium.common.error.NetworkFailure.FeatureNotSupported] if the
+     * backend API version predates targeted messages
+     */
+    suspend fun sendMLSTargetedMessage(batch: MLSMessageApi.TargetedMessageBatch): Either<CoreFailure, MessageSent>
+
+    /**
+     * Send a transient MLS message, which the backend doesn't persist.
+     *
+     * @return [Either.Left] of [com.wire.kalium.common.error.NetworkFailure.FeatureNotSupported] if the
+     * backend API version predates transient messages
+     */
+    suspend fun sendMLSTransientMessage(message: MLSMessageApi.TransientMessage): Either<CoreFailure, MessageSent>
+
+    /**
+     * Send a batch of transient targeted MLS messages, which the backend doesn't persist.
+     *
+     * @return [Either.Left] of [com.wire.kalium.common.error.NetworkFailure.FeatureNotSupported] if the
+     * backend API version predates transient targeted messages
+     */
+    suspend fun sendMLSTransientTargetedMessage(batch: MLSMessageApi.TargetedMessageBatch): Either<CoreFailure, MessageSent>
 }
 
 /** Conversation state the sender reads. */
