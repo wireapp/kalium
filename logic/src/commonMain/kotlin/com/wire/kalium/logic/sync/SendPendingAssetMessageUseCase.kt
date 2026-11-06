@@ -80,7 +80,10 @@ internal class SendPendingAssetMessageUseCaseImpl(
 
         return when (val status = getAssetMessageTransferStatus(message.conversationId, message.id)) {
             AssetTransferStatus.FAILED_UPLOAD -> reuploadAndSend(message, content.value)
-            AssetTransferStatus.UPLOADED -> messageSender.sendPendingMessage(message.conversationId, message.id)
+            AssetTransferStatus.UPLOADED -> messageSender.sendPendingMessage(
+                message.conversationId,
+                message.id,
+            )
             else -> {
                 kaliumLogger.i("Skipping pending asset message ${message.id} with transfer status $status")
                 Either.Right(Unit)

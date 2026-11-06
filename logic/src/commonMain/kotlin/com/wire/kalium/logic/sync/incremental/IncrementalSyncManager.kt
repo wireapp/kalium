@@ -127,7 +127,7 @@ internal fun IncrementalSyncManager(
         )
     }
 
-    private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
+    private fun coroutineExceptionHandler(attemptNetworkId: String?, onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
             logger.logSyncTelemetry(
                 event = SyncTelemetryEvent.EXECUTION_STOPPED,
@@ -164,6 +164,7 @@ internal fun IncrementalSyncManager(
                         onRetryStateChanged = { retry ->
                             incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure, delay, retry))
                         },
+                        previousNetworkId = attemptNetworkId,
                     )
                     onRetry()
                 }
@@ -175,8 +176,6 @@ internal fun IncrementalSyncManager(
             }
         }
     )
-
-    private val exceptionHandler = coroutineExceptionHandler { doIncrementalSync() }
 
     override fun performSyncFlow(): Flow<IncrementalSyncStatus> = channelFlow {
         coroutineScope {
@@ -197,8 +196,11 @@ internal fun IncrementalSyncManager(
         }
     }
 
+    /** [attemptNetworkId]: the network this attempt starts on. If it fails, switching to another network wakes the retry. */
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun doIncrementalSync(): Unit = try {
+    private suspend fun doIncrementalSync(
+        attemptNetworkId: String? = networkStateObserver.observeCurrentNetwork().value?.id,
+    ): Unit = try {
         incrementalSyncWorker
             .processEventsFlow()
             .cancellable()
@@ -235,6 +237,6 @@ internal fun IncrementalSyncManager(
             data = mapOf("reason" to "EVENT_FLOW_COMPLETED")
         )
     } catch (t: Throwable) {
-        exceptionHandler.handleException(t)
+        coroutineExceptionHandler(attemptNetworkId) { doIncrementalSync() }.handleException(t)
     }
 }

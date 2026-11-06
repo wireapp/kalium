@@ -93,6 +93,8 @@ public data class BackupConversation(
     val name: String,
     @SerialName("lastModifiedTime")
     val lastModifiedTime: BackupDateTime? = null,
+    @SerialName("lastReadTime")
+    val lastReadTime: BackupDateTime? = null,
 )
 
 @JsExport

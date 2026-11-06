@@ -85,6 +85,7 @@ kotlin {
                 api(projects.core.common)
                 api(projects.domain.work)
                 implementation(projects.data.network)
+                implementation(projects.data.linkPreviewFetch)
                 api(projects.core.data)
                 implementation(projects.data.dataMappers)
                 api(projects.domain.messaging.receiving)

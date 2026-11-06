@@ -199,7 +199,9 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
         override suspend fun cancelPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean> =
             error("Not used by read-receipt tests")
 
-        override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> =
+        override suspend fun sendPendingMessage(
+            conversationId: ConversationId, messageUuid: String,
+        ): Either<CoreFailure, Unit> =
             Either.Right(Unit)
 
         override suspend fun sendMessage(
