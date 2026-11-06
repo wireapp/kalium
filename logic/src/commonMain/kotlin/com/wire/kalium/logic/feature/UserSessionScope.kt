@@ -2183,7 +2183,8 @@ public class UserSessionScope internal constructor(
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
             conversationRepository = conversationRepository,
-            oneOnOneResolver = oneOnOneResolver,
+            pendingActionsRepository = pendingActionsRepository,
+            resolvePendingOneOnOnes = { launch { recoverPendingOneOnOneResolutionsUseCase() } },
             refillKeyPackages = client.refillKeyPackages,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
