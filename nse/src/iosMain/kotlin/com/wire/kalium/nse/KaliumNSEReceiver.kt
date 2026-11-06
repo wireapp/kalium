@@ -23,6 +23,8 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.MessageContentPreference
+import com.wire.kalium.logic.data.meeting.MeetingReminder
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
@@ -39,6 +41,7 @@ import com.wire.kalium.logic.sync.receiving.ReceivingOptions
 import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
 import com.wire.kalium.logic.sync.receiving.notificationPreview
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
+import com.wire.kalium.logic.sync.receiving.upcomingMeetingReminders
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
@@ -135,6 +138,13 @@ public data class KaliumNSEResult(
     public val messageKind: NotificationMessageKind? = null,
     /** Absolute unread-conversation count after receiving; absent when receiving failed. */
     public val unreadConversationBadgeCount: Long? = null,
+    /**
+     * Invitations, updates and cancellations for meeting events received in this attempt, oldest first. Post each
+     * before completing the request; like the app's meeting alerts they are not replayed.
+     */
+    public val meetingAlerts: List<LocalNotification.Meeting> = emptyList(),
+    /** This account's upcoming meeting reminders after receiving; absent when receiving failed. Replaces native requests. */
+    public val meetingReminders: List<MeetingReminder>? = null,
 )
 
 /** A message alert beyond the request's own; text and names are present only when preview is allowed. */
@@ -280,6 +290,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         }
         return result.copy(
             stoppedReason = received.stoppedReason,
+            meetingAlerts = received.meetings,
+            meetingReminders = runtime.database.upcomingMeetingReminders(),
             presentGenericAlert = !result.shouldNotify && result.alerts.isEmpty() &&
                 mayLeaveUnseenEvents(caughtUp, received, request.appPresentsAlerts) {
                     runtime.database.eventDAO.getEventById(request.notificationId)?.isProcessed == true

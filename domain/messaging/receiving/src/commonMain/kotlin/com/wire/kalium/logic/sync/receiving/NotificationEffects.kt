@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.matchesSystemMessage
 import com.wire.kalium.logic.data.message.shouldUpdateConversationOrder
 import com.wire.kalium.logic.data.message.toEntity
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
@@ -88,6 +89,7 @@ internal class NotificationEffects(
     suspend fun persist(payload: List<ReceivedPayload>, verifications: List<MLSVerification>): NotificationEffectsResult =
         database.writeMessageEffects {
             val calls = mutableListOf<ReceivedCallEvent>()
+            val meetingAlerts = mutableListOf<LocalNotification.Meeting>()
             // Distinct settings reset the wall-clock grace deadline on every replay. The final
             // settings row cannot recover the first attempt's deadline after an intervening change.
             val e2ei = payload.filterIsInstance<ReceivedPayload.Configuration>()
@@ -129,9 +131,10 @@ internal class NotificationEffects(
                 deleteFile = deleteFile,
                 previewImages = previewImages,
                 calls = calls,
+                meetingAlerts = meetingAlerts,
             )
             val access = ReceivedAccessHandler(this, persistMessage)
-            val membership = ReceivedMembershipHandler(this, persistMessage, selfUserId, options.drivePermissionsEnabled)
+            val membership = ReceivedMembershipHandler(this, persistMessage, selfUserId, options.drivePermissionsEnabled, meetingAlerts)
             val team = ReceivedTeamHandler(this, selfUserId, persistMessage)
             val federation = ReceivedFederationHandler(this, selfUserId, persistMessage, deleteFile)
             val connection = ReceivedConnectionHandler(this, selfUserId, deleteFile)
@@ -240,8 +243,13 @@ internal class NotificationEffects(
                             listOf(received.meeting),
                             GenerationLimit.Window(occurrenceOutdatedThreshold(), occurrenceGenerationUntil())
                         )
+                        meetingAlert(received.event, received.meeting)?.let(meetingAlerts::add)
                     }
-                    is ReceivedPayload.MeetingDelete -> meetings.deleteMeeting(received.meetingId.toDao())
+                    is ReceivedPayload.MeetingDelete -> {
+                        val id = received.event.meetingId.toDao()
+                        meetingAlert(received.event, meetings.getMeeting(id))?.let(meetingAlerts::add)
+                        meetings.deleteMeeting(id)
+                    }
                     is ReceivedPayload.UserUpdate -> userUpdate.handle(received.event).orThrow()
                     is ReceivedPayload.NewClient -> newClients.insertNewClient(received.client.newClientParameters(selfUserId))
                     is ReceivedPayload.Connection -> {
@@ -273,7 +281,7 @@ internal class NotificationEffects(
                 recordConversationDependencies(received, recreatedEarlier, requiredEarlier)
             }
             verifications.forEach { persistVerification(this, it, persistMessage) }
-            NotificationEffectsResult(messageHandler.finish(), calls)
+            NotificationEffectsResult(messageHandler.finish(), calls, meetingAlerts)
         }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
@@ -490,8 +498,9 @@ internal sealed interface ReceivedPayload {
     data class MeetingUpsert(
         val meeting: com.wire.kalium.persistence.dao.meeting.MeetingEntity,
         val profiles: com.wire.kalium.logic.data.user.UserProfiles,
+        val event: Event.Meeting? = null,
     ) : ReceivedPayload
-    data class MeetingDelete(val meetingId: com.wire.kalium.logic.data.id.MeetingId) : ReceivedPayload
+    data class MeetingDelete(val event: Event.Meeting.Delete) : ReceivedPayload
     data class NewClient(val client: com.wire.kalium.logic.data.client.Client) : ReceivedPayload
     data class UserDeleted(val userId: UserId) : ReceivedPayload
     data class TeamLeave(val event: Event.Team.MemberLeave) : ReceivedPayload
