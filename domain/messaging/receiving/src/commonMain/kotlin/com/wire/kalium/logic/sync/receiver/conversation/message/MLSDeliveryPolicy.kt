@@ -20,16 +20,26 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 
 /**
  * Whether content received as a targeted and/or transient MLS message may be processed.
  *
  * Targeted and transient messages have weaker security guarantees than messages to the whole conversation, so
  * content is only accepted through them once a feature explicitly allows it here. Everything else is rejected.
+ *
+ * Allowed:
+ * - Read receipts sent as persistent targeted messages, since they are only sent to the sender of the read messages.
  */
-@Suppress("UNUSED_PARAMETER") // Per-content decisions are added as features need them.
 internal fun isAcceptedDelivery(content: MessageContent.FromProto, targeted: Boolean, transient: Boolean): Boolean =
-    !targeted && !transient
+    when {
+        !targeted && !transient -> true
+        targeted && !transient -> content.isReadReceipt()
+        else -> false
+    }
+
+private fun MessageContent.FromProto.isReadReceipt(): Boolean =
+    this is MessageContent.Receipt && type == ReceiptType.READ
 
 /** @see isAcceptedDelivery */
 fun Message.Sendable.isAcceptedDelivery(): Boolean = isAcceptedDelivery(content, targeted, transient)

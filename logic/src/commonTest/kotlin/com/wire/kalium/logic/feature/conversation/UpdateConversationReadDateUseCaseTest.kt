@@ -173,7 +173,7 @@ class UpdateConversationReadDateUseCaseTest {
     }
 
     @Test
-    fun givenMLSGroupConversation_whenUpdatingLastRead_thenShouldPersistAndSyncWithoutSendingReceipt() = runTest {
+    fun givenMLSGroupConversationAndTargetedMLSMessagesDisabled_whenUpdatingLastRead_thenShouldPersistAndSyncWithoutSendingReceipt() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
         val conversation = TestConversation.MLS_CONVERSATION.copy(
@@ -350,7 +350,8 @@ class UpdateConversationReadDateUseCaseTest {
                 selfUserId = selfUserID,
                 conversationRepository = conversationRepository,
                 messageRepository = receiptMessageRepository,
-                userPropertyRepository = userPropertyRepository
+                userPropertyRepository = userPropertyRepository,
+                targetedMLSMessagesEnabled = false
             )
         }
 
