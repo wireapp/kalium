@@ -79,7 +79,6 @@ class NewConversationEventHandlerTest {
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
-            .withConversationUnverifiedWarningSystemMessage()
             .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
@@ -113,7 +112,6 @@ class NewConversationEventHandlerTest {
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
-            .withConversationUnverifiedWarningSystemMessage()
             .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
@@ -151,7 +149,6 @@ class NewConversationEventHandlerTest {
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
             .withConversationResolvedMembersSystemMessage()
-            .withConversationUnverifiedWarningSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
             .withConversationAppsAccessIfEnabled()
@@ -176,13 +173,6 @@ class NewConversationEventHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
                 event.conversation,
-                event.dateTime
-            )
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                event.conversation.id.toModel(),
                 event.dateTime
             )
         }
@@ -217,7 +207,6 @@ class NewConversationEventHandlerTest {
             .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .withConversationStartedSystemMessage()
             .withConversationResolvedMembersSystemMessage()
-            .withConversationUnverifiedWarningSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(QualifiedID("creatorId", "creatorDomain"))
             .withConversationAppsAccessIfEnabled()
@@ -253,7 +242,6 @@ class NewConversationEventHandlerTest {
             .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .withConversationStartedSystemMessage()
             .withConversationResolvedMembersSystemMessage()
-            .withConversationUnverifiedWarningSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(QualifiedID("creatorId", "creatorDomain"))
             .withConversationAppsAccessIfEnabled()
@@ -289,7 +277,6 @@ class NewConversationEventHandlerTest {
             .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
             .withConversationStartedSystemMessage()
             .withConversationResolvedMembersSystemMessage()
-            .withConversationUnverifiedWarningSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(QualifiedID("creatorId", "creatorDomain"))
             .withConversationAppsAccessIfEnabled()
@@ -490,12 +477,6 @@ class NewConversationEventHandlerTest {
         suspend fun withConversationResolvedMembersSystemMessage() = apply {
             everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any(), any())
-            } returns Either.Right(Unit)
-        }
-
-        suspend fun withConversationUnverifiedWarningSystemMessage() = apply {
-            everySuspend {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
             } returns Either.Right(Unit)
         }
 

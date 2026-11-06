@@ -601,7 +601,7 @@ class NotificationProcessor(
                     }
                     else -> emptyList()
                 }
-                listOf(ReceivedPayload.Connection(connection, profiles, "$id:accepted")) + lifecycle
+                listOf(ReceivedPayload.Connection(connection, profiles)) + lifecycle
             }
             is EventContentDTO.User.SessionRefreshSuggestedDTO -> {
                 checkNotNull(sessionRefresh) { "Session refresh requires owned authenticated transport" }

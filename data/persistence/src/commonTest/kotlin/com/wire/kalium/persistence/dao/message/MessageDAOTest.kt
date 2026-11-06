@@ -2427,38 +2427,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUnverifiedWarningMessageIsInserted_whenInsertingSuchMessageAgain_thenOnlyIdIsUpdatedNoNewMessages() = runTest {
-        // given
-        insertInitialData()
-        userDAO.upsertUser(userEntity1.copy(selfUserId))
-        val message0 = newSystemMessageEntity(
-            conversationId = conversationEntity2.id,
-            id = "local_id_id_0",
-            content = MessageEntityContent.ConversationStartedUnverifiedWarning,
-            date = Instant.parse("2022-03-30T15:36:00.000Z"),
-            senderUserId = selfUserId
-        )
-        val message1 = message0.copy(
-            id = "local_id_id_1",
-            date = Instant.parse("2022-03-30T15:46:00.000Z")
-        )
-        messageDAO.insertOrIgnoreMessages(listOf(message0))
-
-        // when
-        messageDAO.insertOrIgnoreMessage(message1)
-
-        // then
-        val result = messageDAO.getMessagesByConversationAndVisibility(
-            conversationId = conversationEntity2.id,
-            limit = 10,
-            offset = 0
-        ).first()
-        assertEquals(1, result.size)
-        assertEquals(message1.id, result[0].id)
-        assertEquals(message0.date, result[0].date)
-    }
-
-    @Test
     fun givenMessagesAreInserted_whenGettingAlreadyEndedEphemeraMessages_thenOnlyRelevantMessagesAreReturned() = runTest {
         insertInitialData()
         val alreadyEndedEphemeralMessage = newRegularMessageEntity(
