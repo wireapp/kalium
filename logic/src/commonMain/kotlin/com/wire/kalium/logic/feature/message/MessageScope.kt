@@ -558,7 +558,8 @@ public class MessageScope internal constructor(
             selfUserId,
             conversationRepository,
             messageRepository,
-            userPropertyRepository
+            userPropertyRepository,
+            targetedMLSMessagesEnabled = kaliumConfigs.targetedAndTransientMLSMessagesEnabled
         )
 
     private val sessionResetSender: SessionResetSender

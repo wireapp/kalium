@@ -50,6 +50,8 @@ import kotlin.uuid.Uuid
  *
  * - For 1:1 we take into consideration [UserPropertyRepository.getReadReceiptsStatus]
  * - For group conversations we have to look for each group conversation configuration.
+ * - For MLS group conversations, receipts are only sent when [targetedMLSMessagesEnabled] is true. Receipts are
+ *   targeted to the original sender, and without targeted MLS messages they would be sent to the whole group.
  */
 internal interface SendConfirmationUseCase {
     suspend operator fun invoke(
@@ -68,6 +70,7 @@ internal fun SendConfirmationUseCase(
     conversationRepository: ConversationRepository,
     messageRepository: MessageRepository,
     userPropertyRepository: UserPropertyRepository,
+    targetedMLSMessagesEnabled: Boolean,
 ) = object : SendConfirmationUseCase {
     val TAG = "SendConfirmation"
     val conversationIdKey = "conversationId"
@@ -165,7 +168,7 @@ internal fun SendConfirmationUseCase(
             when (conversation.type) {
                 Conversation.Type.OneOnOne -> userPropertyRepository.getReadReceiptsStatus()
                 else ->
-                    conversation.protocol !is Conversation.ProtocolInfo.MLS &&
+                    (targetedMLSMessagesEnabled || conversation.protocol !is Conversation.ProtocolInfo.MLS) &&
                         conversation.receiptMode == Conversation.ReceiptMode.ENABLED
             }
         })
