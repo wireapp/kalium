@@ -1834,7 +1834,36 @@ abstract interface com.wire.kalium.logic.feature.search/SearchUsersByNameUseCase
 }
 
 abstract interface com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase { // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase|null[0]
+    abstract suspend fun getSnapshot(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Boolean): com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.getSnapshot|getSnapshot(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Boolean){}[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Boolean): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.message/SelfDeletionTimer> // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Boolean){}[0]
+
+    sealed interface Snapshot { // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot|null[0]
+        final class Failure : com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot { // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/StorageFailure) // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure.<init>|<init>(com.wire.kalium.common.error.StorageFailure){}[0]
+
+            final val cause // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure.cause|{}cause[0]
+                final fun <get-cause>(): com.wire.kalium.common.error/StorageFailure // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure.cause.<get-cause>|<get-cause>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/StorageFailure // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/StorageFailure = ...): com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure.copy|copy(com.wire.kalium.common.error.StorageFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Failure.toString|toString(){}[0]
+        }
+
+        final class Success : com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot { // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success|null[0]
+            constructor <init>(com.wire.kalium.logic.data.message/SelfDeletionTimer) // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success.<init>|<init>(com.wire.kalium.logic.data.message.SelfDeletionTimer){}[0]
+
+            final val timer // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success.timer|{}timer[0]
+                final fun <get-timer>(): com.wire.kalium.logic.data.message/SelfDeletionTimer // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success.timer.<get-timer>|<get-timer>(){}[0]
+
+            final fun component1(): com.wire.kalium.logic.data.message/SelfDeletionTimer // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.logic.data.message/SelfDeletionTimer = ...): com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success.copy|copy(com.wire.kalium.logic.data.message.SelfDeletionTimer){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase.Snapshot.Success.toString|toString(){}[0]
+        }
+    }
 }
 
 abstract interface com.wire.kalium.logic.feature.selfDeletingMessages/ObserveTeamSettingsSelfDeletingStatusUseCase { // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveTeamSettingsSelfDeletingStatusUseCase|null[0]
