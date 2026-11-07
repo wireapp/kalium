@@ -213,7 +213,7 @@ class AppleAccountSessionTest {
             val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                 as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
             try {
-                val opening = async { logic.openSessionScope(userId) }
+                val opening = async(start = CoroutineStart.UNDISPATCHED) { logic.openSessionScope(userId) }
                 delay(200)
                 assertFalse(opening.isCompleted)
                 withTimeout(5.seconds) { opening.cancelAndJoin() }
