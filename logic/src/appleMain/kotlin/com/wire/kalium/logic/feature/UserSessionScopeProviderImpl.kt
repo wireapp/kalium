@@ -226,7 +226,13 @@ internal actual open class UserSessionScopeProviderImpl(
 
     suspend fun resumeSuspendedAccounts() {
         accounts.keys.toList().forEach { userId ->
-            if (get(userId) != null) resumeForExecution(userId)
+            val account = accounts[userId] ?: return@forEach
+            when {
+                get(userId) != null -> resumeForExecution(userId)
+                // An open cancelled while it waited for ownership leaves no session or lease, yet background handoff
+                // still pauses the account. Nothing needs reopening, so admit work without the lock; opens acquire it.
+                super.get(userId) == null && account.lease == null && !account.unavailable -> account.access.resume {}
+            }
         }
     }
 
