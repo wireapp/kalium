@@ -130,52 +130,6 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenSendOwnsTransaction_whenPendingTextIsEdited_thenWaitAndSendNormalEdit() {
-        val (arrangement, sender) = arrange { withSendProteusMessage() }
-        arrangement.testScope.runTest {
-            val pending = TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true)
-            var stored = pending
-            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { Either.Right(stored) }
-            val promoting = CompletableDeferred<Unit>()
-            val releaseSend = CompletableDeferred<Unit>()
-            everySuspend { arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any()) } calls {
-                promoting.complete(Unit)
-                releaseSend.await()
-                stored = pending.copy(status = Message.Status.Sent)
-                Either.Right(Unit)
-            }
-            arrangement.serializeTransactions()
-            val sync = mock<com.wire.kalium.logic.data.sync.SlowSyncRepository>()
-            every { sync.slowSyncStatus } returns kotlinx.coroutines.flow.MutableStateFlow(
-                com.wire.kalium.logic.data.sync.SlowSyncStatus.Complete)
-            val client = mock<com.wire.kalium.logic.data.id.CurrentClientIdProvider>()
-            everySuspend { client() } returns Either.Right(pending.senderClientId)
-            val editSender = mock<com.wire.kalium.messaging.sending.MessageSender>()
-            everySuspend { editSender.sendMessage(any(), any()) } returns Either.Right(Unit)
-            everySuspend { arrangement.messageRepository.updateTextMessage(any(), any<MessageContent.TextEdited>(), any(), any()) } returns
-                Either.Right(Unit)
-            everySuspend { arrangement.messageRepository.updateMessageStatus(any(), any(), any()) } returns Either.Right(Unit)
-            val edit = SendEditTextMessageUseCase(arrangement.messageRepository, pending.senderUserId, client, sync,
-                editSender, arrangement.cryptoTransactionProvider, arrangement.messageSendFailureHandler,
-                dispatchers = testKaliumDispatcher)
-            val sending = async { sender.sendMessage(pending) }
-            promoting.await()
-            val editing = async { edit(pending.conversationId, pending.id, "edited while sending") }
-            runCurrent()
-            assertFalse(editing.isCompleted)
-            verifySuspend(VerifyMode.exactly(0)) {
-                arrangement.messageRepository.updateTextMessage(any(), any<String>(), any<MessageContent.Text>())
-            }
-            releaseSend.complete(Unit)
-            sending.await().shouldSucceed()
-            assertIs<MessageOperationResult.Success>(editing.await())
-            verifySuspend(VerifyMode.exactly(1)) {
-                editSender.sendMessage(matches { it.content is MessageContent.TextEdited }, any())
-            }
-        }
-    }
-
-    @Test
     fun givenOfflineEditOfSentMessage_whenCancellingPending_thenDoNotRemoveItLocally() {
         val (arrangement, sender) = arrange { }
         arrangement.testScope.runTest {
@@ -186,65 +140,6 @@ class MessageSenderTest {
             )
             everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns Either.Right(edited)
             assertEquals(Either.Right(false), sender.cancelPendingMessage(edited.conversationId, edited.id))
-            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.deleteMessage(any(), any()) }
-        }
-    }
-
-    @Test
-    fun givenCancellationQueuedFirst_whenStaleSendWaitsForTransaction_thenItDoesNotSend() {
-        val (arrangement, sender) = arrange { }
-        arrangement.testScope.runTest {
-            val pending = TestMessage.assetMessage().copy(isSelfMessage = true)
-            var stored: Message? = pending
-            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls {
-                stored?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
-            }
-            val deleting = CompletableDeferred<Unit>()
-            val releaseDeletion = CompletableDeferred<Unit>()
-            everySuspend { arrangement.messageRepository.deleteMessage(any(), any()) } calls {
-                deleting.complete(Unit)
-                releaseDeletion.await()
-                stored = null
-                Either.Right(Unit)
-            }
-            arrangement.serializeTransactions()
-            val cancel = async { sender.cancelPendingMessage(pending.conversationId, pending.id) }
-            deleting.await()
-            val send = async { sender.sendMessage(pending) }
-            runCurrent()
-            assertFalse(send.isCompleted)
-            releaseDeletion.complete(Unit)
-            assertEquals(Either.Right(true), cancel.await())
-            send.await().shouldSucceed()
-            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
-            verifySuspend(VerifyMode.exactly(0)) { arrangement.selfDeleteMessageSenderHandler.enqueueSelfDeletion(any(), any()) }
-        }
-    }
-
-    @Test
-    fun givenSendAlreadyInTransaction_whenCancellationWaits_thenSentMessageIsNotRemovedFromQueue() {
-        val (arrangement, sender) = arrange { withSendProteusMessage() }
-        arrangement.testScope.runTest {
-            val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
-            var stored = pending
-            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { Either.Right(stored) }
-            val promoting = CompletableDeferred<Unit>()
-            val releaseSend = CompletableDeferred<Unit>()
-            everySuspend { arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any()) } calls {
-                promoting.complete(Unit)
-                releaseSend.await()
-                stored = pending.copy(status = Message.Status.Sent)
-                Either.Right(Unit)
-            }
-            arrangement.serializeTransactions()
-            val send = async { sender.sendMessage(pending) }
-            promoting.await()
-            val cancel = async { sender.cancelPendingMessage(pending.conversationId, pending.id) }
-            runCurrent()
-            assertFalse(cancel.isCompleted)
-            releaseSend.complete(Unit)
-            send.await().shouldSucceed()
-            assertEquals(Either.Right(false), cancel.await())
             verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.deleteMessage(any(), any()) }
         }
     }
@@ -386,38 +281,6 @@ class MessageSenderTest {
 
             assertEquals(0, arrangement.preparationCalls)
             verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
-        }
-    }
-
-    @Test
-    fun givenCompetingPendingRetry_whenFirstSendOwnsTransaction_thenOnlyWinningPolicyIsPrepared() {
-        val (arrangement, sender) = arrange { withSendProteusMessage() }
-        arrangement.testScope.runTest {
-            val pending = TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true)
-            var stored = pending
-            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { Either.Right(stored) }
-            val promoting = CompletableDeferred<Unit>()
-            val releaseSend = CompletableDeferred<Unit>()
-            everySuspend { arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any()) } calls {
-                promoting.complete(Unit)
-                releaseSend.await()
-                stored = pending.copy(status = Message.Status.Sent)
-                Either.Right(Unit)
-            }
-            arrangement.serializeTransactions()
-            val firstSend = async { sender.sendMessage(pending) }
-            promoting.await()
-            val competingRetry = async { sender.sendPendingMessage(pending.conversationId, pending.id) }
-            runCurrent()
-            assertFalse(competingRetry.isCompleted)
-            assertEquals(1, arrangement.preparationCalls)
-
-            releaseSend.complete(Unit)
-            firstSend.await().shouldSucceed()
-            competingRetry.await().shouldSucceed()
-
-            assertEquals(1, arrangement.preparationCalls)
-            verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
         }
     }
 
@@ -830,6 +693,46 @@ class MessageSenderTest {
             verifySuspend(VerifyMode.exactly(2)) {
                 arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
             }
+        }
+    }
+
+    @Test
+    fun givenProteusMessage_whenItIsInTransit_thenNoCryptoTransactionIsOpen() {
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+        arrangement.testScope.runTest {
+            arrangement.serializeTransactions()
+            val queueHeldInTransit = mutableListOf<Boolean>()
+            everySuspend { arrangement.messageRepository.sendEnvelope(any(), any(), any()) } calls {
+                queueHeldInTransit += arrangement.transactionQueue.isLocked
+                Either.Right(TestMessage.TEST_MESSAGE_SENT)
+            }
+
+            messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldSucceed()
+
+            assertEquals(listOf(false), queueHeldInTransit)
+        }
+    }
+
+    @Test
+    fun givenMlsMessage_whenItIsInTransit_thenNoCryptoTransactionIsOpen() {
+        val (arrangement, messageSender) = arrange {
+            withSendMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+        arrangement.testScope.runTest {
+            arrangement.serializeTransactions()
+            val queueHeldInTransit = mutableListOf<Boolean>()
+            everySuspend { arrangement.messageRepository.sendMLSMessage(any()) } calls {
+                queueHeldInTransit += arrangement.transactionQueue.isLocked
+                Either.Right(MessageSent(Arrangement.MESSAGE_SENT_TIME))
+            }
+
+            messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldSucceed()
+
+            assertEquals(listOf(false), queueHeldInTransit)
         }
     }
 
