@@ -32,6 +32,7 @@ import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
 import com.wire.kalium.logic.sync.receiving.NotificationAppWork
 import com.wire.kalium.logic.sync.receiving.catchUp
+import com.wire.kalium.logic.sync.receiving.deliverMessageAlerts
 import com.wire.kalium.logic.sync.receiving.ReceivedCallType
 import com.wire.kalium.logic.sync.receiving.ReceivedMessageResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
@@ -285,8 +286,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         if (received.prefixComplete) claims.take()
         val unnotified = claims.pending.read(request.showMessageContent)
         val result = reconcileNotifications(runtime, received, unnotified, request)
-        if (delivery != null) deliverMessageAlerts(result.alerts, delivery) { key ->
-            claims.pending.acknowledge(listOf(key))
+        if (delivery != null) deliverMessageAlerts(result.alerts, delivery::deliver) { alert ->
+            claims.pending.acknowledge(listOf(alert.messageKey()))
         }
         return result.copy(
             stoppedReason = received.stoppedReason,
@@ -349,6 +350,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         messageId,
         QualifiedIDEntity(conversationValue, conversationDomain)
     )
+
+    private fun KaliumNSEAlert.messageKey() = NotificationMessageKey(messageId, QualifiedIDEntity(conversationValue, conversationDomain))
 
     /** The request's own message alert, registered for later removal and never repeated among unnotified messages. */
     private fun ReceivedNotificationResult.messageAlert() =

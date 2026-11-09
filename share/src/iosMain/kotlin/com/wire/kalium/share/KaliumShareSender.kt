@@ -29,11 +29,13 @@ import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
 import com.wire.kalium.logic.sync.receiving.NotificationProcessor
+import com.wire.kalium.logic.sync.receiving.PendingMessageAlerts
 import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
 import com.wire.kalium.logic.sync.receiving.ReceivedMessageResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
 import com.wire.kalium.logic.sync.receiving.ReceivingOptions
 import com.wire.kalium.logic.sync.receiving.cryptoTransactions
+import com.wire.kalium.logic.sync.receiving.deliverMessageAlerts
 import com.wire.kalium.logic.sync.receiving.holdLive
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -171,14 +173,18 @@ public data class KaliumShareResult(
     public val messageId: String? = null,
     /** Diagnostic code only; never contains account data or message content. */
     public val failureReason: String? = null,
-    /**
-     * Unnotified message alerts, oldest first. The backend sent no push for events delivered over the
-     * open socket, so the host posts each; Kalium has already marked them notified.
-     */
-    public val alerts: List<KaliumShareAlert> = emptyList(),
     /** Events may have arrived that could not be processed in time; the host shows a generic alert. */
     public val presentGenericAlert: Boolean = false,
 )
+
+/**
+ * Posts a message alert using only the supplied alert and native notification APIs, never account resources, under
+ * the identity the app and the notification extension use for the message. Cancellation may release the account
+ * before this callback completes; the account's next owner then posts the alert again.
+ */
+public interface KaliumShareMessageDelivery {
+    public suspend fun deliver(userValue: String, userDomain: String, alert: KaliumShareAlert): Boolean
+}
 
 /** Text and names are present only when preview is allowed. */
 public data class KaliumShareAlert(
@@ -194,10 +200,13 @@ public data class KaliumShareAlert(
 /**
  * Sends shared text and files from the share extension through the app's sender (ADR 12). It uploads files
  * first, then holds the account and keeps it live over the WebSocket while it sends, then processes what
- * arrived and returns unnotified alerts.
+ * arrived and posts unnotified message alerts through [delivery] before it releases the account.
  */
 @Suppress("TooManyFunctions") // The two draft operations use the same exclusive runtime as sending.
-public class KaliumShareSender(private val configuration: KaliumShareConfiguration) {
+public class KaliumShareSender(
+    private val configuration: KaliumShareConfiguration,
+    private val delivery: KaliumShareMessageDelivery,
+) {
 
     /** Completes once another process wants the account; see [yieldAccount]. */
     private val accountWanted = Job()
@@ -205,7 +214,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
     /**
      * Another process needs the account (ADR 12): a [send] that has not stored a message yet stops uploading or
      * catching up, releases the account and returns [KaliumShareStatus.OPEN_APP] with `ACCOUNT_WANTED`, for the host
-     * to hand the share to the app; its alerts are still owed. A send that stores messages finishes within its budget.
+     * to hand the share to the app; it still posts its alerts. A send that stores messages finishes within its budget.
      * Later sends return `ACCOUNT_WANTED` without taking the account.
      */
     public fun yieldAccount() {
@@ -416,6 +425,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         }
         val preference = runtime.readMessageContentPreference()
         val alerts = unnotified.map { alert(it, request.showMessageContent, preference) }
+        delivery.deliverAll(runtime.prepared.userId, alerts, UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).pending)
         // Events may remain unpresented when the socket ended on its own after going live, or when processing
         // deferred or left them for the app. A hold that never went live sent nothing and asks for no alert.
         val unpresented = held.started == CatchUpOutcome.LIVE && held.closed != CatchUpOutcome.LIVE ||
@@ -425,7 +435,6 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             status = outcome.status.toKalium(),
             messageId = outcome.messageId,
             failureReason = outcome.reason,
-            alerts = alerts,
             presentGenericAlert = unpresented && alerts.isEmpty(),
         )
     }
@@ -542,6 +551,12 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
 
 /** The app sends at most this many files at once. */
 internal const val MAX_ATTACHMENTS = 20
+
+/** Acknowledges each alert the host accepted; any other stays pending, and the account's next owner posts it. */
+internal suspend fun KaliumShareMessageDelivery.deliverAll(user: UserId, alerts: List<KaliumShareAlert>, pending: PendingMessageAlerts) =
+    deliverMessageAlerts(alerts, { deliver(user.value, user.domain, it) }) {
+        pending.acknowledge(listOf(NotificationMessageKey(it.messageId, QualifiedIDEntity(it.conversationValue, it.conversationDomain))))
+    }
 
 private const val APP_LOCK = "APP_LOCK"
 
