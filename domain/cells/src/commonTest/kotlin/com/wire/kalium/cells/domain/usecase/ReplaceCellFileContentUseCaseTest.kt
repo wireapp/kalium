@@ -108,7 +108,9 @@ class ReplaceCellFileContentUseCaseTest {
     @Test
     fun givenFolderDraftOrRecycledFile_whenReplacing_thenRejectWithoutUpload() = runTest {
         for (node in listOf(
-            ORIGINAL.copy(type = "COLLECTION"), ORIGINAL.copy(isDraft = true), ORIGINAL.copy(isRecycled = true),
+            ORIGINAL.copy(type = "COLLECTION"),
+            ORIGINAL.copy(isDraft = true),
+            ORIGINAL.copy(isRecycled = true),
             ORIGINAL.copy(uuid = "different-id"),
         )) {
             val fixture = Fixture()
@@ -139,7 +141,7 @@ class ReplaceCellFileContentUseCaseTest {
         val fixture = Fixture()
         fixture.publishFailure = FAILURE
         assertEquals(ReplaceCellFileContentFailure.Other(FAILURE).left(), fixture.replace())
-        assertEquals(0, fixture.versionReads)
+        assertEquals(2, fixture.versionReads)
     }
 
     @Test
@@ -154,6 +156,117 @@ class ReplaceCellFileContentUseCaseTest {
         val fixture = Fixture()
         fixture.downloadAvailable = false
         assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+    }
+
+    @Test
+    fun givenPublishedHeadOmitsOptionalFlags_whenReplacing_thenConfirmPublication() = runTest {
+        val fixture = Fixture()
+        fixture.publishedDraft = null
+        fixture.publishedHead = null
+        val result = fixture.replace()
+        val uploaded = assertNotNull(fixture.uploaded)
+        assertEquals(NodeIdAndVersion(uploaded.uuid, uploaded.versionId).right(), result)
+    }
+
+    @Test
+    fun givenHeadVersionRemainsDraft_whenReplacing_thenDoNotConfirmPublication() = runTest {
+        val fixture = Fixture()
+        fixture.publishedDraft = true
+        assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+    }
+
+    @Test
+    fun givenVersionIsExplicitlyNotHead_whenReplacing_thenDoNotConfirmPublication() = runTest {
+        val fixture = Fixture()
+        fixture.publishedHead = false
+        assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+    }
+
+    @Test
+    fun givenDifferentVersionIsCurrent_whenReplacing_thenDoNotConfirmPublication() = runTest {
+        val fixture = Fixture()
+        fixture.currentVersion = "another-version"
+        assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+    }
+
+    @Test
+    fun givenPublishedHeadHasOnlyMatchingEtag_whenReplacing_thenConfirmPublication() = runTest {
+        val fixture = Fixture()
+        fixture.currentVersion = ""
+        fixture.currentEtag = "replacement-etag"
+        fixture.publishedEtag = "replacement-etag"
+        fixture.publishedDraft = null
+        fixture.publishedHead = null
+        val result = fixture.replace()
+        val uploaded = assertNotNull(fixture.uploaded)
+        assertEquals(NodeIdAndVersion(uploaded.uuid, uploaded.versionId).right(), result)
+    }
+
+    @Test
+    fun givenPublishingChangesDraftIdAndOmitsMetadata_whenReplacing_thenReturnActualPublishedVersion() = runTest {
+        val fixture = Fixture()
+        fixture.currentVersion = ""
+        fixture.currentEtag = "replacement-etag"
+        fixture.publishedEtag = "replacement-etag"
+        fixture.publishedVersion = "server-published-version"
+        fixture.publishedHash = "replacement-content"
+        fixture.publishedDraft = null
+        fixture.publishedHead = null
+        assertEquals(NodeIdAndVersion("file-id", "server-published-version").right(), fixture.replace())
+    }
+
+    @Test
+    fun givenPublishedIdChangesWithoutContentHash_whenReplacing_thenDoNotGuessTheNewVersion() = runTest {
+        val fixture = Fixture()
+        fixture.currentVersion = ""
+        fixture.currentEtag = "published-storage-etag"
+        fixture.publishedEtag = "published-storage-etag"
+        fixture.publishedVersion = "server-published-version"
+        assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+    }
+
+    @Test
+    fun givenPublishedVersionHasDifferentContentFromUploadedDraft_whenReplacing_thenDoNotConfirmPublication() = runTest {
+        val fixture = Fixture()
+        fixture.currentVersion = ""
+        fixture.currentEtag = "other-content"
+        fixture.uploadedHash = "replacement-content"
+        fixture.publishedHash = "other-content"
+        fixture.publishedEtag = "other-content"
+        fixture.publishedVersion = "server-published-version"
+        assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+    }
+
+    @Test
+    fun givenAnOldVersionHasTheSameContent_whenReplacing_thenDoNotReturnTheOldVersion() = runTest {
+        val fixture = Fixture()
+        fixture.existing = fixture.existing.copy(eTag = "same-content")
+        fixture.currentVersion = ""
+        fixture.currentEtag = "same-content"
+        fixture.publishedEtag = "same-content"
+        fixture.publishedHash = "same-content"
+        fixture.publishedVersion = "old-version"
+        assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+    }
+
+    @Test
+    fun givenVersionMetadataIsMissingAndEtagDiffers_whenReplacing_thenDoNotConfirmPublication() = runTest {
+        val fixture = Fixture()
+        fixture.currentVersion = ""
+        fixture.currentEtag = "other-etag"
+        fixture.publishedEtag = "replacement-etag"
+        assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+    }
+
+    @Test
+    fun givenVersionMetadataAndEtagAreMissing_whenReplacing_thenDoNotConfirmPublication() = runTest {
+        for (etag in listOf(null, "")) {
+            val fixture = Fixture()
+            fixture.currentVersion = ""
+            fixture.currentEtag = etag
+            fixture.publishedEtag = etag
+            assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+        }
     }
 
     @Test
@@ -175,24 +288,96 @@ class ReplaceCellFileContentUseCaseTest {
         assertTrue(fixture.published.isEmpty())
     }
 
+    @Test
+    fun givenDraftMetadataIsDelayed_whenReplacing_thenWaitBeforePublishing() = runTest {
+        val fixture = Fixture()
+        fixture.draftReadsToSkip = 2
+        assertTrue(fixture.replace() is Either.Right)
+        assertTrue(testScheduler.currentTime >= 1_000)
+        assertEquals(0, fixture.draftReadsToSkip)
+    }
+
+    @Test
+    fun givenDraftMetadataNeverAppears_whenReplacing_thenTimeoutWithoutPublishing() = runTest {
+        val fixture = Fixture()
+        fixture.draftReadsToSkip = Int.MAX_VALUE
+        assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+        assertEquals(60_000L, testScheduler.currentTime)
+        assertTrue(fixture.published.isEmpty())
+    }
+
+    @Test
+    fun givenDelayedDraftAndMissingDownload_whenReplacing_thenShareOneConfirmationDeadline() = runTest {
+        val fixture = Fixture()
+        fixture.draftReadsToSkip = 2
+        fixture.downloadAvailable = false
+        assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+        assertEquals(60_000L, testScheduler.currentTime)
+        assertTrue(fixture.published.isNotEmpty())
+    }
+
+    @Test
+    fun givenServerAssignsNewIdAndReportsCurrentVersion_whenReplacing_thenReturnPublishedId() = runTest {
+        val fixture = Fixture()
+        fixture.uploadedHash = "replacement-content"
+        fixture.publishedHash = "replacement-content"
+        fixture.publishedVersion = "server-published-version"
+        fixture.publishedDraft = null
+        fixture.publishedHead = null
+        assertEquals(NodeIdAndVersion("file-id", "server-published-version").right(), fixture.replace())
+    }
+
+    @Test
+    fun givenVersionReadFailsAfterUpload_whenReplacing_thenPropagateWithoutPublishing() = runTest {
+        val fixture = Fixture()
+        fixture.versionFailureAfterUpload = FAILURE
+        assertEquals(ReplaceCellFileContentFailure.Other(FAILURE).left(), fixture.replace())
+        assertTrue(fixture.published.isEmpty())
+    }
+
+    @Test
+    fun givenVersionReadFailsAfterPublish_whenReplacing_thenPropagate() = runTest {
+        val fixture = Fixture()
+        fixture.versionFailureAfterPublish = FAILURE
+        assertEquals(ReplaceCellFileContentFailure.Other(FAILURE).left(), fixture.replace())
+        assertTrue(fixture.published.isNotEmpty())
+    }
+
     private class Fixture {
         var existing = ORIGINAL
         var uploaded: CellNode? = null
         var published = emptyList<NodeIdAndVersion>()
         var versionReads = 0
+        var draftReadsToSkip = 0
         var downloadAvailable = true
+        var publishedDraft: Boolean? = false
+        var publishedHead: Boolean? = true
+        var currentVersion: String? = null
+        var currentEtag: String? = null
+        var uploadedEtag: String? = "draft-storage-etag"
+        var uploadedHash: String? = null
+        var publishedHash: String? = null
+        var publishedEtag: String? = null
+        var publishedVersion: String? = null
         var publishedPath: String? = null
         var readFailure: NetworkFailure? = null
         var uploadFailure: NetworkFailure? = null
         var publishFailure: NetworkFailure? = null
         var versionFailure: NetworkFailure? = null
+        var versionFailureAfterUpload: NetworkFailure? = null
+        var versionFailureAfterPublish: NetworkFailure? = null
         var uploadGate: CompletableDeferred<Unit>? = null
         val uploadStarted = CompletableDeferred<Unit>()
         val conversations = mock<CellConversationRepository>()
         val repository = object : CellsRepository by mock<CellsRepository>() {
             override suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode> =
                 readFailure?.left() ?: if (published.isEmpty()) existing.right() else {
-                    checkNotNull(uploaded).copy(isDraft = false, path = publishedPath ?: existing.path).right()
+                    checkNotNull(uploaded).copy(
+                        isDraft = false,
+                        path = publishedPath ?: existing.path,
+                        versionId = currentVersion ?: publishedVersion ?: checkNotNull(uploaded).versionId,
+                        eTag = currentEtag,
+                    ).right()
                 }
 
             override suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> {
@@ -210,11 +395,38 @@ class ReplaceCellFileContentUseCaseTest {
 
             override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> {
                 versionReads++
+                if (published.isNotEmpty()) versionFailureAfterPublish?.let { return it.left() }
+                if (uploaded != null) versionFailureAfterUpload?.let { return it.left() }
+                if (uploaded != null && published.isEmpty() && draftReadsToSkip > 0) {
+                    draftReadsToSkip--
+                    return emptyList<NodeVersion>().right()
+                }
                 val version = NodeVersion(
-                    id = checkNotNull(uploaded).versionId, hash = null, description = null,
-                    isDraft = versionReads == 1, etag = null, editorUrls = null, filePreviews = null,
-                    isHead = true, modifiedTime = null, ownerName = null, ownerUuid = null,
-                    getUrl = if (downloadAvailable) PreSignedUrl(null, "https://download.test/pdf") else null, size = "42",
+                    id = when {
+                        uploaded == null -> existing.versionId
+                        published.isEmpty() -> checkNotNull(uploaded).versionId
+                        else -> publishedVersion ?: checkNotNull(uploaded).versionId
+                    },
+                    hash = when {
+                        uploaded == null -> existing.contentHash
+                        published.isEmpty() -> uploadedHash ?: publishedHash
+                        else -> publishedHash
+                    },
+                    description = null,
+                    isDraft = if (published.isEmpty() || versionReads == 3) true else publishedDraft,
+                    etag = when {
+                        uploaded == null -> existing.eTag
+                        published.isEmpty() -> uploadedEtag ?: publishedEtag
+                        else -> publishedEtag
+                    },
+                    editorUrls = null,
+                    filePreviews = null,
+                    isHead = publishedHead,
+                    modifiedTime = null,
+                    ownerName = null,
+                    ownerUuid = null,
+                    getUrl = if (downloadAvailable) PreSignedUrl(null, "https://download.test/pdf") else null,
+                    size = "42",
                 )
                 return versionFailure?.left() ?: listOf(version).right()
             }
@@ -227,7 +439,10 @@ class ReplaceCellFileContentUseCaseTest {
         }
 
         suspend fun replace(assetSize: Long = 42L) = ReplaceCellFileContentUseCaseImpl(repository, conversations)(
-            ConversationId("conversation", "example.com"), "file-id", "replacement.pdf".toPath(), assetSize,
+            ConversationId("conversation", "example.com"),
+            "file-id",
+            "replacement.pdf".toPath(),
+            assetSize,
         )
     }
 
