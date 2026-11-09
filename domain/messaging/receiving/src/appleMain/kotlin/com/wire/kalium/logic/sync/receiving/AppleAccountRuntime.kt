@@ -328,7 +328,8 @@ public class AppleAccountRuntime private constructor(
          * Authenticated networking for [prepared], read while holding the account, without holding it: for uploads,
          * which touch neither its database nor CoreCrypto, so the app and the notification extension keep the account
          * meanwhile. Requests use the stored token; a refresh holds the account for that moment and waits for it at most
-         * [refreshWait] (see [UnheldAccountSession]). NOT_PREPARED when the account has no token to use.
+         * [refreshWait] (see [UnheldAccountSession]). NOT_PREPARED when the account has no token to use; a failure of
+         * [block] is STORAGE, as for [use].
          */
         @Suppress("LongParameterList", "TooGenericExceptionCaught")
         public suspend fun <T> useUnheld(
@@ -358,6 +359,12 @@ public class AppleAccountRuntime private constructor(
             }
             return try {
                 Either.Right(block(network, session))
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (failure: Exception) {
+                // Such as the stored token removed by a logout meanwhile.
+                kaliumLogger.w("Unheld account work failed", failure)
+                Either.Left(AccountRuntimeFailure.STORAGE)
             } finally {
                 withContext(NonCancellable) {
                     try {
