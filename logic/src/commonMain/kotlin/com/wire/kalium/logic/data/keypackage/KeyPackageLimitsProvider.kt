@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.keypackage
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.feature.mlsmigration.isUpcomingOrOngoing
+import com.wire.kalium.logic.data.featureConfig.isUpcomingOrOngoing
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 /**

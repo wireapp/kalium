@@ -29,7 +29,6 @@ import dev.mokkery.mock
 internal interface NewGroupConversationSystemMessageCreatorArrangement {
     val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
 
-    suspend fun withPersistUnverifiedWarningMessageSuccess(): NewGroupConversationSystemMessageCreatorArrangement
     suspend fun withPersistCellAccessMessageSuccess(): NewGroupConversationSystemMessageCreatorArrangement
 }
 
@@ -38,12 +37,6 @@ internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGrou
         mock<NewGroupConversationSystemMessagesCreator>(mode = MockMode.autoUnit)
 
     val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
-
-    override suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
-        everySuspend {
-            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-        }.returns(Either.Right(Unit))
-    }
 
     override suspend fun withPersistCellAccessMessageSuccess() = apply {
         everySuspend {

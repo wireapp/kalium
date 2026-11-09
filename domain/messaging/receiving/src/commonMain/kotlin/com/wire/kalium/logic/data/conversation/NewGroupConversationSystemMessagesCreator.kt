@@ -64,11 +64,6 @@ interface NewGroupConversationSystemMessagesCreator {
         type: MessageContent.MemberChange.FailedToAdd.Type,
     ): Either<CoreFailure, Unit>
 
-    suspend fun conversationStartedUnverifiedWarning(
-        conversationId: ConversationId,
-        instant: Instant = Clock.System.now()
-    ): Either<CoreFailure, Unit>
-
     suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit>
 
     /**
@@ -231,12 +226,6 @@ class NewGroupConversationSystemMessagesCreatorImpl(
         Either.Right(Unit)
     }
 
-    override suspend fun conversationStartedUnverifiedWarning(
-        conversationId: ConversationId,
-        instant: Instant
-    ): Either<CoreFailure, Unit> =
-        persistMessage(unverifiedConversationMessage(LocalId.generate(), conversationId, instant, selfUserId))
-
     override suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit> = run {
         conversation.wireCell?.let {
             persistMessage(
@@ -351,7 +340,6 @@ suspend fun NewGroupConversationSystemMessagesCreator.createForEvent(
     event: Event.Conversation.NewConversation,
     selfTeamId: TeamId?,
 ): Either<CoreFailure, Unit> = listOf(
-    conversationStartedUnverifiedWarning(event.conversationId, event.dateTime),
     conversationStarted(event.senderUserId, event.conversation, event.dateTime),
     conversationResolvedMembersAdded(
         event.conversationId.toDao(),
@@ -368,15 +356,3 @@ suspend fun NewGroupConversationSystemMessagesCreator.createForEvent(
     ),
     conversationCellAccessStatus(event.conversationId, event.conversation.teamId, event.conversation.cellEnabled(), event.dateTime)
 ).firstOrNull { it is Either.Left } ?: Either.Right(Unit)
-
-fun unverifiedConversationMessage(id: String, conversationId: ConversationId, instant: Instant, selfUserId: UserId): Message.System =
-    Message.System(
-        id,
-        MessageContent.ConversationStartedUnverifiedWarning,
-        conversationId,
-        instant,
-        selfUserId,
-        Message.Status.Sent,
-        Message.Visibility.VISIBLE,
-        expirationData = null,
-    )

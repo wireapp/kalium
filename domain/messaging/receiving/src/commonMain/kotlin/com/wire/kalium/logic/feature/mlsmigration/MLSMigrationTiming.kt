@@ -14,9 +14,3 @@ public fun MLSMigrationModel.hasMigrationStarted(): Boolean =
 
 public fun MLSMigrationModel.hasMigrationEnded(): Boolean =
     status == Status.ENABLED && endTime?.let { Clock.System.now() > it } ?: false
-
-/**
- * Whether the migration is enabled and hasn't ended, including before its start date.
- */
-public fun MLSMigrationModel.isUpcomingOrOngoing(): Boolean =
-    status == Status.ENABLED && !hasMigrationEnded()

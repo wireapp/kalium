@@ -20,7 +20,6 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -47,9 +46,8 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.util.EventLoggingStatus
+import com.wire.kalium.logic.sync.receiving.isConversationUnavailable
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationNotFound
 import kotlinx.coroutines.flow.first
 
 internal interface MLSWelcomeEventHandler {
@@ -91,10 +89,10 @@ internal class MLSWelcomeEventHandlerImpl(
             }
             .flatMapLeft { failure ->
                 when {
-                    failure.isConversationNotFoundFailure() -> {
-                        welcomeOutcome = OUTCOME_SKIPPED_CONVERSATION_NOT_FOUND
+                    failure.isConversationUnavailable() -> {
+                        welcomeOutcome = OUTCOME_SKIPPED_CONVERSATION_UNAVAILABLE
                         kaliumLogger.w(
-                            "$TAG: Discarding welcome because the conversation no longer exists " +
+                            "$TAG: Discarding welcome because the conversation is gone or no longer accessible " +
                                     "[conversationId=${event.conversationId.toLogString()}]"
                         )
                         Either.Right(Unit)
@@ -141,7 +139,7 @@ internal class MLSWelcomeEventHandlerImpl(
                 }
             }
             .onSuccess {
-                if (welcomeOutcome == OUTCOME_SKIPPED_CONVERSATION_NOT_FOUND) {
+                if (welcomeOutcome == OUTCOME_SKIPPED_CONVERSATION_UNAVAILABLE) {
                     eventLogger.logComplete(
                         EventLoggingStatus.SKIPPED,
                         arrayOf("welcomeOutcome" to welcomeOutcome)
@@ -200,15 +198,9 @@ internal class MLSWelcomeEventHandlerImpl(
         private const val OUTCOME_PROCESSED_DIRECTLY = "processed-directly"
         private const val OUTCOME_RECOVERED_VIA_EXTERNAL_COMMIT = "recovered-via-external-commit"
         private const val OUTCOME_SKIPPED_ALREADY_ESTABLISHED = "skipped-already-established"
-        private const val OUTCOME_SKIPPED_CONVERSATION_NOT_FOUND = "skipped-conversation-not-found"
+        private const val OUTCOME_SKIPPED_CONVERSATION_UNAVAILABLE = "skipped-conversation-unavailable"
         private const val OUTCOME_EXTERNAL_COMMIT_REJOIN_FAILED = "external-commit-rejoin-failed"
         private const val OUTCOME_FAILED = "failed"
     }
 
-}
-
-private fun CoreFailure.isConversationNotFoundFailure(): Boolean {
-    val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)
-        ?.kaliumException as? KaliumException.InvalidRequestError
-    return invalidRequest?.isConversationNotFound() == true
 }

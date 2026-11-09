@@ -134,7 +134,6 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlin.time.Duration.Companion.seconds
 import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
 import com.wire.kalium.messaging.sending.MessageEnvelopeCreatorImpl
 import kotlinx.coroutines.flow.first
@@ -682,20 +681,9 @@ public class MessageScope internal constructor(
     public val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
         get() = UpdateAudioMessageNormalizedLoudnessUseCaseImpl(messageRepository = messageRepository)
 
+    @OptIn(InternalKaliumApi::class)
     private val linkPreviewRepository: LinkPreviewRepository by lazy {
         LinkPreviewRepositoryImpl(
-            httpClient = io.ktor.client.HttpClient {
-                install(io.ktor.client.plugins.HttpTimeout) {
-                    requestTimeoutMillis = 5.seconds.inWholeMilliseconds
-                    connectTimeoutMillis = 3.seconds.inWholeMilliseconds
-                    socketTimeoutMillis = 5.seconds.inWholeMilliseconds
-                }
-                install(io.ktor.client.plugins.UserAgent) {
-                    agent = "Wire LinkPreviewFetcher"
-                }
-                followRedirects = false
-                expectSuccess = false
-            },
             kaliumFileSystem = kaliumFileSystem
         )
     }
@@ -704,7 +692,8 @@ public class MessageScope internal constructor(
         get() = GenerateLinkPreviewUseCaseImpl(
             repository = linkPreviewRepository,
             userPropertyRepository = userPropertyRepository,
-            linkPreviewEnabled = linkPreviewEnabled
+            linkPreviewEnabled = linkPreviewEnabled,
+            scope = scope
         )
 
     public val detectLinkPreviewTarget: DetectLinkPreviewTargetUseCase
