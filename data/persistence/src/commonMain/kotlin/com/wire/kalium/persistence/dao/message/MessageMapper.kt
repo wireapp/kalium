@@ -237,7 +237,6 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.ConversationVerifiedMls
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
-            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.LEGAL_HOLD -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.MULTIPART -> when {
                 text.isNullOrBlank() -> MessagePreviewEntityContent.Asset(
@@ -972,7 +971,6 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL ->
                 MessageEntityContent.ConversationProtocolChangedDuringACall
 
-            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessageEntityContent.ConversationStartedUnverifiedWarning
             MessageEntity.ContentType.LOCATION -> MessageEntityContent.Location(
                 latitude = latitude.requireField("latitude"),
                 longitude = longitude.requireField("longitude"),

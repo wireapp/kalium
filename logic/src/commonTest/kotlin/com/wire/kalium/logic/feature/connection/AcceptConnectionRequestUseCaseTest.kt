@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -55,7 +54,6 @@ class AcceptConnectionRequestUseCaseTest {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversationSucceeding()
             withUpdateConversationModifiedDate(Either.Right(Unit))
-            withPersistUnverifiedWarningMessageSuccess()
             withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
         }
 
@@ -80,7 +78,6 @@ class AcceptConnectionRequestUseCaseTest {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversationSucceeding()
             withUpdateConversationModifiedDate(Either.Right(Unit))
-            withPersistUnverifiedWarningMessageSuccess()
             withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
         }
 
@@ -100,7 +97,6 @@ class AcceptConnectionRequestUseCaseTest {
         val (arrangement, acceptConnectionRequestUseCase) = arrange {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversationSucceeding()
-            withPersistUnverifiedWarningMessageSuccess()
             withUpdateConversationModifiedDate(Either.Right(Unit))
             withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
         }
@@ -130,7 +126,6 @@ class AcceptConnectionRequestUseCaseTest {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversationSucceeding()
             withUpdateConversationModifiedDate(Either.Right(Unit))
-            withPersistUnverifiedWarningMessageSuccess()
             withResolveOneOnOneConversationWithUserIdReturning(Either.Left(failure))
         }
 
@@ -142,12 +137,6 @@ class AcceptConnectionRequestUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(CONNECTION.qualifiedToId)
         }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                CONNECTION.qualifiedConversationId,
-                mokkeryAny()
-            )
-        }
     }
 
     @Test
@@ -157,7 +146,6 @@ class AcceptConnectionRequestUseCaseTest {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversationSucceeding()
             withUpdateConversationModifiedDate(Either.Right(Unit))
-            withPersistUnverifiedWarningMessageSuccess()
             withResolveOneOnOneConversationWithUserIdReturning(Either.Left(CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate))
         }
 
@@ -199,7 +187,6 @@ class AcceptConnectionRequestUseCaseTest {
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val oneOnOneResolver = mock<OneOnOneResolver>(mode = MockMode.autoUnit)
         val fetchConversation = mock<FetchConversationUseCase>(mode = MockMode.autoUnit)
-        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>(mode = MockMode.autoUnit)
         val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = run {
@@ -209,7 +196,6 @@ class AcceptConnectionRequestUseCaseTest {
                 connectionRepository = connectionRepository,
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
-                newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
                 fetchConversation = fetchConversation,
                 transactionProvider = cryptoTransactionProvider,
                 pendingActionsRepository = pendingActionsRepository
@@ -232,12 +218,6 @@ class AcceptConnectionRequestUseCaseTest {
             everySuspend {
                 conversationRepository.updateConversationModifiedDate(mokkeryAny(), mokkeryAny())
             } returns result
-        }
-
-        suspend fun withPersistUnverifiedWarningMessageSuccess() {
-            everySuspend {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(mokkeryAny(), mokkeryAny())
-            } returns Either.Right(Unit)
         }
 
         suspend fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {

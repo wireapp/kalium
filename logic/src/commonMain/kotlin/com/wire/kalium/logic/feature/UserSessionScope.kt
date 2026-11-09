@@ -1201,7 +1201,7 @@ public class UserSessionScope internal constructor(
             conversationRepository,
             persistConversationsUseCase,
             AcceptedConnectionEventPersistence { connection ->
-                userStorage.database.writeMessageEffects { persistAcceptedConnection(connection, userId) }
+                userStorage.database.writeMessageEffects { persistAcceptedConnection(connection) }
             }
         )
 
@@ -3061,7 +3061,6 @@ public class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             oneOnOneResolver,
-            newGroupConversationSystemMessagesCreator,
             fetchConversationUseCase,
             cryptoTransactionProvider,
             pendingActionsRepository
