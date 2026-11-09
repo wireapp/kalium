@@ -370,6 +370,8 @@ internal class ShareSending(
         // Reached only after verifyEpoch, which declines.
         override suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = Either.Right(Unit)
 
+        override suspend fun waitUntilLiveWhileRunning(): Either<CoreFailure, Unit> = Either.Right(Unit)
+
         override suspend fun <R> transaction(
             name: String,
             block: suspend (transactionContext: CryptoTransactionContext) -> Either<CoreFailure, R>

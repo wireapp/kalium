@@ -19,10 +19,13 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.sync.SyncManager
+import kotlinx.coroutines.flow.first
 import com.wire.kalium.messaging.sending.SendingSession
 
 /** The app's session for the sender: live means the app's sync manager reached live. */
@@ -34,6 +37,13 @@ internal class SyncedSendingSession(
     override suspend fun waitUntilLive() = syncManager.waitUntilLive()
 
     override suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = syncManager.waitUntilLiveOrFailure()
+
+    // Waiting means no one runs sync (a released request, the app in the background): it would wait for the next sync.
+    override suspend fun waitUntilLiveWhileRunning(): Either<CoreFailure, Unit> =
+        when (syncManager.syncState.first { it is SyncState.Live || it is SyncState.Failed || it is SyncState.Waiting }) {
+            SyncState.Live -> Either.Right(Unit)
+            else -> Either.Left(NetworkFailure.NoNetworkConnection(null))
+        }
 
     override suspend fun <R> transaction(
         name: String,
