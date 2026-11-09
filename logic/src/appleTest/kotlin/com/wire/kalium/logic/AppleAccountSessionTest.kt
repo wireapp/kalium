@@ -38,6 +38,7 @@ import dev.mokkery.matcher.any
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.AccountSessionUnavailableException
 import com.wire.kalium.logic.feature.AccountBusyException
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
@@ -96,6 +97,41 @@ import kotlin.time.Duration.Companion.seconds
 class AppleAccountSessionTest {
     private val userId = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
     private val fileManager = NSFileManager.defaultManager
+
+    @Test
+    fun `queued screen lookup during logout and after release reports unavailable without reopening`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val scope = logic.openSessionScope(userId)
+            val provider = logic.userSessionScopeProvider.value
+            val preparing = CompletableDeferred<Unit>()
+            val finishPreparation = CompletableDeferred<Unit>()
+            val logout = async {
+                provider.logout(userId, scope, prepare = {
+                    preparing.complete(Unit)
+                    finishPreparation.await()
+                }, clearLocalData = {})
+            }
+            try {
+                preparing.await()
+                // The durable account and old UI still exist while preparation waits on network work.
+                assertEquals(Either.Right(true), logic.getGlobalScope().sessionRepository.doesSessionExist(userId))
+                assertFailsWith<AccountSessionUnavailableException> { logic.getSessionScope(userId) }
+                assertNull(provider.get(userId))
+                finishPreparation.complete(Unit)
+                assertTrue(logout.await())
+                assertFailsWith<AccountSessionUnavailableException> { logic.getSessionScope(userId) }
+                // A stale factory must not reacquire ownership or create another account scope.
+                val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+                lease.release()
+            } finally {
+                finishPreparation.complete(Unit)
+                logout.join()
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
 
     @Test
     fun `synchronous lookup cannot construct an unowned account`() = runTest {

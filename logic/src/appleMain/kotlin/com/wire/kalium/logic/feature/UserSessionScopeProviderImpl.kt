@@ -260,9 +260,8 @@ internal actual open class UserSessionScopeProviderImpl(
             super.get(userId)?.takeIf { scope -> scope.coroutineContext.job.isActive }
         }
 
-    actual override fun getOrCreate(userId: UserId): UserSessionScope = checkNotNull(get(userId)) {
-        "Await CoreLogic.openSessionScope before accessing this Apple account"
-    }
+    actual override fun getOrCreate(userId: UserId): UserSessionScope =
+        get(userId) ?: throw AccountSessionUnavailableException()
 
     actual override suspend fun logout(
         userId: UserId,
