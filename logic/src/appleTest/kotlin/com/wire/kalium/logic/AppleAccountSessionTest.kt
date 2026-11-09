@@ -206,6 +206,31 @@ class AppleAccountSessionTest {
     }
 
     @Test
+    fun `host resume admits an account whose first open was cancelled before a background handoff`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+            try {
+                val opening = async(start = CoroutineStart.UNDISPATCHED) { logic.openSessionScope(userId) }
+                delay(200)
+                assertFalse(opening.isCompleted)
+                withTimeout(5.seconds) { opening.cancelAndJoin() }
+                logic.suspendSessionScope(userId)
+                // Nothing was opened, so resuming must not wait for the other owner.
+                withTimeout(5.seconds) { logic.resumeSuspendedSessionScopes() }
+                lease.release()
+                // Opens used to wait forever for a resume that skipped this account.
+                withTimeout(30.seconds) { logic.openSessionScope(userId) }
+            } finally {
+                lease.release()
+                logic.releaseSessionScope(userId)
+            }
+        }
+    }
+
+    @Test
     fun `reopening gives up on an account another process keeps and can reopen it later`() = runTest {
         withContext(Dispatchers.Default) {
             val (root, logic) = fixture(prepared = true)

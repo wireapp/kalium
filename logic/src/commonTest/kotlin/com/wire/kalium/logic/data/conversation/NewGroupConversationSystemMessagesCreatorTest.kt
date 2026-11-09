@@ -77,8 +77,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
         )
 
         assertEquals(failure, creator.createForEvent(event, TestTeam.TEAM_ID))
-        assertEquals(MessageContent.ConversationStartedUnverifiedWarning, attempted.first())
-        assertTrue(attempted.contains(MessageContent.ConversationCreated))
+        assertEquals(MessageContent.ConversationCreated, attempted.first())
         assertTrue(attempted.any { it is MessageContent.MemberChange.CreationAdded })
         assertTrue(attempted.any { it is MessageContent.NewConversationReceiptMode })
     }
@@ -355,25 +354,6 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 })
             }
         }
-
-    @Test
-    fun givenAGroupConversation_whenPersistingAndValid_ThenShouldCreateAStartedUnverifiedSystemMessage() = runTest {
-        val (arrangement, sysMessageCreator) = Arrangement()
-            .withPersistMessageSuccess()
-            .arrange()
-
-        val result = sysMessageCreator.conversationStartedUnverifiedWarning(
-            TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP).id.toModel()
-        )
-
-        result.shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matches {
-                (it.content is MessageContent.System && it.content is MessageContent.ConversationStartedUnverifiedWarning)
-            })
-        }
-    }
 
     private class Arrangement {
                 val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)

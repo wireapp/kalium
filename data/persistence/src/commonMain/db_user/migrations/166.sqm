@@ -1,0 +1,4 @@
+-- Apps now draw the end-to-end encryption notice at the start of every conversation, so the stored notice
+-- and the markers that recorded writing it for accepted connections are no longer used.
+DELETE FROM Message WHERE content_type = 'CONVERSATION_STARTED_UNVERIFIED_WARNING';
+DELETE FROM Metadata WHERE key LIKE 'connection.accepted-warning/%';

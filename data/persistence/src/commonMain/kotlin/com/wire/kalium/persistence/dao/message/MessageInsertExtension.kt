@@ -347,10 +347,6 @@ internal class MessageInsertExtensionImpl(
                 // No content table needed - message exists only in Message table
             }
 
-            is MessageEntityContent.ConversationStartedUnverifiedWarning -> {
-                /* no-op */
-            }
-
             is MessageEntityContent.Location -> messagesQueries.insertLocationMessageContent(
                 message_id = message.id,
                 conversation_id = message.conversationId,
@@ -534,7 +530,6 @@ internal class MessageInsertExtensionImpl(
                 MessageEntityContent.ConversationVerifiedMLS,
                 MessageEntityContent.ConversationDegradedProteus,
                 MessageEntityContent.ConversationVerifiedProteus,
-                MessageEntityContent.ConversationStartedUnverifiedWarning,
                 is MessageEntityContent.TeamMemberRemoved,
                 is MessageEntityContent.LegalHold,
                 is MessageEntityContent.NewConversationWithCellMessage,
@@ -655,9 +650,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
         is MessageEntityContent.ConversationProtocolChangedDuringACall ->
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL
-
-        is MessageEntityContent.ConversationStartedUnverifiedWarning ->
-            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
 
         is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
         is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD

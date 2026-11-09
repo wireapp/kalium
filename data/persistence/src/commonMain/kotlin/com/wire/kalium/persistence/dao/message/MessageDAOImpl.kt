@@ -288,38 +288,24 @@ internal class MessageDAOImpl internal constructor(
     - [MessageEntityContent.MemberChange]
     - [MessageEntityContent.ConversationRenamed]
     - [MessageEntityContent.ConversationMessageTimerChanged]
-    - [MessageEntityContent.ConversationStartedUnverifiedWarning]
      */
     @Suppress("ComplexMethod")
     private suspend fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
         when (message.content) {
             is MessageEntityContent.MemberChange, is MessageEntityContent.ConversationRenamed,
-            is MessageEntityContent.ConversationStartedUnverifiedWarning,
             is MessageEntityContent.ConversationMessageTimerChanged -> message.content
 
             else -> null
         }?.let {
             if (message.senderUserId == selfUserId) it else null
         }?.let { messageContent ->
-            val messagesQuery = if (messageContent is MessageEntityContent.ConversationStartedUnverifiedWarning) {
-                // Conversation could have only one ConversationStartedUnverifiedWarning message (very first message),
-                // all the others are duplicates.
-                queries.selectByConversationIdAndSenderIdAndType(
-                    message.conversationId,
-                    message.senderUserId,
-                    contentTypeOf(messageContent)
-                )
-            } else {
-                // Check if the message with given time and type already exists in the local DB.
-                queries.selectByConversationIdAndSenderIdAndTimeAndType(
-                    message.conversationId,
-                    message.senderUserId,
-                    message.date,
-                    contentTypeOf(messageContent)
-                )
-            }
-
-            messagesQuery
+            // Check if the message with given time and type already exists in the local DB.
+            queries.selectByConversationIdAndSenderIdAndTimeAndType(
+                message.conversationId,
+                message.senderUserId,
+                message.date,
+                contentTypeOf(messageContent)
+            )
                 .awaitAsList()
                 .firstOrNull {
                     LocalId.check(it.id) && when (messageContent) {
@@ -334,8 +320,6 @@ internal class MessageDAOImpl internal constructor(
 
                         is MessageEntityContent.ConversationMessageTimerChanged ->
                             it.messageTimerChanged == messageContent.messageTimer
-
-                        is MessageEntityContent.ConversationStartedUnverifiedWarning -> true
 
                         is MessageEntityContent.ConversationAppsAccessChanged ->
                             it.isConversationAppsEnabled == messageContent.isEnabled
@@ -401,16 +385,6 @@ internal class MessageDAOImpl internal constructor(
             withMultipartAttachments(it)
         }
     }
-
-    override suspend fun getConversationStartedUnverifiedWarning(conversationId: ConversationIDEntity): MessageEntity? =
-        withContext(readDispatcher.value) {
-            queries.selectByConversationIdAndSenderIdAndType(
-                conversationId,
-                selfUserId,
-                MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING,
-                mapper::toEntityMessageFromView
-            ).awaitAsList().firstOrNull()
-        }
 
     override suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity> = withContext(readDispatcher.value) {
         queries.selectConversationIdsByMessageId(id).awaitAsList()

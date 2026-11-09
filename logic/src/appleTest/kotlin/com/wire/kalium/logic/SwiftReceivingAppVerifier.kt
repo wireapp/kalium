@@ -300,10 +300,6 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                     assertEquals("Pending connection", pending.name)
                     assertIs<com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.Proteus>(pending.protocol)
                     assertEquals(listOf(user), session.conversations.observeConversationMembers(pendingId).first().map { it.user.id })
-                    val creationTime = account.getValue("response").jsonObject.getValue("time").jsonPrimitive.content
-                    val warning = assertIs<Message.System>(assertIs<GetMessageByIdUseCase.Result.Success>(
-                        session.messages.getMessageById(pendingId, "$pendingId:$creationTime:creation:0")).message)
-                    assertEquals(MessageContent.ConversationStartedUnverifiedWarning, warning.content)
                     println("APP_PENDING_CONNECTION_CREATION_PASSED")
                     println("APP_SENT_CONNECTION_PASSED")
                 }
@@ -320,14 +316,9 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                     assertEquals(id, active.id)
                     assertEquals(com.wire.kalium.logic.data.conversation.Conversation.Type.OneOnOne, active.type)
                     assertFalse(session.conversations.observeConversationMembers(source).first().any { it.user.id == user })
-                    val warningId = (if (mlsConnection) "notification:1" else "notification") + ":accepted"
-                    if (consent) assertIs<GetMessageByIdUseCase.Result.Failure>(session.messages.getMessageById(id, warningId))
-                    else assertEquals(MessageContent.ConversationStartedUnverifiedWarning,
-                        assertIs<Message.System>(assertIs<GetMessageByIdUseCase.Result.Success>(session.messages.getMessageById(id, warningId)).message).content)
                     if (mlsConnection) {
                         for (message in listOf("history", "history-second")) assertIs<GetMessageByIdUseCase.Result.Success>(
                             session.messages.getMessageById(id, message))
-                        assertIs<GetMessageByIdUseCase.Result.Failure>(session.messages.getMessageById(source, warningId))
                     }
                     // Acceptance retains the app's previous connection row, independently of User status.
                     val retained = session.conversations.observePendingConnectionRequests().first().find { it.conversationId == source }
