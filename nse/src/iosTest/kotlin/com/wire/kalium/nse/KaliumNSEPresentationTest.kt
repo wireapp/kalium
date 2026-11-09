@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.MessageContentPreference
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
 import com.wire.kalium.logic.sync.receiving.NotificationAppWork
@@ -19,6 +20,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TestTimeSource
 
 class KaliumNSEPresentationTest {
     private val receiver = KaliumNSEReceiver(KaliumNSEConfiguration(
@@ -169,6 +172,34 @@ class KaliumNSEPresentationTest {
             assertFalse(result.shouldNotify)
             assertEquals(expected, result.presentGenericAlert, "$reason $appPresentsAlerts")
         }
+    }
+
+    @Test
+    fun timeoutAsksForAGenericAlertUnlessAnAttemptCaughtUpAndClaimedEverythingAfterThePushArrived() {
+        val time = TestTimeSource()
+        val accounts = KaliumNSEReceiver.CaughtUpAccounts()
+        val user = UserId("user", "example.com")
+        val arrived = time.markNow()
+        time += 1.seconds
+        val complete = ReceivedNotificationResult(null, prefixComplete = true, stoppedReason = "QUEUE_END")
+        // Not live, out of time or with a deferred prefix, an attempt may leave the push's event unfetched or unclaimed;
+        // a refused or dropped alert was not presented.
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.BUDGET, complete, true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(droppedAlert = true), true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(stoppedReason = "BUDGET"), true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(prefixComplete = false), true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete, false)
+        assertTrue(receiver.timedOut(accounts.handled("root", user, arrived)).presentGenericAlert)
+
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete, true)
+        val handled = receiver.timedOut(accounts.handled("root", user, arrived))
+        assertEquals(KaliumNSEStatus.SUCCESS, handled.status)
+        assertFalse(handled.presentGenericAlert)
+        // That catch-up may have missed a push arriving later, or another account's.
+        time += 1.seconds
+        assertTrue(receiver.timedOut(accounts.handled("root", user, time.markNow())).presentGenericAlert)
+        assertTrue(receiver.timedOut(accounts.handled("root", UserId("other", "example.com"), arrived)).presentGenericAlert)
+        assertTrue(receiver.timedOut(accounts.handled("other", user, arrived)).presentGenericAlert)
     }
 
     @Test

@@ -21,6 +21,7 @@ package com.wire.kalium.share
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
@@ -218,7 +219,7 @@ public class KaliumShareSender(
      * Another process needs the account (ADR 12): a [send] that has not stored a message yet stops uploading or
      * catching up, releases the account and returns [KaliumShareStatus.OPEN_APP] with `ACCOUNT_WANTED`, for the host
      * to hand the share to the app; it still posts its alerts. A send that stores messages finishes within its budget.
-     * Later sends return `ACCOUNT_WANTED` without taking the account.
+     * A [prepareDraft] upload stops too. Later sends and drafts return `ACCOUNT_WANTED` without taking the account.
      */
     public fun yieldAccount() {
         accountWanted.complete()
@@ -256,14 +257,14 @@ public class KaliumShareSender(
         if (invalid != null) return failure(invalid)
         // The account is another process's now; taking it again would keep that process waiting.
         if (accountWanted.isCompleted) return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = ACCOUNT_WANTED)
-        // A result produced before the budget ends survives a slow runtime close: its message alerts are marked notified.
+        // A result produced before the budget ends survives a slow or failed runtime close: its message alerts are marked notified.
         var produced: KaliumShareResult? = null
         return try {
             val result = use(UserId(request.userValue, request.userDomain)) { runtime ->
                 uploadAndShare(runtime, request, files.filterNotNull(), progress) { produced = it }
             }
             when (result) {
-                is Either.Left -> KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = result.value.name)
+                is Either.Left -> produced ?: KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = result.value.name)
                 is Either.Right -> result.value
             }
         } catch (cancelled: CancellationException) {
@@ -274,12 +275,18 @@ public class KaliumShareSender(
         }
     }
 
-    /** Uploads one Cells draft, releasing the account before the user continues composing. */
+    /**
+     * Uploads one Cells draft, releasing the account before the user continues composing. Returns `ACCOUNT_WANTED`
+     * when the host called [yieldAccount]; the draft is then left for the app to prepare.
+     */
+    @Suppress("NestedBlockDepth") // Keep the yield guard before taking the account.
     @Throws(CancellationException::class)
     public suspend fun prepareDraft(userValue: String, userDomain: String, draftId: String): String? = try {
         val userId = UserId(userValue, userDomain)
         val store = ShareDraftStore(configuration.rootPath, userId)
-        val result = use(userId) { runtime ->
+        var wanted = false
+        // The account is another process's now; taking it again would keep that process waiting.
+        val result = if (accountWanted.isCompleted) Either.Right(ACCOUNT_WANTED) else use(userId) { runtime ->
             if (runtime.database.appLockEnforcedByTeam(options().fileRestrictionState)) return@use APP_LOCK
             val record = store.read(draftId) ?: return@use "DRAFT_UNAVAILABLE"
             if (runtime.database.conversationDAO.getConversationDetailsById(record.conversationId.toDao())?.wireCell == null) {
@@ -288,27 +295,10 @@ public class KaliumShareSender(
             prepareShareDraft(
                 store,
                 draftId,
-                upload = { draft, progress ->
-                    val uploaded = runtime.uploadSharedFiles(
-                        draft.conversationId,
-                        listOf(draft.file),
-                        options().fileRestrictionState,
-                        progress
-                    )
-                    when (uploaded) {
-                        is Either.Left -> Either.Left(uploaded.value.reason ?: "UPLOAD_FAILED")
-                        is Either.Right -> {
-                            val item = uploaded.value.singleOrNull() as? ShareItem.Cells
-                            if (item == null) Either.Left("UNAVAILABLE") else {
-                                val asset = item.attachments.single()
-                                Either.Right(SharedDraftAsset(asset.id, asset.versionId, requireNotNull(asset.assetPath), item.cellId))
-                            }
-                        }
-                    }
-                },
+                upload = { draft, progress -> runtime.uploadDraft(draft, progress).onFailure { wanted = it == ACCOUNT_WANTED } },
                 discard = { runtime.discardSharedDraft(it) },
             )
-            null
+            ACCOUNT_WANTED.takeIf { wanted }
         }
         when (result) {
             is Either.Left -> result.value.name
@@ -319,6 +309,26 @@ public class KaliumShareSender(
     } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
         com.wire.kalium.common.logger.kaliumLogger.w("Share draft operation failed", failure)
         "DRAFT_FAILED"
+    }
+
+    /** Like a [send]'s uploads, stops when the host calls [yieldAccount]; the draft's own timeout bounds it. */
+    private suspend fun AppleAccountRuntime.uploadDraft(
+        draft: ShareDraftRecord,
+        progress: (Long, Long) -> Unit,
+    ): Either<String, SharedDraftAsset> {
+        val uploaded = yieldingUploads(Duration.INFINITE, accountWanted, discard = { discardSharedDrafts(it) }) {
+            uploadSharedFiles(draft.conversationId, listOf(draft.file), options().fileRestrictionState, progress)
+        }
+        return when (uploaded) {
+            is Either.Left -> Either.Left(uploaded.value.reason ?: "UPLOAD_FAILED")
+            is Either.Right -> {
+                val item = uploaded.value.singleOrNull() as? ShareItem.Cells
+                if (item == null) Either.Left("UNAVAILABLE") else {
+                    val asset = item.attachments.single()
+                    Either.Right(SharedDraftAsset(asset.id, asset.versionId, requireNotNull(asset.assetPath), item.cellId))
+                }
+            }
+        }
     }
 
     @Throws(CancellationException::class)
@@ -374,15 +384,20 @@ public class KaliumShareSender(
             val budget = request.budgetMilliseconds.milliseconds
             val started = TimeSource.Monotonic.markNow()
             val sending = ShareSending(runtime, runtime.cryptoTransactions(), options().fileRestrictionState)
+            var handedOff = false
             // Messages stored before the deadline stay in Wire as failed, and the result says so.
             try {
                 withTimeoutOrNull(budget) {
-                    share(runtime, request, sending, uploads, budget, started).also(produced)
+                    share(runtime, request, sending, uploads, budget, started).also {
+                        produced(it)
+                        handedOff = it.failureReason == ACCOUNT_WANTED
+                    }
                 } ?: failure("TIMEOUT").copy(presentGenericAlert = true, messageId = sending.firstStoredId)
             } finally {
                 // Once stored, the message owns the drafts and the app can retry publication.
-                if (sending.firstStoredId == null) runtime.discardSharedDrafts(uploads)
-                draftStore.consume(request.preparedDraftIds)
+                draftStore.endSend(request.preparedDraftIds, stored = sending.firstStoredId != null, handedOff) {
+                    runtime.discardSharedDrafts(uploads)
+                }
             }
         }
     }
