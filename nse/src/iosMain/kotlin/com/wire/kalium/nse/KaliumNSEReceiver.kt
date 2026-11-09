@@ -48,8 +48,11 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -242,7 +245,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     is Either.Left -> produced ?: ownershipFailure(result.value, request.appPresentsAlerts)
                     is Either.Right -> result.value
                 }
-            } ?: produced ?: failure("TIMEOUT").copy(presentGenericAlert = true)
+            } ?: produced ?: timedOut(caughtUpAccounts.handled(configuration.rootPath, userId, started))
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (@Suppress("TooGenericExceptionCaught") cleanup: Exception) {
@@ -274,9 +277,14 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             diagnostics = diagnostics,
         )
         val budget = request.budgetMilliseconds.milliseconds
+        val userId = UserId(request.userValue, request.userDomain)
+        // An attempt that waited for another may find its push already handled (see CaughtUpAccounts). It then opens
+        // no socket, so no event reaches it without a push, and still processes what is stored and claims its alerts.
+        val handledEarlier = caughtUpAccounts.handled(configuration.rootPath, userId, started)
+        val catchUpStarted = TimeSource.Monotonic.markNow()
         // As the app does, catch up over the WebSocket, then process the stored queue to its end. Soft deadlines
         // leave time to present and to close the runtime within the budget.
-        val caughtUp = runtime.catchUp(budget * CATCH_UP_SHARE - started.elapsedNow())
+        val caughtUp = if (handledEarlier) CatchUpOutcome.LIVE else runtime.catchUp(budget * CATCH_UP_SHARE - started.elapsedNow())
         val received = processor.processToLive(request.notificationId) { started.elapsedNow() > budget * PROCESS_SHARE }.let {
             if (caughtUp == CatchUpOutcome.LIVE || it.stoppedReason != QUEUE_END) it
             else it.copy(stoppedReason = "CATCH_UP_${caughtUp.name}")
@@ -297,7 +305,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 mayLeaveUnseenEvents(caughtUp, received, request.appPresentsAlerts) {
                     runtime.database.eventDAO.getEventById(request.notificationId)?.isProcessed == true
                 },
-        )
+        ).also {
+            if (!handledEarlier) caughtUpAccounts.record(configuration.rootPath, userId, catchUpStarted, caughtUp, received)
+        }
     }
 
     /**
@@ -466,6 +476,17 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             }
         )
 
+    /**
+     * Out of time with nothing produced, usually while waiting for another attempt of this process. Once that
+     * attempt handled this push (see [CaughtUpAccounts]), it presented what the push carries; otherwise nobody may have.
+     */
+    internal fun timedOut(handledEarlier: Boolean) =
+        if (handledEarlier) {
+            KaliumNSEResult(KaliumNSEStatus.SUCCESS, false, null, null, null, null, presentationReason = "HANDLED_EARLIER")
+        } else {
+            failure("TIMEOUT").copy(presentGenericAlert = true)
+        }
+
     public companion object {
         /**
          * Closing an account failed in this process, so it keeps that account's lease until it exits: neither the
@@ -479,6 +500,33 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         private const val PROCESS_SHARE = 0.85
         private const val QUEUE_END = "QUEUE_END"
         private const val BUDGET = "BUDGET"
+        private val caughtUpAccounts = CaughtUpAccounts()
+    }
+
+    /**
+     * Per account storage, when this process's latest complete attempt started catching up. Attempts of one account
+     * take turns in a process, and the backend stores an event before pushing it. So an attempt whose catch-up
+     * started after a push arrived stored that push's event; reaching live and processing the stored queue to its
+     * end with every alert claimed, it handled the push.
+     */
+    internal class CaughtUpAccounts {
+        private val since = MutableStateFlow<Map<Pair<String, UserId>, ComparableTimeMark>>(emptyMap())
+
+        fun record(
+            rootPath: String,
+            userId: UserId,
+            catchUpStarted: ComparableTimeMark,
+            caughtUp: CatchUpOutcome,
+            received: ReceivedNotificationResult,
+        ) {
+            if (caughtUp == CatchUpOutcome.LIVE && received.stoppedReason == QUEUE_END && received.prefixComplete) {
+                since.update { it + ((rootPath to userId) to catchUpStarted) }
+            }
+        }
+
+        /** An attempt of this process handled the push that arrived at [arrived]. */
+        fun handled(rootPath: String, userId: UserId, arrived: ComparableTimeMark): Boolean =
+            since.value[rootPath to userId]?.let { it > arrived } == true
     }
 }
 
