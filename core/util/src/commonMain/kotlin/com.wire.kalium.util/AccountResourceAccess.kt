@@ -81,6 +81,14 @@ class AccountResourceAccess {
         transition.withLock { restore({}, openResources) }
     }
 
+    /** Resume without opening resources, only if [canResume] holds while paused and no transition can interleave. */
+    suspend fun resumeIf(canResume: suspend () -> Boolean) {
+        checkOutsideOperation()
+        transition.withLock {
+            if (!state.value.accepting && canResume()) restore({}, {})
+        }
+    }
+
     /**
      * Admit a lifecycle operation atomically with resumption, before another pause can start.
      * When paused, [acquireOwnership] runs first and stays cancellable: if it fails, access stays paused and can
