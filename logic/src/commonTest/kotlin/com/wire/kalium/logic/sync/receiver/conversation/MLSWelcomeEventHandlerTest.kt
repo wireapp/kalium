@@ -104,6 +104,21 @@ class MLSWelcomeEventHandlerTest {
     }
 
     @Test
+    fun givenConversationAccessDenied_whenHandlingWelcome_thenShouldSkipStaleEvent() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied)
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withFetchConversationIfUnknownFailingWith(failure)
+        }
+
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsContext.processWelcomeMessage(any())
+            arrangement.refillKeyPackagesUseCase.invoke(any())
+        }
+    }
+
+    @Test
     fun givenProcessingOfWelcomeSucceeds_thenShouldFetchConversationIfUnknown() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
