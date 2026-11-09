@@ -181,7 +181,8 @@ class MessageSenderImpl(
         sendMessageWithOutcome(message, messageTarget).map { Unit }
 
     override suspend fun sendMessageWithOutcome(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Boolean> =
-        sendPreparedMessage(message, messageTarget, remainingAttempts = 1)
+        awaitLiveIfUserContent(message)
+            .flatMap { sendPreparedMessage(message, messageTarget, remainingAttempts = 1) }
             .onSuccess { sentMessage -> sentMessage?.let(::startSelfDeletionIfNeeded) }
             .map { it != null }
             .onFailure {
@@ -648,6 +649,19 @@ class MessageSenderImpl(
         else {
             messages.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
         }
+
+    /**
+     * What the user writes, edits, reacts or deletes goes out only once sync is live, never from a view of the
+     * conversation that still has events to process. A failed sync fails the send, so the caller keeps the message
+     * pending or marks it failed. Calls, receipts and other signaling keep sending without waiting.
+     */
+    private suspend fun awaitLiveIfUserContent(message: Message.Sendable): Either<CoreFailure, Unit> {
+        val content = message.content
+        val isUserContent = message is Message.Regular || content is MessageContent.TextEdited ||
+            content is MessageContent.MultipartEdited || content is MessageContent.Reaction ||
+            content is MessageContent.DeleteMessage
+        return if (isUserContent) session.waitUntilLiveOrFailure() else Either.Right(Unit)
+    }
 
     /** A stale MLS send whose epoch was verified. It never leaves the sender: [sendPreparedMessage] retries it or returns [cause]. */
     private class StaleUntilLive(val cause: CoreFailure) : CoreFailure.FeatureFailure()

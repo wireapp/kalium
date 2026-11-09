@@ -826,7 +826,8 @@ class MessageSenderTest {
 
             messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldSucceed()
 
-            assertEquals(listOf(false), queueHeldWhileWaiting)
+            // Neither the wait before sending nor the one before the stale retry holds the transaction.
+            assertEquals(listOf(false, false), queueHeldWhileWaiting)
             verifySuspend(VerifyMode.exactly(2)) {
                 arrangement.messageRepository.sendMLSMessage(Arrangement.TEST_MLS_MESSAGE)
             }
@@ -857,7 +858,8 @@ class MessageSenderTest {
             withSendMlsMessage()
             withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
             withVerifyEpoch(Either.Right(Unit))
-            everySuspend { syncManager.waitUntilLiveOrFailure() } calls { live.await() }
+            var waits = 0
+            everySuspend { syncManager.waitUntilLiveOrFailure() } calls { if (waits++ == 0) Either.Right(Unit) else live.await() }
         }
         arrangement.testScope.runTest {
             val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
@@ -888,11 +890,16 @@ class MessageSenderTest {
         // given
         val (arrangement, messageSender) = arrange {
             withSendMlsMessage(sendMlsMessageWithResult = Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE))
-            withWaitUntilLiveOrFailure(failing = true)
             withVerifyEpoch(Either.Right(Unit))
         }
 
         arrangement.testScope.runTest {
+            // Live when the send starts, failed by the time the stale send waits again.
+            var waits = 0
+            everySuspend { arrangement.syncManager.waitUntilLiveOrFailure() } calls {
+                if (waits++ == 0) Either.Right(Unit) else Either.Left(Arrangement.TEST_CORE_FAILURE)
+            }
+
             // when
             val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
 
@@ -907,6 +914,23 @@ class MessageSenderTest {
                     any()
                 )
             }
+        }
+    }
+
+    @Test
+    fun givenSyncFailed_whenSending_thenUserContentIsNotSentButCallingSignalingIs() {
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            withWaitUntilLiveOrFailure(failing = true)
+        }
+
+        arrangement.testScope.runTest {
+            assertEquals(Either.Left(Arrangement.TEST_CORE_FAILURE), messageSender.sendMessage(TestMessage.TEXT_MESSAGE))
+            verifySuspend(VerifyMode.not) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
+
+            messageSender.sendMessage(TestMessage.signalingMessage(MessageContent.Calling(""))).shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
         }
     }
 
@@ -1606,6 +1630,7 @@ class MessageSenderTest {
         fun arrange() = run {
             runBlocking {
                 withGetMessageById()
+                withWaitUntilLiveOrFailure()
                 block()
                 withTransactionReturning(Either.Right(Unit))
             }

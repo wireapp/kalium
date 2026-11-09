@@ -1,0 +1,1 @@
+User content (messages, edits, reactions and deletions) is sent only once sync is live. While sync has failed, the send fails instead of reaching others from a view with unprocessed events; calls, receipts and other signaling still send at once.
