@@ -409,10 +409,6 @@ sealed interface Message {
                     typeKey to "conversationProtocolChangedDuringACall"
                 )
 
-                is MessageContent.ConversationStartedUnverifiedWarning -> mutableMapOf(
-                    typeKey to "conversationStartedUnverifiedWarning"
-                )
-
                 MessageContent.LegalHold.ForConversation.Disabled -> mutableMapOf(
                     typeKey to "legalHoldDisabledForConversation"
                 )

@@ -47,8 +47,6 @@ internal interface SystemMessageInserter {
 
     suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit>
 
-    suspend fun insertConversationStartedUnverifiedWarning(conversationId: ConversationId)
-
     suspend fun insertConversationAppsAccessChanged(
         eventId: String = LocalId.generate(),
         conversationId: ConversationId,
@@ -118,21 +116,6 @@ internal class SystemMessageInserterImpl(
     override suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit> {
         val mlsEpochWarningMessage = mlsEpochWarningMessage(Uuid.random().toString(), conversationId, selfUserId, instant)
         return persistMessage(mlsEpochWarningMessage)
-    }
-
-    override suspend fun insertConversationStartedUnverifiedWarning(conversationId: ConversationId) {
-        persistMessage(
-            Message.System(
-                id = LocalId.generate(),
-                content = MessageContent.ConversationStartedUnverifiedWarning,
-                conversationId = conversationId,
-                date = Clock.System.now(),
-                senderUserId = selfUserId,
-                status = Message.Status.Sent,
-                visibility = Message.Visibility.VISIBLE,
-                expirationData = null
-            )
-        )
     }
 
     override suspend fun insertConversationAppsAccessChanged(
