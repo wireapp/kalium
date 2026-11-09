@@ -79,9 +79,10 @@ internal class RefillKeyPackagesUseCaseImpl(
             .flatMap {
                 kaliumLogger.i("Key packages: Found ${it.count} available key packages")
                 flagPendingConversationsIfDepleted(it.count).flatMap { _ ->
-                    if (keyPackageLimitsProvider.needsRefill(it.count)) {
-                        kaliumLogger.i("Key packages: Refilling key packages...")
-                        uploadInBatches(selfClientId, keyPackageLimitsProvider.missingKeyPackages(it.count))
+                    val pool = keyPackageLimitsProvider.keyPackagePool()
+                    if (pool.needsRefill(it.count)) {
+                        kaliumLogger.i("Key packages: Refilling key packages to ${pool.targetSize}...")
+                        uploadInBatches(selfClientId, pool.missingKeyPackages(it.count))
                     } else {
                         kaliumLogger.i("Key packages: Refill not needed")
                         Either.Right(Unit)

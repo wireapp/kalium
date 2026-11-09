@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
+import com.wire.kalium.logic.data.keypackage.KeyPackagePool
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestClient
@@ -54,7 +55,7 @@ class RefillKeyPackageUseCaseTest {
 
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount)
+            .withKeyPackagePool(Arrangement.KEY_PACKAGE_LIMIT)
             .withKeyPackageCount(keyPackageCount)
             .withUploadKeyPackagesSuccessful()
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
@@ -79,7 +80,7 @@ class RefillKeyPackageUseCaseTest {
 
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withKeyPackageLimits(false, 0)
+            .withKeyPackagePool(Arrangement.KEY_PACKAGE_LIMIT)
             .withKeyPackageCount(keyPackageCount)
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
             .arrange()
@@ -93,7 +94,7 @@ class RefillKeyPackageUseCaseTest {
     fun givenNoKeyPackagesLeft_whenRefilling_thenPendingConversationsAreFlaggedBeforeUploading() = runTest {
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT)
+            .withKeyPackagePool(Arrangement.KEY_PACKAGE_LIMIT)
             .withKeyPackageCount(0)
             .withSetShouldJoinPendingMLSConversationsResult(Either.Right(Unit))
             .withUploadKeyPackagesSuccessful()
@@ -114,7 +115,7 @@ class RefillKeyPackageUseCaseTest {
         val failure = StorageFailure.DataNotFound
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT)
+            .withKeyPackagePool(Arrangement.KEY_PACKAGE_LIMIT)
             .withKeyPackageCount(0)
             .withSetShouldJoinPendingMLSConversationsResult(Either.Left(failure))
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
@@ -133,7 +134,7 @@ class RefillKeyPackageUseCaseTest {
     fun givenSomeKeyPackagesLeft_whenRefilling_thenPendingConversationsAreNotFlagged() = runTest {
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT - 1)
+            .withKeyPackagePool(Arrangement.KEY_PACKAGE_LIMIT)
             .withKeyPackageCount(1)
             .withUploadKeyPackagesSuccessful()
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
@@ -152,7 +153,7 @@ class RefillKeyPackageUseCaseTest {
 
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withKeyPackageLimits(true, 0)
+            .withKeyPackagePool(Arrangement.KEY_PACKAGE_LIMIT)
             .withGetAvailableKeyPackagesFailing(networkFailure)
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
             .arrange()
@@ -167,8 +168,9 @@ class RefillKeyPackageUseCaseTest {
     fun givenThousandKeyPackagesMissing_whenRefilling_thenUploadsTenBatchesEachInItsOwnTransaction() = runTest {
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withKeyPackageLimits(true, 1000)
-            .withKeyPackageCount(1)
+            .withKeyPackagePool(Arrangement.MIGRATION_POOL_SIZE)
+            .withKeyPackageCount(0)
+            .withSetShouldJoinPendingMLSConversationsResult(Either.Right(Unit))
             .withUploadKeyPackagesSuccessful()
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
             .arrange()
@@ -189,7 +191,7 @@ class RefillKeyPackageUseCaseTest {
     fun givenMissingAmountIsNotAMultipleOfTheBatchSize_whenRefilling_thenTheLastBatchUploadsTheRest() = runTest {
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withKeyPackageLimits(true, 501)
+            .withKeyPackagePool(Arrangement.MIGRATION_POOL_SIZE)
             .withKeyPackageCount(499)
             .withUploadKeyPackagesSuccessful()
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
@@ -210,7 +212,7 @@ class RefillKeyPackageUseCaseTest {
         val failure = NetworkFailure.NoNetworkConnection(null)
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withKeyPackageLimits(true, 1000)
+            .withKeyPackagePool(Arrangement.MIGRATION_POOL_SIZE)
             .withKeyPackageCount(1)
             .withUploadKeyPackagesFailing(failure)
             .withDefaultCipherSuite(CipherSuite.fromTag(1))
@@ -251,13 +253,10 @@ class RefillKeyPackageUseCaseTest {
             } returns Either.Right(TestClient.CLIENT_ID)
         }
 
-        fun withKeyPackageLimits(needRefill: Boolean, refillAmount: Int, batchSize: Int = BATCH_SIZE) = apply {
-            every {
-                keyPackageLimitsProvider.needsRefill(any())
-            } returns needRefill
-            every {
-                keyPackageLimitsProvider.missingKeyPackages(any())
-            } returns refillAmount
+        suspend fun withKeyPackagePool(targetSize: Int, batchSize: Int = BATCH_SIZE) = apply {
+            everySuspend {
+                keyPackageLimitsProvider.keyPackagePool()
+            } returns KeyPackagePool(targetSize)
             every {
                 keyPackageLimitsProvider.refillAmount()
             } returns batchSize
@@ -303,6 +302,7 @@ class RefillKeyPackageUseCaseTest {
             const val KEY_PACKAGE_LIMIT = 100
             const val KEY_PACKAGE_THRESHOLD = 0.5F
             const val BATCH_SIZE = 100
+            const val MIGRATION_POOL_SIZE = 1000
         }
 
     }

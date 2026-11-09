@@ -84,10 +84,7 @@ internal class KeyPackageManagerImpl(
         refillKeyPackageJob = refillKeyPackagesScope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState is IncrementalSyncStatus.Live &&
-                    featureSupport.isMLSSupported &&
-                    clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
-                ) {
+                if (syncState is IncrementalSyncStatus.Live) {
                     refillKeyPackagesIfNeeded(forceCheck = false)
                 }
             }
@@ -101,6 +98,7 @@ internal class KeyPackageManagerImpl(
     }
 
     private suspend fun refillKeyPackagesIfNeeded(forceCheck: Boolean) {
+        if (!hasRegisteredMLSClient()) return
         refillMutex.withLock {
             val hasLastCheckPassed = if (forceCheck) {
                 Either.Right(true)
@@ -126,6 +124,9 @@ internal class KeyPackageManagerImpl(
                 }.onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
         }
     }
+
+    private suspend fun hasRegisteredMLSClient(): Boolean =
+        featureSupport.isMLSSupported && clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
 
     private suspend fun localCountNeedsRefill(): Boolean =
         when (val result = keyPackageCountUseCase.value(fromAPI = false)) {

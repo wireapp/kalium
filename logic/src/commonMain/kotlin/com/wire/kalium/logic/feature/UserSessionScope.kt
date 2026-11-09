@@ -847,7 +847,7 @@ public class UserSessionScope internal constructor(
         )
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
-        get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
+        get() = KeyPackageLimitsProviderImpl(kaliumConfigs, userConfigRepository)
 
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
         ProteusMigrationRecoveryHandlerImpl(lazy { logout })
@@ -2381,7 +2381,12 @@ public class UserSessionScope internal constructor(
         get() = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
 
     private val mlsMigrationConfigHandler
-        get() = MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
+        get() = MLSMigrationConfigHandler(
+            userConfigRepository,
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            cryptoTransactionProvider,
+            lazy { keyPackageManager }
+        )
 
     private val classifiedDomainsConfigHandler
         get() = ClassifiedDomainsConfigHandler(userConfigRepository)

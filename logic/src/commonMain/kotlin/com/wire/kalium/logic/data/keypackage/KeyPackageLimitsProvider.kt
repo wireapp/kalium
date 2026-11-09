@@ -18,11 +18,26 @@
 
 package com.wire.kalium.logic.data.keypackage
 
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.feature.mlsmigration.isUpcomingOrOngoing
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
-internal interface KeyPackageLimitsProvider {
+/**
+ * How many key packages to keep on the backend, and when to refill them.
+ */
+internal data class KeyPackagePool(val targetSize: Int) {
 
-    fun needsRefill(keyPackageCount: Int): Boolean
+    fun needsRefill(keyPackageCount: Int): Boolean = keyPackageCount < targetSize * REFILL_THRESHOLD
+
+    fun missingKeyPackages(keyPackageCount: Int): Int = (targetSize - keyPackageCount).coerceAtLeast(0)
+
+    private companion object {
+        const val REFILL_THRESHOLD = 0.5F
+    }
+}
+
+internal interface KeyPackageLimitsProvider {
 
     /**
      * Number of key packages generated and uploaded in one request.
@@ -30,31 +45,36 @@ internal interface KeyPackageLimitsProvider {
     fun refillAmount(): Int
 
     /**
-     * Number of key packages missing from the target pool.
+     * The pool to keep on the backend. It's larger while an MLS migration is enabled and hasn't ended,
+     * including before its start date, so clients are ready before conversations start migrating.
      */
-    fun missingKeyPackages(keyPackageCount: Int): Int
+    suspend fun keyPackagePool(): KeyPackagePool
 
 }
 
 internal class KeyPackageLimitsProviderImpl(
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val userConfigRepository: UserConfigRepository,
 ) : KeyPackageLimitsProvider {
 
-    private val targetPoolSize: Int
-        get() = if (kaliumConfigs.lowerKeyPackageLimits) KEY_PACKAGE_LIMIT_LOW else KEY_PACKAGE_LIMIT
+    override fun refillAmount(): Int =
+        if (kaliumConfigs.lowerKeyPackageLimits) KEY_PACKAGE_LIMIT_LOW else KEY_PACKAGE_UPLOAD_BATCH_SIZE
 
-    override fun needsRefill(keyPackageCount: Int): Boolean =
-        keyPackageCount < targetPoolSize * KEY_PACKAGE_THRESHOLD
+    override suspend fun keyPackagePool(): KeyPackagePool = KeyPackagePool(
+        targetSize = when {
+            kaliumConfigs.lowerKeyPackageLimits -> KEY_PACKAGE_LIMIT_LOW
+            isMLSMigrationUpcomingOrOngoing() -> KEY_PACKAGE_LIMIT_MLS_MIGRATION
+            else -> KEY_PACKAGE_LIMIT
+        }
+    )
 
-    override fun refillAmount(): Int = minOf(targetPoolSize, KEY_PACKAGE_UPLOAD_BATCH_SIZE)
-
-    override fun missingKeyPackages(keyPackageCount: Int): Int =
-        (targetPoolSize - keyPackageCount).coerceAtLeast(0)
+    private suspend fun isMLSMigrationUpcomingOrOngoing(): Boolean =
+        userConfigRepository.getMigrationConfiguration().fold({ false }, { it.isUpcomingOrOngoing() })
 
     internal companion object {
-        internal const val KEY_PACKAGE_LIMIT = 1000
+        internal const val KEY_PACKAGE_LIMIT = 100
+        internal const val KEY_PACKAGE_LIMIT_MLS_MIGRATION = 1000
         internal const val KEY_PACKAGE_LIMIT_LOW = 10
         internal const val KEY_PACKAGE_UPLOAD_BATCH_SIZE = 100
-        internal const val KEY_PACKAGE_THRESHOLD = 0.5F
     }
 }

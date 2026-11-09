@@ -146,6 +146,8 @@ class KeyPackageManagerTests {
     fun whenRefillIsScheduled_thenRefillRunsWithoutWaitingForTheHourlyCheck() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, manager) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withRefillKeyPackagesUseCaseSuccessful()
                 .withUpdateLastKeyPackageCountCheckSuccessful()
                 .arrange()
@@ -165,6 +167,22 @@ class KeyPackageManagerTests {
         }
 
     @Test
+    fun givenNoMLSClientIsRegistered_whenRefillIsScheduled_thenRefillIsNotPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, manager) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(false)
+                .arrange()
+
+            manager.scheduleRefill()
+            yield()
+
+            verifySuspend(VerifyMode.not) {
+                arrangement.refillKeyPackagesUseCase.invoke()
+            }
+        }
+
+    @Test
     fun givenRefillIsRunning_whenAnotherRefillIsScheduled_thenItWaitsForTheFirstOneToFinish() =
         runTest(TestKaliumDispatcher.default) {
             val firstRefillCanFinish = CompletableDeferred<Unit>()
@@ -172,6 +190,8 @@ class KeyPackageManagerTests {
             var running = 0
             var maxRunning = 0
             val (arrangement, manager) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withUpdateLastKeyPackageCountCheckSuccessful()
                 .arrange()
             everySuspend { arrangement.refillKeyPackagesUseCase.invoke() } calls {

@@ -20,9 +20,12 @@ package com.wire.kalium.logic.feature.featureConfig.handler
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
+import com.wire.kalium.logic.feature.mlsmigration.isUpcomingOrOngoing
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
@@ -30,6 +33,7 @@ internal class MLSMigrationConfigHandler(
     private val userConfigRepository: UserConfigRepository,
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
     private val transactionProvider: CryptoTransactionProvider,
+    private val keyPackageManager: Lazy<KeyPackageManager>,
 ) {
 
     internal suspend fun handle(
@@ -53,6 +57,12 @@ internal class MLSMigrationConfigHandler(
             }
         }
 
-        return userConfigRepository.setMigrationConfiguration(mlsMigrationConfig)
+        return userConfigRepository.setMigrationConfiguration(mlsMigrationConfig).onSuccess {
+            // An upcoming or ongoing migration needs a larger key package pool, so check it now
+            // instead of waiting for the next sync.
+            if (mlsMigrationConfig.isUpcomingOrOngoing()) {
+                keyPackageManager.value.scheduleRefill()
+            }
+        }
     }
 }
