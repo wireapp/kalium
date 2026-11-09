@@ -1337,6 +1337,10 @@ public final class com/wire/kalium/logic/feature/AccountBusyException : java/lan
 	public final fun getHolder ()Ljava/lang/String;
 }
 
+public final class com/wire/kalium/logic/feature/AccountSessionUnavailableException : java/lang/IllegalStateException {
+	public fun <init> ()V
+}
+
 public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coroutines/CoroutineScope {
 	public final fun callPresentations (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getAnalyticsIdentifierManager ()Lcom/wire/kalium/logic/feature/analytics/AnalyticsIdentifierManager;
