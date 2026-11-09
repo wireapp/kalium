@@ -45,6 +45,7 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.client.toDao
 import com.wire.kalium.logic.data.client.toModel
+import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -477,7 +478,7 @@ internal class MLSConversationDataSource(
             retryOnStaleMessage = retryOnStaleMessage,
             retryOnMissingUsers = retryOnMissingUsers
         ) {
-            keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
+            claimKeyPackages(userIdList, cipherSuite, allowPartialMemberList).flatMap { result ->
                 when {
                     result.usersWithoutKeyPackages.isNotEmpty() && !allowPartialMemberList -> {
                         logger.d(
@@ -520,6 +521,33 @@ internal class MLSConversationDataSource(
                             .map { user -> UserId(user.userId, user.domain) }.toSet(),
                         usersWithoutKeyPackages = result.usersWithoutKeyPackages,
                         usersWithUnreachableBackend = result.usersWithUnreachableBackend
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Claiming for the self user also takes key packages from its other clients. When every user must be added, a
+     * missing user fails the add, so claim the others first and the self user only once they all succeeded.
+     */
+    private suspend fun claimKeyPackages(
+        userIdList: List<UserId>,
+        cipherSuite: CipherSuite,
+        allowPartialMemberList: Boolean,
+    ): Either<CoreFailure, KeyPackageClaimResult> {
+        val others = userIdList.filter { it != selfUserId }
+        if (allowPartialMemberList || others.isEmpty() || others.size == userIdList.size) {
+            return keyPackageRepository.claimKeyPackages(userIdList, cipherSuite)
+        }
+        return keyPackageRepository.claimKeyPackages(others, cipherSuite).flatMap { othersResult ->
+            if (othersResult.usersWithoutKeyPackages.isNotEmpty() || othersResult.usersWithUnreachableBackend.isNotEmpty()) {
+                Either.Right(othersResult)
+            } else {
+                keyPackageRepository.claimKeyPackages(listOf(selfUserId), cipherSuite).map { selfResult ->
+                    selfResult.copy(
+                        successfullyFetchedKeyPackages = othersResult.successfullyFetchedKeyPackages +
+                            selfResult.successfullyFetchedKeyPackages
                     )
                 }
             }
