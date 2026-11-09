@@ -18,9 +18,12 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import co.touchlab.stately.concurrency.AtomicReference
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.data.event.EventEnvelope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -44,6 +47,10 @@ internal class IncrementalSyncWorkerImpl(
 ) : IncrementalSyncWorker {
     private val logger = logger.withFeatureId(SYNC)
 
+    // A failed batch rolls back as a whole, so after a failure the retry splits the gathered events into smaller
+    // batches that each commit on their own. Back to whole batches once caught up.
+    private val maxBatchSize = AtomicReference(Int.MAX_VALUE)
+
     override suspend fun processEventsFlow(): Flow<EventSource> = channelFlow {
         send(EventSource.PENDING)
         // Removed credentials may never connect; the existing logout owner runs first.
@@ -53,14 +60,33 @@ internal class IncrementalSyncWorkerImpl(
 
         logger.d("$TAG gatherEvents starting...")
         eventGatherer.gatherEvents()
-            .onEach { if (it is EventStreamData.IsUpToDate) send(EventSource.LIVE) }
+            .onEach {
+                if (it is EventStreamData.IsUpToDate) {
+                    maxBatchSize.set(Int.MAX_VALUE)
+                    send(EventSource.LIVE)
+                }
+            }
             .filterIsInstance<EventStreamData.NewEvents>()
             .collect { streamData ->
                 logger.d("$TAG Received ${streamData.eventList.size} events to process")
-                batchProcessor.processBatch(streamData.eventList)
+                streamData.eventList.chunked(maxBatchSize.get()).forEach { processBatch(it) }
             }
         logger.i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun processBatch(events: List<EventEnvelope>) {
+        try {
+            batchProcessor.processBatch(events)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            val nextSize = (events.size / 2).coerceAtLeast(1)
+            maxBatchSize.set(nextSize)
+            logger.w("$TAG Batch of ${events.size} events failed; retrying with at most $nextSize events per batch")
+            throw e
+        }
+    }
 
     companion object {
         const val TAG = "[IncrementalSyncWorker]"
