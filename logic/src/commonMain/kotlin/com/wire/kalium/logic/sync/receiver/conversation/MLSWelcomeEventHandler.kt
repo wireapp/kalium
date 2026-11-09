@@ -40,11 +40,11 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toCrypto
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.util.EventLoggingStatus
@@ -59,7 +59,9 @@ internal interface MLSWelcomeEventHandler {
 @Suppress("LongParameterList", "LongMethod")
 internal class MLSWelcomeEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
-    private val oneOnOneResolver: OneOnOneResolver,
+    private val pendingActionsRepository: PendingActionsRepository,
+    /** Starts resolving queued 1:1s once sync is live, outside this batch's transaction. */
+    private val resolvePendingOneOnOnes: () -> Unit,
     private val refillKeyPackages: RefillKeyPackagesUseCase,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase
@@ -86,8 +88,7 @@ internal class MLSWelcomeEventHandlerImpl(
                 kaliumLogger.d("$TAG: Marking conversation as established ${groupId.obfuscateId()}")
                 markConversationAsEstablished(GroupID(groupId))
             }.flatMap {
-                kaliumLogger.d("$TAG: Resolving conversation if one-on-one ${event.conversationId.toLogString()}")
-                resolveConversationIfOneOnOne(transactionContext, event.conversationId)
+                queueResolutionIfOneOnOne(event.conversationId)
             }
             .flatMapLeft { failure ->
                 when {
@@ -186,21 +187,16 @@ internal class MLSWelcomeEventHandlerImpl(
     private suspend fun markConversationAsEstablished(groupID: GroupID): Either<CoreFailure, Unit> =
         conversationRepository.updateConversationGroupState(groupID, Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
 
-    private suspend fun resolveConversationIfOneOnOne(
-        transactionContext: CryptoTransactionContext,
-        conversationId: ConversationId
-    ): Either<CoreFailure, Unit> =
+    // Resolving the 1:1 inline could fail this whole batch, and every event queued after it, on a
+    // network or protocol problem. The queue entry is durable, so the resolution survives a failed batch.
+    private suspend fun queueResolutionIfOneOnOne(conversationId: ConversationId): Either<CoreFailure, Unit> =
         conversationRepository.observeConversationDetailsById(conversationId)
             .first()
-            .flatMap {
+            .map {
                 if (it is ConversationDetails.OneOne) {
-                    oneOnOneResolver.resolveOneOnOneConversationWithUser(
-                        transactionContext = transactionContext,
-                        user = it.otherUser,
-                        invalidateCurrentKnownProtocols = true
-                    ).map { Unit }
-                } else {
-                    Either.Right(Unit)
+                    kaliumLogger.d("$TAG: Queueing one-on-one resolution ${conversationId.toLogString()}")
+                    pendingActionsRepository.enqueuePendingOneOnOneResolution(it.otherUser.id)
+                    resolvePendingOneOnOnes()
                 }
             }
 
