@@ -401,7 +401,7 @@ class AppleAccountSessionTest {
     }
 
     @Test
-    fun `prepared real Proteus and MLS stores survive release and account reopen`() = runTest {
+    fun `prepared real Proteus and MLS stores stay ready across reopen and handoff`() = runTest {
         withContext(Dispatchers.Default) {
             val (root, logic, keychainConfig) = fixture(prepared = true)
             val first = logic.openSessionScope(userId)
@@ -443,26 +443,28 @@ class AppleAccountSessionTest {
                 assertEquals(publicKey, receivingMLS.getPublicKey().first.toList())
                 runtime.proteusCoreCrypto.proteusClient().transaction("extension-fingerprint") { it.getLocalFingerprint() }
             })
+            val ready = "${logic.rootPathsProvider.rootAccountPath(userId)}/notification-extension-ready.json".toPath()
             val second = logic.openSessionScope(userId)
-            assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, second))
+            // The app can die while it owns the account: opening and resuming keep readiness for the extensions.
+            assertTrue(FileSystem.SYSTEM.exists(ready))
+            logic.suspendSessionScope(userId)
+            kotlin.test.assertSame(second, logic.resumeSessionScope(userId))
+            assertTrue(FileSystem.SYSTEM.exists(ready))
             assertEquals(fingerprint, second.proteusClientProvider.getOrCreate().transaction("reopened-fingerprint") {
                 it.getLocalFingerprint()
             })
             val reopenedMLS = assertIs<Either.Right<com.wire.kalium.cryptography.MLSClient>>(second.mlsClientProvider.getMLSClient()).value
             assertEquals(publicKey, reopenedMLS.getPublicKey().first.toList())
-            // A restore revokes readiness even if a later restore step fails. Existing handles may
-            // refer to the replaced files, so this scope can never certify them after invalidation.
-            logic.userSessionScopeProvider.value.invalidateReceiving(userId, second, cryptoReplacement = true)
-            assertIs<Either.Left<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, second))
             assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.storeSession(session(), logic.getGlobalScope().sessionRepository))
             val third = logic.openSessionScope(userId)
             assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, third))
+            // Registration revokes readiness, and releasing never publishes it again.
             logic.userSessionScopeProvider.value.invalidateReceiving(userId, third)
             logic.releaseSessionScope(userId)
-            val afterRestore = assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value
+            val afterInvalidation = assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value
                 as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-            assertNull(ApplePreparedAccountStore(root, userId).read(afterRestore))
-            afterRestore.release()
+            assertNull(ApplePreparedAccountStore(root, userId).read(afterInvalidation))
+            afterInvalidation.release()
             // Files and credentials alone cannot authorize an interrupted registration, including
             // after a fresh scope opens with no readiness record.
             logic.openSessionScope(userId)

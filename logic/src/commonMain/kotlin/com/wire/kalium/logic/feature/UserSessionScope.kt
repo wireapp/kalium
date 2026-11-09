@@ -637,6 +637,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecovery
@@ -1508,6 +1510,10 @@ public class UserSessionScope internal constructor(
             mlsConversationRepository,
         )
 
+    // MLS welcomes only signal this. One session-owned drain reads the queue, so a burst of welcomes
+    // doesn't make several workers resolve the same users; a signal sent during a run causes one more run.
+    private val pendingOneOnOneResolutionRequests = Channel<Unit>(Channel.CONFLATED)
+
     private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase
         get() = RecoverPendingOneOnOneResolutionsUseCaseImpl(
             pendingActionsRepository = pendingActionsRepository,
@@ -2185,7 +2191,8 @@ public class UserSessionScope internal constructor(
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
             conversationRepository = conversationRepository,
-            oneOnOneResolver = oneOnOneResolver,
+            pendingActionsRepository = pendingActionsRepository,
+            resolvePendingOneOnOnes = { pendingOneOnOneResolutionRequests.trySend(Unit) },
             refillKeyPackages = client.refillKeyPackages,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
@@ -3281,6 +3288,19 @@ public class UserSessionScope internal constructor(
                 userScopedLogger.e("Unable to run startup migrations and reset tasks", exception)
             } finally {
                 callRepository.setStaleOpenCallsCleanupFinished()
+            }
+        }
+
+        launch {
+            pendingOneOnOneResolutionRequests.consumeEach {
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    recoverPendingOneOnOneResolutionsUseCase()
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    userScopedLogger.w("Unable to resolve pending one-on-one conversations", exception)
+                }
             }
         }
 

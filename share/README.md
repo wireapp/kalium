@@ -36,8 +36,8 @@ it, so no file is held in memory, and reports progress over the plain size throu
 Uploads run outside `budgetMilliseconds`, and the account stays held meanwhile. They end when they finish,
 fail or the host cancels, and with `OPEN_APP` when they run past their own budget (`UPLOAD_TIMEOUT`: 30
 seconds plus the files' size at 128 KiB/s, at most five minutes) or when the host calls `yieldAccount`
-(`ACCOUNT_WANTED`), because the app needs the account. The host then hands the share to the app, after
-posting the result's alerts. `yieldAccount` also stops the live hold while it catches up; a send that stored
+(`ACCOUNT_WANTED`), because the app needs the account. The host then hands the share to the app.
+`yieldAccount` also stops the live hold while it catches up; a send that stored
 a message finishes within its budget. Nothing is stored until every upload
 succeeded, so a failed or stopped upload leaves nothing behind in Wire but the uploaded files on the backend.
 
@@ -55,10 +55,12 @@ succeeded, so a failed or stopped upload leaves nothing behind in Wire but the u
    directory. Once a message is not sent, or sending runs past its soft deadline or its budget, the
    remaining messages are stored as failed. The file rules are checked again after catching up, which can
    apply a change to them.
-3. It closes and joins the socket, processes what arrived and returns the alerts owed.
-   The backend sends no push for events delivered over the open socket, so the host posts each
-   `KaliumShareAlert` before it finishes. `presentGenericAlert` asks for a generic alert when events
-   may remain unpresented.
+3. It closes and joins the socket, processes what arrived and posts the alerts owed.
+   The backend sends no push for events delivered over the open socket, so before it releases the account
+   the sender posts each `KaliumShareAlert` through the host's `KaliumShareMessageDelivery`, under the
+   identity the app and the NSE use, and acknowledges each one the host accepted. Any other stays pending
+   for the account's next owner. `presentGenericAlert` asks for a generic alert when events may remain
+   unpresented.
 
 The sender never weakens a consent or verification rule. Work only the app can do, such as committing
 pending MLS proposals, joining or re-syncing a group, a stale MLS epoch, newly enabled legal hold or

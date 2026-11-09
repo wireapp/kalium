@@ -53,7 +53,7 @@ internal fun <T> Flow<T>.retryWhileAccountBusy(): Flow<T> = retryWhen { cause, _
 private val ACCOUNT_BUSY_RETRY = 1.seconds
 
 internal interface UserSessionScopeProvider {
-    suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean = false)
+    suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope)
     suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit>
     fun get(userId: UserId): UserSessionScope?
     suspend fun open(userId: UserId): UserSessionScope
@@ -78,7 +78,7 @@ internal abstract class UserSessionScopeProviderCommon(
     protected val userAgent: String
 ) : UserSessionScopeProvider {
 
-    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean) = Unit
+    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope) = Unit
 
     override suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit> = Either.Right(Unit)
 
@@ -137,7 +137,7 @@ internal abstract class UserSessionScopeProviderCommon(
 }
 
 internal expect class UserSessionScopeProviderImpl : UserSessionScopeProvider {
-    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean)
+    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope)
     override suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit>
     override fun get(userId: UserId): UserSessionScope?
     override suspend fun open(userId: UserId): UserSessionScope
