@@ -37,7 +37,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.conversation.processMLSWelcome
 import com.wire.kalium.logic.data.event.Event
@@ -60,7 +59,8 @@ internal class MLSWelcomeEventHandlerImpl(
     private val pendingActionsRepository: PendingActionsRepository,
     /** Starts resolving queued 1:1s once sync is live, outside this batch's transaction. */
     private val resolvePendingOneOnOnes: () -> Unit,
-    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    /** Starts joining queued MLS groups once sync is live, outside this batch's transaction. */
+    private val joinPendingMLSGroups: () -> Unit,
     private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
     private val keyPackageManager: KeyPackageManager,
 ) : MLSWelcomeEventHandler {
@@ -114,22 +114,16 @@ internal class MLSWelcomeEventHandlerImpl(
                             )
                             Unit.right()
                         } else {
+                            // An external commit reaches the backend even if this batch rolls back, so a retried
+                            // batch would send another one. Queue the join; it runs once sync is live, outside the batch.
+                            welcomeOutcome = OUTCOME_QUEUED_EXTERNAL_COMMIT_REJOIN
                             kaliumLogger.w(
-                                "$TAG: OrphanWelcome, discarding welcome and joining existing conversation by external commit " +
+                                "$TAG: OrphanWelcome, discarding welcome and queueing an external commit rejoin " +
                                         "[conversationId=${event.conversationId.toLogString()}]"
                             )
-                            joinExistingMLSConversation(
-                                transactionContext = transactionContext,
-                                conversationId = event.conversationId,
-                            ).onSuccess {
-                                welcomeOutcome = OUTCOME_RECOVERED_VIA_EXTERNAL_COMMIT
-                            }.onFailure { joinFailure ->
-                                welcomeOutcome = OUTCOME_EXTERNAL_COMMIT_REJOIN_FAILED
-                                kaliumLogger.w(
-                                    "$TAG: External-commit fallback for OrphanWelcome failed " +
-                                            "[conversationId=${event.conversationId.toLogString()}, cause=$joinFailure]"
-                                )
-                            }.map { }
+                            pendingActionsRepository.enqueuePendingMLSGroupJoin(event.conversationId)
+                            joinPendingMLSGroups()
+                            Unit.right()
                         }
                     }
 
@@ -192,10 +186,9 @@ internal class MLSWelcomeEventHandlerImpl(
         // Values for the structured "welcomeOutcome" field on the event log. Kept short and
         // stable so they can be used as filters/aggregations in log-analysis tooling.
         private const val OUTCOME_PROCESSED_DIRECTLY = "processed-directly"
-        private const val OUTCOME_RECOVERED_VIA_EXTERNAL_COMMIT = "recovered-via-external-commit"
+        private const val OUTCOME_QUEUED_EXTERNAL_COMMIT_REJOIN = "queued-external-commit-rejoin"
         private const val OUTCOME_SKIPPED_ALREADY_ESTABLISHED = "skipped-already-established"
         private const val OUTCOME_SKIPPED_CONVERSATION_UNAVAILABLE = "skipped-conversation-unavailable"
-        private const val OUTCOME_EXTERNAL_COMMIT_REJOIN_FAILED = "external-commit-rejoin-failed"
         private const val OUTCOME_FAILED = "failed"
     }
 
