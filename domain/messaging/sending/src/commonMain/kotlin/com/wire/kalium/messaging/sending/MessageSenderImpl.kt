@@ -181,8 +181,7 @@ class MessageSenderImpl(
         sendMessageWithOutcome(message, messageTarget).map { Unit }
 
     override suspend fun sendMessageWithOutcome(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Boolean> =
-        awaitLiveIfUserContent(message)
-            .flatMap { sendPreparedMessage(message, messageTarget, remainingAttempts = 1) }
+        sendPreparedMessage(message, messageTarget, remainingAttempts = 1)
             .onSuccess { sentMessage -> sentMessage?.let(::startSelfDeletionIfNeeded) }
             .map { it != null }
             .onFailure {
@@ -191,14 +190,18 @@ class MessageSenderImpl(
 
     /**
      * Rechecks and prepares the message inside the same crypto transaction as cancellation and competing sends.
-     * A stale MLS send retries after catch-up, outside the transaction, then rechecks the stored state again.
+     * User content goes out only while sync is live, checked inside the transaction: an event batch that fails while
+     * the send waits for it leaves sync failed. Waiting for live and the stale MLS retry both happen outside the
+     * transaction, then the stored state is rechecked.
      */
     private suspend fun sendPreparedMessage(
         message: Message.Sendable,
         messageTarget: MessageTarget,
-        remainingAttempts: Int
+        remainingAttempts: Int,
+        waitedForLive: Boolean = false,
     ): Either<CoreFailure, Message.Sendable?> =
         session.transaction("sendMessage") { transactionContext ->
+            if (message.isUserContent() && !session.isLive()) return@transaction Either.Left(NotLive)
             messageToSend(message).flatMap { current ->
                 if (current == null) return@flatMap Either.Right(null)
                 prepareMessage(current).flatMap { processedMessage ->
@@ -240,6 +243,10 @@ class MessageSenderImpl(
             }
         }.fold({ failure ->
             when {
+                failure === NotLive && waitedForLive -> Either.Left(NetworkFailure.NoNetworkConnection(null))
+                failure === NotLive -> session.waitUntilLiveOrStopped().flatMap {
+                    sendPreparedMessage(message, messageTarget, remainingAttempts, waitedForLive = true)
+                }
                 failure !is StaleUntilLive -> Either.Left(failure)
                 remainingAttempts <= 0 -> Either.Left(failure.cause)
                 else -> session.waitUntilLiveOrFailure().flatMap {
@@ -651,18 +658,15 @@ class MessageSenderImpl(
         }
 
     /**
-     * What the user writes, edits, reacts or deletes goes out only once sync is live, never from a view of the
-     * conversation that still has events to process. A sync that fails or stops fails the send instead of leaving
-     * it to some later sync, so the caller keeps the message pending or marks it failed. Calls, receipts and other
-     * signaling keep sending without waiting.
+     * What the user writes, edits or reacts never goes out from a view of the conversation that still has events to
+     * process. Calls, receipts and other signaling don't wait, and neither do deletions: an expiring self-deleting
+     * message sends its deletion on its own.
      */
-    private suspend fun awaitLiveIfUserContent(message: Message.Sendable): Either<CoreFailure, Unit> {
-        val content = message.content
-        val isUserContent = message is Message.Regular || content is MessageContent.TextEdited ||
-            content is MessageContent.MultipartEdited || content is MessageContent.Reaction ||
-            content is MessageContent.DeleteMessage
-        return if (isUserContent) session.waitUntilLiveOrStopped() else Either.Right(Unit)
-    }
+    private fun Message.Sendable.isUserContent() = this is Message.Regular || content is MessageContent.TextEdited ||
+        content is MessageContent.MultipartEdited || content is MessageContent.Reaction
+
+    /** User content found sync not live inside the transaction; [sendPreparedMessage] waits outside it and retries once. */
+    private object NotLive : CoreFailure.FeatureFailure()
 
     /** A stale MLS send whose epoch was verified. It never leaves the sender: [sendPreparedMessage] retries it or returns [cause]. */
     private class StaleUntilLive(val cause: CoreFailure) : CoreFailure.FeatureFailure()

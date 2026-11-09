@@ -25,9 +25,10 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.sync.SyncManager
-import kotlinx.coroutines.flow.dropWhile
-import kotlinx.coroutines.flow.first
 import com.wire.kalium.messaging.sending.SendingSession
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.seconds
 
 /** The app's session for the sender: live means the app's sync manager reached live. */
 internal class SyncedSendingSession(
@@ -39,12 +40,15 @@ internal class SyncedSendingSession(
 
     override suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = syncManager.waitUntilLiveOrFailure()
 
-    // Waiting before sync starts is startup (or the state lagging its repositories); Waiting after it ran means the request
-    // was released, as when a notification reply times out, and waiting would send on some later sync.
+    override fun isLive(): Boolean = syncManager.syncState.value is SyncState.Live
+
+    // A requested sync leaves Waiting within moments (the state can also lag its repositories). Waiting longer, or
+    // again after it ran, means nothing runs sync, as after a notification reply's request times out.
     override suspend fun waitUntilLiveOrStopped(): Either<CoreFailure, Unit> {
-        val settled = syncManager.syncState
-            .dropWhile { it is SyncState.Waiting }
-            .first { it is SyncState.Live || it is SyncState.Failed || it is SyncState.Waiting }
+        val started = withTimeoutOrNull(SYNC_START_TIMEOUT) { syncManager.syncState.first { it !is SyncState.Waiting } }
+        val settled = started?.let {
+            syncManager.syncState.first { it is SyncState.Live || it is SyncState.Failed || it is SyncState.Waiting }
+        }
         return if (settled is SyncState.Live) Either.Right(Unit) else Either.Left(NetworkFailure.NoNetworkConnection(null))
     }
 
@@ -53,3 +57,5 @@ internal class SyncedSendingSession(
         block: suspend (transactionContext: CryptoTransactionContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R> = transactionProvider.transaction(name, block)
 }
+
+private val SYNC_START_TIMEOUT = 10.seconds

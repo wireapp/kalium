@@ -914,7 +914,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenSyncState_whenSendingUserContent_thenSendOnlyOnceLiveAndFailIfSyncFailsOrStops() {
+    fun givenSyncNotLive_whenSendingUserContent_thenSendOnlyOnceLive() {
         val (arrangement, messageSender) = arrange {
             withSendProteusMessage()
             withPromoteMessageToSentUpdatingServerTime()
@@ -922,7 +922,8 @@ class MessageSenderTest {
         val noNetwork: (CoreFailure) -> Unit = { assertIs<NetworkFailure.NoNetworkConnection>(it) }
 
         arrangement.testScope.runTest {
-            // Not started yet: the send waits for sync instead of failing.
+            arrangement.serializeTransactions()
+            // Starting: wait for sync instead of failing.
             arrangement.syncState.value = SyncState.Waiting
             val afterStart = async { messageSender.sendMessage(TestMessage.TEXT_MESSAGE) }
             runCurrent()
@@ -930,15 +931,25 @@ class MessageSenderTest {
             arrangement.syncState.value = SyncState.Live
             afterStart.await().shouldSucceed()
 
+            // Never starts, failed, or stops during catch-up: fail instead of sending on a later sync.
+            arrangement.syncState.value = SyncState.Waiting
+            messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldFail(noNetwork)
             arrangement.syncState.value = SyncState.Failed(Arrangement.TEST_CORE_FAILURE, 1.seconds)
             messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldFail(noNetwork)
-
-            // Catching up when the request is released: fail instead of sending on some later sync.
             arrangement.syncState.value = SyncState.GatheringPendingEvents
             val stopped = async { messageSender.sendMessage(TestMessage.TEXT_MESSAGE) }
             runCurrent()
             arrangement.syncState.value = SyncState.Waiting
             stopped.await().shouldFail(noNetwork)
+
+            // Live when sent, failed by the time the transaction is free.
+            arrangement.syncState.value = SyncState.Live
+            arrangement.transactionQueue.lock()
+            val queued = async { messageSender.sendMessage(TestMessage.TEXT_MESSAGE) }
+            runCurrent()
+            arrangement.syncState.value = SyncState.Failed(Arrangement.TEST_CORE_FAILURE, 1.seconds)
+            arrangement.transactionQueue.unlock()
+            queued.await().shouldFail(noNetwork)
             verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
 
             // Signaling does not wait: calls keep working while sync is down.

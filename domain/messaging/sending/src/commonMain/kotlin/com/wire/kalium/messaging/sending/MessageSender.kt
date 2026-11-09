@@ -69,8 +69,8 @@ interface MessageSender {
      * Suitable for fire-and-forget messages, like real-time calling signaling,
      * or messages where retrying later is useless or would lead to unwanted behaviour.
      *
-     * User content (regular messages, edits, reactions and deletions) waits until sync is live, and fails as
-     * offline instead of sending while sync has failed or after it stops.
+     * User content (regular messages, edits and reactions) waits until sync is live, and fails as offline
+     * instead of sending while sync has failed, stopped or not started.
      *
      * @param message that will be sent
      * @see [sendPendingMessage]
