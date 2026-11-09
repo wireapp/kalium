@@ -1940,8 +1940,8 @@ the moved code through the app's adapters: Proteus envelope creation (<code>Mess
 session establishment (<code>SessionEstablisher</code>), MLS message creation (<code>MLSMessageCreator</code>), send-failure
 handling (<code>MessageSendFailureHandler</code>) and the sending orchestration (<code>MessageSenderImpl</code>), each with
 narrow ports. Extension adapters over the slim runtime provide a bounded hold that keeps the socket
-open, processes incoming events and returns unnotified message alerts. The share extension sends text
-and files.</p>
+open, processes incoming events and posts unnotified message alerts through the host. The share
+extension sends text and files.</p>
 <h2>Consequences</h2>
 <p>The app and extensions share one sending path, so changes to it affect both. Notification actions and
 receipts can reuse the slim sender later. The hold still needs validation on signed devices (memory,
