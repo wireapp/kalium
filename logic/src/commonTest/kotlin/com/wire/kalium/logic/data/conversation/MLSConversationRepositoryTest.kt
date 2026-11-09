@@ -188,6 +188,28 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenOtherMemberWithoutKeyPackages_whenEstablishingMLSGroupWithSelf_thenSelfKeyPackagesAreNotClaimed() = runTest {
+        val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful(usersWithoutKeyPackages = setOf(userMissingKeyPackage))
+            .withKeyForCipherSuite()
+            .withAddMLSMemberSuccessful()
+            .arrange()
+
+        mlsConversationRepository.establishMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(userMissingKeyPackage, TestUser.SELF.id)
+        ).shouldFail { assertIs<CoreFailure.MissingKeyPackages>(it) }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.claimKeyPackages(matches { TestUser.SELF.id in it }, any())
+        }
+    }
+
+    @Test
     fun givenPartialKeyClaimingResponsesAndAllowPartial_whenCallingEstablishMLSGroup_thenPartialGroupCreatedAndSuccessReturned() = runTest {
         val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
         val userWithKeyPackage = TestConversation.USER_1
