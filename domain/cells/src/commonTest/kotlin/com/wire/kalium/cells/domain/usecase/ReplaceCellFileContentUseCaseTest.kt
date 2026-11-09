@@ -35,6 +35,7 @@ import dev.mokkery.mock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -216,7 +217,7 @@ class ReplaceCellFileContentUseCaseTest {
     }
 
     @Test
-    fun givenPublishedIdChangesWithoutContentHash_whenReplacing_thenDoNotGuessTheNewVersion() = runTest {
+    fun givenPublishedIdChangesWithoutPublishedContentHash_whenReplacing_thenDoNotGuessTheNewVersion() = runTest {
         val fixture = Fixture()
         fixture.currentVersion = ""
         fixture.currentEtag = "published-storage-etag"
@@ -244,6 +245,7 @@ class ReplaceCellFileContentUseCaseTest {
         fixture.currentVersion = ""
         fixture.currentEtag = "same-content"
         fixture.publishedEtag = "same-content"
+        fixture.uploadedHash = "same-content"
         fixture.publishedHash = "same-content"
         fixture.publishedVersion = "old-version"
         assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
@@ -307,12 +309,12 @@ class ReplaceCellFileContentUseCaseTest {
     }
 
     @Test
-    fun givenDelayedDraftAndMissingDownload_whenReplacing_thenShareOneConfirmationDeadline() = runTest {
+    fun givenDelayedDraftAndMissingDownload_whenReplacing_thenUseFreshConfirmationDeadline() = runTest {
         val fixture = Fixture()
         fixture.draftReadsToSkip = 2
         fixture.downloadAvailable = false
         assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
-        assertEquals(60_000L, testScheduler.currentTime)
+        assertEquals(61_000L, testScheduler.currentTime)
         assertTrue(fixture.published.isNotEmpty())
     }
 
@@ -343,6 +345,56 @@ class ReplaceCellFileContentUseCaseTest {
         assertTrue(fixture.published.isNotEmpty())
     }
 
+    @Test
+    fun givenDraftHashIsDelayed_whenReplacing_thenWaitForHashBeforePublishing() = runTest {
+        for (missingHash in listOf(null, "", "   ")) {
+            val fixture = Fixture()
+            fixture.draftHashes = ArrayDeque(listOf(missingHash, missingHash, "replacement-content"))
+            fixture.publishedVersion = "server-published-version"
+            fixture.publishedHash = "replacement-content"
+            fixture.publishedDraft = null
+            fixture.publishedHead = null
+            val start = testScheduler.currentTime
+            assertEquals(NodeIdAndVersion("file-id", "server-published-version").right(), fixture.replace())
+            assertTrue(testScheduler.currentTime - start >= 1_000)
+            assertEquals("replacement-content", fixture.hashAtPublication)
+        }
+    }
+
+    @Test
+    fun givenDraftNeverHasHash_whenReplacing_thenTimeoutWithoutPublishing() = runTest {
+        for (missingHash in listOf(null, "", "   ")) {
+            val fixture = Fixture()
+            fixture.uploadedHash = missingHash
+            val start = testScheduler.currentTime
+            assertEquals(ReplaceCellFileContentFailure.PublicationTimeout.left(), fixture.replace())
+            assertEquals(60_000L, testScheduler.currentTime - start)
+            assertTrue(fixture.published.isEmpty())
+        }
+    }
+
+    @Test
+    fun givenDraftAppearsNearDeadline_whenPublishingTakesLonger_thenDoNotCancelPublication() = runTest {
+        val fixture = Fixture()
+        fixture.draftReadsToSkip = 119
+        fixture.publishDelay = 2_000L
+        assertTrue(fixture.replace() is Either.Right)
+        assertTrue(testScheduler.currentTime >= 61_500L)
+        assertTrue(fixture.publishCompleted)
+    }
+
+    @Test
+    fun givenCallerCancelsDuringPublication_whenReplacing_thenPropagateCancellation() = runTest {
+        val fixture = Fixture()
+        fixture.publishGate = CompletableDeferred()
+        val replacement = async { fixture.replace() }
+        fixture.publishStarted.await()
+        replacement.cancel(CancellationException("cancelled"))
+        replacement.join()
+        assertTrue(replacement.isCancelled)
+        assertFalse(fixture.publishCompleted)
+    }
+
     private class Fixture {
         var existing = ORIGINAL
         var uploaded: CellNode? = null
@@ -355,7 +407,14 @@ class ReplaceCellFileContentUseCaseTest {
         var currentVersion: String? = null
         var currentEtag: String? = null
         var uploadedEtag: String? = "draft-storage-etag"
-        var uploadedHash: String? = null
+        var uploadedHash: String? = "replacement-content"
+        var draftHashes = ArrayDeque<String?>()
+        var lastDraftHash: String? = null
+        var hashAtPublication: String? = null
+        var publishDelay = 0L
+        var publishCompleted = false
+        var publishGate: CompletableDeferred<Unit>? = null
+        val publishStarted = CompletableDeferred<Unit>()
         var publishedHash: String? = null
         var publishedEtag: String? = null
         var publishedVersion: String? = null
@@ -389,7 +448,12 @@ class ReplaceCellFileContentUseCaseTest {
             }
 
             override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit> {
+                hashAtPublication = lastDraftHash
+                publishStarted.complete(Unit)
+                publishGate?.await()
+                delay(publishDelay)
                 published = nodes
+                publishCompleted = true
                 return publishFailure?.left() ?: Unit.right()
             }
 
@@ -409,7 +473,8 @@ class ReplaceCellFileContentUseCaseTest {
                     },
                     hash = when {
                         uploaded == null -> existing.contentHash
-                        published.isEmpty() -> uploadedHash ?: publishedHash
+                        published.isEmpty() -> (if (draftHashes.isEmpty()) uploadedHash else draftHashes.removeFirst())
+                            .also { lastDraftHash = it }
                         else -> publishedHash
                     },
                     description = null,

@@ -41,6 +41,8 @@ public interface ReplaceCellFileContentUseCase {
      * [assetSize] must be greater than zero; empty replacements are rejected before any upload.
      * The caller owns [assetPath] and must keep it available until this suspending operation returns.
      * Success means the new version is published, is the current head and has a download URL.
+     * Publication starts only after the uploaded draft exposes a non-blank content hash.
+     * Draft metadata and post-publication confirmation each have a separate bounded wait.
      * Failures after uploading may leave a draft or an already published version; callers must not blindly retry.
      * Cancellation propagates to the caller. Saved offline copies are not modified by this operation.
      */
@@ -87,14 +89,18 @@ internal class ReplaceCellFileContentUseCaseImpl(
         )
         cellsRepository.uploadFile(assetPath, replacement) { }
             .getOrElse { return ReplaceCellFileContentFailure.Other(it).left() }
-        // Draft metadata can lag behind the upload. Share one deadline for
-        // observing the uploaded draft, publishing it and confirming the head.
+        // Wait for a correlation hash before publishing: the server may replace
+        // the draft ID and storage ETag when it promotes the uploaded content.
+        val uploadedVersion = withTimeoutOrNull(DRAFT_METADATA_TIMEOUT_MILLIS) {
+            awaitUploadedVersion(replacement)
+        }?.getOrElse { return it.left() }
+            ?: return ReplaceCellFileContentFailure.PublicationTimeout.left()
+        val version = NodeIdAndVersion(replacement.uuid, replacement.versionId)
+        // Read-side polling deadlines must not cancel this mutation mid-flight.
+        // HTTP timeouts and cancellation by the caller still apply.
+        cellsRepository.publishDrafts(listOf(version))
+            .getOrElse { return ReplaceCellFileContentFailure.Other(it).left() }
         return withTimeoutOrNull(PUBLICATION_TIMEOUT_MILLIS) {
-            val uploadedVersion = awaitUploadedVersion(replacement)
-                .getOrElse { return@withTimeoutOrNull it.left() }
-            val version = NodeIdAndVersion(replacement.uuid, replacement.versionId)
-            cellsRepository.publishDrafts(listOf(version))
-                .getOrElse { return@withTimeoutOrNull ReplaceCellFileContentFailure.Other(it).left() }
             awaitPublished(replacement, uploadedVersion.hash, previousVersions)
         } ?: ReplaceCellFileContentFailure.PublicationTimeout.left()
     }
@@ -104,7 +110,7 @@ internal class ReplaceCellFileContentUseCaseImpl(
         while (uploaded == null) {
             uploaded = cellsRepository.getNodeVersions(node.uuid)
                 .getOrElse { return ReplaceCellFileContentFailure.Other(it).left() }
-                .singleOrNull { it.id == node.versionId }
+                .singleOrNull { it.id == node.versionId && !it.hash.isNullOrBlank() }
             if (uploaded == null) delay(POLL_INTERVAL_MILLIS)
         }
         return uploaded.right()
@@ -148,6 +154,7 @@ internal class ReplaceCellFileContentUseCaseImpl(
     }
 
     private companion object {
+        const val DRAFT_METADATA_TIMEOUT_MILLIS = 60_000L
         const val PUBLICATION_TIMEOUT_MILLIS = 60_000L
         const val POLL_INTERVAL_MILLIS = 500L
     }
