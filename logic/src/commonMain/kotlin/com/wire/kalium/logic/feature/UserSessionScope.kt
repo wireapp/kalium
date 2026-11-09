@@ -1507,6 +1507,13 @@ public class UserSessionScope internal constructor(
     // doesn't make several workers resolve the same users; a signal sent during a run causes one more run.
     private val pendingOneOnOneResolutionRequests = Channel<Unit>(Channel.CONFLATED)
 
+    // Foreground actions signal the same drain, so it stays the only reader of the queue.
+    private val requestPendingOneOnOneResolutions = object : RecoverPendingOneOnOneResolutionsUseCase {
+        override suspend fun invoke() {
+            pendingOneOnOneResolutionRequests.trySend(Unit)
+        }
+    }
+
     private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase
         get() = RecoverPendingOneOnOneResolutionsUseCaseImpl(
             pendingActionsRepository = pendingActionsRepository,
@@ -2817,7 +2824,7 @@ public class UserSessionScope internal constructor(
             mlsMigrationManager,
             keyingMaterialsManager,
             recoverPendingMLSGroupJoinsUseCase,
-            recoverPendingOneOnOneResolutionsUseCase,
+            requestPendingOneOnOneResolutions,
             cryptoTransactionProvider,
             this,
         )
