@@ -294,7 +294,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         if (received.prefixComplete) claims.take()
         val unnotified = claims.pending.read(request.showMessageContent)
         val result = reconcileNotifications(runtime, received, unnotified, request)
-        if (delivery != null) deliverMessageAlerts(result.alerts, delivery::deliver) { alert ->
+        // Without delivery the host posts the alerts after this returns, so nothing proves they were presented.
+        val presented = delivery != null && deliverMessageAlerts(result.alerts, delivery::deliver) { alert ->
             claims.pending.acknowledge(listOf(alert.messageKey()))
         }
         return result.copy(
@@ -306,7 +307,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     runtime.database.eventDAO.getEventById(request.notificationId)?.isProcessed == true
                 },
         ).also {
-            if (!handledEarlier) caughtUpAccounts.record(configuration.rootPath, userId, catchUpStarted, caughtUp, received)
+            if (!handledEarlier) caughtUpAccounts.record(configuration.rootPath, userId, catchUpStarted, caughtUp, received, presented)
         }
     }
 
@@ -506,8 +507,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     /**
      * Per account storage, when this process's latest complete attempt started catching up. Attempts of one account
      * take turns in a process, and the backend stores an event before pushing it. So an attempt whose catch-up
-     * started after a push arrived stored that push's event; reaching live and processing the stored queue to its
-     * end with every alert claimed, it handled the push.
+     * started after a push arrived stored that push's event; reaching live, processing the stored queue to its end
+     * with every alert claimed, and having the system accept those alerts, it handled the push.
      */
     internal class CaughtUpAccounts {
         private val since = MutableStateFlow<Map<Pair<String, UserId>, ComparableTimeMark>>(emptyMap())
@@ -518,11 +519,15 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             catchUpStarted: ComparableTimeMark,
             caughtUp: CatchUpOutcome,
             received: ReceivedNotificationResult,
+            presented: Boolean,
         ) {
-            if (caughtUp == CatchUpOutcome.LIVE && received.stoppedReason == QUEUE_END && received.prefixComplete) {
+            if (presented && processedEverything(caughtUp, received)) {
                 since.update { it + ((rootPath to userId) to catchUpStarted) }
             }
         }
+
+        private fun processedEverything(caughtUp: CatchUpOutcome, received: ReceivedNotificationResult) =
+            caughtUp == CatchUpOutcome.LIVE && received.stoppedReason == QUEUE_END && received.prefixComplete
 
         /** An attempt of this process handled the push that arrived at [arrived]. */
         fun handled(rootPath: String, userId: UserId, arrived: ComparableTimeMark): Boolean =

@@ -182,13 +182,15 @@ class KaliumNSEPresentationTest {
         val arrived = time.markNow()
         time += 1.seconds
         val complete = ReceivedNotificationResult(null, prefixComplete = true, stoppedReason = "QUEUE_END")
-        // Not live, out of time or with a deferred prefix, an attempt may leave the push's event unfetched or unclaimed.
-        accounts.record("root", user, time.markNow(), CatchUpOutcome.BUDGET, complete)
-        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(stoppedReason = "BUDGET"))
-        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(prefixComplete = false))
+        // Not live, out of time or with a deferred prefix, an attempt may leave the push's event unfetched or unclaimed;
+        // a refused alert was not presented.
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.BUDGET, complete, true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(stoppedReason = "BUDGET"), true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(prefixComplete = false), true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete, false)
         assertTrue(receiver.timedOut(accounts.handled("root", user, arrived)).presentGenericAlert)
 
-        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete, true)
         val handled = receiver.timedOut(accounts.handled("root", user, arrived))
         assertEquals(KaliumNSEStatus.SUCCESS, handled.status)
         assertFalse(handled.presentGenericAlert)
