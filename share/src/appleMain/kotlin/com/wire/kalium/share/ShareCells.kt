@@ -19,23 +19,31 @@
 package com.wire.kalium.share
 
 import com.wire.kalium.cells.CellFileSharing
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 internal suspend fun AppleAccountRuntime.cellFileSharing(): CellFileSharing = CellFileSharing.create(
     network.cellsHttpClient,
     authenticatedSession,
     network.accessTokenApi,
-    database.userConfigDAO.getWireCellsConfig()?.backendUrl
+    // As Cells reads it: a configuration that cannot be read is none.
+    wrapStorageRequest { database.userConfigDAO.getWireCellsConfig()?.backendUrl }.getOrNull()
 )
 
 internal suspend fun AppleAccountRuntime.discardSharedDrafts(items: List<ShareItem>) {
     val attachments = items.filterIsInstance<ShareItem.Cells>().flatMap { it.attachments }
     if (attachments.isEmpty()) return
-    val sharing = cellFileSharing()
-    try {
-        sharing.discard(attachments)
-    } finally {
-        sharing.close()
+    // A cancelled send discards too: reading where the drafts are must not end the cleanup early.
+    withContext(NonCancellable) {
+        val sharing = cellFileSharing()
+        try {
+            sharing.discard(attachments)
+        } finally {
+            sharing.close()
+        }
     }
 }
 
