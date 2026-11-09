@@ -20,8 +20,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class NativeMessageDeliveryTest {
@@ -88,7 +90,8 @@ class NativeMessageDeliveryTest {
     @Test
     fun onlyAcceptedAlertsAreAcknowledged() = runTest {
         val acknowledged = mutableListOf<String>()
-        deliverMessageAlerts(listOf("message", "rejected"), { it == "message" }) { acknowledged.add(it) }
+        assertFalse(deliverMessageAlerts(listOf("message", "rejected"), { it == "message" }) { acknowledged.add(it) })
         assertEquals(listOf("message"), acknowledged)
+        assertTrue(deliverMessageAlerts(listOf("message"), { true }) {})
     }
 }

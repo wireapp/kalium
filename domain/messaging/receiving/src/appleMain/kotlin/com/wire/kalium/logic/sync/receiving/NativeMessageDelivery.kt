@@ -15,20 +15,25 @@ import kotlin.coroutines.startCoroutine
  * Posts each claimed message alert through the extension's host and, while the account is still open, acknowledges
  * each one the host accepted. An alert the host did not accept stays pending for the account's next owner.
  * [deliver] must use only the alert and native notification APIs, never account resources.
+ * Returns true when the host accepted every alert.
  */
 @InternalKaliumApi
 public suspend fun <A> deliverMessageAlerts(
     alerts: List<A>,
     deliver: suspend (A) -> Boolean,
     acknowledge: suspend (A) -> Unit,
-) {
+): Boolean {
+    var accepted = true
     for (alert in alerts) {
         currentCoroutineContext().ensureActive()
         if (awaitNativeAcceptance { deliver(alert) }) {
             // Only the short database acknowledgement is protected, never the native callback.
             withContext(NonCancellable) { acknowledge(alert) }
+        } else {
+            accepted = false
         }
     }
+    return accepted
 }
 
 /**

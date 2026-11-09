@@ -200,6 +200,8 @@ class NotificationProcessor(
             else recovery.acknowledge(listOf(next.eventId))
             if (next.eventId == targetId) {
                 queueEnd.reached(effects.message, "DEFERRED_PRESENTATION_POLICY".takeIf { deferred.isNotEmpty() })
+            } else if (effects.message?.let { it.shouldNotify && it.type != ReceivedNotificationType.MESSAGE } == true) {
+                queueEnd.droppedAlert = true
             }
         }
     }
@@ -209,6 +211,7 @@ class NotificationProcessor(
         private var message: ReceivedMessageResult? = null
         private var suppression: String? = null
         val meetings = mutableListOf<LocalNotification.Meeting>()
+        var droppedAlert = false
 
         fun reached(message: ReceivedMessageResult?, suppression: String?) {
             this.message = message
@@ -222,12 +225,12 @@ class NotificationProcessor(
                 presented != null -> presented
                 completePrefix -> withPendingCalls(message)
                 else -> withoutCalls(message)
-            }.copy(stoppedReason = stop, meetings = meetings.toList())
+            }.copy(stoppedReason = stop, meetings = meetings.toList(), droppedAlert = droppedAlert)
         }
 
         suspend fun stopped(stop: String, work: NotificationAppWork? = null): ReceivedNotificationResult =
             (suppression?.let { withoutPresentation(message, it) } ?: withoutCalls(message))
-                .copy(stoppedReason = stop, appWorkPending = work, meetings = meetings.toList())
+                .copy(stoppedReason = stop, appWorkPending = work, meetings = meetings.toList(), droppedAlert = droppedAlert)
     }
 
     private suspend fun withoutCalls(message: ReceivedMessageResult?) = ReceivedNotificationResult(
