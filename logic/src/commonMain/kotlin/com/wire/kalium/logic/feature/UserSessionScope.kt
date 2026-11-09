@@ -2159,7 +2159,8 @@ public class UserSessionScope internal constructor(
             newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
             selfUserId = userId,
             fetchConversation = fetchConversationUseCase,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            userConfigRepository = userConfigRepository,
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(

@@ -94,6 +94,11 @@ internal class ReceivedMembershipHandler(
         if ((conversation.type.isGroup || conversation.type == ConversationEntity.Type.ONE_ON_ONE) &&
             event.members.any { it.id == selfUserId }
         ) {
+            // Like the app's MemberJoinEventHandler: without a Welcome after this join, the app joins by external commit.
+            val groupState = (conversation.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.groupState
+            if (conversation.type.isGroup && groupState != null && groupState != ConversationEntity.GroupState.ESTABLISHED) {
+                data.config.setShouldJoinPendingMLSConversations(true)
+            }
             if (conversation.type.isGroup && drivePermissionsEnabled && conversation.wireCell != null) {
                 val selfTeam = data.users.getUserDetailsByQualifiedID(selfUserId.toDao())?.team
                 persistMessage(

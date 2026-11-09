@@ -7571,6 +7571,8 @@ class NotificationProcessorNativeTest {
                     assertEquals(3uL, protocol.epoch)
                     assertNotNull(runtime.database.memberDAO.getMemberRole(SELF.toDao(), CONVERSATION_ID))
                     assertNotNull(runtime.database.messageDAO.getMessageById("inactive:mls-removal", CONVERSATION_ID))
+                    // The self join is stored before its Welcome, so it asks the app to join if no Welcome follows.
+                    assertEquals(selfLeave, runtime.database.userConfigDAO.observeShouldJoinPendingMLSConversations().first())
                     if (selfLeave) {
                         assertEquals(!refreshFails, runtime.database.memberDAO.getMemberRole(THIRD.toDao(), CONVERSATION_ID) == null)
                         val conversation = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
