@@ -66,6 +66,18 @@ class AccountResourceAccessTest {
     }
 
     @Test
+    fun conditionalResumeStaysPausedWhenItsConditionFails() = runTest {
+        val access = AccountResourceAccess()
+        access.pause {}
+        access.resumeIf { false }
+        val queued = async { access.withAccess { "resumed" } }
+        runCurrent()
+        assertFalse(queued.isCompleted)
+        access.resumeIf { true }
+        assertEquals("resumed", queued.await())
+    }
+
+    @Test
     fun pauseDrainsAdmittedWorkAndQueuesNewWorkUntilOwnershipReturns() = runTest {
         val access = AccountResourceAccess()
         val finish = CompletableDeferred<Unit>()
