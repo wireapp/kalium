@@ -534,6 +534,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEvent
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.DeferredMLSRecovery
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
@@ -2110,6 +2111,17 @@ public class UserSessionScope internal constructor(
             subconversationRepository = subconversationRepository
         )
 
+    // Recovery started while receiving changes the group on the backend, which a failed receive batch can't roll back.
+    private val deferredMLSRecovery: DeferredMLSRecovery by lazy {
+        DeferredMLSRecovery(
+            syncStateObserver = syncStateObserver.value,
+            transactionProvider = cryptoTransactionProvider,
+            verifier = staleEpochVerifier,
+            reset = resetMlsConversation,
+            logger = userScopedLogger,
+        )
+    }
+
     private val newMessageHandler: NewMessageEventHandler
         get() = NewMessageEventHandlerImpl(
             proteusUnpacker,
@@ -2123,8 +2135,8 @@ public class UserSessionScope internal constructor(
                 messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
             },
             userId,
-            staleEpochVerifier,
-            resetMlsConversation,
+            deferredMLSRecovery.staleEpochVerifier,
+            deferredMLSRecovery.resetMLSConversation,
             receiveRecovery = if (enableDurableMLSReceiveRecovery) {
                 { context, event, wrongEpoch -> receiveRecovery()?.handle(context, event, wrongEpoch) == true }
             } else null,
@@ -3313,6 +3325,10 @@ public class UserSessionScope internal constructor(
                     userScopedLogger.w("Unable to resolve pending one-on-one conversations", exception)
                 }
             }
+        }
+
+        launch {
+            deferredMLSRecovery.run()
         }
 
         launch {
