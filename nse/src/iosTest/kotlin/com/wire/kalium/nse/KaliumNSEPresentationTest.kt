@@ -183,8 +183,9 @@ class KaliumNSEPresentationTest {
         time += 1.seconds
         val complete = ReceivedNotificationResult(null, prefixComplete = true, stoppedReason = "QUEUE_END")
         // Not live, out of time or with a deferred prefix, an attempt may leave the push's event unfetched or unclaimed;
-        // a refused alert was not presented.
+        // a refused or dropped alert was not presented.
         accounts.record("root", user, time.markNow(), CatchUpOutcome.BUDGET, complete, true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(droppedAlert = true), true)
         accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(stoppedReason = "BUDGET"), true)
         accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(prefixComplete = false), true)
         accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete, false)

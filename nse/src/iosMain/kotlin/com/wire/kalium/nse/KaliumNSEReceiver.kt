@@ -508,7 +508,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
      * Per account storage, when this process's latest complete attempt started catching up. Attempts of one account
      * take turns in a process, and the backend stores an event before pushing it. So an attempt whose catch-up
      * started after a push arrived stored that push's event; reaching live, processing the stored queue to its end
-     * with every alert claimed, and having the system accept those alerts, it handled the push.
+     * with every alert claimed and none dropped, and having the system accept those alerts, it handled the push.
      */
     internal class CaughtUpAccounts {
         private val since = MutableStateFlow<Map<Pair<String, UserId>, ComparableTimeMark>>(emptyMap())
@@ -521,7 +521,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             received: ReceivedNotificationResult,
             presented: Boolean,
         ) {
-            if (presented && processedEverything(caughtUp, received)) {
+            // Unnotified alerts restore only messages: a dropped connection request or deletion was not presented.
+            if (presented && !received.droppedAlert && processedEverything(caughtUp, received)) {
                 since.update { it + ((rootPath to userId) to catchUpStarted) }
             }
         }
