@@ -123,8 +123,8 @@ interface SendingSession {
     /** Suspends until sync reaches live, or fails if it is not running or fails. */
     suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit>
 
-    /** Returns once sync is live and waits while it catches up; fails at once if sync has failed or is not running. */
-    suspend fun waitUntilLiveWhileRunning(): Either<CoreFailure, Unit>
+    /** Suspends until sync reaches live; fails if sync has failed, or stops after starting, instead of waiting for the next sync. */
+    suspend fun waitUntilLiveOrStopped(): Either<CoreFailure, Unit>
 
     suspend fun <R> transaction(
         name: String,

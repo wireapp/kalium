@@ -652,8 +652,8 @@ class MessageSenderImpl(
 
     /**
      * What the user writes, edits, reacts or deletes goes out only once sync is live, never from a view of the
-     * conversation that still has events to process. A failed or stopped sync fails the send instead of leaving it
-     * to the next sync, so the caller keeps the message pending or marks it failed. Calls, receipts and other
+     * conversation that still has events to process. A sync that fails or stops fails the send instead of leaving
+     * it to some later sync, so the caller keeps the message pending or marks it failed. Calls, receipts and other
      * signaling keep sending without waiting.
      */
     private suspend fun awaitLiveIfUserContent(message: Message.Sendable): Either<CoreFailure, Unit> {
@@ -661,7 +661,7 @@ class MessageSenderImpl(
         val isUserContent = message is Message.Regular || content is MessageContent.TextEdited ||
             content is MessageContent.MultipartEdited || content is MessageContent.Reaction ||
             content is MessageContent.DeleteMessage
-        return if (isUserContent) session.waitUntilLiveWhileRunning() else Either.Right(Unit)
+        return if (isUserContent) session.waitUntilLiveOrStopped() else Either.Right(Unit)
     }
 
     /** A stale MLS send whose epoch was verified. It never leaves the sender: [sendPreparedMessage] retries it or returns [cause]. */

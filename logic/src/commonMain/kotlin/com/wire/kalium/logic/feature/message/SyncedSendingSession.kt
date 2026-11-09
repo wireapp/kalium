@@ -25,6 +25,7 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.sync.SyncManager
+import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.first
 import com.wire.kalium.messaging.sending.SendingSession
 
@@ -38,12 +39,14 @@ internal class SyncedSendingSession(
 
     override suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = syncManager.waitUntilLiveOrFailure()
 
-    // Waiting means no one runs sync (a released request, the app in the background): it would wait for the next sync.
-    override suspend fun waitUntilLiveWhileRunning(): Either<CoreFailure, Unit> =
-        when (syncManager.syncState.first { it is SyncState.Live || it is SyncState.Failed || it is SyncState.Waiting }) {
-            SyncState.Live -> Either.Right(Unit)
-            else -> Either.Left(NetworkFailure.NoNetworkConnection(null))
-        }
+    // Waiting before sync starts is startup (or the state lagging its repositories); Waiting after it ran means the request
+    // was released, as when a notification reply times out, and waiting would send on some later sync.
+    override suspend fun waitUntilLiveOrStopped(): Either<CoreFailure, Unit> {
+        val settled = syncManager.syncState
+            .dropWhile { it is SyncState.Waiting }
+            .first { it is SyncState.Live || it is SyncState.Failed || it is SyncState.Waiting }
+        return if (settled is SyncState.Live) Either.Right(Unit) else Either.Left(NetworkFailure.NoNetworkConnection(null))
+    }
 
     override suspend fun <R> transaction(
         name: String,

@@ -1,1 +1,1 @@
-User content (messages, edits, reactions and deletions) is sent only once sync is live. While sync has failed or is not running, the send fails as offline instead of reaching others from a view with unprocessed events; calls, receipts and other signaling still send at once.
+User content (messages, edits, reactions and deletions) is sent only once sync is live. If sync fails, or stops while the send waits, the send fails as offline instead of reaching others from a view with unprocessed events; calls, receipts and other signaling still send at once.

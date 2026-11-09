@@ -914,19 +914,34 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenSyncFailedOrStopped_whenSending_thenUserContentIsNotSentButCallingSignalingIs() {
+    fun givenSyncState_whenSendingUserContent_thenSendOnlyOnceLiveAndFailIfSyncFailsOrStops() {
         val (arrangement, messageSender) = arrange {
             withSendProteusMessage()
             withPromoteMessageToSentUpdatingServerTime()
         }
+        val noNetwork: (CoreFailure) -> Unit = { assertIs<NetworkFailure.NoNetworkConnection>(it) }
 
         arrangement.testScope.runTest {
-            for (state in listOf(SyncState.Failed(Arrangement.TEST_CORE_FAILURE, 1.seconds), SyncState.Waiting)) {
-                arrangement.syncState.value = state
-                messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
-            }
-            verifySuspend(VerifyMode.not) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
+            // Not started yet: the send waits for sync instead of failing.
+            arrangement.syncState.value = SyncState.Waiting
+            val afterStart = async { messageSender.sendMessage(TestMessage.TEXT_MESSAGE) }
+            runCurrent()
+            assertFalse(afterStart.isCompleted)
+            arrangement.syncState.value = SyncState.Live
+            afterStart.await().shouldSucceed()
 
+            arrangement.syncState.value = SyncState.Failed(Arrangement.TEST_CORE_FAILURE, 1.seconds)
+            messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldFail(noNetwork)
+
+            // Catching up when the request is released: fail instead of sending on some later sync.
+            arrangement.syncState.value = SyncState.GatheringPendingEvents
+            val stopped = async { messageSender.sendMessage(TestMessage.TEXT_MESSAGE) }
+            runCurrent()
+            arrangement.syncState.value = SyncState.Waiting
+            stopped.await().shouldFail(noNetwork)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
+
+            // Signaling does not wait: calls keep working while sync is down.
             messageSender.sendMessage(TestMessage.signalingMessage(MessageContent.Calling(""))).shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
         }
