@@ -82,8 +82,8 @@ the moved code through the app's adapters: Proteus envelope creation (`MessageEn
 session establishment (`SessionEstablisher`), MLS message creation (`MLSMessageCreator`), send-failure
 handling (`MessageSendFailureHandler`) and the sending orchestration (`MessageSenderImpl`), each with
 narrow ports. Extension adapters over the slim runtime provide a bounded hold that keeps the socket
-open, processes incoming events and returns unnotified message alerts. The share extension sends text
-and files.
+open, processes incoming events and posts unnotified message alerts through the host. The share
+extension sends text and files.
 
 ## Consequences
 

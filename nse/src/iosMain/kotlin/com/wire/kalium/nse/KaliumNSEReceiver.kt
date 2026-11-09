@@ -123,8 +123,8 @@ public data class KaliumNSEResult(
     public val notificationIdentifiersToRemove: List<String> = emptyList(),
     public val isGroupConversation: Boolean = false,
     /**
-     * Further unnotified message alerts, oldest first. Post each before completing the request;
-     * Kalium has already marked them notified.
+     * Further unnotified message alerts, oldest first. [KaliumNSEReceiver.processAndDeliver] posts each through the
+     * host and acknowledges the ones it accepted; the rest stay pending for the account's next owner.
      */
     public val alerts: List<KaliumNSEAlert> = emptyList(),
     /**

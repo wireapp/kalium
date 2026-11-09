@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
@@ -195,6 +196,8 @@ public data class KaliumShareAlert(
     public val conversationName: String?,
     public val senderName: String?,
     public val isGroupConversation: Boolean,
+    /** Labels a picture, file, ping, location or missed call as the notification extension does. */
+    public val messageKind: NotificationMessageKind? = null,
 )
 
 /**
@@ -509,6 +512,7 @@ public class KaliumShareSender(
             conversationName = message.conversationName?.takeIf { canPreview },
             senderName = message.senderName?.takeIf { canPreview },
             isGroupConversation = canPreview && message.isGroupConversation,
+            messageKind = message.messageKind?.takeIf { canPreview },
         )
     }
 
