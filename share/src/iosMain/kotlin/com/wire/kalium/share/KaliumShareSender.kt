@@ -428,7 +428,11 @@ public class KaliumShareSender(
         }
         val preference = runtime.readMessageContentPreference()
         val alerts = unnotified.map { alert(it, request.showMessageContent, preference) }
-        delivery.deliverAll(runtime.prepared.userId, alerts, UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).pending)
+        // A slow host must not turn a decided send or handoff into a timeout: alerts it has not accepted by this
+        // soft deadline stay pending for the account's next owner.
+        withTimeoutOrNull(budget * DELIVER_SHARE - started.elapsedNow()) {
+            delivery.deliverAll(runtime.prepared.userId, alerts, UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).pending)
+        }
         // Events may remain unpresented when the socket ended on its own after going live, or when processing
         // deferred or left them for the app. A hold that never went live sent nothing and asks for no alert.
         val unpresented = held.started == CatchUpOutcome.LIVE && held.closed != CatchUpOutcome.LIVE ||
@@ -545,11 +549,12 @@ public class KaliumShareSender(
 
         private const val QUEUE_END = "QUEUE_END"
 
-        // Soft deadlines: connect, catch up, send, then close and process what arrived.
+        // Soft deadlines: connect, catch up, send, then close and process what arrived, and post its alerts.
         private const val CONNECT_SHARE = 0.25
         private const val SEND_BY_SHARE = 0.45
         private const val SENT_BY_SHARE = 0.7
         private const val PROCESS_SHARE = 0.85
+        private const val DELIVER_SHARE = 0.95
     }
 }
 
