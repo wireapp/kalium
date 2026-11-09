@@ -27,6 +27,7 @@ import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.configuration.UserConfigDataSource
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -47,6 +48,8 @@ import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.config.WireCellsConfigEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.withTestUserDatabase
 import kotlinx.coroutines.CompletableDeferred
@@ -270,6 +273,29 @@ class ShareFilesTest {
 
             config.setFileSharingStatus(status = false, isStatusChanged = false)
             assertNull(database.sharePolicy(SELF, BuildFileRestrictionState.NoRestriction))
+        }
+    }
+
+    @Test
+    fun theUploadTargetCarriesWhatUploadingNeedsWithoutTheAccount() = runTest {
+        withDatabase { database ->
+            val restriction = BuildFileRestrictionState.NoRestriction
+            UserConfigDataSource(database.userPrefsDAO, database.userConfigDAO, lazy { restriction })
+                .setFileSharingStatus(status = true, isStatusChanged = false)
+            database.userDAO.upsertUsers(listOf(user(OTHER, ConnectionEntity.State.ACCEPTED)))
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2)
+            conversation(database, "cells", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val files = listOf(ShareFile("/tmp/notes.pdf", "notes.pdf", "application/pdf", 3))
+            suspend fun target(conversation: String) =
+                database.shareUploadTarget(SELF, ServerConfig.DUMMY, ConversationId(conversation, DOMAIN), files, restriction)
+            val unavailable = Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
+
+            assertEquals(Either.Right(UploadTarget.Assets(auditLog = false)), target("group"))
+            assertEquals(unavailable, target("missing"))
+            // A cell's uploads need the account's Cells backend, read now.
+            assertEquals(unavailable, target("cells"))
+            database.userConfigDAO.setWireCellsConfig(WireCellsConfigEntity("https://cells.test", "none", null))
+            assertEquals(Either.Right(UploadTarget.Cells("cell", "https://cells.test")), target("cells"))
         }
     }
 

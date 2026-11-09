@@ -21,12 +21,11 @@ package com.wire.kalium.share
 import com.wire.kalium.cells.CellFileSharing
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 
-internal fun AppleAccountRuntime.cellFileSharing(): CellFileSharing = CellFileSharing.create(
+internal suspend fun AppleAccountRuntime.cellFileSharing(): CellFileSharing = CellFileSharing.create(
     network.cellsHttpClient,
     authenticatedSession,
     network.accessTokenApi,
-    database.userConfigDAO,
-    database.publicLinks
+    database.userConfigDAO.getWireCellsConfig()?.backendUrl
 )
 
 internal suspend fun AppleAccountRuntime.discardSharedDrafts(items: List<ShareItem>) {

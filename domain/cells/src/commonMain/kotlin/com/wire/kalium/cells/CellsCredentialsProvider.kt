@@ -47,10 +47,8 @@ internal class CellsCredentialsProviderImpl(
     override suspend fun credentials(): CellsCredentials? =
         cachedCredentials ?: getConfiguration()?.backendUrl
             ?.takeIf { it.isNotBlank() }
-            ?.let { CellsCredentials(serverUrl = it, gatewaySecret = GATEWAY_SECRET) }
+            ?.let { CellsCredentials(serverUrl = it, gatewaySecret = CELLS_GATEWAY_SECRET) }
             ?.also { cachedCredentials = it }
-
-    private companion object {
-        const val GATEWAY_SECRET = "gatewaysecret"
-    }
 }
+
+internal const val CELLS_GATEWAY_SECRET = "gatewaysecret"
