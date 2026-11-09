@@ -197,10 +197,10 @@ class ProteusClientCoreCryptoImpl private constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            // No stack trace: building one can take seconds in a cold process while this call still holds the account.
             kaliumLogger.e(
                 "Unexpected non-Proteus exception in " +
-                        "ProteusClientCoreCrypto.wrapException: ${e::class.simpleName}: $e\n" +
-                        "Stack trace: ${e.stackTraceToString()}"
+                        "ProteusClientCoreCrypto.wrapException: ${e::class.simpleName}: ${e.message}"
             )
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }
