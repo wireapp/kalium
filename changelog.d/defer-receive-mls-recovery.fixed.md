@@ -1,0 +1,1 @@
+Stale-epoch rejoins and group resets triggered while receiving MLS messages now run once sync is live, each in its own transaction, instead of inside the receive batch. A failed and retried batch no longer sends them again.
