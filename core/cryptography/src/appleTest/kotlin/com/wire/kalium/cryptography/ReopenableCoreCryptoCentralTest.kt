@@ -56,12 +56,12 @@ class ReopenableCoreCryptoCentralTest {
             } finally {
                 extension.close()
             }
-            access.resume {}
+            access.withResumedAccess({}, {}) {}
             val third = queued.await()
             assertEquals(6, (first + second + third).map { it.id }.toSet().size)
             assertEquals(fingerprint, client.transaction("same-identity") { it.getLocalFingerprint() })
         } finally {
-            access.resume {}
+            access.withResumedAccess({}, {}) {}
             central.close()
             NSFileManager.defaultManager.removeItemAtPath(root, null)
         }
@@ -94,11 +94,11 @@ class ReopenableCoreCryptoCentralTest {
             } finally {
                 extension.close()
             }
-            access.resume {}
+            access.withResumedAccess({}, {}) {}
             assertTrue(client.transaction("updated-groups") { it.conversationExists(group) })
             assertContentEquals(originalKey, client.getPublicKey().first)
         } finally {
-            access.resume {}
+            access.withResumedAccess({}, {}) {}
             central.close()
             NSFileManager.defaultManager.removeItemAtPath(root, null)
         }

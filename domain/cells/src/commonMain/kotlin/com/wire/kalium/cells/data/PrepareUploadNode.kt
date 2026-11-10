@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.CellDrafts
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
@@ -25,7 +25,7 @@ import com.wire.kalium.common.functional.Either
 import kotlin.uuid.Uuid
 
 /** Reserves paths within one batch, including backend-proposed collision names. */
-internal suspend fun CellsRepository.prepareUploadNode(
+internal suspend fun CellDrafts.prepareUploadNode(
     requestedPath: String,
     size: Long,
     reserved: Set<String> = emptySet(),

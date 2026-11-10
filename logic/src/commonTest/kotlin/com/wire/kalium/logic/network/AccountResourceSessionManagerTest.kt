@@ -39,7 +39,7 @@ class AccountResourceSessionManagerTest {
         val refreshed = async { guarded.updateToken(api, "old-refresh") }
         runCurrent()
         assertFalse(refreshed.isCompleted)
-        access.resume {}
+        access.withResumedAccess({}, {}) {}
         // Strict mock has no updateToken stub: using the obsolete token would fail this test.
         assertEquals(session, refreshed.await())
     }
@@ -58,7 +58,7 @@ class AccountResourceSessionManagerTest {
         runCurrent()
         assertFalse(refreshed.isCompleted)
         stored = "new-refresh"
-        access.resume {}
+        access.withResumedAccess({}, {}) {}
         assertEquals(Either.Right(tokens), refreshed.await())
     }
 }

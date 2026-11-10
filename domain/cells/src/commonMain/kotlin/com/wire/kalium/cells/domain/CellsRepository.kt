@@ -21,12 +21,9 @@ import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.data.SortingCriteria
 import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.model.CellNode
-import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.NodePreview
-import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
-import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -34,10 +31,8 @@ import com.wire.kalium.common.functional.Either
 import okio.Path
 
 @Suppress("TooManyFunctions", "LongParameterList")
-internal interface CellsRepository {
-    suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
+internal interface CellsRepository : CellDrafts {
     suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
-    suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
     suspend fun getPaginatedNodes(
         path: String?,
         query: String,
@@ -62,8 +57,6 @@ internal interface CellsRepository {
     ): Either<NetworkFailure, List<CellNode>>
 
     suspend fun deleteFile(nodeUuid: String, permanentDelete: Boolean = false): Either<NetworkFailure, Unit>
-    suspend fun cancelDraft(nodeUuid: String, versionUuid: String): Either<NetworkFailure, Unit>
-    suspend fun publishDrafts(nodes: List<NodeIdAndVersion>): Either<NetworkFailure, Unit>
     suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>?>
     suspend fun getNode(nodeUuid: String): Either<NetworkFailure, CellNode>
     suspend fun deleteFiles(paths: List<String>, permanentDelete: Boolean = false): Either<NetworkFailure, Unit>
@@ -89,6 +82,5 @@ internal interface CellsRepository {
     suspend fun clearPublicLinkPassword(linkUuid: String)
     suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?): Either<NetworkFailure, Unit>
     suspend fun getEditorUrl(nodeUuid: String, urlKey: String): Either<NetworkFailure, String>
-    suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>>
     suspend fun restoreNodeVersion(uuid: String, versionId: String): Either<NetworkFailure, Unit>
 }

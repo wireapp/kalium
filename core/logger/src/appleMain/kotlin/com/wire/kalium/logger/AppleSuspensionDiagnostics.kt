@@ -283,12 +283,9 @@ internal class SuspensionDiagnosticRegistry(
         const val LONG_OPERATION_MILLIS = 1_000L
         const val DEFAULT_REGISTRY_CAPACITY = 256
         const val DEFAULT_EVENT_LIMIT = 64
-        val KINDS = setOf("account_runtime", "diagnostic_logging", "kalium_diagnostic_logging")
+        val KINDS = setOf("account_runtime")
         val DATABASE_KINDS = setOf("user_database", "global_database", "other_database")
-        val OPERATIONS = setOf(
-            "ownership", "append", "append_batch", "maintenance", "checkpoint", "snapshot", "delete",
-            "read", "write", "transaction", "open", "close"
-        )
+        val OPERATIONS = setOf("ownership", "read", "write", "transaction", "open", "close")
         val SUCCESS_OUTCOMES = setOf("success", "commit", "rollback", "deferred")
         val OUTCOMES = SUCCESS_OUTCOMES + setOf("failure", "cancelled", "unknown", "post_commit_failure")
         val STAGES = setOf(
