@@ -58,8 +58,6 @@ internal class MLSMigrationConfigHandler(
         }
 
         return userConfigRepository.setMigrationConfiguration(mlsMigrationConfig).onSuccess {
-            // An upcoming or ongoing migration needs a larger key package pool, so check it now
-            // instead of waiting for the next sync.
             if (mlsMigrationConfig.isUpcomingOrOngoing()) {
                 keyPackageManager.value.scheduleRefill()
             }

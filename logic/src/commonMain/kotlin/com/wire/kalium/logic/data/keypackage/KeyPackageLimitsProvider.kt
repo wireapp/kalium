@@ -18,36 +18,23 @@
 
 package com.wire.kalium.logic.data.keypackage
 
-import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.isUpcomingOrOngoing
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
-/**
- * How many key packages to keep on the backend, and when to refill them.
- */
 internal data class KeyPackagePool(val targetSize: Int) {
 
-    fun needsRefill(keyPackageCount: Int): Boolean = keyPackageCount < targetSize * REFILL_THRESHOLD
+    fun needsRefill(keyPackageCount: Int): Boolean = keyPackageCount < targetSize / 2
 
     fun missingKeyPackages(keyPackageCount: Int): Int = (targetSize - keyPackageCount).coerceAtLeast(0)
-
-    private companion object {
-        const val REFILL_THRESHOLD = 0.5F
-    }
 }
 
 internal interface KeyPackageLimitsProvider {
 
-    /**
-     * Number of key packages generated and uploaded in one request.
-     */
+    // Number of key packages generated and uploaded in one request.
     fun refillAmount(): Int
 
-    /**
-     * The pool to keep on the backend. It's larger while an MLS migration is enabled and hasn't ended,
-     * including before its start date, so clients are ready before conversations start migrating.
-     */
     suspend fun keyPackagePool(): KeyPackagePool
 
 }
@@ -63,13 +50,13 @@ internal class KeyPackageLimitsProviderImpl(
     override suspend fun keyPackagePool(): KeyPackagePool = KeyPackagePool(
         targetSize = when {
             kaliumConfigs.lowerKeyPackageLimits -> KEY_PACKAGE_LIMIT_LOW
-            isMLSMigrationUpcomingOrOngoing() -> KEY_PACKAGE_LIMIT_MLS_MIGRATION
+            // Grow the pool before the start date too, so clients are ready when conversations migrate.
+            userConfigRepository.getMigrationConfiguration().getOrNull()?.isUpcomingOrOngoing() == true ->
+                KEY_PACKAGE_LIMIT_MLS_MIGRATION
+
             else -> KEY_PACKAGE_LIMIT
         }
     )
-
-    private suspend fun isMLSMigrationUpcomingOrOngoing(): Boolean =
-        userConfigRepository.getMigrationConfiguration().fold({ false }, { it.isUpcomingOrOngoing() })
 
     internal companion object {
         internal const val KEY_PACKAGE_LIMIT = 100

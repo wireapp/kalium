@@ -18,10 +18,7 @@
 
 package com.wire.kalium.logic.feature.keypackage
 
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -47,10 +44,6 @@ internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 1.hours
  * Observes the MLS key package count and uploads new key packages when necessary.
  */
 internal interface KeyPackageManager {
-    /**
-     * Checks the backend key package count in the background and refills if needed,
-     * without waiting for the hourly check.
-     */
     fun scheduleRefill()
 }
 
@@ -74,10 +67,7 @@ internal class KeyPackageManagerImpl(
 
     private var refillKeyPackageJob: Job? = null
 
-    /**
-     * Each uploaded batch has its own transaction, so two refills could otherwise read the same count and
-     * both upload the missing key packages.
-     */
+    // Batches commit separately, so without this two refills could read the same count and both top up.
     private val refillMutex = Mutex()
 
     init {
@@ -100,30 +90,18 @@ internal class KeyPackageManagerImpl(
     private suspend fun refillKeyPackagesIfNeeded(forceCheck: Boolean) {
         if (!hasRegisteredMLSClient()) return
         refillMutex.withLock {
-            val hasLastCheckPassed = if (forceCheck) {
-                Either.Right(true)
-            } else {
-                timestampKeyRepository.value.hasPassed(LAST_KEY_PACKAGE_COUNT_CHECK, KEY_PACKAGE_COUNT_CHECK_DURATION)
+            if (forceCheck || isBackendCountCheckDue() || localCountNeedsRefill()) {
+                kaliumLogger.i("Checking if we need to refill key packages")
+                when (val result = refillKeyPackagesUseCase.value()) {
+                    is RefillKeyPackagesResult.Success -> timestampKeyRepository.value.reset(LAST_KEY_PACKAGE_COUNT_CHECK)
+                    is RefillKeyPackagesResult.Failure -> kaliumLogger.w("Error while refilling key packages: ${result.failure}")
+                }
             }
-            hasLastCheckPassed
-                .flatMap { lastKeyPackageCountCheckHasPassed ->
-                    if (lastKeyPackageCountCheckHasPassed || localCountNeedsRefill()) {
-                        kaliumLogger.i("Checking if we need to refill key packages")
-                        when (val result = refillKeyPackagesUseCase.value()) {
-                            is RefillKeyPackagesResult.Success -> {
-                                timestampKeyRepository.value.reset(LAST_KEY_PACKAGE_COUNT_CHECK)
-                                Either.Right(Unit)
-                            }
-                            is RefillKeyPackagesResult.Failure -> {
-                                Either.Left(result.failure)
-                            }
-                        }
-                    } else {
-                        Either.Right(Unit)
-                    }
-                }.onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
         }
     }
+
+    private suspend fun isBackendCountCheckDue(): Boolean =
+        timestampKeyRepository.value.hasPassed(LAST_KEY_PACKAGE_COUNT_CHECK, KEY_PACKAGE_COUNT_CHECK_DURATION).getOrElse(false)
 
     private suspend fun hasRegisteredMLSClient(): Boolean =
         featureSupport.isMLSSupported && clientRepository.value.hasRegisteredMLSClient().getOrElse(false)

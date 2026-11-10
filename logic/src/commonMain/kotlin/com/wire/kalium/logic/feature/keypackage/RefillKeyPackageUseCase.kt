@@ -51,9 +51,7 @@ internal sealed class RefillKeyPackagesResult {
  * pending MLS conversations are flagged to be joined by external commit, before uploading, so the flag
  * survives a failed upload or a restart.
  *
- * Key packages are generated and uploaded in batches, each in its own MLS transaction, so other MLS work
- * isn't blocked for the whole refill and every uploaded batch is committed locally. Because of that, this
- * use case must not be called from inside another crypto transaction.
+ * Each batch runs in its own MLS transaction, so this must not be called from inside another crypto transaction.
  */
 internal interface RefillKeyPackagesUseCase {
 
