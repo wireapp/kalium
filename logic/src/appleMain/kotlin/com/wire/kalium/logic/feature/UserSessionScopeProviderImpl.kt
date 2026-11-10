@@ -131,6 +131,9 @@ internal actual open class UserSessionScopeProviderImpl(
      */
     private val execution = MutableStateFlow(Execution())
 
+    /** Accounts whose release threw with their lock held: only process exit lets those locks go. */
+    private val failedReleases = MutableStateFlow(emptySet<UserId>())
+
     private data class Execution(val foreground: Boolean = true, val holds: Map<UserId, List<Hold>> = emptyMap()) {
         fun allows(userId: UserId) = foreground || userId in holds
 
@@ -280,14 +283,19 @@ internal actual open class UserSessionScopeProviderImpl(
     /** The accounts this process still holds the lock of, with what keeps each: hold reasons, or nothing. */
     fun lockedAccounts(): AccountLocks {
         val current = execution.value
-        val locked = accounts.keys.filter { accounts[it]?.lease != null }.map { userId ->
-            val reasons = current.holds[userId].orEmpty().map { "${it.reason}@${it.since.elapsedNow().inWholeSeconds}s" }
+        val failed = failedReleases.value
+        val owned = accounts.keys.toList().filter { accounts[it]?.lease != null }
+        val locked = owned.map { userId ->
+            val reasons = current.holds[userId].orEmpty().map { "${it.reason}@${it.since.elapsedNow().inWholeSeconds}s" } +
+                listOfNotNull(ACCOUNT_LOCK_UNAVAILABLE.takeIf { userId in failed })
             // Pseudonymous: a prefix of the lock file's identity hash.
             appleAccountFileKey(userId).take(ACCOUNT_KEY_LENGTH) to reasons.ifEmpty {
-                listOf(if (current.foreground) "FOREGROUND" else ACCOUNT_LOCK_UNAVAILABLE)
+                listOf(if (current.foreground) "FOREGROUND" else "RELEASING")
             }
         }
-        return AccountLocks(locked, hasHolds = current.holds.isNotEmpty())
+        // In the foreground the app still runs every account it holds.
+        val hasUnreleasable = !current.foreground && owned.any { it in failed }
+        return AccountLocks(locked, hasHolds = current.holds.isNotEmpty(), hasUnreleasable = hasUnreleasable)
     }
 
     /**
@@ -378,7 +386,7 @@ internal actual open class UserSessionScopeProviderImpl(
      * clients alive; transfers only writable/native resources.
      */
     // Keep ownership on uncertain cleanup, and retry if a concurrent full release replaced the gate.
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "TooGenericExceptionCaught")
     private suspend fun releaseUnlessAllowed(userId: UserId) {
         val account = accounts[userId] ?: return
         // The pause decides again under the gate's transition; this only skips it while the app may run the account.
@@ -388,6 +396,10 @@ internal actual open class UserSessionScopeProviderImpl(
             var syncSuspension: SyncSuspension? = null
             try {
                 pauseForBackground(account, userId, access) { syncSuspension = it }
+            } catch (failure: Exception) {
+                // A release that threw with the lock still held cannot be retried; a cancelled one can.
+                if (failure !is CancellationException && account.lease != null) failedReleases.update { it + userId }
+                throw failure
             } finally {
                 // Reopening resumes sync after reacquiring ownership; undo only this suspension if ownership was kept.
                 if (account.lease != null && !account.unavailable) syncSuspension?.cancel()

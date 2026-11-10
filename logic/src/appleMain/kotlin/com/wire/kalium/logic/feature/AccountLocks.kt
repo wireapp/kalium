@@ -19,15 +19,15 @@ package com.wire.kalium.logic.feature
 
 /**
  * The accounts whose lock the app still holds, each under a pseudonymous key: the reasons of its holds with their age,
- * `FOREGROUND`, or `UNAVAILABLE` when the background release could not let it go.
+ * `UNAVAILABLE` when its release threw, else `FOREGROUND`, or `RELEASING` while its release still runs.
  */
 public class AccountLocks internal constructor(
     private val locked: List<Pair<String, List<String>>>,
     /** A call, upload, setup or restore still holds an account. */
     public val hasHolds: Boolean,
+    /** In the background, an account's release threw and left its lock held: only the process's exit lets it go. */
+    public val hasUnreleasable: Boolean,
 ) {
-    /** An account stays locked although nothing holds it: only the process's exit lets that lock go. */
-    public val hasUnreleasable: Boolean get() = locked.any { (_, reasons) -> ACCOUNT_LOCK_UNAVAILABLE in reasons }
 
     /** One log line, such as `ACCOUNT_LOCKS_KEPT 1a2b3c4d=CALL@12s 9f8e7d6c=UNAVAILABLE`. */
     override fun toString(): String {

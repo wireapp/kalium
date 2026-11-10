@@ -624,15 +624,16 @@ class AppleAccountSessionTest {
                 assertFailsWith<TimeoutCancellationException> { logic.releaseSessionScope(userId) }
                 assertEquals(Either.Left(AccountRuntimeFailure.BUSY), AppleAccountRuntimeOwner(root).tryAcquire(userId))
                 assertFailsWith<IllegalStateException> { logic.openSessionScope(userId) }
-                // Only the process's exit lets this lock go, and nothing holds it: the host may end the app.
-                logic.setForeground(false)
-                assertTrue(logic.lockedAccounts().hasUnreleasable)
-                assertFalse(logic.lockedAccounts().hasHolds)
             } finally {
                 finish.complete(Unit)
                 worker.join()
                 // The failed drain deliberately quarantines this account until process exit.
             }
+            // Its background release fails too: only the process's exit lets this lock go, and nothing holds it.
+            logic.setForeground(false)
+            assertFalse(logic.releaseBackgroundAccounts())
+            assertTrue(logic.lockedAccounts().hasUnreleasable)
+            assertFalse(logic.lockedAccounts().hasHolds)
         }
     }
 
@@ -690,9 +691,14 @@ class AppleAccountSessionTest {
             entered.await()
             // The release drains the logout, which replaces the account's gate meanwhile.
             val releasing = async { hold.release() }
-            delay(200)
-            val opening = async { logic.openSessionScope(userId) }
-            finish.complete(Unit)
+            val opening = try {
+                delay(200)
+                // Still releasing, not failed: nothing to end the app for.
+                assertFalse(logic.lockedAccounts().hasUnreleasable, logic.lockedAccounts().toString())
+                async { logic.openSessionScope(userId) }
+            } finally {
+                finish.complete(Unit)
+            }
             assertTrue(logout.await())
             releasing.await()
             (assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease)
