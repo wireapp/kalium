@@ -111,14 +111,10 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
 
     override suspend fun submitted(id: String, generation: String) = database.writeMessageEffects {
         val state = read(metadata)
-        write(
-            metadata,
-            state.copy(
-                signals = state.signals.map {
-            if (it.id == id) it.copy(submittedGeneration = generation) else it
-        }
-            )
+        val acknowledged = state.copy(
+            signals = state.signals.map { if (it.id == id) it.copy(submittedGeneration = generation) else it },
         )
+        write(metadata, acknowledged.reconcilingSuppressedCancellation(id, generation))
     }
 
     /**
@@ -263,3 +259,49 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
             metadata.putSerializable(KEY, state, CallSignalJournalState.serializer())
     }
 }
+
+/** AVS suppresses both callbacks when a one-to-one call ends while processing notifications. */
+private fun CallSignalJournalState.reconcilingSuppressedCancellation(
+    signalId: String,
+    generation: String,
+): CallSignalJournalState {
+    val source = cancelledStart(signalId, generation) ?: return this
+    // Existing presentations remain owned by native callbacks, including answered/group calls.
+    return if (presentations.any { it.id == source.id }) {
+        this
+    } else {
+        val ended = CallPresentationRecord(
+            source.id,
+            source.conversationValue,
+            source.conversationDomain,
+            source.timeMillis,
+            ringing = false,
+            hasVideo = false,
+            endReason = CANCELLED_REASON,
+        )
+        // closed() uses native callback order. A historical tombstone must never steal a newer close.
+        copy(presentations = listOf(ended) + presentations)
+    }
+}
+
+private fun CallSignalJournalState.cancelledStart(signalId: String, generation: String): CallSignalRecord? {
+    val cancel = signals.singleOrNull { it.id == signalId && it.ready && !it.isGroup }
+    val session = cancel?.requestSession("CANCEL")
+    return if (cancel == null || session == null) null else signals.singleOrNull {
+        it.ready && !it.isGroup && it.submittedGeneration == generation &&
+            it.conversationValue == cancel.conversationValue && it.conversationDomain == cancel.conversationDomain &&
+            it.senderValue == cancel.senderValue && it.senderDomain == cancel.senderDomain &&
+            it.senderClientId == cancel.senderClientId && it.timeMillis <= cancel.timeMillis &&
+            it.requestSession("SETUP") == session
+    }
+}
+
+private fun CallSignalRecord.requestSession(type: String): String? = runCatching {
+    val json = Json.parseToJsonElement(payload).jsonObject
+    if (json["type"]?.jsonPrimitive?.content?.uppercase() != type ||
+        json["resp"]?.jsonPrimitive?.booleanOrNull != false
+    ) return@runCatching null
+    json["sessid"]?.jsonPrimitive?.takeIf { it.isString }?.content?.takeIf { it.isNotBlank() }
+}.getOrNull()
+
+private const val CANCELLED_REASON = 4 // AVS WCALL_REASON_CANCELED
