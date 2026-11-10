@@ -587,7 +587,11 @@ internal actual open class UserSessionScopeProviderImpl(
      */
     private suspend fun acquire(account: OwnedAccount, userId: UserId) {
         if (account.lease != null) return
-        val lease = when (val acquired = acquireWhileAllowed(userId)) {
+        requireExecution(userId)
+        val acquired = owner.acquire(userId, OWNERSHIP_TIMEOUT) { execution.value.allows(userId) }
+        if (!execution.value.allows(userId)) (acquired as? Either.Right)?.value?.release()
+        requireExecution(userId)
+        account.lease = when (acquired) {
             is Either.Left -> throw if (acquired.value == AccountRuntimeFailure.BUSY) {
                 AccountBusyException(owner.holder(userId)).also { kaliumLogger.w("Account ownership wait ended: ${it.message}") }
             } else {
@@ -595,21 +599,10 @@ internal actual open class UserSessionScopeProviderImpl(
             }
             is Either.Right -> acquired.value
         }
-        if (!execution.value.allows(userId)) {
-            lease.release()
-            throw NoExecution()
-        }
-        account.lease = lease
     }
 
-    /** Waits for another process only while execution lasts. */
-    private suspend fun acquireWhileAllowed(userId: UserId): Either<AccountRuntimeFailure, AccountRuntimeLease> {
+    private fun requireExecution(userId: UserId) {
         if (!execution.value.allows(userId)) throw NoExecution()
-        return acquireUnlessRevoked(
-            acquire = { owner.acquire(userId, OWNERSHIP_TIMEOUT) },
-            releaseWon = { (it as? Either.Right)?.value?.release() },
-            revoked = { execution.first { !it.allows(userId) } },
-        ) ?: throw NoExecution()
     }
 
     private class OwnedAccount {
