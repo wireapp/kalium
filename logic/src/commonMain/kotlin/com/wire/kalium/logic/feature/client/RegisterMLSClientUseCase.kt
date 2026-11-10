@@ -102,10 +102,14 @@ internal class RegisterMLSClientUseCaseImpl(
                     // migrated from Proteus meanwhile), so those can only be joined by external commit.
                     userConfigRepository.setShouldJoinPendingMLSConversations(true)
                 }.flatMap {
-                    mlsClient.transaction("uploadNewKeyPackages") { context ->
-                        keyPackageRepository.uploadNewKeyPackages(context, clientId, keyPackageLimitsProvider.refillAmount())
-                    }
-                        .map { RegisterMLSClientResult.Success }
+                    // Commit private keys before publishing their key packages to the backend.
+                    wrapMLSRequest {
+                        mlsClient.transaction("GenerateKeyPackages") { context ->
+                            context.generateKeyPackages(keyPackageLimitsProvider.refillAmount())
+                        }
+                    }.flatMap { keyPackages ->
+                        keyPackageRepository.uploadKeyPackages(clientId, keyPackages)
+                    }.map { RegisterMLSClientResult.Success }
                 }
         }
 }
