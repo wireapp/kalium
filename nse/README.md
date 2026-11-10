@@ -35,9 +35,7 @@ certificate pins. Match these build switches to the app's `KaliumConfigs`:
 For each push, create `KaliumNSERequest` with the qualified user identity, target
 notification ID, an additional host `showMessageContent` restriction and a budget
 between 1 and 25,000 milliseconds. Optionally pass this account's currently delivered
-message alerts in `deliveredNotifications`, and set `appPresentsAlerts` while the app is in
-the foreground and presents alerts itself: a busy or unprepared account, or legal-hold work
-left for the app, then asks for no generic alert.
+message alerts in `deliveredNotifications`.
 Call `process` from Swift async code. Like
 the app, the NSE first catches up over the WebSocket: it opens it, stores the REST pages
 fetched once it is open and closes it at live, then processes the stored queue to its
@@ -127,8 +125,7 @@ the app's incremental sync:
 - `LEGAL_HOLD` when a user's legal hold is enabled or disabled, when app legal-hold
   transitions are pending, or when a membership change or fetched profile disagrees
   with the stored legal-hold status. Every later attempt stops at the same event until
-  the app runs, so a push whose event waits behind it sets `presentGenericAlert`
-  unless `appPresentsAlerts`.
+  the app runs, so a push whose event waits behind it sets `presentGenericAlert`.
 - `ACCOUNT_INVALIDATION` when any stored pending row removes this client or deletes
   the account. The NSE processes no row, writes a per-client invalidation marker and
   revokes readiness, without deleting stores. Later NSE opens are `NOT_PREPARED`;
