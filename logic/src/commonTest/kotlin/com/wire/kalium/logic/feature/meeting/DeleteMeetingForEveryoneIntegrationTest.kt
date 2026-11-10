@@ -59,15 +59,18 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlin.test.AfterTest
-import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -81,19 +84,22 @@ import kotlin.time.Duration.Companion.seconds
 // Real SQL repositories, scope wiring, deletion use case and call observer; HTTP and native crypto are seams.
 @OptIn(ConversationPersistenceApi::class)
 class DeleteMeetingForEveryoneIntegrationTest {
-    private val fixtures = mutableListOf<Fixture>()
-
-    @AfterTest
-    fun closeDatabases() {
-        fixtures.forEach {
-            it.database.builder.close()
-            it.database.delete()
+    private fun runTestWithFixture(testBody: suspend TestScope.(Fixture) -> Unit) = runTest {
+        val fixture = Fixture(testScheduler)
+        try {
+            testBody(fixture)
+        } finally {
+            withContext(NonCancellable) {
+                // SQLDelight queries use Dispatchers.Default, which runTest's scheduler cannot drain.
+                backgroundScope.coroutineContext.job.cancelAndJoin()
+                fixture.database.builder.close()
+                fixture.database.delete()
+            }
         }
     }
 
     @Test
-    fun creatorDeletionRemovesMeetingAndConversationAndEndsObservedCall() = runTest {
-        val fixture = Fixture(testScheduler).also { fixtures += it }
+    fun creatorDeletionRemovesMeetingAndConversationAndEndsObservedCall() = runTestWithFixture { fixture ->
         fixture.seed()
         backgroundScope.launch(fixture.dispatcher) { fixture.callObserver() }
         runCurrent()
@@ -110,8 +116,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
     }
 
     @Test
-    fun proteusMeetingDeletionUsesSameDatabaseAndObserverPathWithoutMlsWork() = runTest {
-        val fixture = Fixture(testScheduler).also { fixtures += it }
+    fun proteusMeetingDeletionUsesSameDatabaseAndObserverPathWithoutMlsWork() = runTestWithFixture { fixture ->
         fixture.seed(protocol = ConversationEntity.ProtocolInfo.Proteus)
         backgroundScope.launch(fixture.dispatcher) { fixture.callObserver() }
         runCurrent()
@@ -125,8 +130,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
     }
 
     @Test
-    fun deletingMeetingAttachedToRegularGroupPreservesConversationAndCall() = runTest {
-        val fixture = Fixture(testScheduler).also { fixtures += it }
+    fun deletingMeetingAttachedToRegularGroupPreservesConversationAndCall() = runTestWithFixture { fixture ->
         fixture.seed(type = ConversationEntity.Type.GROUP)
         backgroundScope.launch(fixture.dispatcher) { fixture.callObserver() }
         runCurrent()
@@ -141,8 +145,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
     }
 
     @Test
-    fun failedRemoteDeletionPreservesMeetingConversationAndCall() = runTest {
-        val fixture = Fixture(testScheduler).also { fixtures += it }
+    fun failedRemoteDeletionPreservesMeetingConversationAndCall() = runTestWithFixture { fixture ->
         fixture.seed()
         fixture.remoteFailure = true
         backgroundScope.launch(fixture.dispatcher) { fixture.callObserver() }
@@ -158,8 +161,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
     }
 
     @Test
-    fun failedMlsCleanupRetainsRemoteSuccessAndAlreadyAppliedLocalDeletion() = runTest {
-        val fixture = Fixture(testScheduler).also { fixtures += it }
+    fun failedMlsCleanupRetainsRemoteSuccessAndAlreadyAppliedLocalDeletion() = runTestWithFixture { fixture ->
         fixture.seed()
         fixture.mlsFailure = true
         backgroundScope.launch(fixture.dispatcher) { fixture.callObserver() }
@@ -176,8 +178,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
     }
 
     @Test
-    fun missingMeetingDoesNotRequestRemoteDeletionOrRemoveConversation() = runTest {
-        val fixture = Fixture(testScheduler).also { fixtures += it }
+    fun missingMeetingDoesNotRequestRemoteDeletionOrRemoveConversation() = runTestWithFixture { fixture ->
         fixture.seed()
         fixture.database.builder.meetingDao.deleteMeeting(MEETING_ENTITY.meetingId)
 
