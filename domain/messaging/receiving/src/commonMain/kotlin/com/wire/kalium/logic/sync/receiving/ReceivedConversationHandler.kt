@@ -35,15 +35,11 @@ import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationNotFound
-import com.wire.kalium.network.exceptions.isAccessDenied
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.MessageEffectDAOs
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.util.DateTimeUtil
-import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.first
 
 /** Metadata needed by later payloads is staged here until the notification's atomic SQL write. */
@@ -465,12 +461,8 @@ internal class ReceivedConversationHandler(
 }
 
 /** Apply only to fetchConversationDetails; a status or label alone does not establish staleness. */
-private fun Either<NetworkFailure, ConversationResponse>.isUnavailableConversationFetch(): Boolean {
-    val failure = (this as? Either.Left)?.value as? NetworkFailure.ServerMiscommunication
-    val error = failure?.kaliumException as? KaliumException.InvalidRequestError ?: return false
-    return error.errorResponse.code == HttpStatusCode.NotFound.value && error.isConversationNotFound() ||
-        error.errorResponse.code == HttpStatusCode.Forbidden.value && error.isAccessDenied()
-}
+private fun Either<NetworkFailure, ConversationResponse>.isUnavailableConversationFetch(): Boolean =
+    (this as? Either.Left)?.value?.isConversationUnavailable() == true
 
 internal data class ConversationCreation(
     val conversation: ConversationEntity,

@@ -34,10 +34,12 @@ import com.wire.kalium.network.api.authenticated.conversation.model.Conversation
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ConversationId as ApiConversationId
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.ServiceAddedResponse
 import com.wire.kalium.network.api.model.SubconversationId
 import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -148,6 +150,16 @@ class MLSReceiveRecoveryTest {
     }
 
     @Test
+    fun unavailableConversationBeforeRecoveryCreatesNoIntentOrJoin() = runTest {
+        withFixture { f ->
+            f.api.detailsFailure = KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "Access denied", "access-denied"))
+            assertNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+            assertNull(f.store.find(EVENT.id) { CIPHERTEXT })
+            assertEquals(0, f.joins)
+        }
+    }
+
+    @Test
     fun nativeEpochControlsNewRecoveryAndMissingNativeGroupCanRecover() = runTest {
         withFixture { f ->
             f.native.epoch = 12uL
@@ -233,6 +245,7 @@ class MLSReceiveRecoveryTest {
         var detailReads = 0
         var groupInfoReads = 0
         var groupInfo = byteArrayOf(1, 2)
+        var detailsFailure: KaliumException? = null
         override suspend fun fetchConversationsIds(
             pagingState: String?
         ): NetworkResponse<ConversationPagingResponse> = error("Unexpected API call")
@@ -241,7 +254,10 @@ class MLSReceiveRecoveryTest {
         ): NetworkResponse<ConversationResponseDTO> = error("Unexpected API call")
         override suspend fun fetchConversationDetails(
             conversationId: ApiConversationId
-        ): NetworkResponse<ConversationResponse> { detailReads++; return NetworkResponse.Success(response, emptyMap(), 200) }
+        ): NetworkResponse<ConversationResponse> {
+            detailReads++
+            return detailsFailure?.let { NetworkResponse.Error(it) } ?: NetworkResponse.Success(response, emptyMap(), 200)
+        }
         override suspend fun createNewConversation(
             createConversationRequest: CreateConversationRequest
         ): NetworkResponse<ConversationResponse> = error("Unexpected API call")

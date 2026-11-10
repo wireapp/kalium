@@ -2254,6 +2254,40 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenNewerSelfDeletingMessages_whenMessageIsSelected_thenPositionCountsThemAsTheListShowsThem() = runTest {
+        // given
+        insertInitialData()
+        val otherUser = userEntity2
+        val target = newRegularMessageEntity(
+            "1",
+            conversationId = conversationEntity1.id,
+            senderUserId = otherUser.id,
+            senderName = otherUser.name!!,
+            date = Instant.parse("2022-03-30T15:36:00.000Z")
+        )
+        // More than the app's initial page: an under-count would omit the live target entirely.
+        val selfDeleting = (2..101).map { index ->
+            newRegularMessageEntity(
+                "$index",
+                conversationId = conversationEntity1.id,
+                senderUserId = otherUser.id,
+                senderName = otherUser.name,
+                date = Instant.parse("2022-03-30T15:36:00.000Z") + index.seconds,
+                expireAfterMs = 1.seconds.inWholeMilliseconds
+            )
+        }
+        messageDAO.insertOrIgnoreMessages(listOf(target) + selfDeleting)
+
+        // when
+        val targetPosition = messageDAO.getSearchedConversationMessagePosition(conversationEntity1.id, target.id)
+        val selfDeletingPosition = messageDAO.getSearchedConversationMessagePosition(conversationEntity1.id, selfDeleting.first().id)
+
+        // then
+        assertEquals(101, targetPosition)
+        assertEquals(100, selfDeletingPosition)
+    }
+
+    @Test
     fun givenMessagesAreInserted_whenGettingLastMessagesByConversations_thenOnlyLastMessagesForEachConversationAreReturned() = runTest {
         // given
         insertInitialData()
@@ -2390,38 +2424,6 @@ class MessageDAOTest : BaseDatabaseTest() {
         // then
         assertEquals(currentLastVisibleMessage.id, resultBefore[conversationEntity1.id]?.id)
         assertEquals(newerAssetMessageCompleteData.id, resultAfter[conversationEntity1.id]?.id)
-    }
-
-    @Test
-    fun givenUnverifiedWarningMessageIsInserted_whenInsertingSuchMessageAgain_thenOnlyIdIsUpdatedNoNewMessages() = runTest {
-        // given
-        insertInitialData()
-        userDAO.upsertUser(userEntity1.copy(selfUserId))
-        val message0 = newSystemMessageEntity(
-            conversationId = conversationEntity2.id,
-            id = "local_id_id_0",
-            content = MessageEntityContent.ConversationStartedUnverifiedWarning,
-            date = Instant.parse("2022-03-30T15:36:00.000Z"),
-            senderUserId = selfUserId
-        )
-        val message1 = message0.copy(
-            id = "local_id_id_1",
-            date = Instant.parse("2022-03-30T15:46:00.000Z")
-        )
-        messageDAO.insertOrIgnoreMessages(listOf(message0))
-
-        // when
-        messageDAO.insertOrIgnoreMessage(message1)
-
-        // then
-        val result = messageDAO.getMessagesByConversationAndVisibility(
-            conversationId = conversationEntity2.id,
-            limit = 10,
-            offset = 0
-        ).first()
-        assertEquals(1, result.size)
-        assertEquals(message1.id, result[0].id)
-        assertEquals(message0.date, result[0].date)
     }
 
     @Test

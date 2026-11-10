@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.PagedData
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -68,11 +69,16 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import okio.FileSystem
+import okio.ForwardingFileSystem
+import okio.IOException
+import okio.Path
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertSame
@@ -214,8 +220,54 @@ class CreateMPBackupUseCaseTest {
         assertSame(failure, assertIs<CoreFailure.Unknown>(result.coreFailure).rootCause)
     }
 
+    @Test
+    fun givenEarlierCreateWorkdirs_whenCreatingBackup_thenAllEarlierCreateWorkdirsAreDeleted() = runTest {
+        val (arrangement, useCase) = Arrangement().withExporter().withMessages(listOf(TEXT_MESSAGE)).arrange()
+        val cacheRoot = arrangement.kaliumFileSystem.rootCachePath
+        val earlierWorkdirs = listOf(cacheRoot / "first-create-workdir", cacheRoot / "second-create-workdir")
+        earlierWorkdirs.forEach {
+            arrangement.fakeFileSystem.createDirectories(it)
+            arrangement.fakeFileSystem.write(it / "backup.zip") { writeUtf8("data") }
+        }
+
+        val result = useCase("") {}
+
+        assertTrue(result is CreateBackupResult.Success)
+        earlierWorkdirs.forEach { assertFalse(arrangement.fakeFileSystem.exists(it)) }
+    }
+
+    @Test
+    fun givenUnrelatedCacheEntries_whenCreatingBackup_thenTheyAreKept() = runTest {
+        val (arrangement, useCase) = Arrangement().withExporter().withMessages(listOf(TEXT_MESSAGE)).arrange()
+        val unrelatedFile = arrangement.kaliumFileSystem.rootCachePath / "other-file.zip"
+        arrangement.fakeFileSystem.write(unrelatedFile) { writeUtf8("data") }
+
+        useCase("") {}
+
+        assertTrue(arrangement.fakeFileSystem.exists(unrelatedFile))
+    }
+
+    @Test
+    fun givenEarlierCreateWorkdirCannotBeDeleted_whenCreatingBackup_thenBackupStillSucceeds() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withExporter()
+            .withMessages(listOf(TEXT_MESSAGE))
+            .withFailingDeletes()
+            .arrange()
+        arrangement.fakeFileSystem.createDirectories(arrangement.kaliumFileSystem.rootCachePath / "earlier-create-workdir")
+
+        val result = useCase("") {}
+
+        assertTrue(result is CreateBackupResult.Success)
+    }
+
     private inner class Arrangement {
 
+        val fakeFileSystem = FakeFileSystem()
+        private var failingDeletes = false
+
+        fun withFailingDeletes() = apply { failingDeletes = true }
+        val kaliumFileSystem = FakeKaliumFileSystem(fakeFileSystem)
         val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         val exporter = mock<BackupExporter>(mode = MockMode.autoUnit)
         val exporterProvider = mock<MPBackupExporterProvider>(mode = MockMode.autoUnit)
@@ -246,7 +298,10 @@ class CreateMPBackupUseCaseTest {
 
             override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> = Unit.right()
 
-            override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
+            override suspend fun insertMessages(
+                messages: List<Message.Standalone>,
+                conversationsWithReadDate: Set<ConversationId>,
+            ): Either<CoreFailure, Unit> = Unit.right()
 
             override suspend fun insertReactions(reactions: List<MessageReactions>): Either<CoreFailure, Unit> = Unit.right()
         }
@@ -296,8 +351,8 @@ class CreateMPBackupUseCaseTest {
             return this to CreateMPBackupUseCaseImpl(
                 backupRepository = backupRepository,
                 userRepository = userRepository,
-                kaliumFileSystem = FakeKaliumFileSystem(),
-                fileSystem = FakeFileSystem(),
+                kaliumFileSystem = kaliumFileSystem,
+                fileSystem = if (failingDeletes) FailingDeleteFileSystem(fakeFileSystem) else fakeFileSystem,
                 exporterProvider = exporterProvider,
                 dispatchers = dispatchers
             )
@@ -355,4 +410,8 @@ class CreateMPBackupUseCaseTest {
             )
         )
     }
+}
+
+private class FailingDeleteFileSystem(delegate: FileSystem) : ForwardingFileSystem(delegate) {
+    override fun delete(path: Path, mustExist: Boolean) = throw IOException("delete failed")
 }

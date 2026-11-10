@@ -6292,6 +6292,10 @@ final class com.wire.kalium.logic.feature/AccountBusyException : kotlin/IllegalS
         final fun <get-holder>(): kotlin/String? // com.wire.kalium.logic.feature/AccountBusyException.holder.<get-holder>|<get-holder>(){}[0]
 }
 
+final class com.wire.kalium.logic.feature/AccountSessionUnavailableException : kotlin/IllegalStateException { // com.wire.kalium.logic.feature/AccountSessionUnavailableException|null[0]
+    constructor <init>() // com.wire.kalium.logic.feature/AccountSessionUnavailableException.<init>|<init>(){}[0]
+}
+
 final class com.wire.kalium.logic.feature/LocalVideoPreviewAttachment { // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment|null[0]
     final suspend fun detach() // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment.detach|detach(){}[0]
     final suspend fun startCapture() // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment.startCapture|startCapture(){}[0]
@@ -6623,6 +6627,8 @@ final class com.wire.kalium.logic/CoreLogic : com.wire.kalium.logic/CoreLogicCom
     final fun getSessionScope(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature/UserSessionScope // com.wire.kalium.logic/CoreLogic.getSessionScope|getSessionScope(com.wire.kalium.logic.data.id.QualifiedID){}[0]
     final suspend fun prepareSessionForNotifications(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.feature/UserSessionScope): com.wire.kalium.common.functional/Either<com.wire.kalium.common.error/CoreFailure, kotlin/Unit> // com.wire.kalium.logic/CoreLogic.prepareSessionForNotifications|prepareSessionForNotifications(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.feature.UserSessionScope){}[0]
     final suspend fun releaseSessionScope(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic/CoreLogic.releaseSessionScope|releaseSessionScope(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    final suspend fun resumeSessionScope(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature/UserSessionScope // com.wire.kalium.logic/CoreLogic.resumeSessionScope|resumeSessionScope(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    final suspend fun resumeSuspendedSessionScopes() // com.wire.kalium.logic/CoreLogic.resumeSuspendedSessionScopes|resumeSuspendedSessionScopes(){}[0]
     final suspend fun suspendSessionScope(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic/CoreLogic.suspendSessionScope|suspendSessionScope(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 

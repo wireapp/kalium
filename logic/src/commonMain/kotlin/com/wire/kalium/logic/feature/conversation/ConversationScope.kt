@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -445,10 +444,7 @@ public class ConversationScope internal constructor(
         TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
 
     internal val typingIndicatorIncomingRepository =
-        TypingIndicatorIncomingRepositoryImpl(
-            ConcurrentMutableMap(),
-            userPropertyRepository
-        )
+        TypingIndicatorIncomingRepositoryImpl(userPropertyRepository)
 
     internal val typingIndicatorOutgoingRepository =
         TypingIndicatorOutgoingRepositoryImpl(

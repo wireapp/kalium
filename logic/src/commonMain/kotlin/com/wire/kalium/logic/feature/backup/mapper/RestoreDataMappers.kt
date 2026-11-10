@@ -37,7 +37,8 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import kotlin.time.Clock
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import kotlin.time.Instant
 
 internal fun BackupQualifiedId.toQualifiedIdOrNull(context: String): QualifiedID? {
     if (domain.isBlank()) {
@@ -87,7 +88,8 @@ internal fun BackupConversation.toConversation(): Conversation? = id.toQualified
         removedBy = null,
         lastNotificationDate = null,
         lastModifiedDate = lastModifiedTime?.instant,
-        lastReadDate = Clock.System.now(),
+        // Without a saved read time, restore falls back to the newest restored message (BackupRepository.insertMessages).
+        lastReadDate = lastReadTime?.instant ?: Instant.UNIX_FIRST_DATE,
         access = emptyList(),
         accessRole = emptyList(),
         creatorId = null,

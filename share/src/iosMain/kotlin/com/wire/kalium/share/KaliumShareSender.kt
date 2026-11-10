@@ -21,19 +21,23 @@ package com.wire.kalium.share
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
 import com.wire.kalium.logic.sync.receiving.NotificationProcessor
+import com.wire.kalium.logic.sync.receiving.PendingMessageAlerts
 import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
 import com.wire.kalium.logic.sync.receiving.ReceivedMessageResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
 import com.wire.kalium.logic.sync.receiving.ReceivingOptions
 import com.wire.kalium.logic.sync.receiving.cryptoTransactions
+import com.wire.kalium.logic.sync.receiving.deliverMessageAlerts
 import com.wire.kalium.logic.sync.receiving.holdLive
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -171,14 +175,18 @@ public data class KaliumShareResult(
     public val messageId: String? = null,
     /** Diagnostic code only; never contains account data or message content. */
     public val failureReason: String? = null,
-    /**
-     * Unnotified message alerts, oldest first. The backend sent no push for events delivered over the
-     * open socket, so the host posts each; Kalium has already marked them notified.
-     */
-    public val alerts: List<KaliumShareAlert> = emptyList(),
     /** Events may have arrived that could not be processed in time; the host shows a generic alert. */
     public val presentGenericAlert: Boolean = false,
 )
+
+/**
+ * Posts a message alert using only the supplied alert and native notification APIs, never account resources, under
+ * the identity the app and the notification extension use for the message. Cancellation may release the account
+ * before this callback completes; the account's next owner then posts the alert again.
+ */
+public interface KaliumShareMessageDelivery {
+    public suspend fun deliver(userValue: String, userDomain: String, alert: KaliumShareAlert): Boolean
+}
 
 /** Text and names are present only when preview is allowed. */
 public data class KaliumShareAlert(
@@ -189,15 +197,20 @@ public data class KaliumShareAlert(
     public val conversationName: String?,
     public val senderName: String?,
     public val isGroupConversation: Boolean,
+    /** Labels a picture, file, ping, location or missed call as the notification extension does. */
+    public val messageKind: NotificationMessageKind? = null,
 )
 
 /**
  * Sends shared text and files from the share extension through the app's sender (ADR 12). It uploads files
  * first, then holds the account and keeps it live over the WebSocket while it sends, then processes what
- * arrived and returns unnotified alerts.
+ * arrived and posts unnotified message alerts through [delivery] before it releases the account.
  */
 @Suppress("TooManyFunctions") // The two draft operations use the same exclusive runtime as sending.
-public class KaliumShareSender(private val configuration: KaliumShareConfiguration) {
+public class KaliumShareSender(
+    private val configuration: KaliumShareConfiguration,
+    private val delivery: KaliumShareMessageDelivery,
+) {
 
     /** Completes once another process wants the account; see [yieldAccount]. */
     private val accountWanted = Job()
@@ -205,8 +218,8 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
     /**
      * Another process needs the account (ADR 12): a [send] that has not stored a message yet stops uploading or
      * catching up, releases the account and returns [KaliumShareStatus.OPEN_APP] with `ACCOUNT_WANTED`, for the host
-     * to hand the share to the app; its alerts are still owed. A send that stores messages finishes within its budget.
-     * Later sends return `ACCOUNT_WANTED` without taking the account.
+     * to hand the share to the app; it still posts its alerts. A send that stores messages finishes within its budget.
+     * A [prepareDraft] upload stops too. Later sends and drafts return `ACCOUNT_WANTED` without taking the account.
      */
     public fun yieldAccount() {
         accountWanted.complete()
@@ -244,14 +257,14 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         if (invalid != null) return failure(invalid)
         // The account is another process's now; taking it again would keep that process waiting.
         if (accountWanted.isCompleted) return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = ACCOUNT_WANTED)
-        // A result produced before the budget ends survives a slow runtime close: its message alerts are marked notified.
+        // A result produced before the budget ends survives a slow or failed runtime close: its message alerts are marked notified.
         var produced: KaliumShareResult? = null
         return try {
             val result = use(UserId(request.userValue, request.userDomain)) { runtime ->
                 uploadAndShare(runtime, request, files.filterNotNull(), progress) { produced = it }
             }
             when (result) {
-                is Either.Left -> KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = result.value.name)
+                is Either.Left -> produced ?: KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = result.value.name)
                 is Either.Right -> result.value
             }
         } catch (cancelled: CancellationException) {
@@ -262,12 +275,18 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         }
     }
 
-    /** Uploads one Cells draft, releasing the account before the user continues composing. */
+    /**
+     * Uploads one Cells draft, releasing the account before the user continues composing. Returns `ACCOUNT_WANTED`
+     * when the host called [yieldAccount]; the draft is then left for the app to prepare.
+     */
+    @Suppress("NestedBlockDepth") // Keep the yield guard before taking the account.
     @Throws(CancellationException::class)
     public suspend fun prepareDraft(userValue: String, userDomain: String, draftId: String): String? = try {
         val userId = UserId(userValue, userDomain)
         val store = ShareDraftStore(configuration.rootPath, userId)
-        val result = use(userId) { runtime ->
+        var wanted = false
+        // The account is another process's now; taking it again would keep that process waiting.
+        val result = if (accountWanted.isCompleted) Either.Right(ACCOUNT_WANTED) else use(userId) { runtime ->
             if (runtime.database.appLockEnforcedByTeam(options().fileRestrictionState)) return@use APP_LOCK
             val record = store.read(draftId) ?: return@use "DRAFT_UNAVAILABLE"
             if (runtime.database.conversationDAO.getConversationDetailsById(record.conversationId.toDao())?.wireCell == null) {
@@ -276,27 +295,10 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             prepareShareDraft(
                 store,
                 draftId,
-                upload = { draft, progress ->
-                    val uploaded = runtime.uploadSharedFiles(
-                        draft.conversationId,
-                        listOf(draft.file),
-                        options().fileRestrictionState,
-                        progress
-                    )
-                    when (uploaded) {
-                        is Either.Left -> Either.Left(uploaded.value.reason ?: "UPLOAD_FAILED")
-                        is Either.Right -> {
-                            val item = uploaded.value.singleOrNull() as? ShareItem.Cells
-                            if (item == null) Either.Left("UNAVAILABLE") else {
-                                val asset = item.attachments.single()
-                                Either.Right(SharedDraftAsset(asset.id, asset.versionId, requireNotNull(asset.assetPath), item.cellId))
-                            }
-                        }
-                    }
-                },
+                upload = { draft, progress -> runtime.uploadDraft(draft, progress).onFailure { wanted = it == ACCOUNT_WANTED } },
                 discard = { runtime.discardSharedDraft(it) },
             )
-            null
+            ACCOUNT_WANTED.takeIf { wanted }
         }
         when (result) {
             is Either.Left -> result.value.name
@@ -307,6 +309,26 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
     } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
         com.wire.kalium.common.logger.kaliumLogger.w("Share draft operation failed", failure)
         "DRAFT_FAILED"
+    }
+
+    /** Like a [send]'s uploads, stops when the host calls [yieldAccount]; the draft's own timeout bounds it. */
+    private suspend fun AppleAccountRuntime.uploadDraft(
+        draft: ShareDraftRecord,
+        progress: (Long, Long) -> Unit,
+    ): Either<String, SharedDraftAsset> {
+        val uploaded = yieldingUploads(Duration.INFINITE, accountWanted, discard = { discardSharedDrafts(it) }) {
+            uploadSharedFiles(draft.conversationId, listOf(draft.file), options().fileRestrictionState, progress)
+        }
+        return when (uploaded) {
+            is Either.Left -> Either.Left(uploaded.value.reason ?: "UPLOAD_FAILED")
+            is Either.Right -> {
+                val item = uploaded.value.singleOrNull() as? ShareItem.Cells
+                if (item == null) Either.Left("UNAVAILABLE") else {
+                    val asset = item.attachments.single()
+                    Either.Right(SharedDraftAsset(asset.id, asset.versionId, requireNotNull(asset.assetPath), item.cellId))
+                }
+            }
+        }
     }
 
     @Throws(CancellationException::class)
@@ -362,15 +384,20 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             val budget = request.budgetMilliseconds.milliseconds
             val started = TimeSource.Monotonic.markNow()
             val sending = ShareSending(runtime, runtime.cryptoTransactions(), options().fileRestrictionState)
+            var handedOff = false
             // Messages stored before the deadline stay in Wire as failed, and the result says so.
             try {
                 withTimeoutOrNull(budget) {
-                    share(runtime, request, sending, uploads, budget, started).also(produced)
+                    share(runtime, request, sending, uploads, budget, started).also {
+                        produced(it)
+                        handedOff = it.failureReason == ACCOUNT_WANTED
+                    }
                 } ?: failure("TIMEOUT").copy(presentGenericAlert = true, messageId = sending.firstStoredId)
             } finally {
                 // Once stored, the message owns the drafts and the app can retry publication.
-                if (sending.firstStoredId == null) runtime.discardSharedDrafts(uploads)
-                draftStore.consume(request.preparedDraftIds)
+                draftStore.endSend(request.preparedDraftIds, stored = sending.firstStoredId != null, handedOff) {
+                    runtime.discardSharedDrafts(uploads)
+                }
             }
         }
     }
@@ -416,6 +443,11 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         }
         val preference = runtime.readMessageContentPreference()
         val alerts = unnotified.map { alert(it, request.showMessageContent, preference) }
+        // A slow host must not turn a decided send or handoff into a timeout: alerts it has not accepted by this
+        // soft deadline stay pending for the account's next owner.
+        withTimeoutOrNull(budget * DELIVER_SHARE - started.elapsedNow()) {
+            delivery.deliverAll(runtime.prepared.userId, alerts, UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).pending)
+        }
         // Events may remain unpresented when the socket ended on its own after going live, or when processing
         // deferred or left them for the app. A hold that never went live sent nothing and asks for no alert.
         val unpresented = held.started == CatchUpOutcome.LIVE && held.closed != CatchUpOutcome.LIVE ||
@@ -425,7 +457,6 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             status = outcome.status.toKalium(),
             messageId = outcome.messageId,
             failureReason = outcome.reason,
-            alerts = alerts,
             presentGenericAlert = unpresented && alerts.isEmpty(),
         )
     }
@@ -500,6 +531,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             conversationName = message.conversationName?.takeIf { canPreview },
             senderName = message.senderName?.takeIf { canPreview },
             isGroupConversation = canPreview && message.isGroupConversation,
+            messageKind = message.messageKind?.takeIf { canPreview },
         )
     }
 
@@ -532,16 +564,23 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
 
         private const val QUEUE_END = "QUEUE_END"
 
-        // Soft deadlines: connect, catch up, send, then close and process what arrived.
+        // Soft deadlines: connect, catch up, send, then close and process what arrived, and post its alerts.
         private const val CONNECT_SHARE = 0.25
         private const val SEND_BY_SHARE = 0.45
         private const val SENT_BY_SHARE = 0.7
         private const val PROCESS_SHARE = 0.85
+        private const val DELIVER_SHARE = 0.95
     }
 }
 
 /** The app sends at most this many files at once. */
 internal const val MAX_ATTACHMENTS = 20
+
+/** Acknowledges each alert the host accepted; any other stays pending, and the account's next owner posts it. */
+internal suspend fun KaliumShareMessageDelivery.deliverAll(user: UserId, alerts: List<KaliumShareAlert>, pending: PendingMessageAlerts) =
+    deliverMessageAlerts(alerts, { deliver(user.value, user.domain, it) }) {
+        pending.acknowledge(listOf(NotificationMessageKey(it.messageId, QualifiedIDEntity(it.conversationValue, it.conversationDomain))))
+    }
 
 private const val APP_LOCK = "APP_LOCK"
 

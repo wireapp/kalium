@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -106,6 +107,19 @@ class RestoreMPBackupUseCaseTest {
     }
 
     @Test
+    fun givenConversationWithBackupReadDate_whenRestoring_thenMessagesKeepThatReadDate() = runTest {
+        val captured = mutableListOf<Set<ConversationId>>()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
+            .withSuccessImport()
+            .captureConversationsWithReadDate(captured)
+            .arrange()
+
+        assertEquals(RestoreBackupResult.Success, useCase(arrangement.storedPath, null) {})
+
+        assertEquals(listOf(setOf(TestConversation.CONVERSATION.id)), captured)
+    }
+
+    @Test
     fun givenACorrectNonEncryptedBackupFile_whenRestoring_thenTheBackupIsRestoredSuccessfully() = runTest {
 
         val (arrangement, useCase) = Arrangement(backgroundScope)
@@ -118,7 +132,7 @@ class RestoreMPBackupUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any(), any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
         verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
         assertEquals(listOf(0.25f, 0.5f, 0.75f, 1f), progress)
@@ -148,7 +162,7 @@ class RestoreMPBackupUseCaseTest {
         assertEquals(listOf(0.25f, 0.5f, 0.75f, 1f), progress)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any(), any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
         verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
         assertFalse(arrangement.fileSystem.exists(arrangement.importerWorkFile))
@@ -213,7 +227,7 @@ class RestoreMPBackupUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any(), any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
     }
 
@@ -385,7 +399,7 @@ class RestoreMPBackupUseCaseTest {
         assertEquals(0, arrangement.refreshCalls)
         assertTrue(restoreJob.isCancelled)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
-        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any(), any()) }
     }
 
     @Test
@@ -411,7 +425,7 @@ class RestoreMPBackupUseCaseTest {
         runCurrent()
         assertEquals(0, arrangement.refreshCalls)
         assertTrue(restoreJob.isCancelled)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any(), any()) }
         verify(VerifyMode.exactly(1)) { arrangement.messagesPager.nextPage() }
         verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
     }
@@ -469,7 +483,7 @@ class RestoreMPBackupUseCaseTest {
         val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().withMessageWriteFailure().arrange()
         val result = useCase(arrangement.storedPath, null) {}
         assertTrue(result is RestoreBackupResult.Failure)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any(), any()) }
         verify(VerifyMode.exactly(1)) { arrangement.messagesPager.nextPage() }
         verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
         runCurrent()
@@ -485,7 +499,7 @@ class RestoreMPBackupUseCaseTest {
             result,
         )
         verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertConversations(any()) }
-        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any(), any()) }
         verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
         runCurrent()
         assertEquals(0, arrangement.refreshCalls)
@@ -496,7 +510,7 @@ class RestoreMPBackupUseCaseTest {
         val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().withConversationWriteFailure().arrange()
         val result = useCase(arrangement.storedPath, null) {}
         assertTrue(result is RestoreBackupResult.Failure)
-        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any(), any()) }
         verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
         runCurrent()
         assertEquals(0, arrangement.refreshCalls)
@@ -653,7 +667,7 @@ class RestoreMPBackupUseCaseTest {
             messagesInsertStubConfigured = true
             messagePageCount = 2
             var attempts = 0
-            everySuspend { backupRepository.insertMessages(any()) } calls {
+            everySuspend { backupRepository.insertMessages(any(), any()) } calls {
                 if (attempts++ == 0) StorageFailure.DataNotFound.left() else Unit.right()
             }
         }
@@ -750,10 +764,19 @@ class RestoreMPBackupUseCaseTest {
 
         suspend fun captureInsertedMessages(captured: MutableList<List<Message.Standalone>>) = apply {
             messagesInsertStubConfigured = true
-            everySuspend { backupRepository.insertMessages(any()) } calls { invocation ->
+            everySuspend { backupRepository.insertMessages(any(), any()) } calls { invocation ->
                 @Suppress("UNCHECKED_CAST")
                 val insertedMessages = invocation.args[0] as List<Message.Standalone>
                 captured.add(insertedMessages)
+                Unit.right()
+            }
+        }
+
+        suspend fun captureConversationsWithReadDate(captured: MutableList<Set<ConversationId>>) = apply {
+            messagesInsertStubConfigured = true
+            everySuspend { backupRepository.insertMessages(any(), any()) } calls { invocation ->
+                @Suppress("UNCHECKED_CAST")
+                captured.add(invocation.args[1] as Set<ConversationId>)
                 Unit.right()
             }
         }
@@ -782,7 +805,7 @@ class RestoreMPBackupUseCaseTest {
                 }
             }
             if (!messagesInsertStubConfigured) {
-                everySuspend { backupRepository.insertMessages(any()) } calls {
+                everySuspend { backupRepository.insertMessages(any(), any()) } calls {
                     messagesInsertAction()
                     Unit.right()
                 }

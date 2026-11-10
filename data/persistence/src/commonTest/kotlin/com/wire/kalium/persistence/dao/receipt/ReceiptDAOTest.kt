@@ -168,6 +168,19 @@ class ReceiptDAOTest : BaseDatabaseTest() {
         )
     }
 
+    @Test
+    fun givenReceiptFromUnknownSender_whenInserting_thenSkipsItWithoutFailing() = runTest {
+        insertTestData()
+
+        receiptDAO.insertReceipts(
+            newUserEntity("unknownUser").id, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.READ,
+            listOf(TEST_MESSAGE.id)
+        )
+
+        val result = receiptDAO.observeDetailedReceiptsForMessage(TEST_CONVERSATION.id, TEST_MESSAGE.id, ReceiptTypeEntity.READ).first()
+        assertTrue(result.isEmpty())
+    }
+
     private suspend fun insertTestData() {
         userDAO.upsertUser(SELF_USER)
         userDAO.upsertUser(OTHER_USER)

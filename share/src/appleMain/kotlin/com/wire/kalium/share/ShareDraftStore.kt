@@ -92,6 +92,16 @@ internal class ShareDraftStore(rootPath: String, userId: UserId) {
     private fun requireId(id: String) { require(Uuid.parseOrNull(id) != null) }
 }
 
+/**
+ * Ends a send's use of its uploads. A stored message owns them. When the app takes the share over before anything was
+ * stored, it sends the prepared drafts, so they stay with their records; it uploads other files again, so those go.
+ */
+internal suspend fun ShareDraftStore.endSend(preparedIds: List<String>, stored: Boolean, handedOff: Boolean, discard: suspend () -> Unit) {
+    if (handedOff && preparedIds.isNotEmpty()) return
+    if (!stored) discard()
+    consume(preparedIds)
+}
+
 @Serializable
 internal data class ShareDraftRecord(
     @SerialName("conversationValue") val conversationValue: String,
@@ -156,7 +166,8 @@ internal suspend fun prepareShareDraft(
                     store.write(
                         id,
                         when (result) {
-                            is Either.Left -> record.copy(failure = result.value)
+                            // Another process wants the account: the draft stays as it was, for the app to prepare.
+                            is Either.Left -> if (result.value == ACCOUNT_WANTED) record else record.copy(failure = result.value)
                             is Either.Right -> requireNotNull(uploaded)
                         }
                     )

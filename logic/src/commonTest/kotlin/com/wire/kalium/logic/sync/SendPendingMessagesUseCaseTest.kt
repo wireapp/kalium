@@ -353,7 +353,22 @@ class SendPendingMessagesUseCaseTest {
         }
     }
 
-    private class Arrangement {
+    @Test
+    fun givenPendingMessagesEnabled_whenSendingEditLosesNetwork_thenKeepPending() = runTest {
+        val message = TEXT_MESSAGE.copy(editStatus = Message.EditStatus.Edited(TEST_DATE))
+        val (arrangement, useCase) = Arrangement(pendingMessagesEnabled = true)
+            .withPendingMessages(Either.Right(listOf(message)))
+            .withSendMessageResult(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            .arrange()
+
+        useCase()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }
+    }
+
+    private class Arrangement(private val pendingMessagesEnabled: Boolean = false) {
         val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
         val sendPendingAssetMessage = mock<SendPendingAssetMessageUseCase>(mode = MockMode.autoUnit)
@@ -385,6 +400,7 @@ class SendPendingMessagesUseCaseTest {
             userId = USER_ID,
             sendPendingAssetMessage = sendPendingAssetMessage,
             messageSendFailureHandler = messageSendFailureHandler,
+            pendingMessagesEnabled = pendingMessagesEnabled,
             clock = object : Clock {
                 override fun now() = TEST_DATE
             },

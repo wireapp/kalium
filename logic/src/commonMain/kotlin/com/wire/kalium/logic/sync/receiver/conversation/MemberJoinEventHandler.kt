@@ -96,7 +96,6 @@ internal class MemberJoinEventHandlerImpl(
                 conversationRepository.getConversationById(event.conversationId).onSuccess { conversation ->
                     when (conversation.type) {
                         Conversation.Type.OneOnOne -> {
-                            addUnverifiedWarningSystemMessageIfNeeded(event)
                             if (event.members.size == 1) {
                                 userRepository.updateActiveOneOnOneConversationIfNotSet(event.members.first().id, event.conversationId)
                             }
@@ -107,7 +106,6 @@ internal class MemberJoinEventHandlerImpl(
                                 addCellAccessSystemMessageIfNeeded(event, conversation)
                             }
                             addMemberAddedSystemMessage(event)
-                            addUnverifiedWarningSystemMessageIfNeeded(event)
                         }
 
                         Conversation.Type.Self,
@@ -122,13 +120,6 @@ internal class MemberJoinEventHandlerImpl(
             }.onFailure {
                 eventLogger.logFailure(it)
             }
-    }
-
-    private suspend fun addUnverifiedWarningSystemMessageIfNeeded(event: Event.Conversation.MemberJoin) {
-        if (event.members.any { it.id == selfUserId }) { // if self user is being added to group
-            newGroupConversationSystemMessagesCreator
-                .conversationStartedUnverifiedWarning(event.conversationId, event.dateTime)
-        }
     }
 
     /**
