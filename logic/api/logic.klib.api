@@ -6292,6 +6292,10 @@ final class com.wire.kalium.logic.feature/AccountBusyException : kotlin/IllegalS
         final fun <get-holder>(): kotlin/String? // com.wire.kalium.logic.feature/AccountBusyException.holder.<get-holder>|<get-holder>(){}[0]
 }
 
+final class com.wire.kalium.logic.feature/AccountSessionUnavailableException : kotlin/IllegalStateException { // com.wire.kalium.logic.feature/AccountSessionUnavailableException|null[0]
+    constructor <init>() // com.wire.kalium.logic.feature/AccountSessionUnavailableException.<init>|<init>(){}[0]
+}
+
 final class com.wire.kalium.logic.feature/LocalVideoPreviewAttachment { // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment|null[0]
     final suspend fun detach() // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment.detach|detach(){}[0]
     final suspend fun startCapture() // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment.startCapture|startCapture(){}[0]

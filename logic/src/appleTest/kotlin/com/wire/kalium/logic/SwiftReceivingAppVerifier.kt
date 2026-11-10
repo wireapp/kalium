@@ -97,6 +97,8 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                 ),
                 useInMemoryStorage = false,
             )
+            val disabledMLS = account["mlsSettingsEvents"]?.jsonPrimitive?.boolean == true &&
+                account.getValue("mls").jsonPrimitive.boolean && !account.getValue("mlsConfiguredEnabled").jsonPrimitive.boolean
             try {
                 // Bootstrap account metadata under ownership using the app's encrypted global store.
                 // CoreLogic creates the key; close this bootstrap connection before opening the account.
@@ -886,15 +888,17 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                     println("APP_PROPOSAL_SCHEDULER_PASSED")
                     println("APP_PROPOSAL_RESPONSE_CONSUMED")
                 }
+                if (disabledMLS) {
+                    // The host prepares whenever sync is live; preparation cannot re-certify a disabled MLS client.
+                    assertIs<Either.Left<*>>(logic.prepareSessionForNotifications(user, session))
+                }
                 println("APP_AFTER_SWIFT_PASSED ${if (mls) "MLS" else "Proteus"}")
             } finally {
                 logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
                 logic.releaseSessionScope(user)
             }
-            val disabledMLS = account["mlsSettingsEvents"]?.jsonPrimitive?.boolean == true &&
-                account.getValue("mls").jsonPrimitive.boolean && !account.getValue("mlsConfiguredEnabled").jsonPrimitive.boolean
             if (disabledMLS) {
-                // The app's ordinary release cannot re-certify a disabled MLS client.
+                // Readiness revoked by the failed preparation stays revoked after release.
                 repeat(2) {
                     assertEquals(Either.Left(com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure.NOT_PREPARED),
                         AppleAccountRuntime.use(root, user, keychain, "disabled-mls-reopen", emptyMap()) {
