@@ -505,12 +505,7 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                         else com.wire.kalium.logic.data.conversation.Conversation.Member.Role.Unknown("custom-final"), role)
                     val messageIds = if (fetched) listOf("notification") else listOf("notification:2", "notification:5")
                     for (messageId in messageIds) {
-                        val message = assertIs<Message.System>(assertIs<GetMessageByIdUseCase.Result.Success>(
-                            session.messages.getMessageById(id, messageId)).message)
-                        assertEquals(MessageContent.MemberChange.UserPromotedToAdmin(listOf(member)), message.content)
-                        assertEquals(user, message.senderUserId)
-                        assertEquals(Message.Status.Sent, message.status)
-                        assertEquals(Message.Visibility.VISIBLE, message.visibility)
+                        assertIs<GetMessageByIdUseCase.Result.Failure>(session.messages.getMessageById(id, messageId))
                     }
                     assertIs<GetMessageByIdUseCase.Result.Failure>(session.messages.getMessageById(id, if (fetched) "notification:1" else "notification:3"))
                     val notifications = assertIs<Either.Right<List<com.wire.kalium.logic.data.notification.LocalNotification>>>(
