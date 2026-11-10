@@ -1,0 +1,1 @@
+Apple incoming calls cancelled during notification synchronization now publish a terminal presentation even when AVS suppresses the incoming callback. This lets the host close a previously reported CallKit call promptly. Matching requires an unambiguous one-to-one session and sender; existing native call state and group calls are unchanged. Public API and ABI are unchanged.
