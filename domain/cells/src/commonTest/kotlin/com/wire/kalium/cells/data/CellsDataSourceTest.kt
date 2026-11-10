@@ -31,7 +31,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
-import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
@@ -173,7 +172,7 @@ class CellsDataSourceTest {
     @Test
     fun givenAwsClientFails_whenDownloadingFile_thenFailureIsReturned() = runTest {
         val (_, dataSource) = Arrangement()
-            .withDownloadFailure(IOException("connection reset"))
+            .withDownloadFailure(IllegalStateException("access denied"))
             .arrange()
 
         val result = dataSource.downloadFile(TARGET_PATH, CELL_PATH) {}
@@ -184,7 +183,7 @@ class CellsDataSourceTest {
     @Test
     fun givenAwsClientFails_whenDownloadingFile_thenPartAndTargetFilesAreNotLeftBehind() = runTest {
         val (arrangement, dataSource) = Arrangement()
-            .withDownloadFailure(IOException("connection reset"))
+            .withDownloadFailure(IllegalStateException("access denied"))
             .arrange()
 
         dataSource.downloadFile(TARGET_PATH, CELL_PATH) {}
@@ -197,7 +196,7 @@ class CellsDataSourceTest {
     fun givenAwsClientFailsAfterPartialWrite_whenDownloadingFile_thenExistingTargetFileIsPreserved() = runTest {
         val (arrangement, dataSource) = Arrangement()
             .withExistingFile(TARGET_PATH, "previous content")
-            .withDownloadWriting("partial") { throw IOException("connection reset") }
+            .withDownloadWriting("partial") { throw IllegalStateException("access denied") }
             .arrange()
 
         val result = dataSource.downloadFile(TARGET_PATH, CELL_PATH) {}
