@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -49,7 +50,8 @@ internal sealed class RefillKeyPackagesResult {
  * pending MLS conversations are flagged to be joined by external commit, before uploading, so the flag
  * survives a failed upload or a restart.
  *
- * Each batch runs in its own MLS transaction, so this must not be called from inside another crypto transaction.
+ * Each batch is generated in its own MLS transaction and uploaded only after it commits, so the backend never gets
+ * key packages whose private keys could still be rolled back. Don't call this from inside another crypto transaction.
  */
 internal interface RefillKeyPackagesUseCase {
 
@@ -94,9 +96,9 @@ internal class RefillKeyPackagesUseCaseImpl(
     private suspend fun uploadInBatches(clientId: ClientId, amount: Int): Either<CoreFailure, Unit> {
         val batchSize = keyPackageLimitsProvider.refillAmount()
         return (0 until amount step batchSize).toList().foldToEitherWhileRight(Unit) { offset, _ ->
-            transactionProvider.mlsTransaction("RefillKeyPackages") { mlsContext ->
-                keyPackageRepository.uploadNewKeyPackages(mlsContext, clientId, minOf(batchSize, amount - offset))
-            }
+            transactionProvider.mlsTransaction("GenerateKeyPackages") { mlsContext ->
+                wrapMLSRequest { mlsContext.generateKeyPackages(minOf(batchSize, amount - offset)) }
+            }.flatMap { keyPackages -> keyPackageRepository.uploadKeyPackages(clientId, keyPackages) }
         }
     }
 
