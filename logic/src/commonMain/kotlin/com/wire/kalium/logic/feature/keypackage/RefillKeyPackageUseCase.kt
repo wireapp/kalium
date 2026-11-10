@@ -33,8 +33,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import kotlinx.coroutines.delay
-import kotlin.time.Duration.Companion.milliseconds
 
 internal sealed class RefillKeyPackagesResult {
 
@@ -96,7 +94,6 @@ internal class RefillKeyPackagesUseCaseImpl(
     private suspend fun uploadInBatches(clientId: ClientId, amount: Int): Either<CoreFailure, Unit> {
         val batchSize = keyPackageLimitsProvider.refillAmount()
         return (0 until amount step batchSize).toList().foldToEitherWhileRight(Unit) { offset, _ ->
-            if (offset > 0) delay(BATCH_DELAY)
             transactionProvider.mlsTransaction("RefillKeyPackages") { mlsContext ->
                 keyPackageRepository.uploadNewKeyPackages(mlsContext, clientId, minOf(batchSize, amount - offset))
             }
@@ -110,8 +107,4 @@ internal class RefillKeyPackagesUseCaseImpl(
         } else {
             Either.Right(Unit)
         }
-
-    private companion object {
-        val BATCH_DELAY = 250.milliseconds
-    }
 }
