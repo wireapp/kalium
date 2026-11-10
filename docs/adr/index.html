@@ -1587,6 +1587,16 @@ it stays cancellable, also when reopening after a background release, and gives 
 after 15 seconds with <code>AccountBusyException</code>; the app keeps what it shows and retries.
 The holder writes its process name, pid and time into the lock file body; locking
 never reads it, and the app logs it when it gives up waiting.</p>
+<p>iOS kills a suspended app that still holds a lock, so the app takes an account's lock
+only while it has execution time: in the foreground, or while an execution hold keeps
+that account (a call, a CallKit action, a background upload, initial sync or backup
+restore). Kalium enforces this where it takes the lock. Without it, opens, logins and
+logouts wait for the foreground before they change anything, outside the account's
+gate, and read the gate again afterwards; a wait for another process stops when
+execution ends, and a lock won just then is let go. In the foreground, an account the
+background release paused opens again on first use. That release pauses every account
+no hold keeps, all at once, and logs each account still locked with its hold reasons,
+or as unavailable when its release failed, so the host can end the app instead.</p>
 <p>The ownership primitive lives in <code>:domain:messaging:receiving</code>. Existing SQLite
 opening stays in persistence, app session construction stays in logic, and the
 Swift facade lives in the iOS-only <code>:nse</code> module. Shared mapping and business rules
@@ -1630,10 +1640,10 @@ rejoin) or its next send (stale message, then epoch check and rejoin), the same 
 the process dies during that request.</p>
 <p>NSE opening retries a busy lease for up to 3 seconds, which covers the app's background
 handoff, and waits for another attempt of the same process to finish: that attempt presents
-only what it received. If the account stays busy, the NSE asks the host for a generic alert
-unless the host reports that the foreground app presents alerts. Missing or incompatible
-readiness, such as after an app update until the app's sync is live, also asks for one unless
-the app presents alerts, and so does storage it cannot read. Opening then reads compatible readiness,
+only what it received. If the account stays busy, the NSE asks the host for a generic alert.
+Missing or incompatible readiness, such as after an app update until the app's sync is live,
+also asks for one, and so does storage it cannot read. <code>appPresentsAlerts</code> would suppress
+these alerts, but the app no longer sets it. Opening then reads compatible readiness,
 checks existing store files and credentials, and opens owned resources. It never
 logs in, registers a client or initializes missing stores to repair preparation.
 SQLite opens without creation or migration. For an encrypted account, the NSE
