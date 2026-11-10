@@ -94,21 +94,23 @@ public class AppleAccountRuntimeOwner internal constructor(
     public suspend fun tryAcquire(
         accountId: UserId,
         retryFor: Duration = Duration.ZERO,
-    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, retryFor, waitForThisProcess = true)
+    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, retryFor, waitForThisProcess = true) { true }
 
     /**
-     * Wait cancellably, at most [timeout], for app ownership; BUSY then means another owner kept the account.
-     * Waiting for one account does not block other accounts.
+     * Wait cancellably, at most [timeout] and while [keepWaiting] holds, for app ownership; BUSY then means another
+     * owner kept the account. Waiting for one account does not block other accounts.
      */
     public suspend fun acquire(
         accountId: UserId,
         timeout: Duration = Duration.INFINITE,
-    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, timeout, waitForThisProcess = false)
+        keepWaiting: () -> Boolean = { true },
+    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, timeout, waitForThisProcess = false, keepWaiting)
 
     private suspend fun acquire(
         accountId: UserId,
         waitFor: Duration,
         waitForThisProcess: Boolean,
+        keepWaiting: () -> Boolean,
     ): Either<AccountRuntimeFailure, AccountRuntimeLease> {
         coroutineContext.ensureActive()
         val descriptor = when (val result = openLockFile(accountId)) {
@@ -120,7 +122,7 @@ public class AppleAccountRuntimeOwner internal constructor(
         val result = try {
             coroutineContext.ensureActive()
             val lockFile = paths.filePath(accountId)
-            val failure = lock(descriptor, lockFile, waitFor, waitForThisProcess, trace)
+            val failure = lock(descriptor, lockFile, waitFor, waitForThisProcess, keepWaiting, trace)
             if (failure == null) {
                 recordHolder(descriptor)
                 onLockAcquired()
@@ -146,12 +148,13 @@ public class AppleAccountRuntimeOwner internal constructor(
         lockFile: String,
         waitFor: Duration,
         waitForThisProcess: Boolean,
+        keepWaiting: () -> Boolean,
         trace: Long,
     ): AccountRuntimeFailure? {
         var failure = tryLock(descriptor, trace)
         // Elapsed time bounds the window, so slow wake-ups do not stretch it.
         withTimeoutOrNull(waitFor) {
-            while (failure == AccountRuntimeFailure.BUSY) failure = retryLock(descriptor, trace)
+            while (failure == AccountRuntimeFailure.BUSY && keepWaiting()) failure = retryLock(descriptor, trace)
         }
         // flock refuses this process's other descriptors too. Unlike another owner, an attempt of this process ends.
         val waitsForThisProcess = waitForThisProcess && waitFor > Duration.ZERO
