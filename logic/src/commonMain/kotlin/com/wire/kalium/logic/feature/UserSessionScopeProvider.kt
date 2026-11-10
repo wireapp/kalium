@@ -45,6 +45,9 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 public class AccountBusyException(public val holder: String?) :
     IllegalStateException("Another process holds the account: ${holder ?: "unknown"}")
 
+/** The Apple account is closing or has already been released; stale UI must stop creating models. */
+public class AccountSessionUnavailableException : IllegalStateException("The account session is no longer available")
+
 /** Observations that open every account keep going, with their last values, until another process lets go. */
 internal fun <T> Flow<T>.retryWhileAccountBusy(): Flow<T> = retryWhen { cause, _ ->
     (cause is AccountBusyException).also { busy -> if (busy) delay(ACCOUNT_BUSY_RETRY) }
