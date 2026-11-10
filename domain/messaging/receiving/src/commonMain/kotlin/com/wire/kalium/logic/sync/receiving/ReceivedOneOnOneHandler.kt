@@ -76,7 +76,10 @@ internal class ReceivedOneOnOneHandler(
         val candidates = conversations.conversationsWith(peer).filter { it.type == ConversationEntity.Type.ONE_ON_ONE }
         val proteus = candidates.filter { it.protocolInfo is ConversationEntity.ProtocolInfo.Proteus }.map { it.id }
         val target = when (protocol) {
-            SupportedProtocol.PROTEUS -> proteus.firstOrNull()
+            // The app's queue only creates a missing Proteus 1:1 for teammates; the app's connection handler fetches it.
+            SupportedProtocol.PROTEUS -> checkNotNull(proteus.firstOrNull()) {
+                "One-to-one resolution requires conversation creation"
+            }
             SupportedProtocol.MLS -> candidates.firstOrNull { candidate ->
                 val info = candidate.protocolInfo
                 info is ConversationEntity.ProtocolInfo.MLS && info.groupState == ConversationEntity.GroupState.ESTABLISHED &&
@@ -90,7 +93,7 @@ internal class ReceivedOneOnOneHandler(
 
 internal data class OneOnOneResolution(
     val peer: UserId,
-    /** Null when the 1:1 still needs creating, or its MLS group establishing or joining, which only the app can do. */
+    /** Null when the MLS 1:1 still needs establishing or joining, which only the app can do. */
     val target: ConversationIDEntity?,
     val sources: List<ConversationIDEntity>,
     val protocol: SupportedProtocol,
