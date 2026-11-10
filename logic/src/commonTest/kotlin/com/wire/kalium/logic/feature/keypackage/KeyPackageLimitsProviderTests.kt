@@ -18,56 +18,98 @@
 
 package com.wire.kalium.logic.feature.keypackage
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
+import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
+import com.wire.kalium.logic.data.keypackage.KeyPackagePool
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class KeyPackageLimitsProviderTests {
 
     @Test
-    fun givenKeyPackageCountIs50PercentBelowLimit_WhenCallNeedRefill_ReturnTrue() = runTest {
-        val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD - 1).toInt()
-        val (_, keyPackageLimitsProvide) = Arrangement()
-            .arrange()
-        val actual = keyPackageLimitsProvide.needsRefill(keyPackageCount)
-        assertTrue { actual }
+    fun givenNoMigrationConfiguration_whenGettingThePool_thenTargetIs100() = runTest {
+        assertEquals(100, provider(migration = null).keyPackagePool().targetSize)
     }
 
     @Test
-    fun givenKeyPackageCountIs50PercentBelowLimit_WhenCallRefillAmount_ReturnCorrectAmount() = runTest {
-        val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD - 1).toInt()
-        val (_, keyPackageLimitsProvide) = Arrangement()
-            .arrange()
-        val actual = keyPackageLimitsProvide.refillAmount()
-        assertEquals(Arrangement.KEY_PACKAGE_LIMIT, actual)
+    fun givenDisabledMigration_whenGettingThePool_thenTargetIs100() = runTest {
+        assertEquals(100, provider(MIGRATION.copy(status = Status.DISABLED)).keyPackagePool().targetSize)
     }
 
     @Test
-    fun givenKeyPackageCount50PercentAboveLimit_WhenCallNeedRefill_ThenReturnFalse() = runTest {
-        val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD).toInt()
-        val (_, keyPackageLimitsProvide) = Arrangement()
-            .arrange()
-        val actual = keyPackageLimitsProvide.needsRefill(keyPackageCount)
-        assertFalse { actual }
+    fun givenMigrationScheduledInTheFuture_whenGettingThePool_thenTargetIs1000() = runTest {
+        val migration = MIGRATION.copy(startTime = Instant.DISTANT_FUTURE, endTime = Instant.DISTANT_FUTURE)
+
+        assertEquals(1000, provider(migration).keyPackagePool().targetSize)
     }
 
-    private class Arrangement {
+    @Test
+    fun givenOngoingMigration_whenGettingThePool_thenTargetIs1000() = runTest {
+        assertEquals(1000, provider(MIGRATION.copy(startTime = Instant.DISTANT_PAST)).keyPackagePool().targetSize)
+    }
 
-        val kaliumConfigs = KaliumConfigs()
+    @Test
+    fun givenEndedMigration_whenGettingThePool_thenTargetIs100() = runTest {
+        val migration = MIGRATION.copy(startTime = Instant.DISTANT_PAST, endTime = Instant.DISTANT_PAST)
 
-        fun arrange() = this to KeyPackageLimitsProviderImpl(
-            kaliumConfigs
-        )
+        assertEquals(100, provider(migration).keyPackagePool().targetSize)
+    }
 
-        companion object {
-            const val KEY_PACKAGE_LIMIT = 100
-            const val KEY_PACKAGE_THRESHOLD = 0.5F
-        }
+    @Test
+    fun givenLowerLimits_whenGettingLimits_thenTheyStayAt10EvenDuringAMigration() = runTest {
+        val provider = provider(MIGRATION, KaliumConfigs(lowerKeyPackageLimits = true))
+
+        assertEquals(10, provider.keyPackagePool().targetSize)
+        assertEquals(10, provider.refillAmount())
+    }
+
+    @Test
+    fun whenGettingRefillAmount_thenReturnTheSizeOfOneUploadRequest() = runTest {
+        assertEquals(100, provider(MIGRATION).refillAmount())
+        assertEquals(100, provider(migration = null).refillAmount())
+    }
+
+    @Test
+    fun givenAPool_whenCheckingNeedsRefill_thenRefillBelowHalfOfTheTarget() {
+        val pool = KeyPackagePool(targetSize = 1000)
+
+        assertTrue(pool.needsRefill(499))
+        assertFalse(pool.needsRefill(500))
+    }
+
+    @Test
+    fun givenAPool_whenGettingMissingKeyPackages_thenReturnTheDifferenceToTheTarget() {
+        val pool = KeyPackagePool(targetSize = 1000)
+
+        assertEquals(1000, pool.missingKeyPackages(0))
+        assertEquals(501, pool.missingKeyPackages(499))
+        assertEquals(0, pool.missingKeyPackages(1200))
+    }
+
+    private suspend fun provider(
+        migration: MLSMigrationModel?,
+        kaliumConfigs: KaliumConfigs = KaliumConfigs(),
+    ): KeyPackageLimitsProviderImpl {
+        val userConfigRepository = mock<UserConfigRepository>()
+        everySuspend {
+            userConfigRepository.getMigrationConfiguration()
+        } returns (migration?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound))
+        return KeyPackageLimitsProviderImpl(kaliumConfigs, userConfigRepository)
+    }
+
+    private companion object {
+        val MIGRATION = MLSMigrationModel(startTime = null, endTime = null, status = Status.ENABLED)
     }
 }
