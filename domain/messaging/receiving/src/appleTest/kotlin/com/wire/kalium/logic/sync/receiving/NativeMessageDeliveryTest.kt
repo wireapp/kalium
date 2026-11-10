@@ -1,10 +1,10 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
-package com.wire.kalium.nse
+@file:OptIn(com.wire.kalium.util.InternalKaliumApi::class)
+
+package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
@@ -20,13 +20,13 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class NativeMessageDeliveryTest {
-    private val alert = KaliumNSEAlert("message", "conversation", "example.com", null, null, null, false)
-
     @Test
     fun cancelledNativeCallbackReleasesLeaseAndLateAcceptanceDoesNotAcknowledge() = runTest {
         val root = (NSTemporaryDirectory() + NSUUID().UUIDString).toPath()
@@ -36,14 +36,10 @@ class NativeMessageDeliveryTest {
         val lease = assertIs<Either.Right<AccountRuntimeLease>>(owner.tryAcquire(account)).value
         val callback = CompletableDeferred<Continuation<Boolean>>()
         val acknowledged = mutableListOf<String>()
-        val delivery = object : KaliumNSEMessageDelivery {
-            override suspend fun deliver(alert: KaliumNSEAlert): Boolean =
-                suspendCoroutine { callback.complete(it) }
-        }
         val operation = launch {
             try {
-                deliverMessageAlerts(listOf(alert, alert.copy(messageId = "later")), delivery) {
-                    acknowledged.add(it.messageId)
+                deliverMessageAlerts(listOf("message", "later"), { suspendCoroutine { callback.complete(it) } }) {
+                    acknowledged.add(it)
                 }
             } finally {
                 lease.release()
@@ -69,9 +65,7 @@ class NativeMessageDeliveryTest {
         lateinit var completion: Continuation<Boolean>
         var acknowledged = false
         val result = withTimeoutOrNull(100) {
-            deliverMessageAlerts(listOf(alert), object : KaliumNSEMessageDelivery {
-                override suspend fun deliver(alert: KaliumNSEAlert): Boolean = suspendCoroutine { completion = it }
-            }) { acknowledged = true }
+            deliverMessageAlerts(listOf("message"), { suspendCoroutine { completion = it } }) { acknowledged = true }
         }
         assertNull(result)
         completion.resume(true)
@@ -84,9 +78,7 @@ class NativeMessageDeliveryTest {
         val callback = CompletableDeferred<Continuation<Boolean>>()
         var acknowledged = false
         val operation = launch {
-            deliverMessageAlerts(listOf(alert), object : KaliumNSEMessageDelivery {
-                override suspend fun deliver(alert: KaliumNSEAlert): Boolean = suspendCoroutine { callback.complete(it) }
-            }) { acknowledged = true }
+            deliverMessageAlerts(listOf("message"), { suspendCoroutine { callback.complete(it) } }) { acknowledged = true }
         }
         val completion = callback.await()
         operation.cancelAndJoin()
@@ -98,9 +90,8 @@ class NativeMessageDeliveryTest {
     @Test
     fun onlyAcceptedAlertsAreAcknowledged() = runTest {
         val acknowledged = mutableListOf<String>()
-        deliverMessageAlerts(listOf(alert, alert.copy(messageId = "rejected")), object : KaliumNSEMessageDelivery {
-            override suspend fun deliver(alert: KaliumNSEAlert): Boolean = alert.messageId == "message"
-        }) { acknowledged.add(it.messageId) }
+        assertFalse(deliverMessageAlerts(listOf("message", "rejected"), { it == "message" }) { acknowledged.add(it) })
         assertEquals(listOf("message"), acknowledged)
+        assertTrue(deliverMessageAlerts(listOf("message"), { true }) {})
     }
 }

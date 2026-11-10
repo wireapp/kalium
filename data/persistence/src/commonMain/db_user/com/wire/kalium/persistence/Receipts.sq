@@ -34,7 +34,9 @@ WHERE EXISTS (
     WHERE
         Message.conversation_id = insertion.conversation_id AND
         Message.id = insertion.message_id
-);
+)
+-- OR IGNORE does not cover foreign keys: a receipt from an unknown sender would fail the whole receive batch.
+AND EXISTS (SELECT 1 FROM User WHERE User.qualified_id = insertion.user_id);
 
 CREATE VIEW IF NOT EXISTS ReceiptDetails
 AS SELECT

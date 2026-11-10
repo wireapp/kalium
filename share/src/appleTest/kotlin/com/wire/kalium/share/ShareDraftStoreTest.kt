@@ -83,6 +83,19 @@ class ShareDraftStoreTest {
     }
 
     @Test
+    fun draftsStayForTheAppWhenItTakesTheAccountOver() = runTest {
+        // An upload that stops for the app leaves the draft for the app to prepare.
+        val stopped = store.create(conversation, file)
+        prepareShareDraft(store, stopped, upload = { _, _ -> Either.Left(ACCOUNT_WANTED) }, discard = {})
+        assertNull(assertNotNull(store.read(stopped)).failure)
+        // A send the app takes over before storing anything keeps its prepared drafts for the app to send.
+        val prepared = store.create(conversation, file)
+        store.write(prepared, requireNotNull(store.read(prepared)).copy(asset = asset))
+        store.endSend(listOf(prepared), stored = false, handedOff = true) { error("Discarded") }
+        assertNotNull(store.resolve(listOf(prepared), conversation))
+    }
+
+    @Test
     fun uploadFailureIsVisibleAndDoesNotMakeDraftSendable() = runTest {
         val id = store.create(conversation, file)
         prepareShareDraft(store, id, upload = { _, _ -> Either.Left("OFFLINE") }, discard = {})

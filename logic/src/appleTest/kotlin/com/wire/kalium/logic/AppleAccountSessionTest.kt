@@ -38,6 +38,7 @@ import dev.mokkery.matcher.any
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.AccountSessionUnavailableException
 import com.wire.kalium.logic.feature.AccountBusyException
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
@@ -96,6 +97,41 @@ import kotlin.time.Duration.Companion.seconds
 class AppleAccountSessionTest {
     private val userId = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
     private val fileManager = NSFileManager.defaultManager
+
+    @Test
+    fun `queued screen lookup during logout and after release reports unavailable without reopening`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val scope = logic.openSessionScope(userId)
+            val provider = logic.userSessionScopeProvider.value
+            val preparing = CompletableDeferred<Unit>()
+            val finishPreparation = CompletableDeferred<Unit>()
+            val logout = async {
+                provider.logout(userId, scope, prepare = {
+                    preparing.complete(Unit)
+                    finishPreparation.await()
+                }, clearLocalData = {})
+            }
+            try {
+                preparing.await()
+                // The durable account and old UI still exist while preparation waits on network work.
+                assertEquals(Either.Right(true), logic.getGlobalScope().sessionRepository.doesSessionExist(userId))
+                assertFailsWith<AccountSessionUnavailableException> { logic.getSessionScope(userId) }
+                assertNull(provider.get(userId))
+                finishPreparation.complete(Unit)
+                assertTrue(logout.await())
+                assertFailsWith<AccountSessionUnavailableException> { logic.getSessionScope(userId) }
+                // A stale factory must not reacquire ownership or create another account scope.
+                val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+                lease.release()
+            } finally {
+                finishPreparation.complete(Unit)
+                logout.join()
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
 
     @Test
     fun `synchronous lookup cannot construct an unowned account`() = runTest {
@@ -401,7 +437,7 @@ class AppleAccountSessionTest {
     }
 
     @Test
-    fun `prepared real Proteus and MLS stores survive release and account reopen`() = runTest {
+    fun `prepared real Proteus and MLS stores stay ready across reopen and handoff`() = runTest {
         withContext(Dispatchers.Default) {
             val (root, logic, keychainConfig) = fixture(prepared = true)
             val first = logic.openSessionScope(userId)
@@ -443,26 +479,28 @@ class AppleAccountSessionTest {
                 assertEquals(publicKey, receivingMLS.getPublicKey().first.toList())
                 runtime.proteusCoreCrypto.proteusClient().transaction("extension-fingerprint") { it.getLocalFingerprint() }
             })
+            val ready = "${logic.rootPathsProvider.rootAccountPath(userId)}/notification-extension-ready.json".toPath()
             val second = logic.openSessionScope(userId)
-            assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, second))
+            // The app can die while it owns the account: opening and resuming keep readiness for the extensions.
+            assertTrue(FileSystem.SYSTEM.exists(ready))
+            logic.suspendSessionScope(userId)
+            kotlin.test.assertSame(second, logic.resumeSessionScope(userId))
+            assertTrue(FileSystem.SYSTEM.exists(ready))
             assertEquals(fingerprint, second.proteusClientProvider.getOrCreate().transaction("reopened-fingerprint") {
                 it.getLocalFingerprint()
             })
             val reopenedMLS = assertIs<Either.Right<com.wire.kalium.cryptography.MLSClient>>(second.mlsClientProvider.getMLSClient()).value
             assertEquals(publicKey, reopenedMLS.getPublicKey().first.toList())
-            // A restore revokes readiness even if a later restore step fails. Existing handles may
-            // refer to the replaced files, so this scope can never certify them after invalidation.
-            logic.userSessionScopeProvider.value.invalidateReceiving(userId, second, cryptoReplacement = true)
-            assertIs<Either.Left<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, second))
             assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.storeSession(session(), logic.getGlobalScope().sessionRepository))
             val third = logic.openSessionScope(userId)
             assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, third))
+            // Registration revokes readiness, and releasing never publishes it again.
             logic.userSessionScopeProvider.value.invalidateReceiving(userId, third)
             logic.releaseSessionScope(userId)
-            val afterRestore = assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value
+            val afterInvalidation = assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value
                 as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-            assertNull(ApplePreparedAccountStore(root, userId).read(afterRestore))
-            afterRestore.release()
+            assertNull(ApplePreparedAccountStore(root, userId).read(afterInvalidation))
+            afterInvalidation.release()
             // Files and credentials alone cannot authorize an interrupted registration, including
             // after a fresh scope opens with no readiness record.
             logic.openSessionScope(userId)

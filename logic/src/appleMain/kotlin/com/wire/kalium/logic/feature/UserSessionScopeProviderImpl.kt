@@ -118,22 +118,13 @@ internal actual open class UserSessionScopeProviderImpl(
     private val owner = AppleAccountRuntimeOwner(rootPathsProvider.rootPath)
     private val accounts = ConcurrentMutableMap<UserId, OwnedAccount>()
 
-    @Suppress("TooGenericExceptionCaught")
-    actual override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean) {
+    /** Readiness is durable: revoke it before a change the extension cannot detect, such as registration. */
+    actual override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope) {
         val account = checkNotNull(accounts[userId]) { "Account preparation requires ownership" }
         account.access.withAccess {
             account.mutex.withLock {
                 checkOwnedScope(account, userId, originatingScope)
-                try {
-                    revokeReadiness(account, userId)
-                    account.canRefreshReadiness = false
-                    // Restore may replace files behind existing crypto clients. Only a fresh app scope
-                    // may validate the restored files and publish readiness again.
-                    account.needsCryptoReopen = account.needsCryptoReopen || cryptoReplacement
-                } catch (failure: Throwable) {
-                    account.unavailable = true
-                    throw failure
-                }
+                revokeReadiness(account, userId)
             }
         }
     }
@@ -143,10 +134,7 @@ internal actual open class UserSessionScopeProviderImpl(
         return account.access.withAccess {
             account.mutex.withLock {
                 checkOwnedScope(account, userId, originatingScope)
-                account.canRefreshReadiness = false
-                prepareOwned(account, userId, checkNotNull(super.get(userId))).also {
-                    account.canRefreshReadiness = it is Either.Right
-                }
+                prepareOwned(account, userId, checkNotNull(super.get(userId)))
             }
         }
     }
@@ -158,16 +146,26 @@ internal actual open class UserSessionScopeProviderImpl(
         check(originatingScope.coroutineContext.job.isActive) { "Account workers are stopped" }
     }
 
-    @OptIn(DelicateKaliumApi::class, InternalCryptoAccess::class)
-    @Suppress("TooGenericExceptionCaught", "ReturnCount", "LongMethod")
+    /**
+     * Keeps the last readiness while verifying: the extension refuses state that changed since, and an app killed
+     * mid-check must not leave it blind. A failed check revokes; cancellation leaves it as it was.
+     */
     private suspend fun prepareOwned(
         account: OwnedAccount,
         userId: UserId,
         scope: UserSessionScope,
+    ): Either<CoreFailure, Unit> = verifyAndPublish(account, userId, scope).also {
+        if (it is Either.Left) revokeReadiness(account, userId)
+    }
+
+    @OptIn(DelicateKaliumApi::class, InternalCryptoAccess::class)
+    @Suppress("TooGenericExceptionCaught", "ReturnCount", "LongMethod")
+    private suspend fun verifyAndPublish(
+        account: OwnedAccount,
+        userId: UserId,
+        scope: UserSessionScope,
     ): Either<CoreFailure, Unit> {
-        revokeReadiness(account, userId)
         return try {
-            check(!account.needsCryptoReopen) { "Reopen the app account after replacing crypto state" }
             val session = globalScope.sessionRepository.fullAccountInfo(userId).getOrElse { return Either.Left(it) }
             check(globalScope.sessionRepository.doesValidSessionExist(userId).getOrElse { return Either.Left(it) })
             val token = checkNotNull(globalPreferences.authTokenStorage.getToken(userId.toDao())) {
@@ -256,9 +254,8 @@ internal actual open class UserSessionScopeProviderImpl(
             }
             acquire(account, userId)
             try {
-                val prepared = ApplePreparedAccountStore(rootPathsProvider.rootPath, userId).read(checkNotNull(account.lease))
-                revokeReadiness(account, userId)
-                super.getOrCreate(userId).also { account.canRefreshReadiness = prepared != null }
+                // Opening keeps published readiness: if this process dies, the extensions keep receiving.
+                super.getOrCreate(userId)
             } catch (failure: Throwable) {
                 // A constructor can fail after opening native resources that never reached a provider.
                 account.unavailable = true
@@ -272,9 +269,8 @@ internal actual open class UserSessionScopeProviderImpl(
             super.get(userId)?.takeIf { scope -> scope.coroutineContext.job.isActive }
         }
 
-    actual override fun getOrCreate(userId: UserId): UserSessionScope = checkNotNull(get(userId)) {
-        "Await CoreLogic.openSessionScope before accessing this Apple account"
-    }
+    actual override fun getOrCreate(userId: UserId): UserSessionScope =
+        get(userId) ?: throw AccountSessionUnavailableException()
 
     actual override suspend fun logout(
         userId: UserId,
@@ -348,7 +344,7 @@ internal actual open class UserSessionScopeProviderImpl(
                 failingStalledRequests.cancelAndJoin()
                 // Drain before taking the lifecycle mutex: admitted operations may still need it
                 // to invalidate notification readiness or complete account preparation.
-                releaseForBackground(account, userId, access)
+                releaseForBackground(account, access)
             }
         } finally {
             failingStalledRequests.cancel()
@@ -356,15 +352,12 @@ internal actual open class UserSessionScopeProviderImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun releaseForBackground(account: OwnedAccount, userId: UserId, access: AccountResourceAccess) {
+    private suspend fun releaseForBackground(account: OwnedAccount, access: AccountResourceAccess) {
         account.mutex.withLock {
             if (access !== account.access || account.lease == null) return@withLock
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
             try {
-                super.get(userId)?.let { scope ->
-                    if (account.canRefreshReadiness) prepareOwned(account, userId, scope)
-                    else revokeReadiness(account, userId)
-                }
+                // Readiness is left as published: no checks or crypto work in the short background window.
                 account.crypto.keys.forEach { it.suspendNativeResources() }
                 account.lease?.release()
                 account.lease = null
@@ -382,13 +375,8 @@ internal actual open class UserSessionScopeProviderImpl(
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
             acquire(account, userId)
             account.unavailable = true
-            super.get(userId)?.let { scope ->
-                // Drain before entering crypto: a worker can hold a non-cancellable transaction.
-                scope.stopAccountWork()
-                // Ordinary release may refresh established readiness, never certify an interrupted login.
-                if (account.canRefreshReadiness) prepareOwned(account, userId, scope)
-                else revokeReadiness(account, userId)
-            }
+            // Drain before closing crypto: a worker can hold a non-cancellable transaction.
+            super.get(userId)?.stopAccountWork()
             closeAndRelease(account, userId)
         }
     }
@@ -400,8 +388,6 @@ internal actual open class UserSessionScopeProviderImpl(
         account.lease?.release()
         account.lease = null
         account.unavailable = false
-        account.needsCryptoReopen = false
-        account.canRefreshReadiness = false
         account.crypto.clear()
         account.access = AccountResourceAccess()
     }
@@ -423,8 +409,6 @@ internal actual open class UserSessionScopeProviderImpl(
                         account.lease?.release()
                         account.lease = null
                         account.unavailable = false
-                        account.needsCryptoReopen = false
-                        account.canRefreshReadiness = false
                         account.crypto.clear()
                         account.access = AccountResourceAccess()
                     }
@@ -456,8 +440,6 @@ internal actual open class UserSessionScopeProviderImpl(
                 withContext(NonCancellable) {
                     super.get(userId)?.closeAccountResources()
                     super.delete(userId)
-                    account.needsCryptoReopen = false
-                    account.canRefreshReadiness = false
                     account.crypto.clear()
                     account.access = AccountResourceAccess()
                 }
@@ -507,7 +489,6 @@ internal actual open class UserSessionScopeProviderImpl(
                         check(!account.unavailable) { "Account resources are unavailable until process exit" }
                         if (access === account.access) {
                             acquire(account, userId)
-                            revokeReadiness(account, userId)
                             super.get(userId)?.let { session ->
                                 session.userStorage.database.refreshAfterExternalWrites()
                                 session.resumeSync()
@@ -552,10 +533,6 @@ internal actual open class UserSessionScopeProviderImpl(
         @Volatile var lease: AccountRuntimeLease? = null
 
         @Volatile var unavailable = false
-
-        var needsCryptoReopen = false
-
-        var canRefreshReadiness = false
     }
 
     override fun create(userId: UserId): UserSessionScope {

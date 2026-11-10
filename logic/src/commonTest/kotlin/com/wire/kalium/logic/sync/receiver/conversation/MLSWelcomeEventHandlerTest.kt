@@ -29,10 +29,10 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
@@ -159,20 +159,21 @@ class MLSWelcomeEventHandlerTest {
     }
 
     @Test
-    fun givenProcessingOfWelcomeForOneOnOneSucceeds_thenShouldResolveConversation() = runTest {
+    fun givenProcessingOfWelcomeForOneOnOneSucceeds_thenShouldQueueResolutionInsteadOfResolvingInline() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_ONE_ONE))
-            withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION_ID))
+            withEnqueueOneOnOneResolutionSucceeding()
         }
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), CONVERSATION_ONE_ONE.otherUser, any())
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(CONVERSATION_ONE_ONE.otherUser.id)
         }
+        assertEquals(1, arrangement.resolutionTriggers)
     }
 
     @Test
@@ -187,8 +188,9 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(any())
         }
+        assertEquals(0, arrangement.resolutionTriggers)
     }
 
     @Test
@@ -203,41 +205,6 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail {
             assertEquals(failure.value, it)
-        }
-    }
-
-    @Test
-    fun givenResolveOneOnOneConversationFails_thenShouldPropagateError() = runTest {
-
-        val failure = Either.Left(NetworkFailure.NoNetworkConnection(null))
-        val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
-            withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
-            withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_ONE_ONE))
-            withResolveOneOnOneConversationWithUserReturning(failure)
-        }
-
-        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail {
-            assertEquals(failure.value, it)
-        }
-    }
-
-    @Test
-    fun givenResolveOneOnOneConversationFails_thenShouldNotAttemptToRefillKeyPackages() = runTest {
-        val failure = Either.Left(NetworkFailure.NoNetworkConnection(null))
-        val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
-            withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
-            withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_ONE_ONE))
-            withResolveOneOnOneConversationWithUserReturning(failure)
-        }
-
-        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
-
-        verify(VerifyMode.not) {
-            arrangement.keyPackageManager.scheduleRefill()
         }
     }
 
@@ -316,7 +283,8 @@ class MLSWelcomeEventHandlerTest {
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val conversationRepository = mock<ConversationRepository>()
         val fetchConversationIfUnknown = mock<FetchConversationIfUnknownUseCase>()
-        val oneOnOneResolver = mock<OneOnOneResolver>()
+        val pendingActionsRepository = mock<PendingActionsRepository>()
+        var resolutionTriggers = 0
         val keyPackageManager = mock<KeyPackageManager>(mode = MockMode.autoUnit)
         val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>()
 
@@ -359,8 +327,8 @@ class MLSWelcomeEventHandlerTest {
             everySuspend { conversationRepository.observeConversationDetailsById(any()) } returns flowOf(result)
         }
 
-        suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, com.wire.kalium.logic.data.id.ConversationId>) = apply {
-            everySuspend { oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any()) } returns result
+        suspend fun withEnqueueOneOnOneResolutionSucceeding() = apply {
+            everySuspend { pendingActionsRepository.enqueuePendingOneOnOneResolution(any()) } returns Unit
         }
 
         suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) = apply {
@@ -371,7 +339,8 @@ class MLSWelcomeEventHandlerTest {
             block()
             this@Arrangement to MLSWelcomeEventHandlerImpl(
                 conversationRepository = conversationRepository,
-                oneOnOneResolver = oneOnOneResolver,
+                pendingActionsRepository = pendingActionsRepository,
+                resolvePendingOneOnOnes = { resolutionTriggers++ },
                 joinExistingMLSConversation = joinExistingMLSConversation,
                 fetchConversationIfUnknown = fetchConversationIfUnknown,
                 keyPackageManager = keyPackageManager

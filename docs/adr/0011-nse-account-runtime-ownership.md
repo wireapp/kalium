@@ -42,17 +42,24 @@ existing owners. There is no generic opener bundle or common runtime coordinator
 ### Preparation and lifetime
 
 The app awaits `open`; synchronous getters return only active cached sessions.
-Registration and restore invalidate readiness. A terminal account event found by the
-NSE also writes a per-client invalidation marker that keeps readiness unreadable
-until a different client publishes it. Successful preparation verifies the
-client, keys, crypto stores and supported configuration before publishing a
-versioned readiness sidecar. That sidecar permits the NSE to open a prepared
-account without opening/migrating a global database. Tokens and keys stay in the
-shared Keychain configuration.
+Readiness is durable account state. The app revokes it before registration,
+credential replacement, logout and session removal, and publishes it only after
+successful preparation: after registration and whenever its sync reaches live.
+Opening, resuming and releasing an account leave it unchanged. A terminal account
+event found by the NSE also writes a per-client invalidation marker that keeps
+readiness unreadable until a different client publishes it. Successful preparation
+verifies the client, keys, crypto stores and supported configuration before
+publishing a versioned readiness sidecar; a failed check revokes it. That sidecar
+permits the NSE to open a prepared account without opening/migrating a global
+database. Tokens and keys stay in the shared Keychain configuration.
 
-App opening captures compatible readiness before revoking it. Ordinary release
-may refresh that authorization after workers drain; it cannot certify interrupted
-registration or restore. Logout serializes mutation and cleanup against the
+Only verified preparation publishes, so an interrupted registration stays unready
+until a later preparation finds the completed client. An app that dies, also before
+its sync is live or during a background release, leaves the last published
+readiness. The NSE refuses a changed client or MLS registration, an unusable cipher
+suite and incompatible stores, and uses the server configuration of the last
+preparation. A future crypto replacement must revoke readiness first and prepare
+only from a fresh app scope. Logout serializes mutation and cleanup against the
 originating session so stale work cannot reach a reopened account. Hosts must
 quiesce their own account operations and observers before releasing ownership.
 Background release keeps the app session but first stops sync and closes its
@@ -75,8 +82,8 @@ NSE opening retries a busy lease for up to 3 seconds, which covers the app's bac
 handoff, and waits for another attempt of the same process to finish: that attempt presents
 only what it received. If the account stays busy, the NSE asks the host for a generic alert
 unless the host reports that the foreground app presents alerts. Missing or incompatible
-readiness, such as after an app update until the app opens, also asks for one unless the app
-presents alerts, and so does storage it cannot read. Opening then reads compatible readiness,
+readiness, such as after an app update until the app's sync is live, also asks for one unless
+the app presents alerts, and so does storage it cannot read. Opening then reads compatible readiness,
 checks existing store files and credentials, and opens owned resources. It never
 logs in, registers a client or initializes missing stores to repair preparation.
 SQLite opens without creation or migration. For an encrypted account, the NSE
@@ -329,6 +336,9 @@ Known gaps follow from the decisions above:
   recovery has a durable intent; other establishment commits need the returned
   events or welcome for replay, and legacy teammate creation needs an idempotent
   backend operation or authenticated reconciliation.
+- The NSE uses the server configuration, including the API version, of the app's last
+  preparation. A version the app negotiates later reaches it when the app's sync is next
+  live.
 - CoreCrypto reports malformed MLS input and provider/store failures as the same
   `Other` error, so the NSE cannot turn either into a failed-message row.
 - Saving a CRL does not replace earlier in-memory sources or clear native
