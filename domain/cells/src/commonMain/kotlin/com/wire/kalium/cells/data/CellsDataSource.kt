@@ -42,7 +42,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okio.Buffer
 import okio.FileSystem
-import okio.ForwardingSink
 import okio.IOException
 import okio.Path
 import okio.Sink
@@ -347,10 +346,10 @@ internal class CellsDataSource internal constructor(
  * on the JVM, IOException also stands for network failures, and a full disk must not pass for a lost connection
  * whose `.part` file would be kept.
  */
-private class DownloadDestinationSink(delegate: Sink) : ForwardingSink(delegate) {
-    override fun write(source: Buffer, byteCount: Long) = rethrowAsDestinationFailure { super.write(source, byteCount) }
-    override fun flush() = rethrowAsDestinationFailure { super.flush() }
-    override fun close() = rethrowAsDestinationFailure { super.close() }
+private class DownloadDestinationSink(private val delegate: Sink) : Sink by delegate {
+    override fun write(source: Buffer, byteCount: Long) = rethrowAsDestinationFailure { delegate.write(source, byteCount) }
+    override fun flush() = rethrowAsDestinationFailure { delegate.flush() }
+    override fun close() = rethrowAsDestinationFailure { delegate.close() }
 
     private inline fun rethrowAsDestinationFailure(block: () -> Unit) {
         try {
