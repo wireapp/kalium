@@ -126,7 +126,9 @@ commit CoreCrypto. Restore the attempt's cancellation context inside its native
 `NonCancellable` wrapper, and await unwind before releasing resources. NSE attempts
 rethrow a callback error only after CoreCrypto confirms the abort; native abort and
 commit errors take precedence. The app retains its gathered-batch boundary; it does
-not adopt the NSE executor.
+not adopt the NSE executor. A failed event in the app's batch returns an error value,
+so native crypto commits what the batch reached and the unacknowledged batch is retried;
+receipt and recovery failures still throw.
 
 These are separate stores. SQL can commit before native crypto, and MLS can commit
 before Proteus. Retry decrypts again, reapplies required fields and uses canonical
