@@ -937,6 +937,8 @@ public class UserSessionScope internal constructor(
 
     /** Resume after ownership returns. */
     internal fun resumeSync() {
+        // The extension may have added or retired recovery records meanwhile; reload them on next use.
+        appMLSReceiveRecovery = null
         syncExecutorImpl.resumeExecution()
     }
 
