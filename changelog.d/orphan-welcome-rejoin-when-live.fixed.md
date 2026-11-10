@@ -1,0 +1,1 @@
+An MLS welcome whose key package is missing locally no longer rejoins the group by external commit inside the receive batch. The rejoin now runs once sync is live, so a batch that fails and is retried doesn't send another external commit.

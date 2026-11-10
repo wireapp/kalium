@@ -1529,6 +1529,15 @@ public class UserSessionScope internal constructor(
             oneOnOneResolver = oneOnOneResolver
         )
 
+    // Same single drain as for 1:1 resolutions, for MLS groups queued by orphan welcomes and failed joins.
+    private val pendingMLSGroupJoinRequests = Channel<Unit>(Channel.CONFLATED)
+
+    private val requestPendingMLSGroupJoins = object : RecoverPendingMLSGroupJoinsUseCase {
+        override suspend fun invoke() {
+            pendingMLSGroupJoinRequests.trySend(Unit)
+        }
+    }
+
     private val recoverPendingMLSGroupJoinsUseCase: RecoverPendingMLSGroupJoinsUseCase
         get() = RecoverPendingMLSGroupJoinsUseCaseImpl(
             pendingActionsRepository = pendingActionsRepository,
@@ -2199,7 +2208,7 @@ public class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             pendingActionsRepository = pendingActionsRepository,
             resolvePendingOneOnOnes = { pendingOneOnOneResolutionRequests.trySend(Unit) },
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            joinPendingMLSGroups = { pendingMLSGroupJoinRequests.trySend(Unit) },
             fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
             keyPackageManager = keyPackageManager
         )
@@ -2835,7 +2844,7 @@ public class UserSessionScope internal constructor(
             mlsClientManager,
             mlsMigrationManager,
             keyingMaterialsManager,
-            recoverPendingMLSGroupJoinsUseCase,
+            requestPendingMLSGroupJoins,
             requestPendingOneOnOneResolutions,
             cryptoTransactionProvider,
             this,
@@ -3311,6 +3320,19 @@ public class UserSessionScope internal constructor(
                     throw exception
                 } catch (exception: Exception) {
                     userScopedLogger.w("Unable to resolve pending one-on-one conversations", exception)
+                }
+            }
+        }
+
+        launch {
+            pendingMLSGroupJoinRequests.consumeEach {
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    recoverPendingMLSGroupJoinsUseCase()
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    userScopedLogger.w("Unable to join pending MLS groups", exception)
                 }
             }
         }
