@@ -22,62 +22,6 @@ import kotlin.test.assertTrue
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class AccountResourceAccessTest {
     @Test
-    fun ordinaryOpenQueuedDuringHandoffCannotResumeResources() = runTest {
-        val access = AccountResourceAccess()
-        val closing = CompletableDeferred<Unit>()
-        val finishClose = CompletableDeferred<Unit>()
-        var acquired = 0
-        val handoff = launch {
-            access.pause {
-                closing.complete(Unit)
-                finishClose.await()
-            }
-        }
-        closing.await()
-        val ordinaryOpen = async {
-            access.withResumedAccess(
-                acquireOwnership = { acquired++ },
-                openResources = {},
-                resumePaused = false,
-            ) { "opened" }
-        }
-        runCurrent()
-        finishClose.complete(Unit)
-        handoff.join()
-        runCurrent()
-        assertFalse(ordinaryOpen.isCompleted)
-        assertEquals(0, acquired)
-        access.withResumedAccess({ acquired++ }, {}) { }
-        assertEquals("opened", ordinaryOpen.await())
-        assertEquals(1, acquired)
-    }
-
-    @Test
-    fun ordinaryOpenWaitingForForegroundCanBeCancelled() = runTest {
-        val access = AccountResourceAccess()
-        access.pause {}
-        val opening = launch {
-            access.withResumedAccess({}, {}, resumePaused = false) { error("Must stay paused") }
-        }
-        runCurrent()
-        opening.cancelAndJoin()
-        access.resume {}
-        assertEquals("resumed", access.withAccess { "resumed" })
-    }
-
-    @Test
-    fun conditionalResumeStaysPausedWhenItsConditionFails() = runTest {
-        val access = AccountResourceAccess()
-        access.pause {}
-        access.resumeIf { false }
-        val queued = async { access.withAccess { "resumed" } }
-        runCurrent()
-        assertFalse(queued.isCompleted)
-        access.resumeIf { true }
-        assertEquals("resumed", queued.await())
-    }
-
-    @Test
     fun pauseDrainsAdmittedWorkAndQueuesNewWorkUntilOwnershipReturns() = runTest {
         val access = AccountResourceAccess()
         val finish = CompletableDeferred<Unit>()

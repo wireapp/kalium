@@ -44,14 +44,19 @@ class AccountResourceAccess {
 
     /**
      * Close all resources before releasing ownership; close failure makes access unavailable.
+     * [shouldPause] decides under the transition, so no admission can interleave with that decision.
      * [quiesce] first stops work that must end before the pause while operations are still admitted;
      * no resume can interleave before [closeResources]. If it fails, access is unchanged.
      */
-    suspend fun pause(quiesce: suspend () -> Unit = {}, closeResources: suspend () -> Unit) {
+    suspend fun pause(
+        shouldPause: suspend () -> Boolean = { true },
+        quiesce: suspend () -> Unit = {},
+        closeResources: suspend () -> Unit,
+    ) {
         checkOutsideOperation()
         transition.withLock {
             checkFailure()
-            if (state.value.paused) return@withLock
+            if (state.value.paused || !shouldPause()) return@withLock
             quiesce()
             state.update { it.copy(accepting = false) }
             try {
@@ -81,42 +86,23 @@ class AccountResourceAccess {
         transition.withLock { restore({}, openResources) }
     }
 
-    /** Resume without opening resources, only if [canResume] holds while paused and no transition can interleave. */
-    suspend fun resumeIf(canResume: suspend () -> Boolean) {
-        checkOutsideOperation()
-        transition.withLock {
-            if (!state.value.accepting && canResume()) restore({}, {})
-        }
-    }
-
     /**
      * Admit a lifecycle operation atomically with resumption, before another pause can start.
      * When paused, [acquireOwnership] runs first and stays cancellable: if it fails, access stays paused and can
      * resume later. [openResources] then runs non-cancellably.
-     * With [resumePaused] false, wait for the host to resume instead of reopening from an ordinary account lookup.
      */
     suspend fun <T> withResumedAccess(
         acquireOwnership: suspend () -> Unit,
         openResources: suspend () -> Unit,
-        resumePaused: Boolean = true,
         operation: suspend () -> T,
     ): T {
         val parent = currentCoroutineContext()[Access]
         if (parent?.contains(this) == true) return withAccess(operation)
         checkOutsideOperation()
-        var admitted: Permit? = null
-        while (admitted == null) {
-            // Ordinary account lookups must not undo a background handoff. Wait outside
-            // the transition mutex so the host can explicitly resume the account.
-            if (!resumePaused) state.first { it.accepting || it.failure != null }
-            admitted = transition.withLock {
-                checkFailure()
-                if (!resumePaused && !state.value.accepting) return@withLock null
-                restore(acquireOwnership, openResources)
-                acquirePermit(trackCoroutine = false)
-            }
+        val permit = transition.withLock {
+            restore(acquireOwnership, openResources)
+            acquirePermit(trackCoroutine = false)
         }
-        val permit = admitted
         return try {
             withContext(Access(this, permit, parent)) { operation() }
         } finally {
@@ -203,6 +189,12 @@ class AccountResourceAccess {
         } finally {
             permit.release()
         }
+    }
+
+    /** True inside an operation this access already admitted: it may finish even while a pause drains. */
+    suspend fun admitsCaller(): Boolean {
+        val context = currentCoroutineContext()
+        return context[Access]?.contains(this) == true || state.value.permits.any { it.owns(context[Job]) }
     }
 
     private suspend fun checkOutsideOperation() {
