@@ -53,7 +53,7 @@ class CoreCryptoCallbackContextTest {
         assertTrue(pause.isCompleted)
         assertEquals(listOf("http", "authenticate", "nonce", "token"), called)
         assertFalse(unrelated.isCompleted)
-        access.resume {}
+        access.withResumedAccess({}, {}) {}
         assertEquals("unrelated", unrelated.await())
     }
 
@@ -98,7 +98,7 @@ class CoreCryptoCallbackContextTest {
         assertFailsWith<IllegalStateException> { oldHooks.getBackendNonce() }
         access.pause {}
         assertFailsWith<IllegalStateException> { oldHooks.getBackendNonce() }
-        access.resume {}
+        access.withResumedAccess({}, {}) {}
         access.withAccess {
             callbacks.operation(1) { assertFailsWith<IllegalStateException> { oldHooks.getBackendNonce() } }
         }
@@ -115,7 +115,7 @@ class CoreCryptoCallbackContextTest {
         worker.cancelAndJoin()
         access.pause {}
         assertFailsWith<IllegalStateException> { hooks.getBackendNonce() }
-        access.resume {}
+        access.withResumedAccess({}, {}) {}
         access.withAccess { callbacks.operation(0) { assertEquals("nonce", hooks.getBackendNonce()) } }
     }
 
@@ -130,7 +130,7 @@ class CoreCryptoCallbackContextTest {
             }
         }
         access.pause {}
-        access.resume {}
+        access.withResumedAccess({}, {}) {}
         assertEquals("next", access.withAccess { callbacks.operation(0) { "next" } })
     }
 

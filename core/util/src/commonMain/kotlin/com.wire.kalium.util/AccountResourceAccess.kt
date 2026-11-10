@@ -80,12 +80,6 @@ class AccountResourceAccess {
         }
     }
 
-    /** Restore ownership before releasing queued operations. */
-    suspend fun resume(openResources: suspend () -> Unit) {
-        checkOutsideOperation()
-        transition.withLock { restore({}, openResources) }
-    }
-
     /**
      * Admit a lifecycle operation atomically with resumption, before another pause can start.
      * When paused, [acquireOwnership] runs first and stays cancellable: if it fails, access stays paused and can
