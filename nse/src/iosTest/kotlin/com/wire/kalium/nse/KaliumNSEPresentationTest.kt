@@ -197,12 +197,13 @@ class KaliumNSEPresentationTest {
     }
 
     @Test
-    fun legalHoldHandoffAsksForAGenericAlertWhileItsEventWaits() = runTest {
+    fun appHandoffAsksForAGenericAlertWhileItsEventWaits() = runTest {
         for (work in listOf(null) + NotificationAppWork.entries) for (targetProcessed in listOf(false, true)) {
             val received = ReceivedNotificationResult(
-                null, appWorkPending = work, stoppedReason = if (work == null) "QUEUE_END" else "LEGAL_HOLD_REQUIRES_APP"
+                null, appWorkPending = work, stoppedReason = if (work == null) "QUEUE_END" else "${work}_REQUIRES_APP"
             )
-            val expected = work == NotificationAppWork.LEGAL_HOLD && !targetProcessed
+            val stopsQueue = work == NotificationAppWork.LEGAL_HOLD || work == NotificationAppWork.MLS_SUBCONVERSATION
+            val expected = stopsQueue && !targetProcessed
             assertEquals(
                 expected,
                 receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received) { targetProcessed },

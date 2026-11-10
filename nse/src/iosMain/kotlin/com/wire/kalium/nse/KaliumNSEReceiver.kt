@@ -312,8 +312,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     /**
      * An unfinished catch-up may leave events the socket received, which get no push; missed notifications
      * mean the backend dropped events until the app's slow sync. A failed catch-up, like processing that ran
-     * out of time, may not have reached the push's own event. Nor may legal-hold work left for the app, which
-     * stops every later attempt at the same event until the app runs.
+     * out of time, may not have reached the push's own event. Nor may legal-hold or call work left for the app,
+     * which stops every later attempt at the same event until the app runs.
      */
     internal suspend fun mayLeaveUnseenEvents(
         caughtUp: CatchUpOutcome,
@@ -322,7 +322,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     ): Boolean = caughtUp == CatchUpOutcome.BUDGET || caughtUp == CatchUpOutcome.NEEDS_SLOW_SYNC || (
         (
             received.stoppedReason == BUDGET || caughtUp == CatchUpOutcome.FAILED ||
-                received.appWorkPending == NotificationAppWork.LEGAL_HOLD
+                received.appWorkPending in QUEUE_STOPPING_WORK
             ) && !targetProcessed()
         )
 
@@ -496,6 +496,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         private const val PROCESS_SHARE = 0.85
         private const val QUEUE_END = "QUEUE_END"
         private const val BUDGET = "BUDGET"
+        private val QUEUE_STOPPING_WORK = setOf(NotificationAppWork.LEGAL_HOLD, NotificationAppWork.MLS_SUBCONVERSATION)
         private val caughtUpAccounts = CaughtUpAccounts()
     }
 

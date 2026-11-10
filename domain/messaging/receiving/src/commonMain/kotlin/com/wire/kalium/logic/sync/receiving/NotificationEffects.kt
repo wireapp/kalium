@@ -162,9 +162,7 @@ internal class NotificationEffects(
                     is ReceivedPayload.DecryptionFailure -> messageHandler.failedDecryption(received.message)
                     is ReceivedPayload.Creation -> received.creation.persist(this, selfUserId, persistMessage)
                     is ReceivedPayload.OneOnOne -> {
-                        if (received.resolution.persist(this, persistMessage)) {
-                            messageHandler.moved(received.resolution.sources, received.resolution.target)
-                        }
+                        received.resolution.persist(this, persistMessage)?.let { messageHandler.moved(received.resolution.sources, it) }
                     }
                     is ReceivedPayload.ProtocolUpdate -> {
                         conversations.updateConversationProtocolAndCipherSuite(
@@ -295,9 +293,7 @@ internal class NotificationEffects(
             }
             received.profiles.persist(users, apps)
             received.resolutions.forEach { resolution ->
-                if (resolution.persist(this, persistMessage)) {
-                    messageHandler.moved(resolution.sources, resolution.target)
-                }
+                resolution.persist(this, persistMessage)?.let { messageHandler.moved(resolution.sources, it) }
             }
         }
         when (val event = received.event) {
@@ -433,8 +429,8 @@ internal class NotificationEffects(
                 is ReceivedPayload.Connection -> if (effect.connection.status ==
                     com.wire.kalium.persistence.dao.ConnectionEntity.State.ACCEPTED
                 ) listOf(effect.connection.qualifiedConversationId) else emptyList()
-                is ReceivedPayload.OneOnOne -> effect.resolution.sources + effect.resolution.target
-                is ReceivedPayload.Configuration -> effect.resolutions.flatMap { it.sources + it.target }
+                is ReceivedPayload.OneOnOne -> effect.resolution.sources + listOfNotNull(effect.resolution.target)
+                is ReceivedPayload.Configuration -> effect.resolutions.flatMap { it.sources + listOfNotNull(it.target) }
                 else -> emptyList()
             }
             required += ids.filter { it !in recreated }
