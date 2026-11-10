@@ -22,9 +22,9 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.toCrypto
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackagePool
@@ -35,7 +35,9 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -64,11 +66,10 @@ class RefillKeyPackageUseCaseTest {
         val actual = refillKeyPackagesUseCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.keyPackageRepository.uploadNewKeyPackages(
-                any(),
-                TestClient.CLIENT_ID,
-                Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount
-            )
+            arrangement.mlsContext.generateKeyPackages(Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount, any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.keyPackageRepository.uploadKeyPackages(TestClient.CLIENT_ID, Arrangement.KEY_PACKAGES)
         }
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
@@ -106,7 +107,7 @@ class RefillKeyPackageUseCaseTest {
         assertIs<RefillKeyPackagesResult.Success>(actual)
         verifySuspend(VerifyMode.order) {
             arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(true)
-            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.KEY_PACKAGE_LIMIT)
+            arrangement.keyPackageRepository.uploadKeyPackages(TestClient.CLIENT_ID, any())
         }
     }
 
@@ -126,7 +127,10 @@ class RefillKeyPackageUseCaseTest {
         assertIs<RefillKeyPackagesResult.Failure>(actual)
         assertEquals(failure, actual.failure)
         verifySuspend(VerifyMode.not) {
-            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+            arrangement.mlsContext.generateKeyPackages(any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.uploadKeyPackages(any(), any())
         }
     }
 
@@ -165,7 +169,7 @@ class RefillKeyPackageUseCaseTest {
     }
 
     @Test
-    fun givenThousandKeyPackagesMissing_whenRefilling_thenUploadsTenBatchesEachInItsOwnTransaction() = runTest {
+    fun givenThousandKeyPackagesMissing_whenRefilling_thenGeneratesTenBatchesEachInItsOwnTransaction() = runTest {
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
             .withKeyPackagePool(Arrangement.MIGRATION_POOL_SIZE)
@@ -179,7 +183,10 @@ class RefillKeyPackageUseCaseTest {
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
         verifySuspend(VerifyMode.exactly(10)) {
-            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.BATCH_SIZE)
+            arrangement.mlsContext.generateKeyPackages(Arrangement.BATCH_SIZE, any())
+        }
+        verifySuspend(VerifyMode.exactly(10)) {
+            arrangement.keyPackageRepository.uploadKeyPackages(TestClient.CLIENT_ID, Arrangement.KEY_PACKAGES)
         }
         // One transaction to read the cipher suite, then one per batch.
         verifySuspend(VerifyMode.exactly(11)) {
@@ -188,7 +195,23 @@ class RefillKeyPackageUseCaseTest {
     }
 
     @Test
-    fun givenMissingAmountIsNotAMultipleOfTheBatchSize_whenRefilling_thenTheLastBatchUploadsTheRest() = runTest {
+    fun givenBatches_whenRefilling_thenEachBatchIsUploadedOnlyAfterItsTransactionHasReturned() = runTest {
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackagePool(Arrangement.MIGRATION_POOL_SIZE)
+            .withKeyPackageCount(0)
+            .withSetShouldJoinPendingMLSConversationsResult(Either.Right(Unit))
+            .withUploadKeyPackagesSuccessful()
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        refillKeyPackagesUseCase()
+
+        assertEquals(List(10) { false }, arrangement.uploadsInsideTransaction)
+    }
+
+    @Test
+    fun givenMissingAmountIsNotAMultipleOfTheBatchSize_whenRefilling_thenTheLastBatchGeneratesTheRest() = runTest {
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
             .withKeyPackagePool(Arrangement.MIGRATION_POOL_SIZE)
@@ -200,10 +223,10 @@ class RefillKeyPackageUseCaseTest {
         refillKeyPackagesUseCase()
 
         verifySuspend(VerifyMode.exactly(5)) {
-            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.BATCH_SIZE)
+            arrangement.mlsContext.generateKeyPackages(Arrangement.BATCH_SIZE, any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, 1)
+            arrangement.mlsContext.generateKeyPackages(1, any())
         }
     }
 
@@ -223,7 +246,28 @@ class RefillKeyPackageUseCaseTest {
         assertIs<RefillKeyPackagesResult.Failure>(actual)
         assertEquals(failure, actual.failure)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+            arrangement.mlsContext.generateKeyPackages(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.keyPackageRepository.uploadKeyPackages(any(), any())
+        }
+    }
+
+    @Test
+    fun givenGeneratingKeyPackagesFails_whenRefilling_thenNothingIsUploaded() = runTest {
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackagePool(Arrangement.MIGRATION_POOL_SIZE)
+            .withKeyPackageCount(1)
+            .withGeneratingKeyPackagesFailing()
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        val actual = refillKeyPackagesUseCase()
+
+        assertIs<RefillKeyPackagesResult.Failure>(actual)
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.uploadKeyPackages(any(), any())
         }
     }
 
@@ -232,6 +276,9 @@ class RefillKeyPackageUseCaseTest {
         val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock()
         val currentClientIdProvider: CurrentClientIdProvider = mock()
         val userConfigRepository: UserConfigRepository = mock(MockMode.autoUnit)
+
+        val uploadsInsideTransaction = mutableListOf<Boolean>()
+        private var openTransactions = 0
 
         private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository,
@@ -268,16 +315,30 @@ class RefillKeyPackageUseCaseTest {
             } returns Either.Right(KeyPackageCountDTO(count))
         }
 
-        suspend fun withUploadKeyPackagesFailing(failure: CoreFailure) = apply {
+        suspend fun withGeneratingKeyPackagesFailing() = apply {
             everySuspend {
-                keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, any())
-            } returns Either.Left(failure)
+                mlsContext.generateKeyPackages(any(), any())
+            } throws IllegalStateException("generation failed")
+        }
+
+        suspend fun withUploadKeyPackagesFailing(failure: CoreFailure) = apply {
+            withUploadKeyPackagesReturning(Either.Left(failure))
         }
 
         suspend fun withUploadKeyPackagesSuccessful() = apply {
+            withUploadKeyPackagesReturning(Either.Right(Unit))
+        }
+
+        private suspend fun withUploadKeyPackagesReturning(result: Either<CoreFailure, Unit>) {
             everySuspend {
-                keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, any())
-            } returns Either.Right(Unit)
+                mlsContext.generateKeyPackages(any(), any())
+            } returns KEY_PACKAGES
+            everySuspend {
+                keyPackageRepository.uploadKeyPackages(TestClient.CLIENT_ID, any())
+            } calls {
+                uploadsInsideTransaction += openTransactions > 0
+                result
+            }
         }
 
         suspend fun withSetShouldJoinPendingMLSConversationsResult(result: Either<StorageFailure, Unit>) = apply {
@@ -292,10 +353,20 @@ class RefillKeyPackageUseCaseTest {
             } returns Either.Left(failure)
         }
 
-        suspend fun arrange() = apply {
-            withMLSTransactionReturning(Either.Right(Unit))
-        }.let {
-            this to refillKeyPackageUseCase
+        @Suppress("UNCHECKED_CAST")
+        suspend fun arrange(): Pair<Arrangement, RefillKeyPackagesUseCaseImpl> {
+            everySuspend {
+                cryptoTransactionProvider.mlsTransaction<Any?>(any(), any())
+            } calls {
+                val block = it.args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, Any?>
+                openTransactions++
+                try {
+                    block(mlsContext)
+                } finally {
+                    openTransactions--
+                }
+            }
+            return this to refillKeyPackageUseCase
         }
 
         companion object {
@@ -303,6 +374,7 @@ class RefillKeyPackageUseCaseTest {
             const val KEY_PACKAGE_THRESHOLD = 0.5F
             const val BATCH_SIZE = 100
             const val MIGRATION_POOL_SIZE = 1000
+            val KEY_PACKAGES = listOf(byteArrayOf(1, 2, 3))
         }
 
     }
