@@ -118,12 +118,12 @@ Pinning the submodule also pins CoreCrypto, the AVS bindings and the AVS runtime
 
 `AppleSuspensionDiagnostics` in `core-logger` records bounded, process-local observations directly to
 OSLog, using subsystem `com.wire.prism.ios`, category `SuspensionDiagnostics` and marker
-`SUSPENSION_DIAGNOSTICS schema=1`. It does not use Kalium's diagnostic file writer. Hosts can call
+`SUSPENSION_DIAGNOSTICS schema=1`. Hosts can call
 `setBackgrounded` to enable detailed background tracing and `snapshot` with a recognized lifecycle
 stage before completing an execution assertion. The background flag controls verbosity only; it does
 not grant execution time or establish suspension safety. NSE requests emit begin/end snapshots.
 
-Snapshots distinguish attempted, held and uncertain explicit account/log locks from active database
+Snapshots distinguish attempted, held and uncertain explicit account locks from active database
 operations. User/global driver spans cover synchronous calls, awaited asynchronous results and outer
 transaction completion; connection creation and close are also observed. Raw SQLite compatibility
 probes, CoreCrypto's internal database operations and SQLite VFS lock ranges are not observed. An

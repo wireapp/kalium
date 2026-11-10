@@ -32,10 +32,6 @@ kotlin {
                 api(libs.kermit)
             }
         }
-        appleMain.dependencies {
-            api(libs.okio.core)
-            implementation(libs.coroutines.core)
-        }
         appleTest.dependencies {
             implementation(libs.coroutines.test)
         }
