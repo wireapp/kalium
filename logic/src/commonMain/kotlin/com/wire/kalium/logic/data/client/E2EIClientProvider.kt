@@ -20,11 +20,13 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapE2EIRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
@@ -93,11 +95,12 @@ internal class EI2EIClientProviderImpl(
     private suspend fun getE2EIClientFromMLSClient(
         currentClientId: ClientId,
         selfUser: SelfUser
-    ): Either<E2EIFailure.GettingE2EIClient, E2EIClient> {
-        return mlsClientProvider.getMLSClient(currentClientId).fold({
-            E2EIFailure.GettingE2EIClient(it).left()
-        }, { mlsClient ->
-            val newE2EIClient = mlsClient.transaction("E2EIClient") {
+    ): Either<E2EIFailure, E2EIClient> {
+        return wrapE2EIRequest {
+            val mlsClient = mlsClientProvider.getMLSClient(currentClientId).getOrElse {
+                return E2EIFailure.GettingE2EIClient(it).left()
+            }
+            mlsClient.transaction("E2EIClient") {
                 if (it.isE2EIEnabled()) {
                     kaliumLogger.w("initial E2EI client for MLS client that already has E2EI enabled")
                     it.e2eiNewRotateEnrollment(
@@ -116,16 +119,17 @@ internal class EI2EIClientProviderImpl(
                     )
                 }
             }
+        }.map { newE2EIClient ->
             cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
             e2EIClient = newE2EIClient
-            Either.Right(newE2EIClient)
-        })
+            newE2EIClient
+        }
     }
 
     private suspend fun createNewE2EIClient(
         currentClientId: ClientId,
         selfUser: SelfUser
-    ): Either<E2EIFailure.GettingE2EIClient, E2EIClient> {
+    ): Either<E2EIFailure, E2EIClient> {
         kaliumLogger.w("initial E2EI client without MLS client")
         return mlsClientProvider.getCoreCrypto(currentClientId).fold({
             E2EIFailure.GettingE2EIClient(it).left()
@@ -138,17 +142,20 @@ internal class EI2EIClientProviderImpl(
                 return E2EIFailure.GettingE2EIClient(error).left()
             }
 
-            val newE2EIClient = it.newAcmeEnrollment(
-                clientId = cryptoQualifiedClientId,
-                displayName = selfUser.name!!,
-                handle = selfUser.handle!!,
-                teamId = selfUser.teamId?.value,
-                expiry = currentE2EIExpiry(),
-                defaultCipherSuite = defaultCipherSuite.toCrypto()
-            )
-            cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
-            e2EIClient = newE2EIClient
-            Either.Right(newE2EIClient)
+            wrapE2EIRequest {
+                it.newAcmeEnrollment(
+                    clientId = cryptoQualifiedClientId,
+                    displayName = selfUser.name!!,
+                    handle = selfUser.handle!!,
+                    teamId = selfUser.teamId?.value,
+                    expiry = currentE2EIExpiry(),
+                    defaultCipherSuite = defaultCipherSuite.toCrypto()
+                )
+            }.map { newE2EIClient ->
+                cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
+                e2EIClient = newE2EIClient
+                newE2EIClient
+            }
         })
     }
 

@@ -107,6 +107,7 @@ class CoreCryptoCentralImpl(
 
         } catch (e: CoreCryptoException) {
             kaliumLogger.e("MLSClient initialization exception: $e")
+            throw e
         }
 
         return MLSClientImpl(cc, defaultCipherSuite.toCrypto())

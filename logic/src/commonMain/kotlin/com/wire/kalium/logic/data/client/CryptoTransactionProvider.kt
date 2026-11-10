@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
@@ -124,13 +125,17 @@ internal class CryptoTransactionProviderImpl(
     }
 
     @OptIn(InternalCryptoAccess::class)
+    @Suppress("ReturnCount")
     override suspend fun <R> transaction(
         name: String?,
         block: suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R> {
         val proteusClient = proteusClientProvider.getOrError().getOrNull()
             ?: return CoreFailure.MissingClientRegistration.left()
-        val mlsClient = mlsClientProvider.getMLSClient().getOrNull()
+        val mlsClient = mlsClientProvider.getMLSClient().nullableFold(
+            { failure -> if (failure is MLSFailure.Disabled) null else return failure.left() },
+            { it }
+        )
 
         return try {
             proteusClient.transaction(name.toTransactionName("proteus")) { proteusCtx ->

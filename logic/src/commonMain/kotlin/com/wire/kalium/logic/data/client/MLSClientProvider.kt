@@ -22,6 +22,8 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapE2EIRequest
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
@@ -205,15 +207,17 @@ internal class MLSClientProviderImpl(
     ): Either<CoreFailure, MLSClient> {
         // TODO KBX should we switch to first get mls config instead of getting core crypto?
         return getCoreCrypto(clientId).flatMap { cc ->
-            getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
-                cc.mlsClient(
-                    clientId = CryptoQualifiedClientId(clientId.value, userId),
-                    allowedCipherSuites = supportedCipherSuite.map { it.toCrypto() },
-                    defaultCipherSuite = defaultCipherSuite.toCrypto(),
-                    mlsTransporter = mlsTransporter,
-                    epochObserver = epochObserver,
-                    coroutineScope = processingScope
-                )
+            getOrFetchMLSConfig().flatMap { (supportedCipherSuite, defaultCipherSuite) ->
+                wrapMLSRequest {
+                    cc.mlsClient(
+                        clientId = CryptoQualifiedClientId(clientId.value, userId),
+                        allowedCipherSuites = supportedCipherSuite.map { it.toCrypto() },
+                        defaultCipherSuite = defaultCipherSuite.toCrypto(),
+                        mlsTransporter = mlsTransporter,
+                        epochObserver = epochObserver,
+                        coroutineScope = processingScope
+                    )
+                }
             }
         }
     }
@@ -230,16 +234,17 @@ internal class MLSClientProviderImpl(
             E2EIFailure.GettingE2EIClient(it).left()
         }, {
             // MLS Keypackages taken care somewhere else, here we don't need to generate any
-            it.mlsClient(
-                enrollment = enrollment,
-                certificateChain = certificateChain,
-                newMLSKeyPackageCount = 0U,
-                defaultCipherSuite = defaultCipherSuite.toCrypto(),
-                mlsTransportProvider,
-                epochObserver,
-                coroutineScope = processingScope
-            ).right()
-
+            wrapE2EIRequest {
+                it.mlsClient(
+                    enrollment = enrollment,
+                    certificateChain = certificateChain,
+                    newMLSKeyPackageCount = 0U,
+                    defaultCipherSuite = defaultCipherSuite.toCrypto(),
+                    mlsTransportProvider,
+                    epochObserver,
+                    coroutineScope = processingScope
+                )
+            }
         })
     }
 
