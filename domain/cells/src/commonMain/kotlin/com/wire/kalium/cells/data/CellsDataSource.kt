@@ -17,34 +17,26 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.data.model.toModel
+import com.wire.kalium.cells.domain.CellDrafts
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
-import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.NodePreview
-import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.Pagination
-import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
@@ -57,37 +49,7 @@ internal class CellsDataSource internal constructor(
     private val awsClient: CellsAwsClient,
     private val fileSystem: FileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) : CellsRepository {
-
-    override suspend fun preCheck(nodePath: String) = withContext(dispatchers.io) {
-        wrapApiRequest {
-            cellsApi.preCheck(nodePath)
-        }.map { result ->
-            if (result.fileExists) {
-                PreCheckResult.FileExists(result.nextPath ?: nodePath)
-            } else {
-                PreCheckResult.Success
-            }
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun uploadFile(
-        path: Path,
-        node: CellNode,
-        onProgressUpdate: (Long) -> Unit,
-    ): Either<NetworkFailure, Unit> = withContext(dispatchers.io) {
-        try {
-            awsClient.upload(path, node.toDto(), onProgressUpdate)
-            Either.Right(Unit)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: NoNetworkConnectionException) {
-            Either.Left(NetworkFailure.NoNetworkConnection(e.cause))
-        } catch (e: Exception) {
-            Either.Left(NetworkFailure.ServerMiscommunication(e))
-        }
-    }
+) : CellsRepository, CellDrafts by CellDraftsDataSource(cellsApi, awsClient, dispatchers) {
 
     override suspend fun getPaginatedNodes(
         path: String?,
@@ -163,22 +125,6 @@ internal class CellsDataSource internal constructor(
     override suspend fun deleteNodes(uuids: List<String>, permanentDelete: Boolean) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.deleteNodes(uuids, permanentDelete)
-        }
-    }
-
-    override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>) = withContext(dispatchers.io) {
-        coroutineScope {
-            nodes.map { (nodeId, versionId) ->
-                async {
-                    wrapApiRequest { cellsApi.publishDraft(nodeId, versionId) }
-                }
-            }.awaitAll().firstOrNull { it.isLeft() } ?: Unit.right()
-        }
-    }
-
-    override suspend fun cancelDraft(nodeUuid: String, versionUuid: String) = withContext(dispatchers.io) {
-        wrapApiRequest {
-            cellsApi.cancelDraft(nodeUuid, versionUuid)
         }
     }
 
@@ -353,16 +299,6 @@ internal class CellsDataSource internal constructor(
 
     override suspend fun getEditorUrl(nodeUuid: String, urlKey: String) = wrapApiRequest {
         cellsApi.getNodeEditorUrl(nodeUuid, urlKey)
-    }
-
-    override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> = withContext(dispatchers.io) {
-        wrapApiRequest {
-            cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection ->
-                collection.map { node ->
-                    node.toModel()
-                }
-            }
-        }
     }
 
     override suspend fun restoreNodeVersion(
