@@ -244,6 +244,25 @@ class IncrementalSyncWorkerTest {
         assertEquals(coreFailureCause, resultException.coreFailureCause)
     }
 
+    @Test
+    fun givenBatchFailed_whenRetrying_thenEventsAreProcessedInSmallerBatchesWithoutSplittingAStoredEvent() = runTest {
+        // The middle two are payloads of one stored event.
+        val events = listOf(0, 1, 1, 2).map { TestEvent.memberJoin(eventId = "event-$it").wrapInEnvelope() }
+        var calls = 0
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(events)))
+            .arrange()
+        everySuspend { arrangement.batchProcessor.processBatch(any()) } calls {
+            if (calls++ == 0) throw KaliumSyncException("Processing failed", NetworkFailure.NoNetworkConnection(null))
+        }
+
+        assertFailsWith<KaliumSyncException> { worker.processEventsFlow().collect() }
+        worker.processEventsFlow().collect()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.batchProcessor.processBatch(events.take(3)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.batchProcessor.processBatch(events.drop(3)) }
+    }
+
     private class Arrangement {
         val batchProcessor: EventBatchProcessor = mock()
         val eventGatherer: EventGatherer = mock()

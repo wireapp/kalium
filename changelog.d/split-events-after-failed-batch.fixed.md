@@ -1,0 +1,1 @@
+After a receive batch fails, incremental sync retries the pending events in batches half the size of the failed one, each committed on its own. It goes back to whole batches once it has caught up, so a short app session can still make progress.
