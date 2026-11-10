@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+
 /*
  * Wire
  * Copyright (C) 2026 Wire Swiss GmbH
@@ -28,6 +30,14 @@ kaliumLibrary {
 
 kotlin {
     explicitApi()
+    targets.withType<KotlinNativeTarget>().configureEach {
+        if (konanTarget.family.isAppleFamily) {
+            compilations.getByName("main").cinterops.create("previewNetwork") {
+                definitionFile.set(project.file("src/nativeInterop/cinterop/previewNetwork.def"))
+                includeDirs(project.file("src/nativeInterop/cinterop"))
+            }
+        }
+    }
     sourceSets {
         all {
             languageSettings.optIn("com.wire.kalium.util.InternalKaliumApi")

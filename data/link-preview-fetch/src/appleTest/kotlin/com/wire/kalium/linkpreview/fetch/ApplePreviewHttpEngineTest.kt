@@ -33,6 +33,24 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
+import platform.Network.NW_PARAMETERS_DEFAULT_CONFIGURATION
+import platform.Network.nw_connection_cancel
+import platform.Network.nw_connection_create
+import platform.Network.nw_connection_set_queue
+import platform.Network.nw_connection_start
+import platform.Network.nw_connection_t
+import platform.Network.nw_endpoint_create_host
+import platform.Network.nw_listener_cancel
+import platform.Network.nw_listener_create_with_port
+import platform.Network.nw_listener_get_port
+import platform.Network.nw_listener_set_new_connection_handler
+import platform.Network.nw_listener_set_queue
+import platform.Network.nw_listener_set_state_changed_handler
+import platform.Network.nw_listener_start
+import platform.Network.nw_listener_state_ready
+import platform.Network.nw_parameters_create_secure_tcp
+import platform.darwin.dispatch_queue_create
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -41,6 +59,49 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ApplePreviewHttpEngineTest {
+    @Test
+    fun givenNativeTlsFailure_whenReading_thenReportsFailureWithoutCrashing(): Unit = runBlocking {
+        val parameters = nw_parameters_create_secure_tcp(
+            { _ -> },
+            NW_PARAMETERS_DEFAULT_CONFIGURATION
+        )
+        val queue = dispatch_queue_create("preview-regression", null)
+        val listener = checkNotNull(nw_listener_create_with_port("0", parameters))
+        val ready = CompletableDeferred<Unit>()
+        val accepted = CompletableDeferred<nw_connection_t>()
+        nw_listener_set_queue(listener, queue)
+        nw_listener_set_state_changed_handler(listener) { state, _ ->
+            if (state == nw_listener_state_ready) ready.complete(Unit)
+        }
+        nw_listener_set_new_connection_handler(listener) { peer ->
+            nw_connection_set_queue(peer, queue)
+            nw_connection_start(peer)
+            // No server identity: TLS must fail and deliver the native error context.
+            accepted.complete(peer)
+        }
+        nw_listener_start(listener)
+        try {
+            withTimeout(5_000) {
+                ready.await()
+                val endpoint = nw_endpoint_create_host(
+                    "127.0.0.1", nw_listener_get_port(listener).toString()
+                )
+                val native = checkNotNull(nw_connection_create(endpoint, parameters))
+                nw_connection_set_queue(native, queue)
+                nw_connection_start(native)
+                val connection = NetworkPreviewConnection(native)
+                try {
+                    assertFailsWith<IllegalStateException> { connection.read() }
+                } finally {
+                    connection.close()
+                }
+            }
+        } finally {
+            if (accepted.isCompleted) nw_connection_cancel(accepted.await())
+            nw_listener_cancel(listener)
+        }
+    }
+
     @Test
     fun givenMixedDnsAnswers_whenRequesting_thenDoesNotOpenAnyConnection() = runTest {
         var connectionOpened = false
