@@ -62,8 +62,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -607,22 +605,11 @@ internal actual open class UserSessionScopeProviderImpl(
     /** Waits for another process only while execution lasts. */
     private suspend fun acquireWhileAllowed(userId: UserId): Either<AccountRuntimeFailure, AccountRuntimeLease> {
         if (!execution.value.allows(userId)) throw NoExecution()
-        return coroutineScope {
-            val waiting = async { owner.acquire(userId, OWNERSHIP_TIMEOUT) }
-            val revocation = launch {
-                execution.first { !it.allows(userId) }
-                // The owner lets go of a lock it wins after this cancellation.
-                waiting.cancel()
-            }
-            try {
-                waiting.await()
-            } catch (_: CancellationException) {
-                currentCoroutineContext().ensureActive()
-                throw NoExecution()
-            } finally {
-                revocation.cancel()
-            }
-        }
+        return acquireUnlessRevoked(
+            acquire = { owner.acquire(userId, OWNERSHIP_TIMEOUT) },
+            releaseWon = { (it as? Either.Right)?.value?.release() },
+            revoked = { execution.first { !it.allows(userId) } },
+        ) ?: throw NoExecution()
     }
 
     private class OwnedAccount {
