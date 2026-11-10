@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.AccountExecutionHold
+import com.wire.kalium.logic.feature.AccountLocks
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
@@ -148,10 +149,13 @@ public actual class CoreLogic(
 
     /**
      * Opens [userId] for work with execution time of its own, such as a CallKit call or a background task, and keeps
-     * it open in the background until [AccountExecutionHold.release].
+     * it open in the background until [AccountExecutionHold.release]. [reason] names that work in logs, such as CALL.
      */
-    public suspend fun holdSessionScope(userId: UserId): AccountExecutionHold =
-        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).hold(userId)
+    public suspend fun holdSessionScope(userId: UserId, reason: String): AccountExecutionHold =
+        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).hold(userId, reason)
+
+    /** Which accounts the app still holds the lock of, and why; `releaseBackgroundAccounts` logs it as it ends. */
+    public fun lockedAccounts(): AccountLocks = (userSessionScopeProvider.value as UserSessionScopeProviderImpl).lockedAccounts()
 
     /**
      * Fully close an account after the host has cancelled and joined its users and collectors.

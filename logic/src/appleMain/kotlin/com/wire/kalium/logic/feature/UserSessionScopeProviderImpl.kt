@@ -53,6 +53,7 @@ import kotlinx.coroutines.job
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
+import com.wire.kalium.logic.sync.receiving.appleAccountFileKey
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
@@ -69,6 +70,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.concurrent.Volatile
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
@@ -129,13 +131,20 @@ internal actual open class UserSessionScopeProviderImpl(
      */
     private val execution = MutableStateFlow(Execution())
 
-    private data class Execution(val foreground: Boolean = true, val holds: Map<UserId, Int> = emptyMap()) {
+    private data class Execution(val foreground: Boolean = true, val holds: Map<UserId, List<Hold>> = emptyMap()) {
         fun allows(userId: UserId) = foreground || userId in holds
 
-        fun withHold(userId: UserId, change: Int): Execution {
-            val count = (holds[userId] ?: 0) + change
-            return copy(holds = if (count > 0) holds + (userId to count) else holds - userId)
+        fun with(userId: UserId, hold: Hold) = copy(holds = holds + (userId to holds[userId].orEmpty() + hold))
+
+        fun without(userId: UserId, hold: Hold): Execution {
+            val rest = holds[userId].orEmpty() - hold
+            return copy(holds = if (rest.isEmpty()) holds - userId else holds + (userId to rest))
         }
+    }
+
+    /** One holder's claim, compared by identity: why it keeps the account and since when. */
+    private class Hold(val reason: String) {
+        val since = TimeSource.Monotonic.markNow()
     }
 
     /** Execution ended while an operation was about to take the lock: it waits for execution and starts again. */
@@ -251,7 +260,7 @@ internal actual open class UserSessionScopeProviderImpl(
      */
     @Suppress("TooGenericExceptionCaught")
     suspend fun releaseBackgroundAccounts(): Boolean = coroutineScope {
-        accounts.keys.toList().map { userId ->
+        val released = accounts.keys.toList().map { userId ->
             async {
                 try {
                     releaseUnlessAllowed(userId)
@@ -264,18 +273,37 @@ internal actual open class UserSessionScopeProviderImpl(
                 }
             }
         }.awaitAll().all { it }
+        kaliumLogger.i(lockedAccounts().toString())
+        released
     }
 
-    /** Opens [userId] for work with execution time of its own, such as a call; it keeps the account until released. */
+    /** The accounts this process still holds the lock of, with what keeps each: hold reasons, or nothing. */
+    fun lockedAccounts(): AccountLocks {
+        val current = execution.value
+        val locked = accounts.keys.filter { accounts[it]?.lease != null }.map { userId ->
+            val reasons = current.holds[userId].orEmpty().map { "${it.reason}@${it.since.elapsedNow().inWholeSeconds}s" }
+            // Pseudonymous: a prefix of the lock file's identity hash.
+            appleAccountFileKey(userId).take(ACCOUNT_KEY_LENGTH) to reasons.ifEmpty {
+                listOf(if (current.foreground) "FOREGROUND" else ACCOUNT_LOCK_UNAVAILABLE)
+            }
+        }
+        return AccountLocks(locked, hasHolds = current.holds.isNotEmpty())
+    }
+
+    /**
+     * Opens [userId] for work with execution time of its own, such as a call; it keeps the account until released.
+     * [reason] names that work in the background log, such as CALL or UPLOAD.
+     */
     @Suppress("TooGenericExceptionCaught")
-    suspend fun hold(userId: UserId): AccountExecutionHold {
+    suspend fun hold(userId: UserId, reason: String): AccountExecutionHold {
         // Count the hold before opening: a background release that decides after this keeps the account.
-        execution.update { it.withHold(userId, 1) }
+        val hold = Hold(reason)
+        execution.update { it.with(userId, hold) }
         val scope = try {
             open(userId)
         } catch (failure: Throwable) {
             withContext(NonCancellable) {
-                execution.update { it.withHold(userId, -1) }
+                execution.update { it.without(userId, hold) }
                 try {
                     releaseUnlessAllowed(userId)
                 } catch (cleanup: Throwable) {
@@ -284,7 +312,7 @@ internal actual open class UserSessionScopeProviderImpl(
             }
             throw failure
         }
-        return AccountExecutionHold(scope, endHold = { execution.update { it.withHold(userId, -1) } }) {
+        return AccountExecutionHold(scope, endHold = { execution.update { it.without(userId, hold) } }) {
             releaseUnlessAllowed(userId)
         }
     }
@@ -676,6 +704,9 @@ internal actual open class UserSessionScopeProviderImpl(
  * work behind an extension that iOS suspended with its host; callers fail or retry instead.
  */
 private val OWNERSHIP_TIMEOUT = 15.seconds
+
+/** Short enough to keep account keys pseudonymous in logs, long enough to tell accounts apart. */
+private const val ACCOUNT_KEY_LENGTH = 8
 
 /**
  * Long enough for a send on a working network to finish, short enough that the release still ends while iOS keeps

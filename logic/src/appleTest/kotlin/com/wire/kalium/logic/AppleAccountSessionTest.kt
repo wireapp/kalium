@@ -624,6 +624,10 @@ class AppleAccountSessionTest {
                 assertFailsWith<TimeoutCancellationException> { logic.releaseSessionScope(userId) }
                 assertEquals(Either.Left(AccountRuntimeFailure.BUSY), AppleAccountRuntimeOwner(root).tryAcquire(userId))
                 assertFailsWith<IllegalStateException> { logic.openSessionScope(userId) }
+                // Only the process's exit lets this lock go, and nothing holds it: the host may end the app.
+                logic.setForeground(false)
+                assertTrue(logic.lockedAccounts().hasUnreleasable)
+                assertFalse(logic.lockedAccounts().hasHolds)
             } finally {
                 finish.complete(Unit)
                 worker.join()
@@ -669,10 +673,12 @@ class AppleAccountSessionTest {
             val owner = AppleAccountRuntimeOwner(root)
             val first = logic.openSessionScope(userId)
             logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
-            val hold = logic.holdSessionScope(userId)
+            val hold = logic.holdSessionScope(userId, "CALL")
             kotlin.test.assertSame(first, hold.scope)
             logic.enterBackground()
             assertEquals(Either.Left(AccountRuntimeFailure.BUSY), owner.tryAcquire(userId))
+            assertTrue(logic.lockedAccounts().hasHolds)
+            assertTrue("=CALL@" in logic.lockedAccounts().toString(), logic.lockedAccounts().toString())
             val entered = CompletableDeferred<Unit>()
             val finish = CompletableDeferred<Unit>()
             val logout = async {
