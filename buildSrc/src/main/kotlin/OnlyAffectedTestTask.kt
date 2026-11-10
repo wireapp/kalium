@@ -22,6 +22,8 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.options.Option
 import org.gradle.kotlin.dsl.support.get
 import org.gradle.process.ExecOperations
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 /**
  * This task will run only the tests for affected modules and dependants when affected-module
@@ -85,6 +87,13 @@ open class OnlyAffectedTestTask : DefaultTask() {
         project.subprojects
             .filter { (runAllTests || affectedModules.contains(it.path)) && !ignoredModules.contains(it.path) }
             .filter { belongsToIosShard(it.path) }
+            .filter { childProject ->
+                if (configuration != TestTaskConfiguration.IOS_TEST_TASK) return@filter true
+                val kotlin = childProject.extensions.findByType(KotlinMultiplatformExtension::class.java) ?: return@filter true
+                val target = kotlin.targets.findByName("iosSimulatorArm64") as? KotlinNativeTarget ?: return@filter false
+                // KMP registers test tasks even when their compilation has no sources.
+                target.compilations.getByName("test").allKotlinSourceSets.any { it.kotlin.files.isNotEmpty() }
+            }
             .forEach { childProject ->
                 val targetTaskName = childProject.tasks.names.firstOrNull { it.equals(configuration.testTarget, true) }
                 targetTaskName?.let { taskName ->
