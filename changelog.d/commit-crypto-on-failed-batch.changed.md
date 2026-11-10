@@ -1,0 +1,1 @@
+A failed incremental-sync batch commits its CoreCrypto state again instead of rolling it back, as before super-kalium#38. Nothing is acknowledged, so the batch is retried. Receipt and recovery failures still roll back.

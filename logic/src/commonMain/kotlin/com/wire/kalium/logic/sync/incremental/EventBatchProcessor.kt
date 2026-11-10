@@ -43,7 +43,8 @@ import kotlinx.coroutines.withContext
  * Applies one gathered app event batch and completes its queue acknowledgement.
  *
  * The batch owns cancellation until native transactions and acknowledgement finish.
- * Required effect and receipt failures throw from the native callback to prevent a commit.
+ * A failed event returns Left, so native crypto commits what the batch reached, as it did before super-kalium#38;
+ * nothing is acknowledged and the batch is retried. Receipt and recovery failures still throw to prevent a commit.
  * Queue acknowledgement starts only after both native transactions return successfully.
  * Standard and durable receiving retain their own traversal and acknowledgement failure policy.
  */
@@ -108,8 +109,6 @@ private class EventBatchProcessorImpl(
                             batch.eventIds
                         }
                     }
-                    // Returning Either.Left would still let native crypto commit.
-                    .onFailure { throw KaliumSyncException("Processing failed", it) }
             }
         }.onSuccess { eventIds ->
             if (eventIds.isEmpty()) logger.i("No events to mark as processed")
