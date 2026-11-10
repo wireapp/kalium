@@ -849,7 +849,7 @@ public class UserSessionScope internal constructor(
         )
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
-        get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
+        get() = KeyPackageLimitsProviderImpl(kaliumConfigs, userConfigRepository)
 
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
         ProteusMigrationRecoveryHandlerImpl(lazy { logout })
@@ -1820,8 +1820,7 @@ public class UserSessionScope internal constructor(
         lazy { clientRepository },
         lazy { client.refillKeyPackages },
         lazy { client.mlsKeyPackageCountUseCase },
-        lazy { users.timestampKeyRepository },
-        cryptoTransactionProvider
+        lazy { users.timestampKeyRepository }
     )
 
     internal val keyingMaterialsManager: KeyingMaterialsManager
@@ -2200,9 +2199,9 @@ public class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             pendingActionsRepository = pendingActionsRepository,
             resolvePendingOneOnOnes = { pendingOneOnOneResolutionRequests.trySend(Unit) },
-            refillKeyPackages = client.refillKeyPackages,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
-            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
+            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
+            keyPackageManager = keyPackageManager
         )
 
     private val renamedConversationHandler: RenamedConversationEventHandler
@@ -2398,7 +2397,12 @@ public class UserSessionScope internal constructor(
         get() = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
 
     private val mlsMigrationConfigHandler
-        get() = MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
+        get() = MLSMigrationConfigHandler(
+            userConfigRepository,
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            cryptoTransactionProvider,
+            lazy { keyPackageManager }
+        )
 
     private val classifiedDomainsConfigHandler
         get() = ClassifiedDomainsConfigHandler(userConfigRepository)

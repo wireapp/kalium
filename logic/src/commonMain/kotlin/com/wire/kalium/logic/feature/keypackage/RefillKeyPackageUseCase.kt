@@ -22,11 +22,14 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.toModel
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
@@ -45,10 +48,12 @@ internal sealed class RefillKeyPackagesResult {
  * If no key packages were left, other clients could not add this client to new MLS groups. In that case
  * pending MLS conversations are flagged to be joined by external commit, before uploading, so the flag
  * survives a failed upload or a restart.
+ *
+ * Each batch runs in its own MLS transaction, so this must not be called from inside another crypto transaction.
  */
 internal interface RefillKeyPackagesUseCase {
 
-    suspend operator fun invoke(mlsContext: MlsCoreCryptoContext): RefillKeyPackagesResult
+    suspend operator fun invoke(): RefillKeyPackagesResult
 
 }
 
@@ -57,21 +62,23 @@ internal class RefillKeyPackagesUseCaseImpl(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userConfigRepository: UserConfigRepository,
+    private val transactionProvider: CryptoTransactionProvider,
 ) : RefillKeyPackagesUseCase {
-    override suspend operator fun invoke(mlsContext: MlsCoreCryptoContext): RefillKeyPackagesResult {
+    override suspend operator fun invoke(): RefillKeyPackagesResult {
         val selfClientId = currentClientIdProvider().getOrElse {
             return RefillKeyPackagesResult.Failure(it)
         }
-        val cipherSuite = mlsContext.getDefaultCipherSuite().toModel()
-        return keyPackageRepository.getAvailableKeyPackageCount(selfClientId, cipherSuite)
+        return transactionProvider.mlsTransaction("getDefaultCipherSuite") {
+            it.getDefaultCipherSuite().toModel().right()
+        }
+            .flatMap { cipherSuite -> keyPackageRepository.getAvailableKeyPackageCount(selfClientId, cipherSuite) }
             .flatMap {
                 kaliumLogger.i("Key packages: Found ${it.count} available key packages")
                 flagPendingConversationsIfDepleted(it.count).flatMap { _ ->
-                    if (keyPackageLimitsProvider.needsRefill(it.count)) {
-                        kaliumLogger.i("Key packages: Refilling key packages...")
-                        val amount = keyPackageLimitsProvider.refillAmount()
-                        keyPackageRepository.uploadNewKeyPackages(mlsContext, selfClientId, amount)
-                            .flatMap { Either.Right(Unit) }
+                    val pool = keyPackageLimitsProvider.keyPackagePool()
+                    if (pool.needsRefill(it.count)) {
+                        kaliumLogger.i("Key packages: Refilling key packages to ${pool.targetSize}...")
+                        uploadInBatches(selfClientId, pool.missingKeyPackages(it.count))
                     } else {
                         kaliumLogger.i("Key packages: Refill not needed")
                         Either.Right(Unit)
@@ -82,6 +89,15 @@ internal class RefillKeyPackagesUseCaseImpl(
             }, {
                 RefillKeyPackagesResult.Success
             })
+    }
+
+    private suspend fun uploadInBatches(clientId: ClientId, amount: Int): Either<CoreFailure, Unit> {
+        val batchSize = keyPackageLimitsProvider.refillAmount()
+        return (0 until amount step batchSize).toList().foldToEitherWhileRight(Unit) { offset, _ ->
+            transactionProvider.mlsTransaction("RefillKeyPackages") { mlsContext ->
+                keyPackageRepository.uploadNewKeyPackages(mlsContext, clientId, minOf(batchSize, amount - offset))
+            }
+        }
     }
 
     private suspend fun flagPendingConversationsIfDepleted(availableCount: Int): Either<CoreFailure, Unit> =

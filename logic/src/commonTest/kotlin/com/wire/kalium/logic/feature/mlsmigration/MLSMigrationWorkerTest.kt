@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerTest.Arrangement.Companion.MIGRATION_CONFIG
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerTest.Arrangement.Companion.NOT_FOUND_FAILURE
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerTest.Arrangement.Companion.TEST_FAILURE
@@ -194,6 +195,7 @@ class MLSMigrationWorkerTest {
         val featureConfigRepository: FeatureConfigRepository = mock<FeatureConfigRepository>(mode = MockMode.autoUnit)
         val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>(mode = MockMode.autoUnit)
         val mlsMigrator: MLSMigrator = mock<MLSMigrator>(mode = MockMode.autoUnit)
+        val keyPackageManager = mock<KeyPackageManager>(mode = MockMode.autoUnit)
 
         val mlsConfigHandler = MLSConfigHandler(
             userConfigRepository,
@@ -204,7 +206,8 @@ class MLSMigrationWorkerTest {
         val mlsMigrationConfigHandler = MLSMigrationConfigHandler(
             userConfigRepository,
             updateSupportedProtocolsAndResolveOneOnOnes,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            lazy { keyPackageManager }
         )
 
         suspend fun withGetMLSMigrationConfigurationsReturns(result: Either<StorageFailure, MLSMigrationModel>) = apply {
