@@ -69,7 +69,7 @@ internal class IncrementalSyncWorkerImpl(
             .filterIsInstance<EventStreamData.NewEvents>()
             .collect { streamData ->
                 logger.d("$TAG Received ${streamData.eventList.size} events to process")
-                streamData.eventList.chunked(maxBatchSize.get()).forEach { processBatch(it) }
+                streamData.eventList.inBatchesOf(maxBatchSize.get()).forEach { processBatch(it) }
             }
         logger.i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()
@@ -87,6 +87,18 @@ internal class IncrementalSyncWorkerImpl(
             throw e
         }
     }
+
+    // Payloads of one stored event share its id and are acknowledged together, so a batch never splits them.
+    private fun List<EventEnvelope>.inBatchesOf(maxSize: Int): List<List<EventEnvelope>> =
+        fold(mutableListOf<MutableList<EventEnvelope>>()) { batches, envelope ->
+            val current = batches.lastOrNull()
+            if (current != null && (current.size < maxSize || current.last().event.id == envelope.event.id)) {
+                current += envelope
+            } else {
+                batches += mutableListOf(envelope)
+            }
+            batches
+        }
 
     companion object {
         const val TAG = "[IncrementalSyncWorker]"
