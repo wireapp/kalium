@@ -41,7 +41,7 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.GetSelfDeletionTimerForConversation
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
@@ -57,7 +57,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlin.time.Clock
-import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /**
@@ -76,7 +75,7 @@ public class SendTextMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
-    private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
+    private val selfDeleteTimer: GetSelfDeletionTimerForConversation,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val pendingMessagesEnabled: Boolean = true,
     private val scope: CoroutineScope,
@@ -143,10 +142,11 @@ public class SendTextMessageUseCase internal constructor(
         // visible locally even while foreground sync is resuming or waiting for crypto.
         if (sendLater) awaitSlowSync()
 
+        val messageTimer = selfDeleteTimer(conversationId).fold(
+            { return MessageOperationResult.Failure(it) },
+            { it }
+        ).duration
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
-        val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
-            .first()
-            .duration
 
         val previews = uploadLinkPreviewImages(linkPreviews, conversationId)
 

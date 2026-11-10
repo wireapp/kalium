@@ -120,6 +120,7 @@ import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseC
 import com.wire.kalium.logic.feature.message.linkpreview.DetectLinkPreviewTargetUseCase
 import com.wire.kalium.logic.feature.message.linkpreview.DetectLinkPreviewTargetUseCaseImpl
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.GetSelfDeletionTimerForConversation
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
@@ -168,6 +169,7 @@ public class MessageScope internal constructor(
     private val kaliumFileSystem: KaliumFileSystem,
     private val protoContentMapper: ProtoContentMapper,
     private val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase,
+    private val getSelfDeletionTimer: GetSelfDeletionTimerForConversation,
     private val messageMetadataRepository: MessageMetadataRepository,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val legalHoldHandler: LegalHoldHandler,
@@ -236,7 +238,7 @@ public class MessageScope internal constructor(
 
     private val messageContentEncoder = MessageContentEncoder()
     private val refreshPendingTextPolicy: RefreshPendingTextPolicy
-        get() = RefreshPendingTextPolicy(messageRepository, userPropertyRepository, observeSelfDeletingMessages)
+        get() = RefreshPendingTextPolicy(messageRepository, userPropertyRepository, getSelfDeletionTimer)
 
     private val messageSendingInterceptor: MessageSendingInterceptor
         get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
@@ -315,7 +317,7 @@ public class MessageScope internal constructor(
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
-            selfDeleteTimer = observeSelfDeletingMessages,
+            selfDeleteTimer = getSelfDeletionTimer,
             scope = scope,
             pendingMessagesEnabled = kaliumConfigs.pendingMessages
         )

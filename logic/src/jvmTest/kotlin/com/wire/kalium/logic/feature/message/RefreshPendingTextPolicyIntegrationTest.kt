@@ -12,7 +12,7 @@ import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.GetSelfDeletionTimerForConversation
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
@@ -25,7 +25,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -60,9 +59,9 @@ class RefreshPendingTextPolicyIntegrationTest {
                 messageDAO = database.builder.messageDAO
             )
             val properties = mock<UserPropertyRepository>()
-            val timer = mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>()
+            val timer = mock<GetSelfDeletionTimerForConversation>()
             everySuspend { properties.getReadReceiptsStatus() } returns personal
-            everySuspend { timer(any(), any()) } returns flowOf(SelfDeletionTimer.Disabled)
+            everySuspend { timer(any()) } returns Either.Right(SelfDeletionTimer.Disabled)
             val pending = TestMessage.TEXT_MESSAGE.copy(
                 isSelfMessage = true,
                 senderUserId = TestUser.USER_ID,

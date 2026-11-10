@@ -36,7 +36,7 @@ import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.GetSelfDeletionTimerForConversation
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -62,13 +62,48 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertIs
 
 class SendTextMessageCaseTest {
+
+    @Test
+    fun missingConversationFailsBeforeWaitingForTimerOrPersistingText() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this).arrange()
+        everySuspend { arrangement.getSelfDeletionTimer(TestConversation.ID) } returns
+            Either.Left(StorageFailure.DataNotFound)
+
+        val result = kotlinx.coroutines.withTimeout(1_000) {
+            sendTextMessage(TestConversation.ID, "must not be persisted")
+        }
+
+        kotlin.test.assertEquals(MessageOperationResult.Failure(StorageFailure.DataNotFound), result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage.invoke(any())
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun removedConversationDoesNotPreventSendingToAnExistingConversation() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .arrange()
+        val deletedId = TestConversation.id(99)
+        everySuspend { arrangement.getSelfDeletionTimer(deletedId) } returns
+            Either.Left(StorageFailure.DataNotFound)
+
+        kotlin.test.assertEquals(MessageOperationResult.Failure(StorageFailure.DataNotFound), sendTextMessage(deletedId, "rejected"))
+        kotlin.test.assertEquals(MessageOperationResult.Success, sendTextMessage(TestConversation.ID, "still works"))
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage.invoke(any()) }
+    }
 
     @Test
     fun pendingTextUsesPolicySyncedAfterLocalPersistence() = runTest {
@@ -84,7 +119,7 @@ class SendTextMessageCaseTest {
         everySuspend { messages.updatePendingTextPolicy(any(), any(), any(), any()) } returns Either.Right(Unit)
         everySuspend { messages.getReceiptModeFromGroupConversationByQualifiedID(any()) } returns Either.Right(null)
         val refresh = RefreshPendingTextPolicy(messages, arrangement.userPropertyRepository,
-            arrangement.observeSelfDeletionTimerSettingsForConversation)
+            arrangement.getSelfDeletionTimer)
         var prepared: com.wire.kalium.logic.data.message.Message.Sendable? = null
         everySuspend { arrangement.messageSender.sendMessage(any(), any()) } calls { args ->
             // Same policy preparation used by MessageScope for initial sends and retries.
@@ -601,7 +636,7 @@ class SendTextMessageCaseTest {
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
         val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
         val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
-        val observeSelfDeletionTimerSettingsForConversation = mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>(mode = MockMode.autoUnit)
+        val getSelfDeletionTimer = mock<GetSelfDeletionTimerForConversation>(mode = MockMode.autoUnit)
         private var pendingMessages = true
 
         suspend fun withSendMessageSuccess() = apply {
@@ -658,8 +693,8 @@ class SendTextMessageCaseTest {
 
         suspend fun withMessageTimer(result: SelfDeletionTimer) = apply {
             everySuspend {
-                observeSelfDeletionTimerSettingsForConversation.invoke(any(), any())
-            } returns flowOf(result)
+                getSelfDeletionTimer.invoke(any())
+            } returns Either.Right(result)
         }
 
         fun withPendingMessagesDisabled() = apply {
@@ -678,7 +713,7 @@ class SendTextMessageCaseTest {
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
-            selfDeleteTimer = observeSelfDeletionTimerSettingsForConversation,
+            selfDeleteTimer = getSelfDeletionTimer,
             scope = coroutineScope,
             dispatchers = coroutineScope.testKaliumDispatcher,
             pendingMessagesEnabled = pendingMessages

@@ -378,6 +378,7 @@ import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelectorImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCaseImpl
 import com.wire.kalium.logic.feature.search.SearchScope
+import com.wire.kalium.logic.feature.selfDeletingMessages.GetSelfDeletionTimerForConversationImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
@@ -2760,6 +2761,10 @@ public class UserSessionScope internal constructor(
             kaliumFileSystem,
             protoContentMapper,
             observeSelfDeletingMessages,
+            GetSelfDeletionTimerForConversationImpl(
+                conversationRepository,
+                userConfigRepository
+            ),
             messageMetadataRepository,
             staleEpochVerifier,
             legalHoldHandler,

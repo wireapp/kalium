@@ -12,7 +12,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.GetSelfDeletionTimerForConversation
 import com.wire.kalium.logic.framework.TestMessage
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -20,20 +20,32 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class RefreshPendingTextPolicyTest {
     @Test
+    fun missingConversationStopsPendingPolicyRefresh() = runTest {
+        val messages = mock<MessageRepository>()
+        val properties = mock<UserPropertyRepository>()
+        val timer = mock<GetSelfDeletionTimerForConversation>()
+        val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true, status = Message.Status.Pending,
+            editStatus = Message.EditStatus.NotEdited, expirationData = null)
+        everySuspend { timer(any()) } returns Either.Left(StorageFailure.DataNotFound)
+
+        assertEquals(Either.Left(StorageFailure.DataNotFound), RefreshPendingTextPolicy(messages, properties, timer)(pending))
+        verifySuspend(VerifyMode.not) { messages.updatePendingTextPolicy(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun receiptLookupFailureDoesNotOverwriteGroupPolicy() = runTest {
         val messages = mock<MessageRepository>()
         val properties = mock<UserPropertyRepository>()
-        val timer = mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>()
+        val timer = mock<GetSelfDeletionTimerForConversation>()
         val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true, status = Message.Status.Pending,
             editStatus = Message.EditStatus.NotEdited, expirationData = null)
-        everySuspend { timer(any(), any()) } returns flowOf(SelfDeletionTimer.Disabled)
+        everySuspend { timer(any()) } returns Either.Right(SelfDeletionTimer.Disabled)
         everySuspend { properties.getReadReceiptsStatus() } returns false
         everySuspend { messages.getReceiptModeFromGroupConversationByQualifiedID(any()) } returns
             Either.Left(StorageFailure.DataNotFound)
@@ -61,10 +73,10 @@ class RefreshPendingTextPolicyTest {
     private suspend fun checkReceipts(mode: Conversation.ReceiptMode?, personal: Boolean, expected: Boolean) {
         val messages = mock<MessageRepository>()
         val properties = mock<UserPropertyRepository>()
-        val timer = mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>()
+        val timer = mock<GetSelfDeletionTimerForConversation>()
         val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true, status = Message.Status.Pending,
             editStatus = Message.EditStatus.NotEdited, expirationData = null)
-        everySuspend { timer(any(), any()) } returns flowOf(SelfDeletionTimer.Disabled)
+        everySuspend { timer(any()) } returns Either.Right(SelfDeletionTimer.Disabled)
         everySuspend { properties.getReadReceiptsStatus() } returns personal
         everySuspend { messages.getReceiptModeFromGroupConversationByQualifiedID(any()) } returns Either.Right(mode)
         everySuspend { messages.updatePendingTextPolicy(any(), any(), any(), any()) } returns Either.Right(Unit)
