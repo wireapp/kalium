@@ -619,9 +619,13 @@ internal actual open class UserSessionScopeProviderImpl(
     private suspend fun acquire(account: OwnedAccount, userId: UserId) {
         if (account.lease != null) return
         requireExecution(userId)
-        val acquired = owner.acquire(userId, OWNERSHIP_TIMEOUT) { execution.value.allows(userId) }
-        if (!execution.value.allows(userId)) (acquired as? Either.Right)?.value?.release()
-        requireExecution(userId)
+        var revoked = false
+        val acquired = owner.acquire(userId, OWNERSHIP_TIMEOUT) { execution.value.allows(userId).also { revoked = !it } }
+        // One decision: a wait execution ended is no busy owner, and a lock won as it ended is let go.
+        if (revoked || !execution.value.allows(userId)) {
+            (acquired as? Either.Right)?.value?.release()
+            throw NoExecution()
+        }
         account.lease = when (acquired) {
             is Either.Left -> throw if (acquired.value == AccountRuntimeFailure.BUSY) {
                 AccountBusyException(owner.holder(userId)).also { kaliumLogger.w("Account ownership wait ended: ${it.message}") }
