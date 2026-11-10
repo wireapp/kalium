@@ -93,8 +93,7 @@ NSE opening retries a busy lease for up to 3 seconds, which covers the app's bac
 handoff, and waits for another attempt of the same process to finish: that attempt presents
 only what it received. If the account stays busy, the NSE asks the host for a generic alert.
 Missing or incompatible readiness, such as after an app update until the app's sync is live,
-also asks for one, and so does storage it cannot read. `appPresentsAlerts` would suppress
-these alerts, but the app no longer sets it. Opening then reads compatible readiness,
+also asks for one, and so does storage it cannot read. Opening then reads compatible readiness,
 checks existing store files and credentials, and opens owned resources. It never
 logs in, registers a client or initializes missing stores to repair preparation.
 SQLite opens without creation or migration. For an encrypted account, the NSE
@@ -286,9 +285,8 @@ incremental sync runs the matching consumer before gathering:
   the stored legal-hold status. The app recovers its transition journals, then
   processes the events normally; for enable and disable it refreshes the user's
   clients first. Every later attempt stops at the same event until the app runs, so a
-  push whose event waits behind it asks for a generic alert unless the app presents
-  alerts. The self user's legal-hold request is a single stored value, which the NSE
-  writes as the app does.
+  push whose event waits behind it asks for a generic alert. The self user's legal-hold
+  request is a single stored value, which the NSE writes as the app does.
 
 The Apple app's pre-sync cleanup also retries pending MLS group wipes queued by local
 removal.
