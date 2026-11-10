@@ -38,7 +38,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">ba5ed76
+        <div class="library-version" id="library-version">2903d62
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
@@ -93,7 +93,7 @@
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.sync.incremental</a><span class="delimiter">/</span><span class="current">EventBatchProcessor</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Event</span><wbr><span>Batch</span><wbr><span><span>Processor</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="index.html">EventBatchProcessor</a></div><p class="paragraph">Applies one gathered app event batch and completes its queue acknowledgement.</p><p class="paragraph">The batch owns cancellation until native transactions and acknowledgement finish. Required effect and receipt failures throw from the native callback to prevent a commit. Queue acknowledgement starts only after both native transactions return successfully. Standard and durable receiving retain their own traversal and acknowledgement failure policy.</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="index.html">EventBatchProcessor</a></div><p class="paragraph">Applies one gathered app event batch and completes its queue acknowledgement.</p><p class="paragraph">The batch owns cancellation until native transactions and acknowledgement finish. A failed batch keeps its native crypto changes and is retried without being acknowledged. Receipt and recovery failures still throw to prevent a commit. Queue acknowledgement starts only after both native transactions return successfully. Standard and durable receiving retain their own traversal and acknowledgement failure policy.</p></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
