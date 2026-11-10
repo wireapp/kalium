@@ -538,7 +538,8 @@ internal actual open class UserSessionScopeProviderImpl(
         operation: suspend () -> T,
     ): T {
         while (true) {
-            if (!account.access.admitsCaller()) execution.first { it.allows(userId) }
+            val admitted = account.access.admitsCaller()
+            if (!admitted) execution.first { it.allows(userId) }
             val access = account.access
             var completed = false
             var result: T? = null
@@ -572,7 +573,9 @@ internal actual open class UserSessionScopeProviderImpl(
                         }
                     },
                 )
-            } catch (_: NoExecution) {
+            } catch (noExecution: NoExecution) {
+                // Admitted work would hold up the drain it waits on, and a retry here would rerun its caller: fail it.
+                if (admitted) throw IllegalStateException("Account work admitted without the lock cannot wait for execution", noExecution)
                 // Nothing changed: wait for execution time, then start again on the current gate.
                 continue
             }
