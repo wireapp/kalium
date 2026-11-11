@@ -162,7 +162,7 @@ internal class ConversationApiV5Test : ApiTest() {
         assertIs<UpdateConversationProtocolResponse.ProtocolUpdated>(response.value)
         assertEquals(
             EventContentDTOJson.validUpdateProtocol.serializableData,
-            (response.value as UpdateConversationProtocolResponse.ProtocolUpdated).event
+            response.value.event
         )
     }
 
