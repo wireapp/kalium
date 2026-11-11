@@ -26,11 +26,13 @@ import dev.mokkery.everySuspend
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
+import kotlinx.coroutines.Job
 
 internal interface OneOnOneResolverArrangement {
 
     val oneOnOneResolver: OneOnOneResolver
 
+    suspend fun withScheduleResolveOneOnOneConversationWithUserId()
     suspend fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>)
     suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>)
     suspend fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>)
@@ -40,6 +42,12 @@ internal interface OneOnOneResolverArrangement {
 internal class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
 
     override val oneOnOneResolver = mock<OneOnOneResolver>(mode = MockMode.autoUnit)
+    override suspend fun withScheduleResolveOneOnOneConversationWithUserId() {
+        everySuspend {
+            oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any())
+        }.returns(Job())
+    }
+
     override suspend fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
         everySuspend {
             oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), true)

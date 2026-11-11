@@ -39,25 +39,22 @@ import kotlin.test.Test
 
 class RecoverPendingOneOnOneResolutionsUseCaseTest {
     @Test
-    fun givenSyncFailsBeforeGoingLive_whenInvoked_thenStillRecoversOnceLive() = runTest {
-        val pendingUserIds = listOf(TestUser.OTHER_USER_ID)
+    fun givenSyncDoesNotReachLive_whenInvoked_thenSkipsRecovery() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
-            .withPendingUserIds(pendingUserIds)
-            .withResolveResult(Either.Right(TestConversation.ID))
             .arrange()
 
         useCase()
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(pendingUserIds)
-        }
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.getPendingOneOnOneResolutions() }
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(any()) }
     }
 
     @Test
     fun givenRecoverySucceeds_whenInvoked_thenAcknowledgesRecoveredUsers() = runTest {
         val pendingUserIds = listOf(TestUser.OTHER_USER_ID, TestUser.OTHER_USER_ID_2)
         val (arrangement, useCase) = Arrangement()
+            .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
             .withResolveResult(Either.Right(TestConversation.ID))
             .arrange()
@@ -73,6 +70,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
     fun givenRecoveryFails_whenInvoked_thenDoesNotAcknowledgePendingUsers() = runTest {
         val pendingUserIds = listOf(TestUser.OTHER_USER_ID)
         val (arrangement, useCase) = Arrangement()
+            .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
             .withResolveResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
             .arrange()
@@ -88,6 +86,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         val successfulUserId = TestUser.OTHER_USER_ID_2
         val pendingUserIds = listOf(failedUserId, successfulUserId)
         val (arrangement, useCase) = Arrangement()
+            .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
             .withResolveResult(Either.Right(TestConversation.ID))
             .withResolveResultForUser(failedUserId, Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))

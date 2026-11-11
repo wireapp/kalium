@@ -380,6 +380,9 @@ class NewConversationEventHandlerTest {
             verifySuspend(VerifyMode.not) {
                 arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
             }
+            verifySuspend(VerifyMode.not) {
+                arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any())
+            }
         }
 
     @Test

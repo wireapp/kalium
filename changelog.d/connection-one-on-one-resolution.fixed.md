@@ -1,1 +1,1 @@
-Accepted connections received during sync queue the 1:1 resolution and start it once sync is live, instead of running it later on the receive batch's closed crypto transaction, so the 1:1 no longer stays unresolved.
+An accepted connection's 1:1 is resolved in its own crypto transaction once sync is live, instead of the receive batch's transaction, which has closed by then.
