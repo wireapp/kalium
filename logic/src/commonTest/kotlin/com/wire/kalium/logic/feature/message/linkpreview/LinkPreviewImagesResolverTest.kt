@@ -24,28 +24,66 @@ import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewImageLimits
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.MockMode
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.time.Instant
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Instant
 import okio.Path.Companion.toPath
-import kotlin.test.Test
 
 class LinkPreviewImagesResolverTest {
+
+    @Test
+    fun excessivePreviewsAreCappedEvenWhenDownloadsFail() = runTest {
+        val message = TEST_MESSAGE.copy(linkPreviews = List(50) { TEST_PREVIEW.copy(urlOffset = it) })
+        val (arrangement, useCase) = Arrangement(this).withMessage(message).withAssetFailure().arrange()
+
+        useCase(TestConversation.ID, message.id)
+        advanceUntilIdle()
+
+        verifySuspend(VerifyMode.exactly(LinkPreviewImageLimits.MAX_PREVIEWS_PER_MESSAGE)) {
+            arrangement.assetRepository.fetchLinkPreviewAsset(any())
+        }
+    }
+
+    @Test
+    fun concurrentResolversShareTheDownloadLimit() = runTest {
+        val (arrangement, first) = Arrangement(this).withMessage(TEST_MESSAGE).arrange()
+        val (_, second) = arrangement.arrange()
+        val release = CompletableDeferred<Unit>()
+        var started = 0
+        everySuspend { arrangement.assetRepository.fetchLinkPreviewAsset(any()) } calls {
+            started++
+            release.await()
+            Either.Left(NetworkFailure.NoNetworkConnection(null))
+        }
+
+        repeat(10) { (if (it % 2 == 0) first else second)(TestConversation.ID, TEST_MESSAGE.id) }
+        testScheduler.runCurrent()
+        assertEquals(LinkPreviewImageLimits.MAX_CONCURRENT_DOWNLOADS, started)
+        release.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(10, started)
+    }
 
     @Test
     fun givenMessageWithRemotePreviewImage_whenInvoked_thenShouldResolveAndPersistLocalPath() = runTest {
@@ -59,16 +97,7 @@ class LinkPreviewImagesResolverTest {
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.fetchPrivateDecodedAsset(
-                assetId = "asset-key",
-                assetDomain = "wire.com",
-                assetName = "preview.png",
-                mimeType = "image/png",
-                assetToken = "asset-token",
-                encryptionKey = any(),
-                assetSHA256Key = any(),
-                downloadIfNeeded = true
-            )
+            arrangement.assetRepository.fetchLinkPreviewAsset(TEST_IMAGE)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.updateLinkPreviewImageLocalPath(
@@ -97,7 +126,7 @@ class LinkPreviewImagesResolverTest {
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+            arrangement.assetRepository.fetchLinkPreviewAsset(any())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.updateLinkPreviewImageLocalPath(any(), any(), any(), any())
@@ -115,7 +144,7 @@ class LinkPreviewImagesResolverTest {
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+            arrangement.assetRepository.fetchLinkPreviewAsset(any())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.updateLinkPreviewImageLocalPath(any(), any(), any(), any())
@@ -135,7 +164,7 @@ class LinkPreviewImagesResolverTest {
             arrangement.messageRepository.getMessageById(any(), any())
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+            arrangement.assetRepository.fetchLinkPreviewAsset(any())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.updateLinkPreviewImageLocalPath(any(), any(), any(), any())
@@ -160,13 +189,13 @@ class LinkPreviewImagesResolverTest {
 
         fun withResolvedAsset(path: okio.Path) = apply {
             everySuspend {
-                assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+                assetRepository.fetchLinkPreviewAsset(any())
             } returns Either.Right(FetchedAssetData(path, true))
         }
 
         fun withAssetFailure() = apply {
             everySuspend {
-                assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+                assetRepository.fetchLinkPreviewAsset(any())
             } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
@@ -198,9 +227,9 @@ private val TEST_IMAGE = LinkPreviewAsset(
     assetKey = "asset-key",
     assetToken = "asset-token",
     assetDomain = "wire.com",
-    otrKey = byteArrayOf(1, 2, 3),
-    sha256Key = byteArrayOf(4, 5, 6),
-    encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+    otrKey = ByteArray(32) { 1 },
+    sha256Key = ByteArray(32) { 2 },
+    encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC
 )
 
 private val TEST_PREVIEW = MessageLinkPreview(

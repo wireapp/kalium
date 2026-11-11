@@ -20,12 +20,11 @@ package com.wire.kalium.logic.feature.message.linkpreview
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewImageLimits
 import com.wire.kalium.logic.data.message.linkpreview.hasRemoteAssetData
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -52,8 +51,10 @@ internal class LinkPreviewImagesResolverImpl(
         if (!linkPreviewEnabled) return
 
         scope.launch(dispatcher.io) {
-            messageRepository.getMessageById(conversationId, messageId).onSuccess { message ->
-                resolveMessage(conversationId, messageId, message)
+            LinkPreviewImageLimits.withDownloadPermit {
+                messageRepository.getMessageById(conversationId, messageId).onSuccess { message ->
+                    resolveMessage(conversationId, messageId, message)
+                }
             }
         }
     }
@@ -64,21 +65,12 @@ internal class LinkPreviewImagesResolverImpl(
         message: Message
     ) {
         val linkPreviews = (message as? Message.Regular)?.linkPreviews.orEmpty()
-        linkPreviews.forEach { preview ->
+        linkPreviews.take(LinkPreviewImageLimits.MAX_PREVIEWS_PER_MESSAGE).forEach { preview ->
             val image = preview.image ?: return@forEach
             if (image.assetDataPath != null) return@forEach
             if (!image.hasRemoteAssetData()) return@forEach
 
-            assetRepository.fetchPrivateDecodedAsset(
-                assetId = image.assetKey.orEmpty(),
-                assetDomain = image.assetDomain,
-                assetName = image.assetName ?: "link-preview-${preview.urlOffset}",
-                mimeType = image.mimeType,
-                assetToken = image.assetToken,
-                encryptionKey = AES256Key(image.otrKey),
-                assetSHA256Key = SHA256Key(image.sha256Key),
-                downloadIfNeeded = true
-            ).onSuccess { (decodedAssetPath, _) ->
+            assetRepository.fetchLinkPreviewAsset(image).onSuccess { (decodedAssetPath, _) ->
                 messageRepository.updateLinkPreviewImageLocalPath(
                     conversationId = conversationId,
                     messageId = messageId,

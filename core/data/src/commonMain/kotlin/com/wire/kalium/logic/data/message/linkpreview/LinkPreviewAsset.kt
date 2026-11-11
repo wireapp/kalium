@@ -40,4 +40,6 @@ data class LinkPreviewAsset(
 
 /** The app image resolver needs the remote identity and both cryptographic keys. */
 fun LinkPreviewAsset.hasRemoteAssetData(): Boolean =
-    !assetKey.isNullOrBlank() && otrKey.isNotEmpty() && sha256Key.isNotEmpty()
+    !assetKey.isNullOrBlank() && otrKey.size == PREVIEW_KEY_SIZE_BYTES && sha256Key.size == PREVIEW_KEY_SIZE_BYTES
+
+private const val PREVIEW_KEY_SIZE_BYTES = 32

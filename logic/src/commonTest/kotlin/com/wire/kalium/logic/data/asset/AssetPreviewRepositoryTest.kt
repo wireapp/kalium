@@ -27,6 +27,8 @@ import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewImageLimits
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -72,6 +74,44 @@ import okio.buffer
 import okio.use
 
 class AssetPreviewRepositoryTest {
+    @Test
+    fun linkPreviewWithForgedSizeIsStoppedWhileStreamingAndPartialFilesAreRemoved() = runTest {
+        val fixture = Fixture()
+        var written = 0L
+        everySuspend { fixture.api.downloadAsset(any(), any(), any(), any()) } calls { invocation ->
+            val sink = invocation.args[3] as Sink
+            repeat(1024) {
+                sink.write(Buffer().write(ByteArray(8192)), 8192)
+                written += 8192
+            }
+            NetworkResponse.Success(Unit, emptyMap(), 200)
+        }
+
+        fixture.repository.fetchLinkPreviewAsset(fixture.linkPreview()).shouldFail()
+
+        assertTrue(written in 1..LinkPreviewImageLimits.MAX_ENCRYPTED_SIZE_IN_BYTES)
+        fixture.assertNothingPersisted()
+    }
+
+    @Test
+    fun linkPreviewDecodedLimitAcceptsFiveMiBAndRejectsOneExtraByte() = runTest {
+        val limit = LinkPreviewImageLimits.MAX_SIZE_IN_BYTES.toInt()
+        for (size in listOf(limit, limit + 1)) {
+            val fixture = Fixture()
+            val image = fixture.linkPreview(fixture.withEncryptedDownload(size))
+
+            val result = fixture.repository.fetchLinkPreviewAsset(image)
+
+            if (size == limit) {
+                result.shouldSucceed { assertEquals(size.toLong(), fixture.files.size(it.path)) }
+                assertTrue(fixture.files.listDirectories(fixture.files.rootCachePath).isEmpty())
+            } else {
+                result.shouldFail()
+                fixture.assertNothingPersisted()
+            }
+        }
+    }
+
     @Test
     fun declaredOversizeIsRejectedBeforeCacheOrDownload() = runTest {
         val fixture = Fixture()
@@ -499,7 +539,6 @@ class AssetPreviewRepositoryTest {
             val encrypted = Buffer()
             encryptFileWithAES256(Buffer().write(ByteArray(decodedSize) { 3 }), key, encrypted)
             val bytes = encrypted.readByteArray()
-            if (decodedSize >= MAX_SIZE) assertEquals(MAX_ENCRYPTED_SIZE, bytes.size.toLong())
             val hash = SHA256Key(calcFileSHA256(Buffer().write(bytes))!!)
             everySuspend { api.downloadAsset(any(), any(), any(), any()) } calls { invocation ->
                 beforeDownload()
@@ -510,6 +549,18 @@ class AssetPreviewRepositoryTest {
             }
             return preview.copy(sizeInBytes = decodedSize.toLong(), remoteData = preview.remoteData.copy(sha256 = hash.data))
         }
+
+        fun linkPreview(preview: AssetContent.Preview = this.preview) = LinkPreviewAsset(
+            mimeType = preview.mimeType,
+            assetDataPath = null,
+            assetDataSize = 1,
+            assetWidth = preview.width,
+            assetHeight = preview.height,
+            assetKey = preview.remoteData.assetId,
+            assetDomain = preview.remoteData.assetDomain,
+            otrKey = preview.remoteData.otrKey,
+            sha256Key = preview.remoteData.sha256,
+        )
 
         suspend fun assertNoDownloadFiles() {
             assertTrue(files.listDirectories(files.rootCachePath).isEmpty())

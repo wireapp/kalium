@@ -38,6 +38,9 @@ import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.hasValidPendingData
 import com.wire.kalium.logic.data.message.hasValidRemoteData
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewImageLimits
+import com.wire.kalium.logic.data.message.linkpreview.hasRemoteAssetData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.fileExtension
@@ -51,7 +54,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
-import okio.Buffer
 import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
@@ -172,6 +174,9 @@ internal interface AssetRepository {
 
     /** Fetches an optional preview with independent transfer, decoded-file and cached-file size limits. */
     suspend fun fetchPreviewAsset(preview: AssetContent.Preview): Either<CoreFailure, FetchedAssetData>
+
+    /** Fetches a link preview with transfer, decoded-file and cached-file limits independent of its declared size. */
+    suspend fun fetchLinkPreviewAsset(image: LinkPreviewAsset): Either<CoreFailure, FetchedAssetData>
 }
 
 @Suppress("TooManyFunctions")
@@ -416,7 +421,31 @@ internal class AssetDataSource(
         )
     }
 
-    private suspend fun fetchCachedPreview(assetId: String, assetDomain: String?): Either<CoreFailure, FetchedAssetData> =
+    override suspend fun fetchLinkPreviewAsset(image: LinkPreviewAsset): Either<CoreFailure, FetchedAssetData> {
+        if (!image.hasRemoteAssetData()) {
+            return Either.Left(StorageFailure.Generic(IOException("Invalid link preview encryption data")))
+        }
+        val assetId = checkNotNull(image.assetKey)
+        return fetchCachedPreview(assetId, image.assetDomain, LinkPreviewImageLimits.MAX_SIZE_IN_BYTES).flatMapLeft {
+            if (it != StorageFailure.DataNotFound) Either.Left(it)
+            else downloadDecodedAsset(
+                assetId = assetId,
+                assetDomain = image.assetDomain,
+                assetName = image.assetName ?: "link-preview",
+                assetToken = image.assetToken,
+                mimeType = image.mimeType,
+                encryptionKey = AES256Key(image.otrKey),
+                assetSHA256 = SHA256Key(image.sha256Key),
+                maxDecodedSize = LinkPreviewImageLimits.MAX_SIZE_IN_BYTES,
+            )
+        }
+    }
+
+    private suspend fun fetchCachedPreview(
+        assetId: String,
+        assetDomain: String?,
+        maxDecodedSize: Long = AssetContent.Preview.MAX_SIZE_IN_BYTES,
+    ): Either<CoreFailure, FetchedAssetData> =
         wrapStorageRequest { assetDao.getAssetByKey(assetId).firstOrNull() }
             .flatMap { asset ->
                 wrapStorageRequest {
@@ -429,11 +458,11 @@ internal class AssetDataSource(
                     }
                 }
             }
-            .flatMap { cachedPreviewData(it) }
+            .flatMap { cachedPreviewData(it, maxDecodedSize) }
 
-    private fun cachedPreviewData(path: Path): Either<CoreFailure, FetchedAssetData> = wrapStorageRequest {
+    private fun cachedPreviewData(path: Path, maxDecodedSize: Long): Either<CoreFailure, FetchedAssetData> = wrapStorageRequest {
         val size = kaliumFileSystem.size(path)
-        if (size == null || size !in 1..AssetContent.Preview.MAX_SIZE_IN_BYTES) {
+        if (size == null || size !in 1..maxDecodedSize) {
             // The same remote ID may also be referenced as an original attachment.
             throw IOException("Cached asset preview exceeds size limit")
         }
@@ -554,7 +583,7 @@ internal class AssetDataSource(
                 Either.Left(StorageFailure.Generic(IOException("Decoded asset preview exceeds size limit")))
             else -> saveAssetInDB(assetId, assetDomain, path, assetDataSize).flatMap {
                 if (maxDecodedSize == null) Either.Right(FetchedAssetData(path, true))
-                else fetchCachedPreview(assetId, assetDomain).map {
+                else fetchCachedPreview(assetId, assetDomain, maxDecodedSize).map {
                     // INSERT OR IGNORE may retain a concurrent download. Return its managed path;
                     // the outer cleanup removes our unused candidate when the paths differ.
                     it.copy(justDownloaded = it.path == path)
@@ -656,22 +685,6 @@ private fun buildFileName(name: String, extension: String?): String =
 private const val PUBLIC_ASSET_CONVERSATION_ID = "00000000-0000-0000-0000-000000000000"
 
 internal data class FetchedAssetData(val path: Path, val justDownloaded: Boolean)
-
-/** A throwing sink stops the streaming HTTP reader before an oversized response reaches disk. */
-private class BoundedAssetSink(private val delegate: Sink, private val maxBytes: Long) : Sink by delegate {
-    private var bytesWritten = 0L
-    var limitExceeded: Boolean = false
-        private set
-
-    override fun write(source: Buffer, byteCount: Long) {
-        if (byteCount > maxBytes - bytesWritten) {
-            limitExceeded = true
-            throw IOException("Asset preview exceeds size limit")
-        }
-        delegate.write(source, byteCount)
-        bytesWritten += byteCount
-    }
-}
 
 private const val AES_BLOCK_SIZE = 16L
 

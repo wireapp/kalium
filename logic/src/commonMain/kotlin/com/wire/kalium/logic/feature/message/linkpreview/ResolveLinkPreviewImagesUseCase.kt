@@ -17,19 +17,11 @@
  */
 package com.wire.kalium.logic.feature.message.linkpreview
 
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * Opportunistically resolves remotely-backed link preview images into persistent local files.
@@ -41,55 +33,12 @@ public interface ResolveLinkPreviewImagesUseCase {
 }
 
 internal class ResolveLinkPreviewImagesUseCaseImpl(
-    private val messageRepository: MessageRepository,
-    private val assetRepository: AssetRepository,
-    private val scope: CoroutineScope,
-    private val dispatcher: KaliumDispatcher
+    messageRepository: MessageRepository,
+    assetRepository: AssetRepository,
+    scope: CoroutineScope,
+    dispatcher: KaliumDispatcher
 ) : ResolveLinkPreviewImagesUseCase {
+    private val resolver = LinkPreviewImagesResolverImpl(messageRepository, assetRepository, true, scope, dispatcher)
 
-    override fun invoke(conversationId: ConversationId, messageId: String) {
-        scope.launch(dispatcher.io) {
-            messageRepository.getMessageById(conversationId, messageId).onSuccess { message ->
-                resolveMessage(conversationId, messageId, message)
-            }
-        }
-    }
-
-    private suspend fun resolveMessage(
-        conversationId: ConversationId,
-        messageId: String,
-        message: Message
-    ) {
-        val linkPreviews = (message as? Message.Regular)?.linkPreviews.orEmpty()
-        linkPreviews.forEach { preview ->
-            val image = preview.image ?: return@forEach
-            if (image.assetDataPath != null) return@forEach
-            if (!image.hasRemoteAssetData()) return@forEach
-
-            assetRepository.fetchPrivateDecodedAsset(
-                assetId = image.assetKey.orEmpty(),
-                assetDomain = image.assetDomain,
-                assetName = image.assetName ?: "link-preview-${preview.urlOffset}",
-                mimeType = image.mimeType,
-                assetToken = image.assetToken,
-                encryptionKey = AES256Key(image.otrKey),
-                assetSHA256Key = SHA256Key(image.sha256Key),
-                downloadIfNeeded = true
-            ).onSuccess { (decodedAssetPath, _) ->
-                messageRepository.updateLinkPreviewImageLocalPath(
-                    conversationId = conversationId,
-                    messageId = messageId,
-                    urlOffset = preview.urlOffset,
-                    localPath = decodedAssetPath.toString()
-                )
-            }.onFailure {
-                kaliumLogger.w(
-                    message = "Failed to resolve link preview image for messageId=$messageId urlOffset=${preview.urlOffset}: $it"
-                )
-            }
-        }
-    }
+    override fun invoke(conversationId: ConversationId, messageId: String): Unit = resolver(conversationId, messageId)
 }
-
-private fun LinkPreviewAsset.hasRemoteAssetData(): Boolean =
-    !assetKey.isNullOrBlank() && otrKey.isNotEmpty() && sha256Key.isNotEmpty()
