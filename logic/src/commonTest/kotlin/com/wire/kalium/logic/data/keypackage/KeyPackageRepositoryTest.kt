@@ -305,6 +305,7 @@ internal class KeyPackageRepositoryTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenFatalFailure_whenClaimingKeyPackages_thenActiveClaimsFinishButWaitingClaimsDoNotStart() = runTest {
         val failingUser = Arrangement.USER_ID.copy(value = "failing")
         val activeUser = Arrangement.USER_ID.copy(value = "active")

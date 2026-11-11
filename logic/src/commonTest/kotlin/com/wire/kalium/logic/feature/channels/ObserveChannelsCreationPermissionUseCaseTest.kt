@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.TestUserDatabase
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -134,6 +135,7 @@ class ObserveChannelsCreationPermissionUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenConfigsUpdate_thenShouldEmitNewValues() = runTest {
         configurationStorage.persistChannelsConfiguration(ChannelFeatureConfiguration.Disabled)
 
@@ -157,6 +159,7 @@ class ObserveChannelsCreationPermissionUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenUserTypeUpdates_thenShouldEmitNewValues() = runTest {
         configurationStorage.persistChannelsConfiguration(
             ChannelFeatureConfiguration.Enabled(

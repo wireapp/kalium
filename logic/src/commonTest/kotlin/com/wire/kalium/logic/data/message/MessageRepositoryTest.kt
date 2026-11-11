@@ -60,6 +60,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
+import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -153,6 +154,7 @@ class MessageRepositoryTest {
     }
 
     @Test
+    @OptIn(DelicateKaliumApi::class)
     fun givenAMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
         val message = TEST_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY

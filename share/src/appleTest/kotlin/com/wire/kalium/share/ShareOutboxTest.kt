@@ -34,6 +34,7 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -226,6 +227,7 @@ class ShareOutboxTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun aSheetGetsItsListWhileAShareIsBeingImported() = runTest {
         withDatabase { database ->
             seed(database)
@@ -251,6 +253,7 @@ class ShareOutboxTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun aShareHandedOffWhileAnImportWaitsForTheAccountIsClaimedAtOnce() = runTest {
         withDatabase { database ->
             seed(database)

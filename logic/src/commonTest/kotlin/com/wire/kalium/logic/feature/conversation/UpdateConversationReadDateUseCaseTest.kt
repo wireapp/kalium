@@ -45,6 +45,7 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -268,6 +269,7 @@ class UpdateConversationReadDateUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenCallerCancelledAfterEnqueue_whenQueued_thenWorkStillExecutes() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds

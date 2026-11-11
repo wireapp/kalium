@@ -56,6 +56,7 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -71,6 +72,7 @@ import kotlin.test.assertIs
 class SendTextMessageCaseTest {
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun pendingTextUsesPolicySyncedAfterLocalPersistence() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -112,6 +114,7 @@ class SendTextMessageCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun pendingMessageIsPersistedBeforeSyncCompletesAndTransportStillWaits() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -453,6 +456,7 @@ class SendTextMessageCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenPersistedText_whenTheScreenCallerIsCancelled_thenDomainDeliveryContinues() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -479,6 +483,7 @@ class SendTextMessageCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenPendingDraft_whenCallerLeavesBeforePersistenceAndReenters_thenOnlyOneMessageIsPersisted() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -506,6 +511,7 @@ class SendTextMessageCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenAnAlreadyConsumedRevision_whenAStalePreparedSubmissionResumes_thenNoDuplicateIsPersisted() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -526,6 +532,7 @@ class SendTextMessageCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenAMessageId_whenStoringText_thenItIsStoredUnderThatIdBeforeTheSendEnds() = runTest {
         val sent = CompletableDeferred<Unit>()
         val (arrangement, sendTextMessage) = Arrangement(this)
@@ -553,6 +560,7 @@ class SendTextMessageCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenStoringIsCancelledBeforeTheMessageIsStored_whenSyncCompletesLater_thenNothingIsStoredOrSent() = runTest {
         val slowSync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
         val (arrangement, sendTextMessage) = Arrangement(this)

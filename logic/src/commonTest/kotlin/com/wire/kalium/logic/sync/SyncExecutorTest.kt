@@ -29,8 +29,11 @@ import com.wire.kalium.logic.fakes.sync.FakeSyncStateObserver
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
@@ -55,6 +58,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SyncExecutorTest {
     @Test
     fun refreshResetsBothBackoffsWithoutReplacingActiveExecution() = runTest(TestKaliumDispatcher.default) {
@@ -516,6 +520,7 @@ class SyncExecutorTest {
     }
 
     @Test
+    @OptIn(DelicateKaliumApi::class)
     fun givenKeepSyncAlwaysOn_whenRequestBlockEnds_thenShouldKeepSync() = runTest(TestKaliumDispatcher.default) {
         val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
         val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
@@ -955,6 +960,7 @@ class SyncExecutorTest {
         override val syncState: StateFlow<SyncState> = mutableSyncState
     }
 
+    @OptIn(ExperimentalForInheritanceCoroutinesApi::class)
     private class PausableStateFlow<T>(initialValue: T) : StateFlow<T> {
         private val delegate = MutableStateFlow(initialValue)
         private val deliveryEnabled = MutableStateFlow(true)

@@ -28,6 +28,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -168,6 +169,7 @@ class SendGifMessageUseCaseTest {
             }
         }
 
+        @OptIn(ExperimentalCoroutinesApi::class)
         val useCase = SendGifMessageUseCaseImpl(
             sendText = { _, text, quotedMessageId ->
                 events += "text:$text:$quotedMessageId"

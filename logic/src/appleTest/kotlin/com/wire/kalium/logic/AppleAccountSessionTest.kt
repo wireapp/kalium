@@ -35,6 +35,7 @@ import dev.mokkery.mock
 import dev.mokkery.everySuspend
 import dev.mokkery.answering.calls
 import dev.mokkery.matcher.any
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import com.wire.kalium.logic.data.user.UserId
@@ -146,6 +147,7 @@ class AppleAccountSessionTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun `cancelled waiting app open creates no account storage`() = runTest {
         val (root, logic) = fixture()
         val owner = AppleAccountRuntimeOwner(root)
@@ -315,6 +317,7 @@ class AppleAccountSessionTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun `cancelled session removal waits for ownership before changing the account`() = runTest {
         val (root, logic) = fixture(prepared = true)
         val owner = AppleAccountRuntimeOwner(root)
@@ -370,6 +373,7 @@ class AppleAccountSessionTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun `cancelled credential installation cannot write before ownership`() = runTest {
         val (root, logic) = fixture(prepared = true)
         val owner = AppleAccountRuntimeOwner(root)

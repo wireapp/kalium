@@ -36,6 +36,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.CompletableDeferred
@@ -201,6 +202,7 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenAppsStillSyncing_whenOtherBranchesFinish_thenTeamSyncWaits() = runTest {
         val (arrangement, sync) = Arrangement()
             .withSelfUser(TestUser.SELF.right()).withTeam().withTeamMembers()
@@ -220,6 +222,7 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenTeamSyncIsCancelled_whenAppSyncIsRunning_thenChildIsDrained() = runTest {
         val (arrangement, sync) = Arrangement()
             .withSelfUser(TestUser.SELF.right()).withTeam().withTeamMembers()

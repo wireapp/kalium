@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.ConversationPersistenceApi
+import com.wire.kalium.util.DelicateKaliumApi
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -160,12 +161,14 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 
+    @OptIn(DelicateKaliumApi::class)
     override suspend fun withDeletingConversationLocallySucceeding(conversationId: (ConversationId) -> Boolean) {
         everySuspend {
             conversationRepository.deleteConversationLocally(matches { conversationId(it) })
         }.returns(Either.Right(true))
     }
 
+    @OptIn(DelicateKaliumApi::class)
     override suspend fun withDeletingConversationLocallyFailing(conversationId: (ConversationId) -> Boolean) {
         everySuspend {
             conversationRepository.deleteConversationLocally(matches { conversationId(it) })

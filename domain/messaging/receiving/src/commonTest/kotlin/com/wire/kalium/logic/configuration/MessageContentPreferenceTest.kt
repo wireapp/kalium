@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
@@ -88,6 +89,7 @@ class MessageContentPreferenceTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun writesCompleteAfterStorageAndCancellationPropagates() = runTest {
         val database = TestUserDatabase(UserIDEntity("completion", "example.test"), StandardTestDispatcher(testScheduler))
         try {

@@ -29,6 +29,7 @@ import io.ktor.client.engine.mock.MockEngine
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
@@ -83,6 +84,7 @@ internal class AuthenticatedNetworkCloseTest : ApiTest() {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun callerCancellationStillAwaitsClientCleanup() = runTest {
         val engine = MockEngine { error("No request expected") }
         val provider = provider(engine)
@@ -135,6 +137,7 @@ internal class AuthenticatedNetworkCloseTest : ApiTest() {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun closeSessionsWaitsForWebsocketClientTeardown() = runTest {
         val engine = MockEngine { error("No request expected") }
         lateinit var disposable: HttpClient

@@ -34,6 +34,7 @@ import dev.mokkery.everySuspend
 import dev.mokkery.mock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -291,6 +292,7 @@ class ReplaceCellFileContentUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenDraftMetadataIsDelayed_whenReplacing_thenWaitBeforePublishing() = runTest {
         val fixture = Fixture()
         fixture.draftReadsToSkip = 2
@@ -300,6 +302,7 @@ class ReplaceCellFileContentUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenDraftMetadataNeverAppears_whenReplacing_thenTimeoutWithoutPublishing() = runTest {
         val fixture = Fixture()
         fixture.draftReadsToSkip = Int.MAX_VALUE
@@ -309,6 +312,7 @@ class ReplaceCellFileContentUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenDelayedDraftAndMissingDownload_whenReplacing_thenUseFreshConfirmationDeadline() = runTest {
         val fixture = Fixture()
         fixture.draftReadsToSkip = 2
@@ -346,6 +350,7 @@ class ReplaceCellFileContentUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenDraftHashIsDelayed_whenReplacing_thenWaitForHashBeforePublishing() = runTest {
         for (missingHash in listOf(null, "", "   ")) {
             val fixture = Fixture()
@@ -362,6 +367,7 @@ class ReplaceCellFileContentUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenDraftNeverHasHash_whenReplacing_thenTimeoutWithoutPublishing() = runTest {
         for (missingHash in listOf(null, "", "   ")) {
             val fixture = Fixture()
@@ -374,6 +380,7 @@ class ReplaceCellFileContentUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenDraftAppearsNearDeadline_whenPublishingTakesLonger_thenDoNotCancelPublication() = runTest {
         val fixture = Fixture()
         fixture.draftReadsToSkip = 119

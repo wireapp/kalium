@@ -29,6 +29,7 @@ import com.wire.kalium.logic.feature.debug.TargetedRepairParam
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncStateObserver
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.string.toHexString
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -40,6 +41,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(DebugKaliumApi::class)
 class MLSFaultyKeysConversationsRepairUseCaseTest {
 
     @Test

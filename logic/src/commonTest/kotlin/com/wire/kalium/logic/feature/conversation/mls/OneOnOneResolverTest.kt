@@ -44,6 +44,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.DelicateKaliumApi
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -384,6 +385,7 @@ class OneOnOneResolverTest {
     }
 
     @Test
+    @OptIn(DelicateKaliumApi::class)
     fun givenPeerIsDeletedAndOneOnOneIsMls_whenResolving_thenWipesMlsGroupAndKeepsLocalConversation() = runTest {
         val deletedPeer = TestUser.OTHER.copy(deleted = true)
         val convId = TestConversation.ID
@@ -408,6 +410,7 @@ class OneOnOneResolverTest {
     }
 
     @Test
+    @OptIn(DelicateKaliumApi::class)
     fun givenPeerIsDeletedAndOneOnOneIsProteus_whenResolving_thenDoesNotTouchCryptoAndKeepsLocalConversation() = runTest {
         val deletedPeer = TestUser.OTHER.copy(deleted = true)
         val convId = TestConversation.ID

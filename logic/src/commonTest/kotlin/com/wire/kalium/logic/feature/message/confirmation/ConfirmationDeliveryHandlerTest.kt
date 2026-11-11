@@ -234,6 +234,7 @@ class ConfirmationDeliveryHandlerTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSyncIsOngoing_whenItTakesLongTimeToExecute_thenShouldReturnAnyway() = runTest {
         val (arrangement, handler) = Arrangement()
             .withConversationResult(TestConversation.CONVERSATION.right())
@@ -262,6 +263,7 @@ class ConfirmationDeliveryHandlerTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenMessagesSent_whenCleared_thenShouldRemoveMessagesFromPendingConfirmation() = runTest {
         val (arrangement, handler) = Arrangement()
             .withConversationResult(TestConversation.CONVERSATION.right())

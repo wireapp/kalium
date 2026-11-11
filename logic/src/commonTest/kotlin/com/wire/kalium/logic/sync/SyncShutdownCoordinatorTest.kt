@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
@@ -30,6 +31,7 @@ import kotlin.test.assertTrue
 
 class SyncShutdownCoordinatorTest {
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenMultipleAccounts_whenStopping_thenWaitForAllBatchesAndRejectNewSync() = runTest {
         val coordinator = SyncShutdownCoordinator()
         val firstBatch = CompletableDeferred<Unit>()

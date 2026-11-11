@@ -56,6 +56,7 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlin.test.assertTrue
@@ -69,6 +70,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class DeleteMessageUseCaseTest {
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSyncPending_whenDeletingSentText_thenWaitBeforeSendingDeletionSignal() = runTest {
         val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
             .withTextMessage(Message.Status.Sent)
@@ -89,6 +91,7 @@ class DeleteMessageUseCaseTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSyncPending_whenDeletingOwnPendingText_thenCancelBeforeSyncCompletes() = runTest {
         val (arrangement, useCase) = Arrangement(testKaliumDispatcher).withOwnPendingMessage().arrange()
         val sync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)

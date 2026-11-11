@@ -19,6 +19,7 @@ package com.wire.kalium.work
 
 import app.cash.turbine.test
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -32,6 +33,7 @@ import kotlin.test.assertEquals
 class InitialSyncWorkMonitorTest {
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSyncBooleanFlowIsTrue_thenShouldUpdateWorkStatusToInProgress() = runTest {
         val slowSyncFlow = Channel<Boolean>()
         val repo = InMemoryWorkRepository()
@@ -91,6 +93,7 @@ class InitialSyncWorkMonitorTest {
     }
 
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenScopeIsCancelled_thenShouldStopMonitoringAndUpdatingTheStatus() = runTest {
         val slowSyncFlow = Channel<Boolean>(capacity = Int.MAX_VALUE)
         val repo = InMemoryWorkRepository()
