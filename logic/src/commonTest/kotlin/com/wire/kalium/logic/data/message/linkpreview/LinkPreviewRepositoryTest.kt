@@ -19,20 +19,17 @@
 
 package com.wire.kalium.logic.data.message.linkpreview
 
-import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.linkpreview.fetch.FetchedPreviewImage
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
+import com.wire.kalium.util.InternalKaliumApi
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlinx.coroutines.test.runTest
+import kotlin.test.assertTrue
 
-@OptIn(ExperimentalEncodingApi::class)
 class LinkPreviewRepositoryTest {
 
     @Test
@@ -56,26 +53,36 @@ class LinkPreviewRepositoryTest {
     }
 
     @Test
-    fun givenRasterImage_whenFetchingImage_thenWritesAssetAndReadsMetadata() = runTest {
-        val imageBytes = Base64.decode(ONE_BY_ONE_PNG_BASE64)
+    fun givenLargeImage_whenFetchingImage_thenStoresOnlyBoundedThumbnail() = runTest {
         val fileSystem = FakeKaliumFileSystem()
         val repository = newRepository(
             fileSystem = fileSystem,
-            image = {
-                FetchedPreviewImage(imageBytes, "image/png")
-            }
+            image = { FetchedPreviewImage(PreviewImageTestData.PNG_1600_BY_800, "image/png") }
         )
 
-        val result = repository.fetchImage("https://example.com/image.png").getOrNull()
+        val result = assertNotNull(repository.fetchImage("https://example.com/image.png").getOrNull())
 
-        assertNotNull(result)
+        val storedBytes = fileSystem.readByteArray(assertNotNull(result.assetDataPath))
+        val storedMetadata = assertNotNull(readImageMetadata(storedBytes, result.mimeType))
         assertEquals("image/png", result.mimeType)
-        assertEquals(1, result.assetWidth)
-        assertEquals(1, result.assetHeight)
-        assertEquals(imageBytes.size.toLong(), result.assetDataSize)
-        val assetDataPath = result.assetDataPath
-        assertNotNull(assetDataPath)
-        assertContentEquals(imageBytes, fileSystem.readByteArray(assetDataPath))
+        assertEquals(storedMetadata.width, result.assetWidth)
+        assertEquals(storedMetadata.height, result.assetHeight)
+        assertEquals(storedBytes.size.toLong(), result.assetDataSize)
+        assertTrue(result.assetWidth in 1..MAX_PREVIEW_THUMBNAIL_DIMENSION)
+        assertTrue(result.assetHeight in 1..MAX_PREVIEW_THUMBNAIL_DIMENSION)
+        assertEquals(result.assetWidth, result.assetHeight * 2)
+    }
+
+    @Test
+    fun givenExcessiveDimensions_whenFetchingImage_thenReturnsNoAssetAndWritesNoFile() = runTest {
+        val fileSystem = FakeKaliumFileSystem()
+        val repository = newRepository(
+            fileSystem = fileSystem,
+            image = { FetchedPreviewImage(PreviewImageTestData.PNG_6000_BY_6000, "image/png") }
+        )
+
+        assertNull(repository.fetchImage("https://example.com/image.png").getOrNull())
+        assertEquals(emptyList(), fileSystem.listDirectories(fileSystem.rootCachePath))
     }
 
     @Test
@@ -94,9 +101,4 @@ class LinkPreviewRepositoryTest {
         fetchImageData = image,
         kaliumFileSystem = fileSystem
     )
-
-    private companion object {
-        const val ONE_BY_ONE_PNG_BASE64 =
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aW4QAAAAASUVORK5CYII="
-    }
 }

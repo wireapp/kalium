@@ -23,4 +23,5 @@ internal data class ImageMetadata(
     val mimeType: String
 )
 
+/** Reads image headers only, rejecting dimensions that exceed the source budget. */
 internal expect fun readImageMetadata(bytes: ByteArray, fallbackMimeType: String): ImageMetadata?

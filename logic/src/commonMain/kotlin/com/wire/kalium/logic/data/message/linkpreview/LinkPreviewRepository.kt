@@ -59,9 +59,10 @@ internal class LinkPreviewRepositoryImpl(
     }
 
     private suspend fun FetchedPreviewImage.toLinkPreviewAsset(imageUrl: String): LinkPreviewAsset? {
-        val metadata = readImageMetadata(bytes, mimeType) ?: return null
+        val thumbnail = preparePreviewImage(bytes, mimeType) ?: return null
+        val metadata = thumbnail.metadata
         val tempPath = kaliumFileSystem.tempFilePath("link-preview-${Uuid.random()}")
-        val source = Buffer().write(bytes)
+        val source = Buffer().write(thumbnail.bytes)
         val sink = kaliumFileSystem.sink(tempPath, mustCreate = true)
         kaliumFileSystem.writeData(sink, source)
         val assetName = sanitizePreviewText(
@@ -72,7 +73,7 @@ internal class LinkPreviewRepositoryImpl(
         return LinkPreviewAsset(
             mimeType = metadata.mimeType,
             assetDataPath = tempPath,
-            assetDataSize = bytes.size.toLong(),
+            assetDataSize = thumbnail.bytes.size.toLong(),
             assetHeight = metadata.height,
             assetWidth = metadata.width,
             assetName = assetName

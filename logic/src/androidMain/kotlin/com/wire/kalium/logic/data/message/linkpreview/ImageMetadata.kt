@@ -17,16 +17,39 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import java.io.ByteArrayOutputStream
+import kotlin.math.max
 
 internal actual fun readImageMetadata(bytes: ByteArray, fallbackMimeType: String): ImageMetadata? {
     val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-    if (options.outWidth <= 0 || options.outHeight <= 0) return null
-
     return ImageMetadata(
         width = options.outWidth,
         height = options.outHeight,
         mimeType = fallbackMimeType
-    )
+    ).takeIf { it.hasSafeDimensions() }
 }
+
+@Suppress("ReturnCount")
+internal actual fun preparePreviewImage(bytes: ByteArray, fallbackMimeType: String): PreviewImage? {
+    val metadata = readImageMetadata(bytes, fallbackMimeType) ?: return null
+    // BitmapFactory rounds inSampleSize down to a power of two.
+    var sampleSize = 1
+    while ((max(metadata.width, metadata.height) + sampleSize - 1) / sampleSize > MAX_PREVIEW_THUMBNAIL_DIMENSION) {
+        sampleSize *= 2
+    }
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    val image = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options) ?: return null
+    return try {
+        val output = ByteArrayOutputStream()
+        if (image.compress(Bitmap.CompressFormat.PNG, PNG_COMPRESSION_QUALITY, output)) {
+            PreviewImage(output.toByteArray(), ImageMetadata(image.width, image.height, "image/png"))
+        } else null
+    } finally {
+        image.recycle()
+    }
+}
+
+private const val PNG_COMPRESSION_QUALITY = 100
