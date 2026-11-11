@@ -232,7 +232,7 @@ class EventBatchProcessorTest {
     }
 
     @Test
-    fun requiredProcessingAndFlushFailuresAbortTheGatheredCryptoCallback() = runTest(TestKaliumDispatcher.default) {
+    fun givenProcessingOrFlushFails_whenProcessingBatch_thenCryptoCommitsButNothingIsAcknowledged() = runTest(TestKaliumDispatcher.default) {
         for (failOnFlush in listOf(false, true)) {
             val failure = StorageFailure.Generic(IllegalStateException("required write failed"))
             val event = TestEvent.memberJoin().wrapInEnvelope()
@@ -250,7 +250,7 @@ class EventBatchProcessorTest {
                 block(arrangement.transactionContext).also { callbackReturned = true }
             }
             assertFailsWith<KaliumSyncException> { processor.processBatches(arrangement.batches) }
-            assertFalse(callbackReturned, "Returning an Either.Left still lets native crypto commit")
+            assertTrue(callbackReturned, "A failed batch commits native crypto and is retried")
             verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
         }
     }
