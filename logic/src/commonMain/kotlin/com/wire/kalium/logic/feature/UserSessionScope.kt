@@ -2140,12 +2140,13 @@ public class UserSessionScope internal constructor(
 
     private val newConversationHandler: NewConversationEventHandler
         get() = NewConversationEventHandlerImpl(
-            conversationRepository,
-            userRepository,
-            selfTeamId,
-            newGroupConversationSystemMessagesCreator,
-            oneOnOneResolver,
-            persistConversationUseCase
+            conversationRepository = conversationRepository,
+            userRepository = userRepository,
+            selfTeamIdProvider = selfTeamId,
+            newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
+            pendingActionsRepository = pendingActionsRepository,
+            resolvePendingOneOnOnes = { pendingOneOnOneResolutionRequests.trySend(Unit) },
+            persistConversation = persistConversationUseCase
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(

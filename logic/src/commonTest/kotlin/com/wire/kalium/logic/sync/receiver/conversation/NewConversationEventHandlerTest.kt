@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -37,7 +38,6 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -59,6 +59,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class NewConversationEventHandlerTest {
 
@@ -350,7 +351,7 @@ class NewConversationEventHandlerTest {
         }
 
     @Test
-    fun givenNewGroupConversationEvent_whenHandlingIt_thenShouldSkipExecutingOneOnOneResolver() =
+    fun givenNewGroupConversationEvent_whenHandlingIt_thenShouldNotQueueOneOnOneResolution() =
         runTest {
             // given
             val event = testNewConversationEvent(
@@ -375,47 +376,32 @@ class NewConversationEventHandlerTest {
 
             // then
             verifySuspend(VerifyMode.not) {
-                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), true)
+                arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(any())
             }
-            verifySuspend(VerifyMode.not) {
-                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
-            }
-            verifySuspend(VerifyMode.not) {
-                arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any(), any())
-            }
+            assertEquals(0, arrangement.resolutionTriggers)
         }
 
     @Test
-    fun givenNewOneOnOneConversationEvent_whenHandlingIt_thenShouldExecuteOneOnOneResolver() =
-        runTest {
-            // given
-            val event = testNewConversationEvent(
-                conversation = TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
-            )
-            val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
-            val otherUserId = members.first()
-            val teamId = TestTeam.TEAM_ID
-            val creatorQualifiedId = QualifiedID("creatorId", "creatorDomain")
-            val (arrangement, eventHandler) = Arrangement()
-                .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-                .withPersistingConversations(Either.Right(false))
-                .withFetchUsersIfUnknownIds(members)
-                .withSelfUserTeamId(Either.Right(teamId))
-                .withConversationStartedSystemMessage()
-                .withConversationResolvedMembersSystemMessage()
-                .withReadReceiptsSystemMessage()
-                .withQualifiedId(creatorQualifiedId)
-                .withResolveOneOnOneConversationWithUserId(Either.Right(event.conversationId))
-                .arrange()
+    fun givenNewOneOnOneConversationEvent_whenHandlingIt_thenShouldQueueResolutionInsteadOfResolvingInline() = runTest {
+        val event = testNewConversationEvent(
+            conversation = TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
+        )
+        val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
+        val (arrangement, eventHandler) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(false))
+            .withFetchUsersIfUnknownIds(members)
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
+            .withEnqueueOneOnOneResolutionSucceeding()
+            .arrange()
 
-            // when
-            eventHandler.handle(arrangement.transactionContext, event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
-            // then
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), otherUserId, true)
-            }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(members.first())
         }
+        assertEquals(1, arrangement.resolutionTriggers)
+    }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val conversationRepository = mock<ConversationRepository>()
@@ -423,7 +409,8 @@ class NewConversationEventHandlerTest {
         val selfTeamIdProvider = mock<SelfTeamIdProvider>()
         val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>()
         private val qualifiedIdMapper = mock<QualifiedIdMapper>()
-        val oneOnOneResolver = mock<OneOnOneResolver>()
+        val pendingActionsRepository = mock<PendingActionsRepository>()
+        var resolutionTriggers = 0
         val persistConversation = mock<PersistConversationUseCase>()
 
         init {
@@ -452,7 +439,8 @@ class NewConversationEventHandlerTest {
             userRepository,
             selfTeamIdProvider,
             newGroupConversationSystemMessagesCreator,
-            oneOnOneResolver,
+            pendingActionsRepository,
+            { resolutionTriggers++ },
             persistConversation
         )
 
@@ -504,10 +492,8 @@ class NewConversationEventHandlerTest {
             } returns qualifiedId
         }
 
-        suspend fun withResolveOneOnOneConversationWithUserId(result: Either<CoreFailure, ConversationId>) = apply {
-            everySuspend {
-                oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), true)
-            } returns result
+        suspend fun withEnqueueOneOnOneResolutionSucceeding() = apply {
+            everySuspend { pendingActionsRepository.enqueuePendingOneOnOneResolution(any()) } returns Unit
         }
 
         suspend fun withConversationAppsAccessIfEnabled() = apply {

@@ -1,0 +1,1 @@
+New 1:1 conversations from conversation-created events queue the 1:1 resolution and start it once sync is live, instead of resolving inside the receive batch. A failed resolution now stays queued for a later retry instead of only being logged.
