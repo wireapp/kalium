@@ -154,7 +154,7 @@ class RegisterAccountUseCaseTest {
 
         assertIs<RegisterResult.Failure.Generic>(actual)
         assertIs<NetworkFailure.ServerMiscommunication>(actual.failure)
-        assertEquals(expected.kaliumException, (actual.failure as NetworkFailure.ServerMiscommunication).kaliumException)
+        assertEquals(expected.kaliumException, actual.failure.kaliumException)
 
         verifySuspend(VerifyMode.exactly(1)) {
             registerAccountRepository.registerPersonalAccountWithEmail(

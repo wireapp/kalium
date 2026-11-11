@@ -425,7 +425,6 @@ internal class CallManagerImpl internal constructor(
             TestVideoType.NONE -> "NONE"
             TestVideoType.PLATFORM -> "PLATFORM"
             TestVideoType.FAKE -> "FAKE"
-            else -> "????"
         }
         callingLogger.d("$tagWithUserId: set test video to $logString")
 

@@ -680,10 +680,6 @@ class NotificationProcessor(
                     }
                 )
             }
-            else -> {
-                diagnostics?.unsupportedEvent()
-                error("Notification contains unsupported required work")
-            }
         }
         onDecoded(decoded)
         decoded

@@ -85,7 +85,6 @@ internal class PendingMessagesPagingSource<RowType : Any>(
                     is LoadParams.Append<*> -> key.toInt()
                     is LoadParams.Refresh<*> ->
                         if (key >= count - params.loadSize) maxOf(0, count - params.loadSize) else key.toInt()
-                    else -> error("Unknown PagingSourceLoadParams ${params::class}")
                 }
 
                 val queries = buildQueries(limit, offset, pendingCount)

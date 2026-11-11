@@ -119,7 +119,7 @@ class MessageTimelineTest {
         assertEquals("original", rendered.quotedMessageId)
         assertEquals(MessageContent.QuotedMessageDetails.Text("Original \"body\""), rendered.quote?.quotedContent)
         assertTrue(assertNotNull(rendered.quote).isQuotingSelfUser)
-        assertEquals(self.id.toModel(), rendered.quote?.senderId)
+        assertEquals(self.id.toModel(), rendered.quote.senderId)
         assertEquals(other.name, item.sender.name)
         assertFalse(item.sender.isSelf)
     }
