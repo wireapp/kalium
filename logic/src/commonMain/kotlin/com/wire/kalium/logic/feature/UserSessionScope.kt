@@ -635,6 +635,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecovery
@@ -845,7 +847,7 @@ public class UserSessionScope internal constructor(
         )
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
-        get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
+        get() = KeyPackageLimitsProviderImpl(kaliumConfigs, userConfigRepository)
 
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler by lazy {
         ProteusMigrationRecoveryHandlerImpl(lazy { logout })
@@ -1501,6 +1503,17 @@ public class UserSessionScope internal constructor(
             mlsConversationRepository,
         )
 
+    // MLS welcomes only signal this. One session-owned drain reads the queue, so a burst of welcomes
+    // doesn't make several workers resolve the same users; a signal sent during a run causes one more run.
+    private val pendingOneOnOneResolutionRequests = Channel<Unit>(Channel.CONFLATED)
+
+    // Foreground actions signal the same drain, so it stays the only reader of the queue.
+    private val requestPendingOneOnOneResolutions = object : RecoverPendingOneOnOneResolutionsUseCase {
+        override suspend fun invoke() {
+            pendingOneOnOneResolutionRequests.trySend(Unit)
+        }
+    }
+
     private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase
         get() = RecoverPendingOneOnOneResolutionsUseCaseImpl(
             pendingActionsRepository = pendingActionsRepository,
@@ -1800,8 +1813,7 @@ public class UserSessionScope internal constructor(
         lazy { clientRepository },
         lazy { client.refillKeyPackages },
         lazy { client.mlsKeyPackageCountUseCase },
-        lazy { users.timestampKeyRepository },
-        cryptoTransactionProvider
+        lazy { users.timestampKeyRepository }
     )
 
     internal val keyingMaterialsManager: KeyingMaterialsManager
@@ -2177,10 +2189,11 @@ public class UserSessionScope internal constructor(
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
             conversationRepository = conversationRepository,
-            oneOnOneResolver = oneOnOneResolver,
-            refillKeyPackages = client.refillKeyPackages,
+            pendingActionsRepository = pendingActionsRepository,
+            resolvePendingOneOnOnes = { pendingOneOnOneResolutionRequests.trySend(Unit) },
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
-            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
+            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
+            keyPackageManager = keyPackageManager
         )
 
     private val renamedConversationHandler: RenamedConversationEventHandler
@@ -2377,7 +2390,12 @@ public class UserSessionScope internal constructor(
         get() = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
 
     private val mlsMigrationConfigHandler
-        get() = MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
+        get() = MLSMigrationConfigHandler(
+            userConfigRepository,
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            cryptoTransactionProvider,
+            lazy { keyPackageManager }
+        )
 
     private val classifiedDomainsConfigHandler
         get() = ClassifiedDomainsConfigHandler(userConfigRepository)
@@ -2810,7 +2828,7 @@ public class UserSessionScope internal constructor(
             mlsMigrationManager,
             keyingMaterialsManager,
             recoverPendingMLSGroupJoinsUseCase,
-            recoverPendingOneOnOneResolutionsUseCase,
+            requestPendingOneOnOneResolutions,
             cryptoTransactionProvider,
             this,
         )
@@ -3273,6 +3291,19 @@ public class UserSessionScope internal constructor(
                 userScopedLogger.e("Unable to run startup migrations and reset tasks", exception)
             } finally {
                 callRepository.setStaleOpenCallsCleanupFinished()
+            }
+        }
+
+        launch {
+            pendingOneOnOneResolutionRequests.consumeEach {
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    recoverPendingOneOnOneResolutionsUseCase()
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    userScopedLogger.w("Unable to resolve pending one-on-one conversations", exception)
+                }
             }
         }
 
