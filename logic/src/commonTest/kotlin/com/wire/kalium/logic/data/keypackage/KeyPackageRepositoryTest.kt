@@ -58,6 +58,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class KeyPackageRepositoryTest {
 
     @Test
@@ -125,7 +126,6 @@ internal class KeyPackageRepositoryTest {
             }
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMoreUsersThanConcurrencyLimit_whenClaimingKeyPackages_thenSemaphoreKeepsClaimsWithinLimit() = runTest {
         val users = List(3) { index -> Arrangement.USER_ID.copy(value = "user$index") }
@@ -305,7 +305,6 @@ internal class KeyPackageRepositoryTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenFatalFailure_whenClaimingKeyPackages_thenActiveClaimsFinishButWaitingClaimsDoNotStart() = runTest {
         val failingUser = Arrangement.USER_ID.copy(value = "failing")
         val activeUser = Arrangement.USER_ID.copy(value = "active")

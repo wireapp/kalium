@@ -68,9 +68,9 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DeleteMessageUseCaseTest {
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSyncPending_whenDeletingSentText_thenWaitBeforeSendingDeletionSignal() = runTest {
         val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
             .withTextMessage(Message.Status.Sent)
@@ -91,7 +91,6 @@ class DeleteMessageUseCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSyncPending_whenDeletingOwnPendingText_thenCancelBeforeSyncCompletes() = runTest {
         val (arrangement, useCase) = Arrangement(testKaliumDispatcher).withOwnPendingMessage().arrange()
         val sync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)

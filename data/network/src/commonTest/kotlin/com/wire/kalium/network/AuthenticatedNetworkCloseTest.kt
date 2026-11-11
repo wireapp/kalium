@@ -45,6 +45,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class AuthenticatedNetworkCloseTest : ApiTest() {
     @Test
     fun closeWaitsForInitializedClientsAndClosesOwnedEngine() = runTest {
@@ -84,7 +85,6 @@ internal class AuthenticatedNetworkCloseTest : ApiTest() {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun callerCancellationStillAwaitsClientCleanup() = runTest {
         val engine = MockEngine { error("No request expected") }
         val provider = provider(engine)
@@ -137,7 +137,6 @@ internal class AuthenticatedNetworkCloseTest : ApiTest() {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun closeSessionsWaitsForWebsocketClientTeardown() = runTest {
         val engine = MockEngine { error("No request expected") }
         lateinit var disposable: HttpClient

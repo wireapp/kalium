@@ -111,6 +111,7 @@ import kotlin.time.Duration
 import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
 import com.wire.kalium.messaging.sending.MLSMessageCreator
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageSenderTest {
     @Test
     fun givenPendingTextWasEdited_whenSendingOldSnapshot_thenEncryptLatestText() {
@@ -131,7 +132,6 @@ class MessageSenderTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSendOwnsTransaction_whenPendingTextIsEdited_thenWaitAndSendNormalEdit() {
         val (arrangement, sender) = arrange { withSendProteusMessage() }
         arrangement.testScope.runTest {
@@ -193,7 +193,6 @@ class MessageSenderTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenCancellationQueuedFirst_whenStaleSendWaitsForTransaction_thenItDoesNotSend() {
         val (arrangement, sender) = arrange { }
         arrangement.testScope.runTest {
@@ -225,7 +224,6 @@ class MessageSenderTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSendAlreadyInTransaction_whenCancellationWaits_thenSentMessageIsNotRemovedFromQueue() {
         val (arrangement, sender) = arrange { withSendProteusMessage() }
         arrangement.testScope.runTest {
@@ -394,7 +392,6 @@ class MessageSenderTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenCompetingPendingRetry_whenFirstSendOwnsTransaction_thenOnlyWinningPolicyIsPrepared() {
         val (arrangement, sender) = arrange { withSendProteusMessage() }
         arrangement.testScope.runTest {
@@ -856,7 +853,6 @@ class MessageSenderTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenStaleMlsSendWaitingForLive_whenPendingMessageIsDeleted_thenCancelWithoutWaitingAndDoNotRetry() {
         val live = CompletableDeferred<Either<CoreFailure, Unit>>()
         val (arrangement, sender) = arrange {

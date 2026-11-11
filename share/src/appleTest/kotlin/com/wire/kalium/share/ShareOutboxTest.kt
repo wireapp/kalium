@@ -57,6 +57,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ShareOutboxTest {
 
     @OptIn(ExperimentalUuidApi::class)
@@ -227,7 +228,6 @@ class ShareOutboxTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun aSheetGetsItsListWhileAShareIsBeingImported() = runTest {
         withDatabase { database ->
             seed(database)
@@ -253,7 +253,6 @@ class ShareOutboxTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun aShareHandedOffWhileAnImportWaitsForTheAccountIsClaimedAtOnce() = runTest {
         withDatabase { database ->
             seed(database)

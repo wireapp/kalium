@@ -47,6 +47,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SyncSelfTeamUseCaseTest {
 
     @Test
@@ -202,7 +203,6 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenAppsStillSyncing_whenOtherBranchesFinish_thenTeamSyncWaits() = runTest {
         val (arrangement, sync) = Arrangement()
             .withSelfUser(TestUser.SELF.right()).withTeam().withTeamMembers()
@@ -222,7 +222,6 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenTeamSyncIsCancelled_whenAppSyncIsRunning_thenChildIsDrained() = runTest {
         val (arrangement, sync) = Arrangement()
             .withSelfUser(TestUser.SELF.right()).withTeam().withTeamMembers()

@@ -40,6 +40,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveChannelsCreationPermissionUseCaseTest {
 
     private val dispatcher = StandardTestDispatcher()
@@ -135,7 +136,6 @@ class ObserveChannelsCreationPermissionUseCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenConfigsUpdate_thenShouldEmitNewValues() = runTest {
         configurationStorage.persistChannelsConfiguration(ChannelFeatureConfiguration.Disabled)
 
@@ -159,7 +159,6 @@ class ObserveChannelsCreationPermissionUseCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenUserTypeUpdates_thenShouldEmitNewValues() = runTest {
         configurationStorage.persistChannelsConfiguration(
             ChannelFeatureConfiguration.Enabled(

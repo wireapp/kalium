@@ -51,6 +51,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ConfirmationDeliveryHandlerTest {
 
     @Test
@@ -76,7 +77,6 @@ class ConfirmationDeliveryHandlerTest {
         assertEquals(1, arrangement.pendingConfirmationMessages.values.flatten().filter { it == TestMessage.TEST_MESSAGE_ID }.size)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMessagesEnqueued_whenCollectingThem_thenShouldSendOnlyForOneToOneConversations() = runTest {
         val (arrangement, sut) = Arrangement()
@@ -96,7 +96,6 @@ class ConfirmationDeliveryHandlerTest {
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMLSOneOnOneConversation_whenCollectingDeliveryConfirmations_thenShouldSendAndClearQueue() = runTest {
         val (arrangement, sut) = Arrangement()
@@ -115,7 +114,6 @@ class ConfirmationDeliveryHandlerTest {
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMixedConversation_whenCollectingDeliveryConfirmations_thenShouldSendUsingProteus() = runTest {
         val (arrangement, sut) = Arrangement()
@@ -134,7 +132,6 @@ class ConfirmationDeliveryHandlerTest {
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMessagesEnqueued_whenCollectingThemAndNoSession_thenShouldStopCollecting() = runTest {
         val (arrangement, sut) = Arrangement()
@@ -154,7 +151,6 @@ class ConfirmationDeliveryHandlerTest {
         verifySuspend(VerifyMode.not) { arrangement.sendDeliverSignal(any(), any()) }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMessagesEnqueued_whenSendingConfirmationsAndError_thenMessagesShouldPersist() = runTest {
         val (arrangement, sut) = Arrangement()
@@ -181,7 +177,6 @@ class ConfirmationDeliveryHandlerTest {
         assertTrue(arrangement.pendingConfirmationMessages.isNotEmpty())
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenABigLoadOfMessagesEnqueued_whenSendingConfirmations_thenShouldAddAndRemoveSecurely() = runTest {
         val (arrangement, sut) = Arrangement()
@@ -211,7 +206,6 @@ class ConfirmationDeliveryHandlerTest {
     }
 
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMultipleEnqueues_whenSendingConfirmations_thenShouldOnlySendOnce() = runTest {
         val (arrangement, sut) = Arrangement()
@@ -234,7 +228,6 @@ class ConfirmationDeliveryHandlerTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSyncIsOngoing_whenItTakesLongTimeToExecute_thenShouldReturnAnyway() = runTest {
         val (arrangement, handler) = Arrangement()
             .withConversationResult(TestConversation.CONVERSATION.right())
@@ -263,7 +256,6 @@ class ConfirmationDeliveryHandlerTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenMessagesSent_whenCleared_thenShouldRemoveMessagesFromPendingConfirmation() = runTest {
         val (arrangement, handler) = Arrangement()
             .withConversationResult(TestConversation.CONVERSATION.right())

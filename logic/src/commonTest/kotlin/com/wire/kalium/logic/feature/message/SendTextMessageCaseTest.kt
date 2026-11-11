@@ -69,10 +69,10 @@ import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SendTextMessageCaseTest {
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun pendingTextUsesPolicySyncedAfterLocalPersistence() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -114,7 +114,6 @@ class SendTextMessageCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun pendingMessageIsPersistedBeforeSyncCompletesAndTransportStillWaits() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -456,7 +455,6 @@ class SendTextMessageCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenPersistedText_whenTheScreenCallerIsCancelled_thenDomainDeliveryContinues() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -483,7 +481,6 @@ class SendTextMessageCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenPendingDraft_whenCallerLeavesBeforePersistenceAndReenters_thenOnlyOneMessageIsPersisted() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -511,7 +508,6 @@ class SendTextMessageCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenAnAlreadyConsumedRevision_whenAStalePreparedSubmissionResumes_thenNoDuplicateIsPersisted() = runTest {
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
@@ -532,7 +528,6 @@ class SendTextMessageCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenAMessageId_whenStoringText_thenItIsStoredUnderThatIdBeforeTheSendEnds() = runTest {
         val sent = CompletableDeferred<Unit>()
         val (arrangement, sendTextMessage) = Arrangement(this)
@@ -560,7 +555,6 @@ class SendTextMessageCaseTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenStoringIsCancelledBeforeTheMessageIsStored_whenSyncCompletesLater_thenNothingIsStoredOrSent() = runTest {
         val slowSync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
         val (arrangement, sendTextMessage) = Arrangement(this)

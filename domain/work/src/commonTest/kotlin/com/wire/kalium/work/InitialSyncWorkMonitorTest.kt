@@ -30,10 +30,10 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class InitialSyncWorkMonitorTest {
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSyncBooleanFlowIsTrue_thenShouldUpdateWorkStatusToInProgress() = runTest {
         val slowSyncFlow = Channel<Boolean>()
         val repo = InMemoryWorkRepository()
@@ -93,7 +93,6 @@ class InitialSyncWorkMonitorTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenScopeIsCancelled_thenShouldStopMonitoringAndUpdatingTheStatus() = runTest {
         val slowSyncFlow = Channel<Boolean>(capacity = Int.MAX_VALUE)
         val repo = InMemoryWorkRepository()

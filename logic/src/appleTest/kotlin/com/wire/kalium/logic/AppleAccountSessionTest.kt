@@ -95,6 +95,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AppleAccountSessionTest {
     private val userId = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
     private val fileManager = NSFileManager.defaultManager
@@ -147,7 +148,6 @@ class AppleAccountSessionTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun `cancelled waiting app open creates no account storage`() = runTest {
         val (root, logic) = fixture()
         val owner = AppleAccountRuntimeOwner(root)
@@ -317,7 +317,6 @@ class AppleAccountSessionTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun `cancelled session removal waits for ownership before changing the account`() = runTest {
         val (root, logic) = fixture(prepared = true)
         val owner = AppleAccountRuntimeOwner(root)
@@ -373,7 +372,6 @@ class AppleAccountSessionTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun `cancelled credential installation cannot write before ownership`() = runTest {
         val (root, logic) = fixture(prepared = true)
         val owner = AppleAccountRuntimeOwner(root)
