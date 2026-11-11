@@ -51,48 +51,34 @@ internal class TypingIndicatorSenderHandlerImpl(
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default
 
-    private val outgoingStoppedQueueTypingEventsMutex = Mutex()
-    private val outgoingStoppedQueueTypingEvents = mutableMapOf<ConversationId, Unit>()
+    private val mutex = Mutex()
+    private val typingConversations = mutableSetOf<ConversationId>()
     private val typingIndicatorTimeoutInSeconds = 10.toDuration(DurationUnit.SECONDS)
 
     /**
-     * Sends a stopping event and removes it from the 'queue'.
+     * Removes the conversation from the typing set and sends a stopping event.
      */
     override fun sendStoppingEvent(conversationId: ConversationId) {
         launch {
-            outgoingStoppedQueueTypingEventsMutex.withLock {
-                if (!outgoingStoppedQueueTypingEvents.containsKey(conversationId)) {
-                    return@launch
-                }
-                outgoingStoppedQueueTypingEvents.remove(conversationId)
-                sendTypingIndicatorStatus(conversationId, Conversation.TypingIndicatorMode.STOPPED)
-            }
+            if (!mutex.withLock { typingConversations.remove(conversationId) }) return@launch
+            sendTypingIndicatorStatus(conversationId, Conversation.TypingIndicatorMode.STOPPED)
         }
     }
 
     /**
-     * Sends a started event and enqueues a stopping event if sent successfully.
+     * Sends a started event and suppresses further starts until the timeout.
      */
     override fun sendStartedAndEnqueueStoppingEvent(conversationId: ConversationId) {
         launch {
-            val (_, isStartedSent) = outgoingStoppedQueueTypingEventsMutex.withLock {
-                if (outgoingStoppedQueueTypingEvents.containsKey(conversationId)) {
-                    return@launch
-                }
-                val isSent = sendTypingIndicatorStatus(conversationId, Conversation.TypingIndicatorMode.STARTED)
-                this to isSent
-            }
-
+            if (!mutex.withLock { typingConversations.add(conversationId) }) return@launch
+            val isStartedSent = sendTypingIndicatorStatus(conversationId, Conversation.TypingIndicatorMode.STARTED)
+            delay(typingIndicatorTimeoutInSeconds)
             if (isStartedSent) {
-                enqueueStoppedEvent(conversationId)
+                sendStoppingEvent(conversationId)
+            } else {
+                mutex.withLock { typingConversations.remove(conversationId) }
             }
         }
-    }
-
-    private suspend fun enqueueStoppedEvent(conversationId: ConversationId) {
-        outgoingStoppedQueueTypingEvents[conversationId] = Unit
-        delay(typingIndicatorTimeoutInSeconds)
-        sendStoppingEvent(conversationId)
     }
 
     private suspend fun sendTypingIndicatorStatus(
