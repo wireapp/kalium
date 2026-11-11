@@ -53,6 +53,7 @@ import kotlinx.coroutines.job
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
+import com.wire.kalium.logic.sync.receiving.appleAccountFileKey
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
@@ -60,10 +61,16 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.concurrent.Volatile
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
@@ -117,6 +124,34 @@ internal actual open class UserSessionScopeProviderImpl(
     private val securityHelper = databaseSecurityHelper(globalPreferences.passphraseStorage)
     private val owner = AppleAccountRuntimeOwner(rootPathsProvider.rootPath)
     private val accounts = ConcurrentMutableMap<UserId, OwnedAccount>()
+
+    /**
+     * iOS kills a suspended app that keeps an account's lock. The app takes a lock only while it runs in the foreground,
+     * or while a [hold] gives that account execution time of its own; everything else waits.
+     */
+    private val execution = MutableStateFlow(Execution())
+
+    /** Accounts whose release threw with their lock held: only process exit lets those locks go. */
+    private val failedReleases = MutableStateFlow(emptySet<UserId>())
+
+    private data class Execution(val foreground: Boolean = true, val holds: Map<UserId, List<Hold>> = emptyMap()) {
+        fun allows(userId: UserId) = foreground || userId in holds
+
+        fun with(userId: UserId, hold: Hold) = copy(holds = holds + (userId to holds[userId].orEmpty() + hold))
+
+        fun without(userId: UserId, hold: Hold): Execution {
+            val rest = holds[userId].orEmpty() - hold
+            return copy(holds = if (rest.isEmpty()) holds - userId else holds + (userId to rest))
+        }
+    }
+
+    /** One holder's claim, compared by identity: why it keeps the account and since when. */
+    private class Hold(val reason: String) {
+        val since = TimeSource.Monotonic.markNow()
+    }
+
+    /** Execution ended while an operation was about to take the lock: it waits for execution and starts again. */
+    private class NoExecution : Exception("The app has no execution time for this account")
 
     /** Readiness is durable: revoke it before a change the extension cannot detect, such as registration. */
     actual override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope) {
@@ -217,33 +252,83 @@ internal actual open class UserSessionScopeProviderImpl(
         check(metadata?.isRegularFile == true && (metadata.size ?: 0) > 0) { "Prepared crypto store is missing" }
     }
 
-    actual override suspend fun open(userId: UserId): UserSessionScope = open(userId, resumePaused = false)
+    /** In the foreground accounts open on first use; in the background only held accounts may take their lock. */
+    fun setForeground(foreground: Boolean) {
+        execution.update { it.copy(foreground = foreground) }
+    }
 
-    /** Only a host with foreground/background execution time may resume a suspended account. */
-    suspend fun resumeForExecution(userId: UserId): UserSessionScope = open(userId, resumePaused = true)
-
-    suspend fun resumeSuspendedAccounts() {
-        accounts.keys.toList().forEach { userId ->
-            val account = accounts[userId] ?: return@forEach
-            if (get(userId) == null) {
-                // An open cancelled while it waited for ownership leaves no session or lease, yet background handoff
-                // still pauses the account. Nothing needs reopening, so admit work without the lock; opens acquire it.
-                // Check under the transition: a session opened and paused meanwhile needs ownership again.
-                val access = account.access
-                access.resumeIf {
-                    account.mutex.withLock {
-                        access === account.access && super.get(userId) == null && account.lease == null && !account.unavailable
-                    }
+    /**
+     * Releases every account no hold keeps, all at once: one slow drain must not keep the other accounts' locks.
+     * Call after [setForeground] false. Returns whether every release succeeded.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    suspend fun releaseBackgroundAccounts(): Boolean = coroutineScope {
+        val released = accounts.keys.toList().map { userId ->
+            async {
+                try {
+                    releaseUnlessAllowed(userId)
+                    true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    kaliumLogger.e("Account release for the background failed: ${failure::class.simpleName}")
+                    false
                 }
             }
-            if (get(userId) != null) resumeForExecution(userId)
+        }.awaitAll().all { it }
+        kaliumLogger.i(lockedAccounts().toString())
+        released
+    }
+
+    /** The accounts this process still holds the lock of, with what keeps each: hold reasons, or nothing. */
+    fun lockedAccounts(): AccountLocks {
+        val current = execution.value
+        val failed = failedReleases.value
+        val owned = accounts.keys.toList().filter { accounts[it]?.lease != null }
+        val locked = owned.map { userId ->
+            val reasons = current.holds[userId].orEmpty().map { "${it.reason}@${it.since.elapsedNow().inWholeSeconds}s" } +
+                listOfNotNull(ACCOUNT_LOCK_UNAVAILABLE.takeIf { userId in failed })
+            // Pseudonymous: a prefix of the lock file's identity hash.
+            appleAccountFileKey(userId).take(ACCOUNT_KEY_LENGTH) to reasons.ifEmpty {
+                listOf(if (current.foreground) "FOREGROUND" else "RELEASING")
+            }
+        }
+        // In the foreground the app still runs every account it holds.
+        val hasUnreleasable = !current.foreground && owned.any { it in failed }
+        return AccountLocks(locked, hasHolds = current.holds.isNotEmpty(), hasUnreleasable = hasUnreleasable)
+    }
+
+    /**
+     * Opens [userId] for work with execution time of its own, such as a call; it keeps the account until released.
+     * [reason] names that work in the background log, such as CALL or UPLOAD.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    suspend fun hold(userId: UserId, reason: String): AccountExecutionHold {
+        // Count the hold before opening: a background release that decides after this keeps the account.
+        val hold = Hold(reason)
+        execution.update { it.with(userId, hold) }
+        val scope = try {
+            open(userId)
+        } catch (failure: Throwable) {
+            withContext(NonCancellable) {
+                execution.update { it.without(userId, hold) }
+                try {
+                    releaseUnlessAllowed(userId)
+                } catch (cleanup: Throwable) {
+                    failure.addSuppressed(cleanup)
+                }
+            }
+            throw failure
+        }
+        return AccountExecutionHold(scope, endHold = { execution.update { it.without(userId, hold) } }) {
+            releaseUnlessAllowed(userId)
         }
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun open(userId: UserId, resumePaused: Boolean): UserSessionScope {
+    actual override suspend fun open(userId: UserId): UserSessionScope {
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return withOwnedAccount(account, userId, resumePaused) {
+        return withOwnedAccount(account, userId) {
             check(!account.unavailable) { "Account resources are unavailable until process exit" }
             super.get(userId)?.let {
                 if (!it.coroutineContext.job.isActive) {
@@ -296,16 +381,25 @@ internal actual open class UserSessionScopeProviderImpl(
         }
     }
 
-    /** Keep the session and its public clients alive; transfer only writable/native resources. */
+    /**
+     * Releases [userId] if the app may not run it now: no foreground and no hold. Keeps the session and its public
+     * clients alive; transfers only writable/native resources.
+     */
     // Keep ownership on uncertain cleanup, and retry if a concurrent full release replaced the gate.
-    @Suppress("ReturnCount")
-    suspend fun suspendForBackground(userId: UserId) {
+    @Suppress("ReturnCount", "TooGenericExceptionCaught")
+    private suspend fun releaseUnlessAllowed(userId: UserId) {
         val account = accounts[userId] ?: return
+        // The pause decides again under the gate's transition; this only skips it while the app may run the account.
+        if (execution.value.allows(userId)) return
         while (true) {
             val access = account.access
             var syncSuspension: SyncSuspension? = null
             try {
                 pauseForBackground(account, userId, access) { syncSuspension = it }
+            } catch (failure: Exception) {
+                // A release that threw with the lock still held cannot be retried; a cancelled one can.
+                if (failure !is CancellationException && account.lease != null) failedReleases.update { it + userId }
+                throw failure
             } finally {
                 // Reopening resumes sync after reacquiring ownership; undo only this suspension if ownership was kept.
                 if (account.lease != null && !account.unavailable) syncSuspension?.cancel()
@@ -335,6 +429,8 @@ internal actual open class UserSessionScopeProviderImpl(
         }
         try {
             access.pause(
+                // Decided under the gate's transition: a hold or the foreground that came first keeps the account.
+                shouldPause = { !execution.value.allows(userId) },
                 // Access does not gate the WebSocket: stop sync and close it while sync can still finish
                 // its writes. Pause holds its transition, so reopening cannot resume sync before release.
                 quiesce = {
@@ -416,6 +512,9 @@ internal actual open class UserSessionScopeProviderImpl(
                 result
             } catch (cancellation: CancellationException) {
                 throw cancellation
+            } catch (noExecution: NoExecution) {
+                // Thrown before anything changed: wait for execution instead of failing.
+                throw noExecution
             } catch (failure: Throwable) {
                 Either.Left(StorageFailure.Generic(failure))
             }
@@ -449,6 +548,9 @@ internal actual open class UserSessionScopeProviderImpl(
                 }
             } catch (cancellation: CancellationException) {
                 throw cancellation
+            } catch (noExecution: NoExecution) {
+                // Thrown before anything changed: a login that finishes in the background waits for the foreground.
+                throw noExecution
             } catch (failure: Throwable) {
                 Either.Left(StorageFailure.Generic(failure))
             }
@@ -465,62 +567,89 @@ internal actual open class UserSessionScopeProviderImpl(
         }
     }
 
+    /**
+     * Runs [operation] owning the account, reopening it first if the background release paused it. Without execution
+     * time this waits here, outside the account's gate, and reads the gate again afterwards: a gate that a logout or a
+     * login replaced meanwhile cannot strand it. Work the gate already admitted finishes without waiting.
+     */
     private suspend fun <T> withOwnedAccount(
         account: OwnedAccount,
         userId: UserId,
-        resumePaused: Boolean = true,
         operation: suspend () -> T,
     ): T {
         while (true) {
+            val admitted = account.access.admitsCaller()
+            if (!admitted) execution.first { it.allows(userId) }
             val access = account.access
             var completed = false
             var result: T? = null
-            access.withResumedAccess(
-                resumePaused = resumePaused,
-                // Another process may hold the lease for long: wait here, where cancellation still works and a
-                // failure keeps the account paused instead of unavailable.
-                acquireOwnership = {
-                    account.mutex.withLock {
-                        if (access === account.access && !account.unavailable) acquire(account, userId)
-                    }
-                },
-                openResources = {
-                    account.mutex.withLock {
-                        check(!account.unavailable) { "Account resources are unavailable until process exit" }
-                        if (access === account.access) {
-                            acquire(account, userId)
-                            super.get(userId)?.let { session ->
-                                session.userStorage.database.refreshAfterExternalWrites()
-                                session.resumeSync()
+            try {
+                access.withResumedAccess(
+                    // Another process may hold the lease for long: wait here, where cancellation still works and a
+                    // failure keeps the account paused instead of unavailable.
+                    acquireOwnership = {
+                        account.mutex.withLock {
+                            if (access === account.access && !account.unavailable) acquire(account, userId)
+                        }
+                    },
+                    openResources = {
+                        account.mutex.withLock {
+                            check(!account.unavailable) { "Account resources are unavailable until process exit" }
+                            if (access === account.access) {
+                                acquire(account, userId)
+                                super.get(userId)?.let { session ->
+                                    session.userStorage.database.refreshAfterExternalWrites()
+                                    session.resumeSync()
+                                }
                             }
                         }
-                    }
-                },
-                operation = {
-                    account.mutex.withLock {
-                        if (access === account.access) {
-                            result = operation()
-                            completed = true
+                    },
+                    operation = {
+                        account.mutex.withLock {
+                            if (access === account.access) {
+                                result = operation()
+                                completed = true
+                            }
                         }
-                    }
-                },
-            )
+                    },
+                )
+            } catch (noExecution: NoExecution) {
+                // Admitted work would hold up the drain it waits on, and a retry here would rerun its caller: fail it.
+                if (admitted) throw IllegalStateException("Account work admitted without the lock cannot wait for execution", noExecution)
+                // Nothing changed: wait for execution time, then start again on the current gate.
+                continue
+            }
             @Suppress("UNCHECKED_CAST")
             if (completed) return result as T
         }
     }
 
+    /**
+     * Takes the account's lock only while the app may run: a wait for another process ends when execution does, and a
+     * lock won just as execution ended is let go again. Operations call this before changing anything.
+     */
     private suspend fun acquire(account: OwnedAccount, userId: UserId) {
-        if (account.lease == null) {
-            account.lease = when (val acquired = owner.acquire(userId, OWNERSHIP_TIMEOUT)) {
-                is Either.Left -> throw if (acquired.value == AccountRuntimeFailure.BUSY) {
-                    AccountBusyException(owner.holder(userId)).also { kaliumLogger.w("Account ownership wait ended: ${it.message}") }
-                } else {
-                    IllegalStateException("Cannot acquire account ownership: ${acquired.value}")
-                }
-                is Either.Right -> acquired.value
-            }
+        if (account.lease != null) return
+        requireExecution(userId)
+        var revoked = false
+        val acquired = owner.acquire(userId, OWNERSHIP_TIMEOUT) { execution.value.allows(userId).also { revoked = !it } }
+        // One decision: a wait execution ended is no busy owner, and a lock won as it ended is let go.
+        if (revoked || !execution.value.allows(userId)) {
+            (acquired as? Either.Right)?.value?.release()
+            throw NoExecution()
         }
+        account.lease = when (acquired) {
+            is Either.Left -> throw if (acquired.value == AccountRuntimeFailure.BUSY) {
+                AccountBusyException(owner.holder(userId)).also { kaliumLogger.w("Account ownership wait ended: ${it.message}") }
+            } else {
+                IllegalStateException("Cannot acquire account ownership: ${acquired.value}")
+            }
+            is Either.Right -> acquired.value
+        }
+    }
+
+    private fun requireExecution(userId: UserId) {
+        if (!execution.value.allows(userId)) throw NoExecution()
     }
 
     private class OwnedAccount {
@@ -591,6 +720,9 @@ internal actual open class UserSessionScopeProviderImpl(
  * work behind an extension that iOS suspended with its host; callers fail or retry instead.
  */
 private val OWNERSHIP_TIMEOUT = 15.seconds
+
+/** Short enough to keep account keys pseudonymous in logs, long enough to tell accounts apart. */
+private const val ACCOUNT_KEY_LENGTH = 8
 
 /**
  * Long enough for a send on a working network to finish, short enough that the release still ends while iOS keeps

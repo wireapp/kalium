@@ -18,18 +18,17 @@
 
 package com.wire.kalium.cells
 
-import com.wire.kalium.cells.data.CellConfigDataSource
+import com.wire.kalium.cells.data.CellDraftsDataSource
 import com.wire.kalium.cells.data.CellsApiImpl
-import com.wire.kalium.cells.data.CellsDataSource
 import com.wire.kalium.cells.data.CellsS3Client
 import com.wire.kalium.cells.data.CellsS3CredentialsProvider
 import com.wire.kalium.cells.data.credentialsOrThrow
 import com.wire.kalium.cells.data.installCellsS3HttpTimeout
-import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.CellDrafts
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.data.prepareUploadNode
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
@@ -39,15 +38,11 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
-import com.wire.kalium.persistence.dao.UserConfigDAO
-import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import okio.FileSystem
 import okio.Path
-import okio.SYSTEM
 import kotlinx.coroutines.CancellationException
 
 /** Files supplied by a share, independent of the conversation's composer draft. */
@@ -61,7 +56,7 @@ public data class CellSharedFile(
 
 /** Uses the app's Cells transport without starting background uploads or consuming composer drafts. */
 public class CellFileSharing internal constructor(
-    private val repository: CellsRepository,
+    private val repository: CellDrafts,
     private val closeTransport: () -> Unit = {},
 ) {
     public fun close(): Unit = closeTransport()
@@ -157,29 +152,32 @@ public class CellFileSharing internal constructor(
     public companion object {
         private const val CLEANUP_TIMEOUT_MS = 5_000L
 
-        /** The authenticated API client belongs to the caller; only this operation's S3 client is closed. */
+        /**
+         * Needs neither the account's database nor CoreCrypto, so it also works while another process holds the account.
+         * [cellsUrl] is the account's Cells backend; without one, every call fails as when Cells is not configured.
+         * The authenticated API client belongs to the caller; only this operation's S3 client is closed.
+         */
         public fun create(
             apiClient: HttpClient,
             session: SessionManager,
             accessTokenApi: AccessTokenApi,
-            config: UserConfigDAO,
-            publicLinks: PublicLinkDao,
+            cellsUrl: String?,
         ): CellFileSharing {
-            val credentials = CellsCredentialsProviderImpl(GetWireCellConfigurationUseCaseImpl(CellConfigDataSource(config)))
+            val credentials = CellsCredentialsProvider {
+                cellsUrl?.takeIf { it.isNotBlank() }?.let { CellsCredentials(serverUrl = it, gatewaySecret = CELLS_GATEWAY_SECRET) }
+            }
             val transport = HttpClient { installCellsS3HttpTimeout() }
-            val repository = CellsDataSource(
+            val drafts = CellDraftsDataSource(
                 CellsApiImpl {
                     NodeServiceApi(baseUrl = "${credentials.credentialsOrThrow().serverUrl}/v2", httpClient = apiClient)
                 },
-                publicLinks,
                 CellsS3Client(
                     transport,
                     { credentials.credentialsOrThrow().serverUrl },
                     CellsS3CredentialsProvider(credentials, session, accessTokenApi)
                 ),
-                FileSystem.SYSTEM,
             )
-            return CellFileSharing(repository, transport::close)
+            return CellFileSharing(drafts, transport::close)
         }
     }
 }

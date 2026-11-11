@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.user.selectOneOnOneProtocol
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.MessageEffectDAOs
 import com.wire.kalium.util.DateTimeUtil
 
@@ -75,32 +76,43 @@ internal class ReceivedOneOnOneHandler(
         val candidates = conversations.conversationsWith(peer).filter { it.type == ConversationEntity.Type.ONE_ON_ONE }
         val proteus = candidates.filter { it.protocolInfo is ConversationEntity.ProtocolInfo.Proteus }.map { it.id }
         val target = when (protocol) {
+            // The app's queue only creates a missing Proteus 1:1 for teammates; the app's connection handler fetches it.
             SupportedProtocol.PROTEUS -> checkNotNull(proteus.firstOrNull()) {
                 "One-to-one resolution requires conversation creation"
             }
-            SupportedProtocol.MLS -> checkNotNull(
-                candidates.firstOrNull { candidate ->
-                    val info = candidate.protocolInfo
-                    info is ConversationEntity.ProtocolInfo.MLS && info.groupState == ConversationEntity.GroupState.ESTABLISHED &&
-                        checkNotNull(context) { "MLS was not prepared" }.conversationExists(info.groupId)
-                }?.id
-            ) { "One-to-one resolution requires MLS establishment or external commit response replay" }
+            SupportedProtocol.MLS -> candidates.firstOrNull { candidate ->
+                val info = candidate.protocolInfo
+                info is ConversationEntity.ProtocolInfo.MLS && info.groupState == ConversationEntity.GroupState.ESTABLISHED &&
+                    checkNotNull(context) { "MLS was not prepared" }.conversationExists(info.groupId)
+            }?.id
         }
-        val sources = if (protocol == SupportedProtocol.MLS) proteus else emptyList()
+        val sources = if (protocol == SupportedProtocol.MLS && target != null) proteus else emptyList()
         return OneOnOneResolution(peer, target, sources, protocol, payloadId)
     }
 }
 
 internal data class OneOnOneResolution(
     val peer: UserId,
-    val target: ConversationIDEntity,
+    /** Null when the MLS 1:1 still needs establishing or joining, which only the app can do. */
+    val target: ConversationIDEntity?,
     val sources: List<ConversationIDEntity>,
     val protocol: SupportedProtocol,
     val payloadId: String,
 ) {
-    suspend fun persist(data: MessageEffectDAOs, persistMessage: PersistMessageUseCase): Boolean {
+    /** Returns the target when this changed the active 1:1. */
+    @Suppress("ReturnCount")
+    suspend fun persist(data: MessageEffectDAOs, persistMessage: PersistMessageUseCase): ConversationIDEntity? {
+        if (target == null) {
+            // The app resolves queued peers once sync is live, the same queue its own welcome handler uses.
+            data.pendingActions.upsert(
+                PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION,
+                peer.toDao(),
+                DateTimeUtil.currentInstant().toEpochMilliseconds()
+            )
+            return null
+        }
         // This is the app's active-conversation rule, not a receiving completion marker.
-        if (checkNotNull(data.users.getUserDetailsByQualifiedID(peer.toDao())).activeOneOnOneConversationId == target) return false
+        if (checkNotNull(data.users.getUserDetailsByQualifiedID(peer.toDao())).activeOneOnOneConversationId == target) return null
         if (protocol == SupportedProtocol.MLS) {
             sources.forEach { data.messages.moveMessages(from = it, to = target) }
             if (sources.isNotEmpty()) data.conversations.updateConversationModifiedDateToMaxOfSources(target, sources)
@@ -119,6 +131,6 @@ internal data class OneOnOneResolution(
             )
             persistMessage(message).orThrow()
         }
-        return true
+        return target
     }
 }

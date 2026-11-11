@@ -49,7 +49,7 @@ class AppleWriteAccessSqlDriverTest {
                 assertFalse(pendingRead.isCompleted)
                 extension.sqlDriver.execute(null, "UPDATE AccessTest SET value = 2", 0).await()
                 assertEquals(2, extension.sqlDriver.readValue())
-                writes.resume {}
+                writes.withResumedAccess({}, {}) {}
                 pending.await()
                 pendingRead.await()
                 assertEquals(3, app.readValue())
@@ -84,7 +84,7 @@ class AppleWriteAccessSqlDriverTest {
             }
             runCurrent()
             assertTrue(handedOff)
-            writes.resume {}
+            writes.withResumedAccess({}, {}) {}
             assertEquals(2, app.readValue())
         } finally {
             database.close()
