@@ -630,6 +630,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -1504,7 +1505,6 @@ public class UserSessionScope internal constructor(
             userRepository,
             oneOnOneProtocolSelector,
             oneOnOneMigrator,
-            incrementalSyncRepository,
             pendingActionsRepository,
             conversationRepository,
             mlsConversationRepository,
@@ -2358,7 +2358,13 @@ public class UserSessionScope internal constructor(
             connectionRepository,
             userRepository,
             logout,
-            oneOnOneResolver,
+            pendingActionsRepository,
+            resolvePendingOneOnOnes = { after ->
+                launch {
+                    delay(after)
+                    pendingOneOnOneResolutionRequests.trySend(Unit)
+                }
+            },
             userId,
             clientIdProvider,
             legalHoldRequestHandler,
