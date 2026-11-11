@@ -30,15 +30,12 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
@@ -47,18 +44,10 @@ import com.wire.kalium.logic.failure.NoClientsForUser
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isTooManyRequests
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
-import kotlin.time.Duration
 
 /**
  * Whether a failed 1:1 resolution may succeed later, for example once the other user has key packages again,
@@ -76,12 +65,6 @@ internal interface OneOnOneResolver {
         synchronizeUsers: Boolean = false,
         allowJoinByExternalCommit: Boolean = true,
     ): Either<CoreFailure, Unit>
-
-    /** Resolves the 1:1 once sync is live, in its own crypto transaction. */
-    suspend fun scheduleResolveOneOnOneConversationWithUserId(
-        userId: UserId,
-        delay: Duration = Duration.ZERO
-    ): Job
 
     /**
      * Resolves a one-on-one conversation with a user based on their userId.
@@ -121,21 +104,13 @@ internal class OneOnOneResolverImpl(
     private val userRepository: UserRepository,
     private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
     private val oneOnOneMigrator: OneOnOneMigrator,
-    private val incrementalSyncRepository: IncrementalSyncRepository,
     private val pendingActionsRepository: PendingActionsRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val transactionProvider: CryptoTransactionProvider,
     private val maxConcurrentResolutions: Int = DEFAULT_MAX_CONCURRENT_RESOLUTIONS,
     private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : OneOnOneResolver {
-
-    private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
-
-    // TODO: inherit the scope of UserSessionScope so it's cancelled if user logs out, etc.
-    private val resolveActiveOneOnOneScope = CoroutineScope(dispatcher)
 
     override suspend fun resolveAllOneOnOneConversations(
         transactionContext: CryptoTransactionContext,
@@ -257,27 +232,6 @@ internal class OneOnOneResolverImpl(
     } else {
         Either.Right(Unit)
     }
-
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun scheduleResolveOneOnOneConversationWithUserId(
-        userId: UserId,
-        delay: Duration
-    ) =
-        resolveActiveOneOnOneScope.launch {
-            kaliumLogger.d("Schedule resolving active one-on-one")
-            incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }
-            delay(delay)
-            // The transaction of the event that scheduled this has closed by now, so open a new one.
-            try {
-                transactionProvider.transaction("scheduledOneOnOneResolution") { transactionContext ->
-                    resolveOneOnOneConversationWithUserId(transactionContext, userId, invalidateCurrentKnownProtocols = true)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                kaliumLogger.w("Scheduled one-on-one resolution failed for ${userId.toLogString()}", e)
-            }
-        }
 
     override suspend fun resolveOneOnOneConversationWithUserId(
         transactionContext: CryptoTransactionContext,

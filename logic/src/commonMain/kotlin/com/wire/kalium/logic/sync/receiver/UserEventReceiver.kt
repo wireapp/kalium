@@ -32,6 +32,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -41,13 +42,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.isUserNotFoundFailure
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
@@ -59,7 +60,9 @@ internal class UserEventReceiverImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
     private val logout: LogoutUseCase,
-    private val oneOnOneResolver: OneOnOneResolver,
+    private val pendingActionsRepository: PendingActionsRepository,
+    /** Starts resolving queued 1:1s after the given delay, once sync is live, outside this batch's transaction. */
+    private val resolvePendingOneOnOnes: (after: Duration) -> Unit,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val legalHoldRequestHandler: LegalHoldRequestHandler,
@@ -125,10 +128,10 @@ internal class UserEventReceiverImpl internal constructor(
                 connectionRepository.insertConnectionFromEvent(transactionContext, event)
                     .onSuccess {
                         if (event.connection.status == ConnectionState.ACCEPTED) {
-                            oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
-                                event.connection.qualifiedToId,
-                                delay = if (deliveryInfo.source == EventSource.LIVE) 3.seconds else ZERO
-                            )
+                            // Queue it: by the time sync is live, this batch's crypto transaction is closed. A live accept
+                            // waits a few seconds so the accepting client can create the MLS group and send the welcome first.
+                            pendingActionsRepository.enqueuePendingOneOnOneResolution(event.connection.qualifiedToId)
+                            resolvePendingOneOnOnes(if (deliveryInfo.source == EventSource.LIVE) 3.seconds else ZERO)
                         }
                     }
                     .flatMap { legalHoldHandler.handleNewConnection(event) }
