@@ -56,7 +56,6 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlin.test.assertTrue
@@ -68,7 +67,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DeleteMessageUseCaseTest {
     @Test
     fun givenSyncPending_whenDeletingSentText_thenWaitBeforeSendingDeletionSignal() = runTest {

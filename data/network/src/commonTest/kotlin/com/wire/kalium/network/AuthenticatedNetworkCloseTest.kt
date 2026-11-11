@@ -29,7 +29,6 @@ import io.ktor.client.engine.mock.MockEngine
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
@@ -45,7 +44,6 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class AuthenticatedNetworkCloseTest : ApiTest() {
     @Test
     fun closeWaitsForInitializedClientsAndClosesOwnedEngine() = runTest {

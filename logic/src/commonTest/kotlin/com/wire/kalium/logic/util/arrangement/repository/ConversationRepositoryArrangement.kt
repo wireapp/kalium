@@ -120,7 +120,7 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean): ConversationRepositoryArrangement
 }
 
-@OptIn(ConversationPersistenceApi::class)
+@OptIn(ConversationPersistenceApi::class, DelicateKaliumApi::class)
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
 
     override val conversationRepository: ConversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
@@ -161,14 +161,12 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 
-    @OptIn(DelicateKaliumApi::class)
     override suspend fun withDeletingConversationLocallySucceeding(conversationId: (ConversationId) -> Boolean) {
         everySuspend {
             conversationRepository.deleteConversationLocally(matches { conversationId(it) })
         }.returns(Either.Right(true))
     }
 
-    @OptIn(DelicateKaliumApi::class)
     override suspend fun withDeletingConversationLocallyFailing(conversationId: (ConversationId) -> Boolean) {
         everySuspend {
             conversationRepository.deleteConversationLocally(matches { conversationId(it) })

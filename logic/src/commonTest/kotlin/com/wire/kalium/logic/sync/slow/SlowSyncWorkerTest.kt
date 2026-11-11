@@ -65,6 +65,7 @@ import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
+@OptIn(DebugKaliumApi::class)
 class SlowSyncWorkerTest {
 
     @Test
@@ -711,7 +712,6 @@ class SlowSyncWorkerTest {
         }
     }
 
-    @OptIn(DebugKaliumApi::class)
     private suspend fun assertUseCases(arrangement: Arrangement, steps: HashSet<SlowSyncStep>) {
         verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.SELF_USER)) 1 else 0)) {
             arrangement.syncSelfUser.invoke()
@@ -762,7 +762,6 @@ class SlowSyncWorkerTest {
         }
     }
 
-    @OptIn(DebugKaliumApi::class)
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementMokkeryImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val syncSelfUser: SyncSelfUserUseCase = mock()

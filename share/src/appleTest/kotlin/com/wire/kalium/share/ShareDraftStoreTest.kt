@@ -5,7 +5,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
@@ -64,7 +63,6 @@ class ShareDraftStoreTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun lateUploadAfterRemovalIsDiscardedAndNeverReady() = runTest {
         val id = store.create(conversation, file)
         val finish = CompletableDeferred<Unit>()

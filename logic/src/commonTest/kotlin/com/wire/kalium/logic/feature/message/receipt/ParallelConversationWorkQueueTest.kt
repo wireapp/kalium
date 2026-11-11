@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.message.receipt
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -33,7 +32,6 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ParallelConversationWorkQueueTest {
 
     private val dispatcher = TestKaliumDispatcher

@@ -44,7 +44,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.runCurrent
@@ -55,7 +54,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SetCallHandRaisedUseCaseTest {
     @Test
     fun confirmsOnlyAfterSendAndCarriesDeviceIdentity() = runTest {

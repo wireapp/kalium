@@ -28,7 +28,6 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -84,7 +83,6 @@ class CellsS3CredentialsProviderTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenConcurrentRequestsRejectedWithSameToken_whenRefreshing_thenTokenIsRefreshedOnlyOnce() = runTest {
         val sessionManager = FakeSessionManager()
         val provider = createProvider(sessionManager)

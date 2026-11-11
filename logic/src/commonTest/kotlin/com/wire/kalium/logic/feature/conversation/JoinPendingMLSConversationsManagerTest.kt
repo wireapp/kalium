@@ -33,7 +33,6 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -111,7 +110,6 @@ class JoinPendingMLSConversationsManagerTest {
     }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenSyncIsAlreadyLive_whenFlagIsSetLater_thenPendingConversationsAreJoined() = runTest {
         val shouldJoin = MutableStateFlow(false)
         val (arrangement, manager) = Arrangement()

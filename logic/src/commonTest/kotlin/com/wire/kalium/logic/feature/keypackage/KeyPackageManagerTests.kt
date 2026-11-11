@@ -37,7 +37,6 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
@@ -184,7 +183,6 @@ class KeyPackageManagerTests {
         }
 
     @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun givenRefillIsRunning_whenAnotherRefillIsScheduled_thenItWaitsForTheFirstOneToFinish() =
         runTest(TestKaliumDispatcher.default) {
             val firstRefillCanFinish = CompletableDeferred<Unit>()

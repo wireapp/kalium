@@ -32,7 +32,6 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
@@ -58,7 +57,6 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SyncExecutorTest {
     @Test
     fun refreshResetsBothBackoffsWithoutReplacingActiveExecution() = runTest(TestKaliumDispatcher.default) {

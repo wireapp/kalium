@@ -28,7 +28,6 @@ import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import okio.Path.Companion.toPath
 import com.wire.kalium.common.error.CoreFailure
@@ -111,7 +110,6 @@ import kotlin.time.Duration
 import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
 import com.wire.kalium.messaging.sending.MLSMessageCreator
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageSenderTest {
     @Test
     fun givenPendingTextWasEdited_whenSendingOldSnapshot_thenEncryptLatestText() {

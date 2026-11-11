@@ -43,7 +43,6 @@ import dev.mokkery.matcher.ofType
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -52,7 +51,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class CallingMessageSenderTest {
 
     @Test

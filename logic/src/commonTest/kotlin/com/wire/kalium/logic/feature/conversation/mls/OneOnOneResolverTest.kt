@@ -62,6 +62,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(DelicateKaliumApi::class)
 class OneOnOneResolverTest {
 
     @Test
@@ -385,7 +386,6 @@ class OneOnOneResolverTest {
     }
 
     @Test
-    @OptIn(DelicateKaliumApi::class)
     fun givenPeerIsDeletedAndOneOnOneIsMls_whenResolving_thenWipesMlsGroupAndKeepsLocalConversation() = runTest {
         val deletedPeer = TestUser.OTHER.copy(deleted = true)
         val convId = TestConversation.ID
@@ -410,7 +410,6 @@ class OneOnOneResolverTest {
     }
 
     @Test
-    @OptIn(DelicateKaliumApi::class)
     fun givenPeerIsDeletedAndOneOnOneIsProteus_whenResolving_thenDoesNotTouchCryptoAndKeepsLocalConversation() = runTest {
         val deletedPeer = TestUser.OTHER.copy(deleted = true)
         val convId = TestConversation.ID

@@ -153,6 +153,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
         assertEquals(1, result.failedRepairs.size)
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationRepository: ConversationRepository = mock()
         val resetMLSConversationUseCase: ResetMLSConversationUseCase = mock()
@@ -161,13 +162,11 @@ class RepairFaultyRemovalKeysUseCaseTest {
             everySuspend { conversationRepository.getMLSConversationsByDomain(any()) } returns result
         }
 
-        @OptIn(ExperimentalStdlibApi::class)
         suspend fun withGetExternalKeyForConversation(key: String) = apply {
             everySuspend { mlsContext.getExternalSenders(any()) } returns
                     ExternalSenderKey(key.hexToByteArray())
         }
 
-        @OptIn(ExperimentalStdlibApi::class)
         suspend fun withGetExternalKeyForConversation(groupId: GroupID, key: String) = apply {
             everySuspend { mlsContext.getExternalSenders(groupId.value) } returns
                     ExternalSenderKey(key.hexToByteArray())

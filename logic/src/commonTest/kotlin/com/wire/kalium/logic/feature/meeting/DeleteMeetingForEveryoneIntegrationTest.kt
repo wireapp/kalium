@@ -59,7 +59,6 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,7 +82,7 @@ import kotlin.time.Instant
 import kotlin.time.Duration.Companion.seconds
 
 // Real SQL repositories, scope wiring, deletion use case and call observer; HTTP and native crypto are seams.
-@OptIn(ConversationPersistenceApi::class, ExperimentalCoroutinesApi::class)
+@OptIn(ConversationPersistenceApi::class)
 class DeleteMeetingForEveryoneIntegrationTest {
     private fun runTestWithFixture(testBody: suspend TestScope.(Fixture) -> Unit) = runTest {
         val fixture = Fixture(testScheduler)

@@ -35,7 +35,6 @@ import dev.mokkery.mock
 import dev.mokkery.everySuspend
 import dev.mokkery.answering.calls
 import dev.mokkery.matcher.any
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import com.wire.kalium.logic.data.user.UserId
@@ -95,7 +94,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class AppleAccountSessionTest {
     private val userId = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
     private val fileManager = NSFileManager.defaultManager

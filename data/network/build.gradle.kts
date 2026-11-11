@@ -37,6 +37,9 @@ kotlin {
         }
     }
     sourceSets {
+        matching { it.name.endsWith("Test") }.configureEach {
+            languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+        }
         // HttpTrafficObserver lives in :data:network-util and is marked @InternalKaliumApi so that
         // external consumers must opt in. This module is the one wiring it up, so it opts in globally.
         all {
