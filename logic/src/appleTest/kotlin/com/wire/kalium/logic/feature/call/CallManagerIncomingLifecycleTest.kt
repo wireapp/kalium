@@ -147,6 +147,8 @@ class CallManagerIncomingLifecycleTest {
                                     Message.Status.Sent, isSelfMessage = own, expirationData = null), content)
                             }
                             val queuedReject = type == ConversationTypeCalling.OneOnOne && termination == "reject"
+                            // AVS rejects a type it cannot decode; that must not hold back the call behind it.
+                            receive("FUTURETYPE", false, false, session, -1)
                             receive(start, false, false, session, 0)
                             if (!queuedReject) {
                                 assertEquals(CallStatus.INCOMING, withTimeout(5000) { states.receive() })
