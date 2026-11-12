@@ -208,11 +208,25 @@ jobs:
               build/reports/tests/iosSimulatorArm64Test/**
               ./**/build/reports/tests/**
 
+      # Retry transient artifact-service errors without rerunning the native suite.
       - name: Archive Test Results
+        id: archive-test-results
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
             name: test-results-ios-${{ matrix.shard }}
+            path: |
+              ./**/build/test-results/testDebugUnitTest/**/*.xml
+              ./**/build/test-results/**/*.xml
+              ./**/build/test-results/iosSimulatorArm64Test/**
+
+      - name: Retry archiving test results
+        if: ${{ always() && steps.archive-test-results.outcome == 'failure' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+            name: test-results-ios-${{ matrix.shard }}
+            overwrite: true
             path: |
               ./**/build/test-results/testDebugUnitTest/**/*.xml
               ./**/build/test-results/**/*.xml

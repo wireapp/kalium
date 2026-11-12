@@ -68,8 +68,12 @@ actual object AppleAvs {
     actual val bridge: AppleAvsBridge = AppleAvsBridgeImpl
 }
 
-// Signaling integration tests use real AVS without starting iOS audio services.
-internal fun signalingUserHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt? =
+/**
+ * Creates a real AVS signaling handle without starting platform audio services, for signaling integration tests.
+ * Release the handle with [AppleAvsBridge.releaseUserHandle] on [AppleAvs.bridge].
+ * Application calls that require audio must use [AppleAvsBridge.userHandle].
+ */
+fun signalingUserHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt? =
     AppleAvsBridgeImpl.createUserHandle(selfUserId, selfClientId, callbacks, useMediaManager = false)
 
 @Suppress("LongParameterList", "ReturnCount", "TooManyFunctions")
