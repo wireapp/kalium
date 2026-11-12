@@ -152,8 +152,9 @@ public class ShareOutboxServer(
                 retry = true
                 continue
             }
-            guarded("finish") { outbox.finish(id) }
-            if (request != null && result != STORED) {
+            // An entry that could not be dropped is imported again, and reported then.
+            val finished = guarded("finish") { outbox.finish(id) } != null
+            if (finished && request != null && result != STORED) {
                 // The finished entry is gone, so a report cancelled now could not be retried.
                 withContext(NonCancellable) { guarded("report") { report(request, result) } }
             }

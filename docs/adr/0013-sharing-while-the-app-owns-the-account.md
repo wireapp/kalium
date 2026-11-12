@@ -54,8 +54,8 @@ on without it, so an import cancelled before a message is stored stores and send
 share whose upload fails stores nothing and stays claimed: the app uploads it again while it serves
 the outbox, less and less often, until the share is a day old. Stored
 messages belong to the app: they upload, send, fail and retry in the conversation like messages from
-the composer. The app then removes the entry. Nothing goes back to the extension: when a share ends
-without a stored message, the app tells the user with a local notification.
+the composer. The app then removes the entry. Nothing goes back to the extension: when the app could
+not store a share completely, it tells the user with a local notification.
 
 **The picker.** The extension cannot list conversations while the app owns the account, and it must not
 open the app's database. It asks the app with a Darwin notification. For each account it owns, the app

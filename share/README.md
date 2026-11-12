@@ -97,6 +97,6 @@ item keeps the message ID the extension gave it, so an import interrupted by a b
 stores a message twice. Once the account caught up, the app checks the conversation and file rules again before it
 stores anything. Requests for conversations are answered meanwhile, on their own, and shares handed off meanwhile
 are claimed at once. A Cells share whose upload fails stays claimed, and the app uploads it again while it
-serves the outbox, less and less often, until the share is a day old. A share that ends without a stored
-message goes to `refused`, for the app to tell the user. Serving also deletes a request for conversations,
-or an answer, that is more than a minute old.
+serves the outbox, less and less often, until the share is a day old. A share the app could not store
+completely goes to `refused`, for the app to tell the user. When serving starts, it deletes a request for
+conversations, or an answer, that is more than a minute old.
