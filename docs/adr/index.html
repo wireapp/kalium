@@ -1896,7 +1896,7 @@ protected Keychain access or signed-device budgets.</li>
                     <div class="panel-body"><h1>12. Sending From Apple Extensions</h1>
 <p>Date: 2026-10-13</p>
 <h2>Status</h2>
-<p>Accepted. Amended 2026-10-25: uploads have a budget and give the account up when the app needs it.</p>
+<p>Accepted. Amended 2026-10-25 and 2026-11-12: uploads run without holding the account and stop when the app needs it.</p>
 <h2>Context</h2>
 <p>The iOS share extension must send a message to a conversation the user picks; later, notification
 actions may send replies, read receipts and delivery receipts. Sending requires a live account: Proteus
@@ -1936,17 +1936,22 @@ instead of waiting for live.</p>
 app's conversation list components.</p>
 <p>Files follow in the same extension. Uploads can outlive a dismissed extension, so the share sheet
 stays open while they run: the extension encrypts and uploads every file before it holds the account
-live, reports progress, and stops when the user cancels. Uploading needs the account's tokens, so the
-extension holds the account meanwhile, but not its socket, and the live hold's budget starts after the
-uploads. Holding the account keeps it from the app and the NSE, so uploads have a budget of their own,
-enough at about 1 Mbit/s and at most five minutes, and they stop when the app needs the account: the app
-posts a Darwin notification when it enters the foreground or a call arrives, and the extension stops when
-its host leaves the foreground, because iOS then suspends it with the account held. The extension then
-releases the account and hands the share to the app (ADR 13), which uploads the files again. The same
-applies once the hold's socket is live, while it catches up; the connection itself is not interrupted.
-Once the extension stored a message, the send finishes within its budget: stopping it then could send the
-message twice.
-Nothing is stored until every upload succeeded; each file then becomes an uploaded asset
+live, reports progress, and stops when the user cancels. Uploading needs the account's token, and
+neither its database nor CoreCrypto, so the extension does not hold the account while it uploads. It
+holds it for a moment to read the conversation, the file rules and where the files go, uploads with the
+stored token, then holds it again to send. The app and the NSE can take the account meanwhile, so a push
+during a long upload is read and a call rings. A token refresh takes the account for that moment.</p>
+<p>Whenever the extension takes the account, it waits for another app extension that holds it, in practice
+the NSE, which gives the account up within its own budget: up to 20 seconds, and never longer than the
+send's budget. The lock file's holder record says whether the holder is an app extension. The app may
+keep the account, so after 3 seconds the extension hands the share to the app instead (ADR 13). It does
+the same when the app asks for the account before anything is stored: the app posts a Darwin notification
+when it enters the foreground or a call arrives, and the extension treats its host leaving the foreground
+the same way, because iOS then suspends it. An upload in flight stops, and the app uploads the files
+again. The same applies once the hold's socket is live, while it catches up; the connection itself is not
+interrupted. Once the extension stored a message, the send finishes within its budget: stopping it then
+could send the message twice.</p>
+<p>Nothing is stored until every upload succeeded; each file then becomes an uploaded asset
 message, so a message that fails to send is retried in the app without uploading again. The extension
 follows the app's file rules: file sharing, allowed types and size limits. Cells files use the app's
 Cells transport as unpublished drafts. One multipart message is stored with its caption before publication.
@@ -1995,7 +2000,7 @@ from inside Wire to Wire, shares from another app during a Wire call, or uses iP
 in the foreground. Today the sheet says &quot;Wire is busy&quot; before the user can pick a conversation, because
 listing conversations also opens the account.</p>
 <p>The extension must not act as a second owner. It may not write the account database, use CoreCrypto,
-refresh tokens, upload, or open a WebSocket while the app owns the account. A pending message written
+refresh tokens or open a WebSocket while the app owns the account. A pending message written
 behind the app would not be sent either: on iOS, Kalium does not schedule pending messages, and the
 app's queries see another process's writes only when it takes the account back.</p>
 <p>iOS does not let an app hide its own share extension from its share sheet: <code>excludedActivityTypes</code>
@@ -2021,7 +2026,9 @@ background handoff during an import therefore stores nothing twice: the next imp
 entry. Catching up can change the rules, so the app first waits until the account caught up, then
 checks the conversation with the extension's own rules (ADR 12's share blocks and file rules). If a
 rule now refuses it, the app stores nothing. The import stores each message itself; only sending goes
-on without it, so an import cancelled before a message is stored stores and sends nothing. Stored
+on without it, so an import cancelled before a message is stored stores and sends nothing. A Cells
+share whose upload fails stores nothing and stays claimed: the app uploads it again while it serves
+the outbox, less and less often, until the share is a day old. Stored
 messages belong to the app: they upload, send, fail and retry in the conversation like messages from
 the composer. The app then writes a result for the extension (stored, or the reason it refused) and
 removes the entry.</p>
@@ -2033,10 +2040,10 @@ asks, and deletes each snapshot once read. A snapshot holds conversation names, 
 request, protected while the device is locked, and excluded from backups. The app answers these
 requests on their own, so a share being imported never keeps a sheet waiting for its list.</p>
 <p><strong>The sheet.</strong> When the app does not answer, the account is busy for another reason, usually the NSE.
-Then the extension retries opening the account itself until its budget ends. If the account becomes
-busy between listing and sending, the extension retries sending for a moment, then hands the share off. It
-also hands the share off when the app wants the account while the extension uploads, or when uploading takes
-too long (ADR 12). The sheet waits a few seconds for the app to claim the share, and a few more for its result.
+Then the extension retries opening the account itself until its budget ends. Who sends is decided when
+the user sends, not by who listed the conversations: the extension takes the account if it can, waits for
+another extension that holds it, and hands the share off when the app holds it, or asks for it before
+anything is stored (ADR 12). The sheet waits a few seconds for the app to claim the share, and a few more for its result.
 If the app writes a refusal in time, the sheet shows the reason. Otherwise the sheet says Wire is sending the share,
 or, if the app has not claimed it, that Wire will send it when Wire is opened. It also marks the entry as unwatched:
 from then on, the app tells the user with a local notification if it refuses the share. The app writes its result
@@ -2044,7 +2051,9 @@ before it looks for the mark, and the sheet marks before it looks one last time 
 them sees the result; only one takes it. The sheet offers no cancel while it waits.</p>
 <p><strong>Not a second lock.</strong> A lock that only the app holds would tell the extension that the app owns the
 account. It would not tell it that the app will take the share, and checking two locks one after the
-other races with the app releasing them. The app's claim answers both.</p>
+other races with the app releasing them. The app's claim answers both. The account lock's holder record
+says whether an app extension holds it; that only decides how long the extension waits before it hands
+the share off.</p>
 <h2>Implementation</h2>
 <p>Kalium's share module holds the outbox (entries, claims, results and snapshots), which the extension and
 the app both use, and the app's importer and snapshot writer, which take the app's sending as ports.
