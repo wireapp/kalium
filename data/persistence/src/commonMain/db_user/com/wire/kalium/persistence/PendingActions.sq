@@ -16,10 +16,28 @@ VALUES (?, ?, ?)
 ON CONFLICT(action_type, qualified_id) DO UPDATE SET
     created_at = CASE WHEN excluded.action_type IN ('clear_conversation_content', 'delete_conversation_locally', 'wipe_mls_group')
         THEN MAX(PendingActions.created_at, excluded.created_at)
+        WHEN excluded.action_type IN ('join_mls_group_conversation', 'recover_mls_group_conversation')
+        THEN MAX(PendingActions.created_at + 1, excluded.created_at)
         ELSE excluded.created_at END;
+
+insertIfAbsent:
+INSERT INTO PendingActions(action_type, qualified_id, created_at)
+VALUES (?, ?, ?)
+ON CONFLICT(action_type, qualified_id) DO NOTHING;
+
+selectChanges:
+SELECT changes();
+
+selectByTypeAndId:
+SELECT qualified_id, created_at FROM PendingActions
+WHERE action_type = ? AND qualified_id = ?;
 
 acknowledge:
 DELETE FROM PendingActions WHERE action_type = ? AND qualified_id = ? AND created_at = ?;
+
+postpone:
+UPDATE PendingActions SET created_at = MAX(created_at + 1, :nextAttempt)
+WHERE action_type = :actionType AND qualified_id = :qualifiedId AND created_at = :attempt;
 
 selectByActionType:
 SELECT qualified_id, created_at
@@ -35,3 +53,7 @@ WHERE action_type = ?
 deleteByActionType:
 DELETE FROM PendingActions
 WHERE action_type = ?;
+
+selectMLSRecoveryById:
+SELECT qualified_id, created_at FROM PendingActions
+WHERE qualified_id = ? AND action_type IN ('recover_mls_group_conversation', 'pause_mls_group_join');

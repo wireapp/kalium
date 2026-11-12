@@ -22,6 +22,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 enum class PendingActionType(val dbValue: String) {
     RESOLVE_ONE_ON_ONE_CONVERSATION("resolve_one_on_one_conversation"),
     JOIN_MLS_GROUP_CONVERSATION("join_mls_group_conversation"),
+    RECOVER_MLS_GROUP_CONVERSATION("recover_mls_group_conversation"),
+    PAUSE_MLS_GROUP_JOIN("pause_mls_group_join"),
 
     // Consumed by PendingConversationCleanup in the app and NSE under account ownership.
     CLEAR_CONVERSATION_CONTENT("clear_conversation_content"),
@@ -40,4 +42,13 @@ interface PendingActionDAO {
     suspend fun deleteByActionTypeAndIds(actionType: PendingActionType, qualifiedIds: List<QualifiedIDEntity>)
     suspend fun deleteByActionType(actionType: PendingActionType)
     suspend fun acknowledge(actionType: PendingActionType, action: PendingActionEntity)
+
+    /** True only for a group with no queued or paused recovery. Discovery never revives paused work. */
+    suspend fun requestMLSGroupJoin(qualifiedId: QualifiedIDEntity, createdAt: Long, evidence: Boolean): Boolean
+
+    /** Pauses only this version of the request; evidence received during an attempt must remain queued. */
+    suspend fun pauseMLSGroupJoin(action: PendingActionEntity)
+
+    suspend fun hasMLSGroupRecovery(qualifiedId: QualifiedIDEntity): Boolean
+    suspend fun postpone(actionType: PendingActionType, action: PendingActionEntity, nextAttempt: Long)
 }

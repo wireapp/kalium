@@ -11,7 +11,7 @@ data class ReceivedNotificationResult(
     val calls: List<ReceivedCallResult> = emptyList(),
     val presentationReason: String? = null,
     val callSignalsPending: Boolean = false,
-    /** Retained ordered Events work, consumed by the existing app incremental sync. */
+    /** Durable work for the app, either retained Events or an exact-ID MLS recovery request. */
     val appWorkPending: NotificationAppWork? = null,
     /** Every queued event through the target was processed without deferral or app handoff; stored alerts may be presented. */
     val prefixComplete: Boolean = false,
@@ -62,4 +62,5 @@ internal data class NotificationEffectsResult(
     val message: ReceivedMessageResult?,
     val calls: List<ReceivedCallEvent>,
     val meetings: List<LocalNotification.Meeting>,
+    val newMLSGroupRecovery: Boolean = false,
 )

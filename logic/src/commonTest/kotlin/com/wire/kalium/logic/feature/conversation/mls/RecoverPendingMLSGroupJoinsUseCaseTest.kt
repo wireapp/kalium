@@ -25,13 +25,19 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSJoinMode
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -40,199 +46,174 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class RecoverPendingMLSGroupJoinsUseCaseTest {
     @Test
-    fun givenSyncDoesNotReachLive_whenInvoked_thenSkipsRecovery() = runTest {
-        val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.getPendingMLSGroupJoins() }
-        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) }
+    fun waitsForLiveBeforeReadingRecoveryWork() = runTest {
+        val a = Arrangement().defaults()
+        everySuspend { a.syncStateObserver.waitUntilLiveOrFailure() } returns Either.Left(CoreFailure.MissingClientRegistration)
+        a.useCase()()
+        verifySuspend(VerifyMode.not) { a.pending.getPendingMLSGroupJoinEntries() }
     }
 
     @Test
-    fun givenRecoverySucceeds_whenInvoked_thenAcknowledgesRecoveredConversations() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID, TestConversation.id(2))
-        val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Right(Unit))
-            .withPendingConversationIds(pendingConversationIds)
-            .withJoinResult(Either.Right(Unit))
-            .withConversationEstablished()
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(pendingConversationIds)
-        }
+    fun acknowledgesOnlyAnEstablishedOriginalWithItsNativeGroup() = runTest {
+        val a = Arrangement().defaults()
+        a.useCase()()
+        verifySuspend { a.join(any(), TestConversation.ID, any(), true, MLSJoinMode.RECOVER_EXACT_GROUP) }
+        verifySuspend { a.pending.acknowledgeMLSGroupJoin(ENTRY) }
+        verifySuspend(VerifyMode.not) { a.pending.pauseMLSGroupJoin(any()) }
     }
 
     @Test
-    fun givenRecoveryFails_whenInvoked_thenDoesNotAcknowledgePendingConversations() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID)
-        val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Right(Unit))
-            .withPendingConversationIds(pendingConversationIds)
-            .withJoinResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any())
-            arrangement.conversationRepository.setConversationDeletedLocally(any(), any())
-        }
+    fun successfulJoinThatLeavesOriginalPendingPausesUntilNewEvidence() = runTest {
+        val a = Arrangement().defaults()
+        everySuspend { a.conversations.getNonDeletedConversationById(any()) } returns Either.Right(PENDING)
+        everySuspend { a.mlsContext.conversationExists(any()) } returns false
+        a.useCase()()
+        verifySuspend { a.pending.pauseMLSGroupJoin(ENTRY) }
+        verifySuspend(VerifyMode.not) { a.pending.acknowledgeMLSGroupJoin(any()) }
     }
 
     @Test
-    fun givenLegacyRecoveryFailsWithBackendConflict_whenInvoked_thenAcknowledgesPendingConversation() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID)
-        val failure = MLSFailure.FederatedBackendConflict(listOf("backend-a.example", "backend-b.example"))
-        val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Right(Unit))
-            .withPendingConversationIds(pendingConversationIds)
-            .withJoinResult(Either.Left(failure))
-            .withMarkingConversationDeletedLocallySucceeding()
-            .arrange()
+    fun transientFailureRetainsAndRotatesTheAttemptWithoutImmediatelyRetrying() = runTest {
+        val a = Arrangement().defaults()
+        everySuspend { a.join(any(), any(), any(), true, MLSJoinMode.RECOVER_EXACT_GROUP) } returns
+            Either.Left(NetworkFailure.NoNetworkConnection(null))
+        a.useCase()()
+        verifySuspend { a.pending.retryMLSGroupJoin(ENTRY) }
+        verifySuspend(VerifyMode.not) { a.pending.acknowledgeMLSGroupJoin(any()) }
+        assertEquals(0, a.signals)
+    }
 
-        useCase()
+    @Test
+    fun unknownFailurePausesRatherThanSpinningOnEveryForeground() = runTest {
+        val a = Arrangement().defaults()
+        everySuspend { a.join(any(), any(), any(), true, MLSJoinMode.RECOVER_EXACT_GROUP) } returns
+            Either.Left(CoreFailure.Unknown(IllegalStateException("failed")))
+        a.useCase()()
+        verifySuspend { a.pending.pauseMLSGroupJoin(ENTRY) }
+    }
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(pendingConversationIds)
+    @Test
+    fun unavailableRecoveryPausesWithoutHidingHistoryOrDeletingNewerEvidence() = runTest {
+        for (code in listOf(403, 404)) {
+            val a = Arrangement().defaults()
+            val label = if (code == 403) "access-denied" else "no-conversation"
+            val failure = NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(code, "removed", label)))
+            everySuspend { a.join(any(), any(), any(), true, MLSJoinMode.RECOVER_EXACT_GROUP) } returns Either.Left(failure)
+            a.useCase()()
+            verifySuspend { a.pending.pauseMLSGroupJoin(ENTRY) }
+            verifySuspend(VerifyMode.not) {
+                a.conversations.setConversationDeletedLocally(any(), any())
+                a.pending.acknowledgeMLSGroupJoin(any(), any())
+            }
         }
     }
 
     @Test
-    fun givenDirectConflictAndDeletionFails_whenInvoked_thenStopsPendingRecovery() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID)
-        val failure = NetworkFailure.FederatedBackendFailure.ConflictingBackends(listOf("backend-a.example", "backend-b.example"))
-        val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Right(Unit))
-            .withPendingConversationIds(pendingConversationIds)
-            .withJoinResult(Either.Left(failure))
-            .withMarkingConversationDeletedLocallyFailing()
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(pendingConversationIds)
-        }
+    fun removedSelfTerminatesRecovery() = runTest {
+        val a = Arrangement().defaults()
+        everySuspend { a.conversations.getConversationMembers(any()) } returns Either.Right(emptyList())
+        a.useCase()()
+        verifySuspend { a.pending.acknowledgeMLSGroupJoin(ENTRY) }
     }
 
     @Test
-    fun givenSomeRecoveriesFail_whenInvoked_thenAcknowledgesOnlySuccessfulConversations() = runTest {
-        val failedConversationId = TestConversation.ID
-        val successfulConversationId = TestConversation.id(2)
-        val pendingConversationIds = listOf(failedConversationId, successfulConversationId)
-        val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Right(Unit))
-            .withPendingConversationIds(pendingConversationIds)
-            .withJoinResult(Either.Right(Unit))
-            .withJoinResultForConversation(failedConversationId, Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
-            .withConversationEstablished()
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(successfulConversationId))
-        }
+    fun discoversMissingPendingGroupsEvenWithoutAnEvent() = runTest {
+        val a = Arrangement().defaults()
+        everySuspend { a.pending.getPendingMLSGroupJoinEntries() } returns emptyList()
+        everySuspend { a.conversations.getConversationsByGroupState(GroupState.PENDING_WELCOME_MESSAGE) } returns Either.Right(listOf(PENDING))
+        everySuspend { a.mlsContext.conversationExists(any()) } returns false
+        a.useCase()()
+        verifySuspend { a.pending.discoverMLSGroupJoin(PENDING.id) }
     }
 
     @Test
-    fun givenJoinSucceedsButConversationIsStillPending_whenInvoked_thenDoesNotAcknowledgeRecovery() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID)
-        val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Right(Unit))
-            .withPendingConversationIds(pendingConversationIds)
-            .withJoinResult(Either.Right(Unit))
-            .withConversationPendingCreation()
-            .arrange()
-
-        useCase()
-
-        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) }
+    fun discoveryDoesNotReactivateAPausedGroup() = runTest {
+        val a = Arrangement().defaults()
+        everySuspend { a.pending.getPendingMLSGroupJoinEntries() } returns emptyList()
+        everySuspend { a.pending.getPausedMLSGroupJoins() } returns listOf(ENTRY)
+        everySuspend { a.conversations.getConversationsByGroupState(any()) } returns Either.Right(listOf(PENDING))
+        everySuspend { a.conversations.getNonDeletedConversationById(any()) } returns Either.Right(PENDING)
+        a.useCase()()
+        verifySuspend(VerifyMode.not) { a.pending.discoverMLSGroupJoin(any()) }
     }
 
-    private class Arrangement :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    @Test
+    fun drainBoundsWorkAndSignalsForTheRest() = runTest {
+        val a = Arrangement().defaults()
+        everySuspend { a.pending.getPendingMLSGroupJoinEntries() } returns
+            (1..21).map { PendingActionEntity(TestConversation.id(it).toDao(), it.toLong()) }
+        a.useCase()()
+        verifySuspend(VerifyMode.exactly(20)) { a.join(any(), any(), any(), true, MLSJoinMode.RECOVER_EXACT_GROUP) }
+        assertEquals(1, a.signals)
+    }
 
-        val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
-        val syncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
-        val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
-        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
-
-        suspend fun withSyncWaitResult(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend { syncStateObserver.waitUntilLiveOrFailure() } returns result
+    @Test
+    fun legacyPendingJoinAtEpochZeroCanEstablishWithoutNewEvidence() = runTest {
+        val a = Arrangement().defaults()
+        var conversation = PENDING.copy(protocol = (PENDING.protocol as Conversation.ProtocolInfo.MLS).copy(
+            epoch = 0UL, groupState = GroupState.PENDING_JOIN))
+        everySuspend { a.pending.getPendingMLSGroupJoinEntries() } returns emptyList()
+        everySuspend { a.pending.getPendingMLSGroupJoinEntries(false) } returns listOf(ENTRY)
+        everySuspend { a.conversations.getNonDeletedConversationById(any()) } calls { Either.Right(conversation) }
+        everySuspend { a.join(any(), any(), any(), true, MLSJoinMode.JOIN_OR_ESTABLISH) } calls {
+            assertEquals(GroupState.PENDING_JOIN, (conversation.protocol as Conversation.ProtocolInfo.MLS).groupState)
+            assertEquals(0UL, (conversation.protocol as Conversation.ProtocolInfo.MLS).epoch)
+            conversation = ESTABLISHED
+            Either.Right(Unit)
         }
+        a.useCase()()
+        verifySuspend { a.join(any(), TestConversation.ID, any(), true, MLSJoinMode.JOIN_OR_ESTABLISH) }
+        verifySuspend { a.pending.acknowledgeMLSGroupJoin(ENTRY, false) }
+    }
 
-        suspend fun withPendingConversationIds(conversationIds: List<ConversationId>) = apply {
-            everySuspend { pendingActionsRepository.getPendingMLSGroupJoins() } returns conversationIds
-            everySuspend { pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) } returns Unit
-        }
+    @Test
+    fun failedLegacyEstablishmentRemainsRetryableWithoutNewMessageEvidence() = runTest {
+        val a = Arrangement().defaults()
+        everySuspend { a.pending.getPendingMLSGroupJoinEntries() } returns emptyList()
+        everySuspend { a.pending.getPendingMLSGroupJoinEntries(false) } returns listOf(ENTRY)
+        everySuspend { a.join(any(), any(), any(), true, MLSJoinMode.JOIN_OR_ESTABLISH) } returns
+            Either.Left(CoreFailure.Unknown(IllegalStateException("retry creation")))
+        a.useCase()()
+        verifySuspend { a.pending.retryMLSGroupJoin(ENTRY, false) }
+        verifySuspend(VerifyMode.not) { a.pending.pauseMLSGroupJoin(any()) }
+    }
 
-        suspend fun withJoinResult(result: Either<CoreFailure, Unit>) = apply {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val pending = mock<PendingActionsRepository>(MockMode.autoUnit)
+        val syncStateObserver = mock<SyncStateObserver>(MockMode.autoUnit)
+        val join = mock<JoinExistingMLSConversationUseCase>(MockMode.autoUnit)
+        val conversations = mock<ConversationRepository>(MockMode.autoUnit)
+        var signals = 0
+
+        suspend fun defaults() = apply {
             withTransactionReturning(Either.Right(Unit))
-            everySuspend {
-                joinExistingMLSConversation.invoke(
-                    transactionContext = any(),
-                    conversationId = any(),
-                    mlsPublicKeys = any(),
-                    allowJoinByExternalCommit = true
-                )
-            } returns result
+            everySuspend { syncStateObserver.waitUntilLiveOrFailure() } returns Either.Right(Unit)
+            everySuspend { pending.getPendingMLSGroupJoinEntries() } returns listOf(ENTRY)
+            everySuspend { pending.getPendingMLSGroupJoinEntries(false) } returns emptyList()
+            everySuspend { pending.getPausedMLSGroupJoins() } returns emptyList()
+            everySuspend { pending.discoverMLSGroupJoin(any()) } returns true
+            everySuspend { join(any(), any(), any(), true, MLSJoinMode.RECOVER_EXACT_GROUP) } returns Either.Right(Unit)
+            everySuspend { conversations.getConversationsByGroupState(any()) } returns Either.Right(emptyList())
+            everySuspend { conversations.getNonDeletedConversationById(any()) } returns Either.Right(ESTABLISHED)
+            everySuspend { conversations.getConversationMembers(any()) } returns Either.Right(listOf(TestUser.USER_ID))
+            everySuspend { conversations.setConversationDeletedLocally(any(), true) } returns Either.Right(Unit)
+            everySuspend { mlsContext.conversationExists(any()) } returns true
         }
 
-        suspend fun withJoinResultForConversation(conversationId: ConversationId, result: Either<CoreFailure, Unit>) = apply {
-            everySuspend {
-                joinExistingMLSConversation.invoke(
-                    transactionContext = any(),
-                    conversationId = conversationId,
-                    mlsPublicKeys = any(),
-                    allowJoinByExternalCommit = true
-                )
-            } returns result
-        }
-
-        suspend fun withConversationEstablished() = withConversationGroupState(
-            Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+        fun useCase() = RecoverPendingMLSGroupJoinsUseCaseImpl(
+            pending, syncStateObserver, cryptoTransactionProvider, join, conversations, TestUser.USER_ID, { signals++ }
         )
+    }
 
-        suspend fun withConversationPendingCreation() = withConversationGroupState(
-            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
-        )
-
-        suspend fun withMarkingConversationDeletedLocallySucceeding() = apply {
-            everySuspend {
-                conversationRepository.setConversationDeletedLocally(any(), true)
-            } returns Either.Right(Unit)
-        }
-
-        suspend fun withMarkingConversationDeletedLocallyFailing() = apply {
-            everySuspend {
-                conversationRepository.setConversationDeletedLocally(any(), true)
-            } returns Either.Left(StorageFailure.DataNotFound)
-        }
-
-        private suspend fun withConversationGroupState(groupState: Conversation.ProtocolInfo.MLSCapable.GroupState) = apply {
-            val conversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO.copy(groupState = groupState))
-            everySuspend { conversationRepository.getConversationById(any()) } returns Either.Right(conversation)
-        }
-
-        suspend fun arrange(): Pair<Arrangement, RecoverPendingMLSGroupJoinsUseCase> = this to
-            RecoverPendingMLSGroupJoinsUseCaseImpl(
-                pendingActionsRepository = pendingActionsRepository,
-                syncStateObserver = syncStateObserver,
-                transactionProvider = cryptoTransactionProvider,
-                joinExistingMLSConversation = joinExistingMLSConversation,
-                conversationRepository = conversationRepository,
-            )
+    private companion object {
+        val ENTRY = PendingActionEntity(TestConversation.ID.toDao(), 1L)
+        val ESTABLISHED = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO.copy(groupState = GroupState.ESTABLISHED))
+        val PENDING = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO.copy(groupState = GroupState.PENDING_WELCOME_MESSAGE))
     }
 }
+
+private typealias GroupState = Conversation.ProtocolInfo.MLSCapable.GroupState
