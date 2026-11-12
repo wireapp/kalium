@@ -129,6 +129,9 @@ public class ShareOutboxServer(
             kaliumLogger.i("Share handoff stage=IMPORT_START")
             val result = if (request == null) UNREADABLE else guarded("import") { import(id, request) } ?: FAILED
             kaliumLogger.i("Share handoff stage=IMPORT_COMPLETE result=$result")
+            // A failed upload stored nothing and the files are still here, so the entry stays claimed: the next ring
+            // or serve uploads again, until the share is a day old.
+            if (result == ShareOutboxSending.UPLOAD_FAILED && outbox.isRecent(id)) continue
             val unwatched = guarded("finish") { outbox.finish(id, result) } == true
             if (unwatched && request != null && result != ShareOutbox.STORED) {
                 // The finished entry is gone, so a report cancelled now could not be retried.

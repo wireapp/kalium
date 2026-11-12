@@ -103,6 +103,12 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
         else -> HandOffState.Finished(take(results / id) ?: MISSING)
     }
 
+    /** Whether entry [id] was handed off within the last day: its ID starts with that time. */
+    fun isRecent(id: String): Boolean {
+        val handedOff = id.substringBefore('-').toLongOrNull() ?: return false
+        return Clock.System.now().toEpochMilliseconds() - handedOff < RETRY_FOR.inWholeMilliseconds
+    }
+
     /**
      * The extension stops waiting for entry [id], so the app reports its result instead (see [finish]). Returns the
      * result if the app finished meanwhile and left it to the extension, once.
@@ -225,6 +231,7 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
         private const val REQUEST = "request.json"
         private const val ID_TIME_DIGITS = 13
         private val SWEEP_AFTER = 1.hours
+        private val RETRY_FOR = 24.hours
         private val json = Json { ignoreUnknownKeys = true }
     }
 }

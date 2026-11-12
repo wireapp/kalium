@@ -98,6 +98,21 @@ class ShareOutboxTest {
     }
 
     @Test
+    fun aCellsShareWhoseUploadFailedStaysForTheNextImport() = runTest {
+        withDatabase { database ->
+            seed(database)
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val id = outbox.handOff(request(PHOTO), listOf(file("photo")))
+            server(database, RecordingSending(database, cellsFailure = ShareOutboxSending.UPLOAD_FAILED)).importShares()
+            assertEquals(HandOffState.Claimed, outbox.state(id))
+            val online = RecordingSending(database)
+            server(database, online).importShares()
+            assertEquals(1, online.stored.size)
+            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
+        }
+    }
+
+    @Test
     fun theAppStoresAHandedOffShareFilesFirstAndReportsItOnce() = runTest {
         withDatabase { database ->
             seed(database)
@@ -389,6 +404,7 @@ class ShareOutboxTest {
         private val database: UserDatabaseBuilder,
         private val cancelOn: String? = null,
         private val synced: CompletableDeferred<Unit>? = null,
+        private val cellsFailure: String? = null,
     ) : ShareOutboxSending {
         val stored = mutableListOf<String>()
         val waitingForSync = CompletableDeferred<Unit>()
@@ -411,6 +427,7 @@ class ShareOutboxTest {
         override suspend fun cells(
             conversationId: ConversationId, files: List<ShareOutboxFile>, text: String, messageId: String,
         ): String? {
+            cellsFailure?.let { return it }
             files.forEach { assertEquals(true, FileSystem.SYSTEM.exists(it.path.toPath())) }
             store(conversationId, messageId, "Cells:${files.joinToString(",") { it.name }}:$text as $messageId")
             if (messageId == cancelOn) throw CancellationException("Backgrounded after storage")
