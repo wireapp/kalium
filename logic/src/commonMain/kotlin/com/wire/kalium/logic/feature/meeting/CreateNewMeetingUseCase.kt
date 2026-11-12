@@ -68,5 +68,8 @@ internal class CreateNewMeetingUseCaseImpl(
         .onSuccess {
             refreshUsersWithoutMetadata()
         }
-        .fold({ CreateNewMeetingUseCase.Result.Failure }, { CreateNewMeetingUseCase.Result.Success(it.conversationId, it.meetingId) })
+        .fold(
+            { CreateNewMeetingUseCase.Result.Failure },
+            { CreateNewMeetingUseCase.Result.Success(it.conversationId, it.meetingId) }
+        )
 }

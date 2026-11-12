@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
 
+@Suppress("TooManyFunctions")
 interface MeetingDao {
     suspend fun upsertMeetings(
         meetings: List<MeetingEntity>,
@@ -208,7 +209,9 @@ internal class MeetingDaoImpl(
 
     override fun observeMeeting(meetingId: QualifiedIDEntity): Flow<MeetingEntity?> =
         meetingsQueries.selectMeetingByIds(listOf(meetingId), MeetingMapper::fromViewToModel)
-            .asFlow().mapToOneOrNull(readDispatcher.value)
+            .asFlow()
+            .mapToOneOrNull(readDispatcher.value)
+            .flowOn(readDispatcher.value)
 
     override suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity? = withContext(readDispatcher.value) {
         meetingsQueries.selectMeetingByIds(listOf(meetingId), MeetingMapper::fromViewToModel)
