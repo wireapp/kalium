@@ -34,11 +34,14 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.native.HiddenFromObjC
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * How the app stores a handed-off share: with its own use cases, as the composer would, under [messageId]. Each returns
@@ -103,13 +106,25 @@ public class ShareOutboxServer(
      * Answers the extension now, then whenever [doorbell] rings, until cancelled. Requests for conversations are
      * answered on their own, so a share being imported never keeps a sheet waiting for its list. Shares are claimed
      * on every ring, so a sheet learns at once that the app has its share, even while an import waits for the account
-     * to catch up; one import runs at a time.
+     * to catch up; one import runs at a time. A share whose upload failed is imported again without a ring, less and
+     * less often, for as long as it stays claimed.
      */
     public suspend fun serve(doorbell: Flow<Unit>): Unit = coroutineScope {
         guarded("sweep") { outbox.sweep() }
         launch { doorbell.onStart { emit(Unit) }.conflate().collect { answerConversations() } }
         val imports = Channel<Unit>(Channel.CONFLATED)
-        launch { imports.receiveAsFlow().collect { importShares() } }
+        launch {
+            var retryIn = Duration.INFINITE
+            while (true) {
+                // A ring, or the time to upload again what a failed upload left claimed.
+                withTimeoutOrNull(retryIn) { imports.receive() }
+                retryIn = when {
+                    !importShares() -> Duration.INFINITE
+                    retryIn.isInfinite() -> FIRST_RETRY
+                    else -> (retryIn * 2).coerceAtMost(LAST_RETRY)
+                }
+            }
+        }
         doorbell.onStart { emit(Unit) }.conflate().collect {
             // Claims at once, so a sheet learns the app has its share while an import waits. importShares claims
             // again, which also lists what to import; both are needed.
@@ -122,22 +137,28 @@ public class ShareOutboxServer(
         guarded("conversations") { outbox.answerIfAsked { database.sharePicker(selfUserId, restriction) } }
     }
 
-    internal suspend fun importShares() {
+    /** Returns whether a share stays claimed for another upload. */
+    internal suspend fun importShares(): Boolean {
+        var retry = false
         for (id in guarded("claim") { outbox.claim() }.orEmpty()) {
             val request = outbox.request(id)
             // An import that fails unexpectedly would fail again, so it ends with what it stored.
             kaliumLogger.i("Share handoff stage=IMPORT_START")
             val result = if (request == null) UNREADABLE else guarded("import") { import(id, request) } ?: FAILED
             kaliumLogger.i("Share handoff stage=IMPORT_COMPLETE result=$result")
-            // A failed upload stored nothing and the files are still here, so the entry stays claimed: the next ring
-            // or serve uploads again, until the share is a day old.
-            if (result == ShareOutboxSending.UPLOAD_FAILED && outbox.isRecent(id)) continue
+            // A failed upload stored nothing and the files are still here, so the entry stays claimed and is uploaded
+            // again, until the share is a day old: then it ends as failed, and the app says so.
+            if (result == ShareOutboxSending.UPLOAD_FAILED && outbox.isRecent(id)) {
+                retry = true
+                continue
+            }
             val unwatched = guarded("finish") { outbox.finish(id, result) } == true
             if (unwatched && request != null && result != ShareOutbox.STORED) {
                 // The finished entry is gone, so a report cancelled now could not be retried.
                 withContext(NonCancellable) { guarded("report") { report(request, result) } }
             }
         }
+        return retry
     }
 
     private suspend fun report(request: OutboxRequest, reason: String) {
@@ -217,5 +238,7 @@ public class ShareOutboxServer(
     private companion object {
         const val UNREADABLE = "UNREADABLE"
         const val FAILED = "FAILED"
+        val FIRST_RETRY = 15.seconds
+        val LAST_RETRY = 10.minutes
     }
 }

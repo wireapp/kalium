@@ -98,17 +98,17 @@ class ShareOutboxTest {
     }
 
     @Test
-    fun aCellsShareWhoseUploadFailedStaysForTheNextImport() = runTest {
+    fun aCellsShareWhoseUploadFailedIsUploadedAgainWithoutARing() = runTest {
         withDatabase { database ->
             seed(database)
             conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
             val id = outbox.handOff(request(PHOTO), listOf(file("photo")))
-            server(database, RecordingSending(database, cellsFailure = ShareOutboxSending.UPLOAD_FAILED)).importShares()
-            assertEquals(HandOffState.Claimed, outbox.state(id))
-            val online = RecordingSending(database)
-            server(database, online).importShares()
-            assertEquals(1, online.stored.size)
-            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
+            val sending = RecordingSending(database, failedCellsUploads = 1)
+            // The doorbell never rings: serving imports at its start, then again on its own after the failed upload.
+            val serving = launch { server(database, sending).serve(MutableSharedFlow()) }
+            assertEquals(HandOffState.Finished(ShareOutbox.STORED), awaitResult(id))
+            assertEquals(1, sending.stored.size)
+            serving.cancelAndJoin()
         }
     }
 
@@ -404,7 +404,7 @@ class ShareOutboxTest {
         private val database: UserDatabaseBuilder,
         private val cancelOn: String? = null,
         private val synced: CompletableDeferred<Unit>? = null,
-        private val cellsFailure: String? = null,
+        private var failedCellsUploads: Int = 0,
     ) : ShareOutboxSending {
         val stored = mutableListOf<String>()
         val waitingForSync = CompletableDeferred<Unit>()
@@ -427,7 +427,7 @@ class ShareOutboxTest {
         override suspend fun cells(
             conversationId: ConversationId, files: List<ShareOutboxFile>, text: String, messageId: String,
         ): String? {
-            cellsFailure?.let { return it }
+            if (failedCellsUploads-- > 0) return ShareOutboxSending.UPLOAD_FAILED
             files.forEach { assertEquals(true, FileSystem.SYSTEM.exists(it.path.toPath())) }
             store(conversationId, messageId, "Cells:${files.joinToString(",") { it.name }}:$text as $messageId")
             if (messageId == cancelOn) throw CancellationException("Backgrounded after storage")

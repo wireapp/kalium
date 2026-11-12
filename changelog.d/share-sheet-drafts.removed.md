@@ -2,5 +2,5 @@ Removed Cells draft uploads from the Apple share sender: `KaliumShareDrafts`, `K
 
   - ABI: breaking for the KaliumShare Apple framework. The `KaliumShareRequest` and `KaliumShareConversation` initializers lose their last argument; the removed types and methods are gone.
   - Source: breaking for hosts that prepare drafts, pass `preparedDraftIds` or read `isCells`.
-  - Behavior: files for a Cells conversation upload when `send` runs, like other files, with progress through `KaliumShareProgress`; a share handed to the app uploads them when the app imports it. Draft records and queued draft work of earlier builds are deleted without being read.
+  - Behavior: files for a Cells conversation upload when `send` runs, like other files, with progress through `KaliumShareProgress`; a share handed to the app uploads them when the app imports it, and one whose upload fails stays queued and is uploaded again while the app serves the outbox, for up to a day. Draft records and queued draft work of earlier builds are deleted without being read.
   - Migration: stop preparing drafts and call `send` or `handOff` with the attachments.
