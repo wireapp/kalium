@@ -5097,6 +5097,66 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun persistedTeamBackedOriginalWithTeamlessCanonicalDoesNotBlockLaterPushes() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val original = CONVERSATION_ID.copy(value = "original-pending-one-to-one")
+                val originalTeam = "original-team"
+                val pushes = (1..2).map { index ->
+                    fixture.event("original-$index", byteArrayOf(1), conversationId = original) to
+                        fixture.event("unrelated-$index", fixture.encrypt("unrelated-$index"))
+                }
+                val call = fixture.event("independent-call", fixture.encrypt("independent-call", fixture.callContent()),
+                    time = Clock.System.now())
+                fixture.releasePrepared()
+                fixture.seedPendingMLSGroup(original)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val canonical = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+                    runtime.database.teamDAO.insertTeam(
+                        com.wire.kalium.persistence.dao.TeamEntity(originalTeam, "Original team", "default"))
+                    val originalRow = checkNotNull(runtime.database.conversationDAO.getConversationById(original))
+                    runtime.database.conversationDAO.insertConversation(originalRow.copy(teamId = originalTeam))
+                    runtime.database.conversationDAO.insertConversation(canonical.copy(
+                        type = ConversationEntity.Type.ONE_ON_ONE, teamId = null))
+                    runtime.database.userDAO.updateActiveOneOnOneConversation(SENDER.toDao(), CONVERSATION_ID)
+                    // Same durable action kind produced by build 113 / #4706; a replacement exists,
+                    // but recovery of that replacement cannot repair this original native group.
+                    runtime.database.pendingActionDAO.upsert(PendingActionType.JOIN_MLS_GROUP_CONVERSATION, original, 1L)
+                })
+                for ((index, push) in pushes.withIndex()) {
+                    val (pending, text) = push
+                    val page = listOf(pending, text) + if (index == 0) listOf(call) else emptyList()
+                    val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, text.id)).value
+                    assertEquals(text.id, result?.messageId)
+                    assertEquals(text.id, result?.text)
+                    assertEquals(true, result?.shouldNotify)
+                    assertEquals("QUEUE_END", fixture.receivedStop)
+                    assertNull(fixture.receivedAppWork)
+                    if (index == 0) assertEquals(ReceivedCallType.INCOMING, fixture.receivedCalls.single().type)
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(text.id)).isProcessed)
+                        assertEquals(listOf(original), runtime.database.pendingActionDAO
+                            .getByActionType(PendingActionType.JOIN_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
+                        assertEquals(listOf(original), runtime.database.pendingActionDAO
+                            .getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
+                        val row = checkNotNull(runtime.database.conversationDAO.getNonDeletedConversationById(original))
+                        assertEquals(originalTeam, row.teamId)
+                        assertNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)?.teamId)
+                        assertEquals(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+                            (row.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState)
+                        assertEquals(CONVERSATION_ID,
+                            runtime.database.userDAO.getUserDetailsByQualifiedID(SENDER.toDao())?.activeOneOnOneConversationId)
+                        checkNotNull(fixture.openMLS(runtime)).transaction { context ->
+                            assertFalse(context.conversationExists("YWJzZW50LWxlZ2FjeS1ncm91cA=="))
+                        }
+                    })
+                }
+            }
+        }
+    }
+
+    @Test
     fun pendingMlsGroupQueuesExactRecoveryAndContinuesOtherMessages() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
