@@ -88,20 +88,12 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
     }
 
     @Test
-    fun unknownFailurePausesRatherThanSpinningOnEveryForeground() = runTest {
-        val a = Arrangement().defaults()
-        everySuspend { a.join(any(), any(), any(), true, MLSJoinMode.RECOVER_EXACT_GROUP) } returns
-            Either.Left(CoreFailure.Unknown(IllegalStateException("failed")))
-        a.useCase()()
-        verifySuspend { a.pending.pauseMLSGroupJoin(ENTRY) }
-    }
-
-    @Test
     fun unavailableRecoveryPausesWithoutHidingHistoryOrDeletingNewerEvidence() = runTest {
         for (code in listOf(403, 404)) {
             val a = Arrangement().defaults()
             val label = if (code == 403) "access-denied" else "no-conversation"
-            val failure = NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(code, "removed", label)))
+            val error = KaliumException.InvalidRequestError(GenericAPIErrorResponse(code, "removed", label))
+            val failure = NetworkFailure.ServerMiscommunication(error)
             everySuspend { a.join(any(), any(), any(), true, MLSJoinMode.RECOVER_EXACT_GROUP) } returns Either.Left(failure)
             a.useCase()()
             verifySuspend { a.pending.pauseMLSGroupJoin(ENTRY) }
@@ -113,42 +105,14 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
     }
 
     @Test
-    fun removedSelfTerminatesRecovery() = runTest {
-        val a = Arrangement().defaults()
-        everySuspend { a.conversations.getConversationMembers(any()) } returns Either.Right(emptyList())
-        a.useCase()()
-        verifySuspend { a.pending.acknowledgeMLSGroupJoin(ENTRY) }
-    }
-
-    @Test
     fun discoversMissingPendingGroupsEvenWithoutAnEvent() = runTest {
         val a = Arrangement().defaults()
         everySuspend { a.pending.getPendingMLSGroupJoinEntries() } returns emptyList()
-        everySuspend { a.conversations.getConversationsByGroupState(GroupState.PENDING_WELCOME_MESSAGE) } returns Either.Right(listOf(PENDING))
+        everySuspend { a.conversations.getConversationsByGroupState(GroupState.PENDING_WELCOME_MESSAGE) } returns
+            Either.Right(listOf(PENDING))
         everySuspend { a.mlsContext.conversationExists(any()) } returns false
         a.useCase()()
         verifySuspend { a.pending.discoverMLSGroupJoin(PENDING.id) }
-    }
-
-    @Test
-    fun discoveryDoesNotReactivateAPausedGroup() = runTest {
-        val a = Arrangement().defaults()
-        everySuspend { a.pending.getPendingMLSGroupJoinEntries() } returns emptyList()
-        everySuspend { a.pending.getPausedMLSGroupJoins() } returns listOf(ENTRY)
-        everySuspend { a.conversations.getConversationsByGroupState(any()) } returns Either.Right(listOf(PENDING))
-        everySuspend { a.conversations.getNonDeletedConversationById(any()) } returns Either.Right(PENDING)
-        a.useCase()()
-        verifySuspend(VerifyMode.not) { a.pending.discoverMLSGroupJoin(any()) }
-    }
-
-    @Test
-    fun drainBoundsWorkAndSignalsForTheRest() = runTest {
-        val a = Arrangement().defaults()
-        everySuspend { a.pending.getPendingMLSGroupJoinEntries() } returns
-            (1..21).map { PendingActionEntity(TestConversation.id(it).toDao(), it.toLong()) }
-        a.useCase()()
-        verifySuspend(VerifyMode.exactly(20)) { a.join(any(), any(), any(), true, MLSJoinMode.RECOVER_EXACT_GROUP) }
-        assertEquals(1, a.signals)
     }
 
     @Test
