@@ -64,8 +64,12 @@ import kotlin.uuid.Uuid
 @Suppress("TooManyFunctions")
 internal class ShareOutbox(rootPath: String, accountId: UserId) {
     private val fileSystem = FileSystem.SYSTEM
-    private val outboxes = rootPath.trimEnd('/').toPath() / DIRECTORY
+    private val root = rootPath.trimEnd('/').toPath()
+    private val outboxes = root / DIRECTORY
     private val directory = outboxes / appleAccountFileKey(accountId)
+
+    /** Where earlier builds kept draft uploads, for every account. Nothing reads them any more. */
+    private val oldDrafts = root / "share-drafts"
     private val staging = directory / "staging"
     private val ready = directory / "ready"
     private val claimed = directory / "claimed"
@@ -186,10 +190,14 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
                 if (modified != null && modified < before) fileSystem.deleteRecursively(entry)
             }
         }
+        fileSystem.deleteRecursively(oldDrafts)
     }
 
     /** Drops every entry, result and answer of the account. */
-    fun delete() = fileSystem.deleteRecursively(directory)
+    fun delete() {
+        fileSystem.deleteRecursively(directory)
+        fileSystem.deleteRecursively(oldDrafts)
+    }
 
     /** Only one reader takes a file: the extension and the app may both try to take a result. */
     private fun take(path: Path): String? = try {
@@ -260,9 +268,8 @@ internal data class OutboxRequest(
     @SerialName("files") val files: List<OutboxFile>,
     @SerialName("text") val text: String,
     @SerialName("textMessageId") val textMessageId: String,
-    @SerialName("preparedDraftIds") val preparedDraftIds: List<String> = emptyList(),
+    /** Set on draft work earlier builds queued. It was never a share to send, so it is dropped. */
     @SerialName("draftAction") val draftAction: String? = null,
-    @SerialName("draftId") val draftId: String? = null,
 )
 
 /** Each item keeps the message ID the extension gave it, so importing it again stores nothing twice. */
