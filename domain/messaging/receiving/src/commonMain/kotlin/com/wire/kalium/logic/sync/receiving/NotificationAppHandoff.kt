@@ -1,12 +1,10 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
-/**
- * The original notification stays unprocessed in Events. EventGatherer / EventProcessor
- * consume it when the app owns the account. This is not an acknowledgement and the NSE
- * must not advance past it. No plaintext or credentials cross the host result boundary.
+/** App work signalled by receiving. MLS_GROUP_RECOVERY is durable and does not stop the event queue.
+ * Other values retain the original event for the app's ordered incremental sync.
  */
-enum class NotificationAppWork { LEGAL_HOLD, MLS_SUBCONVERSATION, CALL_MODERATION, ACCOUNT_INVALIDATION }
+enum class NotificationAppWork { LEGAL_HOLD, MLS_SUBCONVERSATION, CALL_MODERATION, ACCOUNT_INVALIDATION, MLS_GROUP_RECOVERY }
 
 internal class NotificationAppHandoff(val work: NotificationAppWork) : Exception(work.name)
 

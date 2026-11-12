@@ -22,20 +22,27 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import kotlin.time.Clock
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-// Only the two recovery action types below are consumed by the app. NSE conversation-clear
-// actions intentionally remain pending: their app handling is a no-op until cleanup is implemented.
+// Recovery queues are shared with receiving; each consumer acknowledges only its own action type.
 internal interface PendingActionsRepository {
     suspend fun enqueuePendingOneOnOneResolution(userId: UserId)
     suspend fun getPendingOneOnOneResolutions(): List<UserId>
     suspend fun acknowledgePendingOneOnOneResolutions(userIds: List<UserId>)
     suspend fun enqueuePendingMLSGroupJoin(conversationId: ConversationId)
-    suspend fun getPendingMLSGroupJoins(): List<ConversationId>
     suspend fun acknowledgePendingMLSGroupJoins(conversationIds: List<ConversationId>)
+    suspend fun requestMLSGroupJoin(conversationId: ConversationId): Boolean
+    suspend fun discoverMLSGroupJoin(conversationId: ConversationId): Boolean
+    suspend fun getPendingMLSGroupJoinEntries(exactRecovery: Boolean = true): List<PendingActionEntity>
+    suspend fun acknowledgeMLSGroupJoin(entry: PendingActionEntity, exactRecovery: Boolean = true)
+    suspend fun pauseMLSGroupJoin(entry: PendingActionEntity)
+    suspend fun retryMLSGroupJoin(entry: PendingActionEntity, exactRecovery: Boolean = true)
+    suspend fun getPausedMLSGroupJoins(): List<PendingActionEntity>
+    suspend fun clearPausedMLSGroupJoin(entry: PendingActionEntity)
 }
 
 internal class PersistentPendingActionsRepository(
@@ -71,20 +78,40 @@ internal class PersistentPendingActionsRepository(
     }
 
     override suspend fun enqueuePendingMLSGroupJoin(conversationId: ConversationId) {
-        mutex.withLock {
-            pendingActionDAO.upsert(
-                actionType = MLS_GROUP_JOIN_ACTION_TYPE,
-                qualifiedId = conversationId.toDao(),
-                createdAt = Clock.System.now().toEpochMilliseconds()
-            )
-        }
+        pendingActionDAO.upsert(MLS_GROUP_JOIN_ACTION_TYPE, conversationId.toDao(), Clock.System.now().toEpochMilliseconds())
     }
 
-    override suspend fun getPendingMLSGroupJoins(): List<ConversationId> = mutex.withLock {
-        pendingActionDAO
-            .getByActionType(MLS_GROUP_JOIN_ACTION_TYPE)
-            .map { it.qualifiedId.toModel() }
-    }
+    override suspend fun requestMLSGroupJoin(conversationId: ConversationId): Boolean =
+        pendingActionDAO.requestMLSGroupJoin(conversationId.toDao(), Clock.System.now().toEpochMilliseconds(), evidence = true)
+
+    override suspend fun discoverMLSGroupJoin(conversationId: ConversationId): Boolean =
+        pendingActionDAO.requestMLSGroupJoin(conversationId.toDao(), Clock.System.now().toEpochMilliseconds(), evidence = false)
+
+    override suspend fun getPendingMLSGroupJoinEntries(exactRecovery: Boolean): List<PendingActionEntity> =
+        pendingActionDAO.getByActionType(
+            if (exactRecovery) PendingActionType.RECOVER_MLS_GROUP_CONVERSATION else MLS_GROUP_JOIN_ACTION_TYPE
+        )
+
+    override suspend fun acknowledgeMLSGroupJoin(entry: PendingActionEntity, exactRecovery: Boolean) =
+        pendingActionDAO.acknowledge(
+            if (exactRecovery) PendingActionType.RECOVER_MLS_GROUP_CONVERSATION else MLS_GROUP_JOIN_ACTION_TYPE,
+            entry
+        )
+
+    override suspend fun pauseMLSGroupJoin(entry: PendingActionEntity) = pendingActionDAO.pauseMLSGroupJoin(entry)
+
+    override suspend fun retryMLSGroupJoin(entry: PendingActionEntity, exactRecovery: Boolean) =
+        pendingActionDAO.postpone(
+            if (exactRecovery) PendingActionType.RECOVER_MLS_GROUP_CONVERSATION else MLS_GROUP_JOIN_ACTION_TYPE,
+            entry,
+            Clock.System.now().toEpochMilliseconds()
+        )
+
+    override suspend fun getPausedMLSGroupJoins(): List<PendingActionEntity> =
+        pendingActionDAO.getByActionType(PendingActionType.PAUSE_MLS_GROUP_JOIN)
+
+    override suspend fun clearPausedMLSGroupJoin(entry: PendingActionEntity) =
+        pendingActionDAO.acknowledge(PendingActionType.PAUSE_MLS_GROUP_JOIN, entry)
 
     override suspend fun acknowledgePendingMLSGroupJoins(conversationIds: List<ConversationId>) {
         val qualifiedIds = conversationIds.distinct().map { it.toDao() }

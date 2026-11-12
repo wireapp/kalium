@@ -18,6 +18,8 @@
 package com.wire.kalium.persistence.dao.pendingaction
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import com.wire.kalium.persistence.PendingActionsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -29,6 +31,45 @@ internal class PendingActionDAOImpl(
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : PendingActionDAO {
+
+    override suspend fun hasMLSGroupRecovery(qualifiedId: QualifiedIDEntity): Boolean = withContext(readDispatcher.value) {
+        pendingActionsQueries.selectMLSRecoveryById(qualifiedId).awaitAsList().isNotEmpty()
+    }
+
+    override suspend fun postpone(actionType: PendingActionType, action: PendingActionEntity, nextAttempt: Long) =
+        withContext(writeDispatcher.value) {
+            pendingActionsQueries.postpone(nextAttempt, actionType, action.qualifiedId, action.createdAt)
+            Unit
+        }
+
+    override suspend fun requestMLSGroupJoin(qualifiedId: QualifiedIDEntity, createdAt: Long, evidence: Boolean): Boolean =
+        withContext(writeDispatcher.value) {
+            pendingActionsQueries.transactionWithResult {
+                val join = PendingActionType.RECOVER_MLS_GROUP_CONVERSATION
+                val pause = PendingActionType.PAUSE_MLS_GROUP_JOIN
+                val queued = pendingActionsQueries.selectByTypeAndId(join, qualifiedId, ::PendingActionEntity).awaitAsOneOrNull()
+                val paused = pendingActionsQueries.selectByTypeAndId(pause, qualifiedId, ::PendingActionEntity).awaitAsOneOrNull()
+                if (evidence) {
+                    pendingActionsQueries.upsert(join, qualifiedId, createdAt)
+                    if (paused != null) pendingActionsQueries.acknowledge(pause, qualifiedId, paused.createdAt)
+                    queued == null && paused == null
+                } else if (paused == null) {
+                    pendingActionsQueries.insertIfAbsent(join, qualifiedId, createdAt)
+                    pendingActionsQueries.selectChanges().awaitAsOne() > 0
+                } else false
+            }
+        }
+
+    override suspend fun pauseMLSGroupJoin(action: PendingActionEntity) = withContext(writeDispatcher.value) {
+        pendingActionsQueries.transaction {
+            val join = PendingActionType.RECOVER_MLS_GROUP_CONVERSATION
+            val current = pendingActionsQueries.selectByTypeAndId(join, action.qualifiedId, ::PendingActionEntity).awaitAsOneOrNull()
+            if (current == action) {
+                pendingActionsQueries.upsert(PendingActionType.PAUSE_MLS_GROUP_JOIN, action.qualifiedId, action.createdAt)
+                pendingActionsQueries.acknowledge(join, action.qualifiedId, action.createdAt)
+            }
+        }
+    }
 
     override suspend fun upsert(actionType: PendingActionType, qualifiedId: QualifiedIDEntity, createdAt: Long) {
         withContext(writeDispatcher.value) {

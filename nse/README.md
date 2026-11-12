@@ -57,7 +57,13 @@ cannot override another restriction. When preview is not allowed, `contentType`
 is `MESSAGE`. Cancellation still cancels the attempt. Message preference failures
 do not suppress or alter call presentation. `presentationReason`, `failureReason`
 and `stoppedReason` are content-free diagnostic codes. `appWorkPending` names work
-left in Events for the app (`LEGAL_HOLD` or `ACCOUNT_INVALIDATION`).
+left for the app. Most values retain their event in Events. `MLS_GROUP_RECOVERY`
+means the NSE acknowledged an undecryptable pending-group payload and saved an
+exact-conversation-ID recovery request in `PendingActions` (`recover_mls_group_conversation`);
+later events can continue. The existing `join_mls_group_conversation` action keeps
+its join-or-establish behavior for failed conversation creation.
+Only a newly queued group requests a generic alert. The app drains these requests
+after live sync at session start and foreground, and after new recovery evidence.
 
 The NSE registers each alerted message. After successful receiving it returns
 `notificationIdentifiersToRemove`: the delivered identifiers whose message, or a

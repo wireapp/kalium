@@ -98,6 +98,16 @@ internal class ReceivedMLSHandler(
             removed += event.conversationId
             return emptyList()
         }
+        val requiresRecovery = protocol.groupState != ConversationEntity.GroupState.ESTABLISHED ||
+            database.pendingActionDAO.hasMLSGroupRecovery(conversation.id)
+        val canRecover = event.conversationId !in welcomed && previousRemoval == null
+        if (requiresRecovery && canRecover && !context.conversationExists(protocol.groupId)) {
+            // External commit cannot recover this payload's old epoch. Acknowledge it like the app,
+            // and let the app join this exact group outside the receive transaction.
+            return if (conversation.removedBy == null && selfUserId.toDao() in conversations.members(event.conversationId)) {
+                listOf(ReceivedPayload.PendingMLSGroupJoin(event.conversationId))
+            } else emptyList()
+        }
         check(
             protocol.groupState == ConversationEntity.GroupState.ESTABLISHED || event.conversationId in welcomed || previousRemoval != null
         ) {

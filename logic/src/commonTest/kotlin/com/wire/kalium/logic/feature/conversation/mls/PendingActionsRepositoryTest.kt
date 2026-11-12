@@ -104,18 +104,13 @@ class PendingActionsRepositoryTest {
     }
 
     @Test
-    fun givenConversationId_whenEnqueuePendingMLSGroupJoin_thenUpsertIsCalledWithGroupJoinActionData() = runTest {
+    fun existingJoinProducerKeepsItsOriginalActionKind() = runTest {
         val (arrangement, repository) = Arrangement().arrange()
-
         repository.enqueuePendingMLSGroupJoin(TestConversation.ID)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionDAO.upsert(
-                actionType = PendingActionType.JOIN_MLS_GROUP_CONVERSATION,
-                qualifiedId = TestConversation.ID.toDao(),
-                createdAt = any()
-            )
+        verifySuspend {
+            arrangement.pendingActionDAO.upsert(PendingActionType.JOIN_MLS_GROUP_CONVERSATION, TestConversation.ID.toDao(), any())
         }
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionDAO.requestMLSGroupJoin(any(), any(), any()) }
     }
 
     @Test
@@ -129,11 +124,11 @@ class PendingActionsRepositoryTest {
             )
             .arrange()
 
-        val result = repository.getPendingMLSGroupJoins()
+        val result = repository.getPendingMLSGroupJoinEntries().map { it.qualifiedId }
 
-        assertEquals(listOf(conversation1, conversation2), result)
+        assertEquals(listOf(conversation1.toDao(), conversation2.toDao()), result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionDAO.getByActionType(PendingActionType.JOIN_MLS_GROUP_CONVERSATION)
+            arrangement.pendingActionDAO.getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION)
         }
         verifySuspend(VerifyMode.not) { arrangement.pendingActionDAO.deleteByActionTypeAndIds(any(), any()) }
     }
@@ -169,12 +164,13 @@ class PendingActionsRepositoryTest {
 
         suspend fun withPendingGroupRows(vararg rows: PendingActionEntity) = apply {
             everySuspend {
-                pendingActionDAO.getByActionType(PendingActionType.JOIN_MLS_GROUP_CONVERSATION)
+                pendingActionDAO.getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION)
             } returns rows.toList()
         }
 
         suspend fun arrange(): Pair<Arrangement, PendingActionsRepository> = apply {
             everySuspend { pendingActionDAO.upsert(any(), any(), any()) } returns Unit
+            everySuspend { pendingActionDAO.requestMLSGroupJoin(any(), any(), any()) } returns true
             everySuspend { pendingActionDAO.deleteByActionTypeAndIds(any(), any()) } returns Unit
         } to repository
     }

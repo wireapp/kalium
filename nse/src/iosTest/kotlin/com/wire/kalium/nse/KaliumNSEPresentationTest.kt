@@ -203,7 +203,7 @@ class KaliumNSEPresentationTest {
                 null, appWorkPending = work, stoppedReason = if (work == null) "QUEUE_END" else "${work}_REQUIRES_APP"
             )
             val stopsQueue = work == NotificationAppWork.LEGAL_HOLD || work == NotificationAppWork.MLS_SUBCONVERSATION
-            val expected = stopsQueue && !targetProcessed
+            val expected = work == NotificationAppWork.MLS_GROUP_RECOVERY || (stopsQueue && !targetProcessed)
             assertEquals(
                 expected,
                 receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received) { targetProcessed },
