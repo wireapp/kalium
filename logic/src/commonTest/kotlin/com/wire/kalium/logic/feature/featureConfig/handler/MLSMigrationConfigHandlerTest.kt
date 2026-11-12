@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.featureConfig.handler
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -32,6 +33,8 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import dev.mokkery.verify
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -113,10 +116,70 @@ class MLSMigrationConfigHandlerTest {
         }
     }
 
+    @Test
+    fun givenMigrationScheduledInTheFuture_whenHandling_thenKeyPackageRefillIsScheduled() = runTest {
+        val (arrangement, handler) = arrange {
+            withSetMigrationConfigurationSuccessful()
+        }
+
+        handler.handle(
+            MIGRATION_CONFIG.copy(startTime = Instant.DISTANT_FUTURE, endTime = Instant.DISTANT_FUTURE),
+            duringSlowSync = false
+        )
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.keyPackageManager.scheduleRefill()
+        }
+    }
+
+    @Test
+    fun givenOngoingMigration_whenHandling_thenKeyPackageRefillIsScheduled() = runTest {
+        val (arrangement, handler) = arrange {
+            withSetMigrationConfigurationSuccessful()
+        }
+
+        handler.handle(MIGRATION_CONFIG.copy(startTime = Instant.DISTANT_PAST), duringSlowSync = true)
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.keyPackageManager.scheduleRefill()
+        }
+    }
+
+    @Test
+    fun givenEndedOrDisabledMigration_whenHandling_thenKeyPackageRefillIsNotScheduled() = runTest {
+        val (arrangement, handler) = arrange {
+            withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful()
+            withSetMigrationConfigurationSuccessful()
+        }
+
+        handler.handle(MIGRATION_CONFIG.copy(endTime = Instant.DISTANT_PAST), duringSlowSync = false)
+        handler.handle(MIGRATION_CONFIG.copy(status = Status.DISABLED), duringSlowSync = false)
+
+        verify(VerifyMode.not) {
+            arrangement.keyPackageManager.scheduleRefill()
+        }
+    }
+
+    @Test
+    fun givenStoringTheConfigurationFails_whenHandling_thenKeyPackageRefillIsNotScheduled() = runTest {
+        val (arrangement, handler) = arrange {
+            everySuspend {
+                userConfigRepository.setMigrationConfiguration(any())
+            } returns Either.Left(StorageFailure.DataNotFound)
+        }
+
+        handler.handle(MIGRATION_CONFIG, duringSlowSync = false)
+
+        verify(VerifyMode.not) {
+            arrangement.keyPackageManager.scheduleRefill()
+        }
+    }
+
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
         val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>(mode = MockMode.autoUnit)
+        val keyPackageManager = mock<KeyPackageManager>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
             runBlocking {
@@ -126,7 +189,8 @@ class MLSMigrationConfigHandlerTest {
             this@Arrangement to MLSMigrationConfigHandler(
                 userConfigRepository = userConfigRepository,
                 updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes,
-                transactionProvider = cryptoTransactionProvider
+                transactionProvider = cryptoTransactionProvider,
+                keyPackageManager = lazy { keyPackageManager }
             )
         }
 
