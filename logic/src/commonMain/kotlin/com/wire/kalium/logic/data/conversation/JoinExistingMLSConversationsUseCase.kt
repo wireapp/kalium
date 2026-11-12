@@ -26,7 +26,6 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -39,9 +38,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isTooManyRequests
-import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -100,13 +102,16 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                         val progressMutex = Mutex()
                         var completed = 0
                         onProgress(SlowSyncProgress(completed, recoverableConversations.size))
-                        recoverableConversations.chunked(maxConcurrentJoins).foldToEitherWhileRight(Unit) { batch, _ ->
-                            joinBatch(transactionContext, batch, keepRetryingOnFailure, allowJoinByExternalCommit) {
-                                // Completion order can differ from input order. Serialize increments and publication.
-                                progressMutex.withLock {
-                                    completed++
-                                    onProgress(SlowSyncProgress(completed, recoverableConversations.size))
-                                }
+                        joinConversations(
+                            transactionContext,
+                            recoverableConversations,
+                            keepRetryingOnFailure,
+                            allowJoinByExternalCommit,
+                        ) {
+                            // Completion order can differ from input order. Serialize increments and publication.
+                            progressMutex.withLock {
+                                completed++
+                                onProgress(SlowSyncProgress(completed, recoverableConversations.size))
                             }
                         }
                     }
@@ -139,21 +144,38 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
         return Either.Right(result)
     }
 
-    private suspend fun joinBatch(
+    private suspend fun joinConversations(
         transactionContext: CryptoTransactionContext,
-        batch: List<Conversation>,
+        conversations: List<Conversation>,
         keepRetryingOnFailure: Boolean,
         allowJoinByExternalCommit: Boolean,
         onConversationProcessed: suspend () -> Unit,
     ): Either<CoreFailure, Unit> = coroutineScope {
-        batch.map { conversation ->
-            async {
-                joinRetrying(transactionContext, conversation, keepRetryingOnFailure, allowJoinByExternalCommit)
-                    .onSuccess { onConversationProcessed() }
+        val remaining = conversations.iterator()
+        val queueMutex = Mutex()
+        var firstFailure: CoreFailure? = null
+
+        List(minOf(maxConcurrentJoins, conversations.size)) {
+            launch {
+                while (true) {
+                    currentCoroutineContext().ensureActive()
+                    val conversation = queueMutex.withLock {
+                        if (firstFailure == null && remaining.hasNext()) remaining.next() else null
+                    } ?: return@launch
+
+                    val result = joinRetrying(transactionContext, conversation, keepRetryingOnFailure, allowJoinByExternalCommit)
+                    when (result) {
+                        is Either.Left -> queueMutex.withLock {
+                            // Stop taking work, but let in-flight joins finish their external commits.
+                            if (firstFailure == null) firstFailure = result.value
+                        }
+                        is Either.Right -> onConversationProcessed()
+                    }
+                }
             }
-        }
-    }.foldToEitherWhileRight(Unit) { value, _ ->
-        value.await()
+        }.joinAll()
+
+        firstFailure?.let { Either.Left(it) } ?: Either.Right(Unit)
     }
 
     private suspend fun joinRetrying(
