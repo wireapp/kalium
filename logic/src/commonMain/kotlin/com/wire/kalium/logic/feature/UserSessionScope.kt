@@ -29,6 +29,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
@@ -288,6 +289,8 @@ import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassi
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCase
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserResult
+import com.wire.kalium.logic.feature.keypackage.ResetMLSKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
@@ -2734,6 +2737,27 @@ public class UserSessionScope internal constructor(
             cryptoTransactionProvider,
             client.refillKeyPackages,
             certificateRevocationListRepository,
+            ResetMLSKeyPackagesUseCaseImpl(
+                keyPackageRepository,
+                keyPackageLimitsProvider,
+                clientIdProvider,
+                userConfigRepository,
+                cryptoTransactionProvider,
+                client.refillKeyPackages,
+            ),
+            RecoverMLSConversationsForUserUseCase {
+                syncStateObserver.value.waitUntilLiveOrFailure().fold(
+                    { RecoverMLSConversationsForUserResult.Failure(it) },
+                    {
+                        RecoverMLSConversationsForUserUseCaseImpl(
+                            recoverMLSConversationsUseCase,
+                            joinExistingMLSConversations,
+                            cryptoTransactionProvider,
+                            includePendingWelcome = true,
+                        )()
+                    },
+                )
+            },
             userScopedLogger,
         )
     }

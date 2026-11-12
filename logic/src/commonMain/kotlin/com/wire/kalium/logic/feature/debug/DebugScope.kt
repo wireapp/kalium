@@ -19,6 +19,9 @@
 
 package com.wire.kalium.logic.feature.debug
 
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCase
+import com.wire.kalium.logic.feature.keypackage.ResetMLSKeyPackagesUseCase
+
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
@@ -124,6 +127,8 @@ public class DebugScope internal constructor(
     private val transactionProvider: CryptoTransactionProvider,
     private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
+    public val resetMLSKeyPackages: ResetMLSKeyPackagesUseCase,
+    public val recoverMLSConversations: RecoverMLSConversationsForUserUseCase,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
