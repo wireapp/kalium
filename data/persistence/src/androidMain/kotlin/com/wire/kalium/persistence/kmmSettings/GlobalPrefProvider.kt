@@ -27,11 +27,19 @@ import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
 
-actual class GlobalPrefProvider(context: Context, shouldEncryptData: Boolean = true) {
+/**
+ * @param useTinkEncryptedPreferences migrates the global preferences from the deprecated `EncryptedSharedPreferences`
+ * to a Tink-backed store. See [buildMigratingSharedPreferences] for the migration guarantees.
+ */
+actual class GlobalPrefProvider(
+    context: Context,
+    shouldEncryptData: Boolean = true,
+    useTinkEncryptedPreferences: Boolean = false,
+) {
 
     private val settingsOptions = SettingOptions.AppSettings(shouldEncryptData)
     private val platformParam = EncryptedSettingsPlatformParam(context)
-    private val encryptedSharedPreferences = buildSharedPreferences(settingsOptions, platformParam)
+    private val encryptedSharedPreferences = buildMigratingSharedPreferences(settingsOptions, platformParam, useTinkEncryptedPreferences)
 
     private val encryptedSettingsHolder: KaliumPreferences = KaliumPreferencesSettings(
         SharedPreferencesSettings(encryptedSharedPreferences, commit = false)

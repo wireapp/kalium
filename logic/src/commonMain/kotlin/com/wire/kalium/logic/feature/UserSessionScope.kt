@@ -1590,7 +1590,12 @@ public class UserSessionScope internal constructor(
             accountRepository = lazy { accountRepository },
             selfTeamIdProvider = selfTeamId,
             oldUserConfigStorage = lazy {
-                UserConfigStorageFactory().create(userId, kaliumConfigs.shouldEncryptData(), platformUserStorageProperties)
+                UserConfigStorageFactory().create(
+                    userId,
+                    kaliumConfigs.shouldEncryptData(),
+                    kaliumConfigs.useTinkEncryptedPreferences,
+                    platformUserStorageProperties
+                )
             },
             newUserConfigStorage = lazy { userStorage.database.userPrefsDAO }
         )

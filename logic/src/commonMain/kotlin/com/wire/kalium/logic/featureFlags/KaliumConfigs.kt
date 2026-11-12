@@ -36,6 +36,9 @@ public data class KaliumConfigs(
     // Disabling db-encryption will crash on android-api level below 30
     val shouldEncryptData: () -> Boolean = { true },
     val encryptProteusStorage: Boolean = false, // TODO not used can be removed
+    // Android only: migrates the global preferences from the deprecated EncryptedSharedPreferences to Tink.
+    // The migration is one-way: once completed, the Tink store stays in use even if this is turned off again.
+    val useTinkEncryptedPreferences: Boolean = false,
     val lowerKeyPackageLimits: Boolean = false,
     val developmentApiEnabled: Boolean = false,
     val ignoreSSLCertificatesForUnboundCalls: Boolean = false,

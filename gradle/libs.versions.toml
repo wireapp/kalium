@@ -14,6 +14,7 @@ compose-material3 = "1.0.0-alpha01"
 compose-jetbrains = "1.10.3"
 fileKit = "0.14.1"
 android-security = "1.1.0"
+tink = "1.24.0"
 ktor = "3.5.2"
 okio = "3.18.2"
 ok-http = "5.5.1"
@@ -164,6 +165,7 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 
 # cryptobox and crypto dependencies
 androidCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "android-security" }
+tinkAndroid = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
 coreCryptoKmp = { module = "com.wire:core-crypto-kmp", version.ref = "core-crypto" }
