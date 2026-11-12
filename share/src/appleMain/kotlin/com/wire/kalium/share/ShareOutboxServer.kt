@@ -95,8 +95,8 @@ public class ShareOutboxServer(
     private val restriction: BuildFileRestrictionState,
     private val sending: ShareOutboxSending,
     /**
-     * Tells the user why the app stored no more of a share, when the extension stopped waiting for the answer. The
-     * reason is a share rule, as `send` reports them, or `FAILED`.
+     * Tells the user why the app stored no more of a share: the extension hears nothing back. The reason is a share
+     * rule, as `send` reports them, or `FAILED`.
      */
     private val refused: suspend (conversationId: ConversationId, conversationName: String?, reason: String) -> Unit,
 ) {
@@ -105,7 +105,7 @@ public class ShareOutboxServer(
     /**
      * Answers the extension now, then whenever [doorbell] rings, until cancelled. Requests for conversations are
      * answered on their own, so a share being imported never keeps a sheet waiting for its list. Shares are claimed
-     * on every ring, so a sheet learns at once that the app has its share, even while an import waits for the account
+     * on every ring, so a sheet sees at once that the app has its share, even while an import waits for the account
      * to catch up; one import runs at a time. A share whose upload failed is imported again without a ring, less and
      * less often, for as long as it stays claimed.
      */
@@ -126,7 +126,7 @@ public class ShareOutboxServer(
             }
         }
         doorbell.onStart { emit(Unit) }.conflate().collect {
-            // Claims at once, so a sheet learns the app has its share while an import waits. importShares claims
+            // Claims at once, so a sheet sees the app has its share while an import waits. importShares claims
             // again, which also lists what to import; both are needed.
             guarded("claim") { outbox.claim() }
             imports.send(Unit)
@@ -152,8 +152,8 @@ public class ShareOutboxServer(
                 retry = true
                 continue
             }
-            val unwatched = guarded("finish") { outbox.finish(id, result) } == true
-            if (unwatched && request != null && result != ShareOutbox.STORED) {
+            guarded("finish") { outbox.finish(id) }
+            if (request != null && result != STORED) {
                 // The finished entry is gone, so a report cancelled now could not be retried.
                 withContext(NonCancellable) { guarded("report") { report(request, result) } }
             }
@@ -169,14 +169,14 @@ public class ShareOutboxServer(
     /** Stores the share's items in order, skipping those an interrupted import already stored. */
     @Suppress("ReturnCount")
     private suspend fun import(id: String, request: OutboxRequest): String {
-        if (request.draftAction != null) return ShareOutbox.STORED
+        if (request.draftAction != null) return STORED
         // Catching up can change the conversation or the account's file rules, so they are checked after it.
         sending.awaitSynced()
         val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
         refusal(conversationId, request)?.let { return it }
         val isCells = database.conversationDAO.getConversationDetailsById(conversationId.toDao())?.wireCell != null
         if (isCells && request.files.isNotEmpty()) {
-            if (stored(conversationId, request.textMessageId)) return ShareOutbox.STORED
+            if (stored(conversationId, request.textMessageId)) return STORED
             val files = request.files.mapIndexed { index, file ->
                 ShareOutboxFile(
                     outbox.importCopy(id, index),
@@ -188,7 +188,7 @@ public class ShareOutboxServer(
                     file.durationMs
                 )
             }
-            return sending.cells(conversationId, files, request.text, request.textMessageId) ?: ShareOutbox.STORED
+            return sending.cells(conversationId, files, request.text, request.textMessageId) ?: STORED
         }
         request.files.forEachIndexed { index, file ->
             if (!stored(conversationId, file.messageId)) {
@@ -207,7 +207,7 @@ public class ShareOutboxServer(
         if (request.text.isNotBlank() && !stored(conversationId, request.textMessageId)) {
             sending.text(conversationId, request.text, request.textMessageId)?.let { return it }
         }
-        return ShareOutbox.STORED
+        return STORED
     }
 
     /** The extension's rules, checked again: the conversation or the account's file rules may have changed since. */
@@ -236,6 +236,7 @@ public class ShareOutboxServer(
     }
 
     private companion object {
+        const val STORED = "STORED"
         const val UNREADABLE = "UNREADABLE"
         const val FAILED = "FAILED"
         val FIRST_RETRY = 15.seconds

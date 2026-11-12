@@ -88,10 +88,8 @@ App Group:
    `conversations`. When the app does not answer, something else owns the account for a moment; retry
    `conversations`.
 2. `handOff` copies the files (as clones, where the file system allows) next to the request and publishes
-   it, and the host rings the app again. `handOffStatus` follows it: `WAITING` until the app claims it,
-   `CLAIMED` while the app stores it, then `STORED` or `NOT_STORED` with a reason, reported once. A host that
-   stops following it calls `stopWaiting`, which returns a result that arrived meanwhile; otherwise the app
-   reports a refusal itself.
+   it, and the host rings the app again. From here the share is the app's, and nothing comes back to the
+   host. `appTookHandOff` says whether the app claimed the entry, which a running app does as it is rung.
 
 The app runs `serveShareExtension` while it owns an account, live or not. It answers requests for conversations,
 claims handed-off shares and stores them with its composer's use cases, files first, then the text. Each
@@ -99,5 +97,6 @@ item keeps the message ID the extension gave it, so an import interrupted by a b
 stores a message twice. Once the account caught up, the app checks the conversation and file rules again before it
 stores anything. Requests for conversations are answered meanwhile, on their own, and shares handed off meanwhile
 are claimed at once. A Cells share whose upload fails stays claimed, and the app uploads it again while it
-serves the outbox, less and less often, until the share is a day old. A refusal the extension stopped waiting for goes
-to `refused`, for the app to tell the user.
+serves the outbox, less and less often, until the share is a day old. A share that ends without a stored
+message goes to `refused`, for the app to tell the user. Serving also deletes a request for conversations,
+or an answer, that is more than a minute old.
