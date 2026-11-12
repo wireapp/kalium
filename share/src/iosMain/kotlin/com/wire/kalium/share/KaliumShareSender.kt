@@ -468,6 +468,8 @@ public class KaliumShareSender(
             accountWanted.isCompleted -> ShareOutcome(ShareStatus.OPEN_APP, ACCOUNT_WANTED)
             // Unapplied events can carry consent or membership changes; sending would ignore them.
             unfinished != null -> ShareOutcome(ShareStatus.OPEN_APP, "PROCESSING_$unfinished")
+            // Catching up can bring the team's App Lock rule, which the extension cannot unlock.
+            runtime.database.appLockEnforcedByTeam(options().fileRestrictionState) -> ShareOutcome(ShareStatus.OPEN_APP, APP_LOCK)
             else -> sending.send(ConversationId(request.conversationValue, request.conversationDomain), items, shouldStopSending)
         }
         return outcome to unnotified

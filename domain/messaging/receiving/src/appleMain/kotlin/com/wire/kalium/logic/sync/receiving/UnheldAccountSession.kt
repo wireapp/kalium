@@ -39,9 +39,9 @@ import kotlin.time.Duration
 
 /**
  * Authenticated networking for a prepared account this process does not hold, for work that touches neither the account's
- * database nor CoreCrypto, such as uploading a shared file. Each request reads the stored token, so it follows a refresh
- * by the account's owner. Refreshing replaces the stored token, which the app and the extensions do only while they hold
- * the account, so a refresh here holds it for that moment.
+ * database nor CoreCrypto, such as uploading a shared file. The HTTP client keeps the token it loaded until the backend
+ * rejects it; it then takes the stored one if the account's owner refreshed it meanwhile. Refreshing replaces the stored
+ * token, which the app and the extensions do only while they hold the account, so a refresh here holds it for that moment.
  */
 @InternalKaliumApi
 public class UnheldAccountSession internal constructor(
