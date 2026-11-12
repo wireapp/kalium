@@ -14,8 +14,8 @@ with the same `-Pwire.ios.simulatorOnly=true` and `-Pwire.ios.deviceOnly=true` s
 `conversations` lists unarchived conversations the extension may send to, most recently active first.
 It holds the account only to read its database, and opens neither CoreCrypto nor the network. It mirrors the app's interaction rules and leaves out conversations that need the app: legal hold the
 user has not consented to, verification that degraded since the user acknowledged it, and MLS groups
-this client has not established. `acceptsFiles` is false for Cells conversations, which take files through
-Cells; only the app uploads there. `failureReason` names a runtime failure such as `BUSY` when the
+this client has not established. `acceptsFiles` is false for a Cells conversation while the account has no
+Cells backend configured. `failureReason` names a runtime failure such as `BUSY` when the
 account is in use, or `APP_LOCK` when the account's team enforces App Lock: the extension cannot unlock
 it, so sharing stays in the app. The host must also refuse to share while the app's own App Lock
 passcode is set.
@@ -32,6 +32,8 @@ and, for images, videos and audio, dimensions and duration. Before it holds the 
 checks the conversation and the file rules, then encrypts and uploads each file as the app does: private,
 persistent, AES-256-CBC with the IV prefixed. It streams each file and hashes the ciphertext as it writes
 it, so no file is held in memory, and reports progress over the plain size through `KaliumShareProgress`.
+Files for a Cells conversation upload to its cell at the same point, as unpublished drafts, and go as one
+multipart message with the text; a share that stores no message discards them.
 
 Uploads run outside `budgetMilliseconds`, and the account stays held meanwhile. They end when they finish,
 fail or the host cancels, and with `OPEN_APP` when they run past their own budget (`UPLOAD_TIMEOUT`: 30
