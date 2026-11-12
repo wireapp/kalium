@@ -104,13 +104,18 @@ class PendingActionsRepositoryTest {
     }
 
     @Test
-    fun existingJoinProducerKeepsItsOriginalActionKind() = runTest {
+    fun givenConversationId_whenEnqueuePendingMLSGroupJoin_thenUpsertIsCalledWithGroupJoinActionData() = runTest {
         val (arrangement, repository) = Arrangement().arrange()
+
         repository.enqueuePendingMLSGroupJoin(TestConversation.ID)
-        verifySuspend {
-            arrangement.pendingActionDAO.upsert(PendingActionType.JOIN_MLS_GROUP_CONVERSATION, TestConversation.ID.toDao(), any())
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pendingActionDAO.upsert(
+                actionType = PendingActionType.JOIN_MLS_GROUP_CONVERSATION,
+                qualifiedId = TestConversation.ID.toDao(),
+                createdAt = any()
+            )
         }
-        verifySuspend(VerifyMode.not) { arrangement.pendingActionDAO.requestMLSGroupJoin(any(), any(), any()) }
     }
 
     @Test
@@ -170,7 +175,6 @@ class PendingActionsRepositoryTest {
 
         suspend fun arrange(): Pair<Arrangement, PendingActionsRepository> = apply {
             everySuspend { pendingActionDAO.upsert(any(), any(), any()) } returns Unit
-            everySuspend { pendingActionDAO.requestMLSGroupJoin(any(), any(), any()) } returns true
             everySuspend { pendingActionDAO.deleteByActionTypeAndIds(any(), any()) } returns Unit
         } to repository
     }

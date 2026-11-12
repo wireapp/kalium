@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCa
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSJoinMode
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.PersistentPendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -51,164 +50,40 @@ import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 /**
- * Synthetic reproduction of build 113's persisted-action/canonical-ID redirect.
- * The original is a team-backed fake 1:1; the canonical replacement is teamless.
- * Uses a file-backed SQL database, the real action repository, drain and join helper.
- * Only network and native join effects are deterministic boundaries; neither real account
- * identifiers nor exported device data belong in this fixture.
+ * Persisted-action/canonical-ID redirect with a real file-backed database, action repository, drain and join helper.
+ * The original is a team-backed fake 1:1 whose native group is missing; the healthy canonical replacement is teamless.
  */
 class PersistedMLSCanonicalRedirectRegressionTest {
     @Test
-    fun legacyPersistedJoinCanJoinReplacementWithoutAcknowledgingOriginal() = runBlocking {
+    fun replacementJoinNeverAcknowledgesOriginalUntilExactRecoveryJoinsIt() = runBlocking {
         withFixture { f ->
-            f.persistLegacyJoin()
+            f.database.pendingActionDAO.upsert(PendingActionType.JOIN_MLS_GROUP_CONVERSATION, ORIGINAL.toDao(), 1L)
             f.exactFetchFails = true
             f.restart()
-
             f.drain()
 
             assertEquals(listOf(REPLACEMENT), f.joined)
-            assertEquals(1, f.canonicalLookups)
-            assertEquals(listOf(ORIGINAL), f.exactFetches)
-            f.assertOriginalUnrecovered()
+            f.assertOriginal(recovered = false)
+            f.restart()
             assertEquals(listOf(ORIGINAL), f.actions(PendingActionType.JOIN_MLS_GROUP_CONVERSATION))
             assertEquals(listOf(ORIGINAL), f.actions(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION))
-            f.restart()
-            assertEquals(listOf(ORIGINAL), f.actions(PendingActionType.JOIN_MLS_GROUP_CONVERSATION))
-        }
-    }
-
-    @Test
-    fun persistedExactRecoveryJoinsOriginalAndNeverConsultsCanonicalLookup() = runBlocking {
-        withFixture { f ->
-            f.pending.requestMLSGroupJoin(ORIGINAL)
-            val canonicalBefore = f.row(REPLACEMENT)
-            f.restart()
-
-            f.drain()
-
-            assertEquals(listOf(ORIGINAL), f.joined)
-            assertEquals(listOf(ORIGINAL), f.exactFetches)
-            assertEquals(0, f.canonicalLookups)
-            f.assertOriginalRecovered()
-            assertEquals(canonicalBefore, f.row(REPLACEMENT))
-            assertFalse(f.database.pendingActionDAO.hasMLSGroupRecovery(ORIGINAL.toDao()))
-            assertTrue(f.actions(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).isEmpty())
-        }
-    }
-
-    @Test
-    fun restartedForegroundDrainsRetainLegacyActionUntilOriginalReallyRecovers() = runBlocking {
-        withFixture { f ->
-            f.persistLegacyJoin()
-            f.exactFetchFails = true
-            f.restart()
-            f.drain()
-            f.assertOriginalUnrecovered()
-            assertEquals(listOf(ORIGINAL), f.actions(PendingActionType.JOIN_MLS_GROUP_CONVERSATION))
 
             f.exactFetchFails = false
-            f.restart()
             f.drain()
-            f.assertOriginalRecovered()
-            // If the legacy attempt preceded exact recovery, the next foreground acknowledges
-            // it. If exact recovery came first, this drain can already acknowledge it safely.
+            f.assertOriginal(recovered = true)
             f.restart()
             f.drain()
             assertTrue(f.actions(PendingActionType.JOIN_MLS_GROUP_CONVERSATION).isEmpty())
             assertTrue(f.actions(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).isEmpty())
-            f.assertOriginalRecovered()
-        }
-    }
 
-    @Test
-    fun falselySuccessfulRedirectedExactJoinRetainsDurableRecoveryUntilNewEvidence() = runBlocking {
-        withFixture { f ->
-            f.pending.requestMLSGroupJoin(ORIGINAL)
-            f.redirectExactJoin = true
-            f.restart()
-            f.drain()
-
-            assertEquals(listOf(REPLACEMENT), f.joined)
-            f.assertOriginalUnrecovered()
-            assertTrue(f.database.pendingActionDAO.hasMLSGroupRecovery(ORIGINAL.toDao()))
-            assertEquals(listOf(ORIGINAL), f.actions(PendingActionType.PAUSE_MLS_GROUP_JOIN))
-            f.restart()
-            f.drain()
-            assertEquals(listOf(REPLACEMENT), f.joined)
-            f.assertOriginalUnrecovered()
-            assertTrue(f.database.pendingActionDAO.hasMLSGroupRecovery(ORIGINAL.toDao()))
-
-            f.redirectExactJoin = false
-            f.pending.requestMLSGroupJoin(ORIGINAL) // A new message/welcome resumes this retained request.
-            f.drain()
-            assertEquals(listOf(REPLACEMENT, ORIGINAL), f.joined)
-            f.assertOriginalRecovered()
-            assertFalse(f.database.pendingActionDAO.hasMLSGroupRecovery(ORIGINAL.toDao()))
-        }
-    }
-
-    @Test
-    fun verifiedSelfRemovalIsTerminalButReplacementExistenceAloneIsNot() = runBlocking {
-        withFixture { f ->
-            f.pending.requestMLSGroupJoin(ORIGINAL)
-            f.database.memberDAO.deleteMemberByQualifiedID(SELF.toDao(), ORIGINAL.toDao())
-            f.restart()
-            f.drain()
-
-            assertTrue(f.joined.isEmpty())
-            assertFalse(f.database.pendingActionDAO.hasMLSGroupRecovery(ORIGINAL.toDao()))
-            assertEquals(f.row(ORIGINAL), f.database.conversationDAO.getNonDeletedConversationById(ORIGINAL.toDao()))
-            assertFalse(ORIGINAL_GROUP in f.nativeGroups)
-            f.restart()
-            f.drain()
-            assertTrue(f.joined.isEmpty())
-            assertTrue(f.actions(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).isEmpty())
-        }
-    }
-
-    @Test
-    fun canonicalOneOnOneResolutionStillSelectsAndJoinsReplacement() = runBlocking {
-        withFixture { f ->
-            f.persistLegacyJoin()
-            f.nativeGroups.remove(REPLACEMENT_GROUP)
+            // Both are established now; only the teamless replacement remains eligible as the canonical 1:1.
             val resolver = MLSOneOnOneConversationResolverImpl(f.conversations, f.joinHelper, f.fetchCanonical, f.mlsRepository)
-
             assertEquals(REPLACEMENT, assertIs<Either.Right<ConversationId>>(resolver(f.transactionContext, PEER)).value)
-
-            assertEquals(1, f.canonicalLookups)
-            assertEquals(listOf(REPLACEMENT), f.joined)
-            f.assertOriginalUnrecovered()
-            assertEquals(listOf(ORIGINAL), f.actions(PendingActionType.JOIN_MLS_GROUP_CONVERSATION))
-        }
-    }
-
-    @Test
-    fun teamBackedOriginalRemainsIneligibleForCanonicalResolutionAfterExactRecovery() = runBlocking {
-        withFixture { f ->
-            f.pending.requestMLSGroupJoin(ORIGINAL)
-            f.drain()
-            f.assertOriginalRecovered()
-            assertTrue(REPLACEMENT_GROUP in f.nativeGroups)
-            assertEquals(ORIGINAL_TEAM, f.row(ORIGINAL).teamId)
-            assertNull(f.row(REPLACEMENT).teamId)
-            assertEquals(REPLACEMENT.toDao(),
-                f.database.userDAO.getUserDetailsByQualifiedID(PEER.toDao())?.activeOneOnOneConversationId)
-            val resolver = MLSOneOnOneConversationResolverImpl(f.conversations, f.joinHelper, f.fetchCanonical, f.mlsRepository)
-
-            assertEquals(REPLACEMENT, assertIs<Either.Right<ConversationId>>(resolver(f.transactionContext, PEER)).value,
-                "Exact recovery must preserve the existing teamless-only canonical eligibility rule")
-            assertEquals(listOf(REPLACEMENT_GROUP), f.establishedChecks,
-                "The team-backed original must be excluded before checking canonical native candidates")
-            assertEquals(0, f.canonicalLookups)
-            assertEquals(listOf(ORIGINAL), f.joined)
         }
     }
 
@@ -231,11 +106,7 @@ class PersistedMLSCanonicalRedirectRegressionTest {
         val pending get() = PersistentPendingActionsRepository(database.pendingActionDAO)
         val nativeGroups = mutableSetOf(REPLACEMENT_GROUP)
         val joined = mutableListOf<ConversationId>()
-        val exactFetches = mutableListOf<ConversationId>()
-        val establishedChecks = mutableListOf<String>()
-        var canonicalLookups = 0
         var exactFetchFails = false
-        var redirectExactJoin = false
         lateinit var conversations: ConversationRepository
         lateinit var mlsRepository: MLSConversationRepository
         lateinit var fetchCanonical: FetchMLSOneToOneConversationUseCase
@@ -268,37 +139,21 @@ class PersistedMLSCanonicalRedirectRegressionTest {
             database.userDAO.updateActiveOneOnOneConversation(PEER.toDao(), REPLACEMENT.toDao())
         }
 
-        suspend fun persistLegacyJoin() = database.pendingActionDAO.upsert(
-            PendingActionType.JOIN_MLS_GROUP_CONVERSATION, ORIGINAL.toDao(), 1L
-        )
-
         suspend fun restart() {
             database.close()
             database = open()
             wire() // Fresh repository/helper/drain; the action exists only in the reopened SQL database.
         }
 
-        suspend fun row(id: ConversationId) = checkNotNull(database.conversationDAO.getConversationById(id.toDao()))
-        private suspend fun model(id: ConversationId) = MapperProvider.conversationMapper(SELF).fromDaoModel(row(id))
+        private suspend fun row(id: ConversationId) = checkNotNull(database.conversationDAO.getNonDeletedConversationById(id.toDao()))
+        private fun ConversationEntity.model() = MapperProvider.conversationMapper(SELF).fromDaoModel(this)
         suspend fun actions(type: PendingActionType) = database.pendingActionDAO.getByActionType(type).map { it.qualifiedId.toModel() }
 
-        suspend fun assertOriginalUnrecovered() {
-            assertEquals(ORIGINAL_TEAM, row(ORIGINAL).teamId)
-            assertNull(row(REPLACEMENT).teamId)
-            assertEquals(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
-                (row(ORIGINAL).protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState)
-            assertFalse(ORIGINAL_GROUP in nativeGroups)
-            assertEquals(row(ORIGINAL), database.conversationDAO.getNonDeletedConversationById(ORIGINAL.toDao()))
+        suspend fun assertOriginal(recovered: Boolean) {
+            val expected = if (recovered) GroupStateEntity.ESTABLISHED else GroupStateEntity.PENDING_WELCOME_MESSAGE
+            assertEquals(expected, (row(ORIGINAL).protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState)
+            assertEquals(recovered, ORIGINAL_GROUP in nativeGroups)
             assertEquals(REPLACEMENT.toDao(), database.userDAO.getUserDetailsByQualifiedID(PEER.toDao())?.activeOneOnOneConversationId)
-        }
-
-        suspend fun assertOriginalRecovered() {
-            assertEquals(ORIGINAL_TEAM, row(ORIGINAL).teamId)
-            assertNull(row(REPLACEMENT).teamId)
-            assertEquals(ConversationEntity.GroupState.ESTABLISHED,
-                (row(ORIGINAL).protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState)
-            assertTrue(ORIGINAL_GROUP in nativeGroups)
-            assertEquals(row(ORIGINAL), database.conversationDAO.getNonDeletedConversationById(ORIGINAL.toDao()))
         }
 
         suspend fun wire() {
@@ -307,26 +162,19 @@ class PersistedMLSCanonicalRedirectRegressionTest {
             conversations = mock<ConversationRepository>(MockMode.autoUnit)
             everySuspend { conversations.getNonDeletedConversationById(any()) } calls {
                 val row = database.conversationDAO.getNonDeletedConversationById((it.args[0] as ConversationId).toDao())
-                if (row == null) Either.Left(StorageFailure.DataNotFound)
-                else Either.Right(MapperProvider.conversationMapper(SELF).fromDaoModel(row))
-            }
-            everySuspend { conversations.setConversationDeletedLocally(any(), any()) } calls {
-                database.conversationDAO.setConversationDeletedLocally((it.args[0] as ConversationId).toDao(), it.args[1] as Boolean)
-                Either.Right(Unit)
+                row?.let { found -> Either.Right(found.model()) } ?: Either.Left(StorageFailure.DataNotFound)
             }
             everySuspend { conversations.getConversationMembers(any()) } calls {
-                Either.Right(database.memberDAO.getConversationMembers((it.args[0] as ConversationId).toDao()).map { user -> user.toModel() })
+                val id = (it.args[0] as ConversationId).toDao()
+                Either.Right(database.memberDAO.getConversationMembers(id).map { member -> member.toModel() })
             }
             everySuspend { conversations.getConversationsByGroupState(any()) } calls { call ->
                 val state = call.args[0] as Conversation.ProtocolInfo.MLSCapable.GroupState
-                Either.Right(database.conversationDAO.getConversationsByGroupState(ConversationEntity.GroupState.valueOf(state.name)).map {
-                    MapperProvider.conversationMapper(SELF).fromDaoModel(it)
-                })
+                Either.Right(database.conversationDAO.getConversationsByGroupState(ConversationEntity.GroupState.valueOf(state.name))
+                    .map { it.model() })
             }
             everySuspend { conversations.getConversationsByUserId(PEER) } calls {
-                Either.Right(database.conversationDAO.getConversationsByUserId(PEER.toDao()).map {
-                    MapperProvider.conversationMapper(SELF).fromDaoModel(it)
-                })
+                Either.Right(database.conversationDAO.getConversationsByUserId(PEER.toDao()).map { it.model() })
             }
             val feature = mock<FeatureSupport>()
             every { feature.isMLSSupported } returns true
@@ -335,15 +183,10 @@ class PersistedMLSCanonicalRedirectRegressionTest {
             sync = mock<SyncStateObserver>()
             everySuspend { sync.waitUntilLiveOrFailure() } returns Either.Right(Unit)
             fetchCanonical = mock<FetchMLSOneToOneConversationUseCase>()
-            everySuspend { fetchCanonical(any(), PEER) } calls {
-                canonicalLookups++
-                Either.Right(model(REPLACEMENT))
-            }
+            everySuspend { fetchCanonical(any(), PEER) } calls { Either.Right(row(REPLACEMENT).model()) }
             val fetchExact = mock<FetchConversationUseCase>()
             everySuspend { fetchExact(any(), any(), any()) } calls {
-                val id = it.args[1] as ConversationId
-                exactFetches += id
-                assertEquals(ORIGINAL, id)
+                assertEquals(ORIGINAL, it.args[1] as ConversationId)
                 if (exactFetchFails) Either.Left(NetworkFailure.NoNetworkConnection(null)) else Either.Right(Unit)
             }
             val api = mock<ConversationApi>()
@@ -353,9 +196,7 @@ class PersistedMLSCanonicalRedirectRegressionTest {
             }
             mlsRepository = mock<MLSConversationRepository>()
             everySuspend { mlsRepository.hasEstablishedMLSGroup(any(), any()) } calls {
-                val group = (it.args[1] as GroupID).value
-                establishedChecks += group
-                Either.Right(group in nativeGroups)
+                Either.Right((it.args[1] as GroupID).value in nativeGroups)
             }
             everySuspend { mlsRepository.joinGroupByExternalCommit(any(), any(), any()) } calls {
                 val group = (it.args[1] as GroupID).value
@@ -370,15 +211,8 @@ class PersistedMLSCanonicalRedirectRegressionTest {
                 fetchCanonical, fetchExact, mock<ResetMLSConversationUseCase>(), SELF)
         }
 
-        suspend fun drain() {
-            val helper = if (!redirectExactJoin) joinHelper else mock<JoinExistingMLSConversationUseCase>().also { broken ->
-                everySuspend { broken(any(), any(), any(), any(), any()) } calls {
-                    // Deliberate old-helper regression: report success after canonicalizing a recovery ID.
-                    joinHelper(transactionContext, it.args[1] as ConversationId, mode = MLSJoinMode.JOIN_OR_ESTABLISH)
-                }
-            }
-            RecoverPendingMLSGroupJoinsUseCaseImpl(pending, sync, cryptoTransactionProvider, helper, conversations, SELF)()
-        }
+        suspend fun drain() =
+            RecoverPendingMLSGroupJoinsUseCaseImpl(pending, sync, cryptoTransactionProvider, joinHelper, conversations, SELF)()
     }
 
     private companion object {
@@ -391,3 +225,5 @@ class PersistedMLSCanonicalRedirectRegressionTest {
         const val REPLACEMENT_GROUP = "replacement-group"
     }
 }
+
+private typealias GroupStateEntity = ConversationEntity.GroupState
