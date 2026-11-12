@@ -79,7 +79,8 @@ class UpdateMeetingUseCaseTest {
     fun givenUpdateMeetingFailsWithResetConversationResolution_whenInvoking_thenResetsConversationAndReturnsSuccess() = runTest {
         val establishMlsFailure = MeetingDataSource.EstablishMLSFailure(
             conversationId = CONVERSATION_ID,
-            reason = MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex)
+            reason = MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex),
+            meetingId = MEETING_ID,
         )
         val (arrangement, useCase) = Arrangement()
             .withInsertIncompleteUsersSuccess(UPSERT_MEETING)

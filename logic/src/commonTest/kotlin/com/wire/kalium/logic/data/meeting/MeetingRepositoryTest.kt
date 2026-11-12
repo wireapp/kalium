@@ -542,7 +542,7 @@ class MeetingRepositoryTest {
         val response = upsertMeetingResponse(
             groupId = groupId,
             epoch = 0UL,
-        )
+        ).copy(link = "https://wire.example/meeting-join/?key=a&code=b")
         val (arrangement, repository) = Arrangement()
             .withCreateNewMeetingSuccess(createMeeting, response)
             .withPersistConversationsSuccess()
@@ -559,7 +559,7 @@ class MeetingRepositoryTest {
         )
 
         assertTrue(result.isRight())
-        assertEquals(CreateNewMeetingResult(response.conversation.id.toModel(), expectedMLSAdditionResult), result.getOrNull())
+        assertEquals(CreateNewMeetingResult(response.conversation.id.toModel(), expectedMLSAdditionResult, meetingId = response.meetingId.toModel()), result.getOrNull())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToCreateApi(createMeeting))
             arrangement.persistConversations(
@@ -726,7 +726,7 @@ class MeetingRepositoryTest {
         )
 
         assertTrue(result.isRight())
-        assertEquals(CreateNewMeetingResult(response.conversation.id.toModel(), MLSAdditionResult.Empty), result.getOrNull())
+        assertEquals(CreateNewMeetingResult(response.conversation.id.toModel(), MLSAdditionResult.Empty, meetingId = response.meetingId.toModel()), result.getOrNull())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToCreateApi(createMeeting))
             arrangement.persistConversations(

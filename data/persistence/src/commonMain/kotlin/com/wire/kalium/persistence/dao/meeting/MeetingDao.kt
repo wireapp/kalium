@@ -59,6 +59,7 @@ interface MeetingDao {
     suspend fun getMeetingsByConversationId(conversationId: QualifiedIDEntity): List<MeetingEntity>
     suspend fun deleteMeetingsByConversationId(conversationId: QualifiedIDEntity)
     suspend fun getNextUnfinishedMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String?
+    fun observeMeeting(meetingId: QualifiedIDEntity): Flow<MeetingEntity?>
     suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity?
     fun observeMeetingReminderChanges(): Flow<Unit>
     suspend fun getNextMeetingReminder(from: Instant): MeetingReminderEntity?
@@ -204,6 +205,10 @@ internal class MeetingDaoImpl(
                     .awaitAsOneOrNull()
             }
         }
+
+    override fun observeMeeting(meetingId: QualifiedIDEntity): Flow<MeetingEntity?> =
+        meetingsQueries.selectMeetingByIds(listOf(meetingId), MeetingMapper::fromViewToModel)
+            .asFlow().mapToOneOrNull(readDispatcher.value)
 
     override suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity? = withContext(readDispatcher.value) {
         meetingsQueries.selectMeetingByIds(listOf(meetingId), MeetingMapper::fromViewToModel)
