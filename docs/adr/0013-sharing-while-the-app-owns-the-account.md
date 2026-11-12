@@ -18,7 +18,7 @@ in the foreground. Today the sheet says "Wire is busy" before the user can pick 
 listing conversations also opens the account.
 
 The extension must not act as a second owner. It may not write the account database, use CoreCrypto,
-refresh tokens, upload, or open a WebSocket while the app owns the account. A pending message written
+refresh tokens or open a WebSocket while the app owns the account. A pending message written
 behind the app would not be sent either: on iOS, Kalium does not schedule pending messages, and the
 app's queries see another process's writes only when it takes the account back.
 
@@ -50,7 +50,9 @@ background handoff during an import therefore stores nothing twice: the next imp
 entry. Catching up can change the rules, so the app first waits until the account caught up, then
 checks the conversation with the extension's own rules (ADR 12's share blocks and file rules). If a
 rule now refuses it, the app stores nothing. The import stores each message itself; only sending goes
-on without it, so an import cancelled before a message is stored stores and sends nothing. Stored
+on without it, so an import cancelled before a message is stored stores and sends nothing. A Cells
+share whose upload fails stores nothing and stays claimed: the app uploads it again while it serves
+the outbox, less and less often, until the share is a day old. Stored
 messages belong to the app: they upload, send, fail and retry in the conversation like messages from
 the composer. The app then writes a result for the extension (stored, or the reason it refused) and
 removes the entry.
@@ -64,10 +66,10 @@ request, protected while the device is locked, and excluded from backups. The ap
 requests on their own, so a share being imported never keeps a sheet waiting for its list.
 
 **The sheet.** When the app does not answer, the account is busy for another reason, usually the NSE.
-Then the extension retries opening the account itself until its budget ends. If the account becomes
-busy between listing and sending, the extension retries sending for a moment, then hands the share off. It
-also hands the share off when the app wants the account while the extension uploads, or when uploading takes
-too long (ADR 12). The sheet waits a few seconds for the app to claim the share, and a few more for its result.
+Then the extension retries opening the account itself until its budget ends. Who sends is decided when
+the user sends, not by who listed the conversations: the extension takes the account if it can, waits for
+another extension that holds it, and hands the share off when the app holds it, or asks for it before
+anything is stored (ADR 12). The sheet waits a few seconds for the app to claim the share, and a few more for its result.
 If the app writes a refusal in time, the sheet shows the reason. Otherwise the sheet says Wire is sending the share,
 or, if the app has not claimed it, that Wire will send it when Wire is opened. It also marks the entry as unwatched:
 from then on, the app tells the user with a local notification if it refuses the share. The app writes its result
@@ -76,7 +78,9 @@ them sees the result; only one takes it. The sheet offers no cancel while it wai
 
 **Not a second lock.** A lock that only the app holds would tell the extension that the app owns the
 account. It would not tell it that the app will take the share, and checking two locks one after the
-other races with the app releasing them. The app's claim answers both.
+other races with the app releasing them. The app's claim answers both. The account lock's holder record
+says whether an app extension holds it; that only decides how long the extension waits before it hands
+the share off.
 
 ## Implementation
 
