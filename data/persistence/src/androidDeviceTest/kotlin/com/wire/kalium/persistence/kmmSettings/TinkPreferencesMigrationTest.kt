@@ -198,6 +198,28 @@ class TinkPreferencesMigrationTest {
     }
 
     @Test
+    fun givenNoLegacyData_whenBuildingWithTinkEnabled_thenATinkStoreIsCreatedWithoutALegacyStoreOrKey() {
+        val options = SettingOptions.UserSettings(shouldEncryptData = true, userIDEntity = UserIDEntity("tink-fresh-user", "wire.test"))
+        val legacyMasterKeyAlias = "_${options.fileName}_master_key_"
+        try {
+            val preferences = buildMigratingSharedPreferences(options, EncryptedSettingsPlatformParam(context), useTinkEncryptedPreferences = true)
+            preferences.edit().putString("token", "value").commit()
+
+            assertTrue(preferences is TinkEncryptedSharedPreferences)
+            assertTrue(TinkPreferencesStore(context, options.fileName).isMigrationCompleted())
+            assertTrue(rawPreferences(options.fileName).all.isEmpty())
+            assertFalse(AndroidKeystore.hasKey(legacyMasterKeyAlias))
+        } finally {
+            listOf(options.fileName, "${options.fileName}_tink", "${options.fileName}_tink_metadata").forEach {
+                rawPreferences(it).edit().clear().commit()
+                context.deleteSharedPreferences(it)
+            }
+            AndroidKeystore.deleteKey("_${options.fileName}_tink_master_key_")
+            AndroidKeystore.deleteKey(legacyMasterKeyAlias)
+        }
+    }
+
+    @Test
     fun givenEveryValueType_whenEncodedAndDecoded_thenTheValueIsUnchanged() {
         listOf<Any>("", "text ✓", emptySet<String>(), setOf("x", "", "✓"), Int.MIN_VALUE, Long.MIN_VALUE, Float.NaN, -0.5f, true, false)
             .forEach { assertEquals(it, ValueCodec.decode(ValueCodec.encode(it))) }
