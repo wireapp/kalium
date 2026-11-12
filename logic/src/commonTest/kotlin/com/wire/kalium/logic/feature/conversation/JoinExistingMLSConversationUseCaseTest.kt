@@ -364,21 +364,20 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
-    fun exactRecoveryAndItsStaleRetryJoinTheOriginalOneOnOneWithoutCanonicalLookup() = runTest {
+    fun exactRecoveryRefreshesAndJoinsTheOriginalOneOnOneWithoutCanonicalLookup() = runTest {
         val original = Arrangement.MLS_PENDING_WELCOME_REFRESHED_GROUP_CONVERSATION.copy(type = Conversation.Type.OneOnOne)
         val (a, join) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true).withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful(original)
             .withGetConversationMembersSuccessful(listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID))
-            .withLocalGroupExists(false).withFetchConversationSuccessful().withFetchingGroupInfoSuccessful()
-            .withJoinByExternalCommitSuccessful()
-            .withJoinByExternalCommitGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1).arrange()
+            .withLocalGroupExists(false).withFetchConversationSuccessful()
+            .withFetchingGroupInfoSuccessful().withJoinByExternalCommitSuccessful().arrange()
 
         join(a.transactionContext, original.id, mode = MLSJoinMode.RECOVER_EXACT_GROUP).shouldSucceed()
 
-        verifySuspend(VerifyMode.exactly(2)) { a.fetchConversation(any(), original.id, any()) }
-        verifySuspend(VerifyMode.exactly(2)) { a.conversationApi.fetchGroupInfo(original.id.toApi()) }
-        verifySuspend(VerifyMode.exactly(2)) { a.mlsConversationRepository.joinGroupByExternalCommit(any(), Arrangement.GROUP_ID3, any()) }
+        verifySuspend { a.fetchConversation(any(), original.id, any()) }
+        verifySuspend { a.conversationApi.fetchGroupInfo(original.id.toApi()) }
+        verifySuspend { a.mlsConversationRepository.joinGroupByExternalCommit(any(), Arrangement.GROUP_ID3, any()) }
         verifySuspend(VerifyMode.not) { a.fetchMLSOneToOneConversation(any(), any()) }
     }
 
@@ -397,6 +396,41 @@ class JoinExistingMLSConversationUseCaseTest {
             a.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             a.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
         }
+    }
+
+    @Test
+    fun exactRecoverySkipsAnAlreadyEstablishedNativeGroup() = runTest {
+        val established = Arrangement.MLS_CONVERSATION1.copy(protocol =
+            (Arrangement.MLS_CONVERSATION1.protocol as Conversation.ProtocolInfo.MLS).copy(
+                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED))
+        val (a, join) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true).withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(established)
+            .withLocalGroupExists(true).arrange()
+
+        join(a.transactionContext, Arrangement.MLS_CONVERSATION1.id, mode = MLSJoinMode.RECOVER_EXACT_GROUP).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
+            a.fetchConversation(any(), any(), any())
+            a.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun exactRecoveryStaleRetryStillUsesTheOriginalId() = runTest {
+        val original = Arrangement.MLS_PENDING_WELCOME_REFRESHED_GROUP_CONVERSATION.copy(type = Conversation.Type.OneOnOne)
+        val (a, join) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true).withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(original)
+            .withGetConversationMembersSuccessful(listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID))
+            .withLocalGroupExists(false).withFetchConversationSuccessful().withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .withJoinByExternalCommitGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1).arrange()
+
+        join(a.transactionContext, original.id, mode = MLSJoinMode.RECOVER_EXACT_GROUP).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(2)) { a.fetchConversation(any(), original.id, any()) }
+        verifySuspend(VerifyMode.not) { a.fetchMLSOneToOneConversation(any(), any()) }
     }
 
     @Test

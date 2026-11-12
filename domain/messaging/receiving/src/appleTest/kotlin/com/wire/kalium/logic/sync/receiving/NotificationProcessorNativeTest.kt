@@ -5097,83 +5097,239 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun teamBackedPendingOriginalWithTeamlessCanonicalQueuesRecoveryWithoutBlockingMessagesOrCalls() = runTest {
+    fun persistedTeamBackedOriginalWithTeamlessCanonicalDoesNotBlockLaterPushes() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 val original = CONVERSATION_ID.copy(value = "original-pending-one-to-one")
-                val pending = fixture.event("original", byteArrayOf(1), conversationId = original)
-                val call = fixture.event("call", fixture.encrypt("call", fixture.callContent()), time = Clock.System.now())
-                val text = fixture.event("unrelated", fixture.encrypt("unrelated"))
+                val originalTeam = "original-team"
+                val pushes = (1..2).map { index ->
+                    fixture.event("original-$index", byteArrayOf(1), conversationId = original) to
+                        fixture.event("unrelated-$index", fixture.encrypt("unrelated-$index"))
+                }
+                val call = fixture.event("independent-call", fixture.encrypt("independent-call", fixture.callContent()),
+                    time = Clock.System.now())
                 fixture.releasePrepared()
                 fixture.seedPendingMLSGroup(original)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    val dao = runtime.database.conversationDAO
-                    runtime.database.teamDAO.insertTeam(com.wire.kalium.persistence.dao.TeamEntity("team", "Team", "default"))
-                    dao.insertConversation(checkNotNull(dao.getConversationById(original)).copy(teamId = "team"))
-                    dao.insertConversation(checkNotNull(dao.getConversationById(CONVERSATION_ID))
-                        .copy(type = ConversationEntity.Type.ONE_ON_ONE, teamId = null))
+                    val canonical = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+                    runtime.database.teamDAO.insertTeam(
+                        com.wire.kalium.persistence.dao.TeamEntity(originalTeam, "Original team", "default"))
+                    val originalRow = checkNotNull(runtime.database.conversationDAO.getConversationById(original))
+                    runtime.database.conversationDAO.insertConversation(originalRow.copy(teamId = originalTeam))
+                    runtime.database.conversationDAO.insertConversation(canonical.copy(
+                        type = ConversationEntity.Type.ONE_ON_ONE, teamId = null))
                     runtime.database.userDAO.updateActiveOneOnOneConversation(SENDER.toDao(), CONVERSATION_ID)
+                    // Same durable action kind produced by build 113 / #4706; a replacement exists,
+                    // but recovery of that replacement cannot repair this original native group.
                     runtime.database.pendingActionDAO.upsert(PendingActionType.JOIN_MLS_GROUP_CONVERSATION, original, 1L)
                 })
+                for ((index, push) in pushes.withIndex()) {
+                    val (pending, text) = push
+                    val page = listOf(pending, text) + if (index == 0) listOf(call) else emptyList()
+                    val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, text.id)).value
+                    assertEquals(text.id, result?.messageId)
+                    assertEquals(text.id, result?.text)
+                    assertEquals(true, result?.shouldNotify)
+                    assertEquals("QUEUE_END", fixture.receivedStop)
+                    assertNull(fixture.receivedAppWork)
+                    if (index == 0) assertEquals(ReceivedCallType.INCOMING, fixture.receivedCalls.single().type)
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(text.id)).isProcessed)
+                        assertEquals(listOf(original), runtime.database.pendingActionDAO
+                            .getByActionType(PendingActionType.JOIN_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
+                        assertEquals(listOf(original), runtime.database.pendingActionDAO
+                            .getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
+                        val row = checkNotNull(runtime.database.conversationDAO.getNonDeletedConversationById(original))
+                        assertEquals(originalTeam, row.teamId)
+                        assertNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)?.teamId)
+                        assertEquals(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+                            (row.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState)
+                        assertEquals(CONVERSATION_ID,
+                            runtime.database.userDAO.getUserDetailsByQualifiedID(SENDER.toDao())?.activeOneOnOneConversationId)
+                        checkNotNull(fixture.openMLS(runtime)).transaction { context ->
+                            assertFalse(context.conversationExists("YWJzZW50LWxlZ2FjeS1ncm91cA=="))
+                        }
+                    })
+                }
+            }
+        }
+    }
 
-                val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(pending, call, text), text.id)).value
-                assertEquals(text.id, result?.messageId)
-                assertEquals(true, result?.shouldNotify)
+    @Test
+    fun pendingMlsGroupQueuesExactRecoveryAndContinuesOtherMessages() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val legacy = CONVERSATION_ID.copy(value = "legacy-one-to-one")
+                val pending = fixture.event("pending-group", byteArrayOf(1), conversationId = legacy)
+                val tail = fixture.event("unrelated-message", fixture.encrypt("unrelated-message"))
+                fixture.releasePrepared()
+                fixture.seedPendingMLSGroup(legacy)
+                assertIs<Either.Right<*>>(fixture.receive(listOf(pending, tail), pending.id))
                 assertEquals("QUEUE_END", fixture.receivedStop)
-                assertEquals(ReceivedCallType.INCOMING, fixture.receivedCalls.single().type)
+                assertEquals("MLS_GROUP_RECOVERY", fixture.receivedAppWork?.name)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
-                    assertEquals(listOf(original), runtime.database.pendingActionDAO
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById(tail.id, CONVERSATION_ID))
+                    assertEquals(listOf(legacy), runtime.database.pendingActionDAO
                         .getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
-                    assertEquals(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
-                        (checkNotNull(runtime.database.conversationDAO.getConversationById(original)).protocolInfo
-                            as ConversationEntity.ProtocolInfo.MLS).groupState)
+                })
+                val again = fixture.event("pending-group-again", byteArrayOf(1), conversationId = legacy)
+                assertIs<Either.Right<*>>(fixture.receive(listOf(again), again.id))
+                assertNull(fixture.receivedAppWork)
+            }
+        }
+    }
+
+    @Test
+    fun pendingMlsRecoveryDoesNotBlockUnrelatedCalls() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val legacy = CONVERSATION_ID.copy(value = "missing-group")
+                val pending = fixture.event("pending", byteArrayOf(1), conversationId = legacy)
+                val call = fixture.event("call", fixture.encrypt("call", fixture.callContent()), time = Clock.System.now())
+                fixture.releasePrepared()
+                fixture.seedPendingMLSGroup(legacy, mixed = true)
+                assertIs<Either.Right<*>>(fixture.receive(listOf(pending, call), pending.id))
+                assertEquals("QUEUE_END", fixture.receivedStop)
+                assertEquals(ReceivedCallType.INCOMING, fixture.receivedCalls.single().type)
+                assertEquals("MLS_GROUP_RECOVERY", fixture.receivedAppWork?.name)
+            }
+        }
+    }
+
+    @Test
+    fun pendingMlsMessageAfterSelfRemovalIsAcknowledgedWithoutRecovery() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val legacy = CONVERSATION_ID.copy(value = "removed-group")
+                val pending = fixture.event("pending", byteArrayOf(1), conversationId = legacy)
+                fixture.releasePrepared()
+                fixture.seedPendingMLSGroup(legacy, selfMember = false)
+                assertIs<Either.Right<*>>(fixture.receive(listOf(pending), pending.id))
+                assertNull(fixture.receivedAppWork)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
+                    assertTrue(runtime.database.pendingActionDAO.getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).isEmpty())
                 })
             }
         }
     }
 
     @Test
-    fun trackedRecoveryWithEstablishedSqlButMissingNativeGroupDoesNotBlockLaterMessages() = runTest {
+    fun pendingMlsWithNativeGroupStillFailsClosed() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
-                val interrupted = CONVERSATION_ID.copy(value = "interrupted-recovery")
-                val pending = fixture.event("pending", byteArrayOf(1), conversationId = interrupted)
-                val tail = fixture.event("tail", fixture.encrypt("tail"))
+                val pending = fixture.event("pending", byteArrayOf(1))
                 fixture.releasePrepared()
-                fixture.seedPendingMLSGroup(interrupted)
+                fixture.seedPendingMLSGroup(CONVERSATION_ID, nativeGroup = true)
+                assertIs<Either.Left<*>>(fixture.receive(listOf(pending), pending.id))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    // A recovery join committed SQL, then the native commit was interrupted; the paused request is still tracked.
-                    runtime.database.pendingActionDAO.requestMLSGroupJoin(interrupted, 100L, evidence = true)
-                    runtime.database.pendingActionDAO.pauseMLSGroupJoin(
-                        com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity(interrupted, 100L))
-                    runtime.database.conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, MISSING_GROUP)
-                })
-                assertIs<Either.Right<*>>(fixture.receive(listOf(pending, tail), pending.id))
-                assertEquals("QUEUE_END", fixture.receivedStop)
-                assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
-                    assertNotNull(runtime.database.messageDAO.getMessageById(tail.id, CONVERSATION_ID))
-                    // The new message is fresh evidence, so the paused request resumes.
-                    assertEquals(listOf(interrupted), runtime.database.pendingActionDAO
-                        .getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
+                    assertTrue(runtime.database.pendingActionDAO.getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).isEmpty())
                 })
             }
         }
     }
 
-    /** Adds a self-member MLS 1:1 in PENDING_WELCOME_MESSAGE whose native group does not exist. */
-    private suspend fun Fixture.seedPendingMLSGroup(id: QualifiedIDEntity) {
+    @Test
+    fun pendingMlsRecoverySurvivesInterruptedNativeCommitAndReplay() = runTest {
+        withContext(Dispatchers.Default) {
+            for (stage in listOf(Interruption.BEFORE_COMMIT, Interruption.AFTER_COMMIT, Interruption.MARKER)) {
+                withFixture(true) { fixture ->
+                    val legacy = CONVERSATION_ID.copy(value = "replay-group")
+                    val pending = fixture.event("pending", byteArrayOf(1), conversationId = legacy)
+                    fixture.releasePrepared()
+                    fixture.seedPendingMLSGroup(legacy)
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(pending), pending.id, interruption = stage))
+                    fixture.sql("DROP TRIGGER IF EXISTS interrupt_receive")
+                    assertIs<Either.Right<*>>(fixture.receive(emptyList(), pending.id))
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
+                        assertEquals(listOf(legacy), runtime.database.pendingActionDAO
+                            .getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
+                    })
+                }
+            }
+        }
+    }
+
+    @Test
+    fun pendingMlsRecoveryWithEstablishedSqlAndMissingNativeGroupStillContinues() = runTest {
+        withContext(Dispatchers.Default) {
+            for (paused in listOf(false, true)) withFixture(true) { fixture ->
+                val legacy = CONVERSATION_ID.copy(value = "interrupted-recovery")
+                val pending = fixture.event("pending", byteArrayOf(1), conversationId = legacy)
+                val tail = fixture.event("tail", fixture.encrypt("tail"))
+                fixture.releasePrepared()
+                fixture.seedPendingMLSGroup(legacy)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    runtime.database.pendingActionDAO.requestMLSGroupJoin(legacy, 100L, evidence = true)
+                    if (paused) runtime.database.pendingActionDAO.pauseMLSGroupJoin(
+                        com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity(legacy, 100L))
+                    runtime.database.conversationDAO.updateConversationGroupState(
+                        ConversationEntity.GroupState.ESTABLISHED, "YWJzZW50LWxlZ2FjeS1ncm91cA==")
+                })
+                assertIs<Either.Right<*>>(fixture.receive(listOf(pending, tail), pending.id))
+                assertEquals("QUEUE_END", fixture.receivedStop)
+                assertNull(fixture.receivedAppWork)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("tail", CONVERSATION_ID))
+                    assertEquals(listOf(legacy), runtime.database.pendingActionDAO
+                        .getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
+                    assertTrue(runtime.database.pendingActionDAO.getByActionType(PendingActionType.PAUSE_MLS_GROUP_JOIN).isEmpty())
+                })
+            }
+        }
+    }
+
+    @Test
+    fun pendingMlsRecoveryDoesNotIgnoreAnUntrackedEstablishedMissingGroup() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val id = CONVERSATION_ID.copy(value = "untracked-missing-group")
+                val event = fixture.event("missing", byteArrayOf(1), conversationId = id)
+                fixture.releasePrepared()
+                fixture.seedPendingMLSGroup(id)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    runtime.database.conversationDAO.updateConversationGroupState(
+                        ConversationEntity.GroupState.ESTABLISHED, "YWJzZW50LWxlZ2FjeS1ncm91cA==")
+                })
+                fixture.receive(listOf(event), event.id)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertFalse(runtime.database.pendingActionDAO.hasMLSGroupRecovery(id))
+                })
+            }
+        }
+    }
+
+    private suspend fun Fixture.seedPendingMLSGroup(
+        id: QualifiedIDEntity,
+        mixed: Boolean = false,
+        selfMember: Boolean = true,
+        nativeGroup: Boolean = false,
+    ) {
         assertIs<Either.Right<*>>(open { runtime ->
             val canonical = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+            val original = canonical.protocolInfo as ConversationEntity.ProtocolInfo.MLS
+            val protocol = original.copy(
+                groupId = if (nativeGroup) original.groupId else "YWJzZW50LWxlZ2FjeS1ncm91cA==",
+                groupState = ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            )
             runtime.database.conversationDAO.insertConversation(canonical.copy(
                 id = id, type = ConversationEntity.Type.ONE_ON_ONE,
-                protocolInfo = (canonical.protocolInfo as ConversationEntity.ProtocolInfo.MLS).copy(
-                    groupId = MISSING_GROUP, groupState = ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE),
+                protocolInfo = if (mixed) ConversationEntity.ProtocolInfo.Mixed(
+                    protocol.groupId, protocol.groupState, protocol.epoch, protocol.keyingMaterialLastUpdate, protocol.cipherSuite
+                ) else protocol,
             ))
-            runtime.database.memberDAO.insertMembersWithQualifiedId(listOf(SELF, SENDER).map {
-                com.wire.kalium.persistence.dao.member.MemberEntity(
-                    it.toDao(), com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member)
+            val users = if (selfMember) listOf(SELF, SENDER) else listOf(SENDER)
+            if (!selfMember && id == CONVERSATION_ID) error("Use a separate group for removed members")
+            runtime.database.memberDAO.insertMembersWithQualifiedId(users.map {
+                com.wire.kalium.persistence.dao.member.MemberEntity(it.toDao(),
+                    com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member)
             }, id)
         })
     }
@@ -13692,7 +13848,6 @@ class NotificationProcessorNativeTest {
         val SELF = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
         val SENDER = UserId("eef049aa-c081-4520-9e60-3fbe90809ee9", "example.com")
         val CONVERSATION_ID = QualifiedIDEntity("conversation", "example.com")
-        const val MISSING_GROUP = "YWJzZW50LWxlZ2FjeS1ncm91cA=="
         const val CLIENT = "abc123"
         const val SENDER_CLIENT = "def456"
         val THIRD = UserId("bcc012da-0478-46ac-aac7-b02c4ab7b144", "example.com")
