@@ -50,6 +50,8 @@ public class UnheldAccountSession internal constructor(
     tokens: AuthTokenStorage,
     /** How long a refresh waits while another process holds the account. */
     private val refreshWait: Duration,
+    /** And while that process is an app extension, which gives the account up within its own budget. */
+    private val refreshWaitForExtension: Duration = refreshWait,
 ) : SessionManager {
     private val stored = ExistingAccountSessionManager(prepared.userId, ClientId(prepared.clientId), prepared.serverConfig, tokens)
     private val refreshMutex = Mutex()
@@ -69,7 +71,8 @@ public class UnheldAccountSession internal constructor(
     }
 
     private suspend fun refreshHoldingAccount(accessTokenApi: AccessTokenApi, oldRefreshToken: String?): SessionDTO {
-        val lease = when (val acquired = AppleAccountRuntimeOwner(rootPath).tryAcquire(prepared.userId, refreshWait)) {
+        val owner = AppleAccountRuntimeOwner(rootPath)
+        val lease = when (val acquired = owner.tryAcquire(prepared.userId, refreshWait, refreshWaitForExtension)) {
             is Either.Left -> return refreshedElsewhere() ?: run {
                 if (acquired.value == AccountRuntimeFailure.BUSY) blocked.store(true)
                 throw FailureToRefreshTokenException("Account ${acquired.value.name} while refreshing")
