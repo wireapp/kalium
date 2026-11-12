@@ -36,6 +36,7 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageOperationResult
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
@@ -70,7 +71,7 @@ internal fun SendConfirmationUseCase(
     conversationRepository: ConversationRepository,
     messageRepository: MessageRepository,
     userPropertyRepository: UserPropertyRepository,
-    targetedMLSMessagesEnabled: Boolean,
+    featureSupport: FeatureSupport,
 ) = object : SendConfirmationUseCase {
     val TAG = "SendConfirmation"
     val conversationIdKey = "conversationId"
@@ -168,7 +169,7 @@ internal fun SendConfirmationUseCase(
             when (conversation.type) {
                 Conversation.Type.OneOnOne -> userPropertyRepository.getReadReceiptsStatus()
                 else ->
-                    (targetedMLSMessagesEnabled || conversation.protocol !is Conversation.ProtocolInfo.MLS) &&
+                    (featureSupport.isTargetedAndTransientMessagesSupported || conversation.protocol !is Conversation.ProtocolInfo.MLS) &&
                         conversation.receiptMode == Conversation.ReceiptMode.ENABLED
             }
         })

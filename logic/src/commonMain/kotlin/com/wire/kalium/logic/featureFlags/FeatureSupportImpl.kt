@@ -20,18 +20,22 @@ package com.wire.kalium.logic.featureFlags
 
 import com.wire.kalium.logic.feature.user.isMLSApiSupported
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 
 internal interface FeatureSupport {
     val isMLSSupported: Boolean
     val isMeetingsSupported: Boolean
     val isMeetingsGuestLinksSupported: Boolean
+    val isTargetedAndTransientMessagesSupported: Boolean
 }
 
 internal class FeatureSupportImpl(
-    apiVersion: Int
+    apiVersion: Int,
+    kaliumConfigs: KaliumConfigs
 ) : FeatureSupport {
 
     override val isMLSSupported: Boolean = isMLSApiSupported(apiVersion)
     override val isMeetingsSupported: Boolean = apiVersion >= MeetingApi.MIN_API_VERSION_MEETINGS
     override val isMeetingsGuestLinksSupported: Boolean = apiVersion >= MeetingApi.MIN_API_VERSION_MEETINGS_GUESTS_LINKS
+    override val isTargetedAndTransientMessagesSupported: Boolean = apiVersion >= MLSMessageApi.MIN_API_VERSION_TARGETED_TRANSIENT_MESSAGES && kaliumConfigs.targetedAndTransientMLSMessagesEnabled
 }

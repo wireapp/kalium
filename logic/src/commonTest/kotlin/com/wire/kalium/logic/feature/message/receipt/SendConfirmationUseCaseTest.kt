@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageOperationResult
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -103,7 +104,7 @@ class SendConfirmationUseCaseTest {
                 receiptMode = Conversation.ReceiptMode.ENABLED
             )
             val (arrangement, sendConfirmation) = Arrangement()
-                .withTargetedMLSMessagesEnabled(true)
+                .withTargetedAndTransientMessagesSupported(true)
                 .withCurrentClientIdProvider()
                 .withGetConversationByIdSuccessful(mlsGroupConversation)
                 .withPendingMessagesResponse()
@@ -128,7 +129,7 @@ class SendConfirmationUseCaseTest {
             receiptMode = Conversation.ReceiptMode.DISABLED
         )
         val (arrangement, sendConfirmation) = Arrangement()
-            .withTargetedMLSMessagesEnabled(true)
+            .withTargetedAndTransientMessagesSupported(true)
             .withGetConversationByIdSuccessful(mlsGroupConversation)
             .arrange()
 
@@ -150,7 +151,7 @@ class SendConfirmationUseCaseTest {
             receiptMode = Conversation.ReceiptMode.ENABLED
         )
         val (arrangement, sendConfirmation) = Arrangement()
-            .withTargetedMLSMessagesEnabled(false)
+            .withTargetedAndTransientMessagesSupported(false)
             .withGetConversationByIdSuccessful(mlsGroupConversation)
             .arrange()
 
@@ -222,6 +223,7 @@ class SendConfirmationUseCaseTest {
     fun givenMessagesFromMultipleSenders_whenSendingReadConfirmation_thenShouldSendOneConfirmationPerSender() = runTest {
         val (arrangement, sendConfirmation) = Arrangement()
             .withCurrentClientIdProvider()
+            .withTargetedAndTransientMessagesSupported(true)
             .withGetConversationByIdSuccessful(TestConversation.GROUP().copy(receiptMode = Conversation.ReceiptMode.ENABLED))
             .withPendingMessagesResponse(
                 mapOf(
@@ -257,6 +259,7 @@ class SendConfirmationUseCaseTest {
     fun givenSendingToOneSenderFails_whenSendingReadConfirmation_thenShouldStillSendToOtherSendersAndReturnFailure() = runTest {
         val (arrangement, sendConfirmation) = Arrangement()
             .withCurrentClientIdProvider()
+            .withTargetedAndTransientMessagesSupported(true)
             .withGetConversationByIdSuccessful(TestConversation.GROUP().copy(receiptMode = Conversation.ReceiptMode.ENABLED))
             .withPendingMessagesResponse(
                 mapOf(
@@ -316,10 +319,12 @@ class SendConfirmationUseCaseTest {
         private val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
         private val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
-        private var targetedMLSMessagesEnabled = false
+        private var featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
 
-        fun withTargetedMLSMessagesEnabled(enabled: Boolean) = apply {
-            targetedMLSMessagesEnabled = enabled
+        fun withTargetedAndTransientMessagesSupported(supported: Boolean) = apply {
+            everySuspend {
+                featureSupport.isTargetedAndTransientMessagesSupported
+            } returns supported
         }
 
         suspend fun withCurrentClientIdProvider() = apply {
@@ -370,7 +375,7 @@ class SendConfirmationUseCaseTest {
             conversationRepository,
             messageRepository,
             userPropertyRepository,
-            targetedMLSMessagesEnabled
+            featureSupport
         )
     }
 
