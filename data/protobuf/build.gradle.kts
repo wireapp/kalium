@@ -16,9 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import com.google.protobuf.gradle.GenerateProtoTask
 import org.jetbrains.dokka.gradle.DokkaExtension
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -31,21 +29,32 @@ kaliumLibrary {
     }
 }
 
-val codegenProject = project(":tools:protobuf-codegen")
-val generatedFilesBaseDir = file("generated")
-generatedFilesBaseDir.mkdirs()
-val generatedFileSuppressions = """@file:Suppress("UNNECESSARY_NOT_NULL_ASSERTION")"""
+val generatedKotlinSources by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+}
+dependencies {
+    generatedKotlinSources(project(path = ":tools:protobuf-codegen", configuration = "generatedKotlinSources"))
+}
+
+val prepareProtobufSources by tasks.registering(PrepareProtobufSourcesTask::class) {
+    sourceDirectory.set(layout.dir(generatedKotlinSources.elements.map { it.single().asFile }))
+    outputDirectory.set(layout.buildDirectory.dir("generated/protobuf/commonMain/kotlin"))
+    fileAnnotation.set("""@file:Suppress("UNNECESSARY_NOT_NULL_ASSERTION")""")
+}
 
 extensions.configure<DokkaExtension> {
     dokkaSourceSets.named("commonMain") {
-        sourceRoots.builtBy(":tools:protobuf-codegen:generateProto")
+        // DokkaCompatibility supplies source files through a provider, so retain their producer dependency.
+        sourceRoots.builtBy(prepareProtobufSources)
     }
 }
 
 kotlin {
     sourceSets {
         val commonMain by getting {
-            kotlin.srcDir(generatedFilesBaseDir)
+            kotlin.srcDir(prepareProtobufSources)
             dependencies {
                 api(libs.pbandk.runtime.common)
             }
@@ -77,44 +86,3 @@ kotlin {
         }
     }
 }
-
-val compileTasks = tasks.matching { it is KotlinCompileTool }
-
-codegenProject.tasks
-    .matching { it.name == "generateProto" }
-    .all {
-        this as GenerateProtoTask
-        compileTasks.forEach { compileTask ->
-            compileTask.dependsOn(this)
-        }
-        // Always generate protobuf files. So we make sure they exist.
-        outputs.upToDateWhen {
-            false
-        }
-        doLast {
-            outputSourceDirectorySet.srcDirs.forEach { generatedDirectory ->
-                generatedFilesBaseDir.mkdirs()
-                val targetDirectory = File(generatedFilesBaseDir, generatedDirectory.name)
-                // Delete already existing files
-                targetDirectory.deleteRecursively()
-
-                // Move generated files to target directory
-                val movingSucceeded = generatedDirectory.renameTo(targetDirectory)
-
-                require(movingSucceeded) {
-                    "Failed to move Generated protobuf files from '${generatedDirectory.absolutePath}' " +
-                            "to destination directory '${targetDirectory.absolutePath}'"
-                }
-
-                targetDirectory
-                    .walkTopDown()
-                    .filter { it.isFile && it.extension == "kt" }
-                    .forEach { generatedFile ->
-                        val content = generatedFile.readText()
-                        if (!content.contains(generatedFileSuppressions)) {
-                            generatedFile.writeText("$generatedFileSuppressions\n$content")
-                        }
-                    }
-            }
-        }
-    }

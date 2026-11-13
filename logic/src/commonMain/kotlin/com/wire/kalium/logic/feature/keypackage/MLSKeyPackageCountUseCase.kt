@@ -68,7 +68,7 @@ internal class MLSKeyPackageCountUseCaseImpl(
 
         return keyPackageRepository.getAvailableKeyPackageCount(selfClientId, cipherSuite).fold(
             { MLSKeyPackageCountResult.Failure.NetworkCallFailure(it) },
-            { MLSKeyPackageCountResult.Success(selfClientId, it.count, keyPackageLimitsProvider.needsRefill(it.count)) }
+            { successResult(selfClientId, it.count) }
         )
     }
 
@@ -82,9 +82,12 @@ internal class MLSKeyPackageCountUseCaseImpl(
                 {
                     MLSKeyPackageCountResult.Failure.Generic(it)
                 },
-                { MLSKeyPackageCountResult.Success(selfClient, it, keyPackageLimitsProvider.needsRefill(it)) }
+                { successResult(selfClient, it) }
             )
         })
+
+    private suspend fun successResult(clientId: ClientId, count: Int) =
+        MLSKeyPackageCountResult.Success(clientId, count, keyPackageLimitsProvider.keyPackagePool().needsRefill(count))
 }
 
 public sealed class MLSKeyPackageCountResult {

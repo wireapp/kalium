@@ -97,6 +97,8 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                 ),
                 useInMemoryStorage = false,
             )
+            val disabledMLS = account["mlsSettingsEvents"]?.jsonPrimitive?.boolean == true &&
+                account.getValue("mls").jsonPrimitive.boolean && !account.getValue("mlsConfiguredEnabled").jsonPrimitive.boolean
             try {
                 // Bootstrap account metadata under ownership using the app's encrypted global store.
                 // CoreLogic creates the key; close this bootstrap connection before opening the account.
@@ -300,10 +302,6 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                     assertEquals("Pending connection", pending.name)
                     assertIs<com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.Proteus>(pending.protocol)
                     assertEquals(listOf(user), session.conversations.observeConversationMembers(pendingId).first().map { it.user.id })
-                    val creationTime = account.getValue("response").jsonObject.getValue("time").jsonPrimitive.content
-                    val warning = assertIs<Message.System>(assertIs<GetMessageByIdUseCase.Result.Success>(
-                        session.messages.getMessageById(pendingId, "$pendingId:$creationTime:creation:0")).message)
-                    assertEquals(MessageContent.ConversationStartedUnverifiedWarning, warning.content)
                     println("APP_PENDING_CONNECTION_CREATION_PASSED")
                     println("APP_SENT_CONNECTION_PASSED")
                 }
@@ -320,14 +318,9 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                     assertEquals(id, active.id)
                     assertEquals(com.wire.kalium.logic.data.conversation.Conversation.Type.OneOnOne, active.type)
                     assertFalse(session.conversations.observeConversationMembers(source).first().any { it.user.id == user })
-                    val warningId = (if (mlsConnection) "notification:1" else "notification") + ":accepted"
-                    if (consent) assertIs<GetMessageByIdUseCase.Result.Failure>(session.messages.getMessageById(id, warningId))
-                    else assertEquals(MessageContent.ConversationStartedUnverifiedWarning,
-                        assertIs<Message.System>(assertIs<GetMessageByIdUseCase.Result.Success>(session.messages.getMessageById(id, warningId)).message).content)
                     if (mlsConnection) {
                         for (message in listOf("history", "history-second")) assertIs<GetMessageByIdUseCase.Result.Success>(
                             session.messages.getMessageById(id, message))
-                        assertIs<GetMessageByIdUseCase.Result.Failure>(session.messages.getMessageById(source, warningId))
                     }
                     // Acceptance retains the app's previous connection row, independently of User status.
                     val retained = session.conversations.observePendingConnectionRequests().first().find { it.conversationId == source }
@@ -895,15 +888,17 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                     println("APP_PROPOSAL_SCHEDULER_PASSED")
                     println("APP_PROPOSAL_RESPONSE_CONSUMED")
                 }
+                if (disabledMLS) {
+                    // The host prepares whenever sync is live; preparation cannot re-certify a disabled MLS client.
+                    assertIs<Either.Left<*>>(logic.prepareSessionForNotifications(user, session))
+                }
                 println("APP_AFTER_SWIFT_PASSED ${if (mls) "MLS" else "Proteus"}")
             } finally {
                 logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
                 logic.releaseSessionScope(user)
             }
-            val disabledMLS = account["mlsSettingsEvents"]?.jsonPrimitive?.boolean == true &&
-                account.getValue("mls").jsonPrimitive.boolean && !account.getValue("mlsConfiguredEnabled").jsonPrimitive.boolean
             if (disabledMLS) {
-                // The app's ordinary release cannot re-certify a disabled MLS client.
+                // Readiness revoked by the failed preparation stays revoked after release.
                 repeat(2) {
                     assertEquals(Either.Left(com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure.NOT_PREPARED),
                         AppleAccountRuntime.use(root, user, keychain, "disabled-mls-reopen", emptyMap()) {

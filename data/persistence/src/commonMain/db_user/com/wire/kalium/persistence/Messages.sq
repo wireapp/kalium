@@ -702,9 +702,6 @@ SELECT * FROM MessageDetailsView WHERE senderUserId = ? AND status = ?;
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
 
-selectByConversationIdAndSenderIdAndType:
-SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND contentType = ?;
-
 selectMessageIdsThatExpectReadConfirmationWithinDates:
 SELECT Message.id, Message.sender_user_id
 FROM Message
@@ -814,7 +811,6 @@ selectSearchedConversationMessagePosition:
 SELECT COUNT(*) FROM Message
 WHERE conversation_id = :conversationId
 AND creation_date >= (SELECT creation_date FROM Message WHERE id = :messageId LIMIT 1)
-AND expire_after_millis IS NULL
 ORDER BY creation_date DESC;
 
 selectNextAudioMessage:

@@ -190,11 +190,6 @@ private fun systemContent(message: Message.System) =
             "Conversation protocol changed during a call"
         )
 
-        MessageContent.ConversationStartedUnverifiedWarning -> systemMessage(
-            message.senderUserName,
-            "Conversation started unverified warning"
-        )
-
         MessageContent.ConversationVerifiedMLS -> systemMessage(
             message.senderUserName,
             "Conversation verified MLS"

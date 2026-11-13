@@ -38,6 +38,7 @@ import dev.mokkery.matcher.any
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.AccountSessionUnavailableException
 import com.wire.kalium.logic.feature.AccountBusyException
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
@@ -96,6 +97,41 @@ import kotlin.time.Duration.Companion.seconds
 class AppleAccountSessionTest {
     private val userId = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
     private val fileManager = NSFileManager.defaultManager
+
+    @Test
+    fun `queued screen lookup during logout and after release reports unavailable without reopening`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val scope = logic.openSessionScope(userId)
+            val provider = logic.userSessionScopeProvider.value
+            val preparing = CompletableDeferred<Unit>()
+            val finishPreparation = CompletableDeferred<Unit>()
+            val logout = async {
+                provider.logout(userId, scope, prepare = {
+                    preparing.complete(Unit)
+                    finishPreparation.await()
+                }, clearLocalData = {})
+            }
+            try {
+                preparing.await()
+                // The durable account and old UI still exist while preparation waits on network work.
+                assertEquals(Either.Right(true), logic.getGlobalScope().sessionRepository.doesSessionExist(userId))
+                assertFailsWith<AccountSessionUnavailableException> { logic.getSessionScope(userId) }
+                assertNull(provider.get(userId))
+                finishPreparation.complete(Unit)
+                assertTrue(logout.await())
+                assertFailsWith<AccountSessionUnavailableException> { logic.getSessionScope(userId) }
+                // A stale factory must not reacquire ownership or create another account scope.
+                val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+                lease.release()
+            } finally {
+                finishPreparation.complete(Unit)
+                logout.join()
+                logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            }
+        }
+    }
 
     @Test
     fun `synchronous lookup cannot construct an unowned account`() = runTest {
@@ -159,7 +195,7 @@ class AppleAccountSessionTest {
             val metadata = first.userStorage.database.metadataDAO
             metadata.insertValue("before", "handoff-test")
             try {
-                logic.suspendSessionScope(userId)
+                logic.enterBackground()
                 kotlin.test.assertSame(first, logic.getSessionScope(userId))
                 val pendingRead = async(start = CoroutineStart.UNDISPATCHED) { metadata.valueByKey("handoff-test") }
                 assertFalse(pendingRead.isCompleted)
@@ -170,13 +206,14 @@ class AppleAccountSessionTest {
                 val pending = async(start = CoroutineStart.UNDISPATCHED) { metadata.insertValue("after", "handoff-test") }
                 assertFalse(pending.isCompleted)
                 lease.release()
-                val second = logic.resumeSessionScope(userId)
+                val second = logic.reopen(userId)
                 kotlin.test.assertSame(first, second)
                 kotlin.test.assertSame(first, ordinaryOpen.await())
                 pendingRead.await()
                 pending.await()
                 assertEquals("after", metadata.valueByKey("handoff-test"))
             } finally {
+                logic.setForeground(true)
                 logic.releaseSessionScope(userId)
             }
         }
@@ -189,17 +226,43 @@ class AppleAccountSessionTest {
             val first = logic.openSessionScope(userId)
             logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
             try {
-                logic.suspendSessionScope(userId)
+                logic.enterBackground()
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-                val reopening = async { logic.resumeSessionScope(userId) }
+                val reopening = async { logic.reopen(userId) }
                 delay(200)
                 assertFalse(reopening.isCompleted)
                 // The wait used to run inside the non-cancellable restore and outlived its caller.
                 withTimeout(5.seconds) { reopening.cancelAndJoin() }
                 lease.release()
-                kotlin.test.assertSame(first, logic.resumeSessionScope(userId))
+                kotlin.test.assertSame(first, logic.openSessionScope(userId))
             } finally {
+                logic.setForeground(true)
+                logic.releaseSessionScope(userId)
+            }
+        }
+    }
+
+    @Test
+    fun `an account whose first open was cancelled before a background handoff opens in the foreground`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+            try {
+                val opening = async(start = CoroutineStart.UNDISPATCHED) { logic.openSessionScope(userId) }
+                delay(200)
+                assertFalse(opening.isCompleted)
+                withTimeout(5.seconds) { opening.cancelAndJoin() }
+                logic.enterBackground()
+                logic.setForeground(true)
+                lease.release()
+                // Opens used to wait forever for a resume that skipped this account.
+                withTimeout(30.seconds) { logic.openSessionScope(userId) }
+            } finally {
+                lease.release()
+                logic.setForeground(true)
                 logic.releaseSessionScope(userId)
             }
         }
@@ -212,14 +275,15 @@ class AppleAccountSessionTest {
             val first = logic.openSessionScope(userId)
             logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
             try {
-                logic.suspendSessionScope(userId)
+                logic.enterBackground()
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-                val busy = assertFailsWith<AccountBusyException> { logic.resumeSessionScope(userId) }
+                val busy = assertFailsWith<AccountBusyException> { logic.reopen(userId) }
                 assertTrue(busy.holder.orEmpty().contains("pid=${getpid()}"), busy.holder)
                 lease.release()
-                kotlin.test.assertSame(first, logic.resumeSessionScope(userId))
+                kotlin.test.assertSame(first, logic.openSessionScope(userId))
             } finally {
+                logic.setForeground(true)
                 logic.releaseSessionScope(userId)
             }
         }
@@ -376,7 +440,7 @@ class AppleAccountSessionTest {
     }
 
     @Test
-    fun `prepared real Proteus and MLS stores survive release and account reopen`() = runTest {
+    fun `prepared real Proteus and MLS stores stay ready across reopen and handoff`() = runTest {
         withContext(Dispatchers.Default) {
             val (root, logic, keychainConfig) = fixture(prepared = true)
             val first = logic.openSessionScope(userId)
@@ -418,26 +482,28 @@ class AppleAccountSessionTest {
                 assertEquals(publicKey, receivingMLS.getPublicKey().first.toList())
                 runtime.proteusCoreCrypto.proteusClient().transaction("extension-fingerprint") { it.getLocalFingerprint() }
             })
+            val ready = "${logic.rootPathsProvider.rootAccountPath(userId)}/notification-extension-ready.json".toPath()
             val second = logic.openSessionScope(userId)
-            assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, second))
+            // The app can die while it owns the account: opening and resuming keep readiness for the extensions.
+            assertTrue(FileSystem.SYSTEM.exists(ready))
+            logic.enterBackground()
+            kotlin.test.assertSame(second, logic.reopen(userId))
+            assertTrue(FileSystem.SYSTEM.exists(ready))
             assertEquals(fingerprint, second.proteusClientProvider.getOrCreate().transaction("reopened-fingerprint") {
                 it.getLocalFingerprint()
             })
             val reopenedMLS = assertIs<Either.Right<com.wire.kalium.cryptography.MLSClient>>(second.mlsClientProvider.getMLSClient()).value
             assertEquals(publicKey, reopenedMLS.getPublicKey().first.toList())
-            // A restore revokes readiness even if a later restore step fails. Existing handles may
-            // refer to the replaced files, so this scope can never certify them after invalidation.
-            logic.userSessionScopeProvider.value.invalidateReceiving(userId, second, cryptoReplacement = true)
-            assertIs<Either.Left<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, second))
             assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.storeSession(session(), logic.getGlobalScope().sessionRepository))
             val third = logic.openSessionScope(userId)
             assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, third))
+            // Registration revokes readiness, and releasing never publishes it again.
             logic.userSessionScopeProvider.value.invalidateReceiving(userId, third)
             logic.releaseSessionScope(userId)
-            val afterRestore = assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value
+            val afterInvalidation = assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value
                 as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
-            assertNull(ApplePreparedAccountStore(root, userId).read(afterRestore))
-            afterRestore.release()
+            assertNull(ApplePreparedAccountStore(root, userId).read(afterInvalidation))
+            afterInvalidation.release()
             // Files and credentials alone cannot authorize an interrupted registration, including
             // after a fresh scope opens with no readiness record.
             logic.openSessionScope(userId)
@@ -469,7 +535,7 @@ class AppleAccountSessionTest {
                 }
             }
             entered.await()
-            val handoff = async(start = CoroutineStart.UNDISPATCHED) { logic.suspendSessionScope(userId) }
+            val handoff = async(start = CoroutineStart.UNDISPATCHED) { logic.enterBackground() }
             try {
                 assertFalse(handoff.isCompleted)
                 finish.complete(Unit)
@@ -478,7 +544,7 @@ class AppleAccountSessionTest {
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
                 lease.release()
-                kotlin.test.assertSame(scope, logic.resumeSessionScope(userId))
+                kotlin.test.assertSame(scope, logic.reopen(userId))
                 assertEquals("committed", scope.userStorage.database.metadataDAO.valueByKey("crypto-callback"))
                 // The retained client must lazily open a new native generation after the handoff.
                 assertTrue(proteus.newPreKeysAuto(1).isNotEmpty())
@@ -486,6 +552,7 @@ class AppleAccountSessionTest {
                 finish.complete(Unit)
                 worker.await()
                 handoff.await()
+                logic.setForeground(true)
                 logic.releaseSessionScope(userId)
             }
         }
@@ -515,18 +582,19 @@ class AppleAccountSessionTest {
             try {
                 withTimeout(10.seconds) { entered.await() }
                 // iOS suspended the app about 4.8 s after backgrounding, while the release still waited on a request.
-                withTimeout(4.seconds) { logic.suspendSessionScope(userId) }
+                withTimeout(4.seconds) { logic.enterBackground() }
                 val failure = assertIs<ProteusException>(worker.await().exceptionOrNull())
                 assertIs<IOException>(failure.cause)
                 val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
                     as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
                 lease.release()
-                kotlin.test.assertSame(scope, logic.resumeSessionScope(userId))
+                kotlin.test.assertSame(scope, logic.reopen(userId))
                 assertTrue(proteus.newPreKeysAuto(1).isNotEmpty())
             } finally {
                 // Unblock the worker if the release missed the deadline, so the test ends.
                 withContext(NonCancellable) {
                     scope.failNetworkRequests { worker.await() }
+                    logic.setForeground(true)
                     logic.releaseSessionScope(userId)
                 }
             }
@@ -561,8 +629,98 @@ class AppleAccountSessionTest {
                 worker.join()
                 // The failed drain deliberately quarantines this account until process exit.
             }
+            // Its background release fails too: only the process's exit lets this lock go, and nothing holds it.
+            logic.setForeground(false)
+            assertFalse(logic.releaseBackgroundAccounts())
+            assertTrue(logic.lockedAccounts().hasUnreleasable)
+            assertFalse(logic.lockedAccounts().hasHolds)
         }
     }
+
+    @Test
+    fun `background keeps the lock free for a login and for an open that waited on another process`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val owner = AppleAccountRuntimeOwner(root)
+            val extension = assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value
+                as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+            val opening = async { logic.openSessionScope(userId) }
+            delay(200)
+            logic.setForeground(false)
+            extension.release()
+            val login = async {
+                logic.userSessionScopeProvider.value.storeSession(session(), logic.getGlobalScope().sessionRepository)
+            }
+            delay(500)
+            assertFalse(opening.isCompleted)
+            assertFalse(login.isCompleted)
+            // Neither took the account once the app lost its execution time, so the extensions can.
+            (assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease)
+                .release()
+            logic.setForeground(true)
+            withTimeout(10.seconds) {
+                opening.await()
+                assertEquals(Either.Right(Unit), login.await())
+            }
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            logic.releaseSessionScope(userId)
+        }
+    }
+
+    @Test
+    fun `a hold keeps its account in the background and an open waiting through a logout opens in the foreground`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val owner = AppleAccountRuntimeOwner(root)
+            val first = logic.openSessionScope(userId)
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            val hold = logic.holdSessionScope(userId, "CALL")
+            kotlin.test.assertSame(first, hold.scope)
+            logic.enterBackground()
+            assertEquals(Either.Left(AccountRuntimeFailure.BUSY), owner.tryAcquire(userId))
+            assertTrue(logic.lockedAccounts().hasHolds)
+            assertTrue("=CALL@" in logic.lockedAccounts().toString(), logic.lockedAccounts().toString())
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            val logout = async {
+                logic.userSessionScopeProvider.value.logout(userId, first, {
+                    entered.complete(Unit)
+                    finish.await()
+                }, {})
+            }
+            entered.await()
+            // The release drains the logout, which replaces the account's gate meanwhile.
+            val releasing = async { hold.release() }
+            val opening = try {
+                delay(200)
+                // Still releasing, not failed: nothing to end the app for.
+                assertFalse(logic.lockedAccounts().hasUnreleasable, logic.lockedAccounts().toString())
+                async { logic.openSessionScope(userId) }
+            } finally {
+                finish.complete(Unit)
+            }
+            assertTrue(logout.await())
+            releasing.await()
+            (assertIs<Either.Right<*>>(owner.tryAcquire(userId)).value as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease)
+                .release()
+            assertFalse(opening.isCompleted)
+            logic.setForeground(true)
+            assertNotSame(first, withTimeout(10.seconds) { opening.await() })
+            logic.releaseSessionScope(userId)
+        }
+    }
+
+    /**
+     * As the app does when iOS ends its foreground time: no new locks, then every account no hold keeps is released.
+     * Cleanup that may follow a failure here sets the foreground first: releasing an account waits for execution time.
+     */
+    private suspend fun CoreLogic.enterBackground() {
+        setForeground(false)
+        assertTrue(releaseBackgroundAccounts())
+    }
+
+    /** As the app does on its return: an account the background release paused opens again on first use. */
+    private suspend fun CoreLogic.reopen(userId: UserId) = setForeground(true).let { openSessionScope(userId) }
 
     private fun session() = StoreSessionParam(
         serverConfigId = "test-server", ssoId = null,

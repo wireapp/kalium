@@ -1,6 +1,7 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlin.time.Instant
 
@@ -16,6 +17,13 @@ data class ReceivedNotificationResult(
     val prefixComplete: Boolean = false,
     /** Why a sync-to-live scan stopped: QUEUE_END, BUDGET, or the barrier or handoff reason. */
     val stoppedReason: String? = null,
+    /** Alerts for committed meeting events, oldest first. Like the app's, they are not stored for later replay. */
+    val meetings: List<LocalNotification.Meeting> = emptyList(),
+    /**
+     * An event other than the target had an alert that unnotified message alerts cannot restore, such as a
+     * connection request or a conversation deletion, so this scan presented nothing for it.
+     */
+    val droppedAlert: Boolean = false,
 )
 
 enum class ReceivedCallType { INCOMING, MISSED, CLOSED }
@@ -53,4 +61,5 @@ data class ReceivedCallEvent(
 internal data class NotificationEffectsResult(
     val message: ReceivedMessageResult?,
     val calls: List<ReceivedCallEvent>,
+    val meetings: List<LocalNotification.Meeting>,
 )

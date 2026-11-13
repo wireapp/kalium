@@ -1,7 +1,9 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toApi
@@ -60,7 +62,7 @@ class MLSReceiveRecovery(
     ): MLSReceiveRecoveryResult {
         check(event.subconversationId == null) { "Subconversation recovery is not supported" }
         val completed = store.isCompleted(context, operation)
-        val response = fetchValidated(event, operation.groupId)
+        val response = fetchDetails(event).validated(event, operation.groupId)
         return if (completed) {
             MLSReceiveRecoveryResult(response, operation, context.conversationEpoch(operation.groupId))
         } else {
@@ -81,7 +83,10 @@ class MLSReceiveRecovery(
             return resume(context, event, operation)
         }
         check(event.subconversationId == null) { "Subconversation recovery is not supported" }
-        val response = fetchValidated(event, expectedGroupId)
+        val details = fetchDetails(event)
+        // Nothing has started yet, so a conversation this account can no longer read keeps the no-rejoin policy.
+        if (details is Either.Left && details.value.isConversationUnavailable()) return null
+        val response = details.validated(event, expectedGroupId)
         val remoteEpoch = checkNotNull(response.epoch) { "MLS recovery requires a remote epoch" }
         if (context.conversationExists(expectedGroupId) && context.conversationEpoch(expectedGroupId) >= remoteEpoch) return null
 
@@ -105,8 +110,14 @@ class MLSReceiveRecovery(
 
     suspend fun acknowledge(eventIds: List<String>) = store.acknowledge(eventIds)
 
-    private suspend fun fetchValidated(event: Event.Conversation.NewMLSMessage, groupId: String): ConversationResponse {
-        val response = wrapApiRequest { conversationApi.fetchConversationDetails(event.conversationId.toApi()) }.orThrow()
+    private suspend fun fetchDetails(event: Event.Conversation.NewMLSMessage) =
+        wrapApiRequest { conversationApi.fetchConversationDetails(event.conversationId.toApi()) }
+
+    private fun Either<NetworkFailure, ConversationResponse>.validated(
+        event: Event.Conversation.NewMLSMessage,
+        groupId: String,
+    ): ConversationResponse {
+        val response = orThrow()
         check(response.id == event.conversationId.toApi()) { "Recovery response belongs to another conversation" }
         check(response.protocol == ConvProtocol.MLS || response.protocol == ConvProtocol.MIXED) { "Recovery requires MLS" }
         check(!response.groupId.isNullOrBlank() && response.groupId == groupId) { "Recovery response changed the MLS group" }

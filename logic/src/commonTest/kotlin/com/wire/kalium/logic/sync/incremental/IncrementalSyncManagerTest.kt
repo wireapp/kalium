@@ -29,6 +29,7 @@ import com.wire.kalium.logic.fakes.network.FakeNetworkStateObserver
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
+import com.wire.kalium.network.CurrentNetwork
 import com.wire.kalium.network.NetworkState
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -51,6 +52,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -394,6 +396,70 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
+    fun givenBackoffHasGrown_whenAnotherValidatedNetworkBecomesAvailable_thenShouldRetryRightAway() = runTest {
+        val currentNetwork = MutableStateFlow<CurrentNetwork?>(WIFI)
+        var attempts = 0
+        val workerFlow = flow {
+            attempts++
+            if (currentNetwork.value == WIFI) throw IOException("The backend is not reachable through Wi-Fi")
+            emit(EventSource.LIVE)
+            awaitCancellation()
+        }
+        val (arrangement, incrementalSyncManager) = Arrangement(
+            exponentialDurationHelper = ExponentialDurationHelper(1.seconds, 10.minutes),
+            configureDefaultExponentialDuration = false,
+        )
+            .withWorkerReturning(workerFlow)
+            .withRecoveringFromFailure()
+            .withCurrentNetwork(currentNetwork)
+            .arrange()
+        val syncJob = incrementalSyncManager.performSyncFlow().launchIn(backgroundScope)
+        runCurrent()
+        repeat(3) {
+            advanceTimeBy(arrangement.failedState().retryDelay)
+            runCurrent()
+        }
+        assertEquals(8.seconds, arrangement.failedState().retryDelay)
+        val attemptsOnWifi = attempts
+
+        // Moving to mobile data keeps the network state ConnectedWithInternet; only the current network changes.
+        currentNetwork.value = CELLULAR
+        runCurrent()
+
+        assertEquals(attemptsOnWifi + 1, attempts)
+        assertEquals(IncrementalSyncStatus.Live, arrangement.incrementalSyncRepository.incrementalSyncState.first())
+        syncJob.cancel()
+    }
+
+    @Test
+    fun givenNetworkChangesWhileAnAttemptRuns_whenThatAttemptFails_thenShouldRetryRightAway() = runTest {
+        val currentNetwork = MutableStateFlow<CurrentNetwork?>(WIFI)
+        var attempts = 0
+        val workerFlow = flow {
+            attempts++
+            if (attempts == 1) {
+                currentNetwork.value = CELLULAR
+                throw IOException("The Wi-Fi connection was lost")
+            }
+            emit(EventSource.LIVE)
+            awaitCancellation()
+        }
+        val (arrangement, incrementalSyncManager) = Arrangement(configureDefaultExponentialDuration = false)
+            .withWorkerReturning(workerFlow)
+            .withRecoveringFromFailure()
+            .withNextExponentialDuration(10.minutes)
+            .withCurrentNetwork(currentNetwork)
+            .arrange()
+
+        val syncJob = incrementalSyncManager.performSyncFlow().launchIn(backgroundScope)
+        runCurrent()
+
+        assertEquals(2, attempts)
+        assertEquals(IncrementalSyncStatus.Live, arrangement.incrementalSyncRepository.incrementalSyncState.first())
+        syncJob.cancel()
+    }
+
+    @Test
     fun cancellationDuringAnyFailurePublicationRestoresPending() = runTest {
         for (phase in listOf("initial", "scheduled", "attempting")) {
             val entered = CompletableDeferred<Unit>()
@@ -461,6 +527,12 @@ class IncrementalSyncManagerTest {
             networkStateObserver.networkStateFlow = networkStateFlow
         }
 
+        fun withCurrentNetwork(currentNetworkFlow: StateFlow<CurrentNetwork?>) = apply {
+            networkStateObserver.currentNetworkFlow = currentNetworkFlow
+        }
+
+        suspend fun failedState() = assertIs<IncrementalSyncStatus.Failed>(incrementalSyncRepository.incrementalSyncState.first())
+
         fun withNextExponentialDuration(duration: Duration) = apply {
             every {
                 exponentialDurationHelper.next()
@@ -476,5 +548,10 @@ class IncrementalSyncManagerTest {
             userScopedLogger = kaliumLogger,
             userSessionWorkScheduler = userSessionWorkScheduler,
         )
+    }
+
+    private companion object {
+        val WIFI = CurrentNetwork("wifi", CurrentNetwork.Type.WIFI, hasInternetAccess = true)
+        val CELLULAR = CurrentNetwork("cellular", CurrentNetwork.Type.CELLULAR, hasInternetAccess = true)
     }
 }

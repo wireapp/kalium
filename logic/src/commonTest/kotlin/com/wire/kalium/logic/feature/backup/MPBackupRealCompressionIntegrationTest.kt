@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.PagedData
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.mention.MessageMention
@@ -244,7 +245,10 @@ class MPBackupRealCompressionIntegrationTest {
             return Unit.right()
         }
 
-        override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> {
+        override suspend fun insertMessages(
+            messages: List<Message.Standalone>,
+            conversationsWithReadDate: Set<ConversationId>,
+        ): Either<CoreFailure, Unit> {
             insertedMessages += messages
             return Unit.right()
         }

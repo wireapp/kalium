@@ -18,13 +18,9 @@
 
 package com.wire.kalium.logic.feature.keypackage
 
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
@@ -36,15 +32,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Duration.Companion.hours
 
-// The duration in hours after which we should re-check key package count.
-internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
+// Other clients claim this client's key packages without the local count changing, so check the backend count at the
+// first live sync an hour after the last check.
+internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 1.hours
 
 /**
  * Observes the MLS key package count and uploads new key packages when necessary.
  */
-internal interface KeyPackageManager
+internal interface KeyPackageManager {
+    fun scheduleRefill()
+}
 
 @Suppress("LongParameterList")
 internal class KeyPackageManagerImpl(
@@ -54,7 +55,6 @@ internal class KeyPackageManagerImpl(
     private val refillKeyPackagesUseCase: Lazy<RefillKeyPackagesUseCase>,
     private val keyPackageCountUseCase: Lazy<MLSKeyPackageCountUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
-    private val transactionProvider: CryptoTransactionProvider,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : KeyPackageManager {
     /**
@@ -67,46 +67,49 @@ internal class KeyPackageManagerImpl(
 
     private var refillKeyPackageJob: Job? = null
 
+    // Batches commit separately, so without this two refills could read the same count and both top up.
+    private val refillMutex = Mutex()
+
     init {
         refillKeyPackageJob = refillKeyPackagesScope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState is IncrementalSyncStatus.Live &&
-                    featureSupport.isMLSSupported &&
-                    clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
-                ) {
-                    refillKeyPackagesIfNeeded()
+                if (syncState is IncrementalSyncStatus.Live) {
+                    refillKeyPackagesIfNeeded(forceCheck = false)
                 }
             }
         }
     }
 
-    private suspend fun refillKeyPackagesIfNeeded() {
-        timestampKeyRepository.value.hasPassed(LAST_KEY_PACKAGE_COUNT_CHECK, KEY_PACKAGE_COUNT_CHECK_DURATION)
-            .flatMap { lastKeyPackageCountCheckHasPassed ->
-                val forceRefill = keyPackageCountUseCase.value(fromAPI = false).let {
-                    when (it) {
-                        is MLSKeyPackageCountResult.Success -> it.needsRefill
-                        // if that fails, during the next sync we will check again! so it doesn't matter to skip one time!
-                        else -> false
-                    }
-                }
-                if (lastKeyPackageCountCheckHasPassed || forceRefill) {
-                    kaliumLogger.i("Checking if we need to refill key packages")
-                    transactionProvider.mlsTransaction("KeyPackageManager") { mlsContext ->
-                        when (val result = refillKeyPackagesUseCase.value(mlsContext)) {
-                            is RefillKeyPackagesResult.Success -> {
-                                timestampKeyRepository.value.reset(LAST_KEY_PACKAGE_COUNT_CHECK)
-                                Either.Right(Unit)
-                            }
-                            is RefillKeyPackagesResult.Failure -> {
-                                Either.Left(result.failure)
-                            }
-                        }
-                    }
-                } else {
-                    Either.Right(Unit)
-                }
-            }.onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
+    override fun scheduleRefill() {
+        refillKeyPackagesScope.launch {
+            refillKeyPackagesIfNeeded(forceCheck = true)
+        }
     }
+
+    private suspend fun refillKeyPackagesIfNeeded(forceCheck: Boolean) {
+        if (!hasRegisteredMLSClient()) return
+        refillMutex.withLock {
+            if (forceCheck || isBackendCountCheckDue() || localCountNeedsRefill()) {
+                kaliumLogger.i("Checking if we need to refill key packages")
+                when (val result = refillKeyPackagesUseCase.value()) {
+                    is RefillKeyPackagesResult.Success -> timestampKeyRepository.value.reset(LAST_KEY_PACKAGE_COUNT_CHECK)
+                    is RefillKeyPackagesResult.Failure -> kaliumLogger.w("Error while refilling key packages: ${result.failure}")
+                }
+            }
+        }
+    }
+
+    private suspend fun isBackendCountCheckDue(): Boolean =
+        timestampKeyRepository.value.hasPassed(LAST_KEY_PACKAGE_COUNT_CHECK, KEY_PACKAGE_COUNT_CHECK_DURATION).getOrElse(false)
+
+    private suspend fun hasRegisteredMLSClient(): Boolean =
+        featureSupport.isMLSSupported && clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
+
+    private suspend fun localCountNeedsRefill(): Boolean =
+        when (val result = keyPackageCountUseCase.value(fromAPI = false)) {
+            is MLSKeyPackageCountResult.Success -> result.needsRefill
+            // if that fails, during the next sync we will check again! so it doesn't matter to skip one time!
+            else -> false
+        }
 }

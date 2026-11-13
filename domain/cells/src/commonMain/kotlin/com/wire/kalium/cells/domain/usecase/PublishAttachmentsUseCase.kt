@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.CellDrafts
 import com.wire.kalium.cells.diagnosticSummary
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.common.error.NetworkFailure
@@ -37,7 +37,7 @@ public interface PublishAttachmentsUseCase {
 }
 
 internal class PublishAttachmentsUseCaseImpl internal constructor(
-    private val cellsRepository: CellsRepository,
+    private val cellsRepository: CellDrafts,
 ) : PublishAttachmentsUseCase {
 
     @Suppress("ReturnCount")

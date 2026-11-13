@@ -27,6 +27,7 @@ import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.configuration.UserConfigDataSource
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -47,6 +48,8 @@ import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.config.WireCellsConfigEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.withTestUserDatabase
 import kotlinx.coroutines.CompletableDeferred
@@ -70,8 +73,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -148,12 +149,12 @@ class ShareFilesTest {
     }
 
     @Test
-    fun uploadsStopAndReleaseTheAccountWhenAnotherProcessWantsIt() = runTest {
+    fun uploadsStopWhenAnotherProcessWantsTheAccount() = runTest {
         val wanted = Job()
         val started = CompletableDeferred<Unit>()
         var stopped = false
         val result = async {
-            yieldingUploads<Unit>(1.minutes, wanted) {
+            yieldingUploads<Unit>(wanted) {
                 started.complete(Unit)
                 try {
                     awaitCancellation()
@@ -167,7 +168,7 @@ class ShareFilesTest {
         wanted.complete()
 
         assertEquals(ShareOutcome(ShareStatus.OPEN_APP, "ACCOUNT_WANTED"), assertIs<Either.Left<ShareOutcome>>(result.await()).value)
-        assertTrue(stopped, "The upload ended before the account is closed")
+        assertTrue(stopped, "The upload ended before the share is handed to the app")
     }
 
     @Test
@@ -176,7 +177,7 @@ class ShareFilesTest {
         val started = CompletableDeferred<Unit>()
         val discarded = mutableListOf<String>()
         val result = async {
-            yieldingUploads(1.minutes, wanted, discard = { value: String -> discarded += value }) {
+            yieldingUploads(wanted, discard = { value: String -> discarded += value }) {
                 started.complete(Unit)
                 try {
                     awaitCancellation()
@@ -193,30 +194,15 @@ class ShareFilesTest {
     }
 
     @Test
-    fun uploadsThatOutliveTheirBudgetGoToTheApp() = runTest {
-        val result = yieldingUploads<Unit>(30.seconds, Job()) { awaitCancellation() }
-
-        assertEquals(ShareOutcome(ShareStatus.OPEN_APP, "UPLOAD_TIMEOUT"), assertIs<Either.Left<ShareOutcome>>(result).value)
-    }
-
-    @Test
     fun finishedUploadsAreKeptAndAWantedAccountStopsOnlyRunningOnes() = runTest {
         val wanted = Job()
 
-        val finished = yieldingUploads(1.minutes, wanted) { Either.Right("uploaded") }
+        val finished = yieldingUploads(wanted) { Either.Right("uploaded") }
         wanted.complete()
 
         assertEquals(Either.Right("uploaded"), finished)
-        val later = yieldingUploads(1.minutes, wanted) { Either.Right("uploaded") }
+        val later = yieldingUploads(wanted) { Either.Right("uploaded") }
         assertEquals(ShareOutcome(ShareStatus.OPEN_APP, "ACCOUNT_WANTED"), assertIs<Either.Left<ShareOutcome>>(later).value)
-    }
-
-    @Test
-    fun uploadsMayHoldTheAccountLongEnoughAtAbout1MbitPerSecondUpToFiveMinutes() {
-        assertEquals(30.seconds, uploadBudget(0))
-        assertEquals(30.seconds + 120.seconds, uploadBudget(SharePolicy.IMAGE_SIZE_LIMIT_BYTES))
-        assertEquals(30.seconds + 200.seconds, uploadBudget(SharePolicy.PERSONAL_SIZE_LIMIT_BYTES))
-        assertEquals(5.minutes, uploadBudget(SharePolicy.TEAM_SIZE_LIMIT_BYTES))
     }
 
     @Test
@@ -270,6 +256,29 @@ class ShareFilesTest {
 
             config.setFileSharingStatus(status = false, isStatusChanged = false)
             assertNull(database.sharePolicy(SELF, BuildFileRestrictionState.NoRestriction))
+        }
+    }
+
+    @Test
+    fun theUploadTargetCarriesWhatUploadingNeedsWithoutTheAccount() = runTest {
+        withDatabase { database ->
+            val restriction = BuildFileRestrictionState.NoRestriction
+            UserConfigDataSource(database.userPrefsDAO, database.userConfigDAO, lazy { restriction })
+                .setFileSharingStatus(status = true, isStatusChanged = false)
+            database.userDAO.upsertUsers(listOf(user(OTHER, ConnectionEntity.State.ACCEPTED)))
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2)
+            conversation(database, "cells", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val files = listOf(ShareFile("/tmp/notes.pdf", "notes.pdf", "application/pdf", 3))
+            suspend fun target(conversation: String) =
+                database.shareUploadTarget(SELF, ServerConfig.DUMMY, ConversationId(conversation, DOMAIN), files, restriction)
+            val unavailable = Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
+
+            assertEquals(Either.Right(UploadTarget.Assets(auditLog = false)), target("group"))
+            assertEquals(unavailable, target("missing"))
+            // A cell's uploads need the account's Cells backend, read now.
+            assertEquals(unavailable, target("cells"))
+            database.userConfigDAO.setWireCellsConfig(WireCellsConfigEntity("https://cells.test", "none", null))
+            assertEquals(Either.Right(UploadTarget.Cells("cell", "https://cells.test")), target("cells"))
         }
     }
 
