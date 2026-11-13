@@ -64,6 +64,18 @@ fun CipherSuite.toCryptography(): MLSCiphersuite = when (this) {
     CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521 -> MLSCiphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     CipherSuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_ED448 -> MLSCiphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
     CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384 -> MLSCiphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+    // Post-quantum suites added in CoreCrypto 11; Kalium never configures them.
+    CipherSuite.MLS_128_MLKEM768X25519_AES128GCM_SHA256_ED25519,
+    CipherSuite.MLS_128_MLKEM768X25519_AES256GCM_SHA384_ED25519,
+    CipherSuite.MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
+    CipherSuite.MLS_128_MLKEM768P256_AES256GCM_SHA384_P256,
+    CipherSuite.MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384,
+    CipherSuite.MLS_128_MLKEM768_AES256GCM_SHA384_ED25519,
+    CipherSuite.MLS_128_MLKEM768_AES256GCM_SHA384_P256,
+    CipherSuite.MLS_192_MLKEM1024_AES256GCM_SHA384_P384,
+    CipherSuite.MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44,
+    CipherSuite.MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65,
+    CipherSuite.MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87 -> error("Unsupported cipher suite: $this")
 }
 
 fun CommitBundle.toCryptography(): com.wire.kalium.cryptography.CommitBundle = com.wire.kalium.cryptography.CommitBundle(
@@ -113,12 +125,9 @@ fun com.wire.crypto.X509Identity.toCryptography() = WireIdentity.X509Identity(
     domain = domain,
     certificate = certificate,
     serialNumber = serialNumber,
-    notBefore = notBefore.epochSecond,
-    notAfter = notAfter.epochSecond
+    notBefore = notBefore.epochSeconds,
+    notAfter = notAfter.epochSeconds
 )
-
-private val kotlinx.datetime.Instant.epochSecond: Long
-    get() = this.epochSeconds
 
 private fun DeviceStatus.toCryptography(): CryptoCertificateStatus = when (this) {
     DeviceStatus.VALID -> CryptoCertificateStatus.VALID
@@ -133,7 +142,25 @@ fun E2eiConversationState.toCryptography(): E2EIConversationState = when (this) 
 }
 
 fun DecryptedMessage.toBundle(): DecryptedMessageBundle = when (this) {
-    is DecryptedMessage.Text -> DecryptedMessageBundle.Text(
+    is DecryptedMessage.ApplicationMessage -> DecryptedMessageBundle.Text(
+        message = plaintext,
+        senderClientId = senderClientId.toCryptography(),
+        identity = identity.toCryptography()
+    )
+
+    is DecryptedMessage.Transient -> DecryptedMessageBundle.Text(
+        message = plaintext,
+        senderClientId = senderClientId.toCryptography(),
+        identity = identity.toCryptography()
+    )
+
+    is DecryptedMessage.TransientTargeted -> DecryptedMessageBundle.Text(
+        message = plaintext,
+        senderClientId = senderClientId.toCryptography(),
+        identity = identity.toCryptography()
+    )
+
+    is DecryptedMessage.PersistedTargeted -> DecryptedMessageBundle.Text(
         message = plaintext,
         senderClientId = senderClientId.toCryptography(),
         identity = identity.toCryptography()
@@ -151,7 +178,25 @@ fun DecryptedMessage.toBundle(): DecryptedMessageBundle = when (this) {
 }
 
 fun BufferedDecryptedMessage.toBundle(): DecryptedMessageBundle = when (this) {
-    is BufferedDecryptedMessage.Text -> DecryptedMessageBundle.Text(
+    is BufferedDecryptedMessage.ApplicationMessage -> DecryptedMessageBundle.Text(
+        message = plaintext,
+        senderClientId = senderClientId.toCryptography(),
+        identity = identity.toCryptography()
+    )
+
+    is BufferedDecryptedMessage.Transient -> DecryptedMessageBundle.Text(
+        message = plaintext,
+        senderClientId = senderClientId.toCryptography(),
+        identity = identity.toCryptography()
+    )
+
+    is BufferedDecryptedMessage.TransientTargeted -> DecryptedMessageBundle.Text(
+        message = plaintext,
+        senderClientId = senderClientId.toCryptography(),
+        identity = identity.toCryptography()
+    )
+
+    is BufferedDecryptedMessage.PersistedTargeted -> DecryptedMessageBundle.Text(
         message = plaintext,
         senderClientId = senderClientId.toCryptography(),
         identity = identity.toCryptography()
