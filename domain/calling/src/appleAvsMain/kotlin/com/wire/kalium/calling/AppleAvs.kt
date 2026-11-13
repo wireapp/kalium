@@ -31,7 +31,6 @@ import avs.wcall_recv_msg
 import avs.wcall_reject
 import avs.wcall_request_video_streams
 import avs.wcall_resp
-import avs.wcall_run
 import avs.wcall_set_active_speaker_handler
 import avs.wcall_set_background
 import avs.wcall_set_clients_for_conv
@@ -47,7 +46,6 @@ import avs.wcall_set_req_new_epoch_handler
 import avs.wcall_set_shutdown_handler
 import avs.wcall_set_video_send_state
 import avs.wcall_sft_resp
-import avs.wcall_setup
 import avs.wcall_start
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
@@ -68,7 +66,7 @@ actual object AppleAvs {
     actual val bridge: AppleAvsBridge = AppleAvsBridgeImpl
 }
 
-// Signaling integration tests use real AVS without starting iOS audio services.
+// Signaling integration tests use real AVS handles without a per-handle media manager.
 internal fun signalingUserHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt? =
     AppleAvsBridgeImpl.createUserHandle(selfUserId, selfClientId, callbacks, useMediaManager = false)
 
@@ -87,8 +85,8 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
     }
 
     private val runtimeStartup = AppleAvsRuntimeStartup(
-        setup = { wcall_setup() },
-        run = { wcall_run() },
+        setup = AppleAvsPlatformRuntime::setup,
+        run = AppleAvsPlatformRuntime::run,
         onStarted = { wcall_set_log_handler(logHandler, null) },
     )
     private val handles = mutableMapOf<String, CreatedHandle>()

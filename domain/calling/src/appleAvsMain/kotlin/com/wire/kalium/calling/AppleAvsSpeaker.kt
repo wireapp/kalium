@@ -48,8 +48,6 @@ actual class AppleAvsSpeaker actual constructor() {
         awaitClose { AVSMediaManagerChangeNotification.removeObserver(observer) }
     }
 
-    private fun manager(): AVSMediaManager {
-        check(AppleAvs.bridge.startIfAvailable()) { "AVS is unavailable" }
-        return checkNotNull(AVSMediaManager.defaultMediaManager()) { "AVS media manager is unavailable" }
-    }
+    private fun manager(): AVSMediaManager =
+        checkNotNull(AppleAvsPlatformRuntime.mediaManager()) { "AVS media manager is unavailable" }
 }
