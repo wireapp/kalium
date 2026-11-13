@@ -44,6 +44,7 @@ import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -51,10 +52,18 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class JoinExistingMLSConversationsUseCaseTest {
 
@@ -219,12 +228,13 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenNetworkFailure_WhenJoinExistingMLSConversationUseCase_ThenPropagateFailure() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(true)
-            .withGetConversationsByGroupStateSuccessful().withJoinExistingMLSConversationNetworkFailure().arrange()
+            .withGetConversationsByGroupStateSuccessful(listOf(Arrangement.MLS_CONVERSATION1))
+            .withJoinExistingMLSConversationNetworkFailure().arrange()
 
         joinExistingMLSConversationsUseCase().shouldFail {
             assertIs<NetworkFailure>(it)
         }
-        verifySuspend(VerifyMode.exactly(2)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }
     }
@@ -421,6 +431,131 @@ class JoinExistingMLSConversationsUseCaseTest {
         assertEquals(listOf(SlowSyncProgress(0, 2)), progress)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenMoreConversationsThanLimit_whenJoinCompletes_thenNextJoinStartsWithoutWaitingForOthers() = runTest {
+        val conversations = List(4) { index ->
+            Arrangement.MLS_CONVERSATION1.copy(id = ConversationId("id$index", "domain"))
+        }
+        val started = mutableListOf<ConversationId>()
+        val releaseJoin = conversations.associate { it.id to CompletableDeferred<Unit>() }
+        val (_, useCase) = Arrangement(maxConcurrentJoins = 2)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(conversations)
+            .withJoinExistingMLSConversationAnswer { conversationId ->
+                started += conversationId
+                releaseJoin.getValue(conversationId).await()
+                Either.Right(Unit)
+            }
+            .arrange()
+        val progress = mutableListOf<SlowSyncProgress>()
+
+        val result = async { useCase(onProgress = { progress += it }) }
+        runCurrent()
+
+        assertEquals(conversations.take(2).map { it.id }, started)
+
+        releaseJoin.getValue(conversations[1].id).complete(Unit)
+        runCurrent()
+
+        assertEquals(conversations.take(3).map { it.id }, started)
+        assertFalse(result.isCompleted)
+
+        releaseJoin.getValue(conversations[2].id).complete(Unit)
+        runCurrent()
+
+        assertEquals(conversations.map { it.id }, started)
+        assertEquals(listOf(0, 1, 2), progress.map { it.completed })
+
+        releaseJoin.getValue(conversations[0].id).complete(Unit)
+        releaseJoin.getValue(conversations[3].id).complete(Unit)
+        result.await().shouldSucceed()
+        assertEquals(listOf(0, 1, 2, 3, 4), progress.map { it.completed })
+        assertEquals(List(5) { conversations.size }, progress.map { it.total })
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenFatalFailure_whenJoining_thenActiveJoinsFinishButWaitingJoinsDoNotStart() = runTest {
+        val conversations = listOf(
+            Arrangement.MLS_CONVERSATION1,
+            Arrangement.MLS_CONVERSATION2,
+            Arrangement.MLS_PENDING_AFTER_RESET_CONVERSATION,
+        )
+        val started = mutableListOf<ConversationId>()
+        val activeJoinStarted = CompletableDeferred<Unit>()
+        val releaseActiveJoin = CompletableDeferred<Unit>()
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (_, useCase) = Arrangement(maxConcurrentJoins = 2)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(conversations)
+            .withJoinExistingMLSConversationAnswer { conversationId ->
+                started += conversationId
+                if (conversationId == conversations[0].id) {
+                    activeJoinStarted.await()
+                    Either.Left(failure)
+                } else {
+                    activeJoinStarted.complete(Unit)
+                    releaseActiveJoin.await()
+                    Either.Right(Unit)
+                }
+            }
+            .arrange()
+        val progress = mutableListOf<SlowSyncProgress>()
+
+        val result = async { useCase(onProgress = { progress += it }) }
+        runCurrent()
+
+        assertEquals(conversations.take(2).map { it.id }, started)
+        assertFalse(result.isCompleted)
+        assertEquals(listOf(SlowSyncProgress(0, conversations.size)), progress)
+
+        releaseActiveJoin.complete(Unit)
+        result.await().shouldFail { assertEquals(failure, it) }
+
+        assertEquals(conversations.take(2).map { it.id }, started)
+        assertEquals(listOf(0, 1), progress.map { it.completed })
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenActiveJoins_whenCancelled_thenAllWorkersStopWithoutStartingWaitingJoins() = runTest {
+        val conversations = listOf(
+            Arrangement.MLS_CONVERSATION1,
+            Arrangement.MLS_CONVERSATION2,
+            Arrangement.MLS_PENDING_AFTER_RESET_CONVERSATION,
+        )
+        val started = mutableListOf<ConversationId>()
+        val cancelled = mutableListOf<ConversationId>()
+        val (_, useCase) = Arrangement(maxConcurrentJoins = 2)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(conversations)
+            .withJoinExistingMLSConversationAnswer { conversationId ->
+                started += conversationId
+                try {
+                    awaitCancellation()
+                } finally {
+                    cancelled += conversationId
+                }
+            }
+            .arrange()
+        val progress = mutableListOf<SlowSyncProgress>()
+
+        val result = async { useCase(onProgress = { progress += it }) }
+        runCurrent()
+        assertEquals(conversations.take(2).map { it.id }, started)
+
+        result.cancelAndJoin()
+
+        assertTrue(result.isCancelled)
+        assertEquals(conversations.take(2).map { it.id }.toSet(), cancelled.toSet())
+        assertEquals(conversations.take(2).map { it.id }, started)
+        assertEquals(listOf(SlowSyncProgress(0, conversations.size)), progress)
+    }
+
     private class Arrangement(
         private val maxConcurrentJoins: Int = 4,
         private val maxThrottleRetries: Int = 3,
@@ -497,6 +632,14 @@ class JoinExistingMLSConversationsUseCaseTest {
             everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withJoinExistingMLSConversationAnswer(
+            answer: suspend (ConversationId) -> Either<CoreFailure, Unit>,
+        ) = apply {
+            everySuspend {
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
+            } calls { answer(it.args[1] as ConversationId) }
         }
 
         suspend fun withJoinExistingMLSConversationNetworkFailure() = apply {
