@@ -21,6 +21,8 @@ package com.wire.kalium.logic
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.AccountExecutionHold
+import com.wire.kalium.logic.feature.AccountLocks
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
@@ -129,25 +131,31 @@ public actual class CoreLogic(
         userSessionScopeProvider.value.prepareReceiving(userId, scope)
 
     /**
-     * Pause account database access and native crypto while retaining the session.
-     * The host must stop foreground sync and exclude accounts with active calls first.
-     * Call resumeSessionScope or resumeSuspendedSessionScopes when execution is authorized again.
+     * Whether the app runs in the foreground. iOS kills a suspended app that keeps an account's lock, so in the
+     * background no account takes its lock unless [holdSessionScope] holds it: opens, logins and logouts wait for the
+     * foreground instead. In the foreground an account the background release paused opens again on first use.
+     * Starts true; an app that may launch in the background sets false before anything opens an account.
      */
-    public suspend fun suspendSessionScope(userId: UserId) {
-        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).suspendForBackground(userId)
+    public fun setForeground(foreground: Boolean) {
+        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).setForeground(foreground)
     }
 
     /**
-     * Resume a background-paused account before foreground work or a system-authorized background operation.
-     * Ordinary openSessionScope calls wait while paused and cannot reacquire the shared file lock.
+     * After [setForeground] false and once foreground work has stopped: pauses every account no hold keeps, keeping
+     * its session, and releases its lock. Returns whether every release succeeded.
      */
-    public suspend fun resumeSessionScope(userId: UserId): UserSessionScope =
-        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).resumeForExecution(userId)
+    public suspend fun releaseBackgroundAccounts(): Boolean =
+        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).releaseBackgroundAccounts()
 
-    /** Resume retained accounts before restarting foreground observers that may request them. */
-    public suspend fun resumeSuspendedSessionScopes() {
-        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).resumeSuspendedAccounts()
-    }
+    /**
+     * Opens [userId] for work with execution time of its own, such as a CallKit call or a background task, and keeps
+     * it open in the background until [AccountExecutionHold.release]. [reason] names that work in logs, such as CALL.
+     */
+    public suspend fun holdSessionScope(userId: UserId, reason: String): AccountExecutionHold =
+        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).hold(userId, reason)
+
+    /** Which accounts the app still holds the lock of, and why; `releaseBackgroundAccounts` logs it as it ends. */
+    public fun lockedAccounts(): AccountLocks = (userSessionScopeProvider.value as UserSessionScopeProviderImpl).lockedAccounts()
 
     /**
      * Fully close an account after the host has cancelled and joined its users and collectors.

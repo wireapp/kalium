@@ -19,28 +19,36 @@
 package com.wire.kalium.share
 
 import com.wire.kalium.cells.CellFileSharing
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
+import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
+import com.wire.kalium.network.session.SessionManager
 
-internal fun AppleAccountRuntime.cellFileSharing(): CellFileSharing = CellFileSharing.create(
+internal suspend fun AppleAccountRuntime.cellFileSharing(): CellFileSharing = CellFileSharing.create(
     network.cellsHttpClient,
     authenticatedSession,
     network.accessTokenApi,
-    database.userConfigDAO,
-    database.publicLinks
+    // As Cells reads it: a configuration that cannot be read is none.
+    wrapStorageRequest { database.userConfigDAO.getWireCellsConfig()?.backendUrl }.getOrNull()
 )
 
-internal suspend fun AppleAccountRuntime.discardSharedDrafts(items: List<ShareItem>) {
+/**
+ * Cancels the Cells drafts among [items], which no stored message owns. Like uploading them, it needs neither the
+ * account's database nor CoreCrypto, and a cancelled send still finishes it.
+ */
+internal suspend fun discardSharedDrafts(
+    network: AuthenticatedNetworkContainer,
+    session: SessionManager,
+    cellsUrl: String?,
+    items: List<ShareItem>,
+) {
     val attachments = items.filterIsInstance<ShareItem.Cells>().flatMap { it.attachments }
     if (attachments.isEmpty()) return
-    val sharing = cellFileSharing()
+    val sharing = CellFileSharing.create(network.cellsHttpClient, session, network.accessTokenApi, cellsUrl)
     try {
         sharing.discard(attachments)
     } finally {
         sharing.close()
     }
-}
-
-internal suspend fun AppleAccountRuntime.discardSharedDraft(record: ShareDraftRecord) {
-    val asset = record.asset ?: return
-    discardSharedDrafts(listOf(ShareItem.Cells(listOf(record.file), listOf(asset.content(record.file)), asset.cellName)))
 }

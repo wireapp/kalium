@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
+import com.wire.kalium.logic.data.keypackage.KeyPackagePool
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -153,10 +154,10 @@ class MLSKeyPackageCountUseCaseTest {
             } returns result
         }
 
-        fun withKeyPackageLimitSucceed() = apply {
-            every {
-                keyPackageLimitsProvider.needsRefill(any())
-            } returns true
+        suspend fun withKeyPackageLimitSucceed() = apply {
+            everySuspend {
+                keyPackageLimitsProvider.keyPackagePool()
+            } returns KeyPackagePool(targetSize = 100)
         }
 
         suspend fun withAvailableKeyPackageCountReturn(result: Either<NetworkFailure, KeyPackageCountDTO>) = apply {

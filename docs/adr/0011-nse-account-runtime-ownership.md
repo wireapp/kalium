@@ -33,6 +33,17 @@ after 15 seconds with `AccountBusyException`; the app keeps what it shows and re
 The holder writes its process name, pid and time into the lock file body; locking
 never reads it, and the app logs it when it gives up waiting.
 
+iOS kills a suspended app that still holds a lock, so the app takes an account's lock
+only while it has execution time: in the foreground, or while an execution hold keeps
+that account (a call, a CallKit action, a background upload, initial sync or backup
+restore). Kalium enforces this where it takes the lock. Without it, opens, logins and
+logouts wait for the foreground before they change anything, outside the account's
+gate, and read the gate again afterwards; a wait for another process stops when
+execution ends, and a lock won just then is let go. In the foreground, an account the
+background release paused opens again on first use. That release pauses every account
+no hold keeps, all at once, and logs each account still locked with its hold reasons,
+or as unavailable when its release failed, so the host can end the app instead.
+
 The ownership primitive lives in `:domain:messaging:receiving`. Existing SQLite
 opening stays in persistence, app session construction stays in logic, and the
 Swift facade lives in the iOS-only `:nse` module. Shared mapping and business rules
@@ -42,17 +53,24 @@ existing owners. There is no generic opener bundle or common runtime coordinator
 ### Preparation and lifetime
 
 The app awaits `open`; synchronous getters return only active cached sessions.
-Registration and restore invalidate readiness. A terminal account event found by the
-NSE also writes a per-client invalidation marker that keeps readiness unreadable
-until a different client publishes it. Successful preparation verifies the
-client, keys, crypto stores and supported configuration before publishing a
-versioned readiness sidecar. That sidecar permits the NSE to open a prepared
-account without opening/migrating a global database. Tokens and keys stay in the
-shared Keychain configuration.
+Readiness is durable account state. The app revokes it before registration,
+credential replacement, logout and session removal, and publishes it only after
+successful preparation: after registration and whenever its sync reaches live.
+Opening, resuming and releasing an account leave it unchanged. A terminal account
+event found by the NSE also writes a per-client invalidation marker that keeps
+readiness unreadable until a different client publishes it. Successful preparation
+verifies the client, keys, crypto stores and supported configuration before
+publishing a versioned readiness sidecar; a failed check revokes it. That sidecar
+permits the NSE to open a prepared account without opening/migrating a global
+database. Tokens and keys stay in the shared Keychain configuration.
 
-App opening captures compatible readiness before revoking it. Ordinary release
-may refresh that authorization after workers drain; it cannot certify interrupted
-registration or restore. Logout serializes mutation and cleanup against the
+Only verified preparation publishes, so an interrupted registration stays unready
+until a later preparation finds the completed client. An app that dies, also before
+its sync is live or during a background release, leaves the last published
+readiness. The NSE refuses a changed client or MLS registration, an unusable cipher
+suite and incompatible stores, and uses the server configuration of the last
+preparation. A future crypto replacement must revoke readiness first and prepare
+only from a fresh app scope. Logout serializes mutation and cleanup against the
 originating session so stale work cannot reach a reopened account. Hosts must
 quiesce their own account operations and observers before releasing ownership.
 Background release keeps the app session but first stops sync and closes its
@@ -73,10 +91,9 @@ the process dies during that request.
 
 NSE opening retries a busy lease for up to 3 seconds, which covers the app's background
 handoff, and waits for another attempt of the same process to finish: that attempt presents
-only what it received. If the account stays busy, the NSE asks the host for a generic alert
-unless the host reports that the foreground app presents alerts. Missing or incompatible
-readiness, such as after an app update until the app opens, also asks for one unless the app
-presents alerts, and so does storage it cannot read. Opening then reads compatible readiness,
+only what it received. If the account stays busy, the NSE asks the host for a generic alert.
+Missing or incompatible readiness, such as after an app update until the app's sync is live,
+also asks for one, and so does storage it cannot read. Opening then reads compatible readiness,
 checks existing store files and credentials, and opens owned resources. It never
 logs in, registers a client or initializes missing stores to repair preparation.
 SQLite opens without creation or migration. For an encrypted account, the NSE
@@ -131,7 +148,9 @@ commit CoreCrypto. Restore the attempt's cancellation context inside its native
 `NonCancellable` wrapper, and await unwind before releasing resources. NSE attempts
 rethrow a callback error only after CoreCrypto confirms the abort; native abort and
 commit errors take precedence. The app retains its gathered-batch boundary; it does
-not adopt the NSE executor.
+not adopt the NSE executor. A failed event in the app's batch returns an error value,
+so native crypto commits what the batch reached and the unacknowledged batch is retried;
+receipt and recovery failures still throw.
 
 These are separate stores. SQL can commit before native crypto, and MLS can commit
 before Proteus. Retry decrypts again, reapplies required fields and uses canonical
@@ -268,9 +287,8 @@ incremental sync runs the matching consumer before gathering:
   the stored legal-hold status. The app recovers its transition journals, then
   processes the events normally; for enable and disable it refreshes the user's
   clients first. Every later attempt stops at the same event until the app runs, so a
-  push whose event waits behind it asks for a generic alert unless the app presents
-  alerts. The self user's legal-hold request is a single stored value, which the NSE
-  writes as the app does.
+  push whose event waits behind it asks for a generic alert. The self user's legal-hold
+  request is a single stored value, which the NSE writes as the app does.
 
 The Apple app's pre-sync cleanup also retries pending MLS group wipes queued by local
 removal.
@@ -305,7 +323,12 @@ owns the single system completion callback.
 The NSE collects committed calling signals through the target, evaluates one AVS
 event-only batch after sync and returns its callbacks for the host to report to
 CallKit. Committed signals are retained in the account's call signal journal for
-replay through the full app engine, which owns ringing and termination. Besides
+replay through the full app engine, which owns ringing and termination. They are
+kept for three minutes, because a new full engine ignores anything older: AVS drops
+conference starts older than 120 s and only reports a 1:1 start older than 60 s as
+missed. When the full engine closes a call that does not continue for others, the
+signals it handled in that conversation are dropped, so a restart cannot replay an
+ended call. Besides
 storing committed signals, the NSE writes only a once-per-signal missed-call claim.
 AVS exposes no message or session identity, so identical callback references cannot
 distinguish separate real calls. As with ordinary alerts, interruption after
@@ -329,6 +352,9 @@ Known gaps follow from the decisions above:
   recovery has a durable intent; other establishment commits need the returned
   events or welcome for replay, and legacy teammate creation needs an idempotent
   backend operation or authenticated reconciliation.
+- The NSE uses the server configuration, including the API version, of the app's last
+  preparation. A version the app negotiates later reaches it when the app's sync is next
+  live.
 - CoreCrypto reports malformed MLS input and provider/store failures as the same
   `Other` error, so the NSE cannot turn either into a failed-message row.
 - Saving a CRL does not replace earlier in-memory sources or clear native

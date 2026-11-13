@@ -206,8 +206,6 @@ internal class ConversationGroupRepositoryImpl(
         val prepareResult = wrapStorageRequest {
             conversationDAO.insertConversation(conversationEntity)
         }.flatMap {
-            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(conversationEntity.id.toModel())
-        }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationCellStatus(conversationEntity)

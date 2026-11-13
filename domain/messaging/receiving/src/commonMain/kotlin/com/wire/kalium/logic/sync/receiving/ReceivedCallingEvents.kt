@@ -19,6 +19,11 @@ data class ReceivedNotificationResult(
     val stoppedReason: String? = null,
     /** Alerts for committed meeting events, oldest first. Like the app's, they are not stored for later replay. */
     val meetings: List<LocalNotification.Meeting> = emptyList(),
+    /**
+     * An event other than the target had an alert that unnotified message alerts cannot restore, such as a
+     * connection request or a conversation deletion, so this scan presented nothing for it.
+     */
+    val droppedAlert: Boolean = false,
 )
 
 enum class ReceivedCallType { INCOMING, MISSED, CLOSED }

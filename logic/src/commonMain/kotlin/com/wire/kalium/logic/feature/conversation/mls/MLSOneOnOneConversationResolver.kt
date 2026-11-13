@@ -68,7 +68,9 @@ internal class MLSOneOnOneConversationResolverImpl(
     ): Either<CoreFailure, ConversationId> =
         conversationRepository.getConversationsByUserId(userId).flatMap { conversations ->
             val establishedMLSOneOnOnes = conversations.filter {
-                val isOneOnOne = it.type == Conversation.Type.OneOnOne
+                // The backend's MLS 1:1 has no team. A team group with one other member is also
+                // typed OneOnOne locally, and once migrated to MLS it must not take the 1:1's place.
+                val isOneOnOne = it.type == Conversation.Type.OneOnOne && it.teamId == null
                 val protocol = it.protocol
                 val isMLSInitialized = protocol is Conversation.ProtocolInfo.MLS &&
                         protocol.groupState == GroupState.ESTABLISHED

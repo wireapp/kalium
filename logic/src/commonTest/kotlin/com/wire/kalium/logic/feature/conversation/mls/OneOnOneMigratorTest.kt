@@ -203,10 +203,6 @@ class OneOnOneMigratorTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(any())
-        }
-
-        verifySuspend(VerifyMode.not) {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }
     }
@@ -273,10 +269,6 @@ class OneOnOneMigratorTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(any())
-        }
-
-        verifySuspend(VerifyMode.not) {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }
     }
@@ -326,10 +318,6 @@ class OneOnOneMigratorTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(resolvedConversationId)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }
     }
@@ -355,10 +343,6 @@ class OneOnOneMigratorTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.updateActiveOneOnOneConversation(user.id, resolvedConversationId)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.systemMessageInserter.insertConversationStartedUnverifiedWarning(resolvedConversationId)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {

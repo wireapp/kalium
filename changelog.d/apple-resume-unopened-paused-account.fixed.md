@@ -1,0 +1,1 @@
+`resumeSuspendedSessionScopes` now also resumes Apple accounts that a background handoff paused before their first open finished, so later `openSessionScope` calls no longer wait until the app restarts.

@@ -19,6 +19,7 @@
 
 package com.wire.kalium.linkpreview.fetch
 
+import com.wire.kalium.linkpreview.fetch.nativeinterop.wire_preview_receive
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.HttpClientEngineBase
 import io.ktor.client.engine.HttpClientEngineConfig
@@ -61,7 +62,6 @@ import okio.ByteString.Companion.encodeUtf8
 import platform.Network.NW_PARAMETERS_DEFAULT_CONFIGURATION
 import platform.Network.nw_connection_cancel
 import platform.Network.nw_connection_create
-import platform.Network.nw_connection_receive
 import platform.Network.nw_connection_send
 import platform.Network.nw_connection_set_queue
 import platform.Network.nw_connection_set_state_changed_handler
@@ -298,7 +298,7 @@ internal suspend fun readPreviewResponseHeaders(connection: PreviewAppleConnecti
     error("Too many informational preview responses")
 }
 
-private class NetworkPreviewConnection private constructor(private val connection: nw_connection_t) : PreviewAppleConnection {
+internal class NetworkPreviewConnection internal constructor(private val connection: nw_connection_t) : PreviewAppleConnection {
     private val messageContext = checkNotNull(nw_content_context_create("wire-link-preview-request"))
 
     override suspend fun write(bytes: ByteArray): Unit = suspendCancellableCoroutine { continuation ->
@@ -314,7 +314,7 @@ private class NetworkPreviewConnection private constructor(private val connectio
 
     override suspend fun read(): ByteArray? = suspendCancellableCoroutine { continuation ->
         continuation.invokeOnCancellation { close() }
-        nw_connection_receive(connection, 1u, READ_BUFFER_SIZE.toUInt()) { data, _, complete, error ->
+        wire_preview_receive(connection, 1u, READ_BUFFER_SIZE.toUInt()) { data, complete, error ->
             when {
                 error != null -> continuation.resumeWithException(networkError(error))
                 data != null && dispatch_data_get_size(data) > 0u -> continuation.resume(data.copyBytes())

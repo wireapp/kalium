@@ -189,7 +189,7 @@ class NotificationProcessor(
             } catch (_: NotificationOrderingBarrier) {
                 return queueEnd.stopped("DEFERRED_ORDERING_BARRIER")
             } catch (handoff: NotificationAppHandoff) {
-                return queueEnd.stopped("LEGAL_HOLD_REQUIRES_APP", handoff.work)
+                return queueEnd.stopped("${handoff.work}_REQUIRES_APP", handoff.work)
             }
             currentCoroutineContext().ensureActive()
             diagnostics?.stage = "MARK_PROCESSED"
@@ -200,6 +200,8 @@ class NotificationProcessor(
             else recovery.acknowledge(listOf(next.eventId))
             if (next.eventId == targetId) {
                 queueEnd.reached(effects.message, "DEFERRED_PRESENTATION_POLICY".takeIf { deferred.isNotEmpty() })
+            } else if (effects.message?.let { it.shouldNotify && it.type != ReceivedNotificationType.MESSAGE } == true) {
+                queueEnd.droppedAlert = true
             }
         }
     }
@@ -209,6 +211,7 @@ class NotificationProcessor(
         private var message: ReceivedMessageResult? = null
         private var suppression: String? = null
         val meetings = mutableListOf<LocalNotification.Meeting>()
+        var droppedAlert = false
 
         fun reached(message: ReceivedMessageResult?, suppression: String?) {
             this.message = message
@@ -222,12 +225,12 @@ class NotificationProcessor(
                 presented != null -> presented
                 completePrefix -> withPendingCalls(message)
                 else -> withoutCalls(message)
-            }.copy(stoppedReason = stop, meetings = meetings.toList())
+            }.copy(stoppedReason = stop, meetings = meetings.toList(), droppedAlert = droppedAlert)
         }
 
         suspend fun stopped(stop: String, work: NotificationAppWork? = null): ReceivedNotificationResult =
             (suppression?.let { withoutPresentation(message, it) } ?: withoutCalls(message))
-                .copy(stoppedReason = stop, appWorkPending = work, meetings = meetings.toList())
+                .copy(stoppedReason = stop, appWorkPending = work, meetings = meetings.toList(), droppedAlert = droppedAlert)
     }
 
     private suspend fun withoutCalls(message: ReceivedMessageResult?) = ReceivedNotificationResult(
@@ -604,7 +607,7 @@ class NotificationProcessor(
                     }
                     else -> emptyList()
                 }
-                listOf(ReceivedPayload.Connection(connection, profiles, "$id:accepted")) + lifecycle
+                listOf(ReceivedPayload.Connection(connection, profiles)) + lifecycle
             }
             is EventContentDTO.User.SessionRefreshSuggestedDTO -> {
                 checkNotNull(sessionRefresh) { "Session refresh requires owned authenticated transport" }

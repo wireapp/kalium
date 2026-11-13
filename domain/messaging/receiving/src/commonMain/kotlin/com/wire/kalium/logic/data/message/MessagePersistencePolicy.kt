@@ -78,11 +78,10 @@ fun MessageContent.shouldUpdateConversationOrder(): Boolean =
         is MessageContent.FederationStopped.Removed -> false
         is MessageContent.ConversationProtocolChanged -> false
         is MessageContent.ConversationProtocolChangedDuringACall -> false
-        is MessageContent.ConversationStartedUnverifiedWarning -> false
         is MessageContent.Location -> true
         is MessageContent.LegalHold -> false
         is MessageContent.MemberChange.RemovedFromTeam -> false
-        is MessageContent.MemberChange.UserPromotedToAdmin -> true
+        is MessageContent.MemberChange.UserPromotedToAdmin -> false
         is MessageContent.TeamMemberRemoved -> false
         is MessageContent.DataTransfer -> false
         is MessageContent.InCallHandRaise -> false
@@ -149,7 +148,6 @@ fun MessageContent.shouldNotifyUser(): Boolean =
         is MessageContent.FederationStopped.Removed,
         is MessageContent.ConversationProtocolChanged,
         is MessageContent.ConversationProtocolChangedDuringACall,
-        is MessageContent.ConversationStartedUnverifiedWarning,
         is MessageContent.LegalHold,
         is MessageContent.MemberChange.RemovedFromTeam,
         is MessageContent.MemberChange.UserPromotedToAdmin,

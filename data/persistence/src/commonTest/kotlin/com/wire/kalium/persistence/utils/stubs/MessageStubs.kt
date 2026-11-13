@@ -314,12 +314,6 @@ fun allMessageEntities(
         newSystemMessageEntity(
             conversationId = conversationId,
             senderUserId = senderUserId,
-            id = "testMessage27",
-            content = MessageEntityContent.ConversationStartedUnverifiedWarning
-        ),
-        newSystemMessageEntity(
-            conversationId = conversationId,
-            senderUserId = senderUserId,
             id = "testMessage28",
             content = MessageEntityContent.Federation(
                 listOf("otherDomain"),

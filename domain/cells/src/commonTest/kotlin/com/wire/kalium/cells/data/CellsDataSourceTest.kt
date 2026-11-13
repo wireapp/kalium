@@ -31,12 +31,12 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
-import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
 import okio.buffer
 import okio.fakefilesystem.FakeFileSystem
+import okio.use
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -133,10 +133,10 @@ class CellsDataSourceTest {
     }
 
     @Test
-    fun givenStalePartFileExists_whenDownloadSucceeds_thenItIsOverwritten() = runTest {
+    fun givenPartFileExistsAndServerIgnoresRange_whenDownloadSucceeds_thenPartIsOverwritten() = runTest {
         val (arrangement, dataSource) = Arrangement()
             .withExistingFile(PART_PATH, "stale part content")
-            .withDownloadWriting(FILE_CONTENT)
+            .withResumeWriting(FILE_CONTENT, rangeHonoured = false)
             .arrange()
 
         val result = dataSource.downloadFile(TARGET_PATH, CELL_PATH) {}
@@ -173,7 +173,7 @@ class CellsDataSourceTest {
     @Test
     fun givenAwsClientFails_whenDownloadingFile_thenFailureIsReturned() = runTest {
         val (_, dataSource) = Arrangement()
-            .withDownloadFailure(IOException("connection reset"))
+            .withDownloadFailure(IllegalStateException("access denied"))
             .arrange()
 
         val result = dataSource.downloadFile(TARGET_PATH, CELL_PATH) {}
@@ -184,7 +184,7 @@ class CellsDataSourceTest {
     @Test
     fun givenAwsClientFails_whenDownloadingFile_thenPartAndTargetFilesAreNotLeftBehind() = runTest {
         val (arrangement, dataSource) = Arrangement()
-            .withDownloadFailure(IOException("connection reset"))
+            .withDownloadFailure(IllegalStateException("access denied"))
             .arrange()
 
         dataSource.downloadFile(TARGET_PATH, CELL_PATH) {}
@@ -197,7 +197,7 @@ class CellsDataSourceTest {
     fun givenAwsClientFailsAfterPartialWrite_whenDownloadingFile_thenExistingTargetFileIsPreserved() = runTest {
         val (arrangement, dataSource) = Arrangement()
             .withExistingFile(TARGET_PATH, "previous content")
-            .withDownloadWriting("partial") { throw IOException("connection reset") }
+            .withDownloadWriting("partial") { throw IllegalStateException("access denied") }
             .arrange()
 
         val result = dataSource.downloadFile(TARGET_PATH, CELL_PATH) {}
@@ -279,6 +279,19 @@ class CellsDataSourceTest {
                 }
                 progressUpdates.forEach(onProgressUpdate)
                 afterWrite(fileSystem)
+            }
+        }
+
+        /**
+         * Simulates the AWS client resuming a download: opens the destination via the provided `openSink`
+         * with [rangeHonoured] as the append flag, then writes [content] to it.
+         */
+        fun withResumeWriting(content: String, rangeHonoured: Boolean) = apply {
+            everySuspend { awsClient.downloadFrom(any(), any(), any(), any()) } calls { invocation ->
+                @Suppress("UNCHECKED_CAST")
+                val openSink = invocation.args[2] as (Boolean) -> Sink
+
+                openSink(rangeHonoured).buffer().use { it.writeUtf8(content) }
             }
         }
 

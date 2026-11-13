@@ -17,37 +17,34 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.data.model.toModel
+import com.wire.kalium.cells.domain.CellDrafts
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
-import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.NodePreview
-import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.Pagination
-import com.wire.kalium.cells.domain.model.PreCheckResult
+import com.wire.kalium.cells.domain.usecase.download.CellDownloadPausedException
+import com.wire.kalium.cells.domain.usecase.download.isDownloadPaused
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import okio.Buffer
 import okio.FileSystem
+import okio.IOException
 import okio.Path
+import okio.Sink
 import okio.use
 
 @Suppress("TooManyFunctions")
@@ -57,37 +54,7 @@ internal class CellsDataSource internal constructor(
     private val awsClient: CellsAwsClient,
     private val fileSystem: FileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) : CellsRepository {
-
-    override suspend fun preCheck(nodePath: String) = withContext(dispatchers.io) {
-        wrapApiRequest {
-            cellsApi.preCheck(nodePath)
-        }.map { result ->
-            if (result.fileExists) {
-                PreCheckResult.FileExists(result.nextPath ?: nodePath)
-            } else {
-                PreCheckResult.Success
-            }
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun uploadFile(
-        path: Path,
-        node: CellNode,
-        onProgressUpdate: (Long) -> Unit,
-    ): Either<NetworkFailure, Unit> = withContext(dispatchers.io) {
-        try {
-            awsClient.upload(path, node.toDto(), onProgressUpdate)
-            Either.Right(Unit)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: NoNetworkConnectionException) {
-            Either.Left(NetworkFailure.NoNetworkConnection(e.cause))
-        } catch (e: Exception) {
-            Either.Left(NetworkFailure.ServerMiscommunication(e))
-        }
-    }
+) : CellsRepository, CellDrafts by CellDraftsDataSource(cellsApi, awsClient, dispatchers) {
 
     override suspend fun getPaginatedNodes(
         path: String?,
@@ -166,39 +133,48 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun publishDrafts(nodes: List<NodeIdAndVersion>) = withContext(dispatchers.io) {
-        coroutineScope {
-            nodes.map { (nodeId, versionId) ->
-                async {
-                    wrapApiRequest { cellsApi.publishDraft(nodeId, versionId) }
-                }
-            }.awaitAll().firstOrNull { it.isLeft() } ?: Unit.right()
-        }
-    }
-
-    override suspend fun cancelDraft(nodeUuid: String, versionUuid: String) = withContext(dispatchers.io) {
-        wrapApiRequest {
-            cellsApi.cancelDraft(nodeUuid, versionUuid)
-        }
-    }
-
+    /**
+     * Downloads into a `.part` file next to [out], moved to [out] once complete.
+     *
+     * When the connection drops midway, the `.part` file is kept and [NetworkFailure.NoNetworkConnection] returned:
+     * the next download of the same [out] resumes from where it stopped, with an HTTP range request. So does a
+     * cancellation with [CellDownloadPausedException]. Any other failure, or cancellation, deletes it.
+     */
     @Suppress("TooGenericExceptionCaught")
     override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> {
         val partPath = out.parent?.let { it / "${out.name}.part" }
             ?: return Either.Left(NetworkFailure.ServerMiscommunication(Exception("Cannot derive .part path for: $out")))
 
+        val resumeOffset = fileSystem.metadataOrNull(partPath)?.size ?: 0L
         return try {
-            fileSystem.sink(partPath).use { sink ->
-                awsClient.download(cellPath, sink, onProgressUpdate)
+            if (resumeOffset > 0L) {
+                awsClient.downloadFrom(
+                    objectKey = cellPath,
+                    offset = resumeOffset,
+                    openSink = { append ->
+                        DownloadDestinationSink(if (append) fileSystem.appendingSink(partPath) else fileSystem.sink(partPath))
+                    },
+                    onProgressUpdate = onProgressUpdate,
+                )
+            } else {
+                DownloadDestinationSink(fileSystem.sink(partPath)).use { sink ->
+                    awsClient.download(cellPath, sink, onProgressUpdate)
+                }
             }
             fileSystem.atomicMove(partPath, out)
             Either.Right(Unit)
         } catch (e: CancellationException) {
-            fileSystem.delete(partPath, mustExist = false)
+            if (!e.isDownloadPaused()) fileSystem.delete(partPath, mustExist = false)
             throw e
         } catch (e: Exception) {
-            fileSystem.delete(partPath, mustExist = false)
-            Either.Left(NetworkFailure.ServerMiscommunication(e))
+            if (e.isDownloadInterruptedByConnectivity()) {
+                // Kept for the next attempt to resume from, unless there is nothing in it yet.
+                if ((fileSystem.metadataOrNull(partPath)?.size ?: 0L) == 0L) fileSystem.delete(partPath, mustExist = false)
+                Either.Left(NetworkFailure.NoNetworkConnection(e))
+            } else {
+                fileSystem.delete(partPath, mustExist = false)
+                Either.Left(NetworkFailure.ServerMiscommunication(e))
+            }
         }
     }
 
@@ -355,16 +331,6 @@ internal class CellsDataSource internal constructor(
         cellsApi.getNodeEditorUrl(nodeUuid, urlKey)
     }
 
-    override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> = withContext(dispatchers.io) {
-        wrapApiRequest {
-            cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection ->
-                collection.map { node ->
-                    node.toModel()
-                }
-            }
-        }
-    }
-
     override suspend fun restoreNodeVersion(
         uuid: String,
         versionId: String
@@ -374,3 +340,24 @@ internal class CellsDataSource internal constructor(
         }
     }
 }
+
+/**
+ * Reports a failure to write a download to disk as a [DownloadDestinationException], which isn't an IOException:
+ * on the JVM, IOException also stands for network failures, and a full disk must not pass for a lost connection
+ * whose `.part` file would be kept.
+ */
+private class DownloadDestinationSink(private val delegate: Sink) : Sink by delegate {
+    override fun write(source: Buffer, byteCount: Long) = rethrowAsDestinationFailure { delegate.write(source, byteCount) }
+    override fun flush() = rethrowAsDestinationFailure { delegate.flush() }
+    override fun close() = rethrowAsDestinationFailure { delegate.close() }
+
+    private inline fun rethrowAsDestinationFailure(block: () -> Unit) {
+        try {
+            block()
+        } catch (e: IOException) {
+            throw DownloadDestinationException(e)
+        }
+    }
+}
+
+private class DownloadDestinationException(cause: IOException) : RuntimeException(cause.message, cause)

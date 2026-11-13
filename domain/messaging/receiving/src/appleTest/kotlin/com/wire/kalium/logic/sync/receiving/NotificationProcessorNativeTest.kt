@@ -724,7 +724,7 @@ class NotificationProcessorNativeTest {
                     fetchProfiles = { ListUsersDTO(usersFound = listOf(fixture.lifecyclePeer(SENDER.toApi()))) })).value
                 assertEquals(true, result?.shouldNotify)
                 assertEquals("first", result?.messageId)
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it, consent) })
+                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it) })
                 fixture.verifyStoredAndNext(next, "first", if (mls) listOf("prefix", "first") else listOf("first"))
             }
         }
@@ -742,7 +742,7 @@ class NotificationProcessorNativeTest {
                     assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, interruption, fetchConnectionPeer = fixture::lifecyclePeer))
                     fixture.sql("DROP TRIGGER IF EXISTS interrupt_receive")
                     assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id, fetchConnectionPeer = fixture::lifecyclePeer))
-                    assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it, consent) })
+                    assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it) })
                     fixture.verifyStoredAndNext(next, "first", if (mls) listOf("prefix", "first") else listOf("first"))
                 }
             }
@@ -750,7 +750,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun acceptedConnectionWarningAndMembershipFailures() = runTest {
+    fun acceptedConnectionMessageAndMembershipFailures() = runTest {
         withContext(Dispatchers.Default) {
             for (table in listOf("Message", "Member")) withFixture(false) { fixture ->
                 fixture.seedAcceptedConnection(false)
@@ -765,13 +765,13 @@ class NotificationProcessorNativeTest {
                 })
                 fixture.sql("DROP TRIGGER interrupt_accepted")
                 assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id, fetchConnectionPeer = fixture::lifecyclePeer))
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it, false) })
+                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it) })
             }
         }
     }
 
     @Test
-    fun acceptedConnectionConsentSuppressionSurvivesReplayAndLaterStatuses() = runTest {
+    fun acceptedConnectionReplayKeepsLaterStatuses() = runTest {
         withContext(Dispatchers.Default) {
             for (restoreMode in listOf("none", "before", "after")) {
                 for (stage in listOf(null, Interruption.BEFORE_COMMIT, Interruption.AFTER_COMMIT, Interruption.MARKER)) {
@@ -794,10 +794,6 @@ class NotificationProcessorNativeTest {
                             assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                             assertEquals(if (restoreMode == "after") ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT else ConnectionEntity.State.IGNORED,
                                 runtime.database.connectionDAO.getConnection(CONVERSATION_ID)?.status)
-                            val warnings = runtime.database.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first()
-                                .filter { it.content == MessageEntityContent.ConversationStartedUnverifiedWarning }
-                            // Replaying after IGNORED must preserve the original legal-hold suppression.
-                            assertEquals(0, warnings.size)
                         })
                         fixture.verifyStoredAndNext(next, "tail", listOf("first", "tail"))
                     }
@@ -807,7 +803,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun acceptedConnectionStoredRequestAndMovedWarningReplay() = runTest {
+    fun acceptedConnectionStoredRequestReplay() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 fixture.seedAcceptedConnection(false)
@@ -818,7 +814,7 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, Interruption.BEFORE_COMMIT,
                     fetchConnectionPeer = fixture::lifecyclePeer))
                 assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id, fetchConnectionPeer = fixture::lifecyclePeer))
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it, false, expectedState = ConnectionEntity.State.IGNORED) })
+                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it, expectedState = ConnectionEntity.State.IGNORED) })
             }
             withFixture(true) { fixture ->
                 fixture.seedAcceptedConnection(false)
@@ -830,13 +826,13 @@ class NotificationProcessorNativeTest {
                 // The request was accepted in the same notification, so only the message alerts.
                 assertEquals(ReceivedNotificationType.MESSAGE, result?.type)
                 assertEquals(CONVERSATION_ID.value, result?.conversationValue)
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it, false) })
+                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it) })
             }
         }
     }
 
     @Test
-    fun acceptedConnectionRetainsPositiveWarningAfterConsentChange() = runTest {
+    fun acceptedConnectionKeepsLaterConsentChangeOnReplay() = runTest {
         withContext(Dispatchers.Default) {
             for (mls in listOf(false, true)) withFixture(mls) { fixture ->
                 fixture.seedAcceptedConnection(false)
@@ -846,7 +842,7 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, Interruption.BEFORE_COMMIT,
                     fetchConnectionPeer = fixture::lifecyclePeer))
                 assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id, fetchConnectionPeer = fixture::lifecyclePeer))
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it, false,
+                assertIs<Either.Right<*>>(fixture.open { fixture.verifyAcceptedConnection(it,
                     expectedState = ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT,
                     expectedUserState = ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT) })
             }
@@ -2080,7 +2076,7 @@ class NotificationProcessorNativeTest {
     @Test
     fun mlsProtocolUploadFailuresKeepQueuePending() = runTest {
         for (mls in listOf(false, true)) for (failure in listOf("upload", "profiles", "self", "profile-write", "active", "later") +
-            if (mls) listOf("history", "warning") else emptyList()) {
+            if (mls) listOf("history", "protocol-message") else emptyList()) {
             withContext(Dispatchers.Default) {
                 withFixture(mls) { fixture ->
                     fixture.seedMLSProtocolResolution()
@@ -2093,7 +2089,7 @@ class NotificationProcessorNativeTest {
                             "profile-write" -> "INSERT ON User WHEN NEW.qualified_id = '${SENDER.toDao()}'"
                             "active" -> "UPDATE OF active_one_on_one_conversation_id ON User WHEN NEW.qualified_id = '${SENDER.toDao()}'"
                             "history" -> "UPDATE ON Message WHEN OLD.id = 'history'"
-                            "warning" -> "INSERT ON Message WHEN NEW.id LIKE '%one-to-one%'"
+                            "protocol-message" -> "INSERT ON Message WHEN NEW.id LIKE '%one-to-one%'"
                             else -> "INSERT ON Message WHEN NEW.id = 'first'"
                         }
                         fixture.sql("CREATE TRIGGER interrupt_config BEFORE $target BEGIN SELECT RAISE(ABORT, 'protocol resolution failed'); END")
@@ -2242,21 +2238,20 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun mlsProtocolResolutionWithoutNativeCandidateStaysPending() = runTest {
+    fun mlsProtocolResolutionWithoutNativeCandidateQueuesForTheApp() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(false) { fixture ->
                 fixture.seedMLSProtocolResolution()
                 val event = fixture.mlsSettingsEvents(changeTeamProtocols = true)
                 val tail = fixture.event("tail", fixture.encrypt("tail"))
                 fixture.releasePrepared()
-                repeat(2) { assertIs<Either.Left<*>>(fixture.receive(listOf(event, tail), event.id,
+                assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), event.id,
                     fetchSelfClients = { fixture.selfClients() }, uploadSelfProtocols = {},
-                    fetchProfiles = { ListUsersDTO(usersFound = listOf(fixture.connectionProfile(SENDER.toApi()))) })) }
+                    fetchProfiles = { ListUsersDTO(usersFound = listOf(fixture.connectionProfile(SENDER.toApi()))) }))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
-                    assertNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
-                    assertEquals(setOf(SupportedProtocolEntity.PROTEUS), runtime.database.userDAO.getUserDetailsByQualifiedID(SELF.toDao())?.supportedProtocols)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertEquals(listOf(SENDER.toDao()), runtime.database.pendingActionDAO
+                        .getByActionType(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION).map { it.qualifiedId })
                 })
             }
         }
@@ -2636,9 +2631,6 @@ class NotificationProcessorNativeTest {
                         assertEquals("Created group", conversation.name)
                         assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member,
                             runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
-                        // Fetch returns Admin, but the app read null before that fetch: promotion is required.
-                        fixture.verifyPromotion(runtime, "notification", SENDER)
-                        assertNull(runtime.database.messageDAO.getMessageById("notification:1", CONVERSATION_ID))
                         if (mls) assertEquals(ConversationEntity.GroupState.ESTABLISHED,
                             assertIs<ConversationEntity.ProtocolInfo.MLS>(conversation.protocolInfo).groupState)
                     })
@@ -2653,8 +2645,9 @@ class NotificationProcessorNativeTest {
         for (mls in listOf(false, true)) for (stage in listOf("read", "write", "promotion", "fetch")) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val target = if (stage == "fetch") DELETE_TARGET else CONVERSATION_ID
+                val member = if (stage == "promotion") SELF else SENDER
                 val event = fixture.batch("notification", fixture.event("prefix", fixture.encrypt("prefix")),
-                    fixture.memberRoleEvent("wire_admin", target = target), fixture.event("first", fixture.encrypt("first")))
+                    fixture.memberRoleEvent("wire_admin", member = member, target = target), fixture.event("first", fixture.encrypt("first")))
                 val tail = fixture.event("tail-notification", fixture.encrypt("tail"))
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
@@ -2671,7 +2664,7 @@ class NotificationProcessorNativeTest {
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                         assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member,
-                            runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
+                            runtime.database.memberDAO.getMemberRole(member.toDao(), CONVERSATION_ID))
                         assertNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
                         assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                         assertTrue(runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).isEmpty())
@@ -2681,7 +2674,7 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), tail.id, fetchConversation = {
                     fixture.creationResponse().copy(id = target.toApi(), groupId = null, epoch = null, protocol = ConvProtocol.PROTEUS)
                 }))
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifyPromotion(it, "notification:1", SENDER, target) })
+                if (stage == "promotion") assertIs<Either.Right<*>>(fixture.open { fixture.verifySelfPromotion(it, "notification:1") })
                 fixture.verifyStoredAndNext(next, "tail", listOf("prefix", "first", "tail"))
             }
         }
@@ -2693,7 +2686,7 @@ class NotificationProcessorNativeTest {
             withFixture(mls, if (mode == "delete") SELF else SENDER) { fixture ->
                 val clear = if (mode == "delete") null else fixture.event("clear", fixture.encrypt("clear",
                     MessageContent.Cleared(CONVERSATION_ID.toModel(), TIME, false)))
-                val promotion = fixture.memberRoleEvent("wire_admin")
+                val promotion = fixture.memberRoleEvent("wire_admin", member = SELF)
                 val event = when (mode) {
                     "delete" -> fixture.batch("notification", promotion, fixture.event("delete", fixture.encrypt("delete", MessageContent.DeleteMessage("notification"))),
                         fixture.event("first", fixture.encrypt("first")))
@@ -2710,11 +2703,11 @@ class NotificationProcessorNativeTest {
                     if (mode == "delete") {
                         assertEquals(MessageEntity.Visibility.DELETED, checkNotNull(message).visibility)
                     } else {
-                        fixture.verifyPromotion(runtime, id, SENDER)
+                        fixture.verifySelfPromotion(runtime, id)
                         fixture.verifyPendingConversationCleanup(runtime, CONVERSATION_ID)
                     }
                     assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Admin,
-                        runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
+                        runtime.database.memberDAO.getMemberRole(SELF.toDao(), CONVERSATION_ID))
                 })
                 fixture.verifyStoredAndNext(next, "first", if (mode == "delete") emptyList() else listOf("first"))
             }
@@ -2738,7 +2731,6 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(receive())
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertNull(runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
-                    fixture.verifyPromotion(runtime, "notification:1", SENDER)
                     assertEquals(MessageEntity.MemberChangeType.REMOVED, assertIs<MessageEntityContent.MemberChange>(
                         assertIs<MessageEntity.System>(runtime.database.messageDAO.getMessageById("notification:3", CONVERSATION_ID)).content).memberChangeType)
                 })
@@ -2774,9 +2766,7 @@ class NotificationProcessorNativeTest {
                             val role = runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID)
                             if (leave) assertNull(role) else assertEquals(
                                 com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member, role)
-                            // Retry may add a promotion because the original unchanged role is no longer stored.
-                            if (stage == null) assertNull(runtime.database.messageDAO.getMessageById("notification:1", CONVERSATION_ID))
-                            else fixture.verifyPromotion(runtime, "notification:1", SENDER)
+                            assertNull(runtime.database.messageDAO.getMessageById("notification:1", CONVERSATION_ID))
                             assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                         })
                         assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value)
@@ -2813,7 +2803,6 @@ class NotificationProcessorNativeTest {
                         assertEquals(stage == null, ConversationEntity.AccessRole.SERVICE in conversation.accessRole)
                         assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Admin,
                             runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
-                        fixture.verifyPromotion(runtime, "notification:1", SENDER)
                         assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                     })
                     fixture.verifyStoredAndNext(next, "tail", listOf("first", "tail"))
@@ -6910,9 +6899,6 @@ class NotificationProcessorNativeTest {
                     }
                     val messages = db.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first()
                     assertEquals(1, messages.filterIsInstance<MessageEntity.System>().count {
-                        it.content == MessageEntityContent.ConversationStartedUnverifiedWarning
-                    })
-                    assertEquals(1, messages.filterIsInstance<MessageEntity.System>().count {
                         it.content is MessageEntityContent.ConversationProtocolChanged
                     })
                 })
@@ -6946,18 +6932,18 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun oneOnOneCreationNeedsExternalEstablishment() = runTest {
+    fun oneOnOneCreationQueuesExternalEstablishmentForTheApp() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true, newConversation = true) { fixture ->
                 val response = fixture.creationResponse().copy(type = ConversationResponse.Type.ONE_TO_ONE)
-                val event = fixture.batch("notification", fixture.creationEvent(response = response),
-                    fixture.welcomeEvent(), fixture.event("text", fixture.encrypt("first")))
+                val event = fixture.creationEvent(response = response)
+                val tail = fixture.batch("tail", fixture.welcomeEvent(), fixture.event("text", fixture.encrypt("first")))
                 fixture.releasePrepared()
-                assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id))
+                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event, tail), tail.id)).value?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
-                    assertNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
-                    assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertEquals(listOf(SENDER.toDao()), runtime.database.pendingActionDAO
+                        .getByActionType(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION).map { it.qualifiedId })
                 })
             }
         }
@@ -7837,7 +7823,7 @@ class NotificationProcessorNativeTest {
                     val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, "notification",
                         fetchConversation = { fixture.selfConversationResponse() })).value
                     assertFalse(checkNotNull(result).shouldNotify)
-                    assertIs<Either.Right<*>>(fixture.open { fixture.verifySelfConversation(it, mode != "welcome-only") })
+                    assertIs<Either.Right<*>>(fixture.open { fixture.verifySelfConversation(it) })
                     assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification")).value)
                     fixture.verifyStoredAndNext(next, "first", deliveries = emptyList())
                 }
@@ -7873,14 +7859,13 @@ class NotificationProcessorNativeTest {
     @Test
     fun selfConversationRequiredWrites() = runTest {
         withContext(Dispatchers.Default) {
-            for (mls in listOf(false, true)) for (table in listOf("Conversation", "Member", "Message")) {
+            for (mls in listOf(false, true)) for (table in listOf("Conversation", "Member")) {
                 withFixture(mls, senderId = SELF, newConversation = true) { fixture ->
                     fixture.seedDeleteForMeTarget()
                     val page = fixture.selfConversationPage("together")
                     val next = fixture.encrypt("next")
                     fixture.releasePrepared()
-                    val condition = if (table == "Message") "WHEN NEW.content_type = 'CONVERSATION_STARTED_UNVERIFIED_WARNING'" else ""
-                    fixture.sql("CREATE TRIGGER fail_self BEFORE INSERT ON $table $condition BEGIN SELECT RAISE(ABORT, 'self write failed'); END")
+                    fixture.sql("CREATE TRIGGER fail_self BEFORE INSERT ON $table BEGIN SELECT RAISE(ABORT, 'self write failed'); END")
                     assertIs<Either.Left<*>>(fixture.receive(page, "notification"))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
@@ -7920,7 +7905,7 @@ class NotificationProcessorNativeTest {
                 })
                 assertIs<Either.Right<*>>(fixture.receive(emptyList(), "notification",
                     fetchConversation = { fixture.selfConversationResponse() }))
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifySelfConversation(it, expectWarning = false) })
+                assertIs<Either.Right<*>>(fixture.open { fixture.verifySelfConversation(it) })
                 fixture.verifyStoredAndNext(next, "first", deliveries = emptyList())
             }
         }
@@ -8040,8 +8025,6 @@ class NotificationProcessorNativeTest {
                     assertEquals(ConnectionEntity.State.SENT, db.connectionDAO.getConnection(DELETE_TARGET)?.status)
                     assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Admin, db.memberDAO.getMemberRole(SELF.toDao(), DELETE_TARGET))
                     assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Admin, db.memberDAO.getMemberRole(SENDER.toDao(), DELETE_TARGET))
-                    assertEquals(1, db.messageDAO.getMessagesByConversationAndVisibility(DELETE_TARGET, 100, 0).first().count {
-                        it.content == MessageEntityContent.ConversationStartedUnverifiedWarning })
                 })
                 fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first"))
             }
@@ -8050,15 +8033,14 @@ class NotificationProcessorNativeTest {
 
     @Test
     fun pendingConnectionCreationRequiredWritesKeepQueuePending() = runTest {
-        for (mls in listOf(false, true)) for (table in listOf("Conversation", "Member", "Message")) withContext(Dispatchers.Default) {
+        for (mls in listOf(false, true)) for (table in listOf("Conversation", "Member")) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val event = fixture.batch("notification", fixture.event("prefix", fixture.encrypt("prefix")),
                     fixture.pendingConnectionCreation(), fixture.event("first", fixture.encrypt("first")))
                 val tail = fixture.event("tail-notification", fixture.encrypt("tail"))
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
-                val condition = if (table == "Message") "WHEN NEW.conversation_id = '$DELETE_TARGET'" else ""
-                fixture.sql("CREATE TRIGGER fail_pending_create BEFORE INSERT ON $table $condition BEGIN SELECT RAISE(ABORT, 'fixture'); END")
+                fixture.sql("CREATE TRIGGER fail_pending_create BEFORE INSERT ON $table BEGIN SELECT RAISE(ABORT, 'fixture'); END")
                 repeat(2) {
                     assertIs<Either.Left<*>>(fixture.receive(listOf(event, tail), tail.id))
                     fixture.verifyPendingTextQueue(event, tail)
@@ -8619,7 +8601,7 @@ class NotificationProcessorNativeTest {
                             com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member), CONVERSATION_ID)
                     // An existing system message does not prove metadata or membership is complete.
                     runtime.database.messageDAO.insertOrIgnoreMessages(listOf(MessageEntity.System(
-                        id = "${CONVERSATION_ID.toModel()}:$TIME:creation:1",
+                        id = "${CONVERSATION_ID.toModel()}:$TIME:creation:0",
                         content = MessageEntityContent.ConversationCreated,
                         conversationId = CONVERSATION_ID,
                         date = TIME,
@@ -8653,10 +8635,9 @@ class NotificationProcessorNativeTest {
     @Test
     fun creationUnsupportedDependenciesStayPending() = runTest {
         withContext(Dispatchers.Default) {
-            for (kind in listOf("one-to-one", "group-mismatch", "partial-group-mismatch", "missing-welcome", "recovery")) {
+            for (kind in listOf("group-mismatch", "partial-group-mismatch", "missing-welcome", "recovery")) {
                 withFixture(true, newConversation = true) { fixture ->
                     val response = when (kind) {
-                        "one-to-one" -> fixture.creationResponse().copy(type = ConversationResponse.Type.ONE_TO_ONE)
                         "group-mismatch" -> fixture.creationResponse().copy(groupId = Base64.encode("wrong-group".encodeToByteArray()))
                         else -> fixture.creationResponse()
                     }
@@ -9458,7 +9439,8 @@ class NotificationProcessorNativeTest {
                 val subNext = fixture.encrypt("sub-next", groupId = RESET_GROUP_ID)
                 fixture.releasePrepared()
                 repeat(2) {
-                    assertIs<Either.Left<*>>(fixture.receive(listOf(event, tail), tail.id))
+                    assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), tail.id))
+                    assertEquals(NotificationAppWork.MLS_SUBCONVERSATION, fixture.receivedAppWork)
                     fixture.verifyPendingTextQueue(event, tail)
                 }
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
@@ -11095,7 +11077,7 @@ class NotificationProcessorNativeTest {
                         fixture.verifySentConnection(it); fixture.verifyPendingConnectionCreation(it)
                     })
                     if (account["acceptedConnectionEvents"]?.jsonPrimitive?.boolean == true) assertIs<Either.Right<*>>(fixture.open {
-                        fixture.verifyAcceptedConnection(it, account.getValue("acceptedConnectionConsent").jsonPrimitive.boolean)
+                        fixture.verifyAcceptedConnection(it)
                     })
                     if (account["connectionEvents"]?.jsonPrimitive?.boolean == true) assertIs<Either.Right<*>>(fixture.open {
                         fixture.verifyConnectionState(it)
@@ -11134,7 +11116,6 @@ class NotificationProcessorNativeTest {
                     })
                     if (account["memberRoleEvents"]?.jsonPrimitive?.boolean == true) assertIs<Either.Right<*>>(fixture.open { runtime ->
                         if (account["memberRoleFetched"]?.jsonPrimitive?.boolean == true) {
-                            fixture.verifyPromotion(runtime, "notification", SENDER)
                             assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member,
                                 runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
                         } else fixture.verifyMemberRoles(runtime)
@@ -11422,10 +11403,7 @@ class NotificationProcessorNativeTest {
             assertEquals(role, db.memberDAO.getMemberRole(SELF.toDao(), DELETE_TARGET))
             assertNull(db.connectionDAO.getConnection(DELETE_TARGET))
             assertNull(db.userDAO.getUserDetailsByQualifiedID(SELF.toDao())?.activeOneOnOneConversationId)
-            val message = db.messageDAO.getMessagesByConversationAndVisibility(DELETE_TARGET, 100, 0).first().single()
-            assertEquals(MessageEntityContent.ConversationStartedUnverifiedWarning, message.content)
-            assertEquals(SELF.toDao(), message.senderUserId)
-            assertEquals(TIME, message.date)
+            assertTrue(db.messageDAO.getMessagesByConversationAndVisibility(DELETE_TARGET, 100, 0).first().isEmpty())
         }
 
         fun creationResponse(): ConversationResponse = ConversationResponse(
@@ -11503,7 +11481,7 @@ class NotificationProcessorNativeTest {
                 event("first", encrypt("first"))).toTypedArray())
         }
 
-        suspend fun verifyAcceptedConnection(runtime: AppleAccountRuntime, consent: Boolean,
+        suspend fun verifyAcceptedConnection(runtime: AppleAccountRuntime,
             expectedState: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED,
             expectedUserState: ConnectionEntity.State = if (expectedState == ConnectionEntity.State.IGNORED) expectedState else ConnectionEntity.State.ACCEPTED) {
             val db = runtime.database
@@ -11515,10 +11493,8 @@ class NotificationProcessorNativeTest {
             assertEquals(expectedUserState,
                 db.userDAO.getUserDetailsByQualifiedID(SENDER.toDao())?.connectionStatus)
             assertEquals(CONVERSATION_ID, db.userDAO.getUserDetailsByQualifiedID(SENDER.toDao())?.activeOneOnOneConversationId)
-            val messages = db.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first()
-            assertEquals((if (consent) 0 else 1) + (if (mlsEnabled) 1 else 0), messages.count {
-                it.content == MessageEntityContent.ConversationStartedUnverifiedWarning })
             if (mlsEnabled) {
+                val messages = db.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first()
                 for (id in listOf("history", "history-second")) assertNotNull(db.messageDAO.getMessageById(id, CONVERSATION_ID))
                 assertTrue(db.messageDAO.getMessagesByConversationAndVisibility(source, 100, 0).first().isEmpty())
                 assertEquals(1, messages.count { it.content is MessageEntityContent.ConversationProtocolChanged })
@@ -11633,7 +11609,7 @@ class NotificationProcessorNativeTest {
                 else listOf(batch("notification", *(before + signal + text).toTypedArray()))
         }
 
-        suspend fun verifySelfConversation(runtime: AppleAccountRuntime, expectWarning: Boolean = true) {
+        suspend fun verifySelfConversation(runtime: AppleAccountRuntime) {
             val db = runtime.database
             val conversation = checkNotNull(db.conversationDAO.getConversationById(CONVERSATION_ID))
             assertEquals(ConversationEntity.Type.SELF, conversation.type)
@@ -11641,7 +11617,6 @@ class NotificationProcessorNativeTest {
                 if (mlsEnabled) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS))
             assertEquals(listOf(SELF.toDao()), db.memberDAO.getConversationMembers(CONVERSATION_ID))
             val messages = db.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first()
-            assertEquals(if (expectWarning) 1 else 0, messages.count { it.content == MessageEntityContent.ConversationStartedUnverifiedWarning })
             assertFalse(messages.any { it.content == MessageEntityContent.ConversationCreated ||
                 it.content is MessageEntityContent.MemberChange || it.content is MessageEntityContent.NewConversationReceiptMode })
             assertNull(db.messageDAO.getMessageById("delete-me", DELETE_TARGET))
@@ -12980,9 +12955,9 @@ class NotificationProcessorNativeTest {
             memberRoleEvent("wire_member", member, target, system), memberRoleEvent("wire_admin", member, target, system),
             memberRoleEvent("custom-final", member, target, system), event("first", encrypt("first")))
 
-        suspend fun verifyPromotion(runtime: AppleAccountRuntime, id: String, member: UserId, target: QualifiedIDEntity = CONVERSATION_ID) {
-            val message = assertIs<MessageEntity.System>(runtime.database.messageDAO.getMessageById(id, target))
-            assertEquals(MessageEntityContent.MemberChange(listOf(member.toDao()), MessageEntity.MemberChangeType.USER_PROMOTED_TO_ADMIN), message.content)
+        suspend fun verifySelfPromotion(runtime: AppleAccountRuntime, id: String) {
+            val message = assertIs<MessageEntity.System>(runtime.database.messageDAO.getMessageById(id, CONVERSATION_ID))
+            assertEquals(MessageEntityContent.MemberChange(listOf(SELF.toDao()), MessageEntity.MemberChangeType.USER_PROMOTED_TO_ADMIN), message.content)
             assertEquals(SELF.toDao(), message.senderUserId)
             assertEquals(TIME, message.date)
             assertEquals(MessageEntity.Status.SENT, message.status)
@@ -12993,11 +12968,6 @@ class NotificationProcessorNativeTest {
             absentMember: Boolean = false) {
             val role = runtime.database.memberDAO.getMemberRole(member.toDao(), target)
             if (absentMember) assertNull(role) else assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Unknown("custom-final"), role)
-            val promotions = if (absentMember) listOf(2, 3, 5) else listOf(2, 5)
-            for (index in 1..6) {
-                if (index in promotions) verifyPromotion(runtime, "notification:$index", member, target)
-                else assertNull(runtime.database.messageDAO.getMessageById("notification:$index", target))
-            }
         }
 
         suspend fun seedAccess(enabled: Boolean) {
@@ -13315,7 +13285,6 @@ class NotificationProcessorNativeTest {
                     assertNull(db.messageDAO.getMessageById(it, QualifiedIDEntity("legacy-second", SELF.domain)))
                 }
                 val warnings = db.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION_ID, 100, 0).first().filterIsInstance<MessageEntity.System>()
-                assertEquals(1, warnings.count { it.content == MessageEntityContent.ConversationStartedUnverifiedWarning })
                 assertEquals(1, warnings.count { it.content == MessageEntityContent.ConversationProtocolChanged(ConversationEntity.Protocol.MLS) })
             }
         }
