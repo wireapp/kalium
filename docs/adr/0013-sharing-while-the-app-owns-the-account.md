@@ -54,27 +54,25 @@ on without it, so an import cancelled before a message is stored stores and send
 share whose upload fails stores nothing and stays claimed: the app uploads it again while it serves
 the outbox, less and less often, until the share is a day old. Stored
 messages belong to the app: they upload, send, fail and retry in the conversation like messages from
-the composer. The app then writes a result for the extension (stored, or the reason it refused) and
-removes the entry.
+the composer. The app then removes the entry. Nothing goes back to the extension: when the app could
+not store a share completely, it tells the user with a local notification.
 
 **The picker.** The extension cannot list conversations while the app owns the account, and it must not
 open the app's database. It asks the app with a Darwin notification. For each account it owns, the app
 writes a snapshot: the account name, its file rules, and the conversations the extension may share to,
 built by the same code as the extension's own list. The extension deletes any old snapshot before it
 asks, and deletes each snapshot once read. A snapshot holds conversation names, so it is written only on
-request, protected while the device is locked, and excluded from backups. The app answers these
+request, protected while the device is locked, and excluded from backups. A request or a snapshot more
+than a minute old is deleted the next time the app serves the outbox: its sheet stopped waiting. The app answers these
 requests on their own, so a share being imported never keeps a sheet waiting for its list.
 
 **The sheet.** When the app does not answer, the account is busy for another reason, usually the NSE.
 Then the extension retries opening the account itself until its budget ends. Who sends is decided when
 the user sends, not by who listed the conversations: the extension takes the account if it can, waits for
 another extension that holds it, and hands the share off when the app holds it, or asks for it before
-anything is stored (ADR 12). The sheet waits a few seconds for the app to claim the share, and a few more for its result.
-If the app writes a refusal in time, the sheet shows the reason. Otherwise the sheet says Wire is sending the share,
-or, if the app has not claimed it, that Wire will send it when Wire is opened. It also marks the entry as unwatched:
-from then on, the app tells the user with a local notification if it refuses the share. The app writes its result
-before it looks for the mark, and the sheet marks before it looks one last time for the result, so at least one of
-them sees the result; only one takes it. The sheet offers no cancel while it waits.
+anything is stored (ADR 12). A running app claims the share as it is rung, so the sheet looks for a moment
+whether its entry left `ready/`: if so it closes, as after a send; if not it says that Wire will send the
+share when Wire is opened.
 
 **Not a second lock.** A lock that only the app holds would tell the extension that the app owns the
 account. It would not tell it that the app will take the share, and checking two locks one after the
@@ -84,13 +82,12 @@ the share off.
 
 ## Implementation
 
-Kalium's share module holds the outbox (entries, claims, results and snapshots), which the extension and
+Kalium's share module holds the outbox (entries, claims and snapshots), which the extension and
 the app both use, and the app's importer and snapshot writer, which take the app's sending as ports.
 The app runs them with `serveShareExtension`, which stores each item through the composer's text and
 asset use cases under the item's message ID. The iOS app posts and observes the Darwin
 notifications and runs the importer in each account's foreground and call work; the share extension
-shows the snapshot picker, hands the share to the app, waits for its answer and falls back as described
-above.
+shows the snapshot picker and hands the share to the app as described above.
 
 ## Consequences
 
@@ -98,4 +95,4 @@ Only the app imports. A share left in the outbox waits for the app to own the ac
 extension and the NSE do not send other shares, which keeps their memory and time budgets unchanged.
 Entries and snapshots add plaintext copies in the App Group, protected like the account's own files
 and removed once imported or read. A share that a rule refuses at import was shown as allowed in the
-picker; the sheet reports it if the app's answer arrives in time, and the app reports it otherwise.
+picker; the app reports it.
