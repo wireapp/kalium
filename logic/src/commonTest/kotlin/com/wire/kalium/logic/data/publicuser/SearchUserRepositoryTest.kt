@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.data.publicuser
 
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ContactStatus
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.di.MapperProvider
@@ -41,8 +42,11 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.model.ContactStatusDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.PartialUserEntity
@@ -53,6 +57,7 @@ import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -71,6 +76,107 @@ import kotlin.test.assertTrue
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 class SearchUserRepositoryTest {
+
+    @Test
+    fun singleUserStatusLookupUsesOnlyBulkEndpointAndDoesNotPersist() = runTest {
+        for ((wireStatus, expected) in listOf(
+            "non-contactable" to ContactStatus.NON_CONTACTABLE,
+            "contactable" to ContactStatus.CONTACTABLE,
+            "future-state" to null,
+            null to null,
+        )) {
+            val profile = USER_PROFILE_DTO.copy(contactStatus = wireStatus?.let { ContactStatusDTO(it) })
+            val (arrangement, repository) = Arrangement().arrange {
+                withGetMultipleUsersResult(NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(profile)), mapOf(), 200))
+            }
+            val userId = profile.id.toModel()
+            assertEquals(mapOf(userId to expected), repository.fetchContactStatuses(setOf(userId)))
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(listOf(profile.id)))
+            }
+            verifySuspend(VerifyMode.not) { arrangement.userDetailsApi.getUserInfo(any()) }
+            verifySuspend(VerifyMode.not) { arrangement.userDAO.updateUser(any<List<PartialUserEntity>>()) }
+            verifySuspend(VerifyMode.not) { arrangement.userDAO.upsertUsers(any()) }
+        }
+    }
+
+    @Test
+    fun omittedUserAndFailedStatusLookupReturnNoStatus() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val userId = USER_PROFILE_DTO.id.toModel()
+        everySuspend { arrangement.userDetailsApi.getMultipleUsers(any()) } sequentiallyReturns listOf(
+            NetworkResponse.Success(ListUsersDTO(emptyList(), emptyList()), mapOf(), 200),
+            TestNetworkResponseError.genericResponseError(),
+        )
+        repeat(2) { assertEquals(emptyMap(), repository.fetchContactStatuses(setOf(userId))) }
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.userDetailsApi.getMultipleUsers(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userDetailsApi.getUserInfo(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userDAO.upsertUsers(any()) }
+    }
+
+    @Test
+    fun disabledFeatureIgnoresUnsolicitedStatusAndSkipsStatusBatches() = runTest {
+        val profile = USER_PROFILE_DTO.copy(contactStatus = ContactStatusDTO("non-contactable"))
+        val (arrangement, repository) = Arrangement().arrange {
+            pendingConnectionsEnabled = false
+            withTeamId(Either.Right(TestUser.SELF.teamId))
+            withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+            withGetMultipleUsersResult(NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(profile)), mapOf(), 200))
+            withGetUsersDetailsByQualifiedIdListResult(listOf(TestUser.DETAILS_ENTITY))
+        }
+        repository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default).shouldSucceed {
+            assertEquals(null, it.result.single().contactStatus)
+        }
+        assertEquals(emptyMap(), repository.fetchContactStatuses(setOf(profile.id.toModel())))
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userDetailsApi.getMultipleUsers(any()) }
+    }
+
+    @Test
+    fun contactStatusBatchesKeepSuccessesAfterFailureAndDoNotWriteUsers() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val profile = USER_PROFILE_DTO.copy(contactStatus = ContactStatusDTO("non-contactable"))
+        val ids = (0 until 500).map { com.wire.kalium.logic.data.user.UserId("user-$it", profile.id.domain) }.toSet() +
+            profile.id.toModel()
+        everySuspend { arrangement.userDetailsApi.getMultipleUsers(any()) } sequentiallyReturns listOf(
+            TestNetworkResponseError.genericResponseError(),
+            NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(profile)), mapOf(), 200)
+        )
+        assertEquals(mapOf(profile.id.toModel() to ContactStatus.NON_CONTACTABLE), repository.fetchContactStatuses(ids))
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.userDetailsApi.getMultipleUsers(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userDAO.updateUser(any<List<PartialUserEntity>>()) }
+        verifySuspend(VerifyMode.not) { arrangement.userDAO.upsertUsers(any()) }
+    }
+
+    @Test
+    fun noStatusRequestIsMadeForAnEmptyList() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        assertEquals(emptyMap(), repository.fetchContactStatuses(emptySet()))
+        verifySuspend(VerifyMode.not) { arrangement.userDetailsApi.getMultipleUsers(any()) }
+    }
+
+    @Test
+    fun remoteContactStatusNeverFallsBackToStorage() = runTest {
+        for ((wireState, expected) in listOf(
+            null to null,
+            "future-state" to null,
+            "non-contactable" to ContactStatus.NON_CONTACTABLE,
+            "contactable" to ContactStatus.CONTACTABLE
+        )) {
+            val remoteUser = USER_PROFILE_DTO.copy(
+                contactStatus = wireState?.let { ContactStatusDTO(it) }
+            )
+            val localUser = TestUser.DETAILS_ENTITY
+            val (_, repository) = Arrangement().arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(remoteUser)), mapOf(), 200))
+                withGetUsersDetailsByQualifiedIdListResult(listOf(localUser))
+            }
+            repository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default).shouldSucceed { result ->
+                assertEquals(expected, result.result.single().contactStatus)
+            }
+        }
+    }
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
@@ -715,6 +821,8 @@ class SearchUserRepositoryTest {
         internal val userSearchApiWrapper: UserSearchApiWrapper = mock<UserSearchApiWrapper>(mode = MockMode.autoUnit)
         internal val userDAO: UserDAO = mock<UserDAO>(mode = MockMode.autoUnit)
 
+        var pendingConnectionsEnabled = true
+
         private val searchUserRepository: SearchUserRepository by lazy {
             SearchUserRepositoryImpl(
                 userDAO,
@@ -723,7 +831,8 @@ class SearchUserRepositoryTest {
                 userDetailsApi,
                 userSearchApiWrapper,
                 selfUserId = TestUser.SELF.id,
-                selfTeamIdProvider
+                selfTeamIdProvider,
+                pendingConnectionsEnabled = pendingConnectionsEnabled,
             )
         }
 

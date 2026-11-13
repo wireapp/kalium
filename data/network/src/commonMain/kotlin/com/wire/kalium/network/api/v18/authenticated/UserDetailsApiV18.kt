@@ -22,5 +22,6 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v17.authenticated.UserDetailsApiV17
 
 internal open class UserDetailsApiV18 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
-) : UserDetailsApiV17(authenticatedNetworkClient)
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
+    pendingConnectionsEnabled: Boolean = false,
+) : UserDetailsApiV17(authenticatedNetworkClient, pendingConnectionsEnabled)
