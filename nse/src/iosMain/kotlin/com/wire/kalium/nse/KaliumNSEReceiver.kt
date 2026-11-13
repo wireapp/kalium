@@ -44,6 +44,8 @@ import com.wire.kalium.logic.sync.receiving.notificationPreview
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
 import com.wire.kalium.logic.sync.receiving.upcomingMeetingReminders
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
@@ -147,6 +149,14 @@ public data class KaliumNSEResult(
     public val meetingAlerts: List<LocalNotification.Meeting> = emptyList(),
     /** This account's upcoming meeting reminders after receiving; absent when receiving failed. Replaces native requests. */
     public val meetingReminders: List<MeetingReminder>? = null,
+    /** Quiet replacements for delivered alerts whose canonical messages were edited while the app was backgrounded. */
+    public val notificationUpdates: List<KaliumNSENotificationUpdate> = emptyList(),
+)
+
+public data class KaliumNSENotificationUpdate(
+    public val identifier: String,
+    public val editedMessageId: String,
+    public val editedText: String?,
 )
 
 /** A message alert beyond the request's own; text and names are present only when preview is allowed. */
@@ -342,10 +352,24 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         val removals = runtime.database.messageDAO.observeNotificationRemovalCandidates(
             request.deliveredNotifications.map { it.messageId }.distinct()
         ).first().toSet()
+        val preferenceAllowsContent = preference.getOrNull()?.let {
+            it != MessageContentPreference.Disabled
+        } == true
+        val permitted = request.showMessageContent && preferenceAllowsContent
+        val updates = request.deliveredNotifications.mapNotNull { delivered ->
+            if (delivered.messageKey() in removals) return@mapNotNull null
+            val conversation = QualifiedIDEntity(delivered.conversationValue, delivered.conversationDomain)
+            val currentId = runtime.database.messageDAO.resolveNotificationMessage(delivered.messageId, conversation)
+                ?.takeIf { it != delivered.messageId } ?: return@mapNotNull null
+            val message = runtime.database.messageDAO.getMessageById(currentId, conversation) as? MessageEntity.Regular
+                ?: return@mapNotNull null
+            delivered.notificationUpdate(currentId, message, permitted)
+        }
         return result.copy(
             notificationIdentifiersToRemove = request.deliveredNotifications.filter {
                 it.messageKey() in removals
-            }.map { it.identifier }
+            }.map { it.identifier },
+            notificationUpdates = updates
         )
     }
 
@@ -530,6 +554,21 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         fun handled(rootPath: String, userId: UserId, arrived: ComparableTimeMark): Boolean =
             since.value[rootPath to userId]?.let { it > arrived } == true
     }
+}
+
+internal fun KaliumNSEDeliveredNotification.notificationUpdate(
+    currentMessageId: String,
+    message: MessageEntity.Regular,
+    showsMessageContent: Boolean,
+): KaliumNSENotificationUpdate? {
+    if (currentMessageId == messageId || !message.visibility.isVisible) return null
+    val text = if (showsMessageContent && message.expireAfterMs == null) when (val content = message.content) {
+        is MessageEntityContent.Text -> content.messageBody
+        is MessageEntityContent.Multipart -> content.messageBody
+        is MessageEntityContent.Poll -> content.question
+        else -> null
+    } else null
+    return KaliumNSENotificationUpdate(identifier, currentMessageId, text)
 }
 
 private fun failure(reason: String) = KaliumNSEResult(

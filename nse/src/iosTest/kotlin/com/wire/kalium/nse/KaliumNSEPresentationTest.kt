@@ -14,6 +14,9 @@ import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationType
 import com.wire.kalium.logic.sync.receiving.ReceivedCallResult
 import com.wire.kalium.logic.sync.receiving.ReceivedCallType
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,6 +25,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TestTimeSource
+import kotlin.time.Instant
 
 class KaliumNSEPresentationTest {
     private val receiver = KaliumNSEReceiver(KaliumNSEConfiguration(
@@ -108,6 +112,28 @@ class KaliumNSEPresentationTest {
             assertNull(result.conversationName)
             assertNull(result.text)
         }
+    }
+
+    @Test
+    fun deliveredAlertEditsFollowCurrentIdentityAndKeepHiddenOrExpiringTextPrivate() {
+        val delivered = KaliumNSEDeliveredNotification("alert-id", "conversation", "example.com", "original")
+        val edited = storedMessage("edited", MessageEntityContent.Text("Changed text"))
+        assertEquals(
+            KaliumNSENotificationUpdate("alert-id", "edited", "Changed text"),
+            delivered.notificationUpdate("edited", edited, showsMessageContent = true),
+        )
+        assertEquals(
+            KaliumNSENotificationUpdate("alert-id", "edited", null),
+            delivered.notificationUpdate("edited", edited, showsMessageContent = false),
+        )
+        assertEquals(
+            KaliumNSENotificationUpdate("alert-id", "edited", null),
+            delivered.notificationUpdate("edited", edited.copy(expireAfterMs = 1_000), showsMessageContent = true),
+        )
+        assertNull(delivered.notificationUpdate("original", edited, showsMessageContent = true))
+        assertNull(delivered.notificationUpdate(
+            "edited", edited.copy(visibility = MessageEntity.Visibility.DELETED), showsMessageContent = true,
+        ))
     }
 
     @Test
@@ -217,6 +243,19 @@ class KaliumNSEPresentationTest {
     }
 
     private fun unnotified(id: String) = message(ReceivedNotificationType.MESSAGE).copy(messageId = id)
+
+    private fun storedMessage(id: String, content: MessageEntityContent.Regular) = MessageEntity.Regular(
+        id = id,
+        content = content,
+        conversationId = QualifiedIDEntity("conversation", "example.com"),
+        date = Instant.fromEpochMilliseconds(1),
+        senderUserId = QualifiedIDEntity("sender", "example.com"),
+        senderClientId = "client",
+        status = MessageEntity.Status.SENT,
+        editStatus = MessageEntity.EditStatus.NotEdited,
+        readCount = 0,
+        senderName = "Sender",
+    )
 
     private fun message(type: ReceivedNotificationType) = ReceivedMessageResult(
         "message", "conversation", "example.com", "Text", true, true, type,
