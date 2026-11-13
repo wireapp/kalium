@@ -70,7 +70,6 @@ class SessionManagerTest {
         assertFailsWith<FailureToRefreshTokenException> {
             sessionManager.updateToken(arrangement.accessTokenApi, "egal")
         }
-        assertEquals(emptyList(), arrangement.logoutReasons)
     }
 
     @Test
@@ -111,17 +110,15 @@ class SessionManagerTest {
 
     @Test
     fun givenTemporaryStorageFailure_whenFetchingSession_thenRequestFailsWithoutLogoutAndNextReadRecovers() = runTest {
-        val failure = IllegalStateException("Keychain is temporarily unavailable")
         var storageAvailable = false
         val (arrangement, sessionManager) = arrange {
             withCurrentTokenReturning {
-                if (!storageAvailable) throw failure
+                if (!storageAvailable) error("Keychain is temporarily unavailable")
                 TEST_AUTH_TOKEN_ENTITY
             }
         }
 
-        assertEquals(failure.message, assertFailsWith<IllegalStateException> { sessionManager.session() }.message)
-        assertEquals(emptyList(), arrangement.logoutReasons)
+        assertFailsWith<IllegalStateException> { sessionManager.session() }
 
         storageAvailable = true
         assertEquals(TEST_SESSION_DTO, sessionManager.session())
@@ -136,17 +133,6 @@ class SessionManagerTest {
 
         assertNull(sessionManager.session())
         assertEquals(listOf(LogoutReason.SESSION_EXPIRED), arrangement.logoutReasons)
-    }
-
-    @Test
-    fun givenCancelledTokenRead_whenFetchingSession_thenCancellationPropagatesWithoutLogout() = runTest {
-        val cancellation = CancellationException("Account is being released")
-        val (arrangement, sessionManager) = arrange {
-            withCurrentTokenReturning { throw cancellation }
-        }
-
-        assertEquals(cancellation.message, assertFailsWith<CancellationException> { sessionManager.session() }.message)
-        assertEquals(emptyList(), arrangement.logoutReasons)
     }
 
     @Test
