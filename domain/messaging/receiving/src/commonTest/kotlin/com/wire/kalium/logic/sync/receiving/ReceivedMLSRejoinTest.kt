@@ -113,6 +113,16 @@ class ReceivedMLSRejoinTest {
 
         override suspend fun sendMessage(message: ByteArray): NetworkResponse<SendMLSMessageResponse> = error("Unexpected message send")
 
+        override suspend fun sendTargetedMessage(batch: MLSMessageApi.TargetedMessageBatch): NetworkResponse<SendMLSMessageResponse> =
+            error("Unexpected targeted message send")
+
+        override suspend fun sendTransientMessage(message: MLSMessageApi.TransientMessage): NetworkResponse<SendMLSMessageResponse> =
+            error("Unexpected transient message send")
+
+        override suspend fun sendTransientTargetedMessage(
+            batch: MLSMessageApi.TargetedMessageBatch
+        ): NetworkResponse<SendMLSMessageResponse> = error("Unexpected transient targeted message send")
+
         override suspend fun sendCommitBundle(bundle: MLSMessageApi.CommitBundle): NetworkResponse<SendMLSMessageResponse> {
             attempts++
             lastBundle = bundle

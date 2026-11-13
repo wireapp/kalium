@@ -40,9 +40,11 @@ import com.wire.kalium.network.api.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.authenticated.message.Parameters
 import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
+import com.wire.kalium.network.utils.NetworkResponse
 import kotlin.time.Instant
 
 /** Sends envelopes and MLS messages, mapping a Proteus 412 to [com.wire.kalium.logic.failure.ProteusSendMessageFailure]. */
@@ -154,6 +156,29 @@ class MessageTransportImpl(
     ): Either<CoreFailure, MessageSent> =
         wrapApiRequest {
             mlsMessageApi.sendMessage(message.value)
+        }.flatMapLeft { networkFailure ->
+            Either.Left(networkFailure.wrapNetworkMlsFailureIfApplicable())
+        }.flatMap { response ->
+            Either.Right(sendMessagePartialFailureMapper.fromMlsDTO(response))
+        }
+
+    override suspend fun sendMLSTargetedMessage(
+        batch: MLSMessageApi.TargetedMessageBatch
+    ): Either<CoreFailure, MessageSent> = sendMLS { mlsMessageApi.sendTargetedMessage(batch) }
+
+    override suspend fun sendMLSTransientMessage(
+        message: MLSMessageApi.TransientMessage
+    ): Either<CoreFailure, MessageSent> = sendMLS { mlsMessageApi.sendTransientMessage(message) }
+
+    override suspend fun sendMLSTransientTargetedMessage(
+        batch: MLSMessageApi.TargetedMessageBatch
+    ): Either<CoreFailure, MessageSent> = sendMLS { mlsMessageApi.sendTransientTargetedMessage(batch) }
+
+    private suspend fun sendMLS(
+        request: suspend () -> NetworkResponse<SendMLSMessageResponse>
+    ): Either<CoreFailure, MessageSent> =
+        wrapApiRequest {
+            request()
         }.flatMapLeft { networkFailure ->
             Either.Left(networkFailure.wrapNetworkMlsFailureIfApplicable())
         }.flatMap { response ->

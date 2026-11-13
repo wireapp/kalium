@@ -7,8 +7,10 @@ package com.wire.kalium.network.api.v19.authenticated.networkContainer
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v18.authenticated.networkContainer.AuthenticatedNetworkContainerV18
+import com.wire.kalium.network.api.v19.authenticated.MLSMessageApiV19
 import com.wire.kalium.network.api.v19.authenticated.MeetingApiV19
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
@@ -39,4 +41,5 @@ internal class AuthenticatedNetworkContainerV19 internal constructor(
     engine = engine
 ) {
     override val meetingApi: MeetingApi get() = MeetingApiV19(networkClient)
+    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV19(networkClient)
 }
