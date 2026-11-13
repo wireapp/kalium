@@ -35,17 +35,23 @@ it, so no file is held in memory, and reports progress over the plain size throu
 Files for a Cells conversation upload to its cell at the same point, as unpublished drafts, and go as one
 multipart message with the text; a share that stores no message discards them.
 
-Uploads run outside `budgetMilliseconds`, and the account stays held meanwhile. They end when they finish,
-fail or the host cancels, and with `OPEN_APP` when they run past their own budget (`UPLOAD_TIMEOUT`: 30
-seconds plus the files' size at 128 KiB/s, at most five minutes) or when the host calls `yieldAccount`
-(`ACCOUNT_WANTED`), because the app needs the account. The host then hands the share to the app.
-`yieldAccount` also stops the live hold while it catches up; a send that stored
-a message finishes within its budget. Nothing is stored until every upload
-succeeded, so a failed or stopped upload leaves nothing behind in Wire but the uploaded files on the backend.
+Uploads run outside `budgetMilliseconds` and without holding the account: `send` holds it only for a
+moment, to read the conversation, the file rules and where the files go, so the app and the NSE can take
+it while files upload. A token refresh takes it for that moment. Uploads end when they finish, fail or
+the host cancels, and with `OPEN_APP` when the host calls `yieldAccount` (`ACCOUNT_WANTED`), because the
+app needs the account. The host then hands the share to the app. `yieldAccount` also stops the live hold
+while it catches up; a send that stored a message finishes within its budget. Nothing is stored until
+every upload succeeded, so a failed or stopped upload leaves nothing behind in Wire but the uploaded
+files on the backend.
 
 ## Sending
 
-`send` holds the account for at most `budgetMilliseconds`:
+Each time `send` takes the account, it waits for another app extension that holds it, usually the NSE:
+up to 20 seconds, and never longer than `budgetMilliseconds`. When the app holds it, `send` gives up after
+3 seconds and returns `OPEN_APP` with `BUSY`, and the host hands the share to the app. The host does not
+call `send` again on `BUSY`: that would upload the files again.
+
+`send` then holds the account for at most `budgetMilliseconds`:
 
 1. It opens the WebSocket and keeps it open while it works. As the app's sender waits for live, it sends
    only over a live socket: if the socket does not reach live, it returns `OFFLINE` without storing a
@@ -72,9 +78,9 @@ resends a failed file message without uploading it again.
 
 ## While the app owns the account
 
-`conversations` and `send` report `BUSY` while another process owns the account. The NSE owns it briefly, but
-the app owns it as long as it is in the foreground or in a call. Then the extension hands the share to the
-app ([ADR 13](../docs/adr/0013-sharing-while-the-app-owns-the-account.md)) through a per-account outbox in the
+`conversations` reports `BUSY` while another process owns the account, and `send` when the app does. The
+NSE owns it briefly, but the app owns it as long as it is in the foreground or in a call. Then the
+extension hands the share to the app ([ADR 13](../docs/adr/0013-sharing-while-the-app-owns-the-account.md)) through a per-account outbox in the
 App Group:
 
 1. `KaliumShareOutbox.askAppForConversations` asks the app to list the account's conversations, and the host rings the app
@@ -82,14 +88,15 @@ App Group:
    `conversations`. When the app does not answer, something else owns the account for a moment; retry
    `conversations`.
 2. `handOff` copies the files (as clones, where the file system allows) next to the request and publishes
-   it, and the host rings the app again. `handOffStatus` follows it: `WAITING` until the app claims it,
-   `CLAIMED` while the app stores it, then `STORED` or `NOT_STORED` with a reason, reported once. A host that
-   stops following it calls `stopWaiting`, which returns a result that arrived meanwhile; otherwise the app
-   reports a refusal itself.
+   it, and the host rings the app again. From here the share is the app's, and nothing comes back to the
+   host. `appTookHandOff` says whether the app claimed the entry, which a running app does as it is rung.
 
 The app runs `serveShareExtension` while it owns an account, live or not. It answers requests for conversations,
 claims handed-off shares and stores them with its composer's use cases, files first, then the text. Each
 item keeps the message ID the extension gave it, so an import interrupted by a background handoff never
 stores a message twice. Once the account caught up, the app checks the conversation and file rules again before it
 stores anything. Requests for conversations are answered meanwhile, on their own, and shares handed off meanwhile
-are claimed at once. A refusal the extension stopped waiting for goes to `refused`, for the app to tell the user.
+are claimed at once. A Cells share whose upload fails stays claimed, and the app uploads it again while it
+serves the outbox, less and less often, until the share is a day old. A share the app could not store
+completely goes to `refused`, for the app to tell the user. When serving starts, it deletes a request for
+conversations, or an answer, that is more than a minute old.

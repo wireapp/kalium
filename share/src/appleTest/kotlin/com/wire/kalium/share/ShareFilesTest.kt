@@ -73,8 +73,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -151,12 +149,12 @@ class ShareFilesTest {
     }
 
     @Test
-    fun uploadsStopAndReleaseTheAccountWhenAnotherProcessWantsIt() = runTest {
+    fun uploadsStopWhenAnotherProcessWantsTheAccount() = runTest {
         val wanted = Job()
         val started = CompletableDeferred<Unit>()
         var stopped = false
         val result = async {
-            yieldingUploads<Unit>(1.minutes, wanted) {
+            yieldingUploads<Unit>(wanted) {
                 started.complete(Unit)
                 try {
                     awaitCancellation()
@@ -170,7 +168,7 @@ class ShareFilesTest {
         wanted.complete()
 
         assertEquals(ShareOutcome(ShareStatus.OPEN_APP, "ACCOUNT_WANTED"), assertIs<Either.Left<ShareOutcome>>(result.await()).value)
-        assertTrue(stopped, "The upload ended before the account is closed")
+        assertTrue(stopped, "The upload ended before the share is handed to the app")
     }
 
     @Test
@@ -179,7 +177,7 @@ class ShareFilesTest {
         val started = CompletableDeferred<Unit>()
         val discarded = mutableListOf<String>()
         val result = async {
-            yieldingUploads(1.minutes, wanted, discard = { value: String -> discarded += value }) {
+            yieldingUploads(wanted, discard = { value: String -> discarded += value }) {
                 started.complete(Unit)
                 try {
                     awaitCancellation()
@@ -196,30 +194,15 @@ class ShareFilesTest {
     }
 
     @Test
-    fun uploadsThatOutliveTheirBudgetGoToTheApp() = runTest {
-        val result = yieldingUploads<Unit>(30.seconds, Job()) { awaitCancellation() }
-
-        assertEquals(ShareOutcome(ShareStatus.OPEN_APP, "UPLOAD_TIMEOUT"), assertIs<Either.Left<ShareOutcome>>(result).value)
-    }
-
-    @Test
     fun finishedUploadsAreKeptAndAWantedAccountStopsOnlyRunningOnes() = runTest {
         val wanted = Job()
 
-        val finished = yieldingUploads(1.minutes, wanted) { Either.Right("uploaded") }
+        val finished = yieldingUploads(wanted) { Either.Right("uploaded") }
         wanted.complete()
 
         assertEquals(Either.Right("uploaded"), finished)
-        val later = yieldingUploads(1.minutes, wanted) { Either.Right("uploaded") }
+        val later = yieldingUploads(wanted) { Either.Right("uploaded") }
         assertEquals(ShareOutcome(ShareStatus.OPEN_APP, "ACCOUNT_WANTED"), assertIs<Either.Left<ShareOutcome>>(later).value)
-    }
-
-    @Test
-    fun uploadsMayHoldTheAccountLongEnoughAtAbout1MbitPerSecondUpToFiveMinutes() {
-        assertEquals(30.seconds, uploadBudget(0))
-        assertEquals(30.seconds + 120.seconds, uploadBudget(SharePolicy.IMAGE_SIZE_LIMIT_BYTES))
-        assertEquals(30.seconds + 200.seconds, uploadBudget(SharePolicy.PERSONAL_SIZE_LIMIT_BYTES))
-        assertEquals(5.minutes, uploadBudget(SharePolicy.TEAM_SIZE_LIMIT_BYTES))
     }
 
     @Test
