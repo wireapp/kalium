@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.network
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
@@ -72,9 +73,21 @@ internal class SessionManagerImpl internal constructor(
         wrapStorageRequest { tokenStorage.getToken(userId.toDao()) }
             .map { sessionMapper.fromEntityToSessionDTO(it) }
             .nullableFold(
-                {
-                    logout(LogoutReason.SESSION_EXPIRED)
-                    null
+                { failure ->
+                    when (failure) {
+                        StorageFailure.DataNotFound -> {
+                            kaliumLogger.w("SESSION MANAGER: expiring session reason=MISSING_STORED_TOKEN")
+                            logout(LogoutReason.SESSION_EXPIRED)
+                            null
+                        }
+
+                        is StorageFailure.Generic -> {
+                            // A failed Keychain/storage read does not mean the saved credentials are invalid.
+                            // Fail this request and let a later request read the credentials again.
+                            kaliumLogger.w("SESSION MANAGER: retaining session reason=TOKEN_STORAGE_READ_FAILED")
+                            throw failure.rootCause
+                        }
+                    }
                 },
                 { session ->
                     session
@@ -141,7 +154,7 @@ internal class SessionManagerImpl internal constructor(
     }
 
     private suspend fun onSessionExpired() {
-        kaliumLogger.d("SESSION MANAGER: onSessionExpired is called for user ${userId.toLogString()}")
+        kaliumLogger.w("SESSION MANAGER: expiring session reason=REFRESH_FORBIDDEN user=${userId.toLogString()}")
         logout(LogoutReason.SESSION_EXPIRED)
     }
 
