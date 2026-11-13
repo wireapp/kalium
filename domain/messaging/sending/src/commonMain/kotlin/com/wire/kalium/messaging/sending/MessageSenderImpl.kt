@@ -409,7 +409,7 @@ class MessageSenderImpl(
         }
             .flatMap { sendMLSMessage ->
                 sendMLSMessage().fold({
-                    handleMlsRejection(it, protocolInfo, message)
+                    handleMlsRejection(it, protocolInfo, message, messageTarget, transient)
                 }, { messageSent ->
                     handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
                         Either.Right(messageSent.time)
@@ -447,7 +447,9 @@ class MessageSenderImpl(
     private suspend fun handleMlsRejection(
         failure: CoreFailure,
         protocolInfo: Conversation.ProtocolInfo.MLS,
-        message: Message.Sendable
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+        transient: Boolean
     ): Either<CoreFailure, Instant> =
         when (val mlsRejectionCause = (failure.wrapNetworkMlsFailureIfApplicable() as? MLSFailure.MessageRejected)?.cause) {
             is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> {
@@ -458,7 +460,7 @@ class MessageSenderImpl(
                         protocolInfo.groupId,
                         mlsRejectionCause
                     )
-                }.flatMap { attemptToSend(message) }
+                }.flatMap { attemptToSend(message, messageTarget, transient) }
             }
             is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
                 logger.logStructuredJson(
