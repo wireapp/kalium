@@ -36,6 +36,19 @@ import kotlin.test.assertIs
 class RecoverMLSConversationsForUserUseCaseTest {
 
     @Test
+    fun givenManualKeyPackageRecovery_whenRecovering_thenAlsoJoinGroupsWithLostWelcomes() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withEstablishedRecovery(RecoverMLSConversationsResult.Success)
+            .withPendingRecovery(Either.Right(Unit))
+            .arrange(includePendingWelcome = true)
+
+        assertIs<RecoverMLSConversationsForUserResult.Success>(useCase())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinPendingMLSConversations.invoke(true, true, true, any())
+        }
+    }
+
+    @Test
     fun givenEstablishedScanSucceeds_whenRecovering_thenJoinPendingGroupsWithExternalCommits() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withEstablishedRecovery(RecoverMLSConversationsResult.Success)
@@ -93,12 +106,13 @@ class RecoverMLSConversationsForUserUseCaseTest {
             everySuspend { joinPendingMLSConversations.invoke(any(), any(), any(), any()) } returns result
         }
 
-        suspend fun arrange(): Pair<Arrangement, RecoverMLSConversationsForUserUseCase> {
+        suspend fun arrange(includePendingWelcome: Boolean = false): Pair<Arrangement, RecoverMLSConversationsForUserUseCase> {
             withTransactionReturning(Either.Right(Unit))
             return this to RecoverMLSConversationsForUserUseCaseImpl(
                 recoverEstablishedMLSConversations = recoverEstablishedMLSConversations,
                 joinPendingMLSConversations = joinPendingMLSConversations,
                 transactionProvider = cryptoTransactionProvider,
+                includePendingWelcome = includePendingWelcome,
             )
         }
     }
