@@ -364,6 +364,7 @@ internal class UserMapperImpl(
             expiresAt = userProfile.expiresAt?.let { Instant.parse(it) },
             defederated = false,
             isProteusVerified = false,
+            contactStatus = userProfile.contactStatus?.toModel(),
             supportedProtocols = userProfile.supportedProtocols?.toModel() ?: setOf(SupportedProtocol.PROTEUS),
         )
 

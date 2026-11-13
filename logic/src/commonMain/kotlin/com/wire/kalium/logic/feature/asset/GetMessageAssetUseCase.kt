@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.EncryptionFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
@@ -139,6 +140,7 @@ internal class GetMessageAssetUseCaseImpl(
                                     }
 
                                     it is NetworkFailure.FederatedBackendFailure -> MessageAssetResult.Failure(it, false)
+                                    it is EncryptionFailure -> MessageAssetResult.Failure(it, false)
                                     it is NetworkFailure.NoNetworkConnection -> MessageAssetResult.Failure(it, true)
                                     else -> MessageAssetResult.Failure(it, true)
                                 }

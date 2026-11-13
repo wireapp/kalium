@@ -55,11 +55,11 @@ import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.model.AppDTO
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.UserTypeDTO
-import com.wire.kalium.network.api.model.AppDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.AppDAO
@@ -85,14 +85,28 @@ import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
 
 class UserRepositoryTest {
+
+    @Test
+    fun fetchingUserInfoPersistsProfileDetailsAndReturnsUnit() = runTest {
+        val profile = TestUser.USER_PROFILE_DTO.copy(
+            teamId = null,
+            contactStatus = com.wire.kalium.network.api.model.ContactStatusDTO("non-contactable")
+        )
+        val (arrangement, repository) = Arrangement().withSuccessfulGetUsersInfo(profile).arrange()
+        repository.fetchUserInfo(profile.id.toModel()).shouldSucceed {
+            assertEquals(Unit, it)
+        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userDetailsApi.getUserInfo(profile.id) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userDAO.upsertUsers(any()) }
+    }
 
     @Test
     fun givenAllUsersAreKnown_whenFetchingUsersIfUnknown_thenShouldNotFetchFromApiAndSucceed() = runTest {
