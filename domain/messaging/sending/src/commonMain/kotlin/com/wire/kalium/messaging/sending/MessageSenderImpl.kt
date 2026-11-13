@@ -394,7 +394,10 @@ class MessageSenderImpl(
         }
             .flatMap { sendMLSMessage ->
                 sendMLSMessage().fold({
-                    handleMlsRejection(it, protocolInfo, message, messageTarget, transient)
+                    handleTargetedTransientMessagesNotSupported(it, message)
+                        .flatMapLeft {
+                            handleMlsRejection(it, protocolInfo, message, messageTarget, transient)
+                        }
                 }, { messageSent ->
                     handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
                         Either.Right(messageSent.time)
@@ -424,6 +427,20 @@ class MessageSenderImpl(
                     )
                 )
             }
+
+    private suspend fun handleTargetedTransientMessagesNotSupported(
+        failure: CoreFailure,
+        message: Message.Sendable
+    ): Either<CoreFailure, Instant> =
+        if (failure is NetworkFailure.FeatureNotSupported) {
+            logger.w(
+                "Targeted & transient MLS messages is not supported by the backend, " +
+                        "sending a persistent message to the whole group"
+            )
+            attemptToSend(message)
+        } else {
+            Either.Left(failure)
+        }
 
     /**
      * Recovers from a rejected MLS send. On "mls-stale-message" it verifies the epoch and returns [StaleUntilLive],
@@ -500,22 +517,7 @@ class MessageSenderImpl(
                     isTransient
                 ).map { batch -> sendTargetedBatch(batch, isTransient, message) }
         }
-        return outgoingMessage.map { send ->
-            {
-                send().flatMapLeft { failure ->
-                    if (failure is NetworkFailure.FeatureNotSupported) {
-                        logger.w(
-                            "MLS message (targeted = $isTargeted, transient = $isTransient) is not supported by the backend, " +
-                                "sending a persistent message to the whole group"
-                        )
-                        mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, groupId, message)
-                            .flatMap { mlsMessage -> transport.sendMLSMessage(mlsMessage) }
-                    } else {
-                        Either.Left(failure)
-                    }
-                }
-            }
-        }
+        return outgoingMessage
     }
 
     private fun sendTargetedBatch(

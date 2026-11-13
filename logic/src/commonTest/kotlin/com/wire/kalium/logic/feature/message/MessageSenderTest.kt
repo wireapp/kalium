@@ -844,9 +844,20 @@ class MessageSenderTest {
         }
 
         arrangement.testScope.runTest {
+            arrangement.serializeTransactions()
+            // The fallback must encrypt inside an open transaction, not reuse the closed one of the first attempt.
+            val fallbackEncryptedInTransaction = mutableListOf<Boolean>()
+            everySuspend {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
+            } calls {
+                fallbackEncryptedInTransaction += arrangement.transactionQueue.isLocked
+                Either.Right(Arrangement.TEST_MLS_MESSAGE)
+            }
+
             val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, MessageTarget.Users(TEST_MEMBER_2))
 
             result.shouldSucceed()
+            assertEquals(listOf(true), fallbackEncryptedInTransaction)
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageRepository.sendMLSTargetedMessage(Arrangement.TEST_MLS_TARGETED_MESSAGE_BATCH)
             }
@@ -1012,9 +1023,20 @@ class MessageSenderTest {
         }
 
         arrangement.testScope.runTest {
+            arrangement.serializeTransactions()
+            // The fallback must encrypt inside an open transaction, not reuse the closed one of the first attempt.
+            val fallbackEncryptedInTransaction = mutableListOf<Boolean>()
+            everySuspend {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
+            } calls {
+                fallbackEncryptedInTransaction += arrangement.transactionQueue.isLocked
+                Either.Right(Arrangement.TEST_MLS_MESSAGE)
+            }
+
             val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, transient = true)
 
             result.shouldSucceed()
+            assertEquals(listOf(true), fallbackEncryptedInTransaction)
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageRepository.sendMLSTransientMessage(any())
             }
