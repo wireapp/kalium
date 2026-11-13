@@ -77,7 +77,8 @@ internal class ReceivedMLSHandler(
 
     @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount")
     suspend fun decrypt(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage, payloadId: String): List<ReceivedPayload> {
-        check(event.subconversationId == null) { "Subconversation receiving is not implemented" }
+        // The app owns call subconversations; the event stays pending for it.
+        if (event.subconversationId != null) throw NotificationAppHandoff(NotificationAppWork.MLS_SUBCONVERSATION)
         check(event.conversationId !in removed) { "Account no longer belongs to the MLS group" }
         val conversation = checkNotNull(conversations.conversation(event.conversationId)) {
             "Conversation must already exist"

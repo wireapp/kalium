@@ -189,7 +189,7 @@ class NotificationProcessor(
             } catch (_: NotificationOrderingBarrier) {
                 return queueEnd.stopped("DEFERRED_ORDERING_BARRIER")
             } catch (handoff: NotificationAppHandoff) {
-                return queueEnd.stopped("LEGAL_HOLD_REQUIRES_APP", handoff.work)
+                return queueEnd.stopped("${handoff.work}_REQUIRES_APP", handoff.work)
             }
             currentCoroutineContext().ensureActive()
             diagnostics?.stage = "MARK_PROCESSED"

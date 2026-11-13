@@ -22,19 +22,24 @@ import okio.Sink
 import okio.Source
 
 actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData {
+    key.requireValidSize()
     TODO("Not yet implemented")
 }
 
 actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData {
+    secretKey.requireValidSize()
     TODO("Not yet implemented")
 }
 
 actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long {
+    key.requireValidSize()
     TODO("Not yet implemented")
 }
 
-actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long =
+actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long {
+    secretKey.requireValidSize()
     TODO("Not yet implemented")
+}
 
 actual fun generateRandomAES256Key(): AES256Key {
     TODO("Not yet implemented")

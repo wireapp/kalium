@@ -100,6 +100,21 @@ class MLSOneOnOneConversationResolverTest {
     }
 
     @Test
+    fun givenMigratedTeamOneOnOneGroupListedFirst_thenShouldReturnTheBackendOneOnOne() = runTest {
+        val migratedTeamGroup = CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.copy(
+            id = ConversationId("migrated-team-group", "test"),
+            teamId = TestConversation.ONE_ON_ONE().teamId,
+        )
+        val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
+            withConversationsForUserIdReturning(Either.Right(listOf(migratedTeamGroup) + ALL_CONVERSATIONS))
+        }
+
+        getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId).shouldSucceed {
+            assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
+        }
+    }
+
+    @Test
     fun givenDatabaseEstablishedMLSConversationIsMissingFromCoreCrypto_thenShouldFetchAndEstablishIt() = runTest {
         val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
             withConversationsForUserIdReturning(Either.Right(ALL_CONVERSATIONS))
@@ -254,6 +269,7 @@ class MLSOneOnOneConversationResolverTest {
 
         private val CONVERSATION_ONE_ON_ONE_PROTEUS = TestConversation.ONE_ON_ONE().copy(
             id = ConversationId("one-on-one-proteus", "test"),
+            teamId = null,
             protocol = Conversation.ProtocolInfo.Proteus,
         )
 
