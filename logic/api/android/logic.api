@@ -5853,12 +5853,14 @@ public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase
 }
 
 public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
+	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getMeetingId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -5975,12 +5977,17 @@ public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
 	public final fun getMaintainMeetingOccurrences ()Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase;
 	public final fun getMeetingReminders ()Lcom/wire/kalium/logic/feature/meeting/MeetingRemindersUseCase;
+	public final fun getObserveMeeting ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
 	public final fun getUpdateMeeting ()Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase {
 	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveMeetingUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase {

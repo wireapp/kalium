@@ -97,6 +97,7 @@ internal interface MeetingRepository {
         from: Instant = currentInstant().asStartOfDay(),
     ): Flow<PagingData<MeetingOccurrence>>
 
+    fun observeMeeting(meetingId: MeetingId): Flow<Meeting?>
     suspend fun getMeeting(meetingId: MeetingId): Either<StorageFailure, Meeting>
 
     suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
@@ -227,6 +228,11 @@ internal class MeetingDataSource(
         from = from,
     ).pagingDataFlow.map { pagingData -> pagingData.map(meetingMapper::fromDaoToModel) }
 
+    override fun observeMeeting(meetingId: MeetingId): Flow<Meeting?> =
+        meetingDAO.observeMeeting(meetingId.toDao())
+            .map { it?.let(meetingMapper::fromDaoToModel) }
+            .distinctUntilChanged()
+
     override suspend fun getMeeting(meetingId: MeetingId): Either<StorageFailure, Meeting> = wrapStorageRequest {
         meetingDAO.getMeeting(meetingId.toDao())?.let(meetingMapper::fromDaoToModel)
     }
@@ -280,7 +286,9 @@ internal class MeetingDataSource(
                 otherParticipants = meeting.otherParticipants,
                 generateOccurrencesFrom = generateOccurrencesFrom,
                 generateOccurrencesUntil = generateOccurrencesUntil
-            ).map { CreateNewMeetingResult(response.conversation.id.toModel(), it) }
+            ).map { result ->
+                CreateNewMeetingResult(response.conversation.id.toModel(), result, response.meetingId.toModel())
+            }
         }
     }
 
@@ -441,7 +449,11 @@ internal class MeetingDataSource(
                     pendingActionsRepository.enqueuePendingMLSGroupJoin(conversationId = conversation.id.toModel())
                 }
             }.mapLeft {
-                EstablishMLSFailure(conversationId = conversation.id.toModel(), reason = it)
+                EstablishMLSFailure(
+                    conversationId = conversation.id.toModel(),
+                    reason = it,
+                    meetingId = meetingId.toModel(),
+                )
             }
         }
     }
@@ -462,9 +474,17 @@ internal class MeetingDataSource(
         else -> false
     }
 
-    data class EstablishMLSFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
+    data class EstablishMLSFailure(
+        val conversationId: ConversationId,
+        val reason: CoreFailure,
+        val meetingId: MeetingId,
+    ) : CoreFailure.FeatureFailure()
     data class UpdateConversationNameFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
     data object MeetingNotSupportedFailure : CoreFailure.FeatureFailure()
 }
 
-internal data class CreateNewMeetingResult(val conversationId: ConversationId, val mlsAdditionResult: MLSAdditionResult)
+internal data class CreateNewMeetingResult(
+    val conversationId: ConversationId,
+    val mlsAdditionResult: MLSAdditionResult,
+    val meetingId: MeetingId,
+)
