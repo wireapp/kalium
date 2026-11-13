@@ -57,7 +57,7 @@ class AppleAvsHandleTeardownTest {
         teardown.await()
     }
 
-    private class RecordingCallbacks : AppleAvsCallbacks {
+    internal class RecordingCallbacks : AppleAvsCallbacks {
         val configRequested = CompletableDeferred<Unit>()
         private val lock = NSLock()
         private var logCalls = 0
