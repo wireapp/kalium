@@ -247,6 +247,6 @@ class CallSignalReplayTest {
         }
         override suspend fun incoming(reference: IncomingCallReference, ring: Boolean, video: Boolean, generation: String) =
             null
-        override suspend fun closed(conversationValue: String, conversationDomain: String, reason: Int): String? = null
+        override suspend fun closed(conversationValue: String, conversationDomain: String, reason: Int, handledBy: String?): String? = null
     }
 }
