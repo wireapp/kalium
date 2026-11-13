@@ -65,7 +65,7 @@ internal class SelfApiV0Test : ApiTest() {
         val response = selfApi.getSelfInfo()
         assertFalse(response.isSuccessful())
         assertTrue(response.kException is KaliumException.InvalidRequestError)
-        assertEquals((response.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
+        assertEquals(response.kException.errorResponse, ERROR_RESPONSE)
     }
 
     @Test
@@ -121,7 +121,7 @@ internal class SelfApiV0Test : ApiTest() {
         selfApi.updateEmailAddress("new Email").also {
             assertFalse(it.isSuccessful())
             assertTrue(it.kException is KaliumException.InvalidRequestError)
-            assertEquals((it.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
+            assertEquals(it.kException.errorResponse, ERROR_RESPONSE)
         }
     }
 

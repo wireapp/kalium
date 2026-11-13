@@ -162,7 +162,7 @@ abstract class SchemaMigrationTest {
     ): List<Map<String, Any?>> {
         return executeQuery(null, sql, mapper = { cursor ->
             val results = mutableListOf<Map<String, Any?>>()
-            val columnCount = cursor.next().value?.let {
+            val columnCount = cursor.next().value.let {
                 // Get column count from the cursor
                 var count = 0
                 while (true) {
@@ -174,7 +174,7 @@ abstract class SchemaMigrationTest {
                     }
                 }
                 count
-            } ?: 0
+            }
 
             if (columnCount > 0) {
                 do {

@@ -65,7 +65,7 @@ internal class LogoutApiV0Test : ApiTest() {
         val errorResponse = logout.logout()
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
-        assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE.serializableData)
+        assertEquals(errorResponse.kException.errorResponse, ERROR_RESPONSE.serializableData)
     }
 
     private companion object {
