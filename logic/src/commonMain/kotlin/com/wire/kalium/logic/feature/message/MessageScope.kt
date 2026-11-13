@@ -124,6 +124,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.SendPendingAssetMessageUseCase
 import com.wire.kalium.logic.sync.SendPendingAssetMessageUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -189,6 +190,7 @@ public class MessageScope internal constructor(
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher,
     private val messageTimelineDAO: MessageTimelineDAO,
+    private val featureSupport: FeatureSupport,
 ) {
 
     private val messageTimelineRepository = MessageTimelineRepository(messageTimelineDAO, selfUserId)
@@ -558,7 +560,8 @@ public class MessageScope internal constructor(
             selfUserId,
             conversationRepository,
             messageRepository,
-            userPropertyRepository
+            userPropertyRepository,
+            featureSupport
         )
 
     private val sessionResetSender: SessionResetSender

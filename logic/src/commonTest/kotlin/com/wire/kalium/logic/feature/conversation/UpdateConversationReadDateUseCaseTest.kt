@@ -35,6 +35,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
 import dev.mokkery.MockMode
@@ -173,7 +174,7 @@ class UpdateConversationReadDateUseCaseTest {
     }
 
     @Test
-    fun givenMLSGroupConversation_whenUpdatingLastRead_thenShouldPersistAndSyncWithoutSendingReceipt() = runTest {
+    fun givenMLSGroupConversationAndTargetedMLSMessagesDisabled_whenUpdatingLastRead_thenShouldPersistAndSyncWithoutSendingReceipt() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
         val conversation = TestConversation.MLS_CONVERSATION.copy(
@@ -306,6 +307,7 @@ class UpdateConversationReadDateUseCaseTest {
         private val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
         private val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
         var sendConfirmation: SendConfirmationUseCase = mock<SendConfirmationUseCase>(mode = MockMode.autoUnit)
+        val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
 
         var workQueue: ConversationWorkQueue = InstantConversationWorkQueue()
 
@@ -350,7 +352,8 @@ class UpdateConversationReadDateUseCaseTest {
                 selfUserId = selfUserID,
                 conversationRepository = conversationRepository,
                 messageRepository = receiptMessageRepository,
-                userPropertyRepository = userPropertyRepository
+                userPropertyRepository = userPropertyRepository,
+                featureSupport = featureSupport
             )
         }
 

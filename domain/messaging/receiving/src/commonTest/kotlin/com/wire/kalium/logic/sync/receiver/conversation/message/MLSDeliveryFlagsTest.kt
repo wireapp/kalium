@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -76,6 +77,31 @@ class MLSDeliveryFlagsTest {
             applicationMessage(MessageContent.Calling("call"), targeted = true, transient = false).toSignalingMessage(self)
                 .isAcceptedDelivery()
         )
+    }
+
+    @Test
+    fun givenTargetedReadReceipt_whenCheckingPolicy_thenItIsAccepted() {
+        val readReceipt = MessageContent.Receipt(ReceiptType.READ, listOf("message"))
+
+        assertTrue(applicationMessage(readReceipt, targeted = true, transient = false).isAcceptedDelivery())
+        assertTrue(
+            applicationMessage(readReceipt, targeted = true, transient = false).toSignalingMessage(self).isAcceptedDelivery()
+        )
+    }
+
+    @Test
+    fun givenTransientReadReceipt_whenCheckingPolicy_thenItIsRejected() {
+        val readReceipt = MessageContent.Receipt(ReceiptType.READ, listOf("message"))
+
+        assertFalse(applicationMessage(readReceipt, targeted = false, transient = true).isAcceptedDelivery())
+        assertFalse(applicationMessage(readReceipt, targeted = true, transient = true).isAcceptedDelivery())
+    }
+
+    @Test
+    fun givenTargetedDeliveryReceipt_whenCheckingPolicy_thenItIsRejected() {
+        val deliveryReceipt = MessageContent.Receipt(ReceiptType.DELIVERED, listOf("message"))
+
+        assertFalse(applicationMessage(deliveryReceipt, targeted = true, transient = false).isAcceptedDelivery())
     }
 
     private fun decryptedBundle(content: MessageContent.FromProto, targeted: Boolean, transient: Boolean) =
