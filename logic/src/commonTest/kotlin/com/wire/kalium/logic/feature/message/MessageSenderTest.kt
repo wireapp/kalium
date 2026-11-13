@@ -959,6 +959,48 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenGroupOutOfSyncResponse_whenSendingTransientTargetedMLSMessage_thenRetryAsTransientTargetedMessage() {
+        val messageTarget = MessageTarget.Users(TEST_MEMBER_2)
+        val groupOutOfSyncFailure = MLSFailure.MessageRejected(
+            NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync(listOf(TestUser.OTHER_USER_ID))
+        )
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
+            withCreateOutgoingTransientTargetedMlsMessage()
+            withSendOutgoingTransientTargetedMlsMessage(
+                Either.Left(groupOutOfSyncFailure),
+                Either.Right(MessageSent(MESSAGE_SENT_TIME))
+            )
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(Arrangement.TEST_SIGNALING_MESSAGE, messageTarget, transient = true)
+
+            result.shouldSucceed()
+            assertEquals(1, arrangement.mlsMissingUsersMessageRejectionHandler.callCount)
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
+                    any(),
+                    Arrangement.GROUP_ID,
+                    any(),
+                    messageTarget,
+                    true
+                )
+            }
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.messageRepository.sendMLSTransientTargetedMessage(Arrangement.TEST_MLS_TRANSIENT_TARGETED_MESSAGE_BATCH)
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }
+        }
+    }
+
+    @Test
     fun givenBackendWithoutTransientMessages_whenSendingTransientMLSMessage_thenFallBackToApplicationMessage() {
         val (arrangement, messageSender) = arrange {
             withGetProtocolInfo(Arrangement.MLS_PROTOCOL_INFO)
