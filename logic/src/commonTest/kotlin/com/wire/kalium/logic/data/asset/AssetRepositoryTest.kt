@@ -45,6 +45,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
+import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
@@ -67,7 +68,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matches
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -113,6 +113,88 @@ internal class AssetRepositoryTest {
     fun breakDown() {
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun givenInvalidKeySizesAndMatchingHash_whenDownloadingPrivateAsset_thenFailsBeforeDownloading() = runTest {
+        val assetKey = UserAssetId("asset-id", "domain")
+        val ciphertext = ByteArray(32)
+        val matchingHash = SHA256Key(calcSHA256(ciphertext))
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withSuccessfulDownloadAndPersistedData(listOf(assetKey to ciphertext))
+            .arrange()
+
+        for (size in (0 until 32).toList() + listOf(33, 64)) {
+            repository.fetchPrivateDecodedAsset(
+                assetId = assetKey.value,
+                assetDomain = assetKey.domain,
+                assetName = "file.bin",
+                mimeType = "application/octet-stream",
+                assetToken = null,
+                encryptionKey = AES256Key(ByteArray(size)),
+                assetSHA256Key = matchingHash,
+            ).shouldFail { assertEquals(EncryptionFailure.GenericDecryptionError, it, "Key size: $size") }
+        }
+
+        verifySuspend(VerifyMode.not) { arrangement.assetApi.downloadAsset(any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.assetDAO.insertAsset(any()) }
+        assertTrue(fakeKaliumFileSystem.listDirectories(fakeKaliumFileSystem.rootCachePath).isEmpty())
+    }
+
+    @Test
+    fun givenInvalidHashSizes_whenDownloadingPrivateAsset_thenFailsBeforeDownloading() = runTest {
+        val assetKey = UserAssetId("asset-id", "domain")
+        val key = generateRandomAES256Key()
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withSuccessfulDownloadAndPersistedData(listOf(assetKey to ByteArray(32)))
+            .arrange()
+
+        for (size in (0 until 32).toList() + listOf(33, 64)) {
+            repository.fetchPrivateDecodedAsset(
+                assetId = assetKey.value,
+                assetDomain = assetKey.domain,
+                assetName = "file.bin",
+                mimeType = "application/octet-stream",
+                assetToken = null,
+                encryptionKey = key,
+                assetSHA256Key = SHA256Key(ByteArray(size)),
+            ).shouldFail { assertEquals(EncryptionFailure.WrongAssetHash, it, "Hash size: $size") }
+        }
+
+        verifySuspend(VerifyMode.not) { arrangement.assetApi.downloadAsset(any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.assetDAO.insertAsset(any()) }
+        assertTrue(fakeKaliumFileSystem.listDirectories(fakeKaliumFileSystem.rootCachePath).isEmpty())
+    }
+
+    @Test
+    fun givenCachedPendingAssetWithEmptyHash_whenFetchingPrivateAsset_thenReturnsLocalFile() = runTest {
+        val assetKey = UserAssetId("pending-asset", "domain")
+        val path = fakeKaliumFileSystem.providePersistentAssetPath("file.bin")
+        val payload = "pending upload".encodeToByteArray()
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withRawStoredData(payload, path)
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, path, payload.size.toLong()))
+            .arrange()
+
+        for (downloadIfNeeded in listOf(false, true)) {
+            repository.fetchPrivateDecodedAsset(
+                assetId = assetKey.value,
+                assetDomain = assetKey.domain,
+                assetName = "file.bin",
+                mimeType = "application/octet-stream",
+                assetToken = null,
+                encryptionKey = generateRandomAES256Key(),
+                assetSHA256Key = SHA256Key(byteArrayOf()),
+                downloadIfNeeded = downloadIfNeeded,
+            ).shouldSucceed {
+                assertEquals(path, it.path)
+                assertEquals(false, it.justDownloaded)
+            }
+        }
+
+        verifySuspend(VerifyMode.not) { arrangement.assetApi.downloadAsset(any(), any(), any(), any()) }
+        assertContentEquals(payload, fakeKaliumFileSystem.readByteArray(path))
+    }
+
     @Test
     fun retriedPublicUploadReopensTheSource() = runTest {
         verifyRetriedUpload(privateAsset = false)
@@ -145,9 +227,14 @@ internal class AssetRepositoryTest {
             otrKey = generateRandomAES256Key(), sha256Key = SHA256Key(byteArrayOf()), audioLengthInMs = 0, audioNormalizedLoudness = null,
         )
         val useCase = UploadAssetUseCaseImpl(
-            repository, sender, mock<MessageSendFailureHandler>(mode = MockMode.autoUnit), transfer,
-            mock<UpdateAudioMessageNormalizedLoudnessUseCase>(mode = MockMode.autoUnit), persist,
-            mock<AudioNormalizedLoudnessBuilder>(), dispatcher = testScope.testKaliumDispatcher(),
+            repository,
+            sender,
+            mock<MessageSendFailureHandler>(mode = MockMode.autoUnit),
+            transfer,
+            mock<UpdateAudioMessageNormalizedLoudnessUseCase>(mode = MockMode.autoUnit),
+            persist,
+            mock<AudioNormalizedLoudnessBuilder>(),
+            dispatcher = testScope.testKaliumDispatcher(),
         )
         val copiedFile = CompletableDeferred<Unit>()
         everySuspend { arrangement.assetDAO.insertAsset(any()) } calls {
@@ -232,7 +319,8 @@ internal class AssetRepositoryTest {
 
         verifySuspend {
             arrangement.assetApi.uploadAsset(any(), any(), any())
-        }    }
+        }
+    }
 
     @Test
     fun givenValidParams_whenUploadingPrivateAssets_thenShouldSucceedWithAMappedResponse() = runTest {
@@ -590,8 +678,8 @@ internal class AssetRepositoryTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
         val assetName = "La Gioconda.jpg"
-        val encryptionKey = AES256Key("some-encryption-key".encodeToByteArray())
-        val assetSha256 = SHA256Key(byteArrayOf(1, 2, 3))
+        val encryptionKey = AES256Key(ByteArray(32) { 1 })
+        val assetSha256 = SHA256Key(ByteArray(32) { 2 })
 
         val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
@@ -718,7 +806,10 @@ internal class AssetRepositoryTest {
             .withSuccessDeleteRemotelyResponse()
             .withSuccessDeleteLocallyResponse()
             .withRawStoredData(assetRawData, assetFile)
-            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()).copy(domain = assetKey.domain))
+            .withMockedAssetDaoGetByKeyCall(
+                assetKey,
+                stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()).copy(domain = assetKey.domain)
+            )
             .arrange()
 
         assertEquals(true, fakeKaliumFileSystem!!.exists(assetFile))
@@ -843,7 +934,8 @@ internal class AssetRepositoryTest {
                     it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
                 }
             )
-        }    }
+        }
+    }
 
     @Test
     fun uploadingManagedAssetRetainsSourceUntilMessageCommits() = runTest {
@@ -899,7 +991,8 @@ internal class AssetRepositoryTest {
                     it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
                 }
             )
-        }    }
+        }
+    }
 
     @Test
     fun givenDataFileNotExisting_whenPersistingAsset_thenShouldReturnFailure() = runTest {
@@ -1049,7 +1142,8 @@ internal class AssetRepositoryTest {
                 any(),
                 any()
             )
-        }    }
+        }
+    }
 
     @Test
     fun givenAuditLogEnabled_whenUploadingPrivateAsset_thenMetadataShouldBeIncluded() = runTest {
@@ -1091,7 +1185,8 @@ internal class AssetRepositoryTest {
                 any(),
                 any()
             )
-        }    }
+        }
+    }
 
     @Test
     fun givenAuditLogDisabled_whenUploadingPrivateAsset_thenMetadataShouldNotBeIncluded() = runTest {

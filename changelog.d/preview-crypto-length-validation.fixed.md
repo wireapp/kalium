@@ -1,0 +1,1 @@
+Validate AES-256 keys and SHA-256 hashes for received attachments and link preview images. Reject malformed attachment keys and hashes before downloading, report non-retryable download failures, and check AES key lengths before invoking platform cryptography.
