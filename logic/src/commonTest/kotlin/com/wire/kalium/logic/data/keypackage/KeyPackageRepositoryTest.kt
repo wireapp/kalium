@@ -50,7 +50,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlin.io.encoding.Base64
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -125,7 +124,6 @@ internal class KeyPackageRepositoryTest {
             }
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMoreUsersThanConcurrencyLimit_whenClaimingKeyPackages_thenSemaphoreKeepsClaimsWithinLimit() = runTest {
         val users = List(3) { index -> Arrangement.USER_ID.copy(value = "user$index") }

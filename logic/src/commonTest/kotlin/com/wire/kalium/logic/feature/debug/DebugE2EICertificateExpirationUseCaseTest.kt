@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
+import com.wire.kalium.util.DebugKaliumApi
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -43,6 +44,7 @@ class DebugE2EICertificateExpirationUseCaseTest {
     }
 
     @Test
+    @OptIn(DebugKaliumApi::class)
     fun givenExpirationBelowMinimum_whenSettingExpiration_thenMinimumIsStored() = runTest {
         val useCase = SetDebugE2EICertificateExpirationUseCaseImpl(x509CredentialAcquisitionConfigProvider)
 

@@ -48,6 +48,7 @@ import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangem
 import com.wire.kalium.logic.util.stubs.FailureSyncMigration
 import com.wire.kalium.logic.util.stubs.MigrationCrashStep
 import com.wire.kalium.logic.util.stubs.SuccessSyncMigration
+import com.wire.kalium.util.DebugKaliumApi
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -64,6 +65,7 @@ import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
+@OptIn(DebugKaliumApi::class)
 class SlowSyncWorkerTest {
 
     @Test

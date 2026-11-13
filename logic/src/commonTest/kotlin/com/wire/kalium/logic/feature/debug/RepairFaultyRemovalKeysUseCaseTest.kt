@@ -33,6 +33,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.util.DebugKaliumApi
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
@@ -45,6 +46,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(DebugKaliumApi::class)
 class RepairFaultyRemovalKeysUseCaseTest {
 
     @Test
@@ -151,6 +153,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
         assertEquals(1, result.failedRepairs.size)
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationRepository: ConversationRepository = mock()
         val resetMLSConversationUseCase: ResetMLSConversationUseCase = mock()
@@ -159,13 +162,11 @@ class RepairFaultyRemovalKeysUseCaseTest {
             everySuspend { conversationRepository.getMLSConversationsByDomain(any()) } returns result
         }
 
-        @OptIn(ExperimentalStdlibApi::class)
         suspend fun withGetExternalKeyForConversation(key: String) = apply {
             everySuspend { mlsContext.getExternalSenders(any()) } returns
                     ExternalSenderKey(key.hexToByteArray())
         }
 
-        @OptIn(ExperimentalStdlibApi::class)
         suspend fun withGetExternalKeyForConversation(groupId: GroupID, key: String) = apply {
             everySuspend { mlsContext.getExternalSenders(groupId.value) } returns
                     ExternalSenderKey(key.hexToByteArray())

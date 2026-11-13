@@ -54,6 +54,9 @@ kotlin {
         }
     }
     sourceSets {
+        matching { it.name.endsWith("Test") }.configureEach {
+            languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+        }
         appleMain {
             kotlin.srcDir(generateReceivingCompatibility)
         }

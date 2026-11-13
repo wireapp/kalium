@@ -41,6 +41,7 @@ import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlin.time.Instant
@@ -50,6 +51,7 @@ internal open class FakeMessageRepository : MessageRepository {
     override val extensions: MessageRepositoryExtensions
         get() = FakeMessageRepositoryExtensions()
 
+    @OptIn(DelicateKaliumApi::class)
     override suspend fun persistMessage(
         message: Message.Standalone,
         updateConversationModifiedDate: Boolean
