@@ -304,9 +304,19 @@ public class AppleAccountRuntime private constructor(
             diagnostics: ReceivingDiagnostics? = null,
             /** How long to keep trying while another owner holds the account. */
             busyRetry: Duration = Duration.ZERO,
+            /** And while that owner is an app extension, which gives the account up within its own budget. */
+            busyRetryForExtension: Duration = busyRetry,
             block: suspend (AppleAccountRuntime) -> T,
-        ): Either<AccountRuntimeFailure, T> =
-            use(rootPath, userId, keychainConfig, NetworkSettings(userAgent, certificatePinning), diagnostics, busyRetry, block)
+        ): Either<AccountRuntimeFailure, T> = use(
+            rootPath,
+            userId,
+            keychainConfig,
+            NetworkSettings(userAgent, certificatePinning),
+            diagnostics,
+            busyRetry,
+            busyRetryForExtension,
+            block,
+        )
 
         /**
          * As [use], but opens only the account's database: no CoreCrypto, network or PKI client. For reads, such
@@ -318,9 +328,11 @@ public class AppleAccountRuntime private constructor(
             keychainConfig: ApplePersistenceConfig,
             /** How long to keep trying while another owner holds the account. */
             busyRetry: Duration = Duration.ZERO,
+            /** And while that owner is an app extension, which gives the account up within its own budget. */
+            busyRetryForExtension: Duration = busyRetry,
             block: suspend (database: UserDatabaseBuilder, prepared: PreparedAccount) -> T,
         ): Either<AccountRuntimeFailure, T> =
-            use(rootPath, userId, keychainConfig, network = null, diagnostics = null, busyRetry = busyRetry) {
+            use(rootPath, userId, keychainConfig, network = null, diagnostics = null, busyRetry, busyRetryForExtension) {
                 block(it.database, it.prepared)
             }
 
@@ -328,8 +340,8 @@ public class AppleAccountRuntime private constructor(
          * Authenticated networking for [prepared], read while holding the account, without holding it: for uploads,
          * which touch neither its database nor CoreCrypto, so the app and the notification extension keep the account
          * meanwhile. Requests use the stored token; a refresh holds the account for that moment and waits for it at most
-         * [refreshWait] (see [UnheldAccountSession]). NOT_PREPARED when the account has no token to use; a failure of
-         * [block] is STORAGE, as for [use].
+         * [refreshWait], or [refreshWaitForExtension] while an app extension holds it (see [UnheldAccountSession]).
+         * NOT_PREPARED when the account has no token to use; a failure of [block] is STORAGE, as for [use].
          */
         @Suppress("LongParameterList", "TooGenericExceptionCaught")
         public suspend fun <T> useUnheld(
@@ -339,11 +351,13 @@ public class AppleAccountRuntime private constructor(
             userAgent: String,
             certificatePinning: CertificatePinning,
             refreshWait: Duration,
+            refreshWaitForExtension: Duration = refreshWait,
             block: suspend (network: AuthenticatedNetworkContainer, session: UnheldAccountSession) -> T,
         ): Either<AccountRuntimeFailure, T> {
             val userId = prepared.userId
             val (session, network) = try {
-                val session = UnheldAccountSession(rootPath, prepared, GlobalPrefProvider(keychainConfig).authTokenStorage, refreshWait)
+                val tokens = GlobalPrefProvider(keychainConfig).authTokenStorage
+                val session = UnheldAccountSession(rootPath, prepared, tokens, refreshWait, refreshWaitForExtension)
                 // Darwin currently rejects either proxy configuration or proxy credentials.
                 check(prepared.serverConfig.links.apiProxy == null && session.proxyCredentials() == null) {
                     "Apple proxy is unsupported"
@@ -385,9 +399,11 @@ public class AppleAccountRuntime private constructor(
             network: NetworkSettings?,
             diagnostics: ReceivingDiagnostics?,
             busyRetry: Duration,
+            busyRetryForExtension: Duration,
             block: suspend (AppleAccountRuntime) -> T,
         ): Either<AccountRuntimeFailure, T> {
-            val lease = when (val acquired = AppleAccountRuntimeOwner(rootPath).tryAcquire(userId, busyRetry)) {
+            val owner = AppleAccountRuntimeOwner(rootPath)
+            val lease = when (val acquired = owner.tryAcquire(userId, busyRetry, busyRetryForExtension)) {
                 is Either.Left -> return acquired
                 is Either.Right -> acquired.value
             }

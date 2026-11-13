@@ -19,7 +19,6 @@
 package com.wire.kalium.share
 
 import com.wire.kalium.cells.CellSharedFile
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
@@ -45,7 +44,6 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
-import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.AssetRetentionType
@@ -58,7 +56,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import okio.Buffer
@@ -68,22 +65,18 @@ import okio.HashingSink
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Source
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** A file the host prepared to share. Kalium reads [path] and never moves or deletes it. */
-@Serializable
 internal data class ShareFile(
-    @SerialName("path") val path: String,
-    @SerialName("name") val name: String,
-    @SerialName("mimeType") val mimeType: String,
-    @SerialName("sizeInBytes") val sizeInBytes: Long,
-    @SerialName("width") val width: Int? = null,
-    @SerialName("height") val height: Int? = null,
-    @SerialName("durationMs") val durationMs: Long? = null,
+    val path: String,
+    val name: String,
+    val mimeType: String,
+    val sizeInBytes: Long,
+    val width: Int? = null,
+    val height: Int? = null,
+    val durationMs: Long? = null,
 )
 
 /** A [ShareFile] the backend stored, encrypted with [otrKey]. */
@@ -138,35 +131,20 @@ internal fun SharePolicy?.refusal(name: String, mimeType: String, sizeInBytes: L
     else -> null
 }
 
-/** Checks [files] against the conversation and the account's rules, then uploads them while holding the account. */
-internal suspend fun AppleAccountRuntime.uploadSharedFiles(
-    conversationId: ConversationId,
-    files: List<ShareFile>,
-    restriction: BuildFileRestrictionState,
-    progress: (uploaded: Long, total: Long) -> Unit,
-): Either<ShareOutcome, List<ShareItem>> {
-    if (files.isEmpty()) return Either.Right(emptyList())
-    return database.shareUploadTarget(prepared.userId, prepared.serverConfig.links, conversationId, files, restriction)
-        .flatMap { it.upload(network, authenticatedSession, conversationId, files, progress) }
-}
-
 /**
- * Runs [upload] while the extension holds the account for it, which keeps the account from the app and the NSE
- * (ADR 12). Uploads end with `OPEN_APP`, for the host to hand the share to the app, when [accountWanted] completes
- * or [budget] ends. Nothing is stored before every upload finished, so stopping them stores nothing.
+ * Runs [upload], which holds the account only for a moment to read where the files go, until it ends or
+ * [accountWanted] completes: the app is about to own the account the send needs, so uploads end with `OPEN_APP` and
+ * the host hands the share to the app (ADR 12). Nothing is stored before every upload finished, so stopping them
+ * stores nothing.
  */
 internal suspend fun <T> yieldingUploads(
-    budget: Duration,
     accountWanted: Job,
     discard: suspend (T) -> Unit = {},
     upload: suspend () -> Either<ShareOutcome, T>,
 ): Either<ShareOutcome, T> = coroutineScope {
     var completed: Either<ShareOutcome, T>? = null
     var delivered = false
-    val uploads = async {
-        withTimeoutOrNull(budget) { upload().also { completed = it } }
-            ?: Either.Left(ShareOutcome(ShareStatus.OPEN_APP, UPLOAD_TIMEOUT))
-    }
+    val uploads = async { upload().also { completed = it } }
     try {
         select {
             uploads.onAwait {
@@ -183,19 +161,8 @@ internal suspend fun <T> yieldingUploads(
     }
 }
 
-/**
- * How long uploads of [totalBytes] may hold the account: enough at about 1 Mbit/s, and at most five minutes. A
- * slower share goes to the app, which uploads it while it owns the account anyway.
- */
-internal fun uploadBudget(totalBytes: Long): Duration =
-    (UPLOAD_BUDGET_BASE + (totalBytes / MIN_UPLOAD_BYTES_PER_SECOND).seconds).coerceAtMost(MAX_UPLOAD_BUDGET)
-
-/** Another process wants the account the extension holds; see [yieldingUploads]. */
+/** Another process wants the account; see [yieldingUploads]. */
 internal const val ACCOUNT_WANTED = "ACCOUNT_WANTED"
-private const val UPLOAD_TIMEOUT = "UPLOAD_TIMEOUT"
-private const val MIN_UPLOAD_BYTES_PER_SECOND = 128L * 1024
-private val UPLOAD_BUDGET_BASE = 30.seconds
-private val MAX_UPLOAD_BUDGET = 5.minutes
 
 internal fun ShareFile.metadata(): AssetContent.AssetMetadata? =
     sharedFileMetadata(mimeType, width, height, durationMs)

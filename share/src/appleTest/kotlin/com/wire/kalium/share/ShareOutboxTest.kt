@@ -21,9 +21,6 @@ package com.wire.kalium.share
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.message.CellAssetContent
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.RegularMessageMapper
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
@@ -101,25 +98,17 @@ class ShareOutboxTest {
     }
 
     @Test
-    fun appPreparesDraftWithoutSendingThenConsumesItWithoutReupload() = runTest {
+    fun aCellsShareWhoseUploadFailedIsUploadedAgainWithoutARing() = runTest {
         withDatabase { database ->
             seed(database)
             conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
-            val store = ShareDraftStore(root.toString(), SELF)
-            val path = file("photo")
-            val draft = store.create(ConversationId("group", SELF.domain), ShareFile(path, PHOTO.name, PHOTO.mimeType, PHOTO.sizeInBytes, PHOTO.width, PHOTO.height))
-            val preparation = request(PHOTO).copy(draftAction = "prepare", draftId = draft)
-            outbox.handOff(preparation, listOf(path))
-            val sending = RecordingSending(database)
-            server(database, sending).importShares()
-            assertEquals(1, sending.prepared)
-            assertEquals(emptyList(), sending.stored)
-            assertEquals("version", store.read(draft)?.asset?.version)
-            outbox.handOff(request(PHOTO).copy(preparedDraftIds = listOf(draft)), listOf(path))
-            server(database, sending).importShares()
-            assertEquals(1, sending.prepared)
-            assertEquals(listOf("Prepared:1:Hello"), sending.stored)
-            assertNull(store.read(draft))
+            val id = outbox.handOff(request(PHOTO), listOf(file("photo")))
+            val sending = RecordingSending(database, failedCellsUploads = 1)
+            // The doorbell never rings: serving imports at its start, then again on its own after the failed upload.
+            val serving = launch { server(database, sending).serve(MutableSharedFlow()) }
+            assertEquals(HandOffState.Finished(ShareOutbox.STORED), awaitResult(id))
+            assertEquals(1, sending.stored.size)
+            serving.cancelAndJoin()
         }
     }
 
@@ -298,20 +287,22 @@ class ShareOutboxTest {
     }
 
     @Test
-    fun anUnwatchedDraftPreparationDoesNotReportAMessageSendFailure() = runTest {
+    fun draftWorkAnEarlierBuildQueuedIsDroppedWithoutSendingOrReporting() = runTest {
         withDatabase { database ->
             seed(database)
-            val id = outbox.handOff(
-                request(PHOTO, conversation = "left").copy(draftAction = "prepare"),
-                listOf(file("photo")),
-            )
-            assertNull(outbox.stopWaiting(id))
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val prepare = outbox.handOff(request(PHOTO).copy(draftAction = "prepare"), listOf(file("photo")))
+            val discard = outbox.handOff(request(conversation = "left").copy(draftAction = "discard"), emptyList())
+            assertNull(outbox.stopWaiting(prepare))
+            assertNull(outbox.stopWaiting(discard))
+            val sending = RecordingSending(database)
             val reports = mutableListOf<String>()
 
-            server(database, RecordingSending(database)) { _, _, reason -> reports += reason }.importShares()
+            server(database, sending) { _, _, reason -> reports += reason }.importShares()
 
+            assertEquals(emptyList(), sending.stored)
             assertTrue(reports.isEmpty())
-            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(id))
+            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(prepare))
         }
     }
 
@@ -365,6 +356,8 @@ class ShareOutboxTest {
             outbox.askForConversations()
             server(database, RecordingSending(database)).answerConversations()
             val queued = outbox.handOff(request(), emptyList())
+            // Draft uploads an earlier build left behind.
+            FileSystem.SYSTEM.createDirectories(root / "share-drafts" / "account")
 
             deleteShareOutbox(root.toString(), SELF)
 
@@ -411,6 +404,7 @@ class ShareOutboxTest {
         private val database: UserDatabaseBuilder,
         private val cancelOn: String? = null,
         private val synced: CompletableDeferred<Unit>? = null,
+        private var failedCellsUploads: Int = 0,
     ) : ShareOutboxSending {
         val stored = mutableListOf<String>()
         val waitingForSync = CompletableDeferred<Unit>()
@@ -433,28 +427,10 @@ class ShareOutboxTest {
         override suspend fun cells(
             conversationId: ConversationId, files: List<ShareOutboxFile>, text: String, messageId: String,
         ): String? {
+            if (failedCellsUploads-- > 0) return ShareOutboxSending.UPLOAD_FAILED
             files.forEach { assertEquals(true, FileSystem.SYSTEM.exists(it.path.toPath())) }
             store(conversationId, messageId, "Cells:${files.joinToString(",") { it.name }}:$text as $messageId")
             if (messageId == cancelOn) throw CancellationException("Backgrounded after storage")
-            return null
-        }
-
-        var prepared = 0
-        override suspend fun prepareCells(
-            conversationId: ConversationId, files: List<ShareOutboxFile>, progress: (Long, Long) -> Unit,
-        ): Either<String, List<CellAssetContent>> {
-            prepared++
-            progress(1, 2)
-            return Either.Right(files.map {
-                CellAssetContent("node", "version", it.mimeType, "cell/${it.name}", it.sizeInBytes,
-                    metadata = it.metadata(), transferStatus = AssetTransferStatus.NOT_DOWNLOADED)
-            })
-        }
-        override suspend fun discardCells(attachments: List<CellAssetContent>) = Unit
-        override suspend fun storeCells(
-            conversationId: ConversationId, attachments: List<CellAssetContent>, text: String, messageId: String,
-        ): String? {
-            store(conversationId, messageId, "Prepared:${attachments.size}:$text")
             return null
         }
 
