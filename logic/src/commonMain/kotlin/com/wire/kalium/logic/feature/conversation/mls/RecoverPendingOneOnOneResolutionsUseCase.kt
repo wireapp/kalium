@@ -40,9 +40,9 @@ internal class RecoverPendingOneOnOneResolutionsUseCaseImpl(
 ) : RecoverPendingOneOnOneResolutionsUseCase {
 
     override suspend fun invoke() {
-        syncStateObserver.waitUntilLiveOrFailure().onFailure {
-            return
-        }
+        // Only the session's drain runs this, and it has already consumed the signal, so wait through
+        // sync failures instead of dropping the run; the queue could otherwise stall until the next foreground.
+        syncStateObserver.waitUntilLive()
 
         val pendingUserIds = pendingActionsRepository.getPendingOneOnOneResolutions()
         if (pendingUserIds.isEmpty()) return
