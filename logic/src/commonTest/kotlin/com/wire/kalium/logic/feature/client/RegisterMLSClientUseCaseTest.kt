@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CredentialType
@@ -42,6 +44,7 @@ import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -50,6 +53,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class RegisterMLSClientUseCaseTest {
@@ -66,8 +70,9 @@ class RegisterMLSClientUseCaseTest {
                 .withRegisterMLSClient(Either.Right(Unit))
                 .withSetShouldJoinPendingMLSConversations(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
-                .withUploadKeyPackagesSuccessful()
-                .withMLSTransaction<Unit>()
+                .withGeneratingKeyPackagesSuccessful()
+                .withUploadKeyPackagesResult()
+                .withMLSTransaction()
                 .arrange()
 
             val result = registerMLSClient(TestClient.CLIENT_ID)
@@ -85,8 +90,10 @@ class RegisterMLSClientUseCaseTest {
             }
 
             verifySuspend {
-                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+                arrangement.mlsContext.generateKeyPackages(Arrangement.REFILL_AMOUNT, any())
+                arrangement.keyPackageRepository.uploadKeyPackages(TestClient.CLIENT_ID, Arrangement.KEY_PACKAGES)
             }
+            assertEquals(listOf(true), arrangement.uploadsAfterCommit)
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsClient.initializeBasicCredential()
             }
@@ -104,7 +111,7 @@ class RegisterMLSClientUseCaseTest {
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
-                .withUploadKeyPackagesSuccessful()
+                .withUploadKeyPackagesResult()
                 .arrange()
 
             val result = registerMLSClient(TestClient.CLIENT_ID)
@@ -122,7 +129,7 @@ class RegisterMLSClientUseCaseTest {
             }
 
             verifySuspend(VerifyMode.not) {
-                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+                arrangement.keyPackageRepository.uploadKeyPackages(any(), any())
                 arrangement.mlsClient.initializeBasicCredential()
             }
         }
@@ -171,8 +178,9 @@ class RegisterMLSClientUseCaseTest {
                 .withRegisterMLSClient(Either.Right(Unit))
                 .withSetShouldJoinPendingMLSConversations(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
-                .withUploadKeyPackagesSuccessful()
-                .withMLSTransaction<Unit>()
+                .withGeneratingKeyPackagesSuccessful()
+                .withUploadKeyPackagesResult()
+                .withMLSTransaction()
                 .arrange()
 
             val result = registerMLSClient(TestClient.CLIENT_ID)
@@ -190,8 +198,10 @@ class RegisterMLSClientUseCaseTest {
             }
 
             verifySuspend {
-                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+                arrangement.mlsContext.generateKeyPackages(Arrangement.REFILL_AMOUNT, any())
+                arrangement.keyPackageRepository.uploadKeyPackages(TestClient.CLIENT_ID, Arrangement.KEY_PACKAGES)
             }
+            assertEquals(listOf(true), arrangement.uploadsAfterCommit)
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsClient.initializeBasicCredential()
             }
@@ -206,8 +216,9 @@ class RegisterMLSClientUseCaseTest {
             .withRegisterMLSClient(Either.Right(Unit))
             .withSetShouldJoinPendingMLSConversations(Either.Right(Unit))
             .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
-            .withUploadKeyPackagesSuccessful()
-            .withMLSTransaction<Unit>()
+            .withGeneratingKeyPackagesSuccessful()
+            .withUploadKeyPackagesResult()
+            .withMLSTransaction()
             .arrange()
 
         registerMLSClient(TestClient.CLIENT_ID).shouldSucceed()
@@ -215,7 +226,7 @@ class RegisterMLSClientUseCaseTest {
         verifySuspend(VerifyMode.order) {
             arrangement.clientRepository.registerMLSClient(any(), any(), any())
             arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(true)
-            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+            arrangement.keyPackageRepository.uploadKeyPackages(TestClient.CLIENT_ID, Arrangement.KEY_PACKAGES)
         }
     }
 
@@ -248,8 +259,78 @@ class RegisterMLSClientUseCaseTest {
         registerMLSClient(TestClient.CLIENT_ID).shouldFail { assertIs<StorageFailure.DataNotFound>(it) }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+            arrangement.mlsContext.generateKeyPackages(any(), any())
+            arrangement.keyPackageRepository.uploadKeyPackages(any(), any())
         }
+    }
+
+    @Test
+    fun givenKeyPackageGenerationFails_whenRegistering_thenFailureIsPropagatedWithoutUploading() = runTest {
+        val failure = IllegalStateException("generation failed")
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = false)))
+            .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, MLS_CIPHER_SUITE)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withSetShouldJoinPendingMLSConversations(Either.Right(Unit))
+            .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
+            .withGeneratingKeyPackagesFailing(failure)
+            .withMLSTransaction()
+            .arrange()
+
+        registerMLSClient(TestClient.CLIENT_ID).shouldFail {
+            assertEquals(failure, assertIs<MLSFailure.Generic>(it).rootCause)
+        }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.uploadKeyPackages(any(), any())
+        }
+    }
+
+    @Test
+    fun givenKeyPackageCommitFails_whenRegistering_thenFailureIsPropagatedWithoutUploading() = runTest {
+        val failure = IllegalStateException("commit failed")
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = false)))
+            .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, MLS_CIPHER_SUITE)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withSetShouldJoinPendingMLSConversations(Either.Right(Unit))
+            .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
+            .withGeneratingKeyPackagesSuccessful()
+            .withMLSTransaction(commitFailure = failure)
+            .arrange()
+
+        registerMLSClient(TestClient.CLIENT_ID).shouldFail {
+            assertEquals(failure, assertIs<MLSFailure.Generic>(it).rootCause)
+        }
+
+        verifySuspend {
+            arrangement.mlsContext.generateKeyPackages(Arrangement.REFILL_AMOUNT, any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.uploadKeyPackages(any(), any())
+        }
+    }
+
+    @Test
+    fun givenKeyPackageUploadFails_whenRegistering_thenFailureIsPropagatedAfterCommit() = runTest {
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = false)))
+            .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, MLS_CIPHER_SUITE)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withSetShouldJoinPendingMLSConversations(Either.Right(Unit))
+            .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
+            .withGeneratingKeyPackagesSuccessful()
+            .withUploadKeyPackagesResult(Either.Left(failure))
+            .withMLSTransaction()
+            .arrange()
+
+        registerMLSClient(TestClient.CLIENT_ID).shouldFail { assertEquals(failure, it) }
+
+        assertEquals(listOf(true), arrangement.uploadsAfterCommit)
     }
 
     private class Arrangement {
@@ -261,6 +342,9 @@ class RegisterMLSClientUseCaseTest {
         val keyPackageRepository: KeyPackageRepository = mock(mode = MockMode.autoUnit)
         val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock(mode = MockMode.autoUnit)
         val userConfigRepository: UserConfigRepository = mock(mode = MockMode.autoUnit)
+
+        val uploadsAfterCommit = mutableListOf<Boolean>()
+        private var transactionCommitted = false
 
         suspend fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
             everySuspend {
@@ -292,10 +376,25 @@ class RegisterMLSClientUseCaseTest {
             } returns refillAmount
         }
 
-        suspend fun withUploadKeyPackagesSuccessful() = apply {
+        suspend fun withGeneratingKeyPackagesSuccessful() = apply {
             everySuspend {
-                keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, any())
-            } returns Either.Right(Unit)
+                mlsContext.generateKeyPackages(any(), any())
+            } returns KEY_PACKAGES
+        }
+
+        suspend fun withGeneratingKeyPackagesFailing(failure: Exception) = apply {
+            everySuspend {
+                mlsContext.generateKeyPackages(any(), any())
+            } throws failure
+        }
+
+        suspend fun withUploadKeyPackagesResult(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            everySuspend {
+                keyPackageRepository.uploadKeyPackages(TestClient.CLIENT_ID, any())
+            } calls {
+                uploadsAfterCommit += transactionCommitted
+                result
+            }
         }
 
         suspend fun withGetPublicKey(publicKey: ByteArray, cipherSuite: MLSCiphersuite) = apply {
@@ -316,13 +415,16 @@ class RegisterMLSClientUseCaseTest {
             } returns Either.Right(mlsClient)
         }
 
-        suspend fun <R> withMLSTransaction() = apply {
+        suspend fun withMLSTransaction(commitFailure: Exception? = null) = apply {
             everySuspend {
-                mlsClient.transaction<R>(any(), any())
+                mlsClient.transaction<List<ByteArray>>(any(), any())
             } calls { invocation ->
                 @Suppress("UNCHECKED_CAST")
-                val block = invocation.args[1] as suspend (MlsCoreCryptoContext) -> R
-                block(mlsContext)
+                val block = invocation.args[1] as suspend (MlsCoreCryptoContext) -> List<ByteArray>
+                val keyPackages = block(mlsContext)
+                commitFailure?.let { throw it }
+                transactionCommitted = true
+                keyPackages
             }
         }
 
@@ -336,6 +438,7 @@ class RegisterMLSClientUseCaseTest {
 
         companion object {
             val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
+            val KEY_PACKAGES = listOf("keypackage".encodeToByteArray())
             val MLS_CIPHER_SUITE = MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             const val REFILL_AMOUNT = 100
             val RANDOM_URL = "https://random.rn"
