@@ -18,7 +18,6 @@
 package com.wire.kalium.api.base.authenticated.notification
 
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.authenticated.notification.conversation.MLSMessagePayloadEventData
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.tools.KtxSerializer
@@ -26,7 +25,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Instant
 
-class MLSPayloadMessageEventTest {
+class MLSMessageEventTest {
 
     @Test
     fun givenTargetedMLSMessageEvent_whenDecoding_thenReturnsTargetedMessageDTO() {
