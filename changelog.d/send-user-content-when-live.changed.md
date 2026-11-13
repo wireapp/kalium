@@ -1,0 +1,1 @@
+Messages, edits and reactions are sent only while sync is live. If sync fails, stops or does not start, the send fails as offline instead of reaching others from a view with unprocessed events. Calls, receipts, deletions and other signaling still send at once.

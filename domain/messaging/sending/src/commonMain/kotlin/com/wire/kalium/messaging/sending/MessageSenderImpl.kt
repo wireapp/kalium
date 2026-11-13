@@ -190,14 +190,18 @@ class MessageSenderImpl(
 
     /**
      * Rechecks and prepares the message inside the same crypto transaction as cancellation and competing sends.
-     * A stale MLS send retries after catch-up, outside the transaction, then rechecks the stored state again.
+     * User content goes out only while sync is live, checked inside the transaction: an event batch that fails while
+     * the send waits for it leaves sync failed. Waiting for live and the stale MLS retry both happen outside the
+     * transaction, then the stored state is rechecked.
      */
     private suspend fun sendPreparedMessage(
         message: Message.Sendable,
         messageTarget: MessageTarget,
-        remainingAttempts: Int
+        remainingAttempts: Int,
+        waitedForLive: Boolean = false,
     ): Either<CoreFailure, Message.Sendable?> =
         session.transaction("sendMessage") { transactionContext ->
+            if (message.isUserContent() && !session.isLive()) return@transaction Either.Left(NotLive)
             messageToSend(message).flatMap { current ->
                 if (current == null) return@flatMap Either.Right(null)
                 prepareMessage(current).flatMap { processedMessage ->
@@ -239,6 +243,10 @@ class MessageSenderImpl(
             }
         }.fold({ failure ->
             when {
+                failure === NotLive && waitedForLive -> Either.Left(NetworkFailure.NoNetworkConnection(null))
+                failure === NotLive -> session.waitUntilLiveOrStopped().flatMap {
+                    sendPreparedMessage(message, messageTarget, remainingAttempts, waitedForLive = true)
+                }
                 failure !is StaleUntilLive -> Either.Left(failure)
                 remainingAttempts <= 0 -> Either.Left(failure.cause)
                 else -> session.waitUntilLiveOrFailure().flatMap {
@@ -648,6 +656,17 @@ class MessageSenderImpl(
         else {
             messages.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
         }
+
+    /**
+     * What the user writes, edits or reacts never goes out from a view of the conversation that still has events to
+     * process. Calls, receipts and other signaling don't wait, and neither do deletions: an expiring self-deleting
+     * message sends its deletion on its own.
+     */
+    private fun Message.Sendable.isUserContent() = this is Message.Regular || content is MessageContent.TextEdited ||
+        content is MessageContent.MultipartEdited || content is MessageContent.Reaction
+
+    /** User content found sync not live inside the transaction; [sendPreparedMessage] waits outside it and retries once. */
+    private object NotLive : CoreFailure.FeatureFailure()
 
     /** A stale MLS send whose epoch was verified. It never leaves the sender: [sendPreparedMessage] retries it or returns [cause]. */
     private class StaleUntilLive(val cause: CoreFailure) : CoreFailure.FeatureFailure()

@@ -123,6 +123,12 @@ interface SendingSession {
     /** Suspends until sync reaches live, or fails if it is not running or fails. */
     suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit>
 
+    /** Whether sync is live right now. */
+    fun isLive(): Boolean
+
+    /** Suspends until sync reaches live; fails if sync fails, stops, or does not start, instead of waiting for a later sync. */
+    suspend fun waitUntilLiveOrStopped(): Either<CoreFailure, Unit>
+
     suspend fun <R> transaction(
         name: String,
         block: suspend (transactionContext: CryptoTransactionContext) -> Either<CoreFailure, R>
