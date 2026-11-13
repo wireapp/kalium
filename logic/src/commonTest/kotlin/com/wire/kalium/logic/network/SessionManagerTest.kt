@@ -56,6 +56,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class SessionManagerTest {
 
@@ -105,6 +106,33 @@ class SessionManagerTest {
         assertEquals(expectedData.refreshToken, result.refreshToken)
         assertEquals(expectedData.tokenType, result.tokenType)
         assertEquals(expectedData.cookieLabel, result.cookieLabel)
+    }
+
+    @Test
+    fun givenTemporaryStorageFailure_whenFetchingSession_thenRequestFailsWithoutLogoutAndNextReadRecovers() = runTest {
+        var storageAvailable = false
+        val (arrangement, sessionManager) = arrange {
+            withCurrentTokenReturning {
+                if (!storageAvailable) error("Keychain is temporarily unavailable")
+                TEST_AUTH_TOKEN_ENTITY
+            }
+        }
+
+        assertFailsWith<IllegalStateException> { sessionManager.session() }
+
+        storageAvailable = true
+        assertEquals(TEST_SESSION_DTO, sessionManager.session())
+        assertEquals(emptyList(), arrangement.logoutReasons)
+    }
+
+    @Test
+    fun givenMissingStoredToken_whenFetchingSession_thenSessionExpires() = runTest {
+        val (arrangement, sessionManager) = arrange {
+            withCurrentTokenReturning { null }
+        }
+
+        assertNull(sessionManager.session())
+        assertEquals(listOf(LogoutReason.SESSION_EXPIRED), arrangement.logoutReasons)
     }
 
     @Test
@@ -239,7 +267,7 @@ class SessionManagerTest {
             withCurrentTokenReturning { result }
         }
 
-        fun withCurrentTokenReturning(block: (args: Array<Any?>) -> AuthTokenEntity) = apply {
+        fun withCurrentTokenReturning(block: (args: Array<Any?>) -> AuthTokenEntity?) = apply {
             every {
                 tokenStorage.getToken(any())
             } calls { invocation -> block(invocation.args.toTypedArray()) }
@@ -272,6 +300,13 @@ class SessionManagerTest {
             tokenType = TEST_ACCOUNT_TOKENS.accessToken.tokenType,
             accessToken = TEST_ACCOUNT_TOKENS.accessToken.value,
             refreshToken = TEST_ACCOUNT_TOKENS.refreshToken.value,
+            cookieLabel = TEST_ACCOUNT_TOKENS.cookieLabel
+        )
+        val TEST_AUTH_TOKEN_ENTITY = AuthTokenEntity(
+            userId = UserIDEntity(TEST_ACCOUNT_TOKENS.userId.value, TEST_ACCOUNT_TOKENS.userId.domain),
+            accessToken = TEST_ACCOUNT_TOKENS.accessToken.value,
+            refreshToken = TEST_ACCOUNT_TOKENS.refreshToken.value,
+            tokenType = TEST_ACCOUNT_TOKENS.accessToken.tokenType,
             cookieLabel = TEST_ACCOUNT_TOKENS.cookieLabel
         )
     }
