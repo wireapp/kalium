@@ -132,7 +132,7 @@ class CallManagerIncomingLifecycleTest {
                             incomingReferences.send(it.arg(0))
                             null
                         }
-                        everySuspend { journal.closed(any(), any(), any()) } returns null
+                        everySuspend { journal.closed(any(), any(), any(), any()) } returns null
                         manager.attachSignalJournal(journal)
                         try {
                             manager.waitUntilInitialized()

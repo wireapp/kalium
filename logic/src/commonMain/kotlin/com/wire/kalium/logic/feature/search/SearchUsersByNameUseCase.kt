@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
+import com.wire.kalium.logic.data.user.ContactStatus
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -93,6 +94,7 @@ internal class SearchUsersByNameUseCaseImpl internal constructor(
                         previewAssetId = it.previewPicture,
                         type = it.userType,
                         connectionStatus = it.connectionStatus,
+                        contactStatus = it.contactStatus ?: ContactStatus.CONTACTABLE,
                         handle = it.handle
                     )
                 }

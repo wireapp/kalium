@@ -842,10 +842,12 @@ internal class CallManagerImpl internal constructor(
         val closeContext = traceContext(conversationIdWithDomain, Uuid.random().toString())
         AppleCallTrace.record(CallTraceEvent.AVS_CLOSED, closeContext, code = reason)
         callEffects.trySend {
+            var callContinues = false
             try {
                 val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
                 val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
                 val callStatus = getCallStatusFromCloseReason(avsReason, callMetadata?.conversationType)
+                callContinues = callStatus == CallStatus.STILL_ONGOING
 
                 if (avsReason == CallClosedReason.ANSWERED_ELSEWHERE) {
                     callRepository.updateIsAnsweredElsewhere(conversationIdWithDomain)
@@ -877,7 +879,14 @@ internal class CallManagerImpl internal constructor(
                 }
                 createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
             } finally {
-                val endedId = signalJournal?.closed(conversationIdWithDomain.value, conversationIdWithDomain.domain, reason)
+                // A group call that continues keeps its signals, so Join comes back after a restart.
+                // An ended call forgets them, so a restart cannot replay it and record it again.
+                val endedId = signalJournal?.closed(
+                    conversationIdWithDomain.value,
+                    conversationIdWithDomain.domain,
+                    reason,
+                    handledBy = signalGeneration.takeUnless { callContinues },
+                )
                 if (endedId != null) AppleCallTrace.record(
                     CallTraceEvent.JOURNAL_CLOSED,
                     closeContext.withSignal(endedId),
