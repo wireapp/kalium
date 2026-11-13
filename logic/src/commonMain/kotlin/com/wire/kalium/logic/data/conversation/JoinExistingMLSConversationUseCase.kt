@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -60,8 +61,12 @@ internal interface JoinExistingMLSConversationUseCase {
         conversationId: ConversationId,
         mlsPublicKeys: MLSPublicKeys? = null,
         allowJoinByExternalCommit: Boolean = true,
+        mode: MLSJoinMode = MLSJoinMode.JOIN_OR_ESTABLISH,
     ): Either<CoreFailure, Unit>
 }
+
+/** Pending recovery must not resolve a peer to a different 1:1 or create a new group. */
+internal enum class MLSJoinMode { JOIN_OR_ESTABLISH, RECOVER_EXACT_GROUP }
 
 @Suppress("LongParameterList")
 internal class JoinExistingMLSConversationUseCaseImpl(
@@ -84,17 +89,21 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         conversationId: ConversationId,
         mlsPublicKeys: MLSPublicKeys?,
         allowJoinByExternalCommit: Boolean,
+        mode: MLSJoinMode,
     ): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
             logger.d("Skip re-join existing MLS conversation, since MLS is not supported.")
-            Either.Right(Unit)
+            if (mode == MLSJoinMode.RECOVER_EXACT_GROUP) Either.Left(CoreFailure.MissingClientRegistration) else Either.Right(Unit)
         } else {
-            conversationRepository.getNonDeletedConversationById(conversationId).fold({
-                Either.Left(StorageFailure.DataNotFound)
+            conversationRepository.getNonDeletedConversationById(conversationId).fold({ failure ->
+                Either.Left(if (mode == MLSJoinMode.RECOVER_EXACT_GROUP) failure else StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
+                    if (mode == MLSJoinMode.RECOVER_EXACT_GROUP) {
+                        return@withContext recoverExactGroup(transactionContext, conversation)
+                    }
                     refreshConversationMetadataIfNeeded(
                         transactionContext = transactionContext,
                         conversation = conversation,
@@ -111,6 +120,31 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 }
             })
         }
+
+    private suspend fun recoverExactGroup(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+    ): Either<CoreFailure, Unit> {
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable ?: return Either.Right(Unit)
+        return transactionContext.wrapInMLSContext { context ->
+            wrapMLSRequest { context.conversationExists(protocol.groupId.value) }
+        }.flatMap { exists ->
+            if (exists && protocol.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
+                Either.Right(Unit)
+            } else {
+                // A per-peer 1:1 lookup may return a different conversation. Recovery owns this exact ID.
+                fetchConversation(transactionContext, conversation.id).flatMap {
+                    conversationRepository.getNonDeletedConversationById(conversation.id)
+                }.flatMap { refreshed ->
+                    canRecoverExactGroup(refreshed).flatMap { eligible ->
+                        if (eligible) {
+                            joinOrEstablishMLSGroupAndRetry(transactionContext, refreshed, null, true, exactId = true)
+                        } else Either.Right(Unit)
+                    }
+                }
+            }
+        }
+    }
 
     private suspend fun refreshConversationMetadataIfNeeded(
         transactionContext: CryptoTransactionContext,
@@ -163,54 +197,81 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         conversation: Conversation,
         mlsPublicKeys: MLSPublicKeys?,
         allowJoinByExternalCommit: Boolean,
+        exactId: Boolean = false,
     ): Either<CoreFailure, Unit> =
-        joinOrEstablishMLSGroup(
-            transactionContext = transactionContext,
-            conversation = conversation,
-            publicKeys = mlsPublicKeys,
-            allowJoinByExternalCommit = allowJoinByExternalCommit
-        )
-            .flatMapLeft { failure ->
-                val failure = failure.wrapNetworkMlsFailureIfApplicable()
-                if (failure !is MLSFailure.MessageRejected) return@flatMapLeft Either.Left(failure)
-                when (failure.cause) {
-                    is NetworkFailure.MlsMessageRejectedFailure.MissingGroupInfo -> {
-                        logger.w("Conversation has no group info, ignoring...")
-                        Either.Right(Unit)
-                    }
+        (
+            if (exactId) joinExactMLSGroup(transactionContext, conversation)
+            else joinOrEstablishMLSGroup(
+                transactionContext = transactionContext,
+                conversation = conversation,
+                publicKeys = mlsPublicKeys,
+                allowJoinByExternalCommit = allowJoinByExternalCommit
+            )
+        ).flatMapLeft { failure ->
+            val failure = failure.wrapNetworkMlsFailureIfApplicable()
+            if (failure !is MLSFailure.MessageRejected) return@flatMapLeft Either.Left(failure)
+            when (failure.cause) {
+                is NetworkFailure.MlsMessageRejectedFailure.MissingGroupInfo -> {
+                    logger.w("Conversation has no group info, ignoring...")
+                    Either.Right(Unit)
+                }
 
-                    is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
-                        logger.logStructuredJson(
-                            level = KaliumLogLevel.WARN,
-                            leadingMessage = "Join-Establish MLS Group Stale",
-                            jsonStringKeyValues = conversation.logData()
-                        )
-                        // Re-fetch the current epoch and try again
-                        if (conversation.type == Conversation.Type.OneOnOne) {
-                            conversationRepository.getConversationMembers(conversation.id).flatMap {
-                                fetchMLSOneToOneConversation(transactionContext, it.otherThanSelf()).map {
-                                    it.mlsPublicKeys
-                                }
-                            }
-                        } else {
-                            fetchConversation(transactionContext, conversation.id)
-                        }.flatMap {
-                            conversationRepository.getNonDeletedConversationById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(
-                                    transactionContext = transactionContext,
-                                    conversation = conversation,
-                                    publicKeys = null,
-                                    allowJoinByExternalCommit = allowJoinByExternalCommit
-                                )
+                is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
+                    logger.logStructuredJson(
+                        level = KaliumLogLevel.WARN,
+                        leadingMessage = "Join-Establish MLS Group Stale",
+                        jsonStringKeyValues = conversation.logData()
+                    )
+                    // Re-fetch the current epoch and try again
+                    if (!exactId && conversation.type == Conversation.Type.OneOnOne) {
+                        conversationRepository.getConversationMembers(conversation.id).flatMap {
+                            fetchMLSOneToOneConversation(transactionContext, it.otherThanSelf()).map {
+                                it.mlsPublicKeys
                             }
                         }
-                    }
-
-                    else -> {
-                        Either.Left(failure)
+                    } else {
+                        fetchConversation(transactionContext, conversation.id)
+                    }.flatMap {
+                        conversationRepository.getNonDeletedConversationById(conversation.id).flatMap retry@{ refreshed ->
+                            if (exactId) {
+                                return@retry canRecoverExactGroup(refreshed).flatMap { eligible ->
+                                    if (eligible) joinExactMLSGroup(transactionContext, refreshed) else Either.Right(Unit)
+                                }
+                            }
+                            joinOrEstablishMLSGroup(
+                                transactionContext = transactionContext,
+                                conversation = refreshed,
+                                publicKeys = null,
+                                allowJoinByExternalCommit = allowJoinByExternalCommit
+                            )
+                        }
                     }
                 }
+
+                else -> {
+                    Either.Left(failure)
+                }
             }
+        }
+
+    private suspend fun canRecoverExactGroup(conversation: Conversation): Either<CoreFailure, Boolean> {
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
+        if (protocol == null || protocol.epoch == 0UL || conversation.removedBy != null) return Either.Right(false)
+        return conversationRepository.getConversationMembers(conversation.id).map { selfUserId in it }
+    }
+
+    /** Recovery must not reset or establish a group as a side effect of a failed external commit. */
+    private suspend fun joinExactMLSGroup(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+    ): Either<CoreFailure, Unit> {
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable ?: return Either.Right(Unit)
+        return wrapApiRequest { conversationApi.fetchGroupInfo(conversation.id.toApi()) }.flatMap { groupInfo ->
+            transactionContext.wrapInMLSContext { context ->
+                mlsConversationRepository.joinGroupByExternalCommit(context, protocol.groupId, groupInfo)
+            }
+        }
+    }
 
     @Suppress("LongMethod")
     private suspend fun joinOrEstablishMLSGroup(

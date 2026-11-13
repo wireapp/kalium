@@ -5097,6 +5097,88 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun teamBackedPendingOriginalWithTeamlessCanonicalQueuesRecoveryWithoutBlockingMessagesOrCalls() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val original = CONVERSATION_ID.copy(value = "original-pending-one-to-one")
+                val pending = fixture.event("original", byteArrayOf(1), conversationId = original)
+                val call = fixture.event("call", fixture.encrypt("call", fixture.callContent()), time = Clock.System.now())
+                val text = fixture.event("unrelated", fixture.encrypt("unrelated"))
+                fixture.releasePrepared()
+                fixture.seedPendingMLSGroup(original)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val dao = runtime.database.conversationDAO
+                    runtime.database.teamDAO.insertTeam(com.wire.kalium.persistence.dao.TeamEntity("team", "Team", "default"))
+                    dao.insertConversation(checkNotNull(dao.getConversationById(original)).copy(teamId = "team"))
+                    dao.insertConversation(checkNotNull(dao.getConversationById(CONVERSATION_ID))
+                        .copy(type = ConversationEntity.Type.ONE_ON_ONE, teamId = null))
+                    runtime.database.userDAO.updateActiveOneOnOneConversation(SENDER.toDao(), CONVERSATION_ID)
+                    runtime.database.pendingActionDAO.upsert(PendingActionType.JOIN_MLS_GROUP_CONVERSATION, original, 1L)
+                })
+
+                val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(pending, call, text), text.id)).value
+                assertEquals(text.id, result?.messageId)
+                assertEquals(true, result?.shouldNotify)
+                assertEquals("QUEUE_END", fixture.receivedStop)
+                assertEquals(ReceivedCallType.INCOMING, fixture.receivedCalls.single().type)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
+                    assertEquals(listOf(original), runtime.database.pendingActionDAO
+                        .getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
+                    assertEquals(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+                        (checkNotNull(runtime.database.conversationDAO.getConversationById(original)).protocolInfo
+                            as ConversationEntity.ProtocolInfo.MLS).groupState)
+                })
+            }
+        }
+    }
+
+    @Test
+    fun trackedRecoveryWithEstablishedSqlButMissingNativeGroupDoesNotBlockLaterMessages() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val interrupted = CONVERSATION_ID.copy(value = "interrupted-recovery")
+                val pending = fixture.event("pending", byteArrayOf(1), conversationId = interrupted)
+                val tail = fixture.event("tail", fixture.encrypt("tail"))
+                fixture.releasePrepared()
+                fixture.seedPendingMLSGroup(interrupted)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    // A recovery join committed SQL, then the native commit was interrupted; the paused request is still tracked.
+                    runtime.database.pendingActionDAO.requestMLSGroupJoin(interrupted, 100L, evidence = true)
+                    runtime.database.pendingActionDAO.pauseMLSGroupJoin(
+                        com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity(interrupted, 100L))
+                    runtime.database.conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, MISSING_GROUP)
+                })
+                assertIs<Either.Right<*>>(fixture.receive(listOf(pending, tail), pending.id))
+                assertEquals("QUEUE_END", fixture.receivedStop)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(pending.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById(tail.id, CONVERSATION_ID))
+                    // The new message is fresh evidence, so the paused request resumes.
+                    assertEquals(listOf(interrupted), runtime.database.pendingActionDAO
+                        .getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION).map { it.qualifiedId })
+                })
+            }
+        }
+    }
+
+    /** Adds a self-member MLS 1:1 in PENDING_WELCOME_MESSAGE whose native group does not exist. */
+    private suspend fun Fixture.seedPendingMLSGroup(id: QualifiedIDEntity) {
+        assertIs<Either.Right<*>>(open { runtime ->
+            val canonical = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+            runtime.database.conversationDAO.insertConversation(canonical.copy(
+                id = id, type = ConversationEntity.Type.ONE_ON_ONE,
+                protocolInfo = (canonical.protocolInfo as ConversationEntity.ProtocolInfo.MLS).copy(
+                    groupId = MISSING_GROUP, groupState = ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE),
+            ))
+            runtime.database.memberDAO.insertMembersWithQualifiedId(listOf(SELF, SENDER).map {
+                com.wire.kalium.persistence.dao.member.MemberEntity(
+                    it.toDao(), com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member)
+            }, id)
+        })
+    }
+
+    @Test
     fun mlsWrongEpochDefersConversationAndKeepsLaterQueuePending() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
@@ -13610,6 +13692,7 @@ class NotificationProcessorNativeTest {
         val SELF = UserId("fcbe2b38-c66a-4fbe-9e54-6fab39c017a4", "example.com")
         val SENDER = UserId("eef049aa-c081-4520-9e60-3fbe90809ee9", "example.com")
         val CONVERSATION_ID = QualifiedIDEntity("conversation", "example.com")
+        const val MISSING_GROUP = "YWJzZW50LWxlZ2FjeS1ncm91cA=="
         const val CLIENT = "abc123"
         const val SENDER_CLIENT = "def456"
         val THIRD = UserId("bcc012da-0478-46ac-aac7-b02c4ab7b144", "example.com")

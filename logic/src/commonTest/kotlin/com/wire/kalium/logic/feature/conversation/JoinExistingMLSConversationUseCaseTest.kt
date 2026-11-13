@@ -29,11 +29,13 @@ import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.MLSJoinMode
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
@@ -361,6 +363,59 @@ class JoinExistingMLSConversationUseCaseTest {
         joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldFail()
     }
 
+    @Test
+    fun exactRecoveryAndItsStaleRetryJoinTheOriginalOneOnOneWithoutCanonicalLookup() = runTest {
+        val original = Arrangement.MLS_PENDING_WELCOME_REFRESHED_GROUP_CONVERSATION.copy(type = Conversation.Type.OneOnOne)
+        val (a, join) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true).withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(original)
+            .withGetConversationMembersSuccessful(listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID))
+            .withLocalGroupExists(false).withFetchConversationSuccessful().withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .withJoinByExternalCommitGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1).arrange()
+
+        join(a.transactionContext, original.id, mode = MLSJoinMode.RECOVER_EXACT_GROUP).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(2)) { a.fetchConversation(any(), original.id, any()) }
+        verifySuspend(VerifyMode.exactly(2)) { a.conversationApi.fetchGroupInfo(original.id.toApi()) }
+        verifySuspend(VerifyMode.exactly(2)) { a.mlsConversationRepository.joinGroupByExternalCommit(any(), Arrangement.GROUP_ID3, any()) }
+        verifySuspend(VerifyMode.not) { a.fetchMLSOneToOneConversation(any(), any()) }
+    }
+
+    @Test
+    fun exactRecoveryNeverEstablishesAnEpochZeroGroup() = runTest {
+        val original = Arrangement.MLS_PENDING_WELCOME_GROUP_CONVERSATION
+        val (a, join) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true).withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(original)
+            .withGetConversationMembersSuccessful(listOf(TestUser.USER_ID))
+            .withLocalGroupExists(false).withFetchConversationSuccessful().arrange()
+
+        join(a.transactionContext, original.id, mode = MLSJoinMode.RECOVER_EXACT_GROUP).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
+            a.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+            a.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun exactRecoveryFailureDoesNotResetOrCreateAReplacementGroup() = runTest {
+        val original = Arrangement.MLS_PENDING_WELCOME_REFRESHED_GROUP_CONVERSATION
+        val failure = NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex
+        val (a, join) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true).withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(original)
+            .withGetConversationMembersSuccessful(listOf(TestUser.USER_ID))
+            .withLocalGroupExists(false).withFetchConversationSuccessful().withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitGroupFailing(failure).arrange()
+        join(a.transactionContext, original.id, mode = MLSJoinMode.RECOVER_EXACT_GROUP).shouldFail()
+        verifySuspend(VerifyMode.not) {
+            a.resetMlsConversation(any())
+            a.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+        }
+    }
+
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
@@ -388,6 +443,7 @@ class JoinExistingMLSConversationUseCaseTest {
             selfUserId,
             dispatcher
         ).also {
+            everySuspend { mlsContext.conversationExists(any()) } calls { localGroupExists }
             withTransactionReturning(Either.Right(Unit))
             everySuspend {
                 mlsConversationRepository.hasEstablishedMLSGroup(any(), any())

@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.feature.call.usecase.SetCallHandRaisedUseCase
 import com.wire.kalium.logic.data.client.guardedBy
 import com.wire.kalium.logic.network.guardedBy
@@ -1531,6 +1532,14 @@ public class UserSessionScope internal constructor(
             oneOnOneResolver = oneOnOneResolver
         )
 
+    private val pendingMLSGroupJoinRequests = Channel<Unit>(Channel.CONFLATED)
+
+    private val requestPendingMLSGroupJoins = object : RecoverPendingMLSGroupJoinsUseCase {
+        override suspend fun invoke() {
+            pendingMLSGroupJoinRequests.trySend(Unit)
+        }
+    }
+
     private val recoverPendingMLSGroupJoinsUseCase: RecoverPendingMLSGroupJoinsUseCase
         get() = RecoverPendingMLSGroupJoinsUseCaseImpl(
             pendingActionsRepository = pendingActionsRepository,
@@ -1538,6 +1547,8 @@ public class UserSessionScope internal constructor(
             transactionProvider = cryptoTransactionProvider,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             conversationRepository = conversationRepository,
+            selfUserId = userId,
+            requestMore = { pendingMLSGroupJoinRequests.trySend(Unit) },
         )
 
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase
@@ -2130,6 +2141,18 @@ public class UserSessionScope internal constructor(
             receiveRecovery = if (enableDurableMLSReceiveRecovery) {
                 { context, event, wrongEpoch -> receiveRecovery()?.handle(context, event, wrongEpoch) == true }
             } else null,
+            recoverMissingMLSGroup = { id ->
+                val conversation = conversationRepository.getNonDeletedConversationById(id).getOrNull()
+                val protocol = conversation?.protocol as? Conversation.ProtocolInfo.MLSCapable
+                val recoveryTracked = userStorage.database.pendingActionDAO.hasMLSGroupRecovery(id.toDao())
+                val pendingGroup = protocol != null &&
+                    (protocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED || recoveryTracked)
+                val isMember = userId in conversationRepository.getConversationMembers(id).getOrNull().orEmpty()
+                if (pendingGroup && conversation?.removedBy == null && isMember) {
+                    pendingActionsRepository.requestMLSGroupJoin(id)
+                    pendingMLSGroupJoinRequests.trySend(Unit)
+                }
+            },
         )
 
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
@@ -2201,7 +2224,7 @@ public class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             pendingActionsRepository = pendingActionsRepository,
             resolvePendingOneOnOnes = { pendingOneOnOneResolutionRequests.trySend(Unit) },
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            joinPendingMLSGroups = { pendingMLSGroupJoinRequests.trySend(Unit) },
             fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
             keyPackageManager = keyPackageManager
         )
@@ -2837,7 +2860,7 @@ public class UserSessionScope internal constructor(
             mlsClientManager,
             mlsMigrationManager,
             keyingMaterialsManager,
-            recoverPendingMLSGroupJoinsUseCase,
+            requestPendingMLSGroupJoins,
             requestPendingOneOnOneResolutions,
             cryptoTransactionProvider,
             this,
@@ -3316,6 +3339,21 @@ public class UserSessionScope internal constructor(
                 }
             }
         }
+
+        launch {
+            pendingMLSGroupJoinRequests.consumeEach {
+                @Suppress("TooGenericExceptionCaught") // One failed recovery must not cancel the session's drain.
+                try {
+                    recoverPendingMLSGroupJoinsUseCase()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (exception: Exception) {
+                    userScopedLogger.w("Unable to recover pending MLS groups", exception)
+                }
+            }
+        }
+        // Reconcile persisted work even when the process lost its previous in-memory wake-up.
+        pendingMLSGroupJoinRequests.trySend(Unit)
 
         launch {
             val pushTokenUpdater = createPushTokenUpdater()

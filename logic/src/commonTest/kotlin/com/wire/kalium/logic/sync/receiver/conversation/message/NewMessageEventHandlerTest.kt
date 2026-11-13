@@ -61,6 +61,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
+import kotlin.test.assertTrue
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertEquals
@@ -866,6 +867,16 @@ class NewMessageEventHandlerTest {
 
         handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             .shouldSucceed()
+        assertEquals(listOf(event.conversationId), arrangement.missingGroupRequests)
+    }
+
+    @Test
+    fun missingSubconversationDoesNotRequestTopLevelGroupRecovery() = runTest {
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), subConversationId = SubconversationId("call"))
+        val (arrangement, handler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.ConversationNotFound)).arrange()
+        handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+        assertTrue(arrangement.missingGroupRequests.isEmpty())
     }
 
     @Test
@@ -930,6 +941,7 @@ class NewMessageEventHandlerTest {
         val legalHoldHandler = mock<LegalHoldHandler>()
         val resetMlsConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
 
+        val missingGroupRequests = mutableListOf<ConversationId>()
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
             proteusMessageUnpacker,
             mlsMessageUnpacker,
@@ -948,6 +960,7 @@ class NewMessageEventHandlerTest {
             staleEpochVerifier,
             resetMlsConversation,
             recovery,
+            recoverMissingMLSGroup = { missingGroupRequests += it },
         )
 
         suspend fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult.ApplicationMessage>) = apply {

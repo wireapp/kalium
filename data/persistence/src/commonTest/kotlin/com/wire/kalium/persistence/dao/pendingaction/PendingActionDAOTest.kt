@@ -27,8 +27,47 @@ import kotlin.test.Test
 import kotlin.test.assertFails
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 class PendingActionDAOTest : BaseDatabaseTest() {
+
+    @Test
+    fun mlsJoinEvidenceSurvivesAnOlderAcknowledgementInTheSameMillisecond() = runTest(dispatcher) {
+        val type = PendingActionType.RECOVER_MLS_GROUP_CONVERSATION
+        assertTrue(pendingActionDAO.requestMLSGroupJoin(user1, 100L, evidence = true))
+        val attempt = pendingActionDAO.getByActionType(type).single()
+        // Two events can arrive in the same millisecond. They must still have different versions.
+        assertFalse(pendingActionDAO.requestMLSGroupJoin(user1, 100L, evidence = true))
+        pendingActionDAO.acknowledge(type, attempt)
+        assertEquals(listOf(PendingActionEntity(user1, 101L)), pendingActionDAO.getByActionType(type))
+    }
+
+    @Test
+    fun pausingAnOldMlsJoinAttemptDoesNotHideNewerEvidence() = runTest(dispatcher) {
+        val type = PendingActionType.RECOVER_MLS_GROUP_CONVERSATION
+        pendingActionDAO.requestMLSGroupJoin(user1, 100L, evidence = true)
+        val attempt = pendingActionDAO.getByActionType(type).single()
+        pendingActionDAO.requestMLSGroupJoin(user1, 200L, evidence = true)
+        pendingActionDAO.pauseMLSGroupJoin(attempt)
+        assertTrue(pendingActionDAO.getByActionType(PendingActionType.PAUSE_MLS_GROUP_JOIN).isEmpty())
+        assertEquals(listOf(PendingActionEntity(user1, 200L)), pendingActionDAO.getByActionType(type))
+    }
+
+    @Test
+    fun exactRecoveryAndLegacyCreationDoNotOverwriteOrAcknowledgeEachOther() = runTest(dispatcher) {
+        val legacy = PendingActionType.JOIN_MLS_GROUP_CONVERSATION
+        val exact = PendingActionType.RECOVER_MLS_GROUP_CONVERSATION
+        pendingActionDAO.upsert(legacy, user1, 50L)
+        assertFalse(pendingActionDAO.hasMLSGroupRecovery(user1))
+        assertTrue(pendingActionDAO.requestMLSGroupJoin(user1, 100L, evidence = true))
+        assertTrue(pendingActionDAO.hasMLSGroupRecovery(user1))
+        pendingActionDAO.acknowledge(legacy, PendingActionEntity(user1, 50L))
+        assertEquals(listOf(PendingActionEntity(user1, 100L)), pendingActionDAO.getByActionType(exact))
+        pendingActionDAO.pauseMLSGroupJoin(PendingActionEntity(user1, 100L))
+        assertTrue(pendingActionDAO.hasMLSGroupRecovery(user1))
+        pendingActionDAO.acknowledge(PendingActionType.PAUSE_MLS_GROUP_JOIN, PendingActionEntity(user1, 100L))
+        assertFalse(pendingActionDAO.hasMLSGroupRecovery(user1))
+    }
 
     private lateinit var pendingActionDAO: PendingActionDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
