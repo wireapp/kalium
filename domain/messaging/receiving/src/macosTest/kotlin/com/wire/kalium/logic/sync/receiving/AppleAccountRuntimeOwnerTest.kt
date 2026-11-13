@@ -311,6 +311,38 @@ class AppleAccountRuntimeOwnerTest {
     }
 
     @Test
+    fun retryingWaitsLongerForAnAppExtensionThanForTheApp() = withLockRoot { rootPath ->
+        val accountId = UserId("extension-account", "example.com")
+        val owner = AppleAccountRuntimeOwner(rootPath)
+        suspend fun heldBy(extension: Boolean): AccountLockProcess {
+            // The record stays in the file once its writer released, as when a process holds the account.
+            AppleAccountRuntimeOwner(rootPath, inAppExtension = extension, onLockAcquired = {}).acquireLease(accountId).release()
+            return AccountLockProcess.start(owner.lockFilePath(accountId))
+        }
+
+        val extension = heldBy(extension = true)
+        try {
+            val retrying = async { owner.tryAcquire(accountId, retryFor = 3.seconds, retryForExtension = 20.seconds) }
+            advanceTimeBy(10.seconds)
+            assertFalse(retrying.isCompleted, "An app extension gives the account up within its budget")
+            extension.stop()
+            advanceUntilIdle()
+            acquiredLease(retrying.await()).release()
+        } finally {
+            extension.stop()
+        }
+
+        val app = heldBy(extension = false)
+        try {
+            val waited = testScheduler.currentTime
+            assertEquals(Either.Left(AccountRuntimeFailure.BUSY), owner.tryAcquire(accountId, 3.seconds, retryForExtension = 20.seconds))
+            assertTrue(testScheduler.currentTime - waited < 4.seconds.inWholeMilliseconds, "The app may keep the account")
+        } finally {
+            app.stop()
+        }
+    }
+
+    @Test
     fun acquiringRecordsTheHolderForWhoeverWaitsNext() = withLockRoot { rootPath ->
         val accountId = UserId("recorded-account", "example.com")
         val owner = AppleAccountRuntimeOwner(rootPath)

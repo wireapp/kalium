@@ -124,7 +124,7 @@ class GetOrRegisterClientUseCaseTest {
         everySuspend { arrangement.userSessionScopeProvider.prepareReceiving(any(), any()) } returns Either.Left(StorageFailure.DataNotFound)
 
         assertIs<RegisterClientResult.Failure.Generic>(useCase(RegisterClientParam("", listOf())))
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.userSessionScopeProvider.invalidateReceiving(any(), any(), false) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userSessionScopeProvider.invalidateReceiving(any(), any()) }
     }
 
     @Test

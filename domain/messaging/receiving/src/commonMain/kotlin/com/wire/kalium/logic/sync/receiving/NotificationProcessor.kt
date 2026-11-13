@@ -51,6 +51,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
@@ -188,16 +189,19 @@ class NotificationProcessor(
             } catch (_: NotificationOrderingBarrier) {
                 return queueEnd.stopped("DEFERRED_ORDERING_BARRIER")
             } catch (handoff: NotificationAppHandoff) {
-                return queueEnd.stopped("LEGAL_HOLD_REQUIRES_APP", handoff.work)
+                return queueEnd.stopped("${handoff.work}_REQUIRES_APP", handoff.work)
             }
             currentCoroutineContext().ensureActive()
             diagnostics?.stage = "MARK_PROCESSED"
             CallSignalJournal(database).committed(effects.calls)
+            queueEnd.meetings += effects.meetings
             cleanupConversations()
             if (recovery == null) events.markProcessed(listOf(next.eventId), emptyMap())
             else recovery.acknowledge(listOf(next.eventId))
             if (next.eventId == targetId) {
                 queueEnd.reached(effects.message, "DEFERRED_PRESENTATION_POLICY".takeIf { deferred.isNotEmpty() })
+            } else if (effects.message?.let { it.shouldNotify && it.type != ReceivedNotificationType.MESSAGE } == true) {
+                queueEnd.droppedAlert = true
             }
         }
     }
@@ -206,6 +210,8 @@ class NotificationProcessor(
     private inner class QueueEnd(val shouldStop: () -> Boolean) {
         private var message: ReceivedMessageResult? = null
         private var suppression: String? = null
+        val meetings = mutableListOf<LocalNotification.Meeting>()
+        var droppedAlert = false
 
         fun reached(message: ReceivedMessageResult?, suppression: String?) {
             this.message = message
@@ -219,12 +225,12 @@ class NotificationProcessor(
                 presented != null -> presented
                 completePrefix -> withPendingCalls(message)
                 else -> withoutCalls(message)
-            }.copy(stoppedReason = stop)
+            }.copy(stoppedReason = stop, meetings = meetings.toList(), droppedAlert = droppedAlert)
         }
 
         suspend fun stopped(stop: String, work: NotificationAppWork? = null): ReceivedNotificationResult =
             (suppression?.let { withoutPresentation(message, it) } ?: withoutCalls(message))
-                .copy(stoppedReason = stop, appWorkPending = work)
+                .copy(stoppedReason = stop, appWorkPending = work, meetings = meetings.toList(), droppedAlert = droppedAlert)
     }
 
     private suspend fun withoutCalls(message: ReceivedMessageResult?) = ReceivedNotificationResult(
@@ -601,7 +607,7 @@ class NotificationProcessor(
                     }
                     else -> emptyList()
                 }
-                listOf(ReceivedPayload.Connection(connection, profiles, "$id:accepted")) + lifecycle
+                listOf(ReceivedPayload.Connection(connection, profiles)) + lifecycle
             }
             is EventContentDTO.User.SessionRefreshSuggestedDTO -> {
                 checkNotNull(sessionRefresh) { "Session refresh requires owned authenticated transport" }
@@ -639,9 +645,19 @@ class NotificationProcessor(
                 ReceivedPayload.Federation(Event.Federation.ConnectionRemoved(metadataSystemMessageId(eventId, index), content.domains))
             )
             is EventContentDTO.Meeting.MeetingCreateDTO -> fetchReceivedMeeting(content.qualifiedMeetingId, meetingApi, users)
-            is EventContentDTO.Meeting.MeetingUpdateDTO -> fetchReceivedMeeting(content.qualifiedMeetingId, meetingApi, users)
-            is EventContentDTO.Meeting.MeetingMemberAddDTO -> fetchReceivedMeeting(content.qualifiedMeetingId, meetingApi, users)
-            is EventContentDTO.Meeting.MeetingDeleteDTO -> listOf(ReceivedPayload.MeetingDelete(content.qualifiedMeetingId.toModel()))
+            is EventContentDTO.Meeting.MeetingUpdateDTO -> fetchReceivedMeeting(
+                content.qualifiedMeetingId, meetingApi, users,
+                Event.Meeting.Update(eventId, content.qualifiedMeetingId.toModel(), content.time, content.qualifiedFrom?.toModel()),
+            )
+            is EventContentDTO.Meeting.MeetingMemberAddDTO -> fetchReceivedMeeting(
+                content.qualifiedMeetingId, meetingApi, users,
+                Event.Meeting.MemberAdd(eventId, content.qualifiedMeetingId.toModel(), content.time, content.qualifiedFrom?.toModel()),
+            )
+            is EventContentDTO.Meeting.MeetingDeleteDTO -> listOf(
+                ReceivedPayload.MeetingDelete(
+                    Event.Meeting.Delete(eventId, content.qualifiedMeetingId.toModel(), content.time, content.qualifiedFrom?.toModel())
+                )
+            )
             is EventContentDTO.UserProperty.PropertiesSetDTO -> listOfNotNull(
                 (updateUserProperties(selfUserId, eventId, content) as? Event.UserProperty)?.let { ReceivedPayload.UserProperty(it) }
             )

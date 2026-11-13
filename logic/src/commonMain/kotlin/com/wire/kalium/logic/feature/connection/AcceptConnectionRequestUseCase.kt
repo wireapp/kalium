@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -55,7 +54,6 @@ internal class AcceptConnectionRequestUseCaseImpl(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
     private val oneOnOneResolver: OneOnOneResolver,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val fetchConversation: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val pendingActionsRepository: PendingActionsRepository
@@ -88,10 +86,6 @@ internal class AcceptConnectionRequestUseCaseImpl(
                                 }
                                 Either.Right(Unit)
                             }
-                        }.flatMap {
-                            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                                connection.qualifiedConversationId
-                            )
                         }
                 }
         }

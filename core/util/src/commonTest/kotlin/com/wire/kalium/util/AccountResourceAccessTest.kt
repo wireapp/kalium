@@ -22,50 +22,6 @@ import kotlin.test.assertTrue
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class AccountResourceAccessTest {
     @Test
-    fun ordinaryOpenQueuedDuringHandoffCannotResumeResources() = runTest {
-        val access = AccountResourceAccess()
-        val closing = CompletableDeferred<Unit>()
-        val finishClose = CompletableDeferred<Unit>()
-        var acquired = 0
-        val handoff = launch {
-            access.pause {
-                closing.complete(Unit)
-                finishClose.await()
-            }
-        }
-        closing.await()
-        val ordinaryOpen = async {
-            access.withResumedAccess(
-                acquireOwnership = { acquired++ },
-                openResources = {},
-                resumePaused = false,
-            ) { "opened" }
-        }
-        runCurrent()
-        finishClose.complete(Unit)
-        handoff.join()
-        runCurrent()
-        assertFalse(ordinaryOpen.isCompleted)
-        assertEquals(0, acquired)
-        access.withResumedAccess({ acquired++ }, {}) { }
-        assertEquals("opened", ordinaryOpen.await())
-        assertEquals(1, acquired)
-    }
-
-    @Test
-    fun ordinaryOpenWaitingForForegroundCanBeCancelled() = runTest {
-        val access = AccountResourceAccess()
-        access.pause {}
-        val opening = launch {
-            access.withResumedAccess({}, {}, resumePaused = false) { error("Must stay paused") }
-        }
-        runCurrent()
-        opening.cancelAndJoin()
-        access.resume {}
-        assertEquals("resumed", access.withAccess { "resumed" })
-    }
-
-    @Test
     fun pauseDrainsAdmittedWorkAndQueuesNewWorkUntilOwnershipReturns() = runTest {
         val access = AccountResourceAccess()
         val finish = CompletableDeferred<Unit>()
@@ -87,7 +43,7 @@ class AccountResourceAccessTest {
         first.join()
         pause.join()
         assertFalse(queued.isCompleted)
-        access.resume { events += "open" }
+        access.withResumedAccess({}, { events += "open" }) {}
         queued.join()
         assertEquals(listOf("first", "finished", "close", "open", "queued"), events)
     }
@@ -122,7 +78,7 @@ class AccountResourceAccessTest {
             }) { events += "close" }
         }
         runCurrent()
-        val resume = launch { access.resume { events += "open" } }
+        val resume = launch { access.withResumedAccess({}, { events += "open" }) {} }
         runCurrent()
         assertEquals(listOf("admitted"), events)
         stopped.complete(Unit)
@@ -174,7 +130,7 @@ class AccountResourceAccessTest {
         assertEquals(failure.message, assertFailsWith<IllegalStateException> { access.pause { throw failure } }.message)
         val accessFailure = assertFailsWith<IllegalStateException> { access.withAccess { error("must not run") } }
         assertEquals(failure.message, accessFailure.cause?.message)
-        assertFailsWith<IllegalStateException> { access.resume { error("must not reopen") } }
+        assertFailsWith<IllegalStateException> { access.withResumedAccess({}, { error("must not reopen") }) {} }
     }
 
     @Test
@@ -182,7 +138,7 @@ class AccountResourceAccessTest {
         val access = AccountResourceAccess()
         val events = mutableListOf<String>()
         repeat(2) { access.pause { events += "close" } }
-        repeat(2) { access.resume { events += "open" } }
+        repeat(2) { access.withResumedAccess({}, { events += "open" }) {} }
         assertEquals(listOf("close", "open"), events)
     }
 
@@ -191,7 +147,6 @@ class AccountResourceAccessTest {
         val access = AccountResourceAccess()
         access.withAccess {
             assertFailsWith<IllegalStateException> { access.pause {} }
-            assertFailsWith<IllegalStateException> { access.resume {} }
         }
     }
     @Test
@@ -217,7 +172,7 @@ class AccountResourceAccessTest {
         assertEquals("nested", transaction.await())
         pause.join()
         assertFalse(unrelated.isCompleted)
-        access.resume {}
+        access.withResumedAccess({}, {}) {}
         assertEquals("new", unrelated.await())
     }
 
@@ -227,10 +182,10 @@ class AccountResourceAccessTest {
         access.pause { assertEquals("prepare", access.withAccess { "prepare" }) }
         val queued = async { access.withAccess { "queued" } }
         runCurrent()
-        access.resume {
+        access.withResumedAccess({}, {
             assertFalse(queued.isCompleted)
             assertEquals("restore", access.withAccess { "restore" })
-        }
+        }) {}
         assertEquals("queued", queued.await())
     }
 
@@ -240,7 +195,6 @@ class AccountResourceAccessTest {
         val permit = access.acquirePermit()
         try {
             assertFailsWith<IllegalStateException> { access.pause {} }
-            assertFailsWith<IllegalStateException> { access.resume {} }
         } finally {
             permit.release()
         }
@@ -294,7 +248,7 @@ class AccountResourceAccessTest {
             access.withResumedAccess({ error("held by another process") }, { opened = true }) { error("must not run") }
         }
         assertFalse(opened)
-        access.resume { opened = true }
+        access.withResumedAccess({}, { opened = true }) {}
         assertEquals("open", access.withAccess { "open" })
         assertTrue(opened)
     }
@@ -342,7 +296,7 @@ class AccountResourceAccessTest {
             assertFalse(sibling.isCompleted)
         }
         pause.join()
-        access.resume {}
+        access.withResumedAccess({}, {}) {}
         assertEquals("sibling", sibling.await())
     }
 

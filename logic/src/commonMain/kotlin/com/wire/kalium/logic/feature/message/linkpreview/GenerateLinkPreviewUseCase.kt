@@ -22,6 +22,11 @@ import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.withContext
 
 /**
  * Use case for generating link previews from message text.
@@ -42,12 +47,24 @@ internal class GenerateLinkPreviewUseCaseImpl(
     private val repository: LinkPreviewRepository,
     private val userPropertyRepository: UserPropertyRepository,
     private val linkPreviewEnabled: Boolean,
+    private val scope: CoroutineScope,
     private val detectLinkPreviewTarget: DetectLinkPreviewTargetUseCase = DetectLinkPreviewTargetUseCaseImpl(),
 ) : GenerateLinkPreviewUseCase {
     override suspend fun invoke(
         text: String,
         mentions: List<MessageMention>
     ): MessageLinkPreview? {
+        // Account shutdown cancels the whole operation, including asset writes. Caller cancellation
+        // also drains it before returning, so a request-local client cannot outlive either owner.
+        val generation = scope.async { generate(text, mentions) }
+        return try {
+            generation.await()
+        } finally {
+            withContext(NonCancellable) { generation.cancelAndJoin() }
+        }
+    }
+
+    private suspend fun generate(text: String, mentions: List<MessageMention>): MessageLinkPreview? {
         if (!linkPreviewEnabled || !userPropertyRepository.getLinkPreviewsStatus()) return null
 
         val target = detectLinkPreviewTarget(text, mentions)
@@ -71,13 +88,6 @@ internal class GenerateLinkPreviewUseCaseImpl(
         }
     }
 
-    private fun normalizeUrl(url: String): String {
-        return if (url.startsWith("http://") || url.startsWith("https://")) {
-            url
-        } else if (url.startsWith("www.")) {
-            "https://$url"
-        } else {
-            "https://$url"
-        }
-    }
+    private fun normalizeUrl(url: String): String =
+        if (url.startsWith("www.", ignoreCase = true)) "https://$url" else url
 }

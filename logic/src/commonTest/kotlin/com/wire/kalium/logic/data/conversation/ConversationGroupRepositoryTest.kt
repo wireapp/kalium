@@ -107,7 +107,6 @@ class ConversationGroupRepositoryTest {
             .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withConversationAppsAccessIfEnabled()
             .arrange()
@@ -140,7 +139,6 @@ class ConversationGroupRepositoryTest {
             .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withConversationAppsAccessIfEnabled()
             .arrange()
@@ -173,7 +171,6 @@ class ConversationGroupRepositoryTest {
             .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withConversationAppsAccessIfEnabled()
             .arrange()
@@ -200,7 +197,6 @@ class ConversationGroupRepositoryTest {
             .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withConversationAppsAccessIfEnabled()
             .arrange()
@@ -238,7 +234,6 @@ class ConversationGroupRepositoryTest {
             .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withInsertFailedToAddSystemMessageSuccess()
             .withConversationAppsAccessIfEnabled()
@@ -382,7 +377,6 @@ class ConversationGroupRepositoryTest {
             .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withInsertFailedToAddSystemMessageSuccess()
             .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -482,7 +476,6 @@ class ConversationGroupRepositoryTest {
             .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withConversationAppsAccessIfEnabled()
             .arrange()
@@ -522,7 +515,6 @@ class ConversationGroupRepositoryTest {
             .withMlsConversationEstablishFailure(establishFailure)
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withConversationAppsAccessIfEnabled()
             .arrange()
 
@@ -561,7 +553,6 @@ class ConversationGroupRepositoryTest {
             .withMlsConversationEstablishFailure(MLSFailure.FederatedBackendConflict(domains))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withConversationAppsAccessIfEnabled()
             .arrange()
 
@@ -600,7 +591,6 @@ class ConversationGroupRepositoryTest {
                 .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
                 .withSuccessfulNewConversationGroupStartedHandled()
                 .withSuccessfulNewConversationMemberHandled()
-                .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
                 .withSuccessfulLegalHoldHandleConversationMembersChanged()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .withConversationAppsAccessIfEnabled()
@@ -657,7 +647,6 @@ class ConversationGroupRepositoryTest {
                 .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
                 .withSuccessfulNewConversationGroupStartedHandled()
                 .withSuccessfulNewConversationMemberHandled()
-                .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
                 .withSuccessfulLegalHoldHandleConversationMembersChanged()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .withConversationAppsAccessIfEnabled()
@@ -1502,39 +1491,6 @@ class ConversationGroupRepositoryTest {
         }
 
     @Test
-    fun givenAValidConversation_whenCreating_thenConversationIsCreatedAndUnverifiedWarningSystemMessagePersisted() = runTest {
-        val (arrangement, conversationGroupRepository) = Arrangement()
-            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
-            .withSelfTeamId(Either.Right(null))
-            .withInsertConversationSuccess()
-            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
-            .withSuccessfulNewConversationGroupStartedHandled()
-            .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
-            .withSuccessfulLegalHoldHandleConversationMembersChanged()
-            .withConversationAppsAccessIfEnabled()
-            .arrange()
-
-        val result = conversationGroupRepository.createGroupConversation(
-            GROUP_NAME,
-            listOf(TestUser.USER_ID),
-            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
-        )
-
-        result.shouldSucceed()
-
-        with(arrangement) {
-            verifySuspend(VerifyMode.exactly(1)) {
-                conversationDAO.insertConversation(any())
-            }
-
-            verifySuspend(VerifyMode.exactly(1)) {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-            }
-        }
-    }
-
-    @Test
     fun givenNoPackagesAvailable_whenAddingMembers_thenRetryOnceWithValidUsersAndPersistSystemMessage() = runTest {
         // given
         val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
@@ -1868,7 +1824,6 @@ class ConversationGroupRepositoryTest {
             .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
-            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withConversationAppsAccessIfEnabled()
             .arrange()
@@ -2246,12 +2201,6 @@ class ConversationGroupRepositoryTest {
                 everySuspend { conversationApi.addMember(any(), any()) }
                     .sequentiallyReturns(networkResponses.asList())
             }
-
-        suspend fun withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled() = apply {
-            everySuspend {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-            }.returns(Either.Right(Unit))
-        }
 
         suspend fun withRemoteFetchCode(
             result: NetworkResponse<ConversationInviteLinkResponse>

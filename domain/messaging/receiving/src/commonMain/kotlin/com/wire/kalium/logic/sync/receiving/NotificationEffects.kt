@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.matchesSystemMessage
 import com.wire.kalium.logic.data.message.shouldUpdateConversationOrder
 import com.wire.kalium.logic.data.message.toEntity
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
@@ -88,6 +89,7 @@ internal class NotificationEffects(
     suspend fun persist(payload: List<ReceivedPayload>, verifications: List<MLSVerification>): NotificationEffectsResult =
         database.writeMessageEffects {
             val calls = mutableListOf<ReceivedCallEvent>()
+            val meetingAlerts = mutableListOf<LocalNotification.Meeting>()
             // Distinct settings reset the wall-clock grace deadline on every replay. The final
             // settings row cannot recover the first attempt's deadline after an intervening change.
             val e2ei = payload.filterIsInstance<ReceivedPayload.Configuration>()
@@ -129,16 +131,15 @@ internal class NotificationEffects(
                 deleteFile = deleteFile,
                 previewImages = previewImages,
                 calls = calls,
+                meetingAlerts = meetingAlerts,
             )
             val access = ReceivedAccessHandler(this, persistMessage)
-            val membership = ReceivedMembershipHandler(this, persistMessage, selfUserId, options.drivePermissionsEnabled)
+            val membership = ReceivedMembershipHandler(this, persistMessage, selfUserId, options.drivePermissionsEnabled, meetingAlerts)
             val team = ReceivedTeamHandler(this, selfUserId, persistMessage)
             val federation = ReceivedFederationHandler(this, selfUserId, persistMessage, deleteFile)
-            val connection = ReceivedConnectionHandler(this, selfUserId, deleteFile)
+            val connection = ReceivedConnectionHandler(this, deleteFile)
             val replayedFederation = payload.filterIsInstance<ReceivedPayload.Federation>()
                 .associate { it.event to federation.previousMessages(it.event) }
-            val replayedConnectionWarnings = payload.filterIsInstance<ReceivedPayload.Connection>()
-                .associateWith { connection.previousWarning(it) }
             val replayedAccess = payload.filterIsInstance<ReceivedPayload.Metadata>()
                 .mapNotNull { it.event as? Event.Conversation.AccessUpdate }.associateWith { access.previous(it) }
             val replayedPromotions = payload.filterIsInstance<ReceivedPayload.MemberRole>()
@@ -161,9 +162,7 @@ internal class NotificationEffects(
                     is ReceivedPayload.DecryptionFailure -> messageHandler.failedDecryption(received.message)
                     is ReceivedPayload.Creation -> received.creation.persist(this, selfUserId, persistMessage)
                     is ReceivedPayload.OneOnOne -> {
-                        if (received.resolution.persist(this, selfUserId, persistMessage)) {
-                            messageHandler.moved(received.resolution.sources, received.resolution.target)
-                        }
+                        received.resolution.persist(this, persistMessage)?.let { messageHandler.moved(received.resolution.sources, it) }
                     }
                     is ReceivedPayload.ProtocolUpdate -> {
                         conversations.updateConversationProtocolAndCipherSuite(
@@ -240,8 +239,13 @@ internal class NotificationEffects(
                             listOf(received.meeting),
                             GenerationLimit.Window(occurrenceOutdatedThreshold(), occurrenceGenerationUntil())
                         )
+                        meetingAlert(received.event, received.meeting)?.let(meetingAlerts::add)
                     }
-                    is ReceivedPayload.MeetingDelete -> meetings.deleteMeeting(received.meetingId.toDao())
+                    is ReceivedPayload.MeetingDelete -> {
+                        val id = received.event.meetingId.toDao()
+                        meetingAlert(received.event, meetings.getMeeting(id))?.let(meetingAlerts::add)
+                        meetings.deleteMeeting(id)
+                    }
                     is ReceivedPayload.UserUpdate -> userUpdate.handle(received.event).orThrow()
                     is ReceivedPayload.NewClient -> newClients.insertNewClient(received.client.newClientParameters(selfUserId))
                     is ReceivedPayload.Connection -> {
@@ -249,7 +253,6 @@ internal class NotificationEffects(
                             received = received,
                             requiredEarlier = requiredEarlier,
                             recreatedLater = lastCreationIndex.filterValues { it > index }.keys,
-                            previousWarning = replayedConnectionWarnings[received],
                         )
                         messageHandler.connection(received.connection)
                     }
@@ -273,7 +276,7 @@ internal class NotificationEffects(
                 recordConversationDependencies(received, recreatedEarlier, requiredEarlier)
             }
             verifications.forEach { persistVerification(this, it, persistMessage) }
-            NotificationEffectsResult(messageHandler.finish(), calls)
+            NotificationEffectsResult(messageHandler.finish(), calls, meetingAlerts)
         }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
@@ -290,9 +293,7 @@ internal class NotificationEffects(
             }
             received.profiles.persist(users, apps)
             received.resolutions.forEach { resolution ->
-                if (resolution.persist(this, selfUserId, persistMessage)) {
-                    messageHandler.moved(resolution.sources, resolution.target)
-                }
+                resolution.persist(this, persistMessage)?.let { messageHandler.moved(resolution.sources, it) }
             }
         }
         when (val event = received.event) {
@@ -428,8 +429,8 @@ internal class NotificationEffects(
                 is ReceivedPayload.Connection -> if (effect.connection.status ==
                     com.wire.kalium.persistence.dao.ConnectionEntity.State.ACCEPTED
                 ) listOf(effect.connection.qualifiedConversationId) else emptyList()
-                is ReceivedPayload.OneOnOne -> effect.resolution.sources + effect.resolution.target
-                is ReceivedPayload.Configuration -> effect.resolutions.flatMap { it.sources + it.target }
+                is ReceivedPayload.OneOnOne -> effect.resolution.sources + listOfNotNull(effect.resolution.target)
+                is ReceivedPayload.Configuration -> effect.resolutions.flatMap { it.sources + listOfNotNull(it.target) }
                 else -> emptyList()
             }
             required += ids.filter { it !in recreated }
@@ -484,14 +485,14 @@ internal sealed interface ReceivedPayload {
     data class Connection(
         val connection: com.wire.kalium.persistence.dao.ConnectionEntity,
         val profiles: com.wire.kalium.logic.data.user.UserProfiles,
-        val warningId: String,
     ) : ReceivedPayload
     data class Federation(val event: Event.Federation) : ReceivedPayload
     data class MeetingUpsert(
         val meeting: com.wire.kalium.persistence.dao.meeting.MeetingEntity,
         val profiles: com.wire.kalium.logic.data.user.UserProfiles,
+        val event: Event.Meeting? = null,
     ) : ReceivedPayload
-    data class MeetingDelete(val meetingId: com.wire.kalium.logic.data.id.MeetingId) : ReceivedPayload
+    data class MeetingDelete(val event: Event.Meeting.Delete) : ReceivedPayload
     data class NewClient(val client: com.wire.kalium.logic.data.client.Client) : ReceivedPayload
     data class UserDeleted(val userId: UserId) : ReceivedPayload
     data class TeamLeave(val event: Event.Team.MemberLeave) : ReceivedPayload

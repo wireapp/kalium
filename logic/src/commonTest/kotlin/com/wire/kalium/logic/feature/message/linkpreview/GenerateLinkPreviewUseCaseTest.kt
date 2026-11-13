@@ -24,15 +24,30 @@ import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.OpenGraphData
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.calls
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verifySuspend
 import dev.mokkery.verify.VerifyMode
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -54,7 +69,7 @@ class GenerateLinkPreviewUseCaseTest {
         )
         everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns true
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true, scope = this)
             .invoke("read $url")
 
         assertNotNull(result)
@@ -87,7 +102,7 @@ class GenerateLinkPreviewUseCaseTest {
         everySuspend { repository.fetchImage("https://example.com/image.png") } returns Either.Right(expectedImage)
         everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns true
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true, scope = this)
             .invoke("see https://example.com")
 
         assertNotNull(result)
@@ -109,7 +124,7 @@ class GenerateLinkPreviewUseCaseTest {
         )
         everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns true
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true, scope = this)
             .invoke("see https://example.com")
 
         assertNotNull(result)
@@ -134,7 +149,7 @@ class GenerateLinkPreviewUseCaseTest {
         )
         everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns true
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true, scope = this)
             .invoke("see https://example.com")
 
         assertNotNull(result)
@@ -146,7 +161,7 @@ class GenerateLinkPreviewUseCaseTest {
         val repository = mock<LinkPreviewRepository>()
         val userPropertyRepository = mock<UserPropertyRepository>()
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = false)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = false, scope = this)
             .invoke("see https://example.com")
 
         assertNull(result)
@@ -161,7 +176,7 @@ class GenerateLinkPreviewUseCaseTest {
         val userPropertyRepository = mock<UserPropertyRepository>()
         everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns false
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true, scope = this)
             .invoke("see https://example.com")
 
         assertNull(result)
@@ -169,4 +184,45 @@ class GenerateLinkPreviewUseCaseTest {
             repository.fetchOpenGraph(any(), any())
         }
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenAccountOrCallerCancellation_whenGenerating_thenAwaitsCleanupAndStopsAccountWork() = runTest {
+        listOf(true, false).forEach { cancelAccount ->
+            val accountJob = SupervisorJob()
+            val accountScope = CoroutineScope(coroutineContext + accountJob)
+            val started = CompletableDeferred<Unit>()
+            val cleanedUp = CompletableDeferred<Unit>()
+            val repository = mock<LinkPreviewRepository>()
+            val userProperties = mock<UserPropertyRepository>()
+            everySuspend { userProperties.getLinkPreviewsStatus() } returns true
+            everySuspend { repository.fetchOpenGraph(any(), any()) } calls {
+                started.complete(Unit)
+                try {
+                    awaitCancellation()
+                } finally {
+                    withContext(NonCancellable) {
+                        delay(100)
+                        cleanedUp.complete(Unit)
+                    }
+                }
+            }
+            val useCase = GenerateLinkPreviewUseCaseImpl(repository, userProperties, true, accountScope)
+            val request = async { useCase("https://example.com") }
+            started.await()
+
+            if (cancelAccount) accountJob.cancel() else request.cancel()
+            runCurrent()
+            assertFalse(request.isCompleted)
+            request.join()
+
+            assertTrue(cleanedUp.isCompleted)
+            assertFailsWith<CancellationException> { request.await() }
+            accountJob.cancel()
+            accountJob.join()
+            assertFailsWith<CancellationException> { useCase("https://example.com/after-logout") }
+            verifySuspend(VerifyMode.exactly(1)) { repository.fetchOpenGraph(any(), any()) }
+        }
+    }
+
 }

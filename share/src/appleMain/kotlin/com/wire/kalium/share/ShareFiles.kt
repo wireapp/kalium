@@ -18,9 +18,7 @@
 
 package com.wire.kalium.share
 
-import com.wire.kalium.cells.CellFileSharing
 import com.wire.kalium.cells.CellSharedFile
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
@@ -32,7 +30,6 @@ import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigDataSource
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.asset.isAudioMimeType
@@ -47,12 +44,10 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
-import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import io.ktor.http.Url
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -61,7 +56,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import okio.Buffer
@@ -71,22 +65,18 @@ import okio.HashingSink
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Source
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /** A file the host prepared to share. Kalium reads [path] and never moves or deletes it. */
-@Serializable
 internal data class ShareFile(
-    @SerialName("path") val path: String,
-    @SerialName("name") val name: String,
-    @SerialName("mimeType") val mimeType: String,
-    @SerialName("sizeInBytes") val sizeInBytes: Long,
-    @SerialName("width") val width: Int? = null,
-    @SerialName("height") val height: Int? = null,
-    @SerialName("durationMs") val durationMs: Long? = null,
+    val path: String,
+    val name: String,
+    val mimeType: String,
+    val sizeInBytes: Long,
+    val width: Int? = null,
+    val height: Int? = null,
+    val durationMs: Long? = null,
 )
 
 /** A [ShareFile] the backend stored, encrypted with [otrKey]. */
@@ -142,75 +132,19 @@ internal fun SharePolicy?.refusal(name: String, mimeType: String, sizeInBytes: L
 }
 
 /**
- * Checks [files] against the conversation and the account's rules, then uploads them. Sending checks the
- * conversation again after catching up; checking now avoids uploading for nothing.
- */
-@Suppress("ReturnCount")
-internal suspend fun AppleAccountRuntime.uploadSharedFiles(
-    conversationId: ConversationId,
-    files: List<ShareFile>,
-    restriction: BuildFileRestrictionState,
-    progress: (uploaded: Long, total: Long) -> Unit,
-): Either<ShareOutcome, List<ShareItem>> {
-    if (files.isEmpty()) return Either.Right(emptyList())
-    val conversation = database.conversationDAO.getConversationDetailsById(conversationId.toDao())
-    val block = when {
-        conversation == null -> ShareBlock.UNAVAILABLE
-        else -> database.shareBlock(conversation)
-    }
-    val policy = database.sharePolicy(prepared.userId, restriction)
-    val refused = files.firstNotNullOfOrNull { policy.refusal(it.name, it.mimeType, it.sizeInBytes) }
-    return when {
-        block != null -> Either.Left(ShareOutcome(ShareStatus.OPEN_APP, block.name))
-        refused != null -> Either.Left(ShareOutcome(ShareStatus.FAILED, refused.name))
-        conversation?.wireCell != null && !database.cellsConfigured() ->
-            Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
-        conversation?.wireCell != null -> {
-            val sharing = CellFileSharing.create(
-                network.cellsHttpClient,
-                authenticatedSession,
-                network.accessTokenApi,
-                database.userConfigDAO,
-                database.publicLinks
-            )
-            try {
-                val cellName = database.conversationDAO.getCellName(conversationId.toDao())
-                    ?: return Either.Left(ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name))
-                when (val result = sharing.upload(cellName, files.map { it.cellFile() }, progress)) {
-                    is Either.Left -> Either.Left(
-                        ShareOutcome(
-                            if (result.value is NetworkFailure.NoNetworkConnection) ShareStatus.OFFLINE else ShareStatus.FAILED,
-                            "UPLOAD_FAILED"
-                        )
-                    )
-                    is Either.Right -> Either.Right(listOf(ShareItem.Cells(files, result.value, cellName)))
-                }
-            } finally {
-                sharing.close()
-            }
-        }
-        else -> ShareUploads(network.assetApi, assetAuditLog()).upload(files, conversationId, progress)
-            .map { uploads -> uploads.map { ShareItem.File(it) } }
-    }
-}
-
-/**
- * Runs [upload] while the extension holds the account for it, which keeps the account from the app and the NSE
- * (ADR 12). Uploads end with `OPEN_APP`, for the host to hand the share to the app, when [accountWanted] completes
- * or [budget] ends. Nothing is stored before every upload finished, so stopping them stores nothing.
+ * Runs [upload], which holds the account only for a moment to read where the files go, until it ends or
+ * [accountWanted] completes: the app is about to own the account the send needs, so uploads end with `OPEN_APP` and
+ * the host hands the share to the app (ADR 12). Nothing is stored before every upload finished, so stopping them
+ * stores nothing.
  */
 internal suspend fun <T> yieldingUploads(
-    budget: Duration,
     accountWanted: Job,
     discard: suspend (T) -> Unit = {},
     upload: suspend () -> Either<ShareOutcome, T>,
 ): Either<ShareOutcome, T> = coroutineScope {
     var completed: Either<ShareOutcome, T>? = null
     var delivered = false
-    val uploads = async {
-        withTimeoutOrNull(budget) { upload().also { completed = it } }
-            ?: Either.Left(ShareOutcome(ShareStatus.OPEN_APP, UPLOAD_TIMEOUT))
-    }
+    val uploads = async { upload().also { completed = it } }
     try {
         select {
             uploads.onAwait {
@@ -227,26 +161,8 @@ internal suspend fun <T> yieldingUploads(
     }
 }
 
-/**
- * How long uploads of [totalBytes] may hold the account: enough at about 1 Mbit/s, and at most five minutes. A
- * slower share goes to the app, which uploads it while it owns the account anyway.
- */
-internal fun uploadBudget(totalBytes: Long): Duration =
-    (UPLOAD_BUDGET_BASE + (totalBytes / MIN_UPLOAD_BYTES_PER_SECOND).seconds).coerceAtMost(MAX_UPLOAD_BUDGET)
-
-/** Another process wants the account the extension holds; see [yieldingUploads]. */
+/** Another process wants the account; see [yieldingUploads]. */
 internal const val ACCOUNT_WANTED = "ACCOUNT_WANTED"
-private const val UPLOAD_TIMEOUT = "UPLOAD_TIMEOUT"
-private const val MIN_UPLOAD_BYTES_PER_SECOND = 128L * 1024
-private val UPLOAD_BUDGET_BASE = 30.seconds
-private val MAX_UPLOAD_BUDGET = 5.minutes
-
-/** The app names the conversation, the file and its type to an auditing on-premises backend. */
-private suspend fun AppleAccountRuntime.assetAuditLog(): Boolean {
-    val links = prepared.serverConfig.links
-    return database.userConfigDAO.isAssetAuditLogEnabled() && links.isOnPremises &&
-        !ServerConfig.PRODUCTION.api.contains(Url(links.api).host)
-}
 
 internal fun ShareFile.metadata(): AssetContent.AssetMetadata? =
     sharedFileMetadata(mimeType, width, height, durationMs)

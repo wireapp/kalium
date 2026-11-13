@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
@@ -33,7 +32,6 @@ public class ConnectionScope internal constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val oneOnOneResolver: OneOnOneResolver,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val pendingActionsRepository: PendingActionsRepository
@@ -50,7 +48,6 @@ public class ConnectionScope internal constructor(
             connectionRepository,
             conversationRepository,
             oneOnOneResolver,
-            newGroupConversationSystemMessagesCreator,
             fetchConversationUseCase,
             transactionProvider,
             pendingActionsRepository

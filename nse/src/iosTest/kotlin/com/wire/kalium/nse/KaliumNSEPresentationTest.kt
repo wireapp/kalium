@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.notification.NotificationMessageKind
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.MessageContentPreference
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
 import com.wire.kalium.logic.sync.receiving.NotificationAppWork
@@ -19,6 +20,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TestTimeSource
 
 class KaliumNSEPresentationTest {
     private val receiver = KaliumNSEReceiver(KaliumNSEConfiguration(
@@ -155,39 +158,60 @@ class KaliumNSEPresentationTest {
     }
 
     @Test
-    fun ownershipFailuresAskForAGenericAlertOnlyWhenNobodyElsePresents() {
-        for (reason in AccountRuntimeFailure.entries) for (appPresentsAlerts in listOf(false, true)) {
-            val result = receiver.ownershipFailure(reason, appPresentsAlerts)
-            val expected = when (reason) {
-                AccountRuntimeFailure.BUSY, AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE ->
-                    !appPresentsAlerts
-                AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
-                AccountRuntimeFailure.MISSING_STORAGE -> false
-            }
+    fun ownershipFailuresAskForAGenericAlertUnlessTheAppHasNotRun() {
+        for (reason in AccountRuntimeFailure.entries) {
+            val result = receiver.ownershipFailure(reason)
             assertEquals(KaliumNSEStatus.FAILED, result.status)
             assertEquals(reason.name, result.failureReason)
             assertFalse(result.shouldNotify)
-            assertEquals(expected, result.presentGenericAlert, "$reason $appPresentsAlerts")
+            assertEquals(reason != AccountRuntimeFailure.MISSING_STORAGE, result.presentGenericAlert, "$reason")
         }
     }
 
     @Test
-    fun legalHoldHandoffAsksForAGenericAlertWhileItsEventWaitsAndNobodyElsePresents() = runTest {
-        for (work in listOf(null) + NotificationAppWork.entries) for (appPresentsAlerts in listOf(false, true)) {
-            for (targetProcessed in listOf(false, true)) {
-                val received = ReceivedNotificationResult(
-                    null, appWorkPending = work, stoppedReason = if (work == null) "QUEUE_END" else "LEGAL_HOLD_REQUIRES_APP"
-                )
-                val expected = work == NotificationAppWork.LEGAL_HOLD && !appPresentsAlerts && !targetProcessed
-                assertEquals(
-                    expected,
-                    receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received, appPresentsAlerts) { targetProcessed },
-                    "$work $appPresentsAlerts $targetProcessed"
-                )
-            }
+    fun timeoutAsksForAGenericAlertUnlessAnAttemptCaughtUpAndClaimedEverythingAfterThePushArrived() {
+        val time = TestTimeSource()
+        val accounts = KaliumNSEReceiver.CaughtUpAccounts()
+        val user = UserId("user", "example.com")
+        val arrived = time.markNow()
+        time += 1.seconds
+        val complete = ReceivedNotificationResult(null, prefixComplete = true, stoppedReason = "QUEUE_END")
+        // Not live, out of time or with a deferred prefix, an attempt may leave the push's event unfetched or unclaimed;
+        // a refused or dropped alert was not presented.
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.BUDGET, complete, true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(droppedAlert = true), true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(stoppedReason = "BUDGET"), true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete.copy(prefixComplete = false), true)
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete, false)
+        assertTrue(receiver.timedOut(accounts.handled("root", user, arrived)).presentGenericAlert)
+
+        accounts.record("root", user, time.markNow(), CatchUpOutcome.LIVE, complete, true)
+        val handled = receiver.timedOut(accounts.handled("root", user, arrived))
+        assertEquals(KaliumNSEStatus.SUCCESS, handled.status)
+        assertFalse(handled.presentGenericAlert)
+        // That catch-up may have missed a push arriving later, or another account's.
+        time += 1.seconds
+        assertTrue(receiver.timedOut(accounts.handled("root", user, time.markNow())).presentGenericAlert)
+        assertTrue(receiver.timedOut(accounts.handled("root", UserId("other", "example.com"), arrived)).presentGenericAlert)
+        assertTrue(receiver.timedOut(accounts.handled("other", user, arrived)).presentGenericAlert)
+    }
+
+    @Test
+    fun appHandoffAsksForAGenericAlertWhileItsEventWaits() = runTest {
+        for (work in listOf(null) + NotificationAppWork.entries) for (targetProcessed in listOf(false, true)) {
+            val received = ReceivedNotificationResult(
+                null, appWorkPending = work, stoppedReason = if (work == null) "QUEUE_END" else "${work}_REQUIRES_APP"
+            )
+            val stopsQueue = work == NotificationAppWork.LEGAL_HOLD || work == NotificationAppWork.MLS_SUBCONVERSATION
+            val expected = stopsQueue && !targetProcessed
+            assertEquals(
+                expected,
+                receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received) { targetProcessed },
+                "$work $targetProcessed"
+            )
         }
-        // Running out of time still asks even while the app presents.
-        assertTrue(receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, ReceivedNotificationResult(null, stoppedReason = "BUDGET"), true) {
+        // Running out of time asks too.
+        assertTrue(receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, ReceivedNotificationResult(null, stoppedReason = "BUDGET")) {
             false
         })
     }

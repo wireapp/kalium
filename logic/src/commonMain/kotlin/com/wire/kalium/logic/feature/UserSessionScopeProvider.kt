@@ -45,6 +45,9 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 public class AccountBusyException(public val holder: String?) :
     IllegalStateException("Another process holds the account: ${holder ?: "unknown"}")
 
+/** The Apple account is closing or has already been released; stale UI must stop creating models. */
+public class AccountSessionUnavailableException : IllegalStateException("The account session is no longer available")
+
 /** Observations that open every account keep going, with their last values, until another process lets go. */
 internal fun <T> Flow<T>.retryWhileAccountBusy(): Flow<T> = retryWhen { cause, _ ->
     (cause is AccountBusyException).also { busy -> if (busy) delay(ACCOUNT_BUSY_RETRY) }
@@ -53,7 +56,7 @@ internal fun <T> Flow<T>.retryWhileAccountBusy(): Flow<T> = retryWhen { cause, _
 private val ACCOUNT_BUSY_RETRY = 1.seconds
 
 internal interface UserSessionScopeProvider {
-    suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean = false)
+    suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope)
     suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit>
     fun get(userId: UserId): UserSessionScope?
     suspend fun open(userId: UserId): UserSessionScope
@@ -78,7 +81,7 @@ internal abstract class UserSessionScopeProviderCommon(
     protected val userAgent: String
 ) : UserSessionScopeProvider {
 
-    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean) = Unit
+    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope) = Unit
 
     override suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit> = Either.Right(Unit)
 
@@ -137,7 +140,7 @@ internal abstract class UserSessionScopeProviderCommon(
 }
 
 internal expect class UserSessionScopeProviderImpl : UserSessionScopeProvider {
-    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean)
+    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope)
     override suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit>
     override fun get(userId: UserId): UserSessionScope?
     override suspend fun open(userId: UserId): UserSessionScope
