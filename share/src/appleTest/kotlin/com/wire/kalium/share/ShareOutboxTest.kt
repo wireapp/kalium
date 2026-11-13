@@ -21,13 +21,11 @@ package com.wire.kalium.share
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.message.CellAssetContent
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.RegularMessageMapper
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
+import com.wire.kalium.logic.sync.receiving.appleAccountFileKey
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -51,6 +49,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
@@ -61,6 +61,7 @@ class ShareOutboxTest {
     @OptIn(ExperimentalUuidApi::class)
     private val root = FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "share-outbox-test-${Uuid.random()}"
     private val outbox = ShareOutbox(root.toString(), SELF)
+    private val refusals = mutableListOf<String>()
 
     @AfterTest
     fun deleteRoot() = FileSystem.SYSTEM.deleteRecursively(root)
@@ -76,7 +77,7 @@ class ShareOutboxTest {
             val restarted = RecordingSending(database)
             server(database, restarted).importShares()
             assertEquals(emptyList(), restarted.stored)
-            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
+            assertEquals(FINISHED, state(id))
         }
     }
 
@@ -96,46 +97,38 @@ class ShareOutboxTest {
             val sending = RecordingSending(database)
             server(database, sending).importShares()
             assertEquals(listOf("Cells:photo.jpg,video.mp4:Hello as t"), sending.stored)
-            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
+            assertEquals(FINISHED, state(id))
         }
     }
 
     @Test
-    fun appPreparesDraftWithoutSendingThenConsumesItWithoutReupload() = runTest {
+    fun aCellsShareWhoseUploadFailedIsUploadedAgainWithoutARing() = runTest {
         withDatabase { database ->
             seed(database)
             conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
-            val store = ShareDraftStore(root.toString(), SELF)
-            val path = file("photo")
-            val draft = store.create(ConversationId("group", SELF.domain), ShareFile(path, PHOTO.name, PHOTO.mimeType, PHOTO.sizeInBytes, PHOTO.width, PHOTO.height))
-            val preparation = request(PHOTO).copy(draftAction = "prepare", draftId = draft)
-            outbox.handOff(preparation, listOf(path))
-            val sending = RecordingSending(database)
-            server(database, sending).importShares()
-            assertEquals(1, sending.prepared)
-            assertEquals(emptyList(), sending.stored)
-            assertEquals("version", store.read(draft)?.asset?.version)
-            outbox.handOff(request(PHOTO).copy(preparedDraftIds = listOf(draft)), listOf(path))
-            server(database, sending).importShares()
-            assertEquals(1, sending.prepared)
-            assertEquals(listOf("Prepared:1:Hello"), sending.stored)
-            assertNull(store.read(draft))
+            val id = outbox.handOff(request(PHOTO), listOf(file("photo")))
+            val sending = RecordingSending(database, failedCellsUploads = 1)
+            // The doorbell never rings: serving imports at its start, then again on its own after the failed upload.
+            val serving = launch { server(database, sending).serve(MutableSharedFlow()) }
+            awaitFinished(id)
+            assertEquals(1, sending.stored.size)
+            serving.cancelAndJoin()
         }
     }
 
     @Test
-    fun theAppStoresAHandedOffShareFilesFirstAndReportsItOnce() = runTest {
+    fun theAppStoresAHandedOffShareFilesFirst() = runTest {
         withDatabase { database ->
             seed(database)
             val id = outbox.handOff(request(PHOTO, VIDEO), listOf(file("photo"), file("video")))
-            assertEquals(HandOffState.Waiting, outbox.state(id))
+            assertEquals(WAITING, state(id))
 
             val sending = RecordingSending(database)
             server(database, sending).importShares()
 
             assertEquals(listOf("photo.jpg=photo as m1", "video.mp4=video as m2", "Hello as t"), sending.stored)
-            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
-            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(id), "A result is reported once")
+            assertEquals(FINISHED, state(id))
+            assertEquals(emptyList(), refusals)
         }
     }
 
@@ -148,13 +141,13 @@ class ShareOutboxTest {
             // The app goes to the background after its storage took the second file, before the message was stored.
             val interrupted = RecordingSending(database, cancelOn = "m2")
             assertFailsWith<CancellationException> { server(database, interrupted).importShares() }
-            assertEquals(HandOffState.Claimed, outbox.state(id))
+            assertEquals(CLAIMED, state(id))
 
             val sending = RecordingSending(database)
             server(database, sending).importShares()
 
             assertEquals(listOf("video.mp4=video as m2", "Hello as t"), sending.stored)
-            assertEquals(HandOffState.Finished(ShareOutbox.STORED), outbox.state(id))
+            assertEquals(FINISHED, state(id))
         }
     }
 
@@ -168,7 +161,8 @@ class ShareOutboxTest {
             server(database, sending).importShares()
 
             assertEquals(emptyList(), sending.stored)
-            assertEquals(HandOffState.Finished(ShareBlock.UNAVAILABLE.name), outbox.state(id))
+            assertEquals(FINISHED, state(id))
+            assertEquals(listOf(ShareBlock.UNAVAILABLE.name), refusals)
         }
     }
 
@@ -183,7 +177,8 @@ class ShareOutboxTest {
                     error("The app failed")
             }).importShares()
 
-            assertEquals(HandOffState.Finished("FAILED"), outbox.state(id))
+            assertEquals(FINISHED, state(id))
+            assertEquals(listOf("FAILED"), refusals)
         }
     }
 
@@ -213,7 +208,7 @@ class ShareOutboxTest {
 
             val importing = launch { server(database, sending).importShares() }
             withContext(Dispatchers.Default) { withTimeout(10.seconds) { sending.waitingForSync.await() } }
-            assertEquals(HandOffState.Claimed, outbox.state(id))
+            assertEquals(CLAIMED, state(id))
             // Catching up turns file sharing off.
             UserConfigDataSource(database.userPrefsDAO, database.userConfigDAO, lazy { BuildFileRestrictionState.NoRestriction })
                 .setFileSharingStatus(status = false, isStatusChanged = false)
@@ -221,7 +216,8 @@ class ShareOutboxTest {
             importing.join()
 
             assertEquals(emptyList(), sending.stored)
-            assertEquals(HandOffState.Finished(FileRefusal.FILE_SHARING_DISABLED.name), outbox.state(id))
+            assertEquals(FINISHED, state(id))
+            assertEquals(listOf(FileRefusal.FILE_SHARING_DISABLED.name), refusals)
         }
     }
 
@@ -265,26 +261,23 @@ class ShareOutboxTest {
             val second = outbox.handOff(request(textMessageId = "t2"), emptyList())
             doorbell.emit(Unit)
             runCurrent()
-            assertEquals(HandOffState.Claimed, outbox.state(second))
+            assertEquals(CLAIMED, state(second))
 
             // The account catches up, and the app stores both, in order.
             synced.complete(Unit)
-            assertEquals(HandOffState.Finished(ShareOutbox.STORED), awaitResult(first))
-            assertEquals(HandOffState.Finished(ShareOutbox.STORED), awaitResult(second))
+            awaitFinished(first)
+            awaitFinished(second)
             assertEquals(listOf("photo.jpg=photo as m1", "Hello as t", "Hello as t2"), sending.stored)
             serving.cancelAndJoin()
         }
     }
 
     @Test
-    fun theAppReportsARefusalOnlyOnceTheSheetStoppedWaiting() = runTest {
+    fun theAppTellsTheUserOfEveryShareItDidNotStore() = runTest {
         withDatabase { database ->
             seed(database)
-            val refused = outbox.handOff(request(PHOTO, conversation = "left"), listOf(file("photo")))
-            val stored = outbox.handOff(request(textMessageId = "t2"), emptyList())
-            // The sheet waited only seconds for the app.
-            assertNull(outbox.stopWaiting(refused))
-            assertNull(outbox.stopWaiting(stored))
+            outbox.handOff(request(PHOTO, conversation = "left"), listOf(file("photo")))
+            outbox.handOff(request(textMessageId = "t2"), emptyList())
             val reports = mutableListOf<Triple<ConversationId, String?, String>>()
 
             server(database, RecordingSending(database)) { conversation, name, reason -> reports += Triple(conversation, name, reason) }
@@ -292,26 +285,24 @@ class ShareOutboxTest {
 
             val expected = Triple<ConversationId, String?, String>(ConversationId("left", DOMAIN), "left", ShareBlock.UNAVAILABLE.name)
             assertEquals(listOf(expected), reports)
-            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(refused), "The app took the result")
-            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(stored), "The app took the result")
         }
     }
 
     @Test
-    fun anUnwatchedDraftPreparationDoesNotReportAMessageSendFailure() = runTest {
+    fun draftWorkAnEarlierBuildQueuedIsDroppedWithoutSendingOrReporting() = runTest {
         withDatabase { database ->
             seed(database)
-            val id = outbox.handOff(
-                request(PHOTO, conversation = "left").copy(draftAction = "prepare"),
-                listOf(file("photo")),
-            )
-            assertNull(outbox.stopWaiting(id))
+            conversation(database, "group", ConversationEntity.Type.GROUP, T2) { copy(wireCell = "cell") }
+            val prepare = outbox.handOff(request(PHOTO).copy(draftAction = "prepare"), listOf(file("photo")))
+            val discard = outbox.handOff(request(conversation = "left").copy(draftAction = "discard"), emptyList())
+            val sending = RecordingSending(database)
             val reports = mutableListOf<String>()
 
-            server(database, RecordingSending(database)) { _, _, reason -> reports += reason }.importShares()
+            server(database, sending) { _, _, reason -> reports += reason }.importShares()
 
+            assertEquals(emptyList(), sending.stored)
             assertTrue(reports.isEmpty())
-            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(id))
+            assertEquals(listOf(FINISHED, FINISHED), listOf(state(prepare), state(discard)))
         }
     }
 
@@ -319,8 +310,7 @@ class ShareOutboxTest {
     fun aRefusalIsReportedEvenWhenTheAppStopsServingMeanwhile() = runTest {
         withDatabase { database ->
             seed(database)
-            val id = outbox.handOff(request(PHOTO, conversation = "left"), listOf(file("photo")))
-            assertNull(outbox.stopWaiting(id))
+            outbox.handOff(request(PHOTO, conversation = "left"), listOf(file("photo")))
             val reporting = CompletableDeferred<Unit>()
             val goOn = CompletableDeferred<Unit>()
             val reported = CompletableDeferred<Unit>()
@@ -343,17 +333,22 @@ class ShareOutboxTest {
     }
 
     @Test
-    fun aResultTheAppLeftBeforeTheSheetStoppedWaitingIsTheSheets() = runTest {
+    fun aListOfConversationsNoSheetWaitsForIsSwept() = runTest {
         withDatabase { database ->
             seed(database)
-            val id = outbox.handOff(request(PHOTO, conversation = "left"), listOf(file("photo")))
-            var reports = 0
+            val later = Clock.System.now() + 2.minutes
+            // Wire was not running when the sheet asked, and the sheet is long gone when it runs.
+            outbox.askForConversations()
+            outbox.sweep(later)
+            server(database, RecordingSending(database)).answerConversations()
+            assertNull(outbox.takeConversations())
 
-            server(database, RecordingSending(database)) { _, _, _ -> reports++ }.importShares()
-
-            assertEquals(HandOffState.Finished(ShareBlock.UNAVAILABLE.name), outbox.stopWaiting(id))
-            assertEquals(0, reports)
-            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(id), "A result is reported once")
+            // The sheet closed before it read the answer.
+            outbox.askForConversations()
+            outbox.sweep()
+            server(database, RecordingSending(database)).answerConversations()
+            outbox.sweep(later)
+            assertNull(outbox.takeConversations())
         }
     }
 
@@ -365,27 +360,28 @@ class ShareOutboxTest {
             outbox.askForConversations()
             server(database, RecordingSending(database)).answerConversations()
             val queued = outbox.handOff(request(), emptyList())
+            // Draft uploads an earlier build left behind.
+            FileSystem.SYSTEM.createDirectories(root / "share-drafts" / "account")
 
             deleteShareOutbox(root.toString(), SELF)
 
-            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(id))
-            assertEquals(HandOffState.Finished(ShareOutbox.MISSING), outbox.state(queued))
+            assertEquals(listOf(FINISHED, FINISHED), listOf(state(id), state(queued)))
             assertNull(outbox.takeConversations())
             assertEquals(listOf("share-outbox"), FileSystem.SYSTEM.list(root).map { it.name } - "prepared")
             assertEquals(emptyList(), FileSystem.SYSTEM.list(root / "share-outbox"))
         }
     }
 
-    /** The database stores on its own thread, so this waits in real time for the app's result. */
-    private suspend fun awaitResult(id: String): HandOffState = withContext(Dispatchers.Default) {
-        withTimeout(10.seconds) {
-            var state = outbox.state(id)
-            while (state !is HandOffState.Finished) {
-                delay(10.milliseconds)
-                state = outbox.state(id)
-            }
-            state
-        }
+    /** Where an entry is: published, with the app, or gone once the app finished it. */
+    private fun state(id: String) = when {
+        outbox.isWaiting(id) -> WAITING
+        FileSystem.SYSTEM.exists(root / "share-outbox" / appleAccountFileKey(SELF) / "claimed" / id) -> CLAIMED
+        else -> FINISHED
+    }
+
+    /** The database stores on its own thread, so this waits in real time for the app to finish the entry. */
+    private suspend fun awaitFinished(id: String) = withContext(Dispatchers.Default) {
+        withTimeout(10.seconds) { while (state(id) != FINISHED) delay(10.milliseconds) }
     }
 
     /** The database answers on its own thread, so this waits in real time for the app's answer. */
@@ -403,7 +399,7 @@ class ShareOutboxTest {
     private fun server(
         database: UserDatabaseBuilder,
         sending: ShareOutboxSending,
-        refused: suspend (ConversationId, String?, String) -> Unit = { _, _, _ -> },
+        refused: suspend (ConversationId, String?, String) -> Unit = { _, _, reason -> refusals += reason },
     ) = ShareOutboxServer(root.toString(), SELF, database, BuildFileRestrictionState.NoRestriction, sending, refused)
 
     /** Stores each item as a message, as the app's use cases would, and records it. */
@@ -411,6 +407,7 @@ class ShareOutboxTest {
         private val database: UserDatabaseBuilder,
         private val cancelOn: String? = null,
         private val synced: CompletableDeferred<Unit>? = null,
+        private var failedCellsUploads: Int = 0,
     ) : ShareOutboxSending {
         val stored = mutableListOf<String>()
         val waitingForSync = CompletableDeferred<Unit>()
@@ -433,28 +430,10 @@ class ShareOutboxTest {
         override suspend fun cells(
             conversationId: ConversationId, files: List<ShareOutboxFile>, text: String, messageId: String,
         ): String? {
+            if (failedCellsUploads-- > 0) return ShareOutboxSending.UPLOAD_FAILED
             files.forEach { assertEquals(true, FileSystem.SYSTEM.exists(it.path.toPath())) }
             store(conversationId, messageId, "Cells:${files.joinToString(",") { it.name }}:$text as $messageId")
             if (messageId == cancelOn) throw CancellationException("Backgrounded after storage")
-            return null
-        }
-
-        var prepared = 0
-        override suspend fun prepareCells(
-            conversationId: ConversationId, files: List<ShareOutboxFile>, progress: (Long, Long) -> Unit,
-        ): Either<String, List<CellAssetContent>> {
-            prepared++
-            progress(1, 2)
-            return Either.Right(files.map {
-                CellAssetContent("node", "version", it.mimeType, "cell/${it.name}", it.sizeInBytes,
-                    metadata = it.metadata(), transferStatus = AssetTransferStatus.NOT_DOWNLOADED)
-            })
-        }
-        override suspend fun discardCells(attachments: List<CellAssetContent>) = Unit
-        override suspend fun storeCells(
-            conversationId: ConversationId, attachments: List<CellAssetContent>, text: String, messageId: String,
-        ): String? {
-            store(conversationId, messageId, "Prepared:${attachments.size}:$text")
             return null
         }
 
@@ -489,6 +468,9 @@ class ShareOutboxTest {
     }
 
     private companion object {
+        const val WAITING = "waiting"
+        const val CLAIMED = "claimed"
+        const val FINISHED = "finished"
         val PHOTO = OutboxFile("m1", "photo.jpg", "image/jpeg", sizeInBytes = 5, width = 4, height = 3)
         val VIDEO = OutboxFile("m2", "video.mp4", "video/mp4", sizeInBytes = 5, durationMs = 1_000)
 

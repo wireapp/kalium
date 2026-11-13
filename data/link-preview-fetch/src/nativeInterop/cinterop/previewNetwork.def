@@ -1,0 +1,6 @@
+language = Objective-C
+headers = PreviewNetwork.h
+headerFilter = PreviewNetwork.h
+package = com.wire.kalium.linkpreview.fetch.nativeinterop
+compilerOpts = -fobjc-arc
+linkerOpts = -framework Network

@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
-import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
@@ -326,16 +325,11 @@ public class DebugScope internal constructor(
      */
     @OptIn(InternalKaliumApi::class)
     @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
-    public suspend fun refillKeyPackages(): Either<CoreFailure, Unit> {
-        return transactionProvider.transaction { transactionContext ->
-            transactionContext.wrapInMLSContext { mlsContext ->
-                when (val result = refillKeyPackagesUseCase(mlsContext)) {
-                    is RefillKeyPackagesResult.Success -> Either.Right(Unit)
-                    is RefillKeyPackagesResult.Failure -> Either.Left(result.failure)
-                }
-            }
+    public suspend fun refillKeyPackages(): Either<CoreFailure, Unit> =
+        when (val result = refillKeyPackagesUseCase()) {
+            is RefillKeyPackagesResult.Success -> Either.Right(Unit)
+            is RefillKeyPackagesResult.Failure -> Either.Left(result.failure)
         }
-    }
 
     /**
      * Generates test events for debugging purposes.

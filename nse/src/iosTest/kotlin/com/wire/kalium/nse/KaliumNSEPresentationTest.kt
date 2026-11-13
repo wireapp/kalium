@@ -158,19 +158,13 @@ class KaliumNSEPresentationTest {
     }
 
     @Test
-    fun ownershipFailuresAskForAGenericAlertOnlyWhenNobodyElsePresents() {
-        for (reason in AccountRuntimeFailure.entries) for (appPresentsAlerts in listOf(false, true)) {
-            val result = receiver.ownershipFailure(reason, appPresentsAlerts)
-            val expected = when (reason) {
-                AccountRuntimeFailure.BUSY, AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE ->
-                    !appPresentsAlerts
-                AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
-                AccountRuntimeFailure.MISSING_STORAGE -> false
-            }
+    fun ownershipFailuresAskForAGenericAlertUnlessTheAppHasNotRun() {
+        for (reason in AccountRuntimeFailure.entries) {
+            val result = receiver.ownershipFailure(reason)
             assertEquals(KaliumNSEStatus.FAILED, result.status)
             assertEquals(reason.name, result.failureReason)
             assertFalse(result.shouldNotify)
-            assertEquals(expected, result.presentGenericAlert, "$reason $appPresentsAlerts")
+            assertEquals(reason != AccountRuntimeFailure.MISSING_STORAGE, result.presentGenericAlert, "$reason")
         }
     }
 
@@ -203,22 +197,21 @@ class KaliumNSEPresentationTest {
     }
 
     @Test
-    fun legalHoldHandoffAsksForAGenericAlertWhileItsEventWaitsAndNobodyElsePresents() = runTest {
-        for (work in listOf(null) + NotificationAppWork.entries) for (appPresentsAlerts in listOf(false, true)) {
-            for (targetProcessed in listOf(false, true)) {
-                val received = ReceivedNotificationResult(
-                    null, appWorkPending = work, stoppedReason = if (work == null) "QUEUE_END" else "LEGAL_HOLD_REQUIRES_APP"
-                )
-                val expected = work == NotificationAppWork.LEGAL_HOLD && !appPresentsAlerts && !targetProcessed
-                assertEquals(
-                    expected,
-                    receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received, appPresentsAlerts) { targetProcessed },
-                    "$work $appPresentsAlerts $targetProcessed"
-                )
-            }
+    fun appHandoffAsksForAGenericAlertWhileItsEventWaits() = runTest {
+        for (work in listOf(null) + NotificationAppWork.entries) for (targetProcessed in listOf(false, true)) {
+            val received = ReceivedNotificationResult(
+                null, appWorkPending = work, stoppedReason = if (work == null) "QUEUE_END" else "${work}_REQUIRES_APP"
+            )
+            val stopsQueue = work == NotificationAppWork.LEGAL_HOLD || work == NotificationAppWork.MLS_SUBCONVERSATION
+            val expected = stopsQueue && !targetProcessed
+            assertEquals(
+                expected,
+                receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received) { targetProcessed },
+                "$work $targetProcessed"
+            )
         }
-        // Running out of time still asks even while the app presents.
-        assertTrue(receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, ReceivedNotificationResult(null, stoppedReason = "BUDGET"), true) {
+        // Running out of time asks too.
+        assertTrue(receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, ReceivedNotificationResult(null, stoppedReason = "BUDGET")) {
             false
         })
     }

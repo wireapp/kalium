@@ -170,7 +170,7 @@ class AppleAccountResourceCallbackTest {
         central.configurePkiEnvironment(hooks)
         central.startX509CredentialAcquisition(config)
         access.pause { central.suspendNativeResources() }
-        access.resume {}
+        access.withResumedAccess({}, {}) {}
         central.startX509CredentialAcquisition(config)
         assertEquals(2, registered.size)
         central.close()
@@ -199,7 +199,7 @@ class AppleAccountResourceCallbackTest {
             handoff.cancelAndJoin()
             runCurrent()
             worker.await()
-            access.resume { }
+            access.withResumedAccess({}, {}) {}
             central.close()
         }
         assertTrue(drained, "Suspension must drain the native authentication callback before closing resources")

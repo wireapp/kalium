@@ -235,6 +235,39 @@ class DagCommandTaskTest {
     }
 
     @Test
+    fun iosSelectionSkipsModulesWithoutSourcesInTheSimulatorTestCompilation() {
+        val projectDir = setupProject(modulePaths = listOf(":common-tests", ":simulator-tests", ":device-tests", ":sample"))
+        listOf("common-tests", "simulator-tests", "device-tests", "sample").forEach { module ->
+            projectDir.resolve("$module/build.gradle").writeText(
+                """
+                apply plugin: 'org.jetbrains.kotlin.multiplatform'
+                kotlin {
+                    iosArm64()
+                    iosSimulatorArm64()
+                }
+                // Selection also runs on Linux, where simulator execution is unavailable.
+                if (!tasks.names.contains('iosSimulatorArm64Test')) {
+                    tasks.register('iosSimulatorArm64Test')
+                }
+                """.trimIndent() + "\n"
+            )
+        }
+        mapOf(
+            "common-tests" to "commonTest",
+            "simulator-tests" to "iosSimulatorArm64Test",
+            "device-tests" to "iosArm64Test"
+        ).forEach { (module, sourceSet) ->
+            val source = projectDir.resolve("$module/src/$sourceSet/kotlin/ExampleTest.kt")
+            source.parent.createDirectories()
+            source.writeText("class ExampleTest\n")
+        }
+
+        listIosTasks(projectDir, "--all-modules", "--ios-shard=extensions")
+
+        assertEquals(setOf(":common-tests", ":simulator-tests"), readSelectedIosModules(projectDir))
+    }
+
+    @Test
     fun iosShardsPreserveAffectedDependentsAndClearEmptySelections() {
         val projectDir = setupProject(
             modulePaths = listOf(":data:persistence", ":logic", ":domain:messaging:receiving", ":nse", ":share", ":unrelated"),
@@ -363,6 +396,7 @@ class DagCommandTaskTest {
         runCommand(projectDir, "git", "init")
         runCommand(projectDir, "git", "config", "user.email", "dag-command-test@wire.com")
         runCommand(projectDir, "git", "config", "user.name", "Dag Command Test")
+        runCommand(projectDir, "git", "config", "commit.gpgsign", "false")
         runCommand(projectDir, "git", "add", ".")
         runCommand(projectDir, "git", "commit", "-m", "initial")
         runCommand(projectDir, "git", "branch", "-M", "develop")

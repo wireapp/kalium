@@ -92,8 +92,6 @@ public data class KaliumNSERequest(
     public val budgetMilliseconds: Long,
     /** The host supplies only delivered message alerts belonging to this request's account. */
     public val deliveredNotifications: List<KaliumNSEDeliveredNotification> = emptyList(),
-    /** The app is in the foreground and presents alerts itself, so a failed attempt needs no generic alert. */
-    public val appPresentsAlerts: Boolean = false,
 )
 
 public data class KaliumNSEDeliveredNotification(
@@ -242,7 +240,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     ).also { produced = it }
                 }
                 when (result) {
-                    is Either.Left -> produced ?: ownershipFailure(result.value, request.appPresentsAlerts)
+                    is Either.Left -> produced ?: ownershipFailure(result.value)
                     is Either.Right -> result.value
                 }
             } ?: produced ?: timedOut(caughtUpAccounts.handled(configuration.rootPath, userId, started))
@@ -303,7 +301,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             meetingAlerts = received.meetings,
             meetingReminders = runtime.database.upcomingMeetingReminders(),
             presentGenericAlert = !result.shouldNotify && result.alerts.isEmpty() &&
-                mayLeaveUnseenEvents(caughtUp, received, request.appPresentsAlerts) {
+                mayLeaveUnseenEvents(caughtUp, received) {
                     runtime.database.eventDAO.getEventById(request.notificationId)?.isProcessed == true
                 },
         ).also {
@@ -314,18 +312,17 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     /**
      * An unfinished catch-up may leave events the socket received, which get no push; missed notifications
      * mean the backend dropped events until the app's slow sync. A failed catch-up, like processing that ran
-     * out of time, may not have reached the push's own event. Nor may legal-hold work left for the app, which
-     * stops every later attempt at the same event until the app runs; a presenting app shows what follows.
+     * out of time, may not have reached the push's own event. Nor may legal-hold or call work left for the app,
+     * which stops every later attempt at the same event until the app runs.
      */
     internal suspend fun mayLeaveUnseenEvents(
         caughtUp: CatchUpOutcome,
         received: ReceivedNotificationResult,
-        appPresentsAlerts: Boolean,
         targetProcessed: suspend () -> Boolean,
     ): Boolean = caughtUp == CatchUpOutcome.BUDGET || caughtUp == CatchUpOutcome.NEEDS_SLOW_SYNC || (
         (
             received.stoppedReason == BUDGET || caughtUp == CatchUpOutcome.FAILED ||
-                (received.appWorkPending == NotificationAppWork.LEGAL_HOLD && !appPresentsAlerts)
+                received.appWorkPending in QUEUE_STOPPING_WORK
             ) && !targetProcessed()
         )
 
@@ -464,14 +461,12 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
 
     /**
      * Asks for a generic alert when nobody else presents what the push carries: the account is busy, unprepared or
-     * unreadable, such as after an app update until the app opens. The foreground app presents alerts itself.
-     * Missing storage means the app has not run.
+     * unreadable, such as after an app update until the app opens. Missing storage means the app has not run.
      */
-    internal fun ownershipFailure(reason: AccountRuntimeFailure, appPresentsAlerts: Boolean) =
+    internal fun ownershipFailure(reason: AccountRuntimeFailure) =
         failure(reason.name).copy(
             presentGenericAlert = when (reason) {
-                AccountRuntimeFailure.BUSY, AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE ->
-                    !appPresentsAlerts
+                AccountRuntimeFailure.BUSY, AccountRuntimeFailure.NOT_PREPARED, AccountRuntimeFailure.INCOMPATIBLE,
                 AccountRuntimeFailure.PROTECTED_STORAGE, AccountRuntimeFailure.STORAGE -> true
                 AccountRuntimeFailure.MISSING_STORAGE -> false
             }
@@ -501,6 +496,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         private const val PROCESS_SHARE = 0.85
         private const val QUEUE_END = "QUEUE_END"
         private const val BUDGET = "BUDGET"
+        private val QUEUE_STOPPING_WORK = setOf(NotificationAppWork.LEGAL_HOLD, NotificationAppWork.MLS_SUBCONVERSATION)
         private val caughtUpAccounts = CaughtUpAccounts()
     }
 

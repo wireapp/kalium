@@ -2238,21 +2238,20 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun mlsProtocolResolutionWithoutNativeCandidateStaysPending() = runTest {
+    fun mlsProtocolResolutionWithoutNativeCandidateQueuesForTheApp() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(false) { fixture ->
                 fixture.seedMLSProtocolResolution()
                 val event = fixture.mlsSettingsEvents(changeTeamProtocols = true)
                 val tail = fixture.event("tail", fixture.encrypt("tail"))
                 fixture.releasePrepared()
-                repeat(2) { assertIs<Either.Left<*>>(fixture.receive(listOf(event, tail), event.id,
+                assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), event.id,
                     fetchSelfClients = { fixture.selfClients() }, uploadSelfProtocols = {},
-                    fetchProfiles = { ListUsersDTO(usersFound = listOf(fixture.connectionProfile(SENDER.toApi()))) })) }
+                    fetchProfiles = { ListUsersDTO(usersFound = listOf(fixture.connectionProfile(SENDER.toApi()))) }))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
-                    assertNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
-                    assertEquals(setOf(SupportedProtocolEntity.PROTEUS), runtime.database.userDAO.getUserDetailsByQualifiedID(SELF.toDao())?.supportedProtocols)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertEquals(listOf(SENDER.toDao()), runtime.database.pendingActionDAO
+                        .getByActionType(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION).map { it.qualifiedId })
                 })
             }
         }
@@ -6939,18 +6938,18 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun oneOnOneCreationNeedsExternalEstablishment() = runTest {
+    fun oneOnOneCreationQueuesExternalEstablishmentForTheApp() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true, newConversation = true) { fixture ->
                 val response = fixture.creationResponse().copy(type = ConversationResponse.Type.ONE_TO_ONE)
-                val event = fixture.batch("notification", fixture.creationEvent(response = response),
-                    fixture.welcomeEvent(), fixture.event("text", fixture.encrypt("first")))
+                val event = fixture.creationEvent(response = response)
+                val tail = fixture.batch("tail", fixture.welcomeEvent(), fixture.event("text", fixture.encrypt("first")))
                 fixture.releasePrepared()
-                assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id))
+                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event, tail), tail.id)).value?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
-                    assertNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
-                    assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertEquals(listOf(SENDER.toDao()), runtime.database.pendingActionDAO
+                        .getByActionType(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION).map { it.qualifiedId })
                 })
             }
         }
@@ -8642,10 +8641,9 @@ class NotificationProcessorNativeTest {
     @Test
     fun creationUnsupportedDependenciesStayPending() = runTest {
         withContext(Dispatchers.Default) {
-            for (kind in listOf("one-to-one", "group-mismatch", "partial-group-mismatch", "missing-welcome", "recovery")) {
+            for (kind in listOf("group-mismatch", "partial-group-mismatch", "missing-welcome", "recovery")) {
                 withFixture(true, newConversation = true) { fixture ->
                     val response = when (kind) {
-                        "one-to-one" -> fixture.creationResponse().copy(type = ConversationResponse.Type.ONE_TO_ONE)
                         "group-mismatch" -> fixture.creationResponse().copy(groupId = Base64.encode("wrong-group".encodeToByteArray()))
                         else -> fixture.creationResponse()
                     }
@@ -9447,7 +9445,8 @@ class NotificationProcessorNativeTest {
                 val subNext = fixture.encrypt("sub-next", groupId = RESET_GROUP_ID)
                 fixture.releasePrepared()
                 repeat(2) {
-                    assertIs<Either.Left<*>>(fixture.receive(listOf(event, tail), tail.id))
+                    assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), tail.id))
+                    assertEquals(NotificationAppWork.MLS_SUBCONVERSATION, fixture.receivedAppWork)
                     fixture.verifyPendingTextQueue(event, tail)
                 }
                 assertIs<Either.Right<*>>(fixture.open { runtime ->

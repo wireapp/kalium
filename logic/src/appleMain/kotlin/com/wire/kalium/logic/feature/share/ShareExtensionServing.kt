@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.cells.CellSharedFile
-import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.share.metadata
 import kotlinx.coroutines.NonCancellable
@@ -54,8 +53,7 @@ private val turns = ConcurrentMutableMap<UserId, Mutex>()
  * Answers the share extension while the app owns this account, live or not (ADR 13). It lists the account's
  * conversations when the extension asks, and stores handed-off shares as the composer would: now, and whenever
  * [doorbell] rings. Runs until cancelled, which must happen before the app releases the account. Servers of one
- * account take turns. A share it refuses after the extension stopped waiting goes to [refused], for the app to tell
- * the user.
+ * account take turns. A share it does not store goes to [refused], for the app to tell the user.
  */
 public suspend fun UserSessionScope.serveShareExtension(
     doorbell: Flow<Unit>,
@@ -140,37 +138,6 @@ internal class ComposerSending(
                 }
             }
         }
-    }
-
-    @Suppress("ReturnCount")
-    override suspend fun prepareCells(
-        conversationId: ConversationId,
-        files: List<ShareOutboxFile>,
-        progress: (Long, Long) -> Unit,
-    ): Either<String, List<CellAssetContent>> {
-        val conversation = conversations.observeConversationDetailsById(conversationId).first().getOrNull()
-        val cellName = (conversation as? ConversationDetails.Group)?.wireCell
-            ?: return Either.Left(ShareOutboxSending.UNAVAILABLE)
-        if (cells.value.getCellConfig()?.backendUrl.isNullOrBlank()) return Either.Left(ShareOutboxSending.UNAVAILABLE)
-        val prepared = files.map { CellSharedFile(it.path.toPath(), it.name, it.mimeType, it.sizeInBytes, it.metadata()) }
-        return when (val result = cells.value.fileSharing.upload(cellName, prepared, progress)) {
-            is Either.Left -> Either.Left(ShareOutboxSending.UPLOAD_FAILED)
-            is Either.Right -> result
-        }
-    }
-
-    override suspend fun discardCells(attachments: List<CellAssetContent>) {
-        cells.value.fileSharing.discard(attachments)
-    }
-
-    override suspend fun storeCells(
-        conversationId: ConversationId,
-        attachments: List<CellAssetContent>,
-        text: String,
-        messageId: String,
-    ): String? = withContext(NonCancellable) {
-        if (messages.value.sendMultipartMessage.storeShared(messageId, conversationId, text, attachments)) null
-        else ShareOutboxSending.FAILED
     }
 
     override suspend fun text(conversationId: ConversationId, text: String, messageId: String): String? =
