@@ -1845,7 +1845,12 @@ owns the single system completion callback.</p>
 <p>The NSE collects committed calling signals through the target, evaluates one AVS
 event-only batch after sync and returns its callbacks for the host to report to
 CallKit. Committed signals are retained in the account's call signal journal for
-replay through the full app engine, which owns ringing and termination. Besides
+replay through the full app engine, which owns ringing and termination. They are
+kept for three minutes, because a new full engine ignores anything older: AVS drops
+conference starts older than 120 s and only reports a 1:1 start older than 60 s as
+missed. When the full engine closes a call that does not continue for others, the
+signals it handled in that conversation are dropped, so a restart cannot replay an
+ended call. Besides
 storing committed signals, the NSE writes only a once-per-signal missed-call claim.
 AVS exposes no message or session identity, so identical callback references cannot
 distinguish separate real calls. As with ordinary alerts, interruption after
