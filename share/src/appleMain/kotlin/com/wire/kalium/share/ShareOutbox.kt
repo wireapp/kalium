@@ -48,17 +48,19 @@ import platform.Foundation.dataUsingEncoding
 import platform.Foundation.writeToFile
 import platform.posix.rename
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.native.HiddenFromObjC
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 /**
  * An account's outbox in the App Group: shares the extension hands to the app while the app owns the account (ADR 13).
  * The extension publishes an entry by renaming it from `staging/` into `ready/`, and the app claims it by renaming it
- * into `claimed/`; a rename within one file system is atomic. Once the app stored the share, it leaves a result. An
- * extension that stops waiting for the result marks the entry in `unwatched/`, and the app then reports the result
- * itself. The host rings the other side with a Darwin notification; these files say what is there.
+ * into `claimed/`; a rename within one file system is atomic. Nothing comes back: once the app has a share, the app
+ * sends it or tells the user. The host rings the app with a Darwin notification; these files say what is there.
  */
 // Both sides of the file protocol stay in one place.
 @Suppress("TooManyFunctions")
@@ -73,8 +75,6 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
     private val staging = directory / "staging"
     private val ready = directory / "ready"
     private val claimed = directory / "claimed"
-    private val results = directory / "results"
-    private val unwatched = directory / "unwatched"
     private val conversationsRequest = directory / "conversations-request"
     private val conversations = directory / "conversations.json"
 
@@ -96,30 +96,13 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
         return id
     }
 
-    /** Where entry [id] is. Its result is reported once. */
-    fun state(id: String): HandOffState = when {
-        fileSystem.exists(ready / id) -> HandOffState.Waiting
-        fileSystem.exists(claimed / id) -> HandOffState.Claimed
-        else -> HandOffState.Finished(take(results / id) ?: MISSING)
-    }
+    /** Whether the app has not taken entry [id] yet. */
+    fun isWaiting(id: String): Boolean = fileSystem.exists(ready / id)
 
     /** Whether entry [id] was handed off within the last day: its ID starts with that time. */
     fun isRecent(id: String): Boolean {
         val handedOff = id.substringBefore('-').toLongOrNull() ?: return false
         return Clock.System.now().toEpochMilliseconds() - handedOff < RETRY_FOR.inWholeMilliseconds
-    }
-
-    /**
-     * The extension stops waiting for entry [id], so the app reports its result instead (see [finish]). Returns the
-     * result if the app finished meanwhile and left it to the extension, once.
-     */
-    fun stopWaiting(id: String): HandOffState.Finished? {
-        create(unwatched)
-        fileSystem.write(unwatched / id) {}
-        // Each side marks, then looks for the other's mark, so at least one sees the result, and only one takes it.
-        val finished = state(id) as? HandOffState.Finished ?: return null
-        fileSystem.delete(unwatched / id)
-        return finished.takeIf { it.result != MISSING }
     }
 
     /** Asks the app for the account's conversations; an earlier answer is dropped. */
@@ -141,7 +124,7 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
     /** Answers [askForConversations] with [picker]. Conversation names are readable only while the device is unlocked. */
     suspend fun answerIfAsked(picker: suspend () -> SharePicker) {
         if (!fileSystem.exists(conversationsRequest)) return
-        writeShareOutboxFile(conversations, json.encodeToString(picker()), whileUnlocked = true)
+        writeWhileUnlocked(conversations, json.encodeToString(picker()))
         fileSystem.delete(conversationsRequest)
     }
 
@@ -174,29 +157,22 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
         return target.toString()
     }
 
-    /**
-     * Leaves [result] for the extension, then drops the entry, including files the import did not take. Returns true
-     * when the extension stopped waiting without the result: the app then reports it.
-     */
-    fun finish(id: String, result: String): Boolean {
-        create(results)
-        writeShareOutboxFile(results / id, result, whileUnlocked = false)
-        fileSystem.deleteRecursively(claimed / id)
-        if (!fileSystem.exists(unwatched / id)) return false
-        fileSystem.delete(unwatched / id)
-        return take(results / id) != null
-    }
+    /** Drops entry [id], including files the import did not take. */
+    fun finish(id: String) = fileSystem.deleteRecursively(claimed / id)
 
-    /** Drops entries an interrupted extension left in `staging/`, and results no extension read. */
-    fun sweep() {
-        val before = (Clock.System.now() - SWEEP_AFTER).toEpochMilliseconds()
-        listOf(staging, results).forEach { directory ->
-            fileSystem.listOrNull(directory)?.forEach { entry ->
-                val modified = fileSystem.metadataOrNull(entry)?.lastModifiedAtMillis
-                if (modified != null && modified < before) fileSystem.deleteRecursively(entry)
-            }
+    /**
+     * Drops what its writer no longer needs at [now]: entries an interrupted extension left in `staging/`, and a
+     * request for conversations, or its answer with every conversation's name, whose sheet stopped waiting long ago.
+     */
+    fun sweep(now: Instant = Clock.System.now()) {
+        fun old(path: Path, age: Duration): Boolean {
+            val modified = fileSystem.metadataOrNull(path)?.lastModifiedAtMillis
+            return modified != null && modified < (now - age).toEpochMilliseconds()
         }
-        fileSystem.deleteRecursively(oldDrafts)
+        fileSystem.listOrNull(staging)?.filter { old(it, SWEEP_AFTER) }?.forEach { fileSystem.deleteRecursively(it) }
+        listOf(conversationsRequest, conversations).filter { old(it, LIST_SWEEP_AFTER) }.forEach { fileSystem.delete(it) }
+        // What earlier builds left behind: results for the extension, and draft uploads.
+        listOf(directory / "results", directory / "unwatched", oldDrafts).forEach { fileSystem.deleteRecursively(it) }
     }
 
     /** Drops every entry, result and answer of the account. */
@@ -205,7 +181,7 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
         fileSystem.deleteRecursively(oldDrafts)
     }
 
-    /** Only one reader takes a file: the extension and the app may both try to take a result. */
+    /** Reads a file once: it is gone afterwards. */
     private fun take(path: Path): String? = try {
         val content = fileSystem.read(path) { readUtf8() }
         fileSystem.delete(path, mustExist = true)
@@ -221,23 +197,21 @@ internal class ShareOutbox(rootPath: String, accountId: UserId) {
         if (!excluded) NSURL.fileURLWithPath(outboxes.toString()).setResourceValue(true, NSURLIsExcludedFromBackupKey, null)
     }
 
-    companion object {
-        /** The result of a share the app stored. */
-        const val STORED = "STORED"
-
-        /** Neither the entry nor its result exists any more. */
-        const val MISSING = "MISSING"
+    private companion object {
         private const val DIRECTORY = "share-outbox"
         private const val REQUEST = "request.json"
         private const val ID_TIME_DIGITS = 13
         private val SWEEP_AFTER = 1.hours
+
+        /** A sheet waits seconds for its list of conversations. */
+        private val LIST_SWEEP_AFTER = 1.minutes
         private val RETRY_FOR = 24.hours
         private val json = Json { ignoreUnknownKeys = true }
     }
 }
 
 /**
- * Drops an account's share outbox when it logs out (ADR 13): shares not imported yet, results and conversation lists.
+ * Drops an account's share outbox when it logs out (ADR 13): shares not imported yet and conversation lists.
  * Each holds plaintext outside the account's directory, which logging out deletes.
  */
 @InternalKaliumApi
@@ -256,11 +230,12 @@ private fun copy(source: String, target: Path) {
     if (!NSFileManager.defaultManager.copyItemAtPath(source, target.toString(), null)) throw IOException("Cannot copy a shared file")
 }
 
-/** Replaces [path] at once, so the other side never reads half of it. */
-internal fun writeShareOutboxFile(path: Path, text: String, whileUnlocked: Boolean) {
+/** Replaces [path] at once, so the other side never reads half of it, and keeps it unreadable while the device is locked. */
+private fun writeWhileUnlocked(path: Path, text: String) {
     val data = NSString.create(string = text).dataUsingEncoding(NSUTF8StringEncoding) ?: throw IOException("Cannot encode")
-    val options = if (whileUnlocked) NSDataWritingAtomic or readableWhileUnlocked else NSDataWritingAtomic
-    if (!data.writeToFile(path.toString(), options, null)) throw IOException("Cannot write to the share outbox")
+    if (!data.writeToFile(path.toString(), NSDataWritingAtomic or readableWhileUnlocked, null)) {
+        throw IOException("Cannot write to the share outbox")
+    }
 }
 
 /** The file protection that keeps a file unreadable while the device is locked. */
@@ -290,11 +265,3 @@ internal data class OutboxFile(
     @SerialName("height") val height: Int? = null,
     @SerialName("durationMs") val durationMs: Long? = null,
 )
-
-internal sealed interface HandOffState {
-    data object Waiting : HandOffState
-    data object Claimed : HandOffState
-
-    /** [result] is [ShareOutbox.STORED], or why the app stored nothing more. */
-    data class Finished(val result: String) : HandOffState
-}
