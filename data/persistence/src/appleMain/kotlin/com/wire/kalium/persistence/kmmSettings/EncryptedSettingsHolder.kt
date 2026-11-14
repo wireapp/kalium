@@ -39,7 +39,7 @@ import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.Cleaner
 import kotlin.native.ref.createCleaner
 
-@OptIn(ExperimentalForeignApi::class, ExperimentalSettingsApi::class, ExperimentalSettingsImplementation::class)
+@OptIn(ExperimentalSettingsImplementation::class)
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam

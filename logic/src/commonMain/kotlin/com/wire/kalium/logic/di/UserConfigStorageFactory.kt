@@ -31,6 +31,7 @@ internal expect class UserConfigStorageFactory() {
     fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
+        useTinkEncryptedPreferences: Boolean,
         platformProperties: PlatformUserStorageProperties
     ): UserConfigStorage
 }

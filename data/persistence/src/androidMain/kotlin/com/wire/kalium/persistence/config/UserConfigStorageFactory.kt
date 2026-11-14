@@ -18,11 +18,12 @@
 package com.wire.kalium.persistence.config
 
 import android.content.Context
+import com.russhwolf.settings.SharedPreferencesSettings
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsPlatformParam
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmmSettings.SettingOptions
-import com.wire.kalium.persistence.kmmSettings.buildSettings
+import com.wire.kalium.persistence.kmmSettings.buildMigratingSharedPreferences
 
 @Suppress("DEPRECATION")
 @Deprecated(
@@ -43,10 +44,25 @@ actual class UserConfigStorageFactory actual constructor() {
         platformParam: Any
     ): UserConfigStorage {
         require(platformParam is Context) { "platformParam must be an Android Context" }
-        val settings = buildSettings(
+        return create(userId, shouldEncryptData, useTinkEncryptedPreferences = false, context = platformParam)
+    }
+
+    /**
+     * Creates a [UserConfigStorage] instance for Android.
+     * @param useTinkEncryptedPreferences migrates the user's preferences from the deprecated `EncryptedSharedPreferences`
+     * to a Tink-backed store. See [buildMigratingSharedPreferences] for the migration guarantees.
+     */
+    fun create(
+        userId: UserIDEntity,
+        shouldEncryptData: Boolean,
+        useTinkEncryptedPreferences: Boolean,
+        context: Context
+    ): UserConfigStorage {
+        val preferences = buildMigratingSharedPreferences(
             SettingOptions.UserSettings(shouldEncryptData, userId),
-            EncryptedSettingsPlatformParam(platformParam)
+            EncryptedSettingsPlatformParam(context),
+            useTinkEncryptedPreferences
         )
-        return UserConfigStorageImpl(KaliumPreferencesSettings(settings))
+        return UserConfigStorageImpl(KaliumPreferencesSettings(SharedPreferencesSettings(preferences, commit = false)))
     }
 }

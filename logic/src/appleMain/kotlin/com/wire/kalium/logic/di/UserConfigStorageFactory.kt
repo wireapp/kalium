@@ -30,6 +30,7 @@ internal actual class UserConfigStorageFactory actual constructor() {
     actual fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
+        useTinkEncryptedPreferences: Boolean, // Android only
         platformProperties: PlatformUserStorageProperties
     ): UserConfigStorage = persistenceFactory.create(
         userId = userId.toDao(),

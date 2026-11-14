@@ -59,7 +59,8 @@ public actual class CoreLogic(
 
     actual override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(
         appContext,
-        kaliumConfigs.shouldEncryptData()
+        kaliumConfigs.shouldEncryptData(),
+        kaliumConfigs.useTinkEncryptedPreferences
     )
 
     private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)

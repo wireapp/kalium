@@ -24,7 +24,9 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
+import com.wire.kalium.persistence.kaliumLogger
 import kotlinx.coroutines.delay
+import java.io.IOException
 import kotlinx.coroutines.runBlocking
 
 private fun SettingOptions.keyAlias(): String = when (this) {
@@ -50,14 +52,153 @@ internal fun buildSharedPreferences(
     }
 }
 
+/**
+ * Process-wide instances of the migrating preferences, so every caller of a file uses the same store, even if a
+ * migration failed and that file stays on the legacy store for the rest of this process.
+ */
+private val migratingSharedPreferences = mutableMapOf<String, SharedPreferences>()
+
+/**
+ * Builds the encrypted preferences for [options]: the global ones (auth tokens and database passphrases) or the
+ * per-user ones.
+ *
+ * With [useTinkEncryptedPreferences], the legacy `EncryptedSharedPreferences` file is migrated to a
+ * [TinkEncryptedSharedPreferences] store. The migration never modifies the legacy file:
+ * 1. the legacy data is copied to a fresh Tink store and committed,
+ * 2. the copy is read back and compared with the legacy data,
+ * 3. only then the migration is marked as completed.
+ * If any step fails, the unfinished Tink store is discarded, the legacy store is used for this process, and the
+ * migration is retried on the next start.
+ *
+ * When the legacy file is empty (e.g. a new install), the Tink store is created directly, without creating a legacy
+ * store or its master key.
+ *
+ * Once a migration completed, the Tink store is used even if [useTinkEncryptedPreferences] is turned off again:
+ * the legacy file is stale from that point on, and switching back to it would lose the newer values.
+ *
+ * The legacy file is kept as is. Deleting it is left to a later release, once the migration is proven in production.
+ */
+internal fun buildMigratingSharedPreferences(
+    options: SettingOptions,
+    param: EncryptedSettingsPlatformParam,
+    useTinkEncryptedPreferences: Boolean
+): SharedPreferences = synchronized(lock) {
+    if (!options.shouldEncryptData) return@synchronized buildSharedPreferences(options, param)
+    migratingSharedPreferences.getOrPut(options.fileName) {
+        val tinkStore = TinkPreferencesStore(param.appContext, options.fileName)
+        when {
+            tinkStore.isMigrationCompleted() -> openTinkStore(tinkStore, isRetry = false).also {
+                // Warning level so it shows up with the minimal startup logging. Logged once per file per process.
+                kaliumLogger.w("Preferences already migrated, using the Tink store")
+            }
+            useTinkEncryptedPreferences && !hasLegacyData(param.appContext, options.fileName) ->
+                // Nothing to migrate (e.g. a new install): never create a legacy store or its master key.
+                createEmptyTinkStore(tinkStore) ?: encryptedSharedPref(options, param, false)
+
+            useTinkEncryptedPreferences -> {
+                val legacy = encryptedSharedPref(options, param, false)
+                migrateToTink(legacy, tinkStore) ?: legacy
+            }
+
+            else -> encryptedSharedPref(options, param, false)
+        }
+    }
+}
+
+@Suppress("TooGenericExceptionCaught")
+private fun openTinkStore(tinkStore: TinkPreferencesStore, isRetry: Boolean): SharedPreferences = try {
+    tinkStore.open()
+} catch (e: Exception) {
+    // Same policy as the legacy store: one retry for transient Keystore failures, then fail loudly.
+    // Never fall back to the legacy file here: it is stale once the migration completed.
+    if (isRetry) {
+        throw e
+    } else runBlocking {
+        delay(RETRY_DELAY)
+        openTinkStore(tinkStore, true)
+    }
+}
+
+/**
+ * True if the legacy file holds anything: the `EncryptedSharedPreferences` keysets are written to it on creation, so an
+ * empty file means the legacy store was never created. Reads the raw file only, without touching the Keystore.
+ */
+private fun hasLegacyData(context: Context, fileName: String): Boolean =
+    context.getSharedPreferences(fileName, Context.MODE_PRIVATE).all.isNotEmpty()
+
+/**
+ * Creates an empty, completed [TinkPreferencesStore] when there is no legacy data to migrate.
+ * @return the new preferences, or null if the Tink store could not be created and the legacy store must be used.
+ * In that case the legacy store gets the data, and it is migrated on a later start like any other legacy store.
+ */
+@Suppress("TooGenericExceptionCaught")
+private fun createEmptyTinkStore(tinkStore: TinkPreferencesStore): SharedPreferences? = try {
+    val tinkPreferences = tinkStore.createForMigration()
+    tinkStore.markMigrationCompleted()
+    kaliumLogger.w("No legacy preferences to migrate, created a new Tink store")
+    tinkPreferences
+} catch (e: Exception) {
+    kaliumLogger.w("Could not create a new Tink store, falling back to the legacy store", e)
+    try {
+        tinkStore.discardUnfinishedMigration()
+    } catch (cleanupError: Exception) {
+        kaliumLogger.w("Could not discard the unfinished Tink store", cleanupError)
+    }
+    null
+}
+
+/**
+ * Copies [legacy] into a fresh [TinkPreferencesStore] and verifies it.
+ * @return the migrated preferences, or null if the migration failed and [legacy] must still be used.
+ */
+@Suppress("TooGenericExceptionCaught")
+internal fun migrateToTink(legacy: SharedPreferences, tinkStore: TinkPreferencesStore): SharedPreferences? = try {
+    val legacyEntries = legacy.all
+    val tinkPreferences = tinkStore.createForMigration()
+    val editor = tinkPreferences.edit().clear()
+    legacyEntries.forEach { (key, value) -> editor.putAny(key, value) }
+    if (!editor.commit()) throw IOException("Could not persist the migrated preferences")
+    check(tinkPreferences.all == legacyEntries) { "The migrated preferences do not match the legacy ones" }
+    tinkStore.markMigrationCompleted()
+    // Logged as a warning so it shows up with the minimal startup logging, which is WARN and above.
+    kaliumLogger.w("Migrated ${legacyEntries.size} preferences to the Tink store")
+    tinkPreferences
+} catch (e: Exception) {
+    kaliumLogger.w("Migration of preferences to the Tink store failed, keeping the legacy store", e)
+    try {
+        tinkStore.discardUnfinishedMigration()
+    } catch (cleanupError: Exception) {
+        kaliumLogger.w("Could not discard the unfinished Tink migration", cleanupError)
+    }
+    null
+}
+
+private fun SharedPreferences.Editor.putAny(key: String, value: Any?) {
+    when (value) {
+        is String -> putString(key, value)
+        is Set<*> -> putStringSet(key, value.mapTo(mutableSetOf()) { it as String })
+        is Int -> putInt(key, value)
+        is Long -> putLong(key, value)
+        is Float -> putFloat(key, value)
+        is Boolean -> putBoolean(key, value)
+        else -> throw IllegalArgumentException("Unsupported preference type for migration")
+    }
+}
+
+/**
+ * StrongBox is only requested when [requestStrongBox] is true: `MasterKey` does not fall back to the TEE when
+ * StrongBox fails to generate the key. The flag only matters when the key is generated; an existing key is reused
+ * as is, whatever it is backed by.
+ */
 private fun getOrCreateMasterKey(
     context: Context,
-    keyAlias: String
+    keyAlias: String,
+    requestStrongBox: Boolean
 ): MasterKey =
     MasterKey
         .Builder(context, keyAlias)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .setRequestStrongBoxBacked(true)
+        .setRequestStrongBoxBacked(requestStrongBox)
         .build()
 
 private fun encryptedSharedPref(
@@ -67,7 +208,8 @@ private fun encryptedSharedPref(
 ): SharedPreferences {
     @Suppress("TooGenericExceptionCaught")
     return try {
-        val masterKey = getOrCreateMasterKey(param.appContext, options.keyAlias())
+        // The retry generates the key in the TEE, in case StrongBox is what failed.
+        val masterKey = getOrCreateMasterKey(param.appContext, options.keyAlias(), requestStrongBox = !isRetry)
         EncryptedSharedPreferences.create(
             param.appContext,
             options.fileName,

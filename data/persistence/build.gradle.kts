@@ -111,6 +111,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(libs.androidCrypto)
+                implementation(libs.tinkAndroid)
                 implementation(libs.sqldelight.androidDriver)
                 implementation(libs.sqlite.androidx)
                 implementation(libs.sql.android.cipher)
