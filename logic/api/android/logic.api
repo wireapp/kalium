@@ -8496,5 +8496,7 @@ public final class com/wire/kalium/logic/util/PlatformView {
 public final class com/wire/kalium/logic/util/RandomPassword {
 	public fun <init> ()V
 	public final fun invoke ()Ljava/lang/String;
+	public final fun invoke (II)Ljava/lang/String;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/util/RandomPassword;IIILjava/lang/Object;)Ljava/lang/String;
 }
 

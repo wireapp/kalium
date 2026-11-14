@@ -19,6 +19,7 @@ package com.wire.kalium.logic.util
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 
@@ -32,8 +33,8 @@ class RandomPasswordTest {
             val password = randomPassword.invoke()
 
             // Test criteria
-            assertTrue(password.length >= RandomPassword.MIN_LENGTH)
-            assertTrue(password.length <= RandomPassword.MAX_LENGTH)
+            assertTrue(password.length >= RandomPassword.DEFAULT_MIN_LENGTH)
+            assertTrue(password.length <= RandomPassword.DEFAULT_MAX_LENGTH)
             assertTrue(password.any { it in RandomPassword.lowercase })
             assertTrue(password.any { it in RandomPassword.uppercase })
             assertTrue(password.any { it in RandomPassword.digits })
@@ -70,5 +71,61 @@ class RandomPasswordTest {
                     RandomPassword.specialChars
 
         assertEquals(expectedAllCharacters.toList().sorted(), RandomPassword.allCharacters.sorted())
+    }
+
+    @Test
+    fun given_custom_length_bounds_when_generating_password_then_length_and_character_requirements_are_met() {
+        val randomPassword = RandomPassword()
+
+        listOf(8 to 8, 8 to 14, 24 to 24, 20 to 25).forEach { (minLength, maxLength) ->
+            repeat(100) {
+                val password = randomPassword(minLength = minLength, maxLength = maxLength)
+
+                assertTrue(password.length in minLength..maxLength)
+                assertTrue(password.any { it in RandomPassword.lowercase })
+                assertTrue(password.any { it in RandomPassword.uppercase })
+                assertTrue(password.any { it in RandomPassword.digits })
+                assertTrue(password.any { it in RandomPassword.specialChars })
+            }
+        }
+    }
+
+    @Test
+    fun given_min_and_max_length_eight_when_generating_password_then_length_is_eight() {
+        val password = RandomPassword()(minLength = 8, maxLength = 8)
+
+        assertEquals(8, password.length)
+    }
+
+    @Test
+    fun given_only_min_length_when_generating_password_then_default_max_length_is_used() {
+        val password = RandomPassword()(minLength = 20)
+
+        assertEquals(20, password.length)
+    }
+
+    @Test
+    fun given_only_max_length_when_generating_password_then_default_min_length_is_used() {
+        val password = RandomPassword()(maxLength = 15)
+
+        assertEquals(15, password.length)
+    }
+
+    @Test
+    fun given_min_length_below_eight_when_generating_password_then_it_is_rejected() {
+        val randomPassword = RandomPassword()
+
+        listOf(-1, 0, 7).forEach { minLength ->
+            assertFailsWith<IllegalArgumentException> {
+                randomPassword(minLength = minLength)
+            }
+        }
+    }
+
+    @Test
+    fun given_max_length_below_min_length_when_generating_password_then_it_is_rejected() {
+        assertFailsWith<IllegalArgumentException> {
+            RandomPassword()(minLength = 8, maxLength = 7)
+        }
     }
 }

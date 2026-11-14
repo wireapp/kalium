@@ -17,12 +17,26 @@
  */
 package com.wire.kalium.logic.util
 
+import androidx.annotation.IntRange
+
 public class RandomPassword {
-    public operator fun invoke(): String {
+    public operator fun invoke(): String = invoke(minLength = DEFAULT_MIN_LENGTH, maxLength = DEFAULT_MAX_LENGTH)
+
+    /**
+     * Generates a password with a length in the inclusive [minLength]..[maxLength] range, defaulting to 15..20.
+     *
+     * @throws IllegalArgumentException if [minLength] is less than 8 or [maxLength] is less than [minLength].
+     */
+    public operator fun invoke(
+        @IntRange(from = MIN_ALLOWED_LENGTH.toLong()) minLength: Int = DEFAULT_MIN_LENGTH,
+        maxLength: Int = DEFAULT_MAX_LENGTH
+    ): String {
+        require(minLength >= MIN_ALLOWED_LENGTH) { "minLength must be at least $MIN_ALLOWED_LENGTH" }
+        require(maxLength >= minLength) { "maxLength must be at least minLength" }
 
         val secureRandom = SecureRandom()
 
-        val passwordLength = secureRandom.nextInt(MAX_LENGTH - MIN_LENGTH + 1) + MIN_LENGTH
+        val passwordLength = secureRandom.nextInt(maxLength - minLength + 1) + minLength
 
         return buildList {
             add(lowercase[secureRandom.nextInt(lowercase.size)])
@@ -44,9 +58,10 @@ public class RandomPassword {
 
         internal val allCharacters: List<Char> = (lowercase + uppercase + digits + specialChars).shuffled()
 
-        internal const val MIN_LENGTH = 15
-        internal const val MAX_LENGTH = 20
+        internal const val DEFAULT_MIN_LENGTH = 15
+        internal const val DEFAULT_MAX_LENGTH = 20
         internal const val FIXED_CHAR_COUNT = 4
+        private const val MIN_ALLOWED_LENGTH = 8
     }
 
 }
