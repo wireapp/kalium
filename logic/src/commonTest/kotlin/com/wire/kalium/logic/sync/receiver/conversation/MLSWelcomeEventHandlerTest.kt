@@ -34,8 +34,7 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
-import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
@@ -47,12 +46,14 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
+import dev.mokkery.MockMode
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import dev.mokkery.verify
 import kotlin.io.encoding.Base64
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -103,14 +104,15 @@ class MLSWelcomeEventHandlerTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.mlsContext.processWelcomeMessage(any())
-            arrangement.refillKeyPackagesUseCase.invoke(any())
+        }
+        verify(VerifyMode.not) {
+            arrangement.keyPackageManager.scheduleRefill()
         }
     }
 
     @Test
     fun givenProcessingOfWelcomeSucceeds_thenShouldFetchConversationIfUnknown() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -127,7 +129,6 @@ class MLSWelcomeEventHandlerTest {
     @Test
     fun givenProcessingOfWelcomeSucceeds_thenShouldMarkConversationAsEstablished() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -147,7 +148,6 @@ class MLSWelcomeEventHandlerTest {
     @Test
     fun givenProcessingOfWelcomeForOneOnOneSucceeds_thenShouldResolveConversation() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -165,7 +165,6 @@ class MLSWelcomeEventHandlerTest {
     @Test
     fun givenProcessingOfWelcomeForGroupSucceeds_thenShouldNotResolveConversation() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -224,15 +223,14 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.refillKeyPackagesUseCase.invoke(any())
+        verify(VerifyMode.not) {
+            arrangement.keyPackageManager.scheduleRefill()
         }
     }
 
     @Test
     fun givenAllSucceeds_whenHandlingEvent_thenShouldAttemptToRefillKeyPackages() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -241,42 +239,8 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.refillKeyPackagesUseCase.invoke(any())
-        }
-    }
-
-    @Test
-    fun givenRefillFailsWithUnknownFailure_whenHandlingEvent_thenWelcomeStillSucceeds() = runTest {
-        val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Failure(CoreFailure.Unknown(IllegalStateException("refill"))))
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
-            withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
-            withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
-        }
-
-        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.refillKeyPackagesUseCase.invoke(any())
-        }
-    }
-
-    @Test
-    fun givenRefillFailsWithNonUnknownFailure_whenHandlingEvent_thenWelcomeStillSucceeds() = runTest {
-        val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Failure(StorageFailure.DataNotFound))
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
-            withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
-            withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
-        }
-
-        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.refillKeyPackagesUseCase.invoke(any())
+        verify(VerifyMode.exactly(1)) {
+            arrangement.keyPackageManager.scheduleRefill()
         }
     }
 
@@ -324,7 +288,6 @@ class MLSWelcomeEventHandlerTest {
                 )
             )
             withMLSConversationExists(true)
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
         }
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
@@ -355,7 +318,6 @@ class MLSWelcomeEventHandlerTest {
                 )
             )
             withJoinExistingMLSConversationReturning(Either.Right(Unit))
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
         }
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
@@ -369,7 +331,7 @@ class MLSWelcomeEventHandlerTest {
         val conversationRepository = mock<ConversationRepository>()
         val fetchConversationIfUnknown = mock<FetchConversationIfUnknownUseCase>()
         val oneOnOneResolver = mock<OneOnOneResolver>()
-        val refillKeyPackagesUseCase = mock<RefillKeyPackagesUseCase>()
+        val keyPackageManager = mock<KeyPackageManager>(mode = MockMode.autoUnit)
         val checkRevocationList = mock<RevocationListChecker>()
         val certificateRevocationListRepository = mock<CertificateRevocationListRepository>()
         val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>()
@@ -406,12 +368,6 @@ class MLSWelcomeEventHandlerTest {
             } returns Unit
         }
 
-        suspend fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {
-            everySuspend {
-                refillKeyPackagesUseCase.invoke(any())
-            } returns result
-        }
-
         suspend fun withFetchConversationIfUnknownSucceeding() = apply {
             everySuspend { fetchConversationIfUnknown(any(), any(), any()) } returns Either.Right(Unit)
         }
@@ -441,11 +397,11 @@ class MLSWelcomeEventHandlerTest {
             this@Arrangement to MLSWelcomeEventHandlerImpl(
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
-                refillKeyPackages = refillKeyPackagesUseCase,
                 revocationListChecker = checkRevocationList,
                 certificateRevocationListRepository = certificateRevocationListRepository,
                 joinExistingMLSConversation = joinExistingMLSConversation,
-                fetchConversationIfUnknown = fetchConversationIfUnknown
+                fetchConversationIfUnknown = fetchConversationIfUnknown,
+                keyPackageManager = keyPackageManager
             )
         }
     }

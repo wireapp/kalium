@@ -18,35 +18,50 @@
 
 package com.wire.kalium.logic.data.keypackage
 
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.isUpcomingOrOngoing
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+
+internal data class KeyPackagePool(val targetSize: Int) {
+
+    fun needsRefill(keyPackageCount: Int): Boolean = keyPackageCount < targetSize / 2
+
+    fun missingKeyPackages(keyPackageCount: Int): Int = (targetSize - keyPackageCount).coerceAtLeast(0)
+}
 
 internal interface KeyPackageLimitsProvider {
 
-    fun needsRefill(keyPackageCount: Int): Boolean
-
+    // Number of key packages generated and uploaded in one request.
     fun refillAmount(): Int
+
+    suspend fun keyPackagePool(): KeyPackagePool
 
 }
 
 internal class KeyPackageLimitsProviderImpl(
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val userConfigRepository: UserConfigRepository,
 ) : KeyPackageLimitsProvider {
 
-    private val keyPackageUploadLimit: Int
-        get() = if (kaliumConfigs.lowerKeyPackageLimits) KEY_PACKAGE_LIMIT_LOW else KEY_PACKAGE_LIMIT
+    override fun refillAmount(): Int =
+        if (kaliumConfigs.lowerKeyPackageLimits) KEY_PACKAGE_LIMIT_LOW else KEY_PACKAGE_UPLOAD_BATCH_SIZE
 
-    private val keyPackageUploadThreshold: Float
-        get() = KEY_PACKAGE_THRESHOLD
+    override suspend fun keyPackagePool(): KeyPackagePool = KeyPackagePool(
+        targetSize = when {
+            kaliumConfigs.lowerKeyPackageLimits -> KEY_PACKAGE_LIMIT_LOW
+            // Grow the pool before the start date too, so clients are ready when conversations migrate.
+            userConfigRepository.getMigrationConfiguration().getOrNull()?.isUpcomingOrOngoing() == true ->
+                KEY_PACKAGE_LIMIT_MLS_MIGRATION
 
-    override fun needsRefill(keyPackageCount: Int): Boolean {
-        return keyPackageCount < (keyPackageUploadLimit * keyPackageUploadThreshold)
-    }
-
-    override fun refillAmount() = keyPackageUploadLimit
+            else -> KEY_PACKAGE_LIMIT
+        }
+    )
 
     internal companion object {
         internal const val KEY_PACKAGE_LIMIT = 100
+        internal const val KEY_PACKAGE_LIMIT_MLS_MIGRATION = 1000
         internal const val KEY_PACKAGE_LIMIT_LOW = 10
-        internal const val KEY_PACKAGE_THRESHOLD = 0.5F
+        internal const val KEY_PACKAGE_UPLOAD_BATCH_SIZE = 100
     }
 }
