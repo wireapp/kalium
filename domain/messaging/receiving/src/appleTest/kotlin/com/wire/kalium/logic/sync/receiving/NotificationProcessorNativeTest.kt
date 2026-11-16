@@ -4768,6 +4768,8 @@ class NotificationProcessorNativeTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 val lost = fixture.event("lost", fixture.encrypt("lost"))
+                // Sent in the same epoch, so it predates the rejoin and can never be decrypted.
+                val older = fixture.event("older", fixture.encrypt("older"))
                 val groupInfo = checkNotNull(fixture.transport.bundle).groupInfoBundle.payload.drop(4).toByteArray()
                 val transporter = object : MLSTransporter {
                     override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
@@ -4791,9 +4793,10 @@ class NotificationProcessorNativeTest {
                     checkNotNull(fixture.openMLS(runtime)).transaction { it.wipeConversation(GROUP_ID) }
                     runtime.database.conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, GROUP_ID)
                 })
-                assertIs<Either.Right<*>>(fixture.receive(listOf(lost), lost.id, recoveryFactory = recoveryFactory, mlsTransport = transporter))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(lost, older), older.id, recoveryFactory = recoveryFactory, mlsTransport = transporter))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(lost.id)).isProcessed)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(older.id)).isProcessed)
                     val protocol = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)).protocolInfo
                     assertEquals(ConversationEntity.GroupState.ESTABLISHED, assertIs<ConversationEntity.ProtocolInfo.MLS>(protocol).groupState)
                 })
