@@ -20,13 +20,14 @@ package com.wire.kalium.logic.feature.conversation.mls
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -103,7 +104,7 @@ class MLSOneOnOneConversationResolverTest {
     fun givenMigratedTeamOneOnOneGroupListedFirst_thenShouldReturnTheBackendOneOnOne() = runTest {
         val migratedTeamGroup = CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.copy(
             id = ConversationId("migrated-team-group", "test"),
-            teamId = TestConversation.ONE_ON_ONE().teamId,
+            teamId = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID).teamId,
         )
         val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
             withConversationsForUserIdReturning(Either.Right(listOf(migratedTeamGroup) + ALL_CONVERSATIONS))
@@ -267,7 +268,7 @@ class MLSOneOnOneConversationResolverTest {
     private companion object {
         private val userId = TestUser.USER_ID
 
-        private val CONVERSATION_ONE_ON_ONE_PROTEUS = TestConversation.ONE_ON_ONE().copy(
+        private val CONVERSATION_ONE_ON_ONE_PROTEUS = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID).copy(
             id = ConversationId("one-on-one-proteus", "test"),
             teamId = null,
             protocol = Conversation.ProtocolInfo.Proteus,
@@ -275,7 +276,7 @@ class MLSOneOnOneConversationResolverTest {
 
         private val CONVERSATION_ONE_ON_ONE_MLS_NOT_ESTABLISHED = CONVERSATION_ONE_ON_ONE_PROTEUS.copy(
             id = ConversationId("one-on-one-mls-NOT-initialized", "test"),
-            protocol = TestConversation.MLS_PROTOCOL_INFO.copy(
+            protocol = MockConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION,
                 epoch = 0U
             ),
@@ -283,7 +284,7 @@ class MLSOneOnOneConversationResolverTest {
 
         private val CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED = CONVERSATION_ONE_ON_ONE_MLS_NOT_ESTABLISHED.copy(
             id = ConversationId("one-on-one-mls-initialized", "test"),
-            protocol = TestConversation.MLS_PROTOCOL_INFO.copy(
+            protocol = MockConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 epoch = 0U
             ),

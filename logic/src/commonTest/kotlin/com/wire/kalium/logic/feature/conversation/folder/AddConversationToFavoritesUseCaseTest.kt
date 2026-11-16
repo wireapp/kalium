@@ -18,9 +18,9 @@
 package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestFolder
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
@@ -44,7 +44,7 @@ class AddConversationToFavoritesUseCaseTest {
             .withSyncConversationFoldersFromLocal(Either.Right(Unit))
             .arrange()
 
-        val result = addConversationToFavoritesUseCase(TestConversation.ID)
+        val result = addConversationToFavoritesUseCase(MockConversation.ID)
 
         assertIs<AddConversationToFavoritesUseCase.Result.Success>(result)
 
@@ -54,7 +54,7 @@ class AddConversationToFavoritesUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.addConversationToFolder(
-                TestConversation.ID,
+                MockConversation.ID,
                 TestFolder.FAVORITE.id
             )
         }
@@ -67,7 +67,7 @@ class AddConversationToFavoritesUseCaseTest {
             .withSyncConversationFoldersFromLocal(Either.Right(Unit))
             .arrange()
 
-        val result = addConversationToFavoritesUseCase(TestConversation.ID)
+        val result = addConversationToFavoritesUseCase(MockConversation.ID)
 
         assertIs<AddConversationToFavoritesUseCase.Result.Failure>(result)
 
@@ -84,7 +84,7 @@ class AddConversationToFavoritesUseCaseTest {
             .withSyncConversationFoldersFromLocal(Either.Right(Unit))
             .arrange()
 
-        val result = addConversationToFavoritesUseCase(TestConversation.ID)
+        val result = addConversationToFavoritesUseCase(MockConversation.ID)
 
         assertIs<AddConversationToFavoritesUseCase.Result.Failure>(result)
 
@@ -94,7 +94,7 @@ class AddConversationToFavoritesUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.addConversationToFolder(
-                TestConversation.ID,
+                MockConversation.ID,
                 TestFolder.FAVORITE.id
             )
         }

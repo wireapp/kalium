@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -42,7 +42,7 @@ class PersistReactionUseCaseTest {
                 messageId = "messageId",
                 emojiSet = setOf("❤")
             ),
-            conversationId = TestConversation.ID,
+            conversationId = MockConversation.ID,
             senderUserId = TestUser.USER_ID,
             date = Instant.DISTANT_PAST
         )

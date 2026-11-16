@@ -19,10 +19,10 @@ package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -56,7 +56,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
-            .withResolveResult(Either.Right(TestConversation.ID))
+            .withResolveResult(Either.Right(MockConversation.ID))
             .arrange()
 
         useCase()
@@ -88,7 +88,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
-            .withResolveResult(Either.Right(TestConversation.ID))
+            .withResolveResult(Either.Right(MockConversation.ID))
             .withResolveResultForUser(failedUserId, Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
             .arrange()
 

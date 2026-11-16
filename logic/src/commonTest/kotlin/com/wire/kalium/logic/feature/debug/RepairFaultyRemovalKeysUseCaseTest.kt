@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.ExternalSenderKey
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
@@ -29,7 +30,6 @@ import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCaseTest.Arrangement.Companion.FAULTY_KEY
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -62,7 +62,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
     @Test
     fun givenRepairFaultRemovalKeysUseCase_whenInvokedAndNoConversationsFound_thenNoConversationsToRepair() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
+            .withMlsConversations(listOf(MockConversation.MLS_CONVERSATION).right())
             .withGetExternalKeyForConversation(FAULTY_KEY.first())
             .arrange()
 
@@ -87,7 +87,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
     @Test
     fun givenRepairFaultRemovalKeysUseCase_whenInvokedAndConversationsFound_thenPerformRepair() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
+            .withMlsConversations(listOf(MockConversation.MLS_CONVERSATION).right())
             .withGetExternalKeyForConversation(FAULTY_KEY.first())
             .withResetMLSConversationResult(ResetMLSConversationResult.Success)
             .arrange()
@@ -104,7 +104,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
     @Test
     fun givenConfiguredKeyUsesUppercase_whenInvoked_thenPerformRepair() = runTest {
         val (_, useCase) = Arrangement()
-            .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
+            .withMlsConversations(listOf(MockConversation.MLS_CONVERSATION).right())
             .withGetExternalKeyForConversation(FAULTY_KEY.first())
             .withResetMLSConversationResult(ResetMLSConversationResult.Success)
             .arrange()
@@ -117,15 +117,15 @@ class RepairFaultyRemovalKeysUseCaseTest {
 
     @Test
     fun givenKeyInspectionFailsForOneConversation_whenInvoked_thenRepairOthersAndReturnError() = runTest {
-        val failingConversation = TestConversation.MLS_CONVERSATION
+        val failingConversation = MockConversation.MLS_CONVERSATION
         val matchingGroupId = GroupID("matching-group")
-        val matchingConversation = TestConversation.MLS_CONVERSATION.copy(
+        val matchingConversation = MockConversation.MLS_CONVERSATION.copy(
             id = ConversationId("matching-conversation", "domain"),
-            protocol = TestConversation.MLS_PROTOCOL_INFO.copy(groupId = matchingGroupId)
+            protocol = MockConversation.MLS_PROTOCOL_INFO.copy(groupId = matchingGroupId)
         )
         val (arrangement, useCase) = Arrangement()
             .withMlsConversations(listOf(failingConversation, matchingConversation).right())
-            .withGetExternalKeyFailureForConversation(TestConversation.GROUP_ID)
+            .withGetExternalKeyFailureForConversation(MockConversation.GROUP_ID)
             .withGetExternalKeyForConversation(matchingGroupId, FAULTY_KEY.first())
             .withResetMLSConversationResult(ResetMLSConversationResult.Success)
             .arrange()
@@ -139,7 +139,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
     @Test
     fun givenRepairFaultRemovalKeysUseCase_whenInvokedAndConversationsFoundAndFail_thenPerformRepairCountingFailure() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
+            .withMlsConversations(listOf(MockConversation.MLS_CONVERSATION).right())
             .withGetExternalKeyForConversation(FAULTY_KEY.first())
             .withResetMLSConversationResult(ResetMLSConversationResult.Failure(CoreFailure.MissingClientRegistration))
             .arrange()

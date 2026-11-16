@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.selfDeletingMessages
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -26,7 +27,6 @@ import com.wire.kalium.logic.data.message.ConversationSelfDeletionStatus
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -235,7 +235,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
     }
 
     private companion object {
-        val TEST_CONVERSION = TestConversation.CONVERSATION
+        val TEST_CONVERSION = MockConversation.CONVERSATION
     }
 
     private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {

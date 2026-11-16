@@ -20,9 +20,10 @@ package com.wire.kalium.logic.feature.debug
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.util.DebugKaliumApi
@@ -44,14 +45,14 @@ class GetConversationEpochFromCCUseCaseTest {
     @Test
     fun givenMLSConversation_whenInvoked_thenReturnEpochFromCC() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withConversation(TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO).right())
+            .withConversation(MockConversation.group(teamId = TestTeam.TEAM_ID, protocolInfo = MockConversation.MLS_PROTOCOL_INFO).right())
             .withCCEpoch(EXPECTED_EPOCH)
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.conversationEpoch(TestConversation.GROUP_ID.value)
+            arrangement.mlsContext.conversationEpoch(MockConversation.GROUP_ID.value)
         }
         assertEquals(GetConversationEpochFromCCResult.Success(EXPECTED_EPOCH), result)
     }
@@ -59,11 +60,11 @@ class GetConversationEpochFromCCUseCaseTest {
     @Test
     fun givenMLSConversationAndCoreCryptoThrows_whenInvoked_thenReturnGenericFailure() = runTest {
         val (_, useCase) = Arrangement()
-            .withConversation(TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO).right())
+            .withConversation(MockConversation.group(teamId = TestTeam.TEAM_ID, protocolInfo = MockConversation.MLS_PROTOCOL_INFO).right())
             .withCCEpochThrowing(IllegalStateException("Couldn't find conversation"))
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         assertIs<GetConversationEpochFromCCResult.Failure.Generic>(result)
     }
@@ -71,10 +72,10 @@ class GetConversationEpochFromCCUseCaseTest {
     @Test
     fun givenProteusConversation_whenInvoked_thenReturnNotMlsConversationFailure() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withConversation(TestConversation.GROUP(Conversation.ProtocolInfo.Proteus).right())
+            .withConversation(MockConversation.group(teamId = TestTeam.TEAM_ID, protocolInfo = Conversation.ProtocolInfo.Proteus).right())
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.mlsTransaction<ULong>(any(), any())

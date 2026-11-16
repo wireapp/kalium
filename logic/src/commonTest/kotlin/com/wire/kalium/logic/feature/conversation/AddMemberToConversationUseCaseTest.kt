@@ -20,9 +20,9 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
@@ -48,12 +48,12 @@ class AddMemberToConversationUseCaseTest {
             .withInsertOrIgnoreIncompleteUsers()
             .arrange()
 
-        val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+        val result = addMemberUseCase(MockConversation.ID, listOf(MockConversation.USER_1))
 
         assertIs<AddMemberToConversationUseCase.Result.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+            arrangement.conversationGroupRepository.addMembers(listOf(MockConversation.USER_1), MockConversation.ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -72,11 +72,11 @@ class AddMemberToConversationUseCaseTest {
             .withInsertOrIgnoreIncompleteUsers()
             .arrange()
 
-        val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+        val result = addMemberUseCase(MockConversation.ID, listOf(MockConversation.USER_1))
         assertIs<AddMemberToConversationUseCase.Result.Failure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+            arrangement.conversationGroupRepository.addMembers(listOf(MockConversation.USER_1), MockConversation.ID)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {

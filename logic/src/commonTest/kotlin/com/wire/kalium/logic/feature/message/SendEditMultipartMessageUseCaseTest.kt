@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
@@ -32,7 +33,6 @@ import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.fakes.FakeMessageRepository
 import com.wire.kalium.logic.fakes.sync.FakeSlowSyncRepository
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -80,7 +80,7 @@ class SendEditMultipartMessageUseCaseTest {
             .arrange()
 
         // When
-        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
+        val result = sendEditTextMessage(MockConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
         result.toEither().shouldSucceed()
@@ -124,7 +124,7 @@ class SendEditMultipartMessageUseCaseTest {
             .arrange()
 
         // When
-        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
+        val result = sendEditTextMessage(MockConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
         result.toEither().shouldFail()

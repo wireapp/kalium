@@ -19,9 +19,10 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -43,7 +44,7 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
             withConversationDetailsByIdReturning(Either.Left(StorageFailure.DataNotFound))
         }
 
-        useCase(TestConversation.ID)
+        useCase(MockConversation.ID)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.not) { arrangement.fetchMLSVerificationStatusUseCase(any()) }
@@ -52,10 +53,10 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
     @Test
     fun givenProteusConversation_whenCalledToCheck_thenFetchingMLSVerificationIsNotCalled() = runTest {
         val (arrangement, useCase) = arrange {
-            withConversationDetailsByIdReturning(Either.Right(TestConversation.ONE_ON_ONE()))
+            withConversationDetailsByIdReturning(Either.Right(MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID)))
         }
 
-        useCase(TestConversation.ID)
+        useCase(MockConversation.ID)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.not) { arrangement.fetchMLSVerificationStatusUseCase(any()) }
@@ -63,12 +64,15 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenMLSConversation_whenCalledToCheck_thenFetchingMLSVerificationIsCalled() = runTest {
-        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO
+        val protocolInfo = MockConversation.MLS_PROTOCOL_INFO
         val (arrangement, useCase) = arrange {
-            withConversationDetailsByIdReturning(Either.Right(TestConversation.ONE_ON_ONE(protocolInfo)))
+            withConversationDetailsByIdReturning(Either.Right(MockConversation.oneOnOne(
+                teamId = TestTeam.TEAM_ID,
+                protocolInfo = protocolInfo
+            )))
         }
 
-        useCase(TestConversation.ID)
+        useCase(MockConversation.ID)
         advanceUntilIdle()
 
         verifySuspend { arrangement.fetchMLSVerificationStatusUseCase(protocolInfo.groupId) }

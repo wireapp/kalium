@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
@@ -34,7 +35,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.SystemMessageInserter
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -306,7 +306,7 @@ class StaleEpochVerifierTest {
                 is Either.Left -> Either.Left(StorageFailure.Generic(IllegalStateException(result.value.toString())))
                 is Either.Right -> when (result.value.protocol) {
                     ConvProtocol.MLS -> Either.Right(
-                        TestConversation.MLS_PROTOCOL_INFO.copy(epoch = result.value.epoch ?: 0UL)
+                        MockConversation.MLS_PROTOCOL_INFO.copy(epoch = result.value.epoch ?: 0UL)
                     )
                     else -> Either.Right(Conversation.ProtocolInfo.Proteus)
                 }
@@ -382,7 +382,7 @@ class StaleEpochVerifierTest {
             ),
             name = "mls-conversation",
             id = CONVERSATION_ID.toApi(),
-            groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value,
+            groupId = MockConversation.MLS_PROTOCOL_INFO.groupId.value,
             epoch = REMOTE_EPOCH,
             type = ConversationResponse.Type.GROUP,
             messageTimer = 0,

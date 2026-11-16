@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.MockConversation
 import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
@@ -26,7 +27,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
@@ -53,7 +53,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
             .withParticipantsResponseDomains(listOf("wire.com", "bella.com"))
             .arrange()
 
-        val result = getConversationClassifiedType(TestConversation.ID)
+        val result = getConversationClassifiedType(MockConversation.ID)
 
         assertEquals(SecurityClassificationType.NONE, result.firstOrNull())
     }
@@ -69,7 +69,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
                 .withParticipantsResponseDomains(memberDomains)
                 .arrange()
 
-            val result = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(MockConversation.ID)
 
             assertEquals(SecurityClassificationType.CLASSIFIED, result.firstOrNull())
         }
@@ -85,7 +85,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
                 .withParticipantsResponseDomains(memberDomains)
                 .arrange()
 
-            val result = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(MockConversation.ID)
 
             assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.firstOrNull())
         }
@@ -101,7 +101,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
                 .withParticipantsResponseDomains(memberDomains)
                 .arrange()
 
-            val result = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(MockConversation.ID)
 
             assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.firstOrNull())
         }
@@ -117,7 +117,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
                 .withParticipantsResponseDomains(memberDomains)
                 .arrange()
 
-            val result = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(MockConversation.ID)
 
             assertEquals(SecurityClassificationType.NONE, result.firstOrNull())
         }
@@ -133,7 +133,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
                 .withParticipantsResponseDomains(memberDomains, Instant.parse("2050-01-01T00:00:00.000Z"))
                 .arrange()
 
-            val result = getConversationClassifiedType(TestConversation.ID)
+            val result = getConversationClassifiedType(MockConversation.ID)
 
             assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.firstOrNull())
         }
@@ -174,8 +174,8 @@ class ObserveSecurityClassificationLabelUseCaseTest {
             } returns
                 flowOf(
                     Either.Right(
-                        TestConversation.CONVERSATION.copy(
-                            TestConversation.ID.copy(
+                        MockConversation.CONVERSATION.copy(
+                            MockConversation.ID.copy(
                                 domain = conversationDomain
                             )
                         )

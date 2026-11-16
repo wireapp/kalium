@@ -21,10 +21,11 @@ package com.wire.kalium.logic.feature.conversation
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -58,7 +59,7 @@ class ObserveConversationDetailsUseCaseTest {
     @Test
     fun givenAConversationId_whenObservingConversationUseCase_thenTheConversationRepositoryShouldBeCalledWithTheCorrectID() =
         runTest(TestKaliumDispatcher.main) {
-            val conversationId = TestConversation.ID
+            val conversationId = MockConversation.ID
 
             everySuspend {
                 conversationRepository.observeConversationDetailsById(any())
@@ -74,7 +75,7 @@ class ObserveConversationDetailsUseCaseTest {
     @Test
     fun givenTheConversationIsUpdated_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() =
         runTest(TestKaliumDispatcher.main) {
-            val conversation = TestConversation.GROUP()
+            val conversation = MockConversation.group(teamId = TestTeam.TEAM_ID)
             val conversationDetailsValues = listOf(
                 Either.Right(
                     ConversationDetails.Group.Regular(
@@ -97,7 +98,7 @@ class ObserveConversationDetailsUseCaseTest {
                 conversationRepository.observeConversationDetailsById(any())
             } returns conversationDetailsUpdates.consumeAsFlow()
 
-            observeConversationsUseCase(TestConversation.ID).test {
+            observeConversationsUseCase(MockConversation.ID).test {
                 conversationDetailsUpdates.send(conversationDetailsValues[0])
                 awaitItem().let { item ->
                     assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
@@ -121,7 +122,7 @@ class ObserveConversationDetailsUseCaseTest {
             conversationRepository.observeConversationDetailsById(any())
         } returns flowOf(Either.Left(failure))
 
-        observeConversationsUseCase(TestConversation.ID).test {
+        observeConversationsUseCase(MockConversation.ID).test {
             awaitItem().let { item ->
                 assertIs<ObserveConversationDetailsUseCase.Result.Failure>(item)
                 assertEquals(failure, item.storageFailure)

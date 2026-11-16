@@ -20,12 +20,12 @@ package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -51,17 +51,17 @@ class DeleteTeamConversationUseCaseTest {
                 withDeletingConversationSucceeding()
             }
 
-        val result = deleteTeamConversation(TestConversation.ID)
+        val result = deleteTeamConversation(MockConversation.ID)
 
         assertEquals(Result.Success::class, result::class)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfTeamIdProvider.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.deleteConversation(TestConversation.ID, TeamId(TestTeam.TEAM.id))
+            arrangement.teamRepository.deleteConversation(MockConversation.ID, TeamId(TestTeam.TEAM.id))
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.deleteConversation(any(), TestConversation.ID)
+            arrangement.deleteConversation(any(), MockConversation.ID)
         }
     }
 
@@ -74,17 +74,17 @@ class DeleteTeamConversationUseCaseTest {
                 withDeletingConversationSucceeding()
             }
 
-        val result = deleteTeamConversation(TestConversation.ID)
+        val result = deleteTeamConversation(MockConversation.ID)
 
         assertEquals(Result.Failure.GenericFailure::class, result::class)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfTeamIdProvider.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamRepository.deleteConversation(TestConversation.ID, TeamId(TestTeam.TEAM.id))
+            arrangement.teamRepository.deleteConversation(MockConversation.ID, TeamId(TestTeam.TEAM.id))
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.deleteConversation(any(), TestConversation.ID)
+            arrangement.deleteConversation(any(), MockConversation.ID)
         }
     }
 
@@ -97,17 +97,17 @@ class DeleteTeamConversationUseCaseTest {
                 withDeletingConversationSucceeding()
             }
 
-        val result = deleteTeamConversation(TestConversation.ID)
+        val result = deleteTeamConversation(MockConversation.ID)
 
         assertEquals(Result.Failure.NoTeamFailure::class, result::class)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfTeamIdProvider.invoke()
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.teamRepository.deleteConversation(TestConversation.ID, TestTeam.TEAM_ID)
+            arrangement.teamRepository.deleteConversation(MockConversation.ID, TestTeam.TEAM_ID)
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.deleteConversation(any(), TestConversation.ID)
+            arrangement.deleteConversation(any(), MockConversation.ID)
         }
     }
 

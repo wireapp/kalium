@@ -4,6 +4,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -17,7 +18,6 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -271,7 +271,7 @@ class MLSSubconversationMappingRecoveryTest {
 
         init {
             everySuspend { conversations.getConversationProtocolInfo(PARENT_ID) } returns
-                Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(groupId = PARENT_GROUP_ID))
+                Either.Right(MockConversation.MLS_PROTOCOL_INFO.copy(groupId = PARENT_GROUP_ID))
             everySuspend { mlsConversations.decryptMessage(any(), any(), any()) } calls {
                 val groupId = it.args[2] as GroupID
                 decryptionGroups += groupId
@@ -334,7 +334,7 @@ class MLSSubconversationMappingRecoveryTest {
     }
 
     private companion object {
-        val PARENT_ID = TestConversation.ID
+        val PARENT_ID = MockConversation.ID
         val SUBCONVERSATION_ID = SubconversationId("conference")
         val PARENT_GROUP_ID = GroupID("parent-group")
         val SUBGROUP_ID = GroupID("subgroup")
