@@ -1601,7 +1601,35 @@ abstract interface com.wire.kalium.logic.feature.meeting/ObserveMeetingUseCase {
 }
 
 abstract interface com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase { // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String? = ...): com.wire.kalium.common.functional/Either<com.wire.kalium.common.error/CoreFailure, com.wire.kalium.logic.data.meeting/Meeting> // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?){}[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String? = ...): com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result { // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final class Success : com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result { // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success|null[0]
+            constructor <init>(com.wire.kalium.logic.data.meeting/Meeting) // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success.<init>|<init>(com.wire.kalium.logic.data.meeting.Meeting){}[0]
+
+            final val meeting // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success.meeting|{}meeting[0]
+                final fun <get-meeting>(): com.wire.kalium.logic.data.meeting/Meeting // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success.meeting.<get-meeting>|<get-meeting>(){}[0]
+
+            final fun component1(): com.wire.kalium.logic.data.meeting/Meeting // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.logic.data.meeting/Meeting = ...): com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success.copy|copy(com.wire.kalium.logic.data.meeting.Meeting){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/RotateMeetingLinkUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
 }
 
 abstract interface com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase { // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase|null[0]

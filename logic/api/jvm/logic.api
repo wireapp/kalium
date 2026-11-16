@@ -6003,6 +6003,31 @@ public final class com/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCas
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/logic/data/meeting/Meeting;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/meeting/Meeting;
+	public final fun copy (Lcom/wire/kalium/logic/data/meeting/Meeting;)Lcom/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result$Success;Lcom/wire/kalium/logic/data/meeting/Meeting;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/RotateMeetingLinkUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMeeting ()Lcom/wire/kalium/logic/data/meeting/Meeting;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase {
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun isEnabled (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
