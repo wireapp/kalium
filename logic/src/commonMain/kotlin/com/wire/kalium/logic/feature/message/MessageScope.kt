@@ -227,6 +227,8 @@ public class MessageScope internal constructor(
             commitPendingProposals = mlsConversationRepository::commitPendingProposals,
             joinConversation = { context, conversationId -> joinExistingConversationUseCaseProvider()(context, conversationId) },
             encrypt = mlsConversationRepository::encryptMessage,
+            encryptTransient = mlsConversationRepository::encryptTransientMessage,
+            encryptTargeted = mlsConversationRepository::encryptTargetedMessage,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
@@ -295,6 +297,7 @@ public class MessageScope internal constructor(
             },
             scope = scope,
             pendingMessagesEnabled = kaliumConfigs.pendingMessages,
+            targetedAndTransientMLSMessagesEnabled = kaliumConfigs.targetedAndTransientMLSMessagesEnabled
         )
 
     internal val persistMessage: PersistMessageUseCase
