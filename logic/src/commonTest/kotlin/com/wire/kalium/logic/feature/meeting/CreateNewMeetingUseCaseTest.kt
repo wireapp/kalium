@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -45,10 +46,12 @@ import kotlin.test.assertEquals
 
 class CreateNewMeetingUseCaseTest {
 
+    private val MEETING_ID = MeetingId("meeting-id", "domain")
+
     @Test
     fun givenRepositoryCreateSucceeds_whenInvoking_thenReturnsSuccessAndCallRefreshUsersWithoutMetadata() = runTest {
         val createMeeting = CREATE_MEETING
-        val createResult = Either.Right(CreateNewMeetingResult(ConversationId("conversation", "domain"), MLSAdditionResult.Empty))
+        val createResult = Either.Right(CreateNewMeetingResult(ConversationId("conversation", "domain"), MLSAdditionResult.Empty, meetingId = MEETING_ID))
         val (arrangement, useCase) = Arrangement()
             .withCreateNewMeetingReturning(createMeeting, createResult)
             .withTransactionReturning(createResult)
@@ -56,7 +59,7 @@ class CreateNewMeetingUseCaseTest {
 
         val result = useCase(createMeeting)
 
-        assertEquals(CreateNewMeetingUseCase.Result.Success(ConversationId("conversation", "domain")), result)
+        assertEquals(CreateNewMeetingUseCase.Result.Success(ConversationId("conversation", "domain"), meetingId = MEETING_ID), result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cryptoTransactionProvider.transaction<CreateNewMeetingResult>("CreateNewMeeting", any())
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
@@ -67,7 +70,7 @@ class CreateNewMeetingUseCaseTest {
     @Test
     fun givenPassword_whenCreatingMeeting_thenPassesPasswordToRepository() = runTest {
         val createMeeting = CREATE_MEETING.copy(password = "secret")
-        val createResult = Either.Right(CreateNewMeetingResult(ConversationId("conversation", "domain"), MLSAdditionResult.Empty))
+        val createResult = Either.Right(CreateNewMeetingResult(ConversationId("conversation", "domain"), MLSAdditionResult.Empty, meetingId = MEETING_ID))
         val (arrangement, useCase) = Arrangement()
             .withCreateNewMeetingReturning(createMeeting, createResult)
             .withTransactionReturning(createResult)
@@ -106,6 +109,7 @@ class CreateNewMeetingUseCaseTest {
         val establishMLSFailure = MeetingDataSource.EstablishMLSFailure(
             conversationId = ConversationId("conversation", "domain"),
             reason = CoreFailure.MissingClientRegistration,
+            meetingId = MEETING_ID,
         )
         val createResult = Either.Left(establishMLSFailure)
         val (arrangement, useCase) = Arrangement()
@@ -115,7 +119,7 @@ class CreateNewMeetingUseCaseTest {
 
         val result = useCase(createMeeting)
 
-        assertEquals(CreateNewMeetingUseCase.Result.Success(establishMLSFailure.conversationId), result)
+        assertEquals(CreateNewMeetingUseCase.Result.Success(establishMLSFailure.conversationId, meetingId = MEETING_ID), result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cryptoTransactionProvider.transaction<CreateNewMeetingResult>("CreateNewMeeting", any())
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
