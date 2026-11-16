@@ -80,6 +80,9 @@ kotlin {
     }
 
     sourceSets {
+        matching { it.name.endsWith("Test") }.configureEach {
+            languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+        }
         val commonMain by getting {
             dependencies {
                 api(libs.annotation)

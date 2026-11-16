@@ -27,6 +27,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
+import com.wire.kalium.util.DelicateKaliumApi
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -37,6 +38,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(DelicateKaliumApi::class)
 class PersistMessageUseCaseTest {
     @Test
     fun givenMessageRepositoryFailure_whenPersistingMessage_thenReturnFailure() = runTest {
