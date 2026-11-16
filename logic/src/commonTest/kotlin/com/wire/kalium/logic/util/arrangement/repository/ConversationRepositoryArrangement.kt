@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.ConversationPersistenceApi
+import com.wire.kalium.util.DelicateKaliumApi
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -119,7 +120,7 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean): ConversationRepositoryArrangement
 }
 
-@OptIn(ConversationPersistenceApi::class)
+@OptIn(ConversationPersistenceApi::class, DelicateKaliumApi::class)
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
 
     override val conversationRepository: ConversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)

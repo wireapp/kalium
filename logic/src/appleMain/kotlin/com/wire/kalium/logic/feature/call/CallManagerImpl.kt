@@ -225,7 +225,7 @@ internal class CallManagerImpl internal constructor(
         val (type, _) = getCallConversationType(target)
         val journal = signalJournal
         if (journal == null) {
-            receiveSignal(message, content)
+            if (!receiveSignal(message, content)) callingLogger.w("$tagWithUserId: AVS rejected a calling signal")
             return
         }
         journal.append(
@@ -244,7 +244,15 @@ internal class CallManagerImpl internal constructor(
     }
 
     override suspend fun replayPendingSignals() {
-        signalReplay?.replay()
+        // Signals are durable before replay, so a failed drain must not fail receiving or startup.
+        // Pending signals stay in the journal for the next replay.
+        try {
+            signalReplay?.replay()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+            callingLogger.e("$tagWithUserId: Unable to replay pending call signals", failure)
+        }
     }
 
     override suspend fun replayIncomingCallSignals(callId: String) {
@@ -261,7 +269,7 @@ internal class CallManagerImpl internal constructor(
         val content = MessageContent.Calling(signal.payload, target)
         val trace = traceContext(target).withSignal(signal.id)
         AppleCallTrace.record(CallTraceEvent.NATIVE_ENQUEUE, trace, CallTraceResult.REQUESTED)
-        try {
+        val received = try {
             receiveSignal(
                 Message.Signaling(
                     id = signal.messageId, content = content, conversationId = target,
@@ -278,6 +286,13 @@ internal class CallManagerImpl internal constructor(
                 if (failure is CancellationException) CallTraceResult.CANCELLED else CallTraceResult.FAILED,
             )
             throw failure
+        }
+        if (!received) {
+            // AVS rejects a payload it cannot decode, such as a newer message type. A retry would fail
+            // the same way and hold back every later signal, so it counts as handled.
+            callingLogger.w("$tagWithUserId: AVS rejected a calling signal; skipping it")
+            AppleCallTrace.record(CallTraceEvent.NATIVE_ENQUEUE, trace, CallTraceResult.FAILED)
+            return
         }
         AppleCallTrace.record(CallTraceEvent.NATIVE_ENQUEUE, trace, CallTraceResult.ACCEPTED)
     }
@@ -303,7 +318,7 @@ internal class CallManagerImpl internal constructor(
             conversationType = callMapper.toConversationTypeCalling(type).avsValue,
             meeting = isMeeting
         )
-        check(received) { "AVS did not accept calling signal" }
+        received
     }
 
     override suspend fun startCall(
@@ -827,10 +842,12 @@ internal class CallManagerImpl internal constructor(
         val closeContext = traceContext(conversationIdWithDomain, Uuid.random().toString())
         AppleCallTrace.record(CallTraceEvent.AVS_CLOSED, closeContext, code = reason)
         callEffects.trySend {
+            var callContinues = false
             try {
                 val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
                 val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
                 val callStatus = getCallStatusFromCloseReason(avsReason, callMetadata?.conversationType)
+                callContinues = callStatus == CallStatus.STILL_ONGOING
 
                 if (avsReason == CallClosedReason.ANSWERED_ELSEWHERE) {
                     callRepository.updateIsAnsweredElsewhere(conversationIdWithDomain)
@@ -862,7 +879,14 @@ internal class CallManagerImpl internal constructor(
                 }
                 createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
             } finally {
-                val endedId = signalJournal?.closed(conversationIdWithDomain.value, conversationIdWithDomain.domain, reason)
+                // A group call that continues keeps its signals, so Join comes back after a restart.
+                // An ended call forgets them, so a restart cannot replay it and record it again.
+                val endedId = signalJournal?.closed(
+                    conversationIdWithDomain.value,
+                    conversationIdWithDomain.domain,
+                    reason,
+                    handledBy = signalGeneration.takeUnless { callContinues },
+                )
                 if (endedId != null) AppleCallTrace.record(
                     CallTraceEvent.JOURNAL_CLOSED,
                     closeContext.withSignal(endedId),

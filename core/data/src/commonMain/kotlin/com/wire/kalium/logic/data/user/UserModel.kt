@@ -25,9 +25,9 @@ import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 typealias UserId = QualifiedID
 
@@ -149,6 +149,10 @@ data class OtherUserMinimized(
     val accentId: Int
 )
 
+enum class ContactStatus {
+    CONTACTABLE, NON_CONTACTABLE
+}
+
 data class OtherUser(
     override val id: UserId,
     override val name: String?,
@@ -170,6 +174,7 @@ data class OtherUser(
     val isProteusVerified: Boolean,
     val activeOneOnOneConversationId: ConversationId? = null,
     override val isUnderLegalHold: Boolean = false,
+    val contactStatus: ContactStatus? = null,
 ) : User() {
 
     /**

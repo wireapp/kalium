@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
@@ -113,7 +115,57 @@ internal class CellsS3Client(
                 } catch (cause: Exception) {
                     // copyToSink closes the caller-provided sink even if reading fails before the first byte.
                     // Retrying could therefore replay into a partial or closed destination.
-                    throw S3RequestException("Download object response body could not be copied", cause)
+                    throw DownloadBodyCopyException(cause)
+                }
+                Unit
+            },
+        )
+    }
+
+    @Suppress("TooGenericExceptionCaught") // Sink and callback implementations can throw arbitrary exceptions.
+    override suspend fun downloadFrom(
+        objectKey: String,
+        offset: Long,
+        openSink: (append: Boolean) -> Sink,
+        onProgressUpdate: (Long) -> Unit,
+    ) {
+        requestWithRetry(
+            operation = "Download object range",
+            request = { credentials ->
+                val signedRequest = signedRequest(
+                    method = HttpMethod.Get,
+                    objectKey = objectKey,
+                    credentials = credentials,
+                    signedHeaders = mapOf(HttpHeaders.Range to "bytes=$offset-"),
+                )
+                httpClient.prepareRequest(signedRequest.url) {
+                    method = HttpMethod.Get
+                    signedRequest.headers.forEach { (name, value) -> header(name, value) }
+                }
+            },
+            transform = { response ->
+                // 206: the range was honoured. A plain 200 means the server sent the whole object instead.
+                val isPartial = response.status == HttpStatusCode.PartialContent
+                val alreadyDownloaded = if (isPartial) offset else 0L
+                val expectedContentLength = response.expectedContentLength()
+                try {
+                    val copiedBytes = response.bodyAsChannel().copyToSink(
+                        sink = openSink(isPartial),
+                        onProgressUpdate = { copied -> onProgressUpdate(alreadyDownloaded + copied) },
+                    )
+                    if (expectedContentLength != null && copiedBytes != expectedContentLength) {
+                        throw S3RequestException(
+                            "Download object range response body length mismatch: " +
+                                    "expected $expectedContentLength bytes but received $copiedBytes bytes"
+                        )
+                    }
+                } catch (cause: CancellationException) {
+                    throw cause
+                } catch (cause: S3RequestException) {
+                    throw cause
+                } catch (cause: Exception) {
+                    // Same as download: the destination may already hold part of this response, don't replay into it.
+                    throw DownloadBodyCopyException(cause)
                 }
                 Unit
             },
@@ -666,6 +718,10 @@ private open class S3RequestException(message: String, cause: Throwable? = null)
 
 private class RetryableS3Exception(message: String) : S3RequestException(message)
 
+/** Reading the body of a download response, or writing it to the destination, failed midway. */
+private class DownloadBodyCopyException(cause: Throwable) :
+    S3RequestException("Download object response body could not be copied", cause)
+
 /**
  * The gateway rejected the access token used to sign the request.
  */
@@ -694,6 +750,16 @@ private fun Throwable.isConnectivityFailure(): Boolean = when (this) {
     is S3RequestException -> false
     is KtorIOException -> true
     else -> false
+}
+
+/**
+ * Whether [this], thrown by [CellsS3Client.download] or [CellsS3Client.downloadFrom], means the device lost its
+ * connection, so what was downloaded so far is worth keeping to resume later. A failure to write to the destination
+ * only counts if the destination doesn't report it as an [IOException] of its own, see `CellsDataSource`.
+ */
+internal fun Throwable.isDownloadInterruptedByConnectivity(): Boolean = when (this) {
+    is DownloadBodyCopyException -> cause?.isConnectivityFailure() == true
+    else -> isConnectivityFailure()
 }
 
 private sealed interface S3Attempt<out T> {

@@ -28,7 +28,8 @@ internal class AuthenticatedNetworkContainerV19 internal constructor(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
         proxyCredentials = sessionManager.proxyCredentials(),
         certificatePinning = certificatePinning
-    )
+    ),
+    pendingConnectionsEnabled: Boolean = false,
 ) : AuthenticatedNetworkContainerV18(
     sessionManager = sessionManager,
     selfUserId = selfUserId,
@@ -36,7 +37,8 @@ internal class AuthenticatedNetworkContainerV19 internal constructor(
     mockEngine = mockEngine,
     mockWebSocketSession = mockWebSocketSession,
     kaliumLogger = kaliumLogger,
-    engine = engine
+    engine = engine,
+    pendingConnectionsEnabled = pendingConnectionsEnabled,
 ) {
     override val meetingApi: MeetingApi get() = MeetingApiV19(networkClient)
 }

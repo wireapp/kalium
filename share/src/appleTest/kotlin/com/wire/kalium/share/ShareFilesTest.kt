@@ -284,10 +284,13 @@ class ShareFilesTest {
 
     @Test
     fun uploadedFilesBecomeTheAssetsTheAppSends() {
+        // Full-size key and hash: anything shorter is not valid remote data.
+        val otrKey = ByteArray(32) { 1 }
+        val sha256 = ByteArray(32) { 2 }
         fun content(mimeType: String, width: Int? = null, height: Int? = null, durationMs: Long? = null) = UploadedFile(
             file = ShareFile("/tmp/file", "file", mimeType, sizeInBytes = 42, width = width, height = height, durationMs = durationMs),
-            otrKey = AES256Key(byteArrayOf(1)),
-            sha256 = SHA256Key(byteArrayOf(2)),
+            otrKey = AES256Key(otrKey),
+            sha256 = SHA256Key(sha256),
             assetId = UploadedAssetId("key", "wire.com", "token"),
             encryptedSize = 64,
         ).content().value
@@ -299,8 +302,8 @@ class ShareFilesTest {
         assertEquals("key", image.remoteData.assetId)
         assertEquals("wire.com", image.remoteData.assetDomain)
         assertEquals("token", image.remoteData.assetToken)
-        assertContentEquals(byteArrayOf(1), image.remoteData.otrKey)
-        assertContentEquals(byteArrayOf(2), image.remoteData.sha256)
+        assertContentEquals(otrKey, image.remoteData.otrKey)
+        assertContentEquals(sha256, image.remoteData.sha256)
         assertEquals(MessageEncryptionAlgorithm.AES_CBC, image.remoteData.encryptionAlgorithm)
         assertTrue(image.hasValidRemoteData())
 

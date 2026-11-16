@@ -34,6 +34,20 @@ internal interface CellsAwsClient {
         onProgressUpdate: (Long) -> Unit,
     )
 
+    /**
+     * Downloads [objectKey] from byte [offset] on, to resume a download the connection interrupted.
+     *
+     * [openSink] is called once the response arrives, with whether the server honoured the range: if so the bytes
+     * continue what was downloaded so far and must be appended, otherwise the whole object comes again and the
+     * destination must be overwritten. [onProgressUpdate] reports the bytes of the whole object, [offset] included.
+     */
+    suspend fun downloadFrom(
+        objectKey: String,
+        offset: Long,
+        openSink: (append: Boolean) -> Sink,
+        onProgressUpdate: (Long) -> Unit,
+    )
+
     suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit)
 }
 

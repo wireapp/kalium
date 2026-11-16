@@ -40,7 +40,7 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
-/** Real retained native handle and production callbacks; repository writes are recorded at its boundary. */
+/** Real retained native signaling handle and production callbacks; repository writes are recorded at its boundary. */
 class CallManagerIncomingLifecycleTest {
     @Test fun fullEngineUpdatesRepositoryInCallbackOrder() = runTest {
         val work = async(Dispatchers.Default) {
@@ -97,7 +97,8 @@ class CallManagerIncomingLifecycleTest {
                         every { network.observeNetworkState() } returns MutableStateFlow(NetworkState.ConnectedWithInternet)
                         val native = object : AppleAvsBridge by AppleAvs.bridge {
                             override fun userHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt? =
-                                AppleAvs.bridge.userHandle(selfUserId, selfClientId, object : AppleAvsCallbacks by callbacks {
+                                // Audio teardown is independent of the signaling/repository assertions below.
+                                signalingUserHandle(selfUserId, selfClientId, object : AppleAvsCallbacks by callbacks {
                                     override fun onReady(version: Int) { callbacks.onReady(version); ready.complete(Unit) }
                                     override fun onClosedCall(reason: Int, conversationId: String?, messageTime: UInt,
                                         userId: String?, clientId: String?) {
@@ -132,7 +133,7 @@ class CallManagerIncomingLifecycleTest {
                             incomingReferences.send(it.arg(0))
                             null
                         }
-                        everySuspend { journal.closed(any(), any(), any()) } returns null
+                        everySuspend { journal.closed(any(), any(), any(), any()) } returns null
                         manager.attachSignalJournal(journal)
                         try {
                             manager.waitUntilInitialized()
@@ -147,6 +148,8 @@ class CallManagerIncomingLifecycleTest {
                                     Message.Status.Sent, isSelfMessage = own, expirationData = null), content)
                             }
                             val queuedReject = type == ConversationTypeCalling.OneOnOne && termination == "reject"
+                            // AVS rejects a type it cannot decode; that must not hold back the call behind it.
+                            receive("FUTURETYPE", false, false, session, -1)
                             receive(start, false, false, session, 0)
                             if (!queuedReject) {
                                 assertEquals(CallStatus.INCOMING, withTimeout(5000) { states.receive() })

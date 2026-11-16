@@ -115,7 +115,7 @@ class ClientFingerprintUseCaseTest {
         userCase(userId, clientId).also { result ->
             assertIs<Result.Failure>(result)
             assertIs<ProteusFailure>(result.error)
-            assertEquals(error.code, (result.error as ProteusFailure).proteusException.code)
+            assertEquals(error.code, result.error.proteusException.code)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {

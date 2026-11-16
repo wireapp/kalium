@@ -38,6 +38,9 @@ data class LinkPreviewAsset(
     var encryptionAlgorithm: MessageEncryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
 )
 
-/** The app image resolver needs the remote identity and both cryptographic keys. */
+/** The app image resolver needs the remote identity, a full AES-256 key and a SHA-256 hash. */
 fun LinkPreviewAsset.hasRemoteAssetData(): Boolean =
-    !assetKey.isNullOrBlank() && otrKey.isNotEmpty() && sha256Key.isNotEmpty()
+    !assetKey.isNullOrBlank() && otrKey.size == AES256_KEY_SIZE_BYTES && sha256Key.size == SHA256_SIZE_BYTES
+
+private const val AES256_KEY_SIZE_BYTES = 32
+private const val SHA256_SIZE_BYTES = 32

@@ -28,6 +28,9 @@ kaliumLibrary {
 kotlin {
     explicitApi()
     sourceSets {
+        matching { it.name.endsWith("Test") }.configureEach {
+            languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+        }
         val commonMain by getting {
             dependencies {
                 implementation(projects.core.common)

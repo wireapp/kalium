@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
+import com.wire.kalium.logic.data.message.linkpreview.hasRemoteAssetData
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -90,6 +90,3 @@ internal class ResolveLinkPreviewImagesUseCaseImpl(
         }
     }
 }
-
-private fun LinkPreviewAsset.hasRemoteAssetData(): Boolean =
-    !assetKey.isNullOrBlank() && otrKey.isNotEmpty() && sha256Key.isNotEmpty()
