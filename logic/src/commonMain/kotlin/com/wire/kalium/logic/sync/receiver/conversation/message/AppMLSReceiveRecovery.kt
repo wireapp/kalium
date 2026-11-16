@@ -45,14 +45,15 @@ internal class AppMLSReceiveRecovery(
     private val selfUserId: UserId,
     private val selfTeamId: SelfTeamIdProvider,
 ) : EventBatchRecovery {
-    @Suppress("ReturnCount") // Receipt, resume, and WrongEpoch have intentionally distinct preflight paths.
+    /** [needsRejoin]: decryption failed with WrongEpoch, or CoreCrypto has no group for this message. */
+    @Suppress("ReturnCount") // Receipt, resume, and rejoin have intentionally distinct preflight paths.
     @OptIn(ConversationPersistenceApi::class)
-    suspend fun handle(context: CryptoTransactionContext, event: Event.Conversation.NewMLSMessage, wrongEpoch: Boolean): Boolean {
+    suspend fun handle(context: CryptoTransactionContext, event: Event.Conversation.NewMLSMessage, needsRejoin: Boolean): Boolean {
         val mls = context.mls ?: return false
         // Receipts precede even canonical metadata reads: a later recovery may have removed this group.
         if (recovery.wasProcessed(mls, event)) return true
         val resumed = recovery.resume(mls, event)
-        val result = resumed ?: if (wrongEpoch && event.subconversationId == null) {
+        val result = resumed ?: if (needsRejoin && event.subconversationId == null) {
             val protocol = conversations.getConversationProtocolInfo(event.conversationId).recoveryOrThrow()
             check(protocol is Conversation.ProtocolInfo.MLSCapable) { "Recovery requires an existing MLS group" }
             recovery.recover(mls, event, protocol.groupId.value) ?: return true
