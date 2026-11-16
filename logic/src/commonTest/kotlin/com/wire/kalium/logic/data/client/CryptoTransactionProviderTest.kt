@@ -21,7 +21,9 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
@@ -29,6 +31,7 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.InternalCryptoAccess
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -37,9 +40,12 @@ import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertSame
+import kotlinx.coroutines.test.runTest
 
 class CryptoTransactionProviderCrashTest {
 
@@ -126,6 +132,34 @@ class CryptoTransactionProviderCrashTest {
         result.shouldFail {
             assertEquals(CoreFailure.MissingClientRegistration, it)
         }
+    }
+
+    @Test
+    fun givenMLSInitializationFails_whenCombinedTransactionStarts_thenFailurePropagatesWithoutRunningBlock() = runTest {
+        val (arrangement, provider) = Arrangement().arrange()
+        val failures = listOf(MLSFailure.Generic(IllegalStateException("initialization failed")), StorageFailure.DataNotFound)
+        failures.forEach { failure ->
+            everySuspend { arrangement.mlsProvider.getMLSClient() } returns failure.left()
+            var blockCalled = false
+
+            provider.transaction<Unit>("processEvents") {
+                blockCalled = true
+                Unit.right()
+            }.shouldFail { assertSame(failure, it) }
+
+            assertFalse(blockCalled)
+        }
+    }
+
+    @Test
+    fun givenMLSDisabled_whenCombinedTransactionStarts_thenProteusTransactionStillRuns() = runTest {
+        val (arrangement, provider) = Arrangement().withProteusTransactionSucceeds().arrange()
+        everySuspend { arrangement.mlsProvider.getMLSClient() } returns MLSFailure.Disabled.left()
+
+        provider.transaction<Unit>("processProteusEvent") { context ->
+            assertNull(context.mls)
+            Unit.right()
+        }.shouldSucceed()
     }
 
     private class Arrangement {
