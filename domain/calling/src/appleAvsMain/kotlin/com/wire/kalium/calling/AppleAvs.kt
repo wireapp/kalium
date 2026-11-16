@@ -89,8 +89,40 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
     private val runtimeStartup = AppleAvsRuntimeStartup(
         setup = { wcall_setup() },
         run = { wcall_run() },
-        onStarted = { wcall_set_log_handler(logHandler, null) },
+        onStarted = {
+            wcall_set_log_handler(logHandler, null)
+            retainMediaSystem()
+        },
     )
+
+    /**
+     * AVS's iOS media manager keeps handling app activation through AVS's media system after its handle is released.
+     * AVSFlowManager's AVS thread drops the media-system reference wcall_setup takes, so releasing the last handle
+     * would free it and the next activation would crash. This instance holds a reference for the process; with no
+     * handlers and no calls it stays idle.
+     */
+    private fun retainMediaSystem() {
+        wcall_create_ex(
+            userid = "media-system",
+            clientid = "media-system",
+            use_mediamgr = 0,
+            msys_name = "voe",
+            readyh = null,
+            sendh = null,
+            sfth = null,
+            incomingh = null,
+            missedh = null,
+            answerh = null,
+            estabh = null,
+            closeh = null,
+            metricsh = null,
+            cfg_reqh = null,
+            acbrh = null,
+            vstateh = null,
+            arg = null
+        )
+    }
+
     private val handles = mutableMapOf<String, CreatedHandle>()
     private val handlesLock = NSRecursiveLock()
     private val startLock = NSRecursiveLock()

@@ -14,6 +14,7 @@ import kotlinx.coroutines.withTimeout
 import platform.CoreFoundation.CFRunLoopRunInMode
 import platform.CoreFoundation.kCFRunLoopDefaultMode
 import platform.Foundation.NSLock
+import platform.Foundation.NSNotificationCenter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -55,6 +56,29 @@ class AppleAvsHandleTeardownTest {
             CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, true)
         }
         teardown.await()
+    }
+
+    @Test
+    fun becomingActiveAfterFlowManagerStartAndLastHandleReleaseKeepsAvsMediaSystem() = runTest {
+        val release = async(Dispatchers.Default) {
+            withTimeout(15_000) {
+                val flowManager = AppleAvsFlowManager()
+                assertTrue(flowManager.startIfAvailable())
+                // Creates AVSFlowManager, whose AVS thread drops the media-system reference from wcall_setup.
+                flowManager.stopLocalVideoCapture()
+                val callbacks = RecordingCallbacks()
+                val handle = assertNotNull(AppleAvs.bridge.userHandle("${Uuid.random()}@example.com", "abcd", callbacks))
+                callbacks.configRequested.await()
+                AppleAvs.bridge.releaseUserHandle(handle)
+            }
+        }
+        while (!release.isCompleted) {
+            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, true)
+        }
+        release.await()
+        // AVS's media manager handles this on iOS; it crashed once no handle held the media system.
+        NSNotificationCenter.defaultCenter.postNotificationName("UIApplicationDidBecomeActiveNotification", null)
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, false)
     }
 
     private class RecordingCallbacks : AppleAvsCallbacks {
