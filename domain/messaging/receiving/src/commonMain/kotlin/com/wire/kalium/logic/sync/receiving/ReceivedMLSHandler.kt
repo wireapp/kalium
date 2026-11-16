@@ -101,6 +101,12 @@ internal class ReceivedMLSHandler(
             removed += event.conversationId
             return emptyList()
         }
+        // The backend sends main-conversation messages only to clients in the group, and a Welcome before any
+        // message of its epoch. A group CoreCrypto lacks here was lost locally, whatever its canonical state:
+        // rejoin it. Null means the conversation is gone or the rejoin cannot succeed; skip, as the app does.
+        if (recovery != null && event.conversationId !in welcomed && !context.conversationExists(protocol.groupId)) {
+            return recovery.recover(context, event, protocol.groupId)?.let { recovered(context, event, it) } ?: emptyList()
+        }
         check(
             protocol.groupState == ConversationEntity.GroupState.ESTABLISHED || event.conversationId in welcomed || previousRemoval != null
         ) {

@@ -43,12 +43,17 @@ internal fun notificationDependencies(payload: List<EventContentDTO>): Set<Notif
 internal class DeferredNotification(val failure: KaliumSyncException) : Exception("Notification dependency deferred", failure)
 internal class NotificationOrderingBarrier : Exception("Notification requires the complete event prefix")
 
-// A commit keeps a conflicting-backends rejection as an MLS failure; it is the same retryable federation failure.
-internal fun CoreFailure.canDeferNotification(): Boolean = when (val failure = normalizeFederatedBackendConflict()) {
-    is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
-    is NetworkFailure.ServerMiscommunication -> failure.kaliumException.isRetryableServerResponse()
+internal fun CoreFailure.canDeferNotification(): Boolean = isTransientNetworkFailure() || when (this) {
     MLSFailure.WrongEpoch, MLSFailure.UnmergedPendingGroup, MLSFailure.CommitForMissingProposal,
     MLSFailure.ConversationNotFound, MLSFailure.OrphanWelcome -> true
+    else -> false
+}
+
+/** No connection, a federated backend failure, a server error or rate limiting: the same request may succeed later. */
+// A commit keeps a conflicting-backends rejection as an MLS failure; it is the same retryable federation failure.
+internal fun CoreFailure.isTransientNetworkFailure(): Boolean = when (val failure = normalizeFederatedBackendConflict()) {
+    is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
+    is NetworkFailure.ServerMiscommunication -> failure.kaliumException.isRetryableServerResponse()
     else -> false
 }
 

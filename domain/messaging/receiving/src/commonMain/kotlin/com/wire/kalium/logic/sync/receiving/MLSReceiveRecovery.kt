@@ -4,14 +4,17 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import kotlin.io.encoding.Base64
+import kotlinx.coroutines.CancellationException
 
 /** Validated recovery output; callers persist canonical metadata and warning effects before acknowledgement. */
 data class MLSReceiveRecoveryResult(
@@ -29,6 +32,7 @@ data class MLSReceiveRecoveryResult(
  * Completion covers this recovery operation only. The caller must separately preserve replay of
  * earlier successful MLS payloads when a pending join replaces an already caught-up group.
  */
+@Suppress("TooManyFunctions") // One coordinator owns the whole receive-recovery contract.
 class MLSReceiveRecovery(
     private val store: MLSReceiveRecoveryStore,
     private val conversationApi: ConversationApi,
@@ -52,7 +56,7 @@ class MLSReceiveRecovery(
     /** Ordinary receives only consult the owner's cached operation index; ciphertext decoding is lazy. */
     suspend fun resume(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): MLSReceiveRecoveryResult? {
         val operation = store.find(event.id) { Base64.decode(event.content) } ?: return null
-        return resume(context, event, operation)
+        return skippingUnrecoverable(context, event, operation.groupId) { resume(context, event, operation) }
     }
 
     private suspend fun resume(
@@ -71,9 +75,20 @@ class MLSReceiveRecovery(
         }
     }
 
-    /** Called only after WrongEpoch; current native groups keep the caller's existing no-rejoin policy. */
-    @Suppress("ReturnCount") // Pending, current, and completed operations each bypass a new join.
+    /**
+     * Called after WrongEpoch, or for a main-conversation message whose group CoreCrypto doesn't have.
+     * Current native groups keep the caller's existing no-rejoin policy.
+     */
     suspend fun recover(
+        context: MlsCoreCryptoContext,
+        event: Event.Conversation.NewMLSMessage,
+        expectedGroupId: String,
+    ): MLSReceiveRecoveryResult? = skippingUnrecoverable(context, event, expectedGroupId) {
+        rejoinIfBehind(context, event, expectedGroupId)
+    }
+
+    @Suppress("ReturnCount") // Pending, current, and completed operations each bypass a new join.
+    private suspend fun rejoinIfBehind(
         context: MlsCoreCryptoContext,
         event: Event.Conversation.NewMLSMessage,
         expectedGroupId: String,
@@ -109,6 +124,30 @@ class MLSReceiveRecovery(
         store.resumeDeletion(context, payload)
 
     suspend fun acknowledge(eventIds: List<String>) = store.acknowledge(eventIds)
+
+    /**
+     * Before this recovery, a message for a group CoreCrypto doesn't have was skipped. Keep that outcome
+     * when the rejoin fails for any reason but the network: retrying the same event cannot fix it, and one
+     * lost group must not block receiving. Retire the intent first, so the skipped event can be acknowledged.
+     * Groups CoreCrypto has, including one joined before a later check failed, keep failing closed.
+     */
+    @Suppress("TooGenericExceptionCaught") // Any failure but cancellation or the network is final for this event.
+    private suspend fun skippingUnrecoverable(
+        context: MlsCoreCryptoContext,
+        event: Event.Conversation.NewMLSMessage,
+        groupId: String,
+        recovery: suspend () -> MLSReceiveRecoveryResult?,
+    ): MLSReceiveRecoveryResult? = try {
+        recovery()
+    } catch (failure: CancellationException) {
+        throw failure
+    } catch (failure: Exception) {
+        val cause = (failure as? KaliumSyncException)?.coreFailureCause
+        if (cause?.isTransientNetworkFailure() == true || context.conversationExists(groupId)) throw failure
+        store.find(event.id) { Base64.decode(event.content) }?.let { store.abandon(it) }
+        kaliumLogger.w("Skipping an MLS message whose missing group failed to rejoin: ${(cause ?: failure)::class.simpleName}")
+        null
+    }
 
     private suspend fun fetchDetails(event: Event.Conversation.NewMLSMessage) =
         wrapApiRequest { conversationApi.fetchConversationDetails(event.conversationId.toApi()) }
