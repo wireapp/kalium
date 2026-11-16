@@ -75,12 +75,18 @@ interface CallSignalStore {
         video: Boolean,
         generation: String
     ): CallPresentationRecord?
-    suspend fun closed(conversationValue: String, conversationDomain: String, reason: Int): String?
+
+    /**
+     * Ends the conversation's latest presentation. With [handledBy], also forgets the conversation's signals
+     * that engine generation already handled, so a restart cannot replay a call that has ended.
+     */
+    suspend fun closed(conversationValue: String, conversationDomain: String, reason: Int, handledBy: String? = null): String?
 }
 
 /**
  * Submission is an acknowledgement of native enqueue, not an exactly-once AVS effect.
- * Retain accepted signals for replay into a NEW native handle after a host crash.
+ * Signals are kept for [SIGNAL_RETENTION_MS], so a NEW native handle after a host restart
+ * still sees every signal AVS accepts by age; older ones would only be discarded by AVS.
  * A live handle uses one generation token to suppress re-enqueue after duplicate pushes.
  */
 class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalStore {
@@ -187,20 +193,27 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         conversationValue: String,
         conversationDomain: String,
         reason: Int,
+        handledBy: String?,
     ): String? = database.writeMessageEffects {
         val state = read(metadata)
         val current = state.presentations.lastOrNull {
             it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
-        } ?: return@writeMessageEffects null
+        }
+        val signals = state.signals.filterNot {
+            handledBy != null && it.submittedGeneration == handledBy &&
+                it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
+        }
+        if (current == null && signals.size == state.signals.size) return@writeMessageEffects null
         write(
             metadata,
             state.copy(
+                signals = signals,
                 presentations = state.presentations.map {
-            if (it.id == current.id) it.copy(ringing = false, endReason = reason) else it
-        }
+                    if (it.id == current?.id) it.copy(ringing = false, endReason = reason) else it
+                },
             )
         )
-        current.id
+        current?.id
     }
 
     private fun CallSignalRecord.isStartRequest(): Boolean = runCatching {
@@ -213,7 +226,10 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         internal const val MAX_SIGNALS = 4096
         internal const val KEY = "apple_call_signal_journal_v1"
         private const val MILLISECONDS_PER_SECOND = 1000L
-        private const val RETENTION_MS = 24 * 60 * 60 * MILLISECONDS_PER_SECOND
+
+        /** AVS ignores conference starts older than 120 s and only reports a 1:1 start older than 60 s as missed. */
+        internal const val SIGNAL_RETENTION_MS = 3 * 60 * MILLISECONDS_PER_SECOND
+        private const val PRESENTATION_RETENTION_MS = 24 * 60 * 60 * MILLISECONDS_PER_SECOND
 
         /** Called inside the SAME SQL transaction as receiving effects, before the processed marker. */
         suspend fun append(metadata: MetadataDAO, event: ReceivedCallEvent): CallSignalRecord {
@@ -228,14 +244,8 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
                 return it
             }
             val now = Clock.System.now().toEpochMilliseconds()
-            val activeConversations = state.presentations.filter { it.ringing && it.endReason == null }
-                .map { it.conversationValue to it.conversationDomain }.toSet()
-            val retained = state.signals.filter {
-                it.submittedGeneration == null || now - it.storedAtMillis < RETENTION_MS ||
-                    (it.conversationValue to it.conversationDomain) in activeConversations
-            }
-            // A full journal must not block receiving, so drop the oldest signals instead.
-            val dropped = (retained.size - MAX_SIGNALS + 1).coerceAtLeast(0)
+            // read() already left out expired signals. A full journal must not block receiving, so drop the oldest instead.
+            val dropped = (state.signals.size - MAX_SIGNALS + 1).coerceAtLeast(0)
             if (dropped > 0) kaliumLogger.w("Call signal journal is full; dropping $dropped oldest signals")
             val record = CallSignalRecord(
                 Uuid.random().toString(), event.messageId, event.conversationId.value, event.conversationId.domain,
@@ -245,15 +255,19 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
             write(
                 metadata,
                 state.copy(
-                    signals = retained.drop(dropped) + record,
-                presentations = state.presentations.filter { it.ringing || now - it.startTimeMillis < RETENTION_MS }
+                    signals = state.signals.drop(dropped) + record,
+                presentations = state.presentations.filter { it.ringing || now - it.startTimeMillis < PRESENTATION_RETENTION_MS }
                 )
             )
             return record
         }
 
-        private suspend fun read(metadata: MetadataDAO): CallSignalJournalState =
-            metadata.getSerializable(KEY, CallSignalJournalState.serializer()) ?: CallSignalJournalState()
+        /** Leaves out expired signals, so no read replays them and the next write drops them. */
+        private suspend fun read(metadata: MetadataDAO): CallSignalJournalState {
+            val state = metadata.getSerializable(KEY, CallSignalJournalState.serializer()) ?: return CallSignalJournalState()
+            val now = Clock.System.now().toEpochMilliseconds()
+            return state.copy(signals = state.signals.filter { now - it.storedAtMillis < SIGNAL_RETENTION_MS })
+        }
 
         private suspend fun write(metadata: MetadataDAO, state: CallSignalJournalState) =
             metadata.putSerializable(KEY, state, CallSignalJournalState.serializer())

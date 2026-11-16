@@ -50,6 +50,7 @@ import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
+import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
@@ -95,6 +96,7 @@ import dev.mokkery.verify
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runCurrent
@@ -107,6 +109,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
 import com.wire.kalium.messaging.sending.MLSMessageCreator
 
@@ -911,6 +914,51 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenSyncNotLive_whenSendingUserContent_thenSendOnlyOnceLive() {
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+        val noNetwork: (CoreFailure) -> Unit = { assertIs<NetworkFailure.NoNetworkConnection>(it) }
+
+        arrangement.testScope.runTest {
+            arrangement.serializeTransactions()
+            // Starting: wait for sync instead of failing.
+            arrangement.syncState.value = SyncState.Waiting
+            val afterStart = async { messageSender.sendMessage(TestMessage.TEXT_MESSAGE) }
+            runCurrent()
+            assertFalse(afterStart.isCompleted)
+            arrangement.syncState.value = SyncState.Live
+            afterStart.await().shouldSucceed()
+
+            // Never starts, failed, or stops during catch-up: fail instead of sending on a later sync.
+            arrangement.syncState.value = SyncState.Waiting
+            messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldFail(noNetwork)
+            arrangement.syncState.value = SyncState.Failed(Arrangement.TEST_CORE_FAILURE, 1.seconds)
+            messageSender.sendMessage(TestMessage.TEXT_MESSAGE).shouldFail(noNetwork)
+            arrangement.syncState.value = SyncState.GatheringPendingEvents
+            val stopped = async { messageSender.sendMessage(TestMessage.TEXT_MESSAGE) }
+            runCurrent()
+            arrangement.syncState.value = SyncState.Waiting
+            stopped.await().shouldFail(noNetwork)
+
+            // Live when sent, failed by the time the transaction is free.
+            arrangement.syncState.value = SyncState.Live
+            arrangement.transactionQueue.lock()
+            val queued = async { messageSender.sendMessage(TestMessage.TEXT_MESSAGE) }
+            runCurrent()
+            arrangement.syncState.value = SyncState.Failed(Arrangement.TEST_CORE_FAILURE, 1.seconds)
+            arrangement.transactionQueue.unlock()
+            queued.await().shouldFail(noNetwork)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
+
+            // Signaling does not wait: calls keep working while sync is down.
+            messageSender.sendMessage(TestMessage.signalingMessage(MessageContent.Calling(""))).shouldSucceed()
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
+        }
+    }
+
+    @Test
     fun givenClientTargets_WhenSendingOutgoingMessage_ThenCallSendEnvelopeWithCorrectTargets() {
         // given
         val (arrangement, messageSender) = arrange {
@@ -1585,6 +1633,7 @@ class MessageSenderTest {
         val messageEnvelopeCreator: MessageEnvelopeCreator = mock<MessageEnvelopeCreator>(mode = MockMode.autoUnit)
         val mlsMessageCreator: MLSMessageCreator = mock<MLSMessageCreator>(mode = MockMode.autoUnit)
         val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
+        val syncState = MutableStateFlow<SyncState>(SyncState.Live)
         val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         val mlsMissingUsersMessageRejectionHandler = FakeMLSMissingUsersRejectionHandler()
         val selfDeleteMessageSenderHandler = mock<EphemeralMessageDeletionHandler>(mode = MockMode.autoUnit)
@@ -1606,6 +1655,7 @@ class MessageSenderTest {
         fun arrange() = run {
             runBlocking {
                 withGetMessageById()
+                every { syncManager.syncState } returns syncState
                 block()
                 withTransactionReturning(Either.Right(Unit))
             }

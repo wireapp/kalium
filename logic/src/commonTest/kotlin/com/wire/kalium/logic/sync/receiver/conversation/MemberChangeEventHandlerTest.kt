@@ -207,7 +207,7 @@ class MemberChangeEventHandlerTest {
     }
 
     @Test
-    fun givenOtherUserPromotedToAdmin_whenHandlingMemberChangedRole_thenSystemMessageIsPersisted() = runTest {
+    fun givenOtherUserPromotedToAdmin_whenHandlingMemberChangedRole_thenOnlyMemberRoleIsUpdated() = runTest {
         val otherMember = Member(TestUser.OTHER_USER_ID, Member.Role.Admin)
         val event = TestEvent.memberChange(member = otherMember)
 
@@ -221,13 +221,10 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage(
-                matches { message ->
-                    val content = message.content
-                    content is MessageContent.MemberChange.UserPromotedToAdmin &&
-                            content.members == listOf(TestUser.OTHER_USER_ID)
-                }
-            )
+            arrangement.conversationRepository.updateMemberFromEvent(otherMember, event.conversationId)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage(any())
         }
     }
 

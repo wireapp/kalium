@@ -52,6 +52,33 @@ import org.junit.Test
 class AssetMessageHandlerTest {
 
     @Test
+    fun givenPendingAsset_whenHandlingInvalidKeyOrHashSizes_thenKeepsItHiddenAndPreservesPendingData() = runTest {
+        val pending = PREVIEW_ASSET_MESSAGE.copy(visibility = Message.Visibility.HIDDEN)
+        val remote = COMPLETE_ASSET_CONTENT.value.remoteData
+        val invalidData = listOf(0, 1, 16, 24, 31, 33, 64).flatMap { size ->
+            listOf(remote.copy(otrKey = ByteArray(size)), remote.copy(sha256 = ByteArray(size)))
+        }
+        for (data in invalidData) {
+            val incoming = COMPLETE_ASSET_MESSAGE.copy(
+                content = COMPLETE_ASSET_CONTENT.copy(value = COMPLETE_ASSET_CONTENT.value.copy(remoteData = data))
+            )
+            val (arrangement, handler) = Arrangement()
+                .withSuccessfulFileSharingFlag(FileSharingStatus.Value.EnabledAll)
+                .withSuccessfulStoredMessage(pending)
+                .withSuccessfulPersistMessageUseCase(incoming)
+                .arrange()
+
+            handler.handle(incoming)
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.persistMessage(matches {
+                    it.visibility == Message.Visibility.HIDDEN && it.content == pending.content
+                })
+            }
+        }
+    }
+
+    @Test
     fun givenAValidNonRestrictedNewGenericAssetMessage_whenHandlingIt_isCorrectlyProcessedAndIsVisible() = runTest {
         // Given
         val assetMessage = COMPLETE_ASSET_MESSAGE
@@ -281,7 +308,8 @@ class AssetMessageHandlerTest {
 
         }
 
-        verifySuspend(VerifyMode.not) { arrangement.persistMessage(any())
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage(any())
         }
     }
 
@@ -406,10 +434,12 @@ class AssetMessageHandlerTest {
 
         }
 
-        verifySuspend(VerifyMode.not) { arrangement.messageRepository.getMessageById(previewAssetMessage.conversationId, previewAssetMessage.id)
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.getMessageById(previewAssetMessage.conversationId, previewAssetMessage.id)
         }
 
-        verify(VerifyMode.not) { arrangement.validateAssetFileTypeUseCase(any<String>(), any<String>(), any<List<String>>())
+        verify(VerifyMode.not) {
+            arrangement.validateAssetFileTypeUseCase(any<String>(), any<String>(), any<List<String>>())
         }
     }
 
@@ -423,8 +453,8 @@ class AssetMessageHandlerTest {
                 mimeType = "",
                 metadata = null,
                 remoteData = AssetContent.RemoteData(
-                    otrKey = "otrKey".toByteArray(),
-                    sha256 = "sha256".toByteArray(),
+                    otrKey = ByteArray(32) { 1 },
+                    sha256 = ByteArray(32) { 2 },
                     assetId = "some-asset-id",
                     assetDomain = "some-asset-domain",
                     assetToken = "some-asset-token",
@@ -451,12 +481,14 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        verifySuspend(VerifyMode.not) { arrangement.persistMessage(any())
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage(any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(
-                assetMessage.conversationId, assetMessage.id
+                assetMessage.conversationId,
+                assetMessage.id
             )
 
         }
@@ -472,8 +504,8 @@ class AssetMessageHandlerTest {
                 mimeType = "",
                 metadata = null,
                 remoteData = AssetContent.RemoteData(
-                    otrKey = "otrKey".toByteArray(),
-                    sha256 = "sha256".toByteArray(),
+                    otrKey = ByteArray(32) { 1 },
+                    sha256 = ByteArray(32) { 2 },
                     assetId = "some-asset-id",
                     assetDomain = "some-asset-domain",
                     assetToken = "some-asset-token",
@@ -497,10 +529,12 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage(any())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage(any())
         }
 
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.getMessageById(assetMessage.conversationId, assetMessage.id)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.getMessageById(assetMessage.conversationId, assetMessage.id)
         }
     }
 
@@ -555,8 +589,8 @@ class AssetMessageHandlerTest {
                 mimeType = "application/zip",
                 metadata = null,
                 remoteData = AssetContent.RemoteData(
-                    otrKey = "otrKey".toByteArray(),
-                    sha256 = "sha256".toByteArray(),
+                    otrKey = ByteArray(32) { 1 },
+                    sha256 = ByteArray(32) { 2 },
                     assetId = "some-asset-id",
                     assetDomain = "some-asset-domain",
                     assetToken = "some-asset-token",

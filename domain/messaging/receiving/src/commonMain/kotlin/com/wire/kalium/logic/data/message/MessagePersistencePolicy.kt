@@ -81,7 +81,7 @@ fun MessageContent.shouldUpdateConversationOrder(): Boolean =
         is MessageContent.Location -> true
         is MessageContent.LegalHold -> false
         is MessageContent.MemberChange.RemovedFromTeam -> false
-        is MessageContent.MemberChange.UserPromotedToAdmin -> true
+        is MessageContent.MemberChange.UserPromotedToAdmin -> false
         is MessageContent.TeamMemberRemoved -> false
         is MessageContent.DataTransfer -> false
         is MessageContent.InCallHandRaise -> false

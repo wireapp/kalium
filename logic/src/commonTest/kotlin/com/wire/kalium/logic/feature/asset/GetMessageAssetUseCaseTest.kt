@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.EncryptionFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -116,6 +117,27 @@ class GetMessageAssetUseCaseTest {
         assertTrue(result is MessageAssetResult.Failure)
         assertFalse(result.isRetryNeeded)
 
+    }
+
+    @Test
+    fun givenInvalidAssetEncryptionData_whenDownloading_thenReturnsFailureWithoutRetry() = runTest(testDispatcher.default) {
+        val conversationId = ConversationId("conversation-id", "domain")
+        val messageId = "message-id"
+        for (failure in listOf(EncryptionFailure.GenericDecryptionError, EncryptionFailure.WrongAssetHash)) {
+            val (arrangement, getMessageAsset) = Arrangement()
+                .withDownloadAssetErrorResponse(failure)
+                .arrange()
+
+            val result = getMessageAsset(conversationId, messageId).await()
+
+            assertTrue(result is MessageAssetResult.Failure)
+            assertEquals(failure, result.coreFailure)
+            assertFalse(result.isRetryNeeded)
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_DOWNLOAD, conversationId, messageId)
+            }
+            verifySuspend(VerifyMode.not) { arrangement.userRepository.removeUserBrokenAsset(any()) }
+        }
     }
 
     @Test
@@ -350,7 +372,7 @@ class GetMessageAssetUseCaseTest {
 
         private lateinit var convId: ConversationId
         private lateinit var msgId: String
-        private var encryptionKey = AES256Key(ByteArray(1))
+        private var encryptionKey = AES256Key(ByteArray(32))
         private var metadata: AssetContent.AssetMetadata? = AssetContent.AssetMetadata.Image(width = 100, height = 100)
 
         val userId = UserId("some-user", "some-domain.com")
@@ -371,7 +393,7 @@ class GetMessageAssetUseCaseTest {
                 metadata = metadata,
                 remoteData = AssetContent.RemoteData(
                     otrKey = encryptionKey.data,
-                    sha256 = ByteArray(16),
+                    sha256 = ByteArray(32),
                     assetId = someAssetId,
                     assetToken = someAssetToken,
                     assetDomain = "some-asset-domain.com",
@@ -455,16 +477,15 @@ class GetMessageAssetUseCaseTest {
             return this
         }
 
-        suspend fun withDownloadAssetErrorResponse(noNetworkConnection: NetworkFailure): Arrangement {
+        suspend fun withDownloadAssetErrorResponse(failure: CoreFailure): Arrangement {
             convId = ConversationId("", "")
-            encryptionKey = AES256Key(ByteArray(0))
             msgId = ""
             everySuspend {
                 messageRepository.getMessageById(any(), any())
             } returns Either.Right(mockedImageMessage)
             everySuspend {
                 assetDataSource.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
-            } returns Either.Left(noNetworkConnection)
+            } returns Either.Left(failure)
             everySuspend {
                 assetDataSource.fetchDecodedAsset(any())
             } returns Either.Left(StorageFailure.DataNotFound)

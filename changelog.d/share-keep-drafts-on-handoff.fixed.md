@@ -1,1 +1,1 @@
-The share extension stops Cells draft uploads when another process wants the account, keeps prepared drafts for the app when it hands a share over, and reports a sent share as sent when closing the account fails.
+The share extension reports a sent share as sent when closing the account fails.

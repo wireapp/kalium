@@ -2631,9 +2631,6 @@ class NotificationProcessorNativeTest {
                         assertEquals("Created group", conversation.name)
                         assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member,
                             runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
-                        // Fetch returns Admin, but the app read null before that fetch: promotion is required.
-                        fixture.verifyPromotion(runtime, "notification", SENDER)
-                        assertNull(runtime.database.messageDAO.getMessageById("notification:1", CONVERSATION_ID))
                         if (mls) assertEquals(ConversationEntity.GroupState.ESTABLISHED,
                             assertIs<ConversationEntity.ProtocolInfo.MLS>(conversation.protocolInfo).groupState)
                     })
@@ -2648,8 +2645,9 @@ class NotificationProcessorNativeTest {
         for (mls in listOf(false, true)) for (stage in listOf("read", "write", "promotion", "fetch")) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val target = if (stage == "fetch") DELETE_TARGET else CONVERSATION_ID
+                val member = if (stage == "promotion") SELF else SENDER
                 val event = fixture.batch("notification", fixture.event("prefix", fixture.encrypt("prefix")),
-                    fixture.memberRoleEvent("wire_admin", target = target), fixture.event("first", fixture.encrypt("first")))
+                    fixture.memberRoleEvent("wire_admin", member = member, target = target), fixture.event("first", fixture.encrypt("first")))
                 val tail = fixture.event("tail-notification", fixture.encrypt("tail"))
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
@@ -2666,7 +2664,7 @@ class NotificationProcessorNativeTest {
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                         assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member,
-                            runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
+                            runtime.database.memberDAO.getMemberRole(member.toDao(), CONVERSATION_ID))
                         assertNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
                         assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                         assertTrue(runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).isEmpty())
@@ -2676,7 +2674,7 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), tail.id, fetchConversation = {
                     fixture.creationResponse().copy(id = target.toApi(), groupId = null, epoch = null, protocol = ConvProtocol.PROTEUS)
                 }))
-                assertIs<Either.Right<*>>(fixture.open { fixture.verifyPromotion(it, "notification:1", SENDER, target) })
+                if (stage == "promotion") assertIs<Either.Right<*>>(fixture.open { fixture.verifySelfPromotion(it, "notification:1") })
                 fixture.verifyStoredAndNext(next, "tail", listOf("prefix", "first", "tail"))
             }
         }
@@ -2688,7 +2686,7 @@ class NotificationProcessorNativeTest {
             withFixture(mls, if (mode == "delete") SELF else SENDER) { fixture ->
                 val clear = if (mode == "delete") null else fixture.event("clear", fixture.encrypt("clear",
                     MessageContent.Cleared(CONVERSATION_ID.toModel(), TIME, false)))
-                val promotion = fixture.memberRoleEvent("wire_admin")
+                val promotion = fixture.memberRoleEvent("wire_admin", member = SELF)
                 val event = when (mode) {
                     "delete" -> fixture.batch("notification", promotion, fixture.event("delete", fixture.encrypt("delete", MessageContent.DeleteMessage("notification"))),
                         fixture.event("first", fixture.encrypt("first")))
@@ -2705,11 +2703,11 @@ class NotificationProcessorNativeTest {
                     if (mode == "delete") {
                         assertEquals(MessageEntity.Visibility.DELETED, checkNotNull(message).visibility)
                     } else {
-                        fixture.verifyPromotion(runtime, id, SENDER)
+                        fixture.verifySelfPromotion(runtime, id)
                         fixture.verifyPendingConversationCleanup(runtime, CONVERSATION_ID)
                     }
                     assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Admin,
-                        runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
+                        runtime.database.memberDAO.getMemberRole(SELF.toDao(), CONVERSATION_ID))
                 })
                 fixture.verifyStoredAndNext(next, "first", if (mode == "delete") emptyList() else listOf("first"))
             }
@@ -2733,7 +2731,6 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(receive())
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertNull(runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
-                    fixture.verifyPromotion(runtime, "notification:1", SENDER)
                     assertEquals(MessageEntity.MemberChangeType.REMOVED, assertIs<MessageEntityContent.MemberChange>(
                         assertIs<MessageEntity.System>(runtime.database.messageDAO.getMessageById("notification:3", CONVERSATION_ID)).content).memberChangeType)
                 })
@@ -2769,9 +2766,7 @@ class NotificationProcessorNativeTest {
                             val role = runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID)
                             if (leave) assertNull(role) else assertEquals(
                                 com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member, role)
-                            // Retry may add a promotion because the original unchanged role is no longer stored.
-                            if (stage == null) assertNull(runtime.database.messageDAO.getMessageById("notification:1", CONVERSATION_ID))
-                            else fixture.verifyPromotion(runtime, "notification:1", SENDER)
+                            assertNull(runtime.database.messageDAO.getMessageById("notification:1", CONVERSATION_ID))
                             assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                         })
                         assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), tail.id)).value)
@@ -2808,7 +2803,6 @@ class NotificationProcessorNativeTest {
                         assertEquals(stage == null, ConversationEntity.AccessRole.SERVICE in conversation.accessRole)
                         assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Admin,
                             runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
-                        fixture.verifyPromotion(runtime, "notification:1", SENDER)
                         assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                     })
                     fixture.verifyStoredAndNext(next, "tail", listOf("first", "tail"))
@@ -11122,7 +11116,6 @@ class NotificationProcessorNativeTest {
                     })
                     if (account["memberRoleEvents"]?.jsonPrimitive?.boolean == true) assertIs<Either.Right<*>>(fixture.open { runtime ->
                         if (account["memberRoleFetched"]?.jsonPrimitive?.boolean == true) {
-                            fixture.verifyPromotion(runtime, "notification", SENDER)
                             assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member,
                                 runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
                         } else fixture.verifyMemberRoles(runtime)
@@ -12962,9 +12955,9 @@ class NotificationProcessorNativeTest {
             memberRoleEvent("wire_member", member, target, system), memberRoleEvent("wire_admin", member, target, system),
             memberRoleEvent("custom-final", member, target, system), event("first", encrypt("first")))
 
-        suspend fun verifyPromotion(runtime: AppleAccountRuntime, id: String, member: UserId, target: QualifiedIDEntity = CONVERSATION_ID) {
-            val message = assertIs<MessageEntity.System>(runtime.database.messageDAO.getMessageById(id, target))
-            assertEquals(MessageEntityContent.MemberChange(listOf(member.toDao()), MessageEntity.MemberChangeType.USER_PROMOTED_TO_ADMIN), message.content)
+        suspend fun verifySelfPromotion(runtime: AppleAccountRuntime, id: String) {
+            val message = assertIs<MessageEntity.System>(runtime.database.messageDAO.getMessageById(id, CONVERSATION_ID))
+            assertEquals(MessageEntityContent.MemberChange(listOf(SELF.toDao()), MessageEntity.MemberChangeType.USER_PROMOTED_TO_ADMIN), message.content)
             assertEquals(SELF.toDao(), message.senderUserId)
             assertEquals(TIME, message.date)
             assertEquals(MessageEntity.Status.SENT, message.status)
@@ -12975,11 +12968,6 @@ class NotificationProcessorNativeTest {
             absentMember: Boolean = false) {
             val role = runtime.database.memberDAO.getMemberRole(member.toDao(), target)
             if (absentMember) assertNull(role) else assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Unknown("custom-final"), role)
-            val promotions = if (absentMember) listOf(2, 3, 5) else listOf(2, 5)
-            for (index in 1..6) {
-                if (index in promotions) verifyPromotion(runtime, "notification:$index", member, target)
-                else assertNull(runtime.database.messageDAO.getMessageById("notification:$index", target))
-            }
         }
 
         suspend fun seedAccess(enabled: Boolean) {

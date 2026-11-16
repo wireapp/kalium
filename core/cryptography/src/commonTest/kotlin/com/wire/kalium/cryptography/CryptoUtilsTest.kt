@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.calcFileMd5
@@ -35,10 +36,69 @@ import okio.use
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class CryptoUtilsTest {
+    @Test
+    @IgnoreJS
+    @IgnoreAndroidInstrumented
+    fun givenInvalidKeySizes_whenEncryptingData_thenRejectsKeys() {
+        for (size in INVALID_AES256_KEY_SIZES) {
+            assertFailsWith<IllegalArgumentException>("Key size: $size") {
+                encryptDataWithAES256(PlainData(byteArrayOf(1)), AES256Key(ByteArray(size)))
+            }
+        }
+    }
+
+    @Test
+    @IgnoreJS
+    @IgnoreAndroidInstrumented
+    fun givenInvalidKeySizes_whenDecryptingData_thenRejectsKeys() {
+        val encrypted = encryptDataWithAES256(PlainData(byteArrayOf(1)), generateRandomAES256Key())
+        for (size in INVALID_AES256_KEY_SIZES) {
+            assertFailsWith<IllegalArgumentException>("Key size: $size") {
+                decryptDataWithAES256(encrypted, AES256Key(ByteArray(size)))
+            }
+        }
+    }
+
+    @Test
+    @IgnoreJS
+    @IgnoreAndroidInstrumented
+    fun givenInvalidKeySizes_whenEncryptingFile_thenRejectsKeysBeforeReadingOrWriting() {
+        for (size in INVALID_AES256_KEY_SIZES) {
+            val source = Buffer().writeByte(1)
+            val sink = Buffer()
+
+            assertFailsWith<IllegalArgumentException>("Key size: $size") {
+                encryptFileWithAES256(source, AES256Key(ByteArray(size)), sink)
+            }
+
+            assertEquals(1L, source.size)
+            assertEquals(0L, sink.size)
+        }
+    }
+
+    @Test
+    @IgnoreJS
+    @IgnoreAndroidInstrumented
+    fun givenInvalidKeySizes_whenDecryptingFile_thenRejectsKeysBeforeReadingOrWriting() {
+        val encrypted = encryptDataWithAES256(PlainData(byteArrayOf(1)), generateRandomAES256Key())
+        for (size in INVALID_AES256_KEY_SIZES) {
+            val source = Buffer().write(encrypted.data)
+            val sink = Buffer()
+
+            assertFailsWith<IllegalArgumentException>("Key size: $size") {
+                decryptFileWithAES256(source, sink, AES256Key(ByteArray(size)))
+            }
+
+            assertEquals(encrypted.data.size.toLong(), source.size)
+            assertEquals(0L, sink.size)
+        }
+    }
+
     @Test
     @IgnoreJS
     @IgnoreAndroidInstrumented
@@ -248,6 +308,8 @@ class CryptoUtilsTest {
         assertEquals(decodedMessage, testMessage)
     }
 }
+
+private val INVALID_AES256_KEY_SIZES = (0 until 32).toList() + listOf(33, 64)
 
 private fun String.decodeHex(): ByteArray {
     check(length % 2 == 0) { "Must have an even length" }

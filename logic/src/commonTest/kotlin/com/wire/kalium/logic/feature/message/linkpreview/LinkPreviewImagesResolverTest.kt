@@ -48,6 +48,38 @@ import kotlin.test.Test
 class LinkPreviewImagesResolverTest {
 
     @Test
+    fun givenInvalidKeyOrHashSizes_whenInvoked_thenSkipsInvalidImagesAndResolvesValidImage() = runTest {
+        val invalidImages = listOf(0, 1, 16, 24, 31, 33, 64).flatMap { size ->
+            listOf(TEST_IMAGE.copy(otrKey = ByteArray(size)), TEST_IMAGE.copy(sha256Key = ByteArray(size)))
+        }
+        val message = TEST_MESSAGE.copy(
+            linkPreviews = invalidImages.mapIndexed { index, image ->
+                TEST_PREVIEW.copy(urlOffset = index + 100, image = image)
+            } + TEST_PREVIEW
+        )
+        val resolvedPath = "/tmp/link-preview.png".toPath()
+        val (arrangement, useCase) = Arrangement(this)
+            .withMessage(message)
+            .withResolvedAsset(resolvedPath)
+            .arrange()
+
+        useCase(TestConversation.ID, message.id)
+        advanceUntilIdle()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateLinkPreviewImageLocalPath(
+                conversationId = TestConversation.ID,
+                messageId = message.id,
+                urlOffset = TEST_PREVIEW.urlOffset,
+                localPath = resolvedPath.toString()
+            )
+        }
+    }
+
+    @Test
     fun givenMessageWithRemotePreviewImage_whenInvoked_thenShouldResolveAndPersistLocalPath() = runTest {
         val resolvedPath = "/tmp/link-preview.png".toPath()
         val (arrangement, useCase) = Arrangement(this)
@@ -198,8 +230,8 @@ private val TEST_IMAGE = LinkPreviewAsset(
     assetKey = "asset-key",
     assetToken = "asset-token",
     assetDomain = "wire.com",
-    otrKey = byteArrayOf(1, 2, 3),
-    sha256Key = byteArrayOf(4, 5, 6),
+    otrKey = ByteArray(32) { 1 },
+    sha256Key = ByteArray(32) { 2 },
     encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
 )
 

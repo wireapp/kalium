@@ -22,14 +22,24 @@ package com.wire.kalium.cryptography.utils
 import okio.Sink
 import okio.Source
 
-actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData = AESEncrypt().encryptData(data, key)
+actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData {
+    key.requireValidSize()
+    return AESEncrypt().encryptData(data, key)
+}
 
-actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink) =
-    AESEncrypt().encryptFile(source, key, sink)
+actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long {
+    key.requireValidSize()
+    return AESEncrypt().encryptFile(source, key, sink)
+}
 
-actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData = AESDecrypt(secretKey).decryptData(data)
+actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData {
+    secretKey.requireValidSize()
+    return AESDecrypt(secretKey).decryptData(data)
+}
 
-actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key) =
-    AESDecrypt(secretKey).decryptFile(source, sink)
+actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long {
+    secretKey.requireValidSize()
+    return AESDecrypt(secretKey).decryptFile(source, sink)
+}
 
 actual fun generateRandomAES256Key(): AES256Key = AESEncrypt().generateRandomAES256Key()

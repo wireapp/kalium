@@ -30,12 +30,16 @@ import com.wire.kalium.logic.data.app.AppMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ContactStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.data.user.fetchUserProfiles
 import com.wire.kalium.logic.data.user.toDao
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
@@ -48,6 +52,8 @@ import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserDAO
 
 internal interface SearchUserRepository {
+    suspend fun fetchContactStatuses(userIds: Set<UserId>): Map<UserId, ContactStatus?>
+
     suspend fun searchUserRemoteDirectory(
         searchQuery: String,
         domain: String,
@@ -90,8 +96,16 @@ internal class SearchUserRepositoryImpl(
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val appMapper: AppMapper = MapperProvider.appMapper()
+    private val appMapper: AppMapper = MapperProvider.appMapper(),
+    private val pendingConnectionsEnabled: Boolean = false,
 ) : SearchUserRepository {
+    override suspend fun fetchContactStatuses(userIds: Set<UserId>): Map<UserId, ContactStatus?> =
+        if (!pendingConnectionsEnabled) emptyMap() else userIds.chunked(CONTACT_STATUS_BATCH_SIZE).flatMap { batch ->
+            fetchUserProfiles(batch.toSet(), selfUserId, userDetailsApi)
+                .map { result -> result.usersFound.map { it.id.toModel() to it.contactStatus?.toModel() } }
+                .getOrElse(emptyList())
+        }.toMap()
+
     override suspend fun searchUserRemoteDirectory(
         searchQuery: String,
         domain: String,
@@ -127,7 +141,8 @@ internal class SearchUserRepositoryImpl(
                                     selfTeamId
                                 ).let { remoteUser ->
                                     remoteUser.copy(
-                                        connectionStatus = localConnectionStates[remoteUser.id] ?: remoteUser.connectionStatus
+                                        connectionStatus = localConnectionStates[remoteUser.id] ?: remoteUser.connectionStatus,
+                                        contactStatus = remoteUser.contactStatus.takeIf { pendingConnectionsEnabled },
                                     )
                                 }
                             }
@@ -230,3 +245,5 @@ internal class SearchUserRepositoryImpl(
         }.getOrElse(emptyMap())
     }
 }
+
+private const val CONTACT_STATUS_BATCH_SIZE = 500

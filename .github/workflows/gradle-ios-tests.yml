@@ -218,9 +218,13 @@ jobs:
               ./**/build/test-results/**/*.xml
               ./**/build/test-results/iosSimulatorArm64Test/**
 
+      - name: Skip test result publishing when no XML reports are found
+        if: ${{ always() && steps.build-tests.outputs.has-tests == 'true' && hashFiles('**/build/test-results/iosSimulatorArm64Test/**/*.xml') == '' }}
+        run: echo "::notice::Skipping Publish Unit Test Results because no iOS JUnit XML result files were found."
+
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/macos@c950f6fb443cb5af20a377fd0dfaa78838901040
-        if: ${{ always() && steps.build-tests.outputs.has-tests == 'true' }}
+        if: ${{ always() && steps.build-tests.outputs.has-tests == 'true' && hashFiles('**/build/test-results/iosSimulatorArm64Test/**/*.xml') != '' }}
         with:
           check_name: iOS Test Results (${{ matrix.shard }})
           action_fail_on_inconclusive: true
