@@ -82,6 +82,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                api(libs.annotation)
                 api(projects.core.common)
                 api(projects.domain.work)
                 implementation(projects.data.network)
