@@ -5653,6 +5653,24 @@ public final class com/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountUs
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountUseCase;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
+public final class com/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Failure : com/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Success : com/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/legalhold/ApproveLegalHoldRequestUseCase {
 	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
