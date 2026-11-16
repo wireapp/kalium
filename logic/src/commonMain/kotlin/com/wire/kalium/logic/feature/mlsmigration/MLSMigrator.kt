@@ -68,12 +68,14 @@ internal class MLSMigratorImpl(
             // TODO: Add support for channels here. Although... channels should always be MLS
             conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.PROTEUS, teamId)
                 .flatMap { conversations ->
-                    transactionProvider.transaction("migrateProteusConversations") { transactionContext ->
-                        conversations.forEach { conversationId ->
+                    // One transaction per conversation: migrating sends the new group to the backend, so a transaction
+                    // that never commits (e.g. the app is killed) must not drop groups the backend already has.
+                    conversations.forEach { conversationId ->
+                        transactionProvider.transaction("migrateProteusConversation") { transactionContext ->
                             migrate(transactionContext, conversationId)
                         }
-                        Either.Right(Unit)
                     }
+                    Either.Right(Unit)
                 }
         }
 
