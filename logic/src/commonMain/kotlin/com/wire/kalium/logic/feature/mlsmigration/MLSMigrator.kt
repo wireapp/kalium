@@ -33,6 +33,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
@@ -70,12 +71,13 @@ internal class MLSMigratorImpl(
                 .flatMap { conversations ->
                     // One transaction per conversation: migrating sends the new group to the backend, so a transaction
                     // that never commits (e.g. the app is killed) must not drop groups the backend already has.
-                    conversations.forEach { conversationId ->
+                    // A failed conversation is skipped; a transaction that cannot run stops the migration.
+                    conversations.foldToEitherWhileRight(Unit) { conversationId, _ ->
                         transactionProvider.transaction("migrateProteusConversation") { transactionContext ->
                             migrate(transactionContext, conversationId)
+                            Either.Right(Unit)
                         }
                     }
-                    Either.Right(Unit)
                 }
         }
 
