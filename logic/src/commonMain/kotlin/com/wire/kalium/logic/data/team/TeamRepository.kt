@@ -150,7 +150,7 @@ internal class TeamDataSource(
             pagesSynced++
         }
         return if (error != null) {
-            Either.Left(error!!)
+            Either.Left(error)
         } else {
             Either.Right(Unit)
         }

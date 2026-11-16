@@ -103,7 +103,7 @@ internal class QualifiedMessageApiV0Test : ApiTest() {
             assertFalse(response.isSuccessful())
             assertTrue(response.kException is ProteusClientsChangedError)
             assertEquals(
-                (response.kException as ProteusClientsChangedError).errorBody,
+                response.kException.errorBody,
                 errorResponse.serializableData
             )
         }

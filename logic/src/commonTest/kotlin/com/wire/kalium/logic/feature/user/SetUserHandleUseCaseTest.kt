@@ -202,7 +202,7 @@ class SetUserHandleUseCaseTest {
 
         assertIs<SetUserHandleResult.Failure.Generic>(actual)
         assertIs<NetworkFailure.ServerMiscommunication>(actual.error)
-        assertEquals(expected.kaliumException, (actual.error as NetworkFailure.ServerMiscommunication).kaliumException)
+        assertEquals(expected.kaliumException, actual.error.kaliumException)
 
         verify(VerifyMode.exactly(1)) {
             validateHandleUseCase.invoke(handle)

@@ -329,7 +329,7 @@ internal class ConversationApiV0Test : ApiTest() {
         assertIs<ConversationMemberAddedResponse.Changed>(response.value)
         assertEquals(
             EventContentDTOJson.validMemberJoin.serializableData,
-            (response.value as ConversationMemberAddedResponse.Changed).event
+            response.value.event
         )
     }
 

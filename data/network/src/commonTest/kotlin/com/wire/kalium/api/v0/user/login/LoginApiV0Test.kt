@@ -101,7 +101,7 @@ internal class LoginApiV0Test : ApiTest() {
         val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
-        assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
+        assertEquals(errorResponse.kException.errorResponse, ERROR_RESPONSE)
     }
 
     @Test
@@ -125,7 +125,7 @@ internal class LoginApiV0Test : ApiTest() {
         val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
-        assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
+        assertEquals(errorResponse.kException.errorResponse, ERROR_RESPONSE)
 
     }
 

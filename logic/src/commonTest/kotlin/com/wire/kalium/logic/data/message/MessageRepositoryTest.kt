@@ -447,7 +447,7 @@ class MessageRepositoryTest {
         result.shouldSucceed()
 
         assertTrue {
-            (result as Either.Right).value.failedToConfirmClients.isNotEmpty()
+            result.value.failedToConfirmClients.isNotEmpty()
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
