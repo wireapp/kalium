@@ -153,7 +153,7 @@ internal class TeamsApiV0Test : ApiTest() {
                 assertIs<KaliumException.InvalidRequestError>(it.kException)
                 assertEquals(
                     HttpStatusCode.NotFound.value,
-                    (it.kException as KaliumException.InvalidRequestError).errorResponse.code
+                    it.kException.errorResponse.code
                 )
             }
         }

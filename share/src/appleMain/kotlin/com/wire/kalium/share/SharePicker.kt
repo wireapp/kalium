@@ -49,7 +49,6 @@ internal data class SharePicker(
         @SerialName("isGroup") val isGroup: Boolean,
         /** Whether the current destination supports files. */
         @SerialName("acceptsFiles") val acceptsFiles: Boolean,
-        @SerialName("isCells") val isCells: Boolean = false,
     )
 }
 
@@ -67,7 +66,6 @@ internal suspend fun UserDatabaseBuilder.sharePicker(selfUserId: UserId, restric
                 it.name,
                 it.type.isGroup,
                 acceptsFiles = it.wireCell == null || cellsConfigured(),
-                isCells = it.wireCell != null
             )
         },
     )

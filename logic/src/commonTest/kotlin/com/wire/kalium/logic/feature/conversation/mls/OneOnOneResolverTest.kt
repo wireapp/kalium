@@ -42,6 +42,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.DelicateKaliumApi
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -59,6 +60,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(DelicateKaliumApi::class)
 class OneOnOneResolverTest {
 
     @Test

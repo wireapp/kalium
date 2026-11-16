@@ -103,7 +103,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
             assertIs<MigrateFromPersonalToTeamResult.Error>(result)
             assertIs<MigrateFromPersonalToTeamFailure.UnknownError>(result.failure)
             val coreFailure =
-                (result.failure as MigrateFromPersonalToTeamFailure.UnknownError).coreFailure
+                result.failure.coreFailure
             val serverMiscommunication = coreFailure as NetworkFailure.ServerMiscommunication
             val invalidRequestError =
                 serverMiscommunication.kaliumException as KaliumException.InvalidRequestError

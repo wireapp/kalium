@@ -1244,7 +1244,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
                 date = initialDate + 3.seconds,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 expectsReadConfirmation = true
             )
         )

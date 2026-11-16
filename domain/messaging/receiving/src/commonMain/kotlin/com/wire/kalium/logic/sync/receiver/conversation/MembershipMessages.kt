@@ -29,9 +29,11 @@ fun Event.Conversation.MemberLeave.memberRemovedMessage(content: MessageContent.
 fun isPromotionToAdmin(previousRole: Conversation.Member.Role?, newRole: Conversation.Member.Role?): Boolean =
     previousRole != Conversation.Member.Role.Admin && newRole == Conversation.Member.Role.Admin
 
-fun Event.Conversation.MemberChanged.MemberChangedRole.memberPromotedMessage(self: UserId): Message.System? = member?.let {
-    membershipMessage(id, conversationId, self, dateTime, MessageContent.MemberChange.UserPromotedToAdmin(listOf(it.id)))
-}
+// Only the current user's promotion belongs in the local conversation history.
+fun Event.Conversation.MemberChanged.MemberChangedRole.memberPromotedMessage(self: UserId): Message.System? =
+    member?.takeIf { it.id == self }?.let {
+        membershipMessage(id, conversationId, self, dateTime, MessageContent.MemberChange.UserPromotedToAdmin(listOf(it.id)))
+    }
 
 fun memberRemovalContent(reason: MemberLeaveReason, members: List<UserId>, removedFromSelfTeam: Boolean): MessageContent.System =
     if (reason == MemberLeaveReason.UserDeleted && removedFromSelfTeam) MessageContent.MemberChange.RemovedFromTeam(members)

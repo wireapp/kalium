@@ -1,0 +1,1 @@
+The iOS notification extension no longer fails every push on a new MLS 1:1 whose group isn't set up yet or on a call subconversation message: it queues the 1:1 for the app and hands call messages to the app. The app also reloads MLS recovery records the extension wrote while it held the account.

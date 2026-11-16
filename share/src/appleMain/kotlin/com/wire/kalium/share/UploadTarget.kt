@@ -78,18 +78,25 @@ internal suspend fun UploadTarget.upload(
         .map { uploads -> uploads.map { ShareItem.File(it) } }
     is UploadTarget.Cells -> {
         val sharing = CellFileSharing.create(network.cellsHttpClient, session, network.accessTokenApi, cellsUrl)
-        try {
-            when (val result = sharing.upload(cellName, files.map { it.cellFile() }, progress)) {
-                is Either.Left -> Either.Left(
-                    ShareOutcome(
-                        if (result.value is NetworkFailure.NoNetworkConnection) ShareStatus.OFFLINE else ShareStatus.FAILED,
-                        "UPLOAD_FAILED"
-                    )
-                )
-                is Either.Right -> Either.Right(listOf(ShareItem.Cells(files, result.value, cellName)))
-            }
+        val size = files.sumOf { it.sizeInBytes }
+        val result = try {
+            // Cells reports a file's last byte before its backend answered. As for assets, the upload is complete,
+            // and the host stops offering to cancel it, only once it returned.
+            sharing.upload(cellName, files.map { it.cellFile() }) { sent, _ -> progress(minOf(sent, maxOf(size - 1, 0)), size) }
         } finally {
             sharing.close()
+        }
+        when (result) {
+            is Either.Left -> Either.Left(
+                ShareOutcome(
+                    if (result.value is NetworkFailure.NoNetworkConnection) ShareStatus.OFFLINE else ShareStatus.FAILED,
+                    "UPLOAD_FAILED"
+                )
+            )
+            is Either.Right -> {
+                progress(size, size)
+                Either.Right(listOf(ShareItem.Cells(files, result.value, cellName)))
+            }
         }
     }
 }

@@ -67,12 +67,6 @@ internal interface KeyPackageRepository {
         cipherSuite: CipherSuite
     ): Either<CoreFailure, KeyPackageClaimResult>
 
-    suspend fun uploadNewKeyPackages(
-        mlsContext: MlsCoreCryptoContext,
-        clientId: ClientId,
-        amount: Int = 100
-    ): Either<CoreFailure, Unit>
-
     suspend fun uploadKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
 
     suspend fun replaceKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>, cipherSuite: CipherSuite): Either<CoreFailure, Unit>
@@ -161,19 +155,6 @@ internal class KeyPackageDataSource(
         }
         Either.Right(accumulatedClaims)
     }
-
-    override suspend fun uploadNewKeyPackages(
-        mlsContext: MlsCoreCryptoContext,
-        clientId: ClientId,
-        amount: Int
-    ): Either<CoreFailure, Unit> =
-        wrapMLSRequest {
-            mlsContext.generateKeyPackages(amount)
-        }.flatMap { keyPackages ->
-            wrapApiRequest {
-                keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { Base64.encode(it) })
-            }
-        }
 
     override suspend fun uploadKeyPackages(
         clientId: ClientId,

@@ -173,7 +173,8 @@ data class CellAssetContent(
 
 fun AssetContent.hasValidRemoteData() = remoteData.hasValidData()
 
-fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()
+fun AssetContent.RemoteData.hasValidData() =
+    assetId.isNotEmpty() && otrKey.size == AES256_KEY_SIZE_BYTES && sha256.size == SHA256_HASH_SIZE_BYTES
 
 /** Image metadata shared by pending local previews and published remote previews. */
 fun AssetContent.Preview.hasValidMetadata(): Boolean =
@@ -182,15 +183,14 @@ fun AssetContent.Preview.hasValidMetadata(): Boolean =
 
 /** Published previews require a complete AES-256 key and SHA-256 hash. */
 fun AssetContent.Preview.hasValidRemoteData(): Boolean = hasValidMetadata() &&
-    remoteData.assetId.isNotEmpty() && remoteData.otrKey.size == PREVIEW_KEY_SIZE_BYTES &&
-    remoteData.sha256.size == PREVIEW_HASH_SIZE_BYTES
+    remoteData.hasValidData()
 
 /** Only locally pending previews may omit the hash until encryption and upload finish. */
 fun AssetContent.Preview.hasValidPendingData(): Boolean = hasValidMetadata() &&
-    remoteData.assetId.isNotEmpty() && remoteData.otrKey.size == PREVIEW_KEY_SIZE_BYTES && remoteData.sha256.isEmpty()
+    remoteData.assetId.isNotEmpty() && remoteData.otrKey.size == AES256_KEY_SIZE_BYTES && remoteData.sha256.isEmpty()
 
-private const val PREVIEW_KEY_SIZE_BYTES = 32
-private const val PREVIEW_HASH_SIZE_BYTES = 32
+private const val AES256_KEY_SIZE_BYTES = 32
+private const val SHA256_HASH_SIZE_BYTES = 32
 
 fun AssetMetadata.width() = when (this) {
     is AssetMetadata.Image -> width

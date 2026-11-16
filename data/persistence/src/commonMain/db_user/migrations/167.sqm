@@ -1,0 +1,9 @@
+-- A team group with one other member could take a contact's MLS 1:1 place once it moved to MLS.
+-- Queue those contacts so the 1:1 resolver picks their real MLS 1:1 again.
+INSERT OR IGNORE INTO PendingActions(action_type, qualified_id, created_at)
+SELECT 'resolve_one_on_one_conversation', User.qualified_id, Conversation.last_modified_date
+FROM User
+JOIN Conversation ON Conversation.qualified_id = User.active_one_on_one_conversation_id
+WHERE Conversation.type = 'ONE_ON_ONE'
+  AND Conversation.team_id IS NOT NULL
+  AND Conversation.protocol = 'MLS';
