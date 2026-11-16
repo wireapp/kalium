@@ -35,6 +35,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlin.io.encoding.Base64
+import okio.Buffer
 import kotlin.time.Instant
 
 /** Per-notification native work. No timers, scopes or async epoch observers are created here. */
@@ -115,12 +116,17 @@ internal class ReceivedMLSHandler(
         // Team removal changes SQL membership without removing the native client.
         // MLS decryption and the lifecycle state above determine whether receiving can continue.
         val epoch = context.conversationEpoch(protocol.groupId)
-        val result = decryptMLSMessage(context, Base64.decode(event.content), GroupID(protocol.groupId))
+        val message = Base64.decode(event.content)
+        val result = decryptMLSMessage(context, message, GroupID(protocol.groupId))
         if (result is Either.Left && result.value == MLSFailure.WrongEpoch) {
             recovery?.recover(context, event, protocol.groupId)?.let { return recovered(context, event, it) }
         }
         val staleCommit = result is Either.Left && result.value == MLSFailure.StaleCommit
-        val noBundles = result is Either.Left && result.value in listOf(
+        // After an external join, CoreCrypto reports a message from the replaced epoch as a generic failure,
+        // not MessageEpochTooOld. A past epoch's message it cannot decrypt now never becomes decryptable.
+        val pastEpoch = result is Either.Left && result.value is MLSFailure.Other &&
+            mlsMessageEpoch(message)?.let { it < epoch } == true
+        val noBundles = pastEpoch || result is Either.Left && result.value in listOf(
             MLSFailure.StaleCommit, MLSFailure.StaleProposal, MLSFailure.DuplicateMessage,
             MLSFailure.BufferedFutureMessage, MLSFailure.BufferedCommit,
             MLSFailure.SelfCommitIgnored, MLSFailure.MessageEpochTooOld,
@@ -352,3 +358,28 @@ internal data class MLSVerification(
     val identities: Map<UserId, List<WireIdentity>>,
     val active: Boolean = true,
 )
+
+/** The epoch in the plaintext header of an RFC 9420 public or private message, or null for anything else. */
+internal fun mlsMessageEpoch(message: ByteArray): ULong? = runCatching {
+    val buffer = Buffer().write(message)
+    // MLSMessage: version (mls10) and wire format (public or private), then group_id<V> and the epoch.
+    check(buffer.readShort().toInt() == MLS_10 && buffer.readShort().toInt() in PUBLIC_MESSAGE..PRIVATE_MESSAGE)
+    val first = buffer.readByte().toInt() and BYTE_MASK
+    // A <V> length is 1, 2 or 4 bytes; the top two bits of its first byte give the size.
+    val lengthBytes = 1 shl (first ushr VARINT_SIZE_SHIFT)
+    check(lengthBytes <= MAX_VARINT_BYTES)
+    var groupIdLength = (first and VARINT_VALUE_MASK).toLong()
+    repeat(lengthBytes - 1) {
+        groupIdLength = (groupIdLength shl Byte.SIZE_BITS) or (buffer.readByte().toLong() and BYTE_MASK.toLong())
+    }
+    buffer.skip(groupIdLength)
+    buffer.readLong().toULong()
+}.getOrNull()
+
+private const val MLS_10 = 1
+private const val PUBLIC_MESSAGE = 1
+private const val PRIVATE_MESSAGE = 2
+private const val BYTE_MASK = 0xFF
+private const val VARINT_SIZE_SHIFT = 6
+private const val VARINT_VALUE_MASK = 0x3F
+private const val MAX_VARINT_BYTES = 4
