@@ -78,24 +78,27 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
     }
 
     // CoreCrypto may already have the group while the conversation still waits; don't send an external commit for it.
+    // A group behind the recorded epoch is stale: join it instead, and keep the newer epoch as evidence until then.
     private suspend fun markEstablishedIfGroupExists(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId
     ): Either<CoreFailure, Boolean> {
-        val groupId = conversationRepository.getNonDeletedConversationById(conversationId).getOrNull()
-            ?.let { (it.protocol as? Conversation.ProtocolInfo.MLSCapable)?.groupId }
+        val protocol = conversationRepository.getNonDeletedConversationById(conversationId).getOrNull()
+            ?.protocol as? Conversation.ProtocolInfo.MLSCapable
             ?: return Either.Right(false)
+        val groupId = protocol.groupId
         return transactionContext.wrapInMLSContext { mlsContext ->
             mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, groupId).flatMap { groupExists ->
                 if (!groupExists) return@flatMap Either.Right(false)
                 mlsConversationRepository.getLocalGroupEpoch(mlsContext, groupId).flatMap { epoch ->
+                    if (epoch < protocol.epoch) return@flatMap Either.Right(false)
                     conversationRepository.updateMLSGroupIdAndState(
                         conversationId,
                         groupId,
                         epoch,
                         Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
-                    )
-                }.map { true }
+                    ).map { true }
+                }
             }
         }
     }
