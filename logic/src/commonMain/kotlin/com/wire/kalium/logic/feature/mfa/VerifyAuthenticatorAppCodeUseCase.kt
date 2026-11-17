@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.mfa.DummyMFAData
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /** Verifies an additional authenticator's enrollment without generating recovery codes. */
@@ -28,10 +27,6 @@ public interface VerifyAuthenticatorAppCodeUseCase {
 }
 
 internal class VerifyAuthenticatorAppCodeUseCaseImpl(private val repository: MFARepository) : VerifyAuthenticatorAppCodeUseCase {
-    override suspend fun invoke(enrollmentId: String, code: String): Either<MFAFailure, Unit> = repository.update {
-        val pending = enrollments[enrollmentId] ?: return@update Either.Left(MFAFailure.INVALID_ENROLLMENT)
-        if (code != DummyMFAData.TOTP_CODE) return@update Either.Left(MFAFailure.INVALID_CODE)
-        enrollments[enrollmentId] = pending.copy(isVerified = true)
-        Either.Right(Unit)
-    }
+    override suspend fun invoke(enrollmentId: String, code: String): Either<MFAFailure, Unit> =
+        repository.verifyAuthenticatorCode(enrollmentId, code)
 }

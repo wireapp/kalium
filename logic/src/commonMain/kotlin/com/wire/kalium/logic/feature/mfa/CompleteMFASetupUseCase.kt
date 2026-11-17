@@ -20,9 +20,6 @@ package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
 
 /** Enables MFA using a verified initial enrollment and publishes the account's new overview. */
 public interface CompleteMFASetupUseCase {
@@ -30,18 +27,6 @@ public interface CompleteMFASetupUseCase {
 }
 
 internal class CompleteMFASetupUseCaseImpl(private val repository: MFARepository) : CompleteMFASetupUseCase {
-    override suspend fun invoke(enrollmentId: String, name: String): Either<MFAFailure, Unit> = repository.update {
-        val existing = overview as? MFAOverview.Enabled
-        if (existing?.authenticatorApps?.any { it.id == enrollmentId } == true) return@update Either.Right(Unit)
-        if (existing != null) return@update Either.Left(MFAFailure.MFA_ALREADY_ENABLED)
-        val pending = enrollments[enrollmentId]
-        if (pending == null || !pending.isVerified || pending.recoveryCodesCount == 0) {
-            return@update Either.Left(MFAFailure.INVALID_ENROLLMENT)
-        }
-        if (name.isBlank()) return@update Either.Left(MFAFailure.INVALID_NAME)
-        val app = AuthenticatorApp(enrollmentId, name.trim(), Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date)
-        overview = MFAOverview.Enabled(listOf(app), RecoveryCodesStatus(pending.recoveryCodesCount, pending.recoveryCodesCount))
-        enrollments.remove(enrollmentId)
-        Either.Right(Unit)
-    }
+    override suspend fun invoke(enrollmentId: String, name: String): Either<MFAFailure, Unit> =
+        repository.completeSetup(enrollmentId, name)
 }

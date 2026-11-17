@@ -20,9 +20,6 @@ package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
 
 /** Adds a verified enrollment, enforcing the account's authenticator limit and publishing the change. */
 public interface FinishAddingAuthenticatorAppUseCase {
@@ -30,19 +27,6 @@ public interface FinishAddingAuthenticatorAppUseCase {
 }
 
 internal class FinishAddingAuthenticatorAppUseCaseImpl(private val repository: MFARepository) : FinishAddingAuthenticatorAppUseCase {
-    override suspend fun invoke(enrollmentId: String, name: String): Either<MFAFailure, AuthenticatorApp> = repository.update {
-        val enabled = overview as? MFAOverview.Enabled ?: return@update Either.Left(MFAFailure.MFA_DISABLED)
-        val existing = enabled.authenticatorApps.find { it.id == enrollmentId }
-        if (existing != null) return@update Either.Right(existing)
-        val pending = enrollments[enrollmentId]
-        if (pending == null || !pending.isVerified) return@update Either.Left(MFAFailure.INVALID_ENROLLMENT)
-        if (enabled.authenticatorApps.size >= MFAConstraints.MAX_AUTHENTICATOR_APPS) {
-            return@update Either.Left(MFAFailure.LIMIT_REACHED)
-        }
-        if (name.isBlank()) return@update Either.Left(MFAFailure.INVALID_NAME)
-        val app = AuthenticatorApp(enrollmentId, name.trim(), Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date)
-        overview = enabled.copy(authenticatorApps = enabled.authenticatorApps + app)
-        enrollments.remove(enrollmentId)
-        Either.Right(app)
-    }
+    override suspend fun invoke(enrollmentId: String, name: String): Either<MFAFailure, AuthenticatorApp> =
+        repository.finishAddingAuthenticator(enrollmentId, name)
 }

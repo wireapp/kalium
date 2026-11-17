@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
-import kotlinx.coroutines.CancellationException
 
 /** Refreshes the shared overview, retaining cached data on failure and propagating cancellation. */
 public interface RefreshMFAOverviewUseCase {
@@ -29,13 +28,5 @@ public interface RefreshMFAOverviewUseCase {
 }
 
 internal class RefreshMFAOverviewUseCaseImpl(private val repository: MFARepository) : RefreshMFAOverviewUseCase {
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun invoke(): Either<CoreFailure, Unit> = try {
-        repository.refresh()
-        Either.Right(Unit)
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (failure: Exception) {
-        Either.Left(CoreFailure.Unknown(failure))
-    }
+    override suspend fun invoke(): Either<CoreFailure, Unit> = repository.refresh()
 }

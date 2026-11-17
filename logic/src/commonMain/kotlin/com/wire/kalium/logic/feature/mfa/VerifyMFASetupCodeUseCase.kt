@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.mfa.DummyMFAData
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /** Verifies an initial enrollment and returns recovery codes for temporary display by the caller. */
@@ -28,11 +27,6 @@ public interface VerifyMFASetupCodeUseCase {
 }
 
 internal class VerifyMFASetupCodeUseCaseImpl(private val repository: MFARepository) : VerifyMFASetupCodeUseCase {
-    override suspend fun invoke(enrollmentId: String, code: String): Either<MFAFailure, List<String>> = repository.update {
-        val pending = enrollments[enrollmentId] ?: return@update Either.Left(MFAFailure.INVALID_ENROLLMENT)
-        if (code != DummyMFAData.TOTP_CODE) return@update Either.Left(MFAFailure.INVALID_CODE)
-        val codes = DummyMFAData.initialRecoveryCodes
-        enrollments[enrollmentId] = pending.copy(isVerified = true, recoveryCodesCount = codes.size)
-        Either.Right(codes)
-    }
+    override suspend fun invoke(enrollmentId: String, code: String): Either<MFAFailure, List<String>> =
+        repository.verifySetupCode(enrollmentId, code)
 }

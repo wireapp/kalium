@@ -27,12 +27,6 @@ public interface RenameAuthenticatorAppUseCase {
 }
 
 internal class RenameAuthenticatorAppUseCaseImpl(private val repository: MFARepository) : RenameAuthenticatorAppUseCase {
-    override suspend fun invoke(appId: String, name: String): Either<MFAFailure, AuthenticatorApp> = repository.update {
-        val enabled = overview as? MFAOverview.Enabled ?: return@update Either.Left(MFAFailure.MFA_DISABLED)
-        val app = enabled.authenticatorApps.find { it.id == appId } ?: return@update Either.Left(MFAFailure.NOT_FOUND)
-        if (name.isBlank()) return@update Either.Left(MFAFailure.INVALID_NAME)
-        val renamed = app.copy(name = name.trim())
-        overview = enabled.copy(authenticatorApps = enabled.authenticatorApps.map { if (it.id == appId) renamed else it })
-        Either.Right(renamed)
-    }
+    override suspend fun invoke(appId: String, name: String): Either<MFAFailure, AuthenticatorApp> =
+        repository.renameAuthenticator(appId, name)
 }

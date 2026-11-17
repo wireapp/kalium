@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.mfa.DummyMFAData
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /** Confirms credentials and removes an authenticator atomically, preserving the final authenticator. */
@@ -28,13 +27,6 @@ public interface RemoveAuthenticatorAppUseCase {
 }
 
 internal class RemoveAuthenticatorAppUseCaseImpl(private val repository: MFARepository) : RemoveAuthenticatorAppUseCase {
-    override suspend fun invoke(appId: String, password: String, code: String): Either<MFAFailure, Unit> = repository.update {
-        if (password.isBlank()) return@update Either.Left(MFAFailure.INVALID_PASSWORD)
-        if (code != DummyMFAData.TOTP_CODE) return@update Either.Left(MFAFailure.INVALID_CODE)
-        val enabled = overview as? MFAOverview.Enabled ?: return@update Either.Left(MFAFailure.MFA_DISABLED)
-        if (enabled.authenticatorApps.none { it.id == appId }) return@update Either.Left(MFAFailure.NOT_FOUND)
-        if (enabled.authenticatorApps.size <= 1) return@update Either.Left(MFAFailure.LAST_APP)
-        overview = enabled.copy(authenticatorApps = enabled.authenticatorApps.filterNot { it.id == appId })
-        Either.Right(Unit)
-    }
+    override suspend fun invoke(appId: String, password: String, code: String): Either<MFAFailure, Unit> =
+        repository.removeAuthenticator(appId, password, code)
 }

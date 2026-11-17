@@ -27,7 +27,5 @@ public interface ConfirmMFAPasswordUseCase {
 }
 
 internal class ConfirmMFAPasswordUseCaseImpl(private val repository: MFARepository) : ConfirmMFAPasswordUseCase {
-    override suspend fun invoke(password: String): Either<MFAFailure, Unit> = repository.update {
-        if (password.isBlank()) Either.Left(MFAFailure.INVALID_PASSWORD) else Either.Right(Unit)
-    }
+    override suspend fun invoke(password: String): Either<MFAFailure, Unit> = repository.confirmPassword(password)
 }

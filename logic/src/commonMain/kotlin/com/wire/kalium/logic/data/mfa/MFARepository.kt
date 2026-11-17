@@ -18,18 +18,25 @@
 
 package com.wire.kalium.logic.data.mfa
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.feature.mfa.AuthenticatorApp
+import com.wire.kalium.logic.feature.mfa.MFAEnrollment
+import com.wire.kalium.logic.feature.mfa.MFAFailure
 import com.wire.kalium.logic.feature.mfa.MFAOverview
 import kotlinx.coroutines.flow.StateFlow
 
 internal interface MFARepository {
     val overview: StateFlow<MFAOverview?>
-    suspend fun refresh()
-    suspend fun <T> update(block: MFAAccountState.() -> T): T
+    suspend fun refresh(): Either<CoreFailure, Unit>
+    suspend fun startSetup(password: String): Either<MFAFailure, MFAEnrollment>
+    suspend fun verifySetupCode(enrollmentId: String, code: String): Either<MFAFailure, List<String>>
+    suspend fun completeSetup(enrollmentId: String, name: String): Either<MFAFailure, Unit>
+    suspend fun verifyAuthenticatorCode(enrollmentId: String, code: String): Either<MFAFailure, Unit>
+    suspend fun finishAddingAuthenticator(enrollmentId: String, name: String): Either<MFAFailure, AuthenticatorApp>
+    suspend fun renameAuthenticator(appId: String, name: String): Either<MFAFailure, AuthenticatorApp>
+    suspend fun removeAuthenticator(appId: String, password: String, code: String): Either<MFAFailure, Unit>
+    suspend fun confirmPassword(password: String): Either<MFAFailure, Unit>
+    suspend fun generateRecoveryCodes(): Either<MFAFailure, List<String>>
+    suspend fun turnOff(password: String, code: String): Either<MFAFailure, Unit>
 }
-
-/** Only enrollment metadata is retained here, never passwords, setup keys, or recovery-code values. */
-internal class MFAAccountState(var overview: MFAOverview = MFAOverview.Disabled) {
-    val enrollments = mutableMapOf<String, PendingMFAEnrollment>()
-}
-
-internal data class PendingMFAEnrollment(val isVerified: Boolean = false, val recoveryCodesCount: Int = 0)

@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.mfa.DummyMFAData
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /** Confirms credentials, disables MFA, invalidates pending enrollments, and publishes the disabled state. */
@@ -28,11 +27,5 @@ public interface TurnOffMFAUseCase {
 }
 
 internal class TurnOffMFAUseCaseImpl(private val repository: MFARepository) : TurnOffMFAUseCase {
-    override suspend fun invoke(password: String, code: String): Either<MFAFailure, Unit> = repository.update {
-        if (password.isBlank()) return@update Either.Left(MFAFailure.INVALID_PASSWORD)
-        if (code != DummyMFAData.TOTP_CODE) return@update Either.Left(MFAFailure.INVALID_CODE)
-        overview = MFAOverview.Disabled
-        enrollments.clear()
-        Either.Right(Unit)
-    }
+    override suspend fun invoke(password: String, code: String): Either<MFAFailure, Unit> = repository.turnOff(password, code)
 }

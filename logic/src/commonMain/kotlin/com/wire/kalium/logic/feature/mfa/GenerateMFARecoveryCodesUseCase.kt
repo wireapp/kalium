@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.mfa.DummyMFAData
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /** Replaces recovery codes, returning their values once and publishing only their counts in the overview. */
@@ -28,10 +27,5 @@ public interface GenerateMFARecoveryCodesUseCase {
 }
 
 internal class GenerateMFARecoveryCodesUseCaseImpl(private val repository: MFARepository) : GenerateMFARecoveryCodesUseCase {
-    override suspend fun invoke(): Either<MFAFailure, List<String>> = repository.update {
-        val enabled = overview as? MFAOverview.Enabled ?: return@update Either.Left(MFAFailure.MFA_DISABLED)
-        val codes = DummyMFAData.recoveryCodes()
-        overview = enabled.copy(recoveryCodesStatus = RecoveryCodesStatus(codes.size, codes.size))
-        Either.Right(codes)
-    }
+    override suspend fun invoke(): Either<MFAFailure, List<String>> = repository.generateRecoveryCodes()
 }

@@ -19,9 +19,7 @@
 package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.mfa.DummyMFAData
 import com.wire.kalium.logic.data.mfa.MFARepository
-import com.wire.kalium.logic.data.mfa.PendingMFAEnrollment
 
 /** Confirms the password and starts an enrollment for initial setup or an additional authenticator. */
 public interface StartMFASetupUseCase {
@@ -29,10 +27,5 @@ public interface StartMFASetupUseCase {
 }
 
 internal class StartMFASetupUseCaseImpl(private val repository: MFARepository) : StartMFASetupUseCase {
-    override suspend fun invoke(password: String): Either<MFAFailure, MFAEnrollment> = repository.update {
-        if (password.isBlank()) return@update Either.Left(MFAFailure.INVALID_PASSWORD)
-        val enrollment = DummyMFAData.enrollment()
-        enrollments[enrollment.id] = PendingMFAEnrollment()
-        Either.Right(enrollment)
-    }
+    override suspend fun invoke(password: String): Either<MFAFailure, MFAEnrollment> = repository.startSetup(password)
 }
