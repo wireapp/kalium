@@ -73,12 +73,14 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
     private val pendingActionsRepository: PendingActionsRepository,
     private val selfUserId: UserId,
     private val maxConcurrentJoins: Int = DEFAULT_MAX_CONCURRENT_JOINS,
+    private val joinWindowSize: Int = DEFAULT_JOIN_WINDOW_SIZE,
     private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
 ) : JoinExistingMLSConversationsUseCase {
 
     init {
         require(maxConcurrentJoins > 0) { "maxConcurrentJoins must be greater than zero" }
+        require(joinWindowSize > 0) { "joinWindowSize must be greater than zero" }
         require(maxThrottleRetries >= 0) { "maxThrottleRetries must not be negative" }
         require(throttleRetryDelayMs >= 0) { "throttleRetryDelayMs must not be negative" }
     }
@@ -95,16 +97,19 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
             kaliumLogger.i("Skip re-join existing MLS conversation(s), since MLS is not supported.")
             Either.Right(Unit)
         } else {
-            transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
-                getPendingConversations(includePendingWelcome).flatMap { pendingConversations ->
-                    filterSelfMemberConversations(pendingConversations).flatMap { recoverableConversations ->
-                        kaliumLogger.d("Requesting to re-join ${recoverableConversations.size} existing MLS conversation(s)")
-                        val progressMutex = Mutex()
-                        var completed = 0
-                        onProgress(SlowSyncProgress(completed, recoverableConversations.size))
+            getPendingConversations(includePendingWelcome).flatMap { pendingConversations ->
+                filterSelfMemberConversations(pendingConversations)
+            }.flatMap { recoverableConversations ->
+                kaliumLogger.d("Requesting to re-join ${recoverableConversations.size} existing MLS conversation(s)")
+                val progressMutex = Mutex()
+                var completed = 0
+                onProgress(SlowSyncProgress(completed, recoverableConversations.size))
+                recoverableConversations.chunked(joinWindowSize).foldToEitherWhileRight(Unit) { window, _ ->
+                    // Commit each window, so a killed process loses at most one window of joins in CoreCrypto.
+                    transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
                         joinConversations(
                             transactionContext,
-                            recoverableConversations,
+                            window,
                             keepRetryingOnFailure,
                             allowJoinByExternalCommit,
                         ) {
@@ -290,6 +295,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
 
     private companion object {
         const val DEFAULT_MAX_CONCURRENT_JOINS = 4
+        const val DEFAULT_JOIN_WINDOW_SIZE = 16
         const val DEFAULT_MAX_THROTTLE_RETRIES = 3
         const val DEFAULT_THROTTLE_RETRY_DELAY_MS = 250L
     }
