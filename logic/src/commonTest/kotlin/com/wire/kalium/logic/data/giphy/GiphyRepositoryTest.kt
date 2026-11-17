@@ -50,7 +50,7 @@ class GiphyRepositoryTest {
     @Test
     fun givenGiphyGif_whenMapping_thenUsesDownsizedForSendingCleansTheTitleAndKeepsTheCreator() = runTest {
         val (api, repository) = arrange()
-        val user = GiphyUserDTO(username = "studio", avatarUrl = "", isVerified = true)
+        val user = GiphyUserDTO(username = "studio", isVerified = true)
         everySuspend { api.trending(any(), any(), any()) } returns success(
             page(gifDto("a", title = "Happy Friday Dance GIF by Studio", user = user))
         )
@@ -61,7 +61,7 @@ class GiphyRepositoryTest {
         assertEquals("Happy Friday Dance", gif.title)
         assertEquals(GifRendition("https://media.giphy.com/a/downsized.gif", 480, 270, 1_000L), gif.original)
         assertEquals(GifRendition("https://media.giphy.com/a/200w_d.gif", 200, 113, 100L), gif.preview)
-        assertEquals(GifCreator("studio", avatarUrl = null, isVerified = true), gif.creator)
+        assertEquals(GifCreator("studio", isVerified = true), gif.creator)
     }
 
     @Test

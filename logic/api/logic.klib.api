@@ -3588,19 +3588,16 @@ final class com.wire.kalium.logic.data.giphy/Gif { // com.wire.kalium.logic.data
 }
 
 final class com.wire.kalium.logic.data.giphy/GifCreator { // com.wire.kalium.logic.data.giphy/GifCreator|null[0]
-    constructor <init>(kotlin/String, kotlin/String?, kotlin/Boolean) // com.wire.kalium.logic.data.giphy/GifCreator.<init>|<init>(kotlin.String;kotlin.String?;kotlin.Boolean){}[0]
+    constructor <init>(kotlin/String, kotlin/Boolean) // com.wire.kalium.logic.data.giphy/GifCreator.<init>|<init>(kotlin.String;kotlin.Boolean){}[0]
 
-    final val avatarUrl // com.wire.kalium.logic.data.giphy/GifCreator.avatarUrl|{}avatarUrl[0]
-        final fun <get-avatarUrl>(): kotlin/String? // com.wire.kalium.logic.data.giphy/GifCreator.avatarUrl.<get-avatarUrl>|<get-avatarUrl>(){}[0]
     final val isVerified // com.wire.kalium.logic.data.giphy/GifCreator.isVerified|{}isVerified[0]
         final fun <get-isVerified>(): kotlin/Boolean // com.wire.kalium.logic.data.giphy/GifCreator.isVerified.<get-isVerified>|<get-isVerified>(){}[0]
     final val username // com.wire.kalium.logic.data.giphy/GifCreator.username|{}username[0]
         final fun <get-username>(): kotlin/String // com.wire.kalium.logic.data.giphy/GifCreator.username.<get-username>|<get-username>(){}[0]
 
     final fun component1(): kotlin/String // com.wire.kalium.logic.data.giphy/GifCreator.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // com.wire.kalium.logic.data.giphy/GifCreator.component2|component2(){}[0]
-    final fun component3(): kotlin/Boolean // com.wire.kalium.logic.data.giphy/GifCreator.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.giphy/GifCreator // com.wire.kalium.logic.data.giphy/GifCreator.copy|copy(kotlin.String;kotlin.String?;kotlin.Boolean){}[0]
+    final fun component2(): kotlin/Boolean // com.wire.kalium.logic.data.giphy/GifCreator.component2|component2(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.giphy/GifCreator // com.wire.kalium.logic.data.giphy/GifCreator.copy|copy(kotlin.String;kotlin.Boolean){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.giphy/GifCreator.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.giphy/GifCreator.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.giphy/GifCreator.toString|toString(){}[0]

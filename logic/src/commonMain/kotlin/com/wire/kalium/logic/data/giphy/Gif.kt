@@ -22,7 +22,6 @@ public data class Gif(
 /** The Giphy channel or user that made a GIF, shown as its attribution. */
 public data class GifCreator(
     val username: String,
-    val avatarUrl: String?,
     val isVerified: Boolean,
 )
 

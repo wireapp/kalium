@@ -58,7 +58,7 @@ internal class GiphyApiTest : ApiTest() {
         assertEquals("480", gif.images.downsized?.width)
         assertEquals("1234567", gif.images.downsized?.size)
         assertEquals("200", gif.images.fixedWidthDownsampled?.width)
-        assertEquals(GiphyUserDTO("studio", "https://media.giphy.com/avatars/studio.gif", isVerified = true), gif.user)
+        assertEquals(GiphyUserDTO("studio", isVerified = true), gif.user)
         assertEquals(500, result.value.pagination?.totalCount)
         assertEquals(1, result.value.pagination?.count)
         assertEquals(48, result.value.pagination?.offset)

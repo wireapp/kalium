@@ -100,7 +100,7 @@ internal class GiphyDataSource(
     }
 
     private fun GiphyUserDTO.toCreator(): GifCreator? = username?.takeIf { it.isNotBlank() }?.let { name ->
-        GifCreator(username = name, avatarUrl = avatarUrl?.takeIf { it.isNotBlank() }, isVerified = isVerified)
+        GifCreator(username = name, isVerified = isVerified)
     }
 
     private fun GiphyImageDTO.toRendition(): GifRendition? {

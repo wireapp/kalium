@@ -31,8 +31,6 @@ data class GiphyGifDTO(
 data class GiphyUserDTO(
     @SerialName("username")
     val username: String? = null,
-    @SerialName("avatar_url")
-    val avatarUrl: String? = null,
     @SerialName("is_verified")
     val isVerified: Boolean = false,
 )
