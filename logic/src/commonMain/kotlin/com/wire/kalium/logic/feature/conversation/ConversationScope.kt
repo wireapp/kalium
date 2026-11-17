@@ -64,6 +64,8 @@ import com.wire.kalium.logic.feature.conversation.createconversation.GroupConver
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationLocallyUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationLocallyUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import com.wire.kalium.logic.feature.conversation.delete.GetLocallyDeletedConversationIdsUseCase
+import com.wire.kalium.logic.feature.conversation.delete.GetLocallyDeletedConversationIdsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.delete.MarkConversationAsDeletedLocallyUseCase
 import com.wire.kalium.logic.feature.conversation.delete.MarkConversationAsDeletedLocallyUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
@@ -368,6 +370,9 @@ public class ConversationScope internal constructor(
 
     public val markConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
         get() = MarkConversationAsDeletedLocallyUseCaseImpl(conversationRepository)
+
+    public val getLocallyDeletedConversationIdsUseCase: GetLocallyDeletedConversationIdsUseCase
+        get() = GetLocallyDeletedConversationIdsUseCaseImpl(conversationRepository)
 
     public val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
         get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent)
