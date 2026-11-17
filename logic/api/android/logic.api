@@ -1382,6 +1382,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getMarkTeamAppLockStatusAsNotified ()Lcom/wire/kalium/logic/feature/applock/MarkTeamAppLockStatusAsNotifiedUseCase;
 	public final fun getMeetings ()Lcom/wire/kalium/logic/feature/meeting/MeetingScope;
 	public final fun getMessages ()Lcom/wire/kalium/logic/feature/message/MessageScope;
+	public final fun getMfa ()Lcom/wire/kalium/logic/feature/mfa/MFAScope;
 	public final fun getMigrateConversationToMLS ()Lcom/wire/kalium/logic/feature/conversation/MigrateConversationToMLSUseCase;
 	public final fun getMigrateFromPersonalToTeam ()Lcom/wire/kalium/logic/feature/user/migration/MigrateFromPersonalToTeamUseCase;
 	public final fun getMultiPlatformBackup ()Lcom/wire/kalium/logic/feature/backup/MultiPlatformBackupScope;
@@ -6635,6 +6636,157 @@ public final class com/wire/kalium/logic/feature/message/poll/SendPollVoteUseCas
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/mfa/AuthenticatorApp {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/datetime/LocalDate;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lkotlinx/datetime/LocalDate;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/datetime/LocalDate;)Lcom/wire/kalium/logic/feature/mfa/AuthenticatorApp;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/mfa/AuthenticatorApp;Ljava/lang/String;Ljava/lang/String;Lkotlinx/datetime/LocalDate;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/mfa/AuthenticatorApp;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAddedOn ()Lkotlinx/datetime/LocalDate;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/CompleteMFASetupUseCase {
+	public abstract fun invoke (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/ConfirmMFAPasswordUseCase {
+	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/FinishAddingAuthenticatorAppUseCase {
+	public abstract fun invoke (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/GenerateMFARecoveryCodesUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/mfa/MFAConstraints {
+	public static final field AUTHENTICATION_CODE_LENGTH I
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/mfa/MFAConstraints;
+	public static final field MAX_AUTHENTICATOR_APPS I
+}
+
+public final class com/wire/kalium/logic/feature/mfa/MFAEnrollment {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/feature/mfa/MFAEnrollment;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/mfa/MFAEnrollment;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/mfa/MFAEnrollment;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAccount ()Ljava/lang/String;
+	public final fun getAuthenticatorUri ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getSetupKey ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/mfa/MFAFailure : java/lang/Enum {
+	public static final field INVALID_CODE Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static final field INVALID_ENROLLMENT Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static final field INVALID_NAME Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static final field INVALID_PASSWORD Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static final field LAST_APP Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static final field LIMIT_REACHED Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static final field MFA_ALREADY_ENABLED Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static final field MFA_DISABLED Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static final field NOT_FOUND Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+	public static fun values ()[Lcom/wire/kalium/logic/feature/mfa/MFAFailure;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/MFAOverview {
+}
+
+public final class com/wire/kalium/logic/feature/mfa/MFAOverview$Disabled : com/wire/kalium/logic/feature/mfa/MFAOverview {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/mfa/MFAOverview$Disabled;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/mfa/MFAOverview$Enabled : com/wire/kalium/logic/feature/mfa/MFAOverview {
+	public fun <init> (Ljava/util/List;Lcom/wire/kalium/logic/feature/mfa/RecoveryCodesStatus;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lcom/wire/kalium/logic/feature/mfa/RecoveryCodesStatus;
+	public final fun copy (Ljava/util/List;Lcom/wire/kalium/logic/feature/mfa/RecoveryCodesStatus;)Lcom/wire/kalium/logic/feature/mfa/MFAOverview$Enabled;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/mfa/MFAOverview$Enabled;Ljava/util/List;Lcom/wire/kalium/logic/feature/mfa/RecoveryCodesStatus;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/mfa/MFAOverview$Enabled;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAuthenticatorApps ()Ljava/util/List;
+	public final fun getRecoveryCodesStatus ()Lcom/wire/kalium/logic/feature/mfa/RecoveryCodesStatus;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/mfa/MFAScope {
+	public final fun getCompleteSetup ()Lcom/wire/kalium/logic/feature/mfa/CompleteMFASetupUseCase;
+	public final fun getConfirmPassword ()Lcom/wire/kalium/logic/feature/mfa/ConfirmMFAPasswordUseCase;
+	public final fun getFinishAddingAuthenticator ()Lcom/wire/kalium/logic/feature/mfa/FinishAddingAuthenticatorAppUseCase;
+	public final fun getGenerateRecoveryCodes ()Lcom/wire/kalium/logic/feature/mfa/GenerateMFARecoveryCodesUseCase;
+	public final fun getObserveOverview ()Lcom/wire/kalium/logic/feature/mfa/ObserveMFAOverviewUseCase;
+	public final fun getRefreshOverview ()Lcom/wire/kalium/logic/feature/mfa/RefreshMFAOverviewUseCase;
+	public final fun getRemoveAuthenticator ()Lcom/wire/kalium/logic/feature/mfa/RemoveAuthenticatorAppUseCase;
+	public final fun getRenameAuthenticator ()Lcom/wire/kalium/logic/feature/mfa/RenameAuthenticatorAppUseCase;
+	public final fun getStartSetup ()Lcom/wire/kalium/logic/feature/mfa/StartMFASetupUseCase;
+	public final fun getTurnOff ()Lcom/wire/kalium/logic/feature/mfa/TurnOffMFAUseCase;
+	public final fun getVerifyAuthenticatorCode ()Lcom/wire/kalium/logic/feature/mfa/VerifyAuthenticatorAppCodeUseCase;
+	public final fun getVerifySetupCode ()Lcom/wire/kalium/logic/feature/mfa/VerifyMFASetupCodeUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/ObserveMFAOverviewUseCase {
+	public abstract fun invoke ()Lkotlinx/coroutines/flow/StateFlow;
+}
+
+public final class com/wire/kalium/logic/feature/mfa/RecoveryCodesStatus {
+	public fun <init> (II)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun copy (II)Lcom/wire/kalium/logic/feature/mfa/RecoveryCodesStatus;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/mfa/RecoveryCodesStatus;IIILjava/lang/Object;)Lcom/wire/kalium/logic/feature/mfa/RecoveryCodesStatus;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRemaining ()I
+	public final fun getTotal ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/RefreshMFAOverviewUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/RemoveAuthenticatorAppUseCase {
+	public abstract fun invoke (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/RenameAuthenticatorAppUseCase {
+	public abstract fun invoke (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/StartMFASetupUseCase {
+	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/TurnOffMFAUseCase {
+	public abstract fun invoke (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/VerifyAuthenticatorAppCodeUseCase {
+	public abstract fun invoke (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/mfa/VerifyMFASetupCodeUseCase {
+	public abstract fun invoke (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/notificationToken/Result {
