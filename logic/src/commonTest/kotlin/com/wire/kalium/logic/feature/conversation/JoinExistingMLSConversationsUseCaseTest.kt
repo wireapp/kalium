@@ -421,8 +421,28 @@ class JoinExistingMLSConversationsUseCaseTest {
         assertEquals(listOf(SlowSyncProgress(0, 2)), progress)
     }
 
+    @Test
+    fun givenMoreConversationsThanOneWindow_whenJoining_thenEachWindowGetsItsOwnTransaction() = runTest {
+        val conversations = List(3) { index ->
+            Arrangement.MLS_CONVERSATION1.copy(id = ConversationId("id$index", "domain"))
+        }
+        val (arrangement, useCase) = Arrangement(joinWindowSize = 2)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(conversations)
+            .withJoinExistingMLSConversationSuccessful()
+            .arrange()
+
+        useCase().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
+        }
+    }
+
     private class Arrangement(
         private val maxConcurrentJoins: Int = 4,
+        private val joinWindowSize: Int = 16,
         private val maxThrottleRetries: Int = 3,
         private val throttleRetryDelayMs: Long = 250L,
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -443,6 +463,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             pendingActionsRepository = pendingActionsRepository,
             selfUserId = SELF_USER_ID,
             maxConcurrentJoins = maxConcurrentJoins,
+            joinWindowSize = joinWindowSize,
             maxThrottleRetries = maxThrottleRetries,
             throttleRetryDelayMs = throttleRetryDelayMs,
         ).also {

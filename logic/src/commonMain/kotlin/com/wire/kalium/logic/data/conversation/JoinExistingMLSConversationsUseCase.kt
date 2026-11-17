@@ -71,12 +71,14 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
     private val pendingActionsRepository: PendingActionsRepository,
     private val selfUserId: UserId,
     private val maxConcurrentJoins: Int = DEFAULT_MAX_CONCURRENT_JOINS,
+    private val joinWindowSize: Int = DEFAULT_JOIN_WINDOW_SIZE,
     private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
 ) : JoinExistingMLSConversationsUseCase {
 
     init {
         require(maxConcurrentJoins > 0) { "maxConcurrentJoins must be greater than zero" }
+        require(joinWindowSize > 0) { "joinWindowSize must be greater than zero" }
         require(maxThrottleRetries >= 0) { "maxThrottleRetries must not be negative" }
         require(throttleRetryDelayMs >= 0) { "throttleRetryDelayMs must not be negative" }
     }
@@ -93,26 +95,57 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
             kaliumLogger.i("Skip re-join existing MLS conversation(s), since MLS is not supported.")
             Either.Right(Unit)
         } else {
-            transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
+            joinInWindows(keepRetryingOnFailure, allowJoinByExternalCommit, includePendingWelcome, onProgress)
+        }
+
+    /**
+     * Commits each window of joins, so a killed process loses at most one window in CoreCrypto. Each window selects
+     * the still-pending conversations inside its transaction, like the single transaction this replaces: groups that
+     * other transactions establish or mark pending meanwhile are seen. A conversation is attempted at most once.
+     */
+    private suspend fun joinInWindows(
+        keepRetryingOnFailure: Boolean,
+        allowJoinByExternalCommit: Boolean,
+        includePendingWelcome: Boolean,
+        onProgress: suspend (SlowSyncProgress) -> Unit,
+    ): Either<CoreFailure, Unit> {
+        val progressMutex = Mutex()
+        val attempted = mutableSetOf<ConversationId>()
+        var completed = 0
+        var total = -1
+        var finished = false
+        var result: Either<CoreFailure, Unit> = Either.Right(Unit)
+        while (!finished && result is Either.Right) {
+            result = transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
                 getPendingConversations(includePendingWelcome).flatMap { pendingConversations ->
-                    filterSelfMemberConversations(pendingConversations).flatMap { recoverableConversations ->
-                        kaliumLogger.d("Requesting to re-join ${recoverableConversations.size} existing MLS conversation(s)")
-                        val progressMutex = Mutex()
-                        var completed = 0
-                        onProgress(SlowSyncProgress(completed, recoverableConversations.size))
-                        recoverableConversations.chunked(maxConcurrentJoins).foldToEitherWhileRight(Unit) { batch, _ ->
-                            joinBatch(transactionContext, batch, keepRetryingOnFailure, allowJoinByExternalCommit) {
-                                // Completion order can differ from input order. Serialize increments and publication.
-                                progressMutex.withLock {
-                                    completed++
-                                    onProgress(SlowSyncProgress(completed, recoverableConversations.size))
-                                }
+                    filterSelfMemberConversations(pendingConversations)
+                }.flatMap { recoverableConversations ->
+                    val remaining = recoverableConversations.filter { it.id !in attempted }
+                    val window = remaining.take(joinWindowSize)
+                    finished = remaining.size <= joinWindowSize
+                    attempted += window.map { it.id }
+                    progressMutex.withLock {
+                        val known = maxOf(total, attempted.size + remaining.size - window.size)
+                        if (known != total) {
+                            if (total < 0) kaliumLogger.d("Requesting to re-join $known existing MLS conversation(s)")
+                            total = known
+                            onProgress(SlowSyncProgress(completed, total))
+                        }
+                    }
+                    window.chunked(maxConcurrentJoins).foldToEitherWhileRight(Unit) { batch, _ ->
+                        joinBatch(transactionContext, batch, keepRetryingOnFailure, allowJoinByExternalCommit) {
+                            // Completion order can differ from input order. Serialize increments and publication.
+                            progressMutex.withLock {
+                                completed++
+                                onProgress(SlowSyncProgress(completed, total))
                             }
                         }
                     }
                 }
             }
         }
+        return result
+    }
 
     private suspend fun getPendingConversations(includePendingWelcome: Boolean): Either<CoreFailure, List<Conversation>> {
         val groupStates = buildList {
@@ -268,6 +301,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
 
     private companion object {
         const val DEFAULT_MAX_CONCURRENT_JOINS = 4
+        const val DEFAULT_JOIN_WINDOW_SIZE = 16
         const val DEFAULT_MAX_THROTTLE_RETRIES = 3
         const val DEFAULT_THROTTLE_RETRY_DELAY_MS = 250L
     }
