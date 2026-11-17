@@ -22,16 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.StateFlow
-
-/** Observes this account's MFA data; null means it has not been loaded yet. */
-public interface ObserveMFAOverviewUseCase {
-    public operator fun invoke(): StateFlow<MFAOverview?>
-}
-
-internal class ObserveMFAOverviewUseCaseImpl(private val repository: MFARepository) : ObserveMFAOverviewUseCase {
-    override fun invoke(): StateFlow<MFAOverview?> = repository.overview
-}
 
 /** Refreshes the shared overview, retaining cached data on failure and propagating cancellation. */
 public interface RefreshMFAOverviewUseCase {

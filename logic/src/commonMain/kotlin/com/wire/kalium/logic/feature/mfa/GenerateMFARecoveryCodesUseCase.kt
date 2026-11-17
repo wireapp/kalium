@@ -22,17 +22,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.DummyMFAData
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Confirms the account password before the caller offers recovery-code management. */
-public interface ConfirmMFAPasswordUseCase {
-    public suspend operator fun invoke(password: String): Either<MFAFailure, Unit>
-}
-
-internal class ConfirmMFAPasswordUseCaseImpl(private val repository: MFARepository) : ConfirmMFAPasswordUseCase {
-    override suspend fun invoke(password: String): Either<MFAFailure, Unit> = repository.update {
-        if (password.isBlank()) Either.Left(MFAFailure.INVALID_PASSWORD) else Either.Right(Unit)
-    }
-}
-
 /** Replaces recovery codes, returning their values once and publishing only their counts in the overview. */
 public interface GenerateMFARecoveryCodesUseCase {
     public suspend operator fun invoke(): Either<MFAFailure, List<String>>

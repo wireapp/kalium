@@ -19,41 +19,10 @@
 package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.mfa.DummyMFAData
 import com.wire.kalium.logic.data.mfa.MFARepository
-import com.wire.kalium.logic.data.mfa.PendingMFAEnrollment
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
-
-/** Confirms the password and starts an enrollment for initial setup or an additional authenticator. */
-public interface StartMFASetupUseCase {
-    public suspend operator fun invoke(password: String): Either<MFAFailure, MFAEnrollment>
-}
-
-internal class StartMFASetupUseCaseImpl(private val repository: MFARepository) : StartMFASetupUseCase {
-    override suspend fun invoke(password: String): Either<MFAFailure, MFAEnrollment> = repository.update {
-        if (password.isBlank()) return@update Either.Left(MFAFailure.INVALID_PASSWORD)
-        val enrollment = DummyMFAData.enrollment()
-        enrollments[enrollment.id] = PendingMFAEnrollment()
-        Either.Right(enrollment)
-    }
-}
-
-/** Verifies an initial enrollment and returns recovery codes for temporary display by the caller. */
-public interface VerifyMFASetupCodeUseCase {
-    public suspend operator fun invoke(enrollmentId: String, code: String): Either<MFAFailure, List<String>>
-}
-
-internal class VerifyMFASetupCodeUseCaseImpl(private val repository: MFARepository) : VerifyMFASetupCodeUseCase {
-    override suspend fun invoke(enrollmentId: String, code: String): Either<MFAFailure, List<String>> = repository.update {
-        val pending = enrollments[enrollmentId] ?: return@update Either.Left(MFAFailure.INVALID_ENROLLMENT)
-        if (code != DummyMFAData.TOTP_CODE) return@update Either.Left(MFAFailure.INVALID_CODE)
-        val codes = DummyMFAData.initialRecoveryCodes
-        enrollments[enrollmentId] = pending.copy(isVerified = true, recoveryCodesCount = codes.size)
-        Either.Right(codes)
-    }
-}
 
 /** Enables MFA using a verified initial enrollment and publishes the account's new overview. */
 public interface CompleteMFASetupUseCase {
