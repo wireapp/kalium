@@ -1543,6 +1543,7 @@ public class UserSessionScope internal constructor(
             transactionProvider = cryptoTransactionProvider,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
         )
 
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase
