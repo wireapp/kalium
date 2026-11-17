@@ -22,6 +22,19 @@ data class GiphyGifDTO(
     val title: String? = null,
     @SerialName("images")
     val images: GiphyImagesDTO = GiphyImagesDTO(),
+    @SerialName("user")
+    val user: GiphyUserDTO? = null,
+)
+
+/** The channel or user that uploaded a GIF; Giphy leaves it out when there is none. */
+@Serializable
+data class GiphyUserDTO(
+    @SerialName("username")
+    val username: String? = null,
+    @SerialName("avatar_url")
+    val avatarUrl: String? = null,
+    @SerialName("is_verified")
+    val isVerified: Boolean = false,
 )
 
 /** The renditions Wire uses. Giphy sends many more; unknown keys are ignored. */

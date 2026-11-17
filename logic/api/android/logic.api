@@ -592,19 +592,37 @@ public final class com/wire/kalium/logic/data/giphy/DownloadedGif {
 }
 
 public final class com/wire/kalium/logic/data/giphy/Gif {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifCreator;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifCreator;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
 	public final fun component4 ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;)Lcom/wire/kalium/logic/data/giphy/Gif;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/Gif;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/Gif;
+	public final fun component5 ()Lcom/wire/kalium/logic/data/giphy/GifCreator;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifCreator;)Lcom/wire/kalium/logic/data/giphy/Gif;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/Gif;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifCreator;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/Gif;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCreator ()Lcom/wire/kalium/logic/data/giphy/GifCreator;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getOriginal ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
 	public final fun getPreview ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
 	public final fun getTitle ()Ljava/lang/String;
 	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/data/giphy/GifCreator {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Z)Lcom/wire/kalium/logic/data/giphy/GifCreator;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/GifCreator;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/GifCreator;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAvatarUrl ()Ljava/lang/String;
+	public final fun getUsername ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isVerified ()Z
 	public fun toString ()Ljava/lang/String;
 }
 

@@ -6,6 +6,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.authenticated.giphy.GiphyGifsResponseDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphySearchSuggestionsResponseDTO
+import com.wire.kalium.network.api.authenticated.giphy.GiphyUserDTO
 import com.wire.kalium.network.api.vcommon.GiphyApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFound
@@ -57,6 +58,7 @@ internal class GiphyApiTest : ApiTest() {
         assertEquals("480", gif.images.downsized?.width)
         assertEquals("1234567", gif.images.downsized?.size)
         assertEquals("200", gif.images.fixedWidthDownsampled?.width)
+        assertEquals(GiphyUserDTO("studio", "https://media.giphy.com/avatars/studio.gif", isVerified = true), gif.user)
         assertEquals(500, result.value.pagination?.totalCount)
         assertEquals(1, result.value.pagination?.count)
         assertEquals(48, result.value.pagination?.offset)
@@ -224,7 +226,8 @@ internal class GiphyApiTest : ApiTest() {
                     "downsized": {"url": "https://media2.giphy.com/media/abc123/giphy.gif", "width": "480", "height": "270", "size": "1234567"},
                     "fixed_width_downsampled": {"url": "https://media2.giphy.com/media/abc123/200w_d.gif", "width": "200", "height": "113", "size": "98765"},
                     "looping": {"mp4": "https://media2.giphy.com/media/abc123/giphy-loop.mp4"}
-                  }
+                  },
+                  "user": {"username": "studio", "avatar_url": "https://media.giphy.com/avatars/studio.gif", "is_verified": true}
                 }
               ],
               "pagination": {"total_count": 500, "count": 1, "offset": 48},
