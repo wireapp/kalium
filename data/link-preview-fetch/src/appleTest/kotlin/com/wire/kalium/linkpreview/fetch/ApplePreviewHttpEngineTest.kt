@@ -53,6 +53,7 @@ import platform.Network.nw_parameters_create_secure_tcp
 import platform.darwin.dispatch_queue_create
 import platform.posix.AF_INET
 import platform.posix.MSG_NOSIGNAL
+import platform.posix.POLLIN
 import platform.posix.SOCK_STREAM
 import platform.posix.SOL_SOCKET
 import platform.posix.SO_RCVTIMEO
@@ -61,6 +62,8 @@ import platform.posix.bind
 import platform.posix.close
 import platform.posix.getsockname
 import platform.posix.listen
+import platform.posix.poll
+import platform.posix.pollfd
 import platform.posix.recv
 import platform.posix.send
 import platform.posix.setsockopt
@@ -85,6 +88,8 @@ class ApplePreviewHttpEngineTest {
             withTimeout(5_000) {
                 val clientFinished = CompletableDeferred<Unit>()
                 val rejectHandshake = async(Dispatchers.Default) {
+                    // SO_RCVTIMEO does not bound accept() on Darwin, so wait with poll() to keep the 5 s limit.
+                    check(awaitIncomingConnection(listener)) { "TLS fixture got no connection within 5 s" }
                     val peer = accept(listener, null, null)
                     check(peer >= 0) { "TLS fixture did not accept a connection" }
                     try {
@@ -129,10 +134,16 @@ class ApplePreviewHttpEngineTest {
         length.value = sizeOf<sockaddr_in>().convert()
         check(bind(listener, address.ptr.reinterpret(), length.value) == 0)
         check(listen(listener, 1) == 0)
-        setReadTimeout(listener)
         check(getsockname(listener, address.ptr.reinterpret(), length.ptr) == 0)
         val port = address.sin_port.toInt()
         ((port and 0xff) shl 8) or (port ushr 8)
+    }
+
+    private fun awaitIncomingConnection(listener: Int): Boolean = memScoped {
+        val descriptor = alloc<pollfd>()
+        descriptor.fd = listener
+        descriptor.events = POLLIN.convert()
+        poll(descriptor.ptr, 1u, 5_000) == 1
     }
 
     private fun setReadTimeout(socket: Int) = memScoped {
