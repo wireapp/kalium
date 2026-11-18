@@ -1,0 +1,4 @@
+import kotlin.String;
+import kotlin.collections.List;
+
+ALTER TABLE Meeting ADD COLUMN invited_emails TEXT AS List<String> NOT NULL DEFAULT '[]';

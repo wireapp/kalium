@@ -55,6 +55,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
+import com.wire.kalium.network.api.authenticated.meeting.MeetingInvitationsRequest
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.toMeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
@@ -302,7 +303,10 @@ internal class MeetingDataSource(
         wrapStorageRequest {
             meetingDAO.getMeeting(meetingId.toDao())
         }.flatMap { meetingEntity ->
-            conversationRepository.getConversationById(conversationId = meetingEntity.conversationId.toModel())
+            updateInvitations(meetingEntity.invitedEmails, meetingId, meeting)
+                .flatMap {
+                    conversationRepository.getConversationById(conversationId = meetingEntity.conversationId.toModel())
+                }
         }.flatMap { conversation ->
             updateMembers(
                 conversation = conversation,
@@ -325,6 +329,22 @@ internal class MeetingDataSource(
                 }
             }
         }
+
+    private suspend fun updateInvitations(
+        existing: List<String>,
+        meetingId: MeetingId,
+        meeting: UpdateMeeting,
+    ): Either<CoreFailure, Unit> {
+        val toAdd = meeting.invitedEmails.filter { email -> existing.none { it.equals(email, ignoreCase = true) } }
+        val toRemove = existing.filter { email -> meeting.invitedEmails.none { it.equals(email, ignoreCase = true) } }
+        val adding = if (toAdd.isEmpty()) Either.Right(Unit) else wrapApiRequest {
+            meetingApi.addInvitations(meetingId.toApi(), MeetingInvitationsRequest(toAdd))
+        }
+        val removing = if (toRemove.isEmpty()) Either.Right(Unit) else wrapApiRequest {
+            meetingApi.deleteInvitations(meetingId.toApi(), MeetingInvitationsRequest(toRemove))
+        }
+        return adding.flatMap { removing }
+    }
 
     private suspend fun updateMembers(
         conversation: Conversation,

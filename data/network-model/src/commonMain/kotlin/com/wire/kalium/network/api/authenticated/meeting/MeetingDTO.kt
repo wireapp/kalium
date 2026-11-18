@@ -40,6 +40,7 @@ data class MeetingDTO(
     @SerialName("type") val type: MeetingTypeDTO = MeetingTypeDTO.SCHEDULED,
     @SerialName("link") val link: String? = null,
     @SerialName("has_password") val hasPassword: Boolean = false,
+    @SerialName("invited_emails") val invitedEmails: List<String> = emptyList(),
 )
 
 @Serializable

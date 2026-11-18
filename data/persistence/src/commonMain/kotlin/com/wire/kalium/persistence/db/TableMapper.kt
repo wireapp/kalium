@@ -72,6 +72,7 @@ import com.wire.kalium.persistence.adapter.PendingActionTypeAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
+import com.wire.kalium.persistence.adapter.StringListJsonAdapter
 import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
 import com.wire.kalium.persistence.content.ButtonContent
 import com.wire.kalium.persistence.content.PollContent
@@ -312,6 +313,7 @@ internal object TableMapper {
         end_dateAdapter = InstantTypeAdapter,
         recurrence_frequencyAdapter = EnumColumnAdapter(),
         recurrence_end_dateAdapter = InstantTypeAdapter,
+        invited_emailsAdapter = StringListJsonAdapter,
         typeAdapter = EnumColumnAdapter(),
     )
 

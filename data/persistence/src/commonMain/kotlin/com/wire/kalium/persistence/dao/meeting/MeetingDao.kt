@@ -267,6 +267,7 @@ private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
         type = meeting.type,
         link = meeting.link,
         has_password = meeting.hasPassword,
+        invited_emails = meeting.invitedEmails,
     )
 }
 

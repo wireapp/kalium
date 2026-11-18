@@ -39,6 +39,7 @@ data object MeetingMapper {
         type: MeetingEntity.Type,
         link: String?,
         hasPassword: Boolean,
+        invitedEmails: List<String>,
     ): MeetingEntity = MeetingEntity(
         meetingId = meetingId,
         conversationId = conversationId,
@@ -52,6 +53,7 @@ data object MeetingMapper {
         type = type,
         link = link,
         hasPassword = hasPassword,
+        invitedEmails = invitedEmails,
         recurrence = when {
             recurrenceFrequency != null -> MeetingEntity.RecurrenceEntity(
                 frequency = recurrenceFrequency,
@@ -84,6 +86,7 @@ data object MeetingMapper {
         meetingType: MeetingEntity.Type,
         meetingLink: String?,
         meetingHasPassword: Boolean,
+        meetingInvitedEmails: List<String>,
         conversationName: String?,
         conversationType: ConversationEntity.Type,
         channelAccess: ConversationEntity.ChannelAccess?,
@@ -111,6 +114,7 @@ data object MeetingMapper {
             type = meetingType,
             link = meetingLink,
             hasPassword = meetingHasPassword,
+            invitedEmails = meetingInvitedEmails,
         ),
         conversationName = conversationName,
         conversationType = conversationType,
