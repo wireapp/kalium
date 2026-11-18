@@ -27,7 +27,17 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readFully
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.convert
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.reinterpret
+import kotlinx.cinterop.sizeOf
+import kotlinx.cinterop.usePinned
+import kotlinx.cinterop.value
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
@@ -35,22 +45,29 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import platform.Network.NW_PARAMETERS_DEFAULT_CONFIGURATION
-import platform.Network.nw_connection_cancel
 import platform.Network.nw_connection_create
 import platform.Network.nw_connection_set_queue
 import platform.Network.nw_connection_start
-import platform.Network.nw_connection_t
 import platform.Network.nw_endpoint_create_host
-import platform.Network.nw_listener_cancel
-import platform.Network.nw_listener_create_with_port
-import platform.Network.nw_listener_get_port
-import platform.Network.nw_listener_set_new_connection_handler
-import platform.Network.nw_listener_set_queue
-import platform.Network.nw_listener_set_state_changed_handler
-import platform.Network.nw_listener_start
-import platform.Network.nw_listener_state_ready
 import platform.Network.nw_parameters_create_secure_tcp
 import platform.darwin.dispatch_queue_create
+import platform.posix.AF_INET
+import platform.posix.MSG_NOSIGNAL
+import platform.posix.SOCK_STREAM
+import platform.posix.SOL_SOCKET
+import platform.posix.SO_RCVTIMEO
+import platform.posix.accept
+import platform.posix.bind
+import platform.posix.close
+import platform.posix.getsockname
+import platform.posix.listen
+import platform.posix.recv
+import platform.posix.send
+import platform.posix.setsockopt
+import platform.posix.sockaddr_in
+import platform.posix.socket
+import platform.posix.socklen_tVar
+import platform.posix.timeval
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -61,45 +78,68 @@ import kotlin.test.assertTrue
 class ApplePreviewHttpEngineTest {
     @Test
     fun givenNativeTlsFailure_whenReading_thenReportsFailureWithoutCrashing(): Unit = runBlocking {
-        val parameters = nw_parameters_create_secure_tcp(
-            { _ -> },
-            NW_PARAMETERS_DEFAULT_CONFIGURATION
-        )
-        val queue = dispatch_queue_create("preview-regression", null)
-        val listener = checkNotNull(nw_listener_create_with_port("0", parameters))
-        val ready = CompletableDeferred<Unit>()
-        val accepted = CompletableDeferred<nw_connection_t>()
-        nw_listener_set_queue(listener, queue)
-        nw_listener_set_state_changed_handler(listener) { state, _ ->
-            if (state == nw_listener_state_ready) ready.complete(Unit)
-        }
-        nw_listener_set_new_connection_handler(listener) { peer ->
-            nw_connection_set_queue(peer, queue)
-            nw_connection_start(peer)
-            // No server identity: TLS must fail and deliver the native error context.
-            accepted.complete(peer)
-        }
-        nw_listener_start(listener)
+        val listener = socket(AF_INET, SOCK_STREAM, 0)
+        check(listener >= 0)
         try {
+            val port = listenOnLoopback(listener)
             withTimeout(5_000) {
-                ready.await()
-                val endpoint = nw_endpoint_create_host(
-                    "127.0.0.1", nw_listener_get_port(listener).toString()
-                )
+                val clientFinished = CompletableDeferred<Unit>()
+                val rejectHandshake = async(Dispatchers.Default) {
+                    val peer = accept(listener, null, null)
+                    check(peer >= 0) { "TLS fixture did not accept a connection" }
+                    try {
+                        setReadTimeout(peer)
+                        val hello = ByteArray(16_384)
+                        check(hello.usePinned { recv(peer, it.addressOf(0), hello.size.convert(), 0) } > 0)
+                        // Reply to the ClientHello with a fatal TLS handshake_failure alert.
+                        val alert = byteArrayOf(0x15, 0x03, 0x03, 0x00, 0x02, 0x02, 0x28)
+                        check(alert.usePinned { send(peer, it.addressOf(0), alert.size.convert(), MSG_NOSIGNAL) } == alert.size.toLong())
+                        clientFinished.await()
+                    } finally {
+                        close(peer)
+                    }
+                }
+
+                val endpoint = nw_endpoint_create_host("127.0.0.1", port.toString())
+                val parameters = nw_parameters_create_secure_tcp({ _ -> }, NW_PARAMETERS_DEFAULT_CONFIGURATION)
                 val native = checkNotNull(nw_connection_create(endpoint, parameters))
-                nw_connection_set_queue(native, queue)
+                nw_connection_set_queue(native, dispatch_queue_create("preview-regression", null))
                 nw_connection_start(native)
                 val connection = NetworkPreviewConnection(native)
                 try {
                     assertFailsWith<IllegalStateException> { connection.read() }
                 } finally {
+                    clientFinished.complete(Unit)
                     connection.close()
                 }
+                rejectHandshake.await()
             }
         } finally {
-            if (accepted.isCompleted) nw_connection_cancel(accepted.await())
-            nw_listener_cancel(listener)
+            close(listener)
         }
+    }
+
+    private fun listenOnLoopback(listener: Int): Int = memScoped {
+        val address = alloc<sockaddr_in>()
+        address.sin_len = sizeOf<sockaddr_in>().convert()
+        address.sin_family = AF_INET.convert()
+        address.sin_addr.s_addr = 0x0100007fu // 127.0.0.1 in network byte order
+        address.sin_port = 0u
+        val length = alloc<socklen_tVar>()
+        length.value = sizeOf<sockaddr_in>().convert()
+        check(bind(listener, address.ptr.reinterpret(), length.value) == 0)
+        check(listen(listener, 1) == 0)
+        setReadTimeout(listener)
+        check(getsockname(listener, address.ptr.reinterpret(), length.ptr) == 0)
+        val port = address.sin_port.toInt()
+        ((port and 0xff) shl 8) or (port ushr 8)
+    }
+
+    private fun setReadTimeout(socket: Int) = memScoped {
+        val timeout = alloc<timeval>()
+        timeout.tv_sec = 5
+        timeout.tv_usec = 0
+        check(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, timeout.ptr, sizeOf<timeval>().convert()) == 0)
     }
 
     @Test
@@ -194,7 +234,8 @@ class ApplePreviewHttpEngineTest {
     fun givenPartiallyConsumedBody_whenCancelled_thenClosesConnectionAndPendingRead() = runTest {
         val reading = CompletableDeferred<Unit>()
         val consumed = CompletableDeferred<Unit>()
-        var closed = false
+        val closed = CompletableDeferred<Unit>()
+        val pendingReadCancelled = CompletableDeferred<Unit>()
         var firstRead = true
         val connection = object : PreviewAppleConnection {
             override suspend fun write(bytes: ByteArray) = Unit
@@ -204,10 +245,14 @@ class ApplePreviewHttpEngineTest {
                     return "HTTP/1.1 200 OK\r\nContent-Length: 1000000\r\n\r\nWire".encodeToByteArray()
                 }
                 reading.complete(Unit)
-                awaitCancellation()
+                try {
+                    awaitCancellation()
+                } finally {
+                    pendingReadCancelled.complete(Unit)
+                }
             }
             override fun close() {
-                closed = true
+                closed.complete(Unit)
             }
         }
         HttpClient(ApplePreviewHttpEngine({ listOf("93.184.215.14") }) { _, _, _ -> connection }).use { client ->
@@ -225,7 +270,8 @@ class ApplePreviewHttpEngineTest {
 
             request.cancelAndJoin()
 
-            assertTrue(closed)
+            closed.await()
+            pendingReadCancelled.await()
         }
     }
 
