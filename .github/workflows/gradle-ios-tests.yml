@@ -17,10 +17,6 @@ permissions:
   contents: read # required for actions/checkout and repository metadata reads
 
 jobs:
-  detekt:
-    name: Detekt
-    uses: ./.github/workflows/codestyle.yml
-
   test-selection:
     name: Validate iOS task selection
     runs-on: ubuntu-latest
@@ -39,7 +35,7 @@ jobs:
 
   ios-tests:
     name: iOS Tests (${{ matrix.shard }})
-    needs: [detekt, test-selection]
+    needs: test-selection
     strategy:
       fail-fast: false
       matrix:
