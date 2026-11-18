@@ -22,6 +22,7 @@ permissions:
 jobs:
   detekt:
     name: Detekt
+    if: github.event_name != 'pull_request' || (contains(github.event.pull_request.labels.*.name, 'benchmarks') && (github.event.action != 'labeled' || github.event.label.name == 'benchmarks'))
     uses: ./.github/workflows/codestyle.yml
   benchmarks-check:
     name: Benchmarks Check

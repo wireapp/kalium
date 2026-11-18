@@ -33,9 +33,13 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           echo "::notice::Apple klib ABI dump is not validated on pull requests (needs macOS). The merge queue runs the full check."
-          # Turning cross-compilation off marks the Apple targets as unsupported on Linux. The check then validates
-          # the JVM and Android dumps, and takes the Apple targets from the checked-in klib dump unverified.
-          ./gradlew :logic:checkKotlinAbi -Pkotlin.native.enableKlibsCrossCompilation=false
+          # On Linux the Apple targets are unsupported, and checkKotlinAbi would fail on the inferred klib dump.
+          # Regenerate the dumps and compare only the JVM and Android ones with the checked-in files.
+          ./gradlew :logic:updateKotlinAbi -Pkotlin.native.enableKlibsCrossCompilation=false
+          if ! git diff --exit-code -- logic/api/jvm logic/api/android; then
+            echo "::error::The public JVM or Android API of logic changed. Run ./gradlew :logic:updateKotlinAbi on macOS and commit the dumps."
+            exit 1
+          fi
 
       - name: Check Kotlin ABI
         if: github.event_name != 'pull_request'

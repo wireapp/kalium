@@ -110,19 +110,16 @@ jobs:
             ./gradlew packageAndroidDeviceTest
           else
             # Same selection as the emulator step below, so only the APKs that will run are built.
-            ./gradlew connectedAndroidOnlyAffectedTest --list-only | tee "$RUNNER_TEMP/affected-selection.log"
-            if grep -qE 'Running all tests|falling back to all modules' "$RUNNER_TEMP/affected-selection.log"; then
-              ./gradlew packageAndroidDeviceTest
+            # In "run all" mode the selection file lists every module, so no special case is needed.
+            ./gradlew connectedAndroidOnlyAffectedTest --list-only
+            package_tasks=()
+            while IFS= read -r task; do
+              [[ -z "$task" ]] || package_tasks+=("${task%connectedAndroidDeviceTest}packageAndroidDeviceTest")
+            done < build/affected-tests/connectedAndroidOnlyAffectedTest.txt
+            if (( ${#package_tasks[@]} > 0 )); then
+              ./gradlew "${package_tasks[@]}"
             else
-              package_tasks=()
-              while IFS= read -r task; do
-                [[ -z "$task" ]] || package_tasks+=("${task%connectedAndroidDeviceTest}packageAndroidDeviceTest")
-              done < build/affected-tests/connectedAndroidOnlyAffectedTest.txt
-              if (( ${#package_tasks[@]} > 0 )); then
-                ./gradlew "${package_tasks[@]}"
-              else
-                echo "No affected modules, no test APK to build."
-              fi
+              echo "No affected modules, no test APK to build."
             fi
           fi
           # Stop prebuild daemons before booting the emulator to free memory/CPU for the connected test phase.
