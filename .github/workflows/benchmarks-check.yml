@@ -6,12 +6,15 @@ on:
   pull_request:
     branches:
       - develop
-    types: [ opened, synchronize ]
+    types: [ opened, synchronize, labeled ]
+  schedule:
+    - cron: '0 2 * * *' # Nightly on develop
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # An unrelated label added mid-run must not cancel a running benchmark.
+  cancel-in-progress: ${{ github.event.action != 'labeled' || github.event.label.name == 'benchmarks' }}
 
 permissions:
   contents: read # required for actions/checkout and repository metadata reads
@@ -25,6 +28,8 @@ jobs:
     needs: [ detekt ]
     permissions:
       pull-requests: write # required for Bencher comparison comments/checks on PRs
+    # Pull requests only run benchmarks when they carry the `benchmarks` label. Other events always run.
+    if: github.event_name != 'pull_request' || (contains(github.event.pull_request.labels.*.name, 'benchmarks') && (github.event.action != 'labeled' || github.event.label.name == 'benchmarks'))
     runs-on: ubuntu-latest
     container: wirebot/cryptobox:1.4.0@sha256:f0d41d90f5af96cd68a8f151fed66f83616b1b01ea6b2d71bdad319c66617e36
     env:
@@ -86,7 +91,7 @@ jobs:
           --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
 
       - name: Run Bencher on base branch
-        if: github.event_name == 'push' && github.ref_name == 'develop'
+        if: (github.event_name == 'push' || github.event_name == 'schedule') && github.ref_name == 'develop'
         run: |
           bencher run \
           --branch develop \
