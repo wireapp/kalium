@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.mfa
+package com.wire.kalium.logic.data.mfa
 
 /**
  * Details needed to configure an authenticator for MFA enrollment.

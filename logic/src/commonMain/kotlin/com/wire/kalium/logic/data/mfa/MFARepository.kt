@@ -20,10 +20,6 @@ package com.wire.kalium.logic.data.mfa
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.feature.mfa.AuthenticatorApp
-import com.wire.kalium.logic.feature.mfa.MFAEnrollment
-import com.wire.kalium.logic.feature.mfa.MFAFailure
-import com.wire.kalium.logic.feature.mfa.MFAOverview
 import kotlinx.coroutines.flow.StateFlow
 
 /**

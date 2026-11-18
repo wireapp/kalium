@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
+import com.wire.kalium.logic.data.mfa.MFAOverview
 import com.wire.kalium.logic.data.mfa.MFARepository
 import kotlinx.coroutines.flow.StateFlow
 

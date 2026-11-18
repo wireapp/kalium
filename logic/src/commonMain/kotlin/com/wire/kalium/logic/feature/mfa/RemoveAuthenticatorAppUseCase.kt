@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.mfa.MFAFailure
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**

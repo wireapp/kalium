@@ -66,6 +66,24 @@ final enum class com.wire.kalium.logic.data.message.timeline/MessageTimelinePoli
     final fun values(): kotlin/Array<com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy> // com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy.values|values#static(){}[0]
 }
 
+final enum class com.wire.kalium.logic.data.mfa/MFAFailure : kotlin/Enum<com.wire.kalium.logic.data.mfa/MFAFailure> { // com.wire.kalium.logic.data.mfa/MFAFailure|null[0]
+    enum entry INVALID_CODE // com.wire.kalium.logic.data.mfa/MFAFailure.INVALID_CODE|null[0]
+    enum entry INVALID_ENROLLMENT // com.wire.kalium.logic.data.mfa/MFAFailure.INVALID_ENROLLMENT|null[0]
+    enum entry INVALID_NAME // com.wire.kalium.logic.data.mfa/MFAFailure.INVALID_NAME|null[0]
+    enum entry INVALID_PASSWORD // com.wire.kalium.logic.data.mfa/MFAFailure.INVALID_PASSWORD|null[0]
+    enum entry LAST_APP // com.wire.kalium.logic.data.mfa/MFAFailure.LAST_APP|null[0]
+    enum entry LIMIT_REACHED // com.wire.kalium.logic.data.mfa/MFAFailure.LIMIT_REACHED|null[0]
+    enum entry MFA_ALREADY_ENABLED // com.wire.kalium.logic.data.mfa/MFAFailure.MFA_ALREADY_ENABLED|null[0]
+    enum entry MFA_DISABLED // com.wire.kalium.logic.data.mfa/MFAFailure.MFA_DISABLED|null[0]
+    enum entry NOT_FOUND // com.wire.kalium.logic.data.mfa/MFAFailure.NOT_FOUND|null[0]
+
+    final val entries // com.wire.kalium.logic.data.mfa/MFAFailure.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<com.wire.kalium.logic.data.mfa/MFAFailure> // com.wire.kalium.logic.data.mfa/MFAFailure.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.data.mfa/MFAFailure.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<com.wire.kalium.logic.data.mfa/MFAFailure> // com.wire.kalium.logic.data.mfa/MFAFailure.values|values#static(){}[0]
+}
+
 final enum class com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress : kotlin/Enum<com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress> { // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress|null[0]
     enum entry CANCELLED // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.CANCELLED|null[0]
     enum entry COMPLETED // com.wire.kalium.logic.feature.asset.upload/AssetUploadProgress.COMPLETED|null[0]
@@ -125,24 +143,6 @@ final enum class com.wire.kalium.logic.feature.e2ei/MLSCredentialsType : kotlin/
 
     final fun valueOf(kotlin/String): com.wire.kalium.logic.feature.e2ei/MLSCredentialsType // com.wire.kalium.logic.feature.e2ei/MLSCredentialsType.valueOf|valueOf#static(kotlin.String){}[0]
     final fun values(): kotlin/Array<com.wire.kalium.logic.feature.e2ei/MLSCredentialsType> // com.wire.kalium.logic.feature.e2ei/MLSCredentialsType.values|values#static(){}[0]
-}
-
-final enum class com.wire.kalium.logic.feature.mfa/MFAFailure : kotlin/Enum<com.wire.kalium.logic.feature.mfa/MFAFailure> { // com.wire.kalium.logic.feature.mfa/MFAFailure|null[0]
-    enum entry INVALID_CODE // com.wire.kalium.logic.feature.mfa/MFAFailure.INVALID_CODE|null[0]
-    enum entry INVALID_ENROLLMENT // com.wire.kalium.logic.feature.mfa/MFAFailure.INVALID_ENROLLMENT|null[0]
-    enum entry INVALID_NAME // com.wire.kalium.logic.feature.mfa/MFAFailure.INVALID_NAME|null[0]
-    enum entry INVALID_PASSWORD // com.wire.kalium.logic.feature.mfa/MFAFailure.INVALID_PASSWORD|null[0]
-    enum entry LAST_APP // com.wire.kalium.logic.feature.mfa/MFAFailure.LAST_APP|null[0]
-    enum entry LIMIT_REACHED // com.wire.kalium.logic.feature.mfa/MFAFailure.LIMIT_REACHED|null[0]
-    enum entry MFA_ALREADY_ENABLED // com.wire.kalium.logic.feature.mfa/MFAFailure.MFA_ALREADY_ENABLED|null[0]
-    enum entry MFA_DISABLED // com.wire.kalium.logic.feature.mfa/MFAFailure.MFA_DISABLED|null[0]
-    enum entry NOT_FOUND // com.wire.kalium.logic.feature.mfa/MFAFailure.NOT_FOUND|null[0]
-
-    final val entries // com.wire.kalium.logic.feature.mfa/MFAFailure.entries|#static{}entries[0]
-        final fun <get-entries>(): kotlin.enums/EnumEntries<com.wire.kalium.logic.feature.mfa/MFAFailure> // com.wire.kalium.logic.feature.mfa/MFAFailure.entries.<get-entries>|<get-entries>#static(){}[0]
-
-    final fun valueOf(kotlin/String): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/MFAFailure.valueOf|valueOf#static(kotlin.String){}[0]
-    final fun values(): kotlin/Array<com.wire.kalium.logic.feature.mfa/MFAFailure> // com.wire.kalium.logic.feature.mfa/MFAFailure.values|values#static(){}[0]
 }
 
 abstract fun interface com.wire.kalium.logic.feature.asset/AudioNormalizedLoudnessBuilder { // com.wire.kalium.logic.feature.asset/AudioNormalizedLoudnessBuilder|null[0]
@@ -1832,7 +1832,7 @@ abstract interface com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesUse
 }
 
 abstract interface com.wire.kalium.logic.feature.mfa/ObserveMFAOverviewUseCase { // com.wire.kalium.logic.feature.mfa/ObserveMFAOverviewUseCase|null[0]
-    abstract fun invoke(): kotlinx.coroutines.flow/StateFlow<com.wire.kalium.logic.feature.mfa/MFAOverview?> // com.wire.kalium.logic.feature.mfa/ObserveMFAOverviewUseCase.invoke|invoke(){}[0]
+    abstract fun invoke(): kotlinx.coroutines.flow/StateFlow<com.wire.kalium.logic.data.mfa/MFAOverview?> // com.wire.kalium.logic.feature.mfa/ObserveMFAOverviewUseCase.invoke|invoke(){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.mfa/RefreshMFAOverviewUseCase { // com.wire.kalium.logic.feature.mfa/RefreshMFAOverviewUseCase|null[0]
@@ -2736,6 +2736,30 @@ sealed interface com.wire.kalium.logic.data.message.timeline/MessageTimelineResu
     }
 }
 
+sealed interface com.wire.kalium.logic.data.mfa/MFAOverview { // com.wire.kalium.logic.data.mfa/MFAOverview|null[0]
+    final class Enabled : com.wire.kalium.logic.data.mfa/MFAOverview { // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled|null[0]
+        constructor <init>(kotlin.collections/List<com.wire.kalium.logic.data.mfa/AuthenticatorApp>, com.wire.kalium.logic.data.mfa/RecoveryCodesStatus) // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.<init>|<init>(kotlin.collections.List<com.wire.kalium.logic.data.mfa.AuthenticatorApp>;com.wire.kalium.logic.data.mfa.RecoveryCodesStatus){}[0]
+
+        final val authenticatorApps // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.authenticatorApps|{}authenticatorApps[0]
+            final fun <get-authenticatorApps>(): kotlin.collections/List<com.wire.kalium.logic.data.mfa/AuthenticatorApp> // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.authenticatorApps.<get-authenticatorApps>|<get-authenticatorApps>(){}[0]
+        final val recoveryCodesStatus // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.recoveryCodesStatus|{}recoveryCodesStatus[0]
+            final fun <get-recoveryCodesStatus>(): com.wire.kalium.logic.data.mfa/RecoveryCodesStatus // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.recoveryCodesStatus.<get-recoveryCodesStatus>|<get-recoveryCodesStatus>(){}[0]
+
+        final fun component1(): kotlin.collections/List<com.wire.kalium.logic.data.mfa/AuthenticatorApp> // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.component1|component1(){}[0]
+        final fun component2(): com.wire.kalium.logic.data.mfa/RecoveryCodesStatus // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.component2|component2(){}[0]
+        final fun copy(kotlin.collections/List<com.wire.kalium.logic.data.mfa/AuthenticatorApp> = ..., com.wire.kalium.logic.data.mfa/RecoveryCodesStatus = ...): com.wire.kalium.logic.data.mfa/MFAOverview.Enabled // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.copy|copy(kotlin.collections.List<com.wire.kalium.logic.data.mfa.AuthenticatorApp>;com.wire.kalium.logic.data.mfa.RecoveryCodesStatus){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAOverview.Enabled.toString|toString(){}[0]
+    }
+
+    final object Disabled : com.wire.kalium.logic.data.mfa/MFAOverview { // com.wire.kalium.logic.data.mfa/MFAOverview.Disabled|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.mfa/MFAOverview.Disabled.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.mfa/MFAOverview.Disabled.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAOverview.Disabled.toString|toString(){}[0]
+    }
+}
+
 sealed interface com.wire.kalium.logic.data.mlspublickeys/MLSPublicKeyType { // com.wire.kalium.logic.data.mlspublickeys/MLSPublicKeyType|null[0]
     abstract val value // com.wire.kalium.logic.data.mlspublickeys/MLSPublicKeyType.value|{}value[0]
         abstract fun <get-value>(): kotlin/String? // com.wire.kalium.logic.data.mlspublickeys/MLSPublicKeyType.value.<get-value>|<get-value>(){}[0]
@@ -3306,13 +3330,13 @@ sealed interface com.wire.kalium.logic.feature.giphy/SendGifMessageResult { // c
 
 sealed interface com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult { // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult { // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult.Failure.toString|toString(){}[0]
@@ -3327,13 +3351,13 @@ sealed interface com.wire.kalium.logic.feature.mfa/CompleteMFASetupResult { // c
 
 sealed interface com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult { // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult { // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult.Failure.toString|toString(){}[0]
@@ -3348,26 +3372,26 @@ sealed interface com.wire.kalium.logic.feature.mfa/ConfirmMFAPasswordResult { //
 
 sealed interface com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult { // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult { // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Failure.toString|toString(){}[0]
     }
 
     final class Success : com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult { // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/AuthenticatorApp) // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.<init>|<init>(com.wire.kalium.logic.feature.mfa.AuthenticatorApp){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/AuthenticatorApp) // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.<init>|<init>(com.wire.kalium.logic.data.mfa.AuthenticatorApp){}[0]
 
         final val authenticatorApp // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.authenticatorApp|{}authenticatorApp[0]
-            final fun <get-authenticatorApp>(): com.wire.kalium.logic.feature.mfa/AuthenticatorApp // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.authenticatorApp.<get-authenticatorApp>|<get-authenticatorApp>(){}[0]
+            final fun <get-authenticatorApp>(): com.wire.kalium.logic.data.mfa/AuthenticatorApp // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.authenticatorApp.<get-authenticatorApp>|<get-authenticatorApp>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/AuthenticatorApp // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/AuthenticatorApp = ...): com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.copy|copy(com.wire.kalium.logic.feature.mfa.AuthenticatorApp){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/AuthenticatorApp // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/AuthenticatorApp = ...): com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.copy|copy(com.wire.kalium.logic.data.mfa.AuthenticatorApp){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppResult.Success.toString|toString(){}[0]
@@ -3376,13 +3400,13 @@ sealed interface com.wire.kalium.logic.feature.mfa/FinishAddingAuthenticatorAppR
 
 sealed interface com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult { // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult { // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Failure.toString|toString(){}[0]
@@ -3399,30 +3423,6 @@ sealed interface com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResul
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/GenerateMFARecoveryCodesResult.Success.toString|toString(){}[0]
-    }
-}
-
-sealed interface com.wire.kalium.logic.feature.mfa/MFAOverview { // com.wire.kalium.logic.feature.mfa/MFAOverview|null[0]
-    final class Enabled : com.wire.kalium.logic.feature.mfa/MFAOverview { // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled|null[0]
-        constructor <init>(kotlin.collections/List<com.wire.kalium.logic.feature.mfa/AuthenticatorApp>, com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus) // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.<init>|<init>(kotlin.collections.List<com.wire.kalium.logic.feature.mfa.AuthenticatorApp>;com.wire.kalium.logic.feature.mfa.RecoveryCodesStatus){}[0]
-
-        final val authenticatorApps // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.authenticatorApps|{}authenticatorApps[0]
-            final fun <get-authenticatorApps>(): kotlin.collections/List<com.wire.kalium.logic.feature.mfa/AuthenticatorApp> // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.authenticatorApps.<get-authenticatorApps>|<get-authenticatorApps>(){}[0]
-        final val recoveryCodesStatus // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.recoveryCodesStatus|{}recoveryCodesStatus[0]
-            final fun <get-recoveryCodesStatus>(): com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.recoveryCodesStatus.<get-recoveryCodesStatus>|<get-recoveryCodesStatus>(){}[0]
-
-        final fun component1(): kotlin.collections/List<com.wire.kalium.logic.feature.mfa/AuthenticatorApp> // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.component1|component1(){}[0]
-        final fun component2(): com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.component2|component2(){}[0]
-        final fun copy(kotlin.collections/List<com.wire.kalium.logic.feature.mfa/AuthenticatorApp> = ..., com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus = ...): com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.copy|copy(kotlin.collections.List<com.wire.kalium.logic.feature.mfa.AuthenticatorApp>;com.wire.kalium.logic.feature.mfa.RecoveryCodesStatus){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAOverview.Enabled.toString|toString(){}[0]
-    }
-
-    final object Disabled : com.wire.kalium.logic.feature.mfa/MFAOverview { // com.wire.kalium.logic.feature.mfa/MFAOverview.Disabled|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/MFAOverview.Disabled.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/MFAOverview.Disabled.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAOverview.Disabled.toString|toString(){}[0]
     }
 }
 
@@ -3449,13 +3449,13 @@ sealed interface com.wire.kalium.logic.feature.mfa/RefreshMFAOverviewResult { //
 
 sealed interface com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult { // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult { // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult.Failure.toString|toString(){}[0]
@@ -3470,26 +3470,26 @@ sealed interface com.wire.kalium.logic.feature.mfa/RemoveAuthenticatorAppResult 
 
 sealed interface com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult { // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult { // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Failure.toString|toString(){}[0]
     }
 
     final class Success : com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult { // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/AuthenticatorApp) // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.<init>|<init>(com.wire.kalium.logic.feature.mfa.AuthenticatorApp){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/AuthenticatorApp) // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.<init>|<init>(com.wire.kalium.logic.data.mfa.AuthenticatorApp){}[0]
 
         final val authenticatorApp // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.authenticatorApp|{}authenticatorApp[0]
-            final fun <get-authenticatorApp>(): com.wire.kalium.logic.feature.mfa/AuthenticatorApp // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.authenticatorApp.<get-authenticatorApp>|<get-authenticatorApp>(){}[0]
+            final fun <get-authenticatorApp>(): com.wire.kalium.logic.data.mfa/AuthenticatorApp // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.authenticatorApp.<get-authenticatorApp>|<get-authenticatorApp>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/AuthenticatorApp // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/AuthenticatorApp = ...): com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.copy|copy(com.wire.kalium.logic.feature.mfa.AuthenticatorApp){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/AuthenticatorApp // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/AuthenticatorApp = ...): com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.copy|copy(com.wire.kalium.logic.data.mfa.AuthenticatorApp){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult.Success.toString|toString(){}[0]
@@ -3498,26 +3498,26 @@ sealed interface com.wire.kalium.logic.feature.mfa/RenameAuthenticatorAppResult 
 
 sealed interface com.wire.kalium.logic.feature.mfa/StartMFASetupResult { // com.wire.kalium.logic.feature.mfa/StartMFASetupResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/StartMFASetupResult { // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Failure.toString|toString(){}[0]
     }
 
     final class Success : com.wire.kalium.logic.feature.mfa/StartMFASetupResult { // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAEnrollment) // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAEnrollment){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAEnrollment) // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAEnrollment){}[0]
 
         final val enrollment // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.enrollment|{}enrollment[0]
-            final fun <get-enrollment>(): com.wire.kalium.logic.feature.mfa/MFAEnrollment // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.enrollment.<get-enrollment>|<get-enrollment>(){}[0]
+            final fun <get-enrollment>(): com.wire.kalium.logic.data.mfa/MFAEnrollment // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.enrollment.<get-enrollment>|<get-enrollment>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAEnrollment // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAEnrollment = ...): com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.copy|copy(com.wire.kalium.logic.feature.mfa.MFAEnrollment){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAEnrollment // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAEnrollment = ...): com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.copy|copy(com.wire.kalium.logic.data.mfa.MFAEnrollment){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/StartMFASetupResult.Success.toString|toString(){}[0]
@@ -3526,13 +3526,13 @@ sealed interface com.wire.kalium.logic.feature.mfa/StartMFASetupResult { // com.
 
 sealed interface com.wire.kalium.logic.feature.mfa/TurnOffMFAResult { // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/TurnOffMFAResult { // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/TurnOffMFAResult.Failure.toString|toString(){}[0]
@@ -3547,13 +3547,13 @@ sealed interface com.wire.kalium.logic.feature.mfa/TurnOffMFAResult { // com.wir
 
 sealed interface com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult { // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult { // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeResult.Failure.toString|toString(){}[0]
@@ -3568,13 +3568,13 @@ sealed interface com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeRes
 
 sealed interface com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult { // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult { // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.<init>|<init>(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        constructor <init>(com.wire.kalium.logic.data.mfa/MFAFailure) // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.<init>|<init>(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
 
         final val failure // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.failure|{}failure[0]
-            final fun <get-failure>(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+            final fun <get-failure>(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
 
-        final fun component1(): com.wire.kalium.logic.feature.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.copy|copy(com.wire.kalium.logic.feature.mfa.MFAFailure){}[0]
+        final fun component1(): com.wire.kalium.logic.data.mfa/MFAFailure // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.mfa/MFAFailure = ...): com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.copy|copy(com.wire.kalium.logic.data.mfa.MFAFailure){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeResult.Failure.toString|toString(){}[0]
@@ -4294,6 +4294,62 @@ final class com.wire.kalium.logic.data.message.timeline/MessageTimelinePage { //
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.mfa/AuthenticatorApp { // com.wire.kalium.logic.data.mfa/AuthenticatorApp|null[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlinx.datetime/LocalDate) // com.wire.kalium.logic.data.mfa/AuthenticatorApp.<init>|<init>(kotlin.String;kotlin.String;kotlinx.datetime.LocalDate){}[0]
+
+    final val addedOn // com.wire.kalium.logic.data.mfa/AuthenticatorApp.addedOn|{}addedOn[0]
+        final fun <get-addedOn>(): kotlinx.datetime/LocalDate // com.wire.kalium.logic.data.mfa/AuthenticatorApp.addedOn.<get-addedOn>|<get-addedOn>(){}[0]
+    final val id // com.wire.kalium.logic.data.mfa/AuthenticatorApp.id|{}id[0]
+        final fun <get-id>(): kotlin/String // com.wire.kalium.logic.data.mfa/AuthenticatorApp.id.<get-id>|<get-id>(){}[0]
+    final val name // com.wire.kalium.logic.data.mfa/AuthenticatorApp.name|{}name[0]
+        final fun <get-name>(): kotlin/String // com.wire.kalium.logic.data.mfa/AuthenticatorApp.name.<get-name>|<get-name>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.mfa/AuthenticatorApp.component1|component1(){}[0]
+    final fun component2(): kotlin/String // com.wire.kalium.logic.data.mfa/AuthenticatorApp.component2|component2(){}[0]
+    final fun component3(): kotlinx.datetime/LocalDate // com.wire.kalium.logic.data.mfa/AuthenticatorApp.component3|component3(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.datetime/LocalDate = ...): com.wire.kalium.logic.data.mfa/AuthenticatorApp // com.wire.kalium.logic.data.mfa/AuthenticatorApp.copy|copy(kotlin.String;kotlin.String;kotlinx.datetime.LocalDate){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.mfa/AuthenticatorApp.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.mfa/AuthenticatorApp.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.mfa/AuthenticatorApp.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.mfa/MFAEnrollment { // com.wire.kalium.logic.data.mfa/MFAEnrollment|null[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/String) // com.wire.kalium.logic.data.mfa/MFAEnrollment.<init>|<init>(kotlin.String;kotlin.String;kotlin.String){}[0]
+
+    final val account // com.wire.kalium.logic.data.mfa/MFAEnrollment.account|{}account[0]
+        final fun <get-account>(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.account.<get-account>|<get-account>(){}[0]
+    final val authenticatorUri // com.wire.kalium.logic.data.mfa/MFAEnrollment.authenticatorUri|{}authenticatorUri[0]
+        final fun <get-authenticatorUri>(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.authenticatorUri.<get-authenticatorUri>|<get-authenticatorUri>(){}[0]
+    final val id // com.wire.kalium.logic.data.mfa/MFAEnrollment.id|{}id[0]
+        final fun <get-id>(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.id.<get-id>|<get-id>(){}[0]
+    final val setupKey // com.wire.kalium.logic.data.mfa/MFAEnrollment.setupKey|{}setupKey[0]
+        final fun <get-setupKey>(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.setupKey.<get-setupKey>|<get-setupKey>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.component1|component1(){}[0]
+    final fun component2(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.component2|component2(){}[0]
+    final fun component3(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.component3|component3(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ...): com.wire.kalium.logic.data.mfa/MFAEnrollment // com.wire.kalium.logic.data.mfa/MFAEnrollment.copy|copy(kotlin.String;kotlin.String;kotlin.String){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.mfa/MFAEnrollment.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.mfa/MFAEnrollment.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.mfa/RecoveryCodesStatus { // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus|null[0]
+    constructor <init>(kotlin/Int, kotlin/Int) // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.<init>|<init>(kotlin.Int;kotlin.Int){}[0]
+
+    final val remaining // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.remaining|{}remaining[0]
+        final fun <get-remaining>(): kotlin/Int // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.remaining.<get-remaining>|<get-remaining>(){}[0]
+    final val total // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.total|{}total[0]
+        final fun <get-total>(): kotlin/Int // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.total.<get-total>|<get-total>(){}[0]
+
+    final fun component1(): kotlin/Int // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.component1|component1(){}[0]
+    final fun component2(): kotlin/Int // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.component2|component2(){}[0]
+    final fun copy(kotlin/Int = ..., kotlin/Int = ...): com.wire.kalium.logic.data.mfa/RecoveryCodesStatus // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.copy|copy(kotlin.Int;kotlin.Int){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.mfa/RecoveryCodesStatus.toString|toString(){}[0]
 }
 
 final class com.wire.kalium.logic.data.publicuser.model/UserSearchDetails { // com.wire.kalium.logic.data.publicuser.model/UserSearchDetails|null[0]
@@ -6142,46 +6198,6 @@ final class com.wire.kalium.logic.feature.message/ToggleReactionUseCase { // com
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin/String): com.wire.kalium.logic.feature.message/ToggleReactionResult // com.wire.kalium.logic.feature.message/ToggleReactionUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.String){}[0]
 }
 
-final class com.wire.kalium.logic.feature.mfa/AuthenticatorApp { // com.wire.kalium.logic.feature.mfa/AuthenticatorApp|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlinx.datetime/LocalDate) // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.<init>|<init>(kotlin.String;kotlin.String;kotlinx.datetime.LocalDate){}[0]
-
-    final val addedOn // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.addedOn|{}addedOn[0]
-        final fun <get-addedOn>(): kotlinx.datetime/LocalDate // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.addedOn.<get-addedOn>|<get-addedOn>(){}[0]
-    final val id // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.id|{}id[0]
-        final fun <get-id>(): kotlin/String // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.id.<get-id>|<get-id>(){}[0]
-    final val name // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.name|{}name[0]
-        final fun <get-name>(): kotlin/String // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.name.<get-name>|<get-name>(){}[0]
-
-    final fun component1(): kotlin/String // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.component1|component1(){}[0]
-    final fun component2(): kotlin/String // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.component2|component2(){}[0]
-    final fun component3(): kotlinx.datetime/LocalDate // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.datetime/LocalDate = ...): com.wire.kalium.logic.feature.mfa/AuthenticatorApp // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.copy|copy(kotlin.String;kotlin.String;kotlinx.datetime.LocalDate){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/AuthenticatorApp.toString|toString(){}[0]
-}
-
-final class com.wire.kalium.logic.feature.mfa/MFAEnrollment { // com.wire.kalium.logic.feature.mfa/MFAEnrollment|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlin/String) // com.wire.kalium.logic.feature.mfa/MFAEnrollment.<init>|<init>(kotlin.String;kotlin.String;kotlin.String){}[0]
-
-    final val account // com.wire.kalium.logic.feature.mfa/MFAEnrollment.account|{}account[0]
-        final fun <get-account>(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAEnrollment.account.<get-account>|<get-account>(){}[0]
-    final val authenticatorUri // com.wire.kalium.logic.feature.mfa/MFAEnrollment.authenticatorUri|{}authenticatorUri[0]
-        final fun <get-authenticatorUri>(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAEnrollment.authenticatorUri.<get-authenticatorUri>|<get-authenticatorUri>(){}[0]
-    final val id // com.wire.kalium.logic.feature.mfa/MFAEnrollment.id|{}id[0]
-        final fun <get-id>(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAEnrollment.id.<get-id>|<get-id>(){}[0]
-    final val setupKey // com.wire.kalium.logic.feature.mfa/MFAEnrollment.setupKey|{}setupKey[0]
-        final fun <get-setupKey>(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAEnrollment.setupKey.<get-setupKey>|<get-setupKey>(){}[0]
-
-    final fun component1(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAEnrollment.component1|component1(){}[0]
-    final fun component2(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAEnrollment.component2|component2(){}[0]
-    final fun component3(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAEnrollment.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ...): com.wire.kalium.logic.feature.mfa/MFAEnrollment // com.wire.kalium.logic.feature.mfa/MFAEnrollment.copy|copy(kotlin.String;kotlin.String;kotlin.String){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/MFAEnrollment.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/MFAEnrollment.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/MFAEnrollment.toString|toString(){}[0]
-}
-
 final class com.wire.kalium.logic.feature.mfa/MFAScope { // com.wire.kalium.logic.feature.mfa/MFAScope|null[0]
     final val completeSetup // com.wire.kalium.logic.feature.mfa/MFAScope.completeSetup|{}completeSetup[0]
         final fun <get-completeSetup>(): com.wire.kalium.logic.feature.mfa/CompleteMFASetupUseCase // com.wire.kalium.logic.feature.mfa/MFAScope.completeSetup.<get-completeSetup>|<get-completeSetup>(){}[0]
@@ -6207,22 +6223,6 @@ final class com.wire.kalium.logic.feature.mfa/MFAScope { // com.wire.kalium.logi
         final fun <get-verifyAuthenticatorCode>(): com.wire.kalium.logic.feature.mfa/VerifyAuthenticatorAppCodeUseCase // com.wire.kalium.logic.feature.mfa/MFAScope.verifyAuthenticatorCode.<get-verifyAuthenticatorCode>|<get-verifyAuthenticatorCode>(){}[0]
     final val verifySetupCode // com.wire.kalium.logic.feature.mfa/MFAScope.verifySetupCode|{}verifySetupCode[0]
         final fun <get-verifySetupCode>(): com.wire.kalium.logic.feature.mfa/VerifyMFASetupCodeUseCase // com.wire.kalium.logic.feature.mfa/MFAScope.verifySetupCode.<get-verifySetupCode>|<get-verifySetupCode>(){}[0]
-}
-
-final class com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus { // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus|null[0]
-    constructor <init>(kotlin/Int, kotlin/Int) // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.<init>|<init>(kotlin.Int;kotlin.Int){}[0]
-
-    final val remaining // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.remaining|{}remaining[0]
-        final fun <get-remaining>(): kotlin/Int // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.remaining.<get-remaining>|<get-remaining>(){}[0]
-    final val total // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.total|{}total[0]
-        final fun <get-total>(): kotlin/Int // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.total.<get-total>|<get-total>(){}[0]
-
-    final fun component1(): kotlin/Int // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.component1|component1(){}[0]
-    final fun component2(): kotlin/Int // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.component2|component2(){}[0]
-    final fun copy(kotlin/Int = ..., kotlin/Int = ...): com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.copy|copy(kotlin.Int;kotlin.Int){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.feature.mfa/RecoveryCodesStatus.toString|toString(){}[0]
 }
 
 final class com.wire.kalium.logic.feature.notificationToken/SendFCMTokenError { // com.wire.kalium.logic.feature.notificationToken/SendFCMTokenError|null[0]
@@ -9681,17 +9681,17 @@ sealed class com.wire.kalium.logic.sync/SyncRequestResult { // com.wire.kalium.l
     final object Success : com.wire.kalium.logic.sync/SyncRequestResult // com.wire.kalium.logic.sync/SyncRequestResult.Success|null[0]
 }
 
+final object com.wire.kalium.logic.data.mfa/MFAConstraints { // com.wire.kalium.logic.data.mfa/MFAConstraints|null[0]
+    final const val AUTHENTICATION_CODE_LENGTH // com.wire.kalium.logic.data.mfa/MFAConstraints.AUTHENTICATION_CODE_LENGTH|{}AUTHENTICATION_CODE_LENGTH[0]
+        final fun <get-AUTHENTICATION_CODE_LENGTH>(): kotlin/Int // com.wire.kalium.logic.data.mfa/MFAConstraints.AUTHENTICATION_CODE_LENGTH.<get-AUTHENTICATION_CODE_LENGTH>|<get-AUTHENTICATION_CODE_LENGTH>(){}[0]
+    final const val MAX_AUTHENTICATOR_APPS // com.wire.kalium.logic.data.mfa/MFAConstraints.MAX_AUTHENTICATOR_APPS|{}MAX_AUTHENTICATOR_APPS[0]
+        final fun <get-MAX_AUTHENTICATOR_APPS>(): kotlin/Int // com.wire.kalium.logic.data.mfa/MFAConstraints.MAX_AUTHENTICATOR_APPS.<get-MAX_AUTHENTICATOR_APPS>|<get-MAX_AUTHENTICATOR_APPS>(){}[0]
+}
+
 final object com.wire.kalium.logic.feature.call/AppleCallTraceBindings { // com.wire.kalium.logic.feature.call/AppleCallTraceBindings|null[0]
     final fun bind(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, kotlin/String): com.wire.kalium.logic.feature.call/AppleCallTraceBinding // com.wire.kalium.logic.feature.call/AppleCallTraceBindings.bind|bind(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String){}[0]
     final fun context(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, kotlin/String? = ..., kotlin/String? = ...): com.wire.kalium.logger/CallTraceContext // com.wire.kalium.logic.feature.call/AppleCallTraceBindings.context|context(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.String?){}[0]
     final fun release(com.wire.kalium.logic.feature.call/AppleCallTraceBinding) // com.wire.kalium.logic.feature.call/AppleCallTraceBindings.release|release(com.wire.kalium.logic.feature.call.AppleCallTraceBinding){}[0]
-}
-
-final object com.wire.kalium.logic.feature.mfa/MFAConstraints { // com.wire.kalium.logic.feature.mfa/MFAConstraints|null[0]
-    final const val AUTHENTICATION_CODE_LENGTH // com.wire.kalium.logic.feature.mfa/MFAConstraints.AUTHENTICATION_CODE_LENGTH|{}AUTHENTICATION_CODE_LENGTH[0]
-        final fun <get-AUTHENTICATION_CODE_LENGTH>(): kotlin/Int // com.wire.kalium.logic.feature.mfa/MFAConstraints.AUTHENTICATION_CODE_LENGTH.<get-AUTHENTICATION_CODE_LENGTH>|<get-AUTHENTICATION_CODE_LENGTH>(){}[0]
-    final const val MAX_AUTHENTICATOR_APPS // com.wire.kalium.logic.feature.mfa/MFAConstraints.MAX_AUTHENTICATOR_APPS|{}MAX_AUTHENTICATOR_APPS[0]
-        final fun <get-MAX_AUTHENTICATOR_APPS>(): kotlin/Int // com.wire.kalium.logic.feature.mfa/MFAConstraints.MAX_AUTHENTICATOR_APPS.<get-MAX_AUTHENTICATOR_APPS>|<get-MAX_AUTHENTICATOR_APPS>(){}[0]
 }
 
 final object com.wire.kalium.logic.sync/PendingMessagesForegroundSync { // com.wire.kalium.logic.sync/PendingMessagesForegroundSync|null[0]
