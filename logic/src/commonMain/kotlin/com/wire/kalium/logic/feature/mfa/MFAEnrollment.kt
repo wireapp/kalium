@@ -18,28 +18,58 @@
 
 package com.wire.kalium.logic.feature.mfa
 
+/**
+ * Details needed to configure an authenticator for MFA enrollment.
+ *
+ * @property id Identifies the enrollment when verifying and completing setup.
+ * @property account Account label displayed by the authenticator.
+ * @property setupKey Shared secret for manually configuring the authenticator.
+ */
 public data class MFAEnrollment(
     public val id: String,
     public val account: String,
     public val setupKey: String,
 ) {
+    /** TOTP provisioning URI for configuring an authenticator, typically encoded as a QR code. */
     public val authenticatorUri: String
         get() = "otpauth://totp/Wire:$account?secret=$setupKey&issuer=Wire&algorithm=SHA1&digits=6&period=30"
 }
 
+/** Limits and format requirements for MFA configuration. */
 public object MFAConstraints {
+    /** Number of digits in an authenticator-generated authentication code. */
     public const val AUTHENTICATION_CODE_LENGTH: Int = 6
+
+    /** Maximum number of authenticators that can be registered to an account. */
     public const val MAX_AUTHENTICATOR_APPS: Int = 5
 }
 
+/** Reasons an MFA operation could not be completed. */
 public enum class MFAFailure {
+    /** The account password could not be confirmed. */
     INVALID_PASSWORD,
+
+    /** The authentication code could not be verified. */
     INVALID_CODE,
+
+    /** The authenticator name does not meet naming requirements. */
     INVALID_NAME,
+
+    /** The enrollment does not exist or has not completed the required verification steps. */
     INVALID_ENROLLMENT,
+
+    /** The operation requires MFA to be enabled. */
     MFA_DISABLED,
+
+    /** Initial setup cannot be completed because MFA is already enabled. */
     MFA_ALREADY_ENABLED,
+
+    /** The requested authenticator does not exist. */
     NOT_FOUND,
+
+    /** The account's final authenticator cannot be removed while MFA is enabled. */
     LAST_APP,
+
+    /** The account has reached its authenticator limit. */
     LIMIT_REACHED,
 }

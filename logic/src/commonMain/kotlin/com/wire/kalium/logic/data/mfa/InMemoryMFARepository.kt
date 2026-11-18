@@ -36,7 +36,12 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
-/** Simulated account backend. One instance belongs to one Kalium account session. */
+/**
+ * Account-scoped MFA repository that maintains state in memory and publishes changes to observers.
+ *
+ * **Warning:** The current implementation is a temporary dummy implementation. It uses simulated
+ * operations and predefined authentication data instead of communicating with a backend.
+ */
 internal class InMemoryMFARepository(
     initialOverview: MFAOverview = MFAOverview.Disabled,
     private val loadOverview: (suspend () -> MFAOverview)? = null,

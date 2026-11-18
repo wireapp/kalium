@@ -20,7 +20,11 @@ package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Account-scoped MFA settings capability, currently backed by an in-memory prototype. */
+/**
+ * Account-scoped capability for managing MFA settings.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public class MFAScope internal constructor(repository: MFARepository) {
     public val observeOverview: ObserveMFAOverviewUseCase = ObserveMFAOverviewUseCaseImpl(repository)
     public val refreshOverview: RefreshMFAOverviewUseCase = RefreshMFAOverviewUseCaseImpl(repository)
