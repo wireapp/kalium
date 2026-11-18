@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -27,10 +27,22 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface VerifyAuthenticatorAppCodeUseCase {
-    public suspend operator fun invoke(enrollmentId: String, code: String): Either<MFAFailure, Unit>
+    public suspend operator fun invoke(enrollmentId: String, code: String): VerifyAuthenticatorAppCodeResult
 }
 
 internal class VerifyAuthenticatorAppCodeUseCaseImpl(private val repository: MFARepository) : VerifyAuthenticatorAppCodeUseCase {
-    override suspend fun invoke(enrollmentId: String, code: String): Either<MFAFailure, Unit> =
-        repository.verifyAuthenticatorCode(enrollmentId, code)
+    override suspend fun invoke(enrollmentId: String, code: String): VerifyAuthenticatorAppCodeResult =
+        repository.verifyAuthenticatorCode(enrollmentId, code).fold(
+            { VerifyAuthenticatorAppCodeResult.Failure(it) },
+            { VerifyAuthenticatorAppCodeResult.Success },
+        )
+}
+
+/** Outcome of verifying an additional authenticator's authentication code. */
+public sealed interface VerifyAuthenticatorAppCodeResult {
+    /** The enrollment's authentication code was verified. */
+    public data object Success : VerifyAuthenticatorAppCodeResult
+
+    /** The reason the enrollment could not be verified. */
+    public data class Failure(public val failure: MFAFailure) : VerifyAuthenticatorAppCodeResult
 }

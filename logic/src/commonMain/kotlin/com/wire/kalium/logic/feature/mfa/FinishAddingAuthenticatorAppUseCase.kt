@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -27,10 +27,22 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface FinishAddingAuthenticatorAppUseCase {
-    public suspend operator fun invoke(enrollmentId: String, name: String): Either<MFAFailure, AuthenticatorApp>
+    public suspend operator fun invoke(enrollmentId: String, name: String): FinishAddingAuthenticatorAppResult
 }
 
 internal class FinishAddingAuthenticatorAppUseCaseImpl(private val repository: MFARepository) : FinishAddingAuthenticatorAppUseCase {
-    override suspend fun invoke(enrollmentId: String, name: String): Either<MFAFailure, AuthenticatorApp> =
-        repository.finishAddingAuthenticator(enrollmentId, name)
+    override suspend fun invoke(enrollmentId: String, name: String): FinishAddingAuthenticatorAppResult =
+        repository.finishAddingAuthenticator(enrollmentId, name).fold(
+            { FinishAddingAuthenticatorAppResult.Failure(it) },
+            { FinishAddingAuthenticatorAppResult.Success(it) },
+        )
+}
+
+/** Outcome of completing an additional authenticator's enrollment. */
+public sealed interface FinishAddingAuthenticatorAppResult {
+    /** The authenticator added to the account. */
+    public data class Success(public val authenticatorApp: AuthenticatorApp) : FinishAddingAuthenticatorAppResult
+
+    /** The reason the authenticator could not be added. */
+    public data class Failure(public val failure: MFAFailure) : FinishAddingAuthenticatorAppResult
 }

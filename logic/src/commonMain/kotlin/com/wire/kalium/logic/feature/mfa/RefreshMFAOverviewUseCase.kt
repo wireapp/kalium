@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.mfa
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -28,9 +28,21 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface RefreshMFAOverviewUseCase {
-    public suspend operator fun invoke(): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(): RefreshMFAOverviewResult
 }
 
 internal class RefreshMFAOverviewUseCaseImpl(private val repository: MFARepository) : RefreshMFAOverviewUseCase {
-    override suspend fun invoke(): Either<CoreFailure, Unit> = repository.refresh()
+    override suspend fun invoke(): RefreshMFAOverviewResult = repository.refresh().fold(
+        { RefreshMFAOverviewResult.Failure(it) },
+        { RefreshMFAOverviewResult.Success },
+    )
+}
+
+/** Outcome of refreshing the account's MFA overview. */
+public sealed interface RefreshMFAOverviewResult {
+    /** The refresh completed without failure. */
+    public data object Success : RefreshMFAOverviewResult
+
+    /** The reason the overview could not be refreshed. */
+    public data class Failure(public val failure: CoreFailure) : RefreshMFAOverviewResult
 }

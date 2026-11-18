@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -27,10 +27,22 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface RenameAuthenticatorAppUseCase {
-    public suspend operator fun invoke(appId: String, name: String): Either<MFAFailure, AuthenticatorApp>
+    public suspend operator fun invoke(appId: String, name: String): RenameAuthenticatorAppResult
 }
 
 internal class RenameAuthenticatorAppUseCaseImpl(private val repository: MFARepository) : RenameAuthenticatorAppUseCase {
-    override suspend fun invoke(appId: String, name: String): Either<MFAFailure, AuthenticatorApp> =
-        repository.renameAuthenticator(appId, name)
+    override suspend fun invoke(appId: String, name: String): RenameAuthenticatorAppResult =
+        repository.renameAuthenticator(appId, name).fold(
+            { RenameAuthenticatorAppResult.Failure(it) },
+            { RenameAuthenticatorAppResult.Success(it) },
+        )
+}
+
+/** Outcome of renaming an authenticator. */
+public sealed interface RenameAuthenticatorAppResult {
+    /** The authenticator with its updated name. */
+    public data class Success(public val authenticatorApp: AuthenticatorApp) : RenameAuthenticatorAppResult
+
+    /** The reason the authenticator could not be renamed. */
+    public data class Failure(public val failure: MFAFailure) : RenameAuthenticatorAppResult
 }

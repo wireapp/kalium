@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -27,10 +27,22 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface VerifyMFASetupCodeUseCase {
-    public suspend operator fun invoke(enrollmentId: String, code: String): Either<MFAFailure, List<String>>
+    public suspend operator fun invoke(enrollmentId: String, code: String): VerifyMFASetupCodeResult
 }
 
 internal class VerifyMFASetupCodeUseCaseImpl(private val repository: MFARepository) : VerifyMFASetupCodeUseCase {
-    override suspend fun invoke(enrollmentId: String, code: String): Either<MFAFailure, List<String>> =
-        repository.verifySetupCode(enrollmentId, code)
+    override suspend fun invoke(enrollmentId: String, code: String): VerifyMFASetupCodeResult =
+        repository.verifySetupCode(enrollmentId, code).fold(
+            { VerifyMFASetupCodeResult.Failure(it) },
+            { VerifyMFASetupCodeResult.Success(it) },
+        )
+}
+
+/** Outcome of verifying an initial MFA enrollment's authentication code. */
+public sealed interface VerifyMFASetupCodeResult {
+    /** Recovery codes prepared for the verified enrollment. */
+    public data class Success(public val recoveryCodes: List<String>) : VerifyMFASetupCodeResult
+
+    /** The reason the enrollment could not be verified. */
+    public data class Failure(public val failure: MFAFailure) : VerifyMFASetupCodeResult
 }

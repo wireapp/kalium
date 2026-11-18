@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -27,9 +27,21 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface TurnOffMFAUseCase {
-    public suspend operator fun invoke(password: String, code: String): Either<MFAFailure, Unit>
+    public suspend operator fun invoke(password: String, code: String): TurnOffMFAResult
 }
 
 internal class TurnOffMFAUseCaseImpl(private val repository: MFARepository) : TurnOffMFAUseCase {
-    override suspend fun invoke(password: String, code: String): Either<MFAFailure, Unit> = repository.turnOff(password, code)
+    override suspend fun invoke(password: String, code: String): TurnOffMFAResult = repository.turnOff(password, code).fold(
+        { TurnOffMFAResult.Failure(it) },
+        { TurnOffMFAResult.Success },
+    )
+}
+
+/** Outcome of disabling MFA for the account. */
+public sealed interface TurnOffMFAResult {
+    /** MFA was disabled. */
+    public data object Success : TurnOffMFAResult
+
+    /** The reason MFA could not be disabled. */
+    public data class Failure(public val failure: MFAFailure) : TurnOffMFAResult
 }

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -27,9 +27,21 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface ConfirmMFAPasswordUseCase {
-    public suspend operator fun invoke(password: String): Either<MFAFailure, Unit>
+    public suspend operator fun invoke(password: String): ConfirmMFAPasswordResult
 }
 
 internal class ConfirmMFAPasswordUseCaseImpl(private val repository: MFARepository) : ConfirmMFAPasswordUseCase {
-    override suspend fun invoke(password: String): Either<MFAFailure, Unit> = repository.confirmPassword(password)
+    override suspend fun invoke(password: String): ConfirmMFAPasswordResult = repository.confirmPassword(password).fold(
+        { ConfirmMFAPasswordResult.Failure(it) },
+        { ConfirmMFAPasswordResult.Success },
+    )
+}
+
+/** Outcome of confirming the account password for MFA management. */
+public sealed interface ConfirmMFAPasswordResult {
+    /** The password was confirmed. */
+    public data object Success : ConfirmMFAPasswordResult
+
+    /** The reason the password could not be confirmed. */
+    public data class Failure(public val failure: MFAFailure) : ConfirmMFAPasswordResult
 }

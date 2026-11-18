@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -27,9 +27,21 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface GenerateMFARecoveryCodesUseCase {
-    public suspend operator fun invoke(): Either<MFAFailure, List<String>>
+    public suspend operator fun invoke(): GenerateMFARecoveryCodesResult
 }
 
 internal class GenerateMFARecoveryCodesUseCaseImpl(private val repository: MFARepository) : GenerateMFARecoveryCodesUseCase {
-    override suspend fun invoke(): Either<MFAFailure, List<String>> = repository.generateRecoveryCodes()
+    override suspend fun invoke(): GenerateMFARecoveryCodesResult = repository.generateRecoveryCodes().fold(
+        { GenerateMFARecoveryCodesResult.Failure(it) },
+        { GenerateMFARecoveryCodesResult.Success(it) },
+    )
+}
+
+/** Outcome of replacing the account's MFA recovery codes. */
+public sealed interface GenerateMFARecoveryCodesResult {
+    /** The new recovery-code values for display to the user. */
+    public data class Success(public val recoveryCodes: List<String>) : GenerateMFARecoveryCodesResult
+
+    /** The reason recovery codes could not be replaced. */
+    public data class Failure(public val failure: MFAFailure) : GenerateMFARecoveryCodesResult
 }

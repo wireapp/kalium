@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -27,10 +27,22 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface RemoveAuthenticatorAppUseCase {
-    public suspend operator fun invoke(appId: String, password: String, code: String): Either<MFAFailure, Unit>
+    public suspend operator fun invoke(appId: String, password: String, code: String): RemoveAuthenticatorAppResult
 }
 
 internal class RemoveAuthenticatorAppUseCaseImpl(private val repository: MFARepository) : RemoveAuthenticatorAppUseCase {
-    override suspend fun invoke(appId: String, password: String, code: String): Either<MFAFailure, Unit> =
-        repository.removeAuthenticator(appId, password, code)
+    override suspend fun invoke(appId: String, password: String, code: String): RemoveAuthenticatorAppResult =
+        repository.removeAuthenticator(appId, password, code).fold(
+            { RemoveAuthenticatorAppResult.Failure(it) },
+            { RemoveAuthenticatorAppResult.Success },
+        )
+}
+
+/** Outcome of removing an authenticator from the account. */
+public sealed interface RemoveAuthenticatorAppResult {
+    /** The authenticator was removed. */
+    public data object Success : RemoveAuthenticatorAppResult
+
+    /** The reason the authenticator could not be removed. */
+    public data class Failure(public val failure: MFAFailure) : RemoveAuthenticatorAppResult
 }

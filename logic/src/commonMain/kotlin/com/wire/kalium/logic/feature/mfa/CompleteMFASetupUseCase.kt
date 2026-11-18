@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.mfa
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.mfa.MFARepository
 
 /**
@@ -27,10 +27,22 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
 public interface CompleteMFASetupUseCase {
-    public suspend operator fun invoke(enrollmentId: String, name: String): Either<MFAFailure, Unit>
+    public suspend operator fun invoke(enrollmentId: String, name: String): CompleteMFASetupResult
 }
 
 internal class CompleteMFASetupUseCaseImpl(private val repository: MFARepository) : CompleteMFASetupUseCase {
-    override suspend fun invoke(enrollmentId: String, name: String): Either<MFAFailure, Unit> =
-        repository.completeSetup(enrollmentId, name)
+    override suspend fun invoke(enrollmentId: String, name: String): CompleteMFASetupResult =
+        repository.completeSetup(enrollmentId, name).fold(
+            { CompleteMFASetupResult.Failure(it) },
+            { CompleteMFASetupResult.Success },
+        )
+}
+
+/** Outcome of completing initial MFA setup. */
+public sealed interface CompleteMFASetupResult {
+    /** MFA setup completed successfully. */
+    public data object Success : CompleteMFASetupResult
+
+    /** The reason setup could not be completed. */
+    public data class Failure(public val failure: MFAFailure) : CompleteMFASetupResult
 }
