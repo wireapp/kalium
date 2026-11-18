@@ -12,6 +12,7 @@ elif [[ "${EVENT_NAME-}" == "pull_request" &&
         "${PR_BASE_REF-}" == "develop" &&
         -n "${REPOSITORY-}" && "${PR_HEAD_REPOSITORY-}" == "${REPOSITORY}" ]]; then
   enabled=true
+  read_only=true
 elif [[ "${EVENT_NAME-}" == "merge_group" &&
         "${MERGE_GROUP_BASE_REF-}" == "refs/heads/develop" ]]; then
   enabled=true
