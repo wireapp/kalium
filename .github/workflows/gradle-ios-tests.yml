@@ -266,9 +266,8 @@ jobs:
           path: ~/.konan
           key: ${{ steps.konan-cache.outputs.cache-primary-key }}
 
-  # Preserve the existing required check name while exposing each shard's result separately.
   gradle-run-tests:
-    name: Gradle Run Tests
+    name: iOS Tests
     runs-on: ubuntu-latest
     needs: ios-tests
     if: always()
@@ -283,7 +282,7 @@ jobs:
           fi
 
   upload-test-results-datadadog:
-    name: Upload Test Results Datadadog
+    name: Upload iOS Test Results to Datadog
     runs-on: ubuntu-latest
     needs: gradle-run-tests
     if: always()

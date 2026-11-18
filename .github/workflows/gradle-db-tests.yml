@@ -20,7 +20,7 @@ jobs:
     name: Detekt
     uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
-    name: Gradle Run Tests
+    name: Database Tests
     needs: [ detekt ]
     runs-on: ubuntu-latest
     env:
