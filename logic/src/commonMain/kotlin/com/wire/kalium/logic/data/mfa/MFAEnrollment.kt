@@ -24,16 +24,14 @@ package com.wire.kalium.logic.data.mfa
  * @property id Identifies the enrollment when verifying and completing setup.
  * @property account Account label displayed by the authenticator.
  * @property setupKey Shared secret for manually configuring the authenticator.
+ * @property authenticatorUri Server-provided TOTP provisioning URI for configuring an authenticator.
  */
 public data class MFAEnrollment(
     public val id: String,
     public val account: String,
     public val setupKey: String,
-) {
-    /** TOTP provisioning URI for configuring an authenticator, typically encoded as a QR code. */
-    public val authenticatorUri: String
-        get() = "otpauth://totp/Wire:$account?secret=$setupKey&issuer=Wire&algorithm=SHA1&digits=6&period=30"
-}
+    public val authenticatorUri: String,
+)
 
 /** Limits and format requirements for MFA configuration. */
 public object MFAConstraints {

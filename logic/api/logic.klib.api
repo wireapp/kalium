@@ -4316,7 +4316,7 @@ final class com.wire.kalium.logic.data.mfa/AuthenticatorApp { // com.wire.kalium
 }
 
 final class com.wire.kalium.logic.data.mfa/MFAEnrollment { // com.wire.kalium.logic.data.mfa/MFAEnrollment|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlin/String) // com.wire.kalium.logic.data.mfa/MFAEnrollment.<init>|<init>(kotlin.String;kotlin.String;kotlin.String){}[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/String, kotlin/String) // com.wire.kalium.logic.data.mfa/MFAEnrollment.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.String){}[0]
 
     final val account // com.wire.kalium.logic.data.mfa/MFAEnrollment.account|{}account[0]
         final fun <get-account>(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.account.<get-account>|<get-account>(){}[0]
@@ -4330,7 +4330,8 @@ final class com.wire.kalium.logic.data.mfa/MFAEnrollment { // com.wire.kalium.lo
     final fun component1(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.component1|component1(){}[0]
     final fun component2(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.component2|component2(){}[0]
     final fun component3(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ...): com.wire.kalium.logic.data.mfa/MFAEnrollment // com.wire.kalium.logic.data.mfa/MFAEnrollment.copy|copy(kotlin.String;kotlin.String;kotlin.String){}[0]
+    final fun component4(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.component4|component4(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ...): com.wire.kalium.logic.data.mfa/MFAEnrollment // com.wire.kalium.logic.data.mfa/MFAEnrollment.copy|copy(kotlin.String;kotlin.String;kotlin.String;kotlin.String){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.mfa/MFAEnrollment.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.mfa/MFAEnrollment.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.mfa/MFAEnrollment.toString|toString(){}[0]

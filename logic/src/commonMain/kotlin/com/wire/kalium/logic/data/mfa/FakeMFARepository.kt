@@ -192,6 +192,8 @@ private object FakeMFAData {
         id = Uuid.random().toString(),
         account = "demo@wire.example",
         setupKey = "JBSWY3DPEHPK3PXP",
+        authenticatorUri = "otpauth://totp/Wire:demo@wire.example?secret=JBSWY3DPEHPK3PXP&issuer=Wire" +
+            "&algorithm=SHA1&digits=6&period=30",
     )
 
     fun recoveryCodes(): List<String> = List(RECOVERY_CODE_COUNT) {
