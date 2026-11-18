@@ -5,6 +5,10 @@ package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.CoroutineStart
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
@@ -27,6 +31,52 @@ import kotlin.test.assertTrue
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class NativeMessageDeliveryTest {
+    @Test
+    fun queuedNativeDeliveryRemainsPendingWhenCancellationOvertakesDispatch() = runTest {
+        val queued = mutableListOf<Runnable>()
+        val dispatcher = object : CoroutineDispatcher() {
+            override fun dispatch(context: CoroutineContext, block: Runnable) { queued.add(block) }
+        }
+        var pending = 0
+        var starts = 0
+        var finishes = 0
+        var entered = false
+        var acknowledged = false
+        val operation = launch(dispatcher, start = CoroutineStart.UNDISPATCHED) {
+            deliverMessageAlerts(
+                listOf("message"),
+                deliver = { entered = true; true },
+                onStarted = { pending++; starts++ },
+                onFinished = { pending--; finishes++ },
+            ) { acknowledged = true }
+        }
+        assertFalse(entered)
+        assertEquals(1, pending)
+        operation.cancel()
+        // Run cancellation before the already-queued detached enqueue, as a concurrent dispatcher may.
+        queued.removeAt(queued.lastIndex).run()
+        assertTrue(operation.isCompleted)
+        assertFalse(entered)
+        assertEquals(1, pending)
+        queued.removeAt(0).run()
+        assertTrue(entered)
+        assertEquals(0, pending)
+        assertEquals(1, starts)
+        assertEquals(1, finishes)
+        assertFalse(acknowledged)
+    }
+
+    @Test
+    fun observationFailuresDoNotChangeDeliveryOrAcknowledgement() = runTest {
+        val acknowledged = mutableListOf<String>()
+        assertTrue(deliverMessageAlerts(
+            listOf("message"), deliver = { true },
+            onStarted = { error("start observer failed") },
+            onFinished = { error("finish observer failed") },
+        ) { acknowledged.add(it) })
+        assertEquals(listOf("message"), acknowledged)
+    }
+
     @Test
     fun cancelledNativeCallbackReleasesLeaseAndLateAcceptanceDoesNotAcknowledge() = runTest {
         val root = (NSTemporaryDirectory() + NSUUID().UUIDString).toPath()

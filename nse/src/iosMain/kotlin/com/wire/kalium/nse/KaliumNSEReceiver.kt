@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.meeting.MeetingReminder
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
+import com.wire.kalium.logic.sync.receiving.AccountCleanupStage
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeFailure
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
@@ -212,26 +213,39 @@ public interface KaliumNSEMessageDelivery {
 @Suppress("TooManyFunctions") // Keep the diagnostic boundary separate from the receiving workflow.
 public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration) {
     @Throws(CancellationException::class)
-    public suspend fun process(request: KaliumNSERequest): KaliumNSEResult = processOwned(request, null)
+    public suspend fun process(request: KaliumNSERequest): KaliumNSEResult = processOwned(request, null, null)
 
     @Throws(CancellationException::class)
-    public suspend fun processAndDeliver(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery): KaliumNSEResult =
-        processOwned(request, delivery)
+    public suspend fun processAndDeliver(
+        request: KaliumNSERequest,
+        delivery: KaliumNSEMessageDelivery,
+        observer: KaliumNSEObserver? = null,
+    ): KaliumNSEResult = processOwned(request, delivery, observer)
 
-    private suspend fun processOwned(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
+    private suspend fun processOwned(
+        request: KaliumNSERequest,
+        delivery: KaliumNSEMessageDelivery?,
+        observer: KaliumNSEObserver?,
+    ): KaliumNSEResult {
         // An extension has a bounded host budget; this flag controls diagnostic verbosity only.
         AppleSuspensionDiagnostics.setBackgrounded(true)
         AppleSuspensionDiagnostics.snapshot("NSE_BEGIN")
         return try {
-            processObserved(request, delivery)
+            processObserved(request, delivery, observer)
         } finally {
             AppleSuspensionDiagnostics.snapshot("NSE_END")
+            observer.record(KaliumNSEStage.RECEIVER_FINISHED)
         }
     }
 
-    private suspend fun processObserved(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
+    private suspend fun processObserved(
+        request: KaliumNSERequest,
+        delivery: KaliumNSEMessageDelivery?,
+        observer: KaliumNSEObserver?,
+    ): KaliumNSEResult {
         val diagnostics = ReceivingDiagnostics()
         if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) {
+            observer.record(KaliumNSEStage.CLEANUP_NOT_NEEDED)
             return failure("INVALID_REQUEST").also { diagnostics.record("FAILED", it.failureReason, false) }
         }
         val started = TimeSource.Monotonic.markNow()
@@ -242,9 +256,10 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             withTimeoutOrNull(request.budgetMilliseconds) {
                 // The app releases the account within moments of moving to the background. Another attempt of
                 // this process presents only what it received, so this one waits for it too.
-                val result = configuration.useAccount(userId, diagnostics, BUSY_RETRY) { runtime ->
+                val result = configuration.useAccount(userId, diagnostics, BUSY_RETRY, observer) { runtime ->
+                    observer.record(KaliumNSEStage.ACCOUNT_LOADED)
                     // The badge is auxiliary: a slow count read must not discard already-produced alerts.
-                    val received = receive(runtime, request, diagnostics, started, delivery).also { produced = it }
+                    val received = receive(runtime, request, diagnostics, started, delivery, observer).also { produced = it }
                     received.copy(
                         unreadConversationBadgeCount = runtime.readUnreadConversationBadgeCount().getOrNull()
                     ).also { produced = it }
@@ -270,6 +285,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         diagnostics: ReceivingDiagnostics,
         started: TimeSource.Monotonic.ValueTimeMark,
         delivery: KaliumNSEMessageDelivery?,
+        observer: KaliumNSEObserver?,
     ): KaliumNSEResult {
         runtime.database.messageDAO.rememberNotificationMessages(request.deliveredNotifications.map { it.messageKey() })
         val processor = runtime.notificationProcessor(
@@ -292,18 +308,24 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         val catchUpStarted = TimeSource.Monotonic.markNow()
         // As the app does, catch up over the WebSocket, then process the stored queue to its end. Soft deadlines
         // leave time to present and to close the runtime within the budget.
+        observer.record(KaliumNSEStage.SYNC_STARTED)
         val caughtUp = if (handledEarlier) CatchUpOutcome.LIVE else runtime.catchUp(budget * CATCH_UP_SHARE - started.elapsedNow())
         val received = processor.processToLive(request.notificationId) { started.elapsedNow() > budget * PROCESS_SHARE }.let {
             if (caughtUp == CatchUpOutcome.LIVE || it.stoppedReason != QUEUE_END) it
             else it.copy(stoppedReason = "CATCH_UP_${caughtUp.name}")
         }
+        observer.record(KaliumNSEStage.SYNC_FINISHED)
         val claims = UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId)
         claims.pending.acknowledge(request.deliveredNotifications.map { it.messageKey() })
         if (received.prefixComplete) claims.take()
         val unnotified = claims.pending.read(request.showMessageContent)
         val result = reconcileNotifications(runtime, received, unnotified, request)
         // Without delivery the host posts the alerts after this returns, so nothing proves they were presented.
-        val presented = delivery != null && deliverMessageAlerts(result.alerts, delivery::deliver) { alert ->
+        val presented = delivery != null && deliverMessageAlerts(
+            result.alerts, delivery::deliver,
+            onStarted = { observer.record(KaliumNSEStage.NATIVE_DELIVERY_STARTED) },
+            onFinished = { observer.record(KaliumNSEStage.NATIVE_DELIVERY_FINISHED) },
+        ) { alert ->
             claims.pending.acknowledge(listOf(alert.messageKey()))
         }
         return result.copy(
@@ -586,21 +608,38 @@ private suspend fun <T> KaliumNSEConfiguration.useAccount(
     userId: UserId,
     diagnostics: ReceivingDiagnostics,
     busyRetry: Duration,
+    observer: KaliumNSEObserver?,
     block: suspend (AppleAccountRuntime) -> T,
-) = AppleAccountRuntime.use(
-    rootPath,
-    userId,
-    ApplePersistenceConfig(
-        serviceName = keychainService,
-        keychainAccessibility = keychainAccessibility.toApple(),
-        accessGroup = keychainAccessGroup,
-    ),
-    userAgent,
-    certificatePins,
-    diagnostics = diagnostics,
-    busyRetry = busyRetry,
-    block = block,
-)
+): Either<AccountRuntimeFailure, T> {
+    var cleanupObserved = false
+    return try {
+        AppleAccountRuntime.use(
+            rootPath,
+            userId,
+            ApplePersistenceConfig(
+                serviceName = keychainService,
+                keychainAccessibility = keychainAccessibility.toApple(),
+                accessGroup = keychainAccessGroup,
+            ),
+            userAgent,
+            certificatePins,
+            diagnostics = diagnostics,
+            busyRetry = busyRetry,
+            observeCleanup = { stage ->
+                cleanupObserved = true
+                observer.record(when (stage) {
+                    AccountCleanupStage.STARTED -> KaliumNSEStage.CLEANUP_STARTED
+                    AccountCleanupStage.COMPLETED -> KaliumNSEStage.CLEANUP_COMPLETED
+                    AccountCleanupStage.FAILED -> KaliumNSEStage.CLEANUP_FAILED
+                })
+            },
+            block = block,
+        )
+    } finally {
+        // use has already released any lease even when opening was refused or cancelled.
+        if (!cleanupObserved) observer.record(KaliumNSEStage.CLEANUP_NOT_NEEDED)
+    }
+}
 
 private fun KaliumNSEKeychainAccessibility.toApple(): KeychainAccessibility = when (this) {
     KaliumNSEKeychainAccessibility.WHEN_UNLOCKED -> KeychainAccessibility.WhenUnlocked

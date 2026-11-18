@@ -236,8 +236,11 @@ class AppleAccountRuntimeTest {
                 crypto.close()
                 val entered = CompletableDeferred<Unit>()
                 val drained = CompletableDeferred<Unit>()
+                val cleanup = mutableListOf<AccountCleanupStage>()
                 val opening = async {
-                    AppleAccountRuntime.use(fixture.root, userId, fixture.config, "runtime-test", emptyMap()) {
+                    AppleAccountRuntime.use(
+                        fixture.root, userId, fixture.config, "runtime-test", emptyMap(), observeCleanup = cleanup::add
+                    ) {
                         entered.complete(Unit)
                         try {
                             awaitCancellation()
@@ -249,6 +252,8 @@ class AppleAccountRuntimeTest {
                 entered.await()
                 opening.cancelAndJoin()
                 assertTrue(drained.isCompleted)
+                assertTrue(opening.isCancelled)
+                assertEquals(listOf(AccountCleanupStage.STARTED, AccountCleanupStage.COMPLETED), cleanup)
                 assertEquals(Either.Right(fingerprint), AppleAccountRuntime.use(
                     fixture.root, userId, fixture.config, "runtime-test", emptyMap()
                 ) { runtime ->

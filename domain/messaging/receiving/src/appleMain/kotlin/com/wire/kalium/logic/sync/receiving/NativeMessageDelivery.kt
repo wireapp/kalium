@@ -16,17 +16,21 @@ import kotlin.coroutines.startCoroutine
  * each one the host accepted. An alert the host did not accept stays pending for the account's next owner.
  * [deliver] must use only the alert and native notification APIs, never account resources.
  * Returns true when the host accepted every alert.
+ * [onStarted] runs before detached dispatch; [onFinished] follows its completion, even after caller cancellation.
+ * Observation failures are ignored so diagnostics cannot change delivery or account acknowledgements.
  */
 @InternalKaliumApi
 public suspend fun <A> deliverMessageAlerts(
     alerts: List<A>,
     deliver: suspend (A) -> Boolean,
+    onStarted: () -> Unit = {},
+    onFinished: () -> Unit = {},
     acknowledge: suspend (A) -> Unit,
 ): Boolean {
     var accepted = true
     for (alert in alerts) {
         currentCoroutineContext().ensureActive()
-        if (awaitNativeAcceptance { deliver(alert) }) {
+        if (awaitNativeAcceptance(onStarted, onFinished) { deliver(alert) }) {
             // Only the short database acknowledgement is protected, never the native callback.
             withContext(NonCancellable) { acknowledge(alert) }
         } else {
@@ -42,12 +46,27 @@ public suspend fun <A> deliverMessageAlerts(
  * a late completion cannot acknowledge against a closed database. The durable alert stays pending
  * and the host deduplicates its identity if native enqueue actually succeeded.
  */
-private suspend fun awaitNativeAcceptance(enqueue: suspend () -> Boolean): Boolean =
+private suspend fun awaitNativeAcceptance(
+    onStarted: () -> Unit,
+    onFinished: () -> Unit,
+    enqueue: suspend () -> Boolean,
+): Boolean =
     suspendCancellableCoroutine { waiter ->
+        // Register before dispatch: cancellation can release the waiter before enqueue starts.
+        observeNativeDelivery(onStarted)
         enqueue.startCoroutine(object : Continuation<Boolean> {
             override val context = waiter.context.minusKey(Job)
             override fun resumeWith(result: Result<Boolean>) {
-                waiter.resumeWith(result)
+                try {
+                    waiter.resumeWith(result)
+                } finally {
+                    observeNativeDelivery(onFinished)
+                }
             }
         })
     }
+
+@Suppress("TooGenericExceptionCaught")
+private fun observeNativeDelivery(observe: () -> Unit) {
+    try { observe() } catch (_: Throwable) { /* Diagnostics must not interrupt native delivery. */ }
+}

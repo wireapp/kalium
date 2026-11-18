@@ -259,6 +259,7 @@ public class AppleAccountRuntime private constructor(
         rootPath: String,
         keychainConfig: ApplePersistenceConfig,
         network: NetworkSettings?,
+        observeCleanup: (AccountCleanupStage) -> Unit,
         block: suspend (AppleAccountRuntime) -> T,
     ): T {
         var operationFailure: Throwable? = null
@@ -269,17 +270,7 @@ public class AppleAccountRuntime private constructor(
             operationFailure = failure
             throw failure
         } finally {
-            closePreservingFailure(operationFailure)
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    private suspend fun closePreservingFailure(operationFailure: Throwable?) {
-        try {
-            close()
-        } catch (failure: Throwable) {
-            if (operationFailure == null) throw failure
-            operationFailure.addSuppressed(failure)
+            observeAccountCleanup(operationFailure, observeCleanup) { close() }
         }
     }
 
@@ -306,6 +297,7 @@ public class AppleAccountRuntime private constructor(
             busyRetry: Duration = Duration.ZERO,
             /** And while that owner is an app extension, which gives the account up within its own budget. */
             busyRetryForExtension: Duration = busyRetry,
+            observeCleanup: (AccountCleanupStage) -> Unit = {},
             block: suspend (AppleAccountRuntime) -> T,
         ): Either<AccountRuntimeFailure, T> = use(
             rootPath,
@@ -315,6 +307,7 @@ public class AppleAccountRuntime private constructor(
             diagnostics,
             busyRetry,
             busyRetryForExtension,
+            observeCleanup,
             block,
         )
 
@@ -400,6 +393,7 @@ public class AppleAccountRuntime private constructor(
             diagnostics: ReceivingDiagnostics?,
             busyRetry: Duration,
             busyRetryForExtension: Duration,
+            observeCleanup: (AccountCleanupStage) -> Unit = {},
             block: suspend (AppleAccountRuntime) -> T,
         ): Either<AccountRuntimeFailure, T> {
             val owner = AppleAccountRuntimeOwner(rootPath)
@@ -413,7 +407,7 @@ public class AppleAccountRuntime private constructor(
                     ?: return Either.Left(AccountRuntimeFailure.NOT_PREPARED)
                 val account = AppleAccountRuntime(prepared, lease, "${appleAccountPath(rootPath, userId)}/storage/files")
                     .also { runtime = it }
-                Either.Right(account.run(rootPath, keychainConfig, network, block))
+                Either.Right(account.run(rootPath, keychainConfig, network, observeCleanup, block))
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (failure: Throwable) {
