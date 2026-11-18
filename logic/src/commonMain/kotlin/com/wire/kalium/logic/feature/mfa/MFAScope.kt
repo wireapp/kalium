@@ -25,17 +25,40 @@ import com.wire.kalium.logic.data.mfa.MFARepository
  *
  * **Warning:** Currently backed by a temporary dummy implementation.
  */
-public class MFAScope internal constructor(repository: MFARepository) {
-    public val observeOverview: ObserveMFAOverviewUseCase = ObserveMFAOverviewUseCaseImpl(repository)
-    public val refreshOverview: RefreshMFAOverviewUseCase = RefreshMFAOverviewUseCaseImpl(repository)
-    public val startSetup: StartMFASetupUseCase = StartMFASetupUseCaseImpl(repository)
-    public val verifySetupCode: VerifyMFASetupCodeUseCase = VerifyMFASetupCodeUseCaseImpl(repository)
-    public val completeSetup: CompleteMFASetupUseCase = CompleteMFASetupUseCaseImpl(repository)
-    public val verifyAuthenticatorCode: VerifyAuthenticatorAppCodeUseCase = VerifyAuthenticatorAppCodeUseCaseImpl(repository)
-    public val finishAddingAuthenticator: FinishAddingAuthenticatorAppUseCase = FinishAddingAuthenticatorAppUseCaseImpl(repository)
-    public val renameAuthenticator: RenameAuthenticatorAppUseCase = RenameAuthenticatorAppUseCaseImpl(repository)
-    public val removeAuthenticator: RemoveAuthenticatorAppUseCase = RemoveAuthenticatorAppUseCaseImpl(repository)
-    public val confirmPassword: ConfirmMFAPasswordUseCase = ConfirmMFAPasswordUseCaseImpl(repository)
-    public val generateRecoveryCodes: GenerateMFARecoveryCodesUseCase = GenerateMFARecoveryCodesUseCaseImpl(repository)
-    public val turnOff: TurnOffMFAUseCase = TurnOffMFAUseCaseImpl(repository)
+public class MFAScope internal constructor(private val repository: MFARepository) {
+    public val observeOverview: ObserveMFAOverviewUseCase
+        get() = ObserveMFAOverviewUseCaseImpl(repository)
+
+    public val refreshOverview: RefreshMFAOverviewUseCase
+        get() = RefreshMFAOverviewUseCaseImpl(repository)
+
+    public val startSetup: StartMFASetupUseCase
+        get() = StartMFASetupUseCaseImpl(repository)
+
+    public val verifySetupCode: VerifyMFASetupCodeUseCase
+        get() = VerifyMFASetupCodeUseCaseImpl(repository)
+
+    public val completeSetup: CompleteMFASetupUseCase
+        get() = CompleteMFASetupUseCaseImpl(repository)
+
+    public val verifyAuthenticatorCode: VerifyAuthenticatorAppCodeUseCase
+        get() = VerifyAuthenticatorAppCodeUseCaseImpl(repository)
+
+    public val finishAddingAuthenticator: FinishAddingAuthenticatorAppUseCase
+        get() = FinishAddingAuthenticatorAppUseCaseImpl(repository)
+
+    public val renameAuthenticator: RenameAuthenticatorAppUseCase
+        get() = RenameAuthenticatorAppUseCaseImpl(repository)
+
+    public val removeAuthenticator: RemoveAuthenticatorAppUseCase
+        get() = RemoveAuthenticatorAppUseCaseImpl(repository)
+
+    public val confirmPassword: ConfirmMFAPasswordUseCase
+        get() = ConfirmMFAPasswordUseCaseImpl(repository)
+
+    public val generateRecoveryCodes: GenerateMFARecoveryCodesUseCase
+        get() = GenerateMFARecoveryCodesUseCaseImpl(repository)
+
+    public val turnOff: TurnOffMFAUseCase
+        get() = TurnOffMFAUseCaseImpl(repository)
 }
