@@ -51,3 +51,10 @@ test('pagination finds a match beyond the first page', async () => {
     }, quiet), true);
     assert.deepEqual(pages, ['1', '2']);
 });
+
+test('a re-run of a develop push runs all tests', async () => {
+    let calls = 0;
+    assert.equal(await check({...env, GITHUB_RUN_ATTEMPT: '2'}, async () => {calls++; return response([run]);}, quiet), false);
+    assert.equal(calls, 0);
+    assert.equal(await check({...env, GITHUB_RUN_ATTEMPT: '1'}, async () => response([run]), quiet), true);
+});

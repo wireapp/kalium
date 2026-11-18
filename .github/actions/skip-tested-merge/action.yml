@@ -11,8 +11,8 @@ runs:
       id: check
       env:
         GH_TOKEN: ${{ github.token }}
-        CHECK_SCRIPT: ${{ github.action_path }}/check.cjs
       with:
+        # github.action_path is the host path inside container jobs; GITHUB_WORKSPACE is translated.
         script: |
-          const {check} = require(process.env.CHECK_SCRIPT);
+          const {check} = require(require('path').join(process.env.GITHUB_WORKSPACE, '.github/actions/skip-tested-merge/check.cjs'));
           core.setOutput('skip-tests', String(await check()));

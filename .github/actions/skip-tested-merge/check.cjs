@@ -5,6 +5,10 @@ async function check(env = process.env, request = fetch, log = console.log) {
         log('Run full tests: this is not a develop push.');
         return false;
     }
+    if ((env.GITHUB_RUN_ATTEMPT || '1') !== '1') {
+        log(`Run full tests: re-run attempt ${env.GITHUB_RUN_ATTEMPT} must not inherit the merge-queue result.`);
+        return false;
+    }
     try {
         const prefix = `${env.GITHUB_REPOSITORY}/`;
         const ref = env.GITHUB_WORKFLOW_REF;
