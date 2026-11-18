@@ -105,7 +105,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Build/dex/package test APKs before starting the emulator, so QEMU does not compete with the heaviest Android build work.
-          ./gradlew packageAndroidDeviceTest
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            # Develop runs the complete suite, so it needs every APK.
+            ./gradlew packageAndroidDeviceTest
+          else
+            # Same selection as the emulator step below, so only the APKs that will run are built.
+            ./gradlew connectedAndroidOnlyAffectedTest --list-only | tee "$RUNNER_TEMP/affected-selection.log"
+            if grep -qE 'Running all tests|falling back to all modules' "$RUNNER_TEMP/affected-selection.log"; then
+              ./gradlew packageAndroidDeviceTest
+            else
+              package_tasks=()
+              while IFS= read -r task; do
+                [[ -z "$task" ]] || package_tasks+=("${task%connectedAndroidDeviceTest}packageAndroidDeviceTest")
+              done < build/affected-tests/connectedAndroidOnlyAffectedTest.txt
+              if (( ${#package_tasks[@]} > 0 )); then
+                ./gradlew "${package_tasks[@]}"
+              else
+                echo "No affected modules, no test APK to build."
+              fi
+            fi
+          fi
           # Stop prebuild daemons before booting the emulator to free memory/CPU for the connected test phase.
           ./gradlew --stop
 
