@@ -39,11 +39,8 @@ internal class VerifyAuthenticatorAppCodeUseCaseImpl(private val repository: MFA
         )
 }
 
-/** Outcome of verifying an additional authenticator's authentication code. */
 public sealed interface VerifyAuthenticatorAppCodeResult {
-    /** The enrollment's authentication code was verified. */
     public data object Success : VerifyAuthenticatorAppCodeResult
 
-    /** The reason the enrollment could not be verified. */
     public data class Failure(public val failure: MFAFailure) : VerifyAuthenticatorAppCodeResult
 }

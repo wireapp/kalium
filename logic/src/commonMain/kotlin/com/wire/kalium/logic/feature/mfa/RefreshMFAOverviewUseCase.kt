@@ -38,11 +38,8 @@ internal class RefreshMFAOverviewUseCaseImpl(private val repository: MFAReposito
     )
 }
 
-/** Outcome of refreshing the account's MFA overview. */
 public sealed interface RefreshMFAOverviewResult {
-    /** The refresh completed without failure. */
     public data object Success : RefreshMFAOverviewResult
 
-    /** The reason the overview could not be refreshed. */
     public data class Failure(public val failure: CoreFailure) : RefreshMFAOverviewResult
 }

@@ -38,11 +38,8 @@ internal class TurnOffMFAUseCaseImpl(private val repository: MFARepository) : Tu
     )
 }
 
-/** Outcome of disabling MFA for the account. */
 public sealed interface TurnOffMFAResult {
-    /** MFA was disabled. */
     public data object Success : TurnOffMFAResult
 
-    /** The reason MFA could not be disabled. */
     public data class Failure(public val failure: MFAFailure) : TurnOffMFAResult
 }

@@ -39,11 +39,8 @@ internal class CompleteMFASetupUseCaseImpl(private val repository: MFARepository
         )
 }
 
-/** Outcome of completing initial MFA setup. */
 public sealed interface CompleteMFASetupResult {
-    /** MFA setup completed successfully. */
     public data object Success : CompleteMFASetupResult
 
-    /** The reason setup could not be completed. */
     public data class Failure(public val failure: MFAFailure) : CompleteMFASetupResult
 }

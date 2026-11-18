@@ -40,11 +40,8 @@ internal class RenameAuthenticatorAppUseCaseImpl(private val repository: MFARepo
         )
 }
 
-/** Outcome of renaming an authenticator. */
 public sealed interface RenameAuthenticatorAppResult {
-    /** The authenticator with its updated name. */
     public data class Success(public val authenticatorApp: AuthenticatorApp) : RenameAuthenticatorAppResult
 
-    /** The reason the authenticator could not be renamed. */
     public data class Failure(public val failure: MFAFailure) : RenameAuthenticatorAppResult
 }

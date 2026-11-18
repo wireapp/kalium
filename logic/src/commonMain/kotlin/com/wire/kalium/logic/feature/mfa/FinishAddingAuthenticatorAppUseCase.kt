@@ -40,11 +40,8 @@ internal class FinishAddingAuthenticatorAppUseCaseImpl(private val repository: M
         )
 }
 
-/** Outcome of completing an additional authenticator's enrollment. */
 public sealed interface FinishAddingAuthenticatorAppResult {
-    /** The authenticator added to the account. */
     public data class Success(public val authenticatorApp: AuthenticatorApp) : FinishAddingAuthenticatorAppResult
 
-    /** The reason the authenticator could not be added. */
     public data class Failure(public val failure: MFAFailure) : FinishAddingAuthenticatorAppResult
 }

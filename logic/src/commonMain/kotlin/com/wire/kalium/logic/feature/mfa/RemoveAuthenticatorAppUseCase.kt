@@ -39,11 +39,8 @@ internal class RemoveAuthenticatorAppUseCaseImpl(private val repository: MFARepo
         )
 }
 
-/** Outcome of removing an authenticator from the account. */
 public sealed interface RemoveAuthenticatorAppResult {
-    /** The authenticator was removed. */
     public data object Success : RemoveAuthenticatorAppResult
 
-    /** The reason the authenticator could not be removed. */
     public data class Failure(public val failure: MFAFailure) : RemoveAuthenticatorAppResult
 }

@@ -38,11 +38,8 @@ internal class GenerateMFARecoveryCodesUseCaseImpl(private val repository: MFARe
     )
 }
 
-/** Outcome of replacing the account's MFA recovery codes. */
 public sealed interface GenerateMFARecoveryCodesResult {
-    /** The new recovery-code values for display to the user. */
     public data class Success(public val recoveryCodes: List<String>) : GenerateMFARecoveryCodesResult
 
-    /** The reason recovery codes could not be replaced. */
     public data class Failure(public val failure: MFAFailure) : GenerateMFARecoveryCodesResult
 }

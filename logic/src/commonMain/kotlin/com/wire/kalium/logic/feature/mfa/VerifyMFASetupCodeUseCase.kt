@@ -39,11 +39,8 @@ internal class VerifyMFASetupCodeUseCaseImpl(private val repository: MFAReposito
         )
 }
 
-/** Outcome of verifying an initial MFA enrollment's authentication code. */
 public sealed interface VerifyMFASetupCodeResult {
-    /** Recovery codes prepared for the verified enrollment. */
     public data class Success(public val recoveryCodes: List<String>) : VerifyMFASetupCodeResult
 
-    /** The reason the enrollment could not be verified. */
     public data class Failure(public val failure: MFAFailure) : VerifyMFASetupCodeResult
 }

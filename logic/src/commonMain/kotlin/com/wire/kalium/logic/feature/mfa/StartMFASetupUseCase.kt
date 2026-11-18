@@ -39,11 +39,8 @@ internal class StartMFASetupUseCaseImpl(private val repository: MFARepository) :
     )
 }
 
-/** Outcome of starting an MFA enrollment. */
 public sealed interface StartMFASetupResult {
-    /** Enrollment details for configuring an authenticator. */
     public data class Success(public val enrollment: MFAEnrollment) : StartMFASetupResult
 
-    /** The reason enrollment could not be started. */
     public data class Failure(public val failure: MFAFailure) : StartMFASetupResult
 }

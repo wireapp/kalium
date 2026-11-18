@@ -38,11 +38,8 @@ internal class ConfirmMFAPasswordUseCaseImpl(private val repository: MFAReposito
     )
 }
 
-/** Outcome of confirming the account password for MFA management. */
 public sealed interface ConfirmMFAPasswordResult {
-    /** The password was confirmed. */
     public data object Success : ConfirmMFAPasswordResult
 
-    /** The reason the password could not be confirmed. */
     public data class Failure(public val failure: MFAFailure) : ConfirmMFAPasswordResult
 }
