@@ -22,7 +22,11 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Refreshes the shared overview, retaining cached data on failure and propagating cancellation. */
+/**
+ * Refreshes the shared overview, retaining cached data on failure and propagating cancellation.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface RefreshMFAOverviewUseCase {
     public suspend operator fun invoke(): Either<CoreFailure, Unit>
 }

@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Verifies an initial enrollment and returns recovery codes for temporary display by the caller. */
+/**
+ * Verifies an initial enrollment and returns recovery codes for temporary display by the caller.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface VerifyMFASetupCodeUseCase {
     public suspend operator fun invoke(enrollmentId: String, code: String): Either<MFAFailure, List<String>>
 }

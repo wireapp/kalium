@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Verifies an additional authenticator's enrollment without generating recovery codes. */
+/**
+ * Verifies an additional authenticator's enrollment without generating recovery codes.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface VerifyAuthenticatorAppCodeUseCase {
     public suspend operator fun invoke(enrollmentId: String, code: String): Either<MFAFailure, Unit>
 }

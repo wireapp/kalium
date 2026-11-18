@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Enables MFA using a verified initial enrollment and publishes the account's new overview. */
+/**
+ * Enables MFA using a verified initial enrollment and publishes the account's new overview.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface CompleteMFASetupUseCase {
     public suspend operator fun invoke(enrollmentId: String, name: String): Either<MFAFailure, Unit>
 }

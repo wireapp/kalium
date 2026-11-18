@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Confirms the password and starts an enrollment for initial setup or an additional authenticator. */
+/**
+ * Confirms the password and starts an enrollment for initial setup or an additional authenticator.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface StartMFASetupUseCase {
     public suspend operator fun invoke(password: String): Either<MFAFailure, MFAEnrollment>
 }

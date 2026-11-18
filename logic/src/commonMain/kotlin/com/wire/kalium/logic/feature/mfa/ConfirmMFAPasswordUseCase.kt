@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Confirms the account password before the caller offers recovery-code management. */
+/**
+ * Confirms the account password before the caller offers recovery-code management.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface ConfirmMFAPasswordUseCase {
     public suspend operator fun invoke(password: String): Either<MFAFailure, Unit>
 }

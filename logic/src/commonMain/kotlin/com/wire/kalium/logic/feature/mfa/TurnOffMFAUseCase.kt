@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Confirms credentials, disables MFA, invalidates pending enrollments, and publishes the disabled state. */
+/**
+ * Confirms credentials, disables MFA, invalidates pending enrollments, and publishes the disabled state.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface TurnOffMFAUseCase {
     public suspend operator fun invoke(password: String, code: String): Either<MFAFailure, Unit>
 }

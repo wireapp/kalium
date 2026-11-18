@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Replaces recovery codes, returning their values once and publishing only their counts in the overview. */
+/**
+ * Replaces recovery codes, returning their values once and publishing only their counts in the overview.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface GenerateMFARecoveryCodesUseCase {
     public suspend operator fun invoke(): Either<MFAFailure, List<String>>
 }

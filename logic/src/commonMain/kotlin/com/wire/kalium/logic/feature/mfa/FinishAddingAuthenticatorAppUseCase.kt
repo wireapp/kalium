@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Adds a verified enrollment, enforcing the account's authenticator limit and publishing the change. */
+/**
+ * Adds a verified enrollment, enforcing the account's authenticator limit and publishing the change.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface FinishAddingAuthenticatorAppUseCase {
     public suspend operator fun invoke(enrollmentId: String, name: String): Either<MFAFailure, AuthenticatorApp>
 }

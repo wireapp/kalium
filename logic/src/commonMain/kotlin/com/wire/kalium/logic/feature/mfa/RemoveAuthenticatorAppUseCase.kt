@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mfa.MFARepository
 
-/** Confirms credentials and removes an authenticator atomically, preserving the final authenticator. */
+/**
+ * Confirms credentials and removes an authenticator atomically, preserving the final authenticator.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface RemoveAuthenticatorAppUseCase {
     public suspend operator fun invoke(appId: String, password: String, code: String): Either<MFAFailure, Unit>
 }

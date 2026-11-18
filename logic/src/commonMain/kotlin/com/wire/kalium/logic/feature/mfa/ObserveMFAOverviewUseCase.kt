@@ -21,7 +21,11 @@ package com.wire.kalium.logic.feature.mfa
 import com.wire.kalium.logic.data.mfa.MFARepository
 import kotlinx.coroutines.flow.StateFlow
 
-/** Observes this account's MFA data; null means it has not been loaded yet. */
+/**
+ * Observes this account's MFA data; null means it has not been loaded yet.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
 public interface ObserveMFAOverviewUseCase {
     public operator fun invoke(): StateFlow<MFAOverview?>
 }
