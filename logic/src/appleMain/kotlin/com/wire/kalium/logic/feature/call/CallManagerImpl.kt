@@ -1008,6 +1008,13 @@ internal class CallManagerImpl internal constructor(
 }
 
 private fun com.wire.kalium.logic.sync.receiving.CallSignalCloseResult.traceClosed(closeContext: CallTraceContext, reason: Int) {
+    removedSignalIds.forEach { signalId ->
+        AppleCallTrace.record(
+            CallTraceEvent.JOURNAL_SIGNAL_REMOVED,
+            closeContext.withSignal(signalId),
+            CallTraceResult.COMPLETED,
+        )
+    }
     if (presentationId != null) AppleCallTrace.record(
         CallTraceEvent.JOURNAL_CLOSED,
         closeContext.withSignal(presentationId),

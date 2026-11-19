@@ -158,9 +158,12 @@ class CallSignalReplayTest {
     fun priorityRequiresAnExactReadyStartSignal() = runTest {
         val store = Store(listOf(signal("terminal", "current", 1, "REJECT"), signal("unready", "current", 2).copy(ready = false)))
         val replay = CallSignalReplay(store, "handle", { error("must not submit") }, {})
-        assertFailsWith<IllegalStateException> { replay.replayIncoming("missing") }
-        assertFailsWith<IllegalStateException> { replay.replayIncoming("terminal") }
-        assertFailsWith<IllegalStateException> { replay.replayIncoming("unready") }
+        assertEquals(IncomingCallSignalFailure.UNAVAILABLE,
+            assertFailsWith<IncomingCallSignalException> { replay.replayIncoming("missing") }.reason)
+        assertEquals(IncomingCallSignalFailure.UNAVAILABLE,
+            assertFailsWith<IncomingCallSignalException> { replay.replayIncoming("terminal") }.reason)
+        assertEquals(IncomingCallSignalFailure.UNAVAILABLE,
+            assertFailsWith<IncomingCallSignalException> { replay.replayIncoming("unready") }.reason)
     }
 
     @Test
@@ -170,7 +173,8 @@ class CallSignalReplayTest {
         val store = Store(listOf(incoming, newer))
         val submitted = mutableListOf<String>()
         val replay = CallSignalReplay(store, "handle", { submitted += it.id }, {})
-        assertFailsWith<IllegalStateException> { replay.replayIncoming("incoming") }
+        assertEquals(IncomingCallSignalFailure.SUPERSEDED,
+            assertFailsWith<IncomingCallSignalException> { replay.replayIncoming("incoming") }.reason)
         assertEquals(listOf("incoming", "newer"), submitted)
         replay.replayIncoming("newer")
         assertEquals(listOf("incoming", "newer"), submitted)

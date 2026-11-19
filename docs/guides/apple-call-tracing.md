@@ -1,6 +1,6 @@
 # Apple calling diagnostics
 
-Reviewed 2026-10-06. The Apple trace contract covers engine events and native host lifecycle events.
+Reviewed 2026-11-19. The Apple trace contract covers engine events and native host lifecycle events.
 The host supplies native instrumentation. Tracing does not change calling policy or recover failed calls.
 
 ## Configuration and record contract
@@ -56,6 +56,36 @@ is separate from the fact that AVS delivered the callback.
 remote device receipt. A request without an outcome is incomplete evidence, not automatic success.
 Runtime setup/run and engine create/ready/release events distinguish process setup from individual calls.
 Raw AVS messages remain process-global supporting evidence; do not assign them to a call by timestamp alone.
+
+## Incoming Answer and journal cleanup
+
+`JOURNAL_SIGNAL_REMOVED` identifies each opaque signal UUID actually removed by the completed
+journal transaction. It carries the close callback's captured engine and operation context. It is
+separate from `JOURNAL_CLOSED`, which identifies a terminal presentation, not a deletion list.
+No deletion record is emitted when the transaction fails or removes nothing. A process exit after
+commit but before trace emission can still leave an unobserved deletion.
+
+The Prism host emits `INCOMING_ANSWER` around account acquisition, journal replay, incoming
+presentation validation and shared Answer submission. Its `attempt` is the CallKit journal UUID;
+its operation UUID pairs request and outcome. Completion does not prove established media.
+Failures still propagate to the caller; the trace contains only these fixed codes:
+
+| Code | Meaning |
+| --- | --- |
+| 1 | Requested start signal unavailable or no longer a start request |
+| 2 | Start signal superseded by a distinct setup |
+| 3 | Requested presentation unavailable after replay |
+| 4 | Presentation conversation mismatch |
+| 5 | Presentation ended or no longer ringing |
+| 6 | Presentation superseded |
+| 7 | Answer operation timed out |
+| 8 | Account busy |
+| 9 | Operation cancelled |
+| 10 | Other exception; no message, stack, payload or arbitrary class name recorded |
+
+Timeout and cancellation use `CANCELLED`; other exceptions use `FAILED`. Native audio preparation
+and CallKit action outcomes remain separate events. These records diagnose the shared admission
+path; they do not guarantee that every native failure has a shared admission event.
 
 ## Tests
 

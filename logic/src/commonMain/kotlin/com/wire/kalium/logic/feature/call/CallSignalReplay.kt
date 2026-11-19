@@ -31,7 +31,7 @@ internal class CallSignalReplay(
     suspend fun replayIncoming(callId: String) {
         val conversation = mutex.withLock {
             val source = journal.signals().firstOrNull { it.id == callId }
-            check(source != null && source.isStartRequest()) { "Incoming call signal is unavailable" }
+            if (source == null || !source.isStartRequest()) throw IncomingCallSignalException(IncomingCallSignalFailure.UNAVAILABLE)
             source.conversation.also { priorities[it] = priorities.getOrElse(it) { 0 } + 1 }
         }
         try {
@@ -79,7 +79,8 @@ internal class CallSignalReplay(
     /** Native commands address a conversation only. Do not answer a later, distinct queued start. */
     private suspend fun requireCurrentStart(callId: String) {
         val signals = journal.signals()
-        val source = checkNotNull(signals.firstOrNull { it.id == callId }) { "Incoming call signal is unavailable" }
+        val source = signals.firstOrNull { it.id == callId }
+            ?: throw IncomingCallSignalException(IncomingCallSignalFailure.UNAVAILABLE)
         // Group start broadcasts also arbitrate concurrent conferences. A distinct broadcast does
         // not prove that AVS replaced the ringing call, so leave group identity decisions to AVS.
         if (source.isGroup || source.signalType() != "SETUP") return
@@ -88,7 +89,7 @@ internal class CallSignalReplay(
             it.id != callId && it.conversation == source.conversation && it.timeMillis >= source.timeMillis &&
                 it.signalType() == "SETUP" && it.isStartRequest() && it.isDistinctSetupFrom(source, session)
         }
-        check(!superseded) { "Incoming call was superseded by another start" }
+        if (superseded) throw IncomingCallSignalException(IncomingCallSignalFailure.SUPERSEDED)
     }
 
     private fun CallSignalRecord.isDistinctSetupFrom(source: CallSignalRecord, session: String?): Boolean =

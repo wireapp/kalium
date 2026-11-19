@@ -91,6 +91,17 @@ final enum class com.wire.kalium.logic.feature.backup/BackupFileFormat : kotlin/
     final fun values(): kotlin/Array<com.wire.kalium.logic.feature.backup/BackupFileFormat> // com.wire.kalium.logic.feature.backup/BackupFileFormat.values|values#static(){}[0]
 }
 
+final enum class com.wire.kalium.logic.feature.call/IncomingCallSignalFailure : kotlin/Enum<com.wire.kalium.logic.feature.call/IncomingCallSignalFailure> { // com.wire.kalium.logic.feature.call/IncomingCallSignalFailure|null[0]
+    enum entry SUPERSEDED // com.wire.kalium.logic.feature.call/IncomingCallSignalFailure.SUPERSEDED|null[0]
+    enum entry UNAVAILABLE // com.wire.kalium.logic.feature.call/IncomingCallSignalFailure.UNAVAILABLE|null[0]
+
+    final val entries // com.wire.kalium.logic.feature.call/IncomingCallSignalFailure.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<com.wire.kalium.logic.feature.call/IncomingCallSignalFailure> // com.wire.kalium.logic.feature.call/IncomingCallSignalFailure.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): com.wire.kalium.logic.feature.call/IncomingCallSignalFailure // com.wire.kalium.logic.feature.call/IncomingCallSignalFailure.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<com.wire.kalium.logic.feature.call/IncomingCallSignalFailure> // com.wire.kalium.logic.feature.call/IncomingCallSignalFailure.values|values#static(){}[0]
+}
+
 final enum class com.wire.kalium.logic.feature.conversation/SecurityClassificationType : kotlin/Enum<com.wire.kalium.logic.feature.conversation/SecurityClassificationType> { // com.wire.kalium.logic.feature.conversation/SecurityClassificationType|null[0]
     enum entry CLASSIFIED // com.wire.kalium.logic.feature.conversation/SecurityClassificationType.CLASSIFIED|null[0]
     enum entry NONE // com.wire.kalium.logic.feature.conversation/SecurityClassificationType.NONE|null[0]
@@ -4631,6 +4642,13 @@ final class com.wire.kalium.logic.feature.call/CallsScope { // com.wire.kalium.l
         final fun <get-updateNextTimeCallFeedback>(): com.wire.kalium.logic.feature.user/UpdateNextTimeCallFeedbackUseCase // com.wire.kalium.logic.feature.call/CallsScope.updateNextTimeCallFeedback.<get-updateNextTimeCallFeedback>|<get-updateNextTimeCallFeedback>(){}[0]
     final val updateVideoState // com.wire.kalium.logic.feature.call/CallsScope.updateVideoState|{}updateVideoState[0]
         final fun <get-updateVideoState>(): com.wire.kalium.logic.feature.call.usecase.video/UpdateVideoStateUseCase // com.wire.kalium.logic.feature.call/CallsScope.updateVideoState.<get-updateVideoState>|<get-updateVideoState>(){}[0]
+}
+
+final class com.wire.kalium.logic.feature.call/IncomingCallSignalException : kotlin/IllegalStateException { // com.wire.kalium.logic.feature.call/IncomingCallSignalException|null[0]
+    constructor <init>(com.wire.kalium.logic.feature.call/IncomingCallSignalFailure) // com.wire.kalium.logic.feature.call/IncomingCallSignalException.<init>|<init>(com.wire.kalium.logic.feature.call.IncomingCallSignalFailure){}[0]
+
+    final val reason // com.wire.kalium.logic.feature.call/IncomingCallSignalException.reason|{}reason[0]
+        final fun <get-reason>(): com.wire.kalium.logic.feature.call/IncomingCallSignalFailure // com.wire.kalium.logic.feature.call/IncomingCallSignalException.reason.<get-reason>|<get-reason>(){}[0]
 }
 
 final class com.wire.kalium.logic.feature.channels/ChannelsScope { // com.wire.kalium.logic.feature.channels/ChannelsScope|null[0]

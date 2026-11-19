@@ -2851,6 +2851,19 @@ public final class com/wire/kalium/logic/feature/call/CallsScope {
 	public final fun isLastCallClosed ()Lcom/wire/kalium/logic/feature/call/usecase/IsLastCallClosedUseCase;
 }
 
+public final class com/wire/kalium/logic/feature/call/IncomingCallSignalException : java/lang/IllegalStateException {
+	public fun <init> (Lcom/wire/kalium/logic/feature/call/IncomingCallSignalFailure;)V
+	public final fun getReason ()Lcom/wire/kalium/logic/feature/call/IncomingCallSignalFailure;
+}
+
+public final class com/wire/kalium/logic/feature/call/IncomingCallSignalFailure : java/lang/Enum {
+	public static final field SUPERSEDED Lcom/wire/kalium/logic/feature/call/IncomingCallSignalFailure;
+	public static final field UNAVAILABLE Lcom/wire/kalium/logic/feature/call/IncomingCallSignalFailure;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/call/IncomingCallSignalFailure;
+	public static fun values ()[Lcom/wire/kalium/logic/feature/call/IncomingCallSignalFailure;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/call/usecase/AnswerCallUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }

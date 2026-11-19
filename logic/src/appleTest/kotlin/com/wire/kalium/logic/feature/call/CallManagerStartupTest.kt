@@ -310,6 +310,7 @@ class CallManagerStartupTest {
 
     @Test
     fun closeScopeIsCapturedBeforeQueuedEffectsAndSuspendedCleanup() = runTest {
+        val trace = captureTrace()
         fun id(n: Int) = "00000000-0000-0000-0000-${n.toString().padStart(12, '0')}"
         for (delayBeforeEffect in listOf(true, false)) {
             val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher(), mls = true)
@@ -356,6 +357,10 @@ class CallManagerStartupTest {
                 assertEquals(setOf(id(1), id(2)), removed)
                 assertEquals(listOf(id(3)), signals.map { it.id })
                 manager.replayIncomingCallSignals(id(3))
+                val removals = trace.filter { "event=JOURNAL_SIGNAL_REMOVED" in it }
+                assertTrue(removals.any { "signal=${id(1)}" in it })
+                assertTrue(removals.any { "signal=${id(2)}" in it })
+                assertTrue(removals.none { "signal=${id(3)}" in it })
             } finally { manager.cancelJobs() }
         }
     }
