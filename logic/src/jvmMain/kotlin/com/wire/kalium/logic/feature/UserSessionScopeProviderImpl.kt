@@ -32,8 +32,10 @@ import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncShutdownCoordinator
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.desktopDatabaseNeedsExistingKey
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.DatabaseStorageType
@@ -57,6 +59,7 @@ internal actual open class UserSessionScopeProviderImpl(
     userAgent: String,
     private val useInMemoryDatabase: Boolean,
     private val syncShutdownCoordinator: SyncShutdownCoordinator,
+    private val protectDesktopStorage: Boolean = false,
 ) : UserSessionScopeProviderCommon(
     globalCallManager,
     userStorageProvider,
@@ -79,8 +82,16 @@ internal actual open class UserSessionScopeProviderImpl(
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
         val dbPath = DBFolder("$rootAccountPath/database")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
+        val secret = if (protectDesktopStorage && databaseInfo is DatabaseStorageType.FiledBacked) {
+            val helper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+            if (desktopDatabaseNeedsExistingKey(databaseInfo.filePath.resolve("main.db").toPath())) {
+                checkNotNull(helper.userDBOrSecretNull(userId)) { "Missing user database key" }
+            } else {
+                helper.userDBSecret(userId, databaseExists = false)
+            }
+        } else null
         return UserSessionScope(
-            PlatformUserStorageProperties(rootPathsProvider.rootPath, databaseInfo),
+            PlatformUserStorageProperties(rootPathsProvider.rootPath, databaseInfo, secret),
             userId,
             globalScope,
             globalCallManager,

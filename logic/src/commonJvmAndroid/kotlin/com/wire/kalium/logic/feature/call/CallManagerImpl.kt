@@ -306,32 +306,37 @@ internal class CallManagerImpl internal constructor(
     override suspend fun onCallingMessageReceived(
         message: Message.Signaling,
         content: MessageContent.Calling,
-    ) = withCalling {
-        ensureServerTimeOffsetComputed() // make sure the offset is now computed and only process if was not computed before.
-        callingLogger.i("$tagWithUserId: onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
-        val msg = content.value.toByteArray()
+    ) {
+        JvmCallStartupTrace.record("incoming signaling received by Kalium")
+        withCalling {
+            JvmCallStartupTrace.record("incoming signaling handle ready")
+            ensureServerTimeOffsetComputed() // make sure the offset is now computed and only process if was not computed before.
+            callingLogger.i("$tagWithUserId: onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
+            val msg = content.value.toByteArray()
 
-        val targetConversationId = if (message.isSelfMessage) {
-            content.conversationId ?: message.conversationId
-        } else {
-            message.conversationId
+            val targetConversationId = if (message.isSelfMessage) {
+                content.conversationId ?: message.conversationId
+            } else {
+                message.conversationId
+            }
+            val (callConversationType, isMeeting) = getCallConversationType(targetConversationId)
+            val type = callMapper.toConversationType(callConversationType)
+
+            JvmCallStartupTrace.record("incoming signaling entering AVS")
+            wcall_recv_msg(
+                inst = deferredHandle.await(),
+                msg = msg,
+                len = msg.size,
+                curr_time = Uint32_t(value = serverTimeHandler.toServerTimestamp()),
+                msg_time = Uint32_t(value = message.date.epochSeconds),
+                convId = federatedIdMapper.parseToFederatedId(targetConversationId),
+                userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
+                clientId = message.senderClientId.value,
+                convType = callMapper.toConversationTypeCalling(type).avsValue,
+                meeting = isMeeting.toInt()
+            )
+            callingLogger.i("$tagWithUserId: wcall_recv_msg() called")
         }
-        val (callConversationType, isMeeting) = getCallConversationType(targetConversationId)
-        val type = callMapper.toConversationType(callConversationType)
-
-        wcall_recv_msg(
-            inst = deferredHandle.await(),
-            msg = msg,
-            len = msg.size,
-            curr_time = Uint32_t(value = serverTimeHandler.toServerTimestamp()),
-            msg_time = Uint32_t(value = message.date.epochSeconds),
-            convId = federatedIdMapper.parseToFederatedId(targetConversationId),
-            userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
-            clientId = message.senderClientId.value,
-            convType = callMapper.toConversationTypeCalling(type).avsValue,
-            meeting = isMeeting.toInt()
-        )
-        callingLogger.i("$tagWithUserId: wcall_recv_msg() called")
     }
 
     // Keep native startup and its rollback together; every exception must roll back call and MLS state.

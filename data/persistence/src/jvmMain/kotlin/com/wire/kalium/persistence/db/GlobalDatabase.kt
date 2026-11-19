@@ -39,17 +39,15 @@ actual fun globalDatabaseProvider(
         throw IllegalStateException("Unsupported storage data type: $storageData")
     }
 
-    if (passphrase != null) {
-        throw NotImplementedError("Encrypted DB is not supported on JVM")
-    }
 
     val schema = GlobalDatabase.Schema.synchronous()
     val databasePath = storageData.file.resolve(FileNameUtil.globalDBName())
 
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
+    if (passphrase != null) DesktopDatabaseMigration.prepare(databasePath.toPath(), passphrase.value)
     val url = "jdbc:sqlite:${databasePath.absolutePath}"
-    val driver = databaseDriver(uri = url, schema = schema) {
+    val driver = configuredDatabaseDriver(uri = url, schema = schema, secret = passphrase?.value) {
         isWALEnabled = enableWAL
         areForeignKeyConstraintsEnforced = true
     }

@@ -41,11 +41,26 @@ actual class UserConfigStorageFactory actual constructor() {
         shouldEncryptData: Boolean,
         platformParam: Any
     ): UserConfigStorage {
-        require(platformParam is String) { "platformParam must be a String (root path)" }
+        val settingsParam = when (platformParam) {
+            is String -> EncryptedSettingsPlatformParam(platformParam)
+            is DesktopProtectedUserSettings -> EncryptedSettingsPlatformParam(
+                platformParam.rootPath, true, java.nio.file.Path.of(platformParam.accountDirectory, "user-preference")
+            )
+            else -> error("Unsupported settings storage")
+        }
         val settings = buildSettings(
             SettingOptions.UserSettings(shouldEncryptData, userId),
-            EncryptedSettingsPlatformParam(platformParam)
+            settingsParam
         )
         return UserConfigStorageImpl(KaliumPreferencesSettings(settings))
+    }
+}
+
+class DesktopProtectedUserSettings(val rootPath: String, val accountDirectory: String) {
+    fun migrateExisting(userId: UserIDEntity) {
+        val options = SettingOptions.UserSettings(true, userId)
+        if (!java.nio.file.Files.notExists(java.nio.file.Path.of(rootPath, options.fileName))) {
+            buildSettings(options, EncryptedSettingsPlatformParam(rootPath, true, java.nio.file.Path.of(accountDirectory, "user-preference")))
+        }
     }
 }

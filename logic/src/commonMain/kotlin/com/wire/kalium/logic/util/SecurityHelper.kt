@@ -25,10 +25,11 @@ import com.wire.kalium.cryptography.utils.CryptoServiceInfo
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.persistence.dbPassphrase.USER_DB_PASSPHRASE_PREFIX_V2
-import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
-import com.wire.kalium.persistence.dbPassphrase.PROTEUS_DB_PASSPHRASE_PREFIX_V2
+import com.wire.kalium.persistence.dbPassphrase.CryptoStoreKeyCreationGuard
 import com.wire.kalium.persistence.dbPassphrase.MLS_DB_PASSPHRASE_PREFIX_V2
+import com.wire.kalium.persistence.dbPassphrase.PROTEUS_DB_PASSPHRASE_PREFIX_V2
+import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.persistence.dbPassphrase.USER_DB_PASSPHRASE_PREFIX_V2
 import kotlin.io.encoding.Base64
 
 internal expect class SecureRandom internal constructor() {
@@ -138,13 +139,11 @@ internal class SecurityHelperImpl(
         // Step 2: Try legacy format (v1) - migrate to v2 if found
         getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX}_$userId")
             ?.let { legacyPassphrase ->
-                return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
-                    databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
-                    passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", Base64.encode(newKeyBytes))
-                }.let { MlsDBSecret(it) }
+                return MlsDBSecret(migrateLegacyKey(rootDir, legacyPassphrase, "${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId"))
             }
 
         // Step 3: Generate new secret as fallback
+        (passphraseStorage as? CryptoStoreKeyCreationGuard)?.requireNewCryptoStore(rootDir)
         return getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId").let {
             MlsDBSecret(Base64.decode(it))
         }
@@ -159,17 +158,26 @@ internal class SecurityHelperImpl(
             // Step 2: Try legacy format (v1) - migrate to v2 if found
             getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId")
                 ?.let { legacyPassphrase ->
-                    return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
-                        databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
-                        passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", Base64.encode(newKeyBytes))
-                    }.let { ProteusDBSecret(it) }
+                    return ProteusDBSecret(migrateLegacyKey(rootDir, legacyPassphrase, "${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId"))
                 }
 
             // Step 3: Generate new secret as fallback
+            (passphraseStorage as? CryptoStoreKeyCreationGuard)?.requireNewCryptoStore(rootDir)
             return getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId").let {
                 ProteusDBSecret(Base64.decode(it))
             }
         }
+
+    private suspend fun migrateLegacyKey(rootDir: String, oldKey: String, alias: String): ByteArray {
+        val protectedDesktop = passphraseStorage is CryptoStoreKeyCreationGuard
+        val pending = "${alias}_migration_pending"
+        // The native migrator may commit the rekey before this process can persist the active alias.
+        val key = if (protectedDesktop) getOrGeneratePassPhrase(pending).toPreservedByteArray else generatePassword()
+        databaseMigrator(rootDir, oldKey, key)
+        passphraseStorage.setPassphrase(alias, Base64.encode(key))
+        if (protectedDesktop) passphraseStorage.clearPassphrase(pending)
+        return key
+    }
 
     override fun setDBPassphrase(key: String, passphrase: String) {
         passphraseStorage.setPassphrase(key, passphrase)

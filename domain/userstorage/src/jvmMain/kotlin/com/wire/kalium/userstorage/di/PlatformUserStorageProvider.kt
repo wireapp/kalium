@@ -42,7 +42,7 @@ public actual class PlatformUserStorageProvider : UserStorageProvider() {
                 userDatabaseBuilder(
                     platformDatabaseData = PlatformDatabaseData(storageData),
                     userId = userIdEntity,
-                    passphrase = null,
+                    passphrase = platformProperties.secret,
                     dispatcher = KaliumDispatcherImpl.io,
                     enableWAL = true,
                     dbInvalidationControlEnabled = dbInvalidationControlEnabled

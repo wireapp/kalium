@@ -18,12 +18,17 @@
 
 package com.wire.kalium.userstorage.di
 
+import com.wire.kalium.persistence.db.UserDBSecret
 import java.io.File
 
 public actual class PlatformUserStorageProperties(
     public val rootPath: String,
-    internal val databaseInfo: DatabaseStorageType
-)
+    internal val databaseInfo: DatabaseStorageType,
+    internal val secret: UserDBSecret? = null
+) {
+    public val protectedAccountDirectory: String?
+        get() = if (secret != null) (databaseInfo as DatabaseStorageType.FiledBacked).filePath.path else null
+}
 
 public sealed interface DatabaseStorageType {
     public data class FiledBacked(val filePath: File) : DatabaseStorageType

@@ -46,17 +46,16 @@ actual fun userDatabaseBuilder(
     if (storageData !is StorageData.FileBacked) {
         throw IllegalStateException("Unsupported storage data type: $storageData")
     }
-    if (passphrase != null) {
-        throw NotImplementedError("Encrypted DB is not supported on JVM")
-    }
 
     val schema = UserDatabase.Schema.synchronous()
-    val databasePath = storageData.file.resolve(DATABASE_NAME)
+    val data = if (platformDatabaseData.owner == null) platformDatabaseData.copy(owner = userId) else platformDatabaseData
+    val databasePath = data.userFile(userId)
 
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
+    if (passphrase != null) DesktopDatabaseMigration.prepare(databasePath.toPath(), passphrase.value)
     val url = "jdbc:sqlite:${databasePath.absolutePath}"
-    val rawDriver: SqlDriver = databaseDriver(uri = url, schema = schema) {
+    val rawDriver: SqlDriver = configuredDatabaseDriver(uri = url, schema = schema, secret = passphrase?.value) {
         isWALEnabled = enableWAL
         areForeignKeyConstraintsEnforced = true
     }
@@ -75,8 +74,8 @@ actual fun userDatabaseBuilder(
         userId = userId,
         sqlDriver = driver,
         dispatcher = dispatcher,
-        platformDatabaseData = platformDatabaseData,
-        isEncrypted = !passphrase.isNullOrBlank(),
+        platformDatabaseData = data,
+        isEncrypted = passphrase != null,
         dbInvalidationController = invalidationController
     )
 }
@@ -86,7 +85,7 @@ actual fun userDatabaseDriverByPath(
     path: String,
     passphrase: UserDBSecret?,
     enableWAL: Boolean
-): SqlDriver = databaseDriver("jdbc:sqlite:$path") {
+): SqlDriver = configuredDatabaseDriver("jdbc:sqlite:$path", secret = passphrase?.value) {
     isWALEnabled = enableWAL
     areForeignKeyConstraintsEnforced = true
 }
@@ -99,7 +98,7 @@ internal actual fun getDatabaseAbsoluteFileLocation(
     if (storageData !is StorageData.FileBacked) {
         return null
     }
-    val dbFile = storageData.file.resolve(DATABASE_NAME)
+    val dbFile = platformDatabaseData.userFile(userId)
     return if (dbFile.exists()) dbFile.absolutePath else null
 }
 
@@ -148,5 +147,20 @@ internal actual fun nuke(
     platformDatabaseData: PlatformDatabaseData
 ): Boolean = when (val storageData = platformDatabaseData.storageData) {
     StorageData.InMemory -> clearInMemoryDatabase(userId)
-    is StorageData.FileBacked -> storageData.file.resolve(DATABASE_NAME).delete()
+    is StorageData.FileBacked -> {
+        val file = platformDatabaseData.userFile(userId)
+        file.delete() || (platformDatabaseData.owner != null && platformDatabaseData.owner != userId &&
+            java.nio.file.Files.notExists(file.toPath()))
+    }
+}
+
+private fun PlatformDatabaseData.userFile(userId: UserIDEntity): File {
+    val directory = (storageData as StorageData.FileBacked).file
+    val name = when {
+        owner == null || owner == userId -> DATABASE_NAME
+        userId == owner.copy(value = "backup-" + owner.value) -> "backup-export.db"
+        userId == owner.copy(value = "obfuscated-backup-" + owner.value) -> "obfuscated-export.db"
+        else -> error("Unknown database owner")
+    }
+    return directory.resolve(name)
 }

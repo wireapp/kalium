@@ -22,25 +22,41 @@ import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.AuthTokenStorageImpl
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
+import com.wire.kalium.persistence.dbPassphrase.CryptoStoreKeyCreationGuard
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
+import java.nio.file.Files
+import java.nio.file.NoSuchFileException
+import java.nio.file.Path
 
 actual class GlobalPrefProvider(
     rootPath: String,
-    shouldEncryptData: Boolean = true
+    shouldEncryptData: Boolean = true,
+    protectSettings: Boolean = false
 ) {
-    private val kaliumPref =
-        KaliumPreferencesSettings(
-            buildSettings(
-                SettingOptions.AppSettings(shouldEncryptData),
-                EncryptedSettingsPlatformParam(rootPath)
-            )
-        )
+    private val settings = buildSettings(SettingOptions.AppSettings(shouldEncryptData), EncryptedSettingsPlatformParam(rootPath, protectSettings))
+    private val kaliumPref = KaliumPreferencesSettings(settings)
 
     actual val authTokenStorage: AuthTokenStorage
         get() = AuthTokenStorageImpl(kaliumPref)
     actual val passphraseStorage: PassphraseStorage
-        get() = PassphraseStorageImpl(kaliumPref)
+        get() {
+            val storage = PassphraseStorageImpl(kaliumPref)
+            val protected = settings as? DesktopProtectedSettings ?: return storage
+            return object : PassphraseStorage by storage, CryptoStoreKeyCreationGuard {
+                override fun requireNewCryptoStore(rootDir: String) {
+                    try {
+                        Files.newDirectoryStream(Path.of(rootDir)).use {
+                            check(!it.iterator().hasNext()) { "Missing key for existing Core Crypto store" }
+                        }
+                    } catch (_: NoSuchFileException) {
+                        // Core Crypto creates the directory on its first open.
+                    }
+                }
+
+                override fun setPassphraseIfAbsent(key: String, passphrase: String): String = protected.putIfAbsent(key, passphrase)
+            }
+        }
     actual val tokenStorage: TokenStorage
         get() = TokenStorageImpl(kaliumPref)
 }

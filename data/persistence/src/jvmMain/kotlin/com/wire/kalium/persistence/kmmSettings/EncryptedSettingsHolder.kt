@@ -43,18 +43,22 @@ private fun createOrLoad(rootPath: String, file: File): Properties {
     return properties
 }
 
-// TODO(jvm): JvmPreferencesSettings is not encrypted
-/**
- * the java implementation is not yet encrypted
- */
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
 ): Settings {
     val file = File(Paths.get(param.rootPath, options.fileName).toString())
+    if (param.protectSettings) {
+        check(options.shouldEncryptData) { "Encryption is required for protected desktop settings" }
+        return DesktopProtectedSettings(file.toPath(), param.identity ?: file.toPath())
+    }
     val properties = createOrLoad(param.rootPath, file)
 
     return PropertiesSettings(properties) { onModify(it, file) }
 }
 
-internal actual class EncryptedSettingsPlatformParam(val rootPath: String)
+internal actual class EncryptedSettingsPlatformParam(
+    val rootPath: String,
+    val protectSettings: Boolean = false,
+    val identity: java.nio.file.Path? = null
+)

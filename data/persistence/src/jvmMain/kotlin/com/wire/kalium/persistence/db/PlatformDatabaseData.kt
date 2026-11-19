@@ -21,11 +21,14 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.wire.kalium.persistence.dao.UserIDEntity
 import org.sqlite.SQLiteConfig
+import org.sqlite.mc.SQLiteMCSqlCipherConfig
 import java.io.File
 
 actual data class PlatformDatabaseData(
-    val storageData: StorageData
+    val storageData: StorageData,
+    internal val owner: UserIDEntity? = null
 )
 
 sealed interface StorageData {
@@ -50,8 +53,21 @@ fun databaseDriver(
     schema: SqlSchema<QueryResult.Value<Unit>>? = null,
     config: DriverConfigurationBuilder.() -> Unit = {}
 ): SqlDriver {
+    return configuredDatabaseDriver(uri, schema, null, config)
+}
+
+internal fun configuredDatabaseDriver(
+    uri: String,
+    schema: SqlSchema<QueryResult.Value<Unit>>? = null,
+    secret: ByteArray?,
+    config: DriverConfigurationBuilder.() -> Unit
+): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
-    val sqliteConfig = SQLiteConfig()
+    val sqliteConfig = if (secret == null) {
+        SQLiteConfig()
+    } else {
+        desktopCipherConfig(secret)
+    }
     val journalMode = if (driverConfiguration.isWALEnabled) SQLiteConfig.JournalMode.WAL else SQLiteConfig.JournalMode.DELETE
     sqliteConfig.setJournalMode(journalMode)
     sqliteConfig.enforceForeignKeys(driverConfiguration.areForeignKeyConstraintsEnforced)
@@ -64,5 +80,29 @@ fun databaseDriver(
             properties = properties,
             schema = schema
         )
+    }
+}
+
+// SQLite silently ignores unknown pragmas. Check the native engine before supplying any disk path.
+private val nativeCipherAvailable by lazy {
+    java.sql.DriverManager.getConnection("jdbc:sqlite::memory:").use { connection ->
+        connection.createStatement().use { statement ->
+            statement.executeQuery("SELECT sqlite3mc_config('sqlcipher', 'hmac_use')").use { it.next() && it.getInt(1) == 1 }
+        }
+    }
+}
+
+internal fun desktopCipherConfig(secret: ByteArray): SQLiteConfig {
+    check(nativeCipherAvailable) { "A native SQLite3MC engine with SQLCipher page authentication is required" }
+    // Kalium supplies SQLCipher raw keys as ASCII x'<64 hex digits>'.
+    val encoded = secret.decodeToString()
+    require(Regex("x'[0-9a-fA-F]{64}'").matches(encoded)) { "Invalid SQLCipher raw key" }
+    val rawKey = java.util.HexFormat.of().parseHex(encoded, 2, encoded.lastIndex)
+    return try {
+        SQLiteMCSqlCipherConfig.getV4Defaults().withRawUnsaltedKey(rawKey).build().apply {
+            setTempStore(SQLiteConfig.TempStore.MEMORY)
+        }
+    } finally {
+        rawKey.fill(0)
     }
 }

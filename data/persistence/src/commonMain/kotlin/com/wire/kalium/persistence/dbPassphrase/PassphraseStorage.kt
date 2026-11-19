@@ -37,6 +37,11 @@ interface PassphraseStorage {
     fun clearPassphrase(key: String)
 }
 
+/** Optional policy for stores that can verify whether Core Crypto already has persisted data. */
+interface CryptoStoreKeyCreationGuard {
+    fun requireNewCryptoStore(rootDir: String)
+}
+
 internal class PassphraseStorageImpl internal constructor(
     private val kaliumPreferences: KaliumPreferences
 ) : PassphraseStorage {

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.util
 
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dbPassphrase.CryptoStoreKeyCreationGuard
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -61,6 +62,31 @@ class SecurityHelperTest {
         // Use a no-op migrator by default for tests to avoid file system dependencies
         val noOpMigrator: DatabaseMigrator = { _, _, _ -> }
         securityHelper = SecurityHelperImpl(passphraseStorage, noOpMigrator)
+    }
+
+    @Test
+    fun desktopRetainsBothKeysAcrossInterruptedLegacyRekey() = runTest {
+        val values = mutableMapOf(mlsV1Alias to "legacy")
+        val storage = object : PassphraseStorage, CryptoStoreKeyCreationGuard {
+            override fun requireNewCryptoStore(rootDir: String) = error("Unexpected key provisioning")
+            override fun getPassphrase(key: String) = values[key]
+            override fun setPassphrase(key: String, passphrase: String) { values[key] = passphrase }
+            override fun setPassphraseIfAbsent(key: String, passphrase: String) = values.getOrPut(key) { passphrase }
+            override fun clearPassphrase(key: String) { values.remove(key) }
+        }
+        val pending = "${mlsV2Alias}_migration_pending"
+        val interrupted = SecurityHelperImpl(storage, { _, _, key ->
+            assertEquals(Base64.encode(key), values[pending])
+            error("Injected interruption")
+        })
+        assertFailsWith<IllegalStateException> { interrupted.mlsDBSecret(userId, rootPath) }
+        val expected = requireNotNull(values[pending])
+        assertEquals("legacy", values[mlsV1Alias])
+        assertEquals(null, values[mlsV2Alias])
+        SecurityHelperImpl(storage, { _, _, key -> assertEquals(expected, Base64.encode(key)) })
+            .mlsDBSecret(userId, rootPath)
+        assertEquals(expected, values[mlsV2Alias])
+        assertEquals(null, values[pending])
     }
 
     @Test
