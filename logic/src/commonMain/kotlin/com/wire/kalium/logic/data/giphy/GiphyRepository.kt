@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.network.api.authenticated.giphy.GiphyGifDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphyGifsResponseDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphyImageDTO
+import com.wire.kalium.network.api.authenticated.giphy.GiphyUserDTO
 import com.wire.kalium.network.api.base.authenticated.GiphyApi
 import okio.ByteString.Companion.encodeUtf8
 import okio.IOException
@@ -89,7 +90,17 @@ internal class GiphyDataSource(
             ?.takeIf { (it.sizeInBytes ?: Long.MAX_VALUE) <= MAX_GIF_SIZE_BYTES }
             ?: return null
         val preview = (images.fixedWidthDownsampled ?: images.fixedWidth)?.toRendition() ?: original
-        return Gif(id = id, title = cleanTitle(title.orEmpty()), preview = preview, original = original)
+        return Gif(
+            id = id,
+            title = cleanTitle(title.orEmpty()),
+            preview = preview,
+            original = original,
+            creator = user?.toCreator(),
+        )
+    }
+
+    private fun GiphyUserDTO.toCreator(): GifCreator? = username?.takeIf { it.isNotBlank() }?.let { name ->
+        GifCreator(username = name, isVerified = isVerified)
     }
 
     private fun GiphyImageDTO.toRendition(): GifRendition? {
