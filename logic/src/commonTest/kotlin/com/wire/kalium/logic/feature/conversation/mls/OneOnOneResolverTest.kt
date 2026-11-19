@@ -24,8 +24,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.OtherUser
@@ -44,6 +42,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.DelicateKaliumApi
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -61,6 +60,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(DelicateKaliumApi::class)
 class OneOnOneResolverTest {
 
     @Test
@@ -493,7 +493,6 @@ class OneOnOneResolverTest {
         val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         val oneOnOneProtocolSelector = mock<OneOnOneProtocolSelector>(mode = MockMode.autoUnit)
         val oneOnOneMigrator = mock<OneOnOneMigrator>(mode = MockMode.autoUnit)
-        val incrementalSyncRepository = mock<IncrementalSyncRepository>(mode = MockMode.autoUnit)
         val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
@@ -506,7 +505,6 @@ class OneOnOneResolverTest {
                 userRepository = userRepository,
                 oneOnOneProtocolSelector = oneOnOneProtocolSelector,
                 oneOnOneMigrator = oneOnOneMigrator,
-                incrementalSyncRepository = incrementalSyncRepository,
                 pendingActionsRepository = pendingActionsRepository,
                 conversationRepository = conversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
@@ -558,10 +556,6 @@ class OneOnOneResolverTest {
 
         suspend fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, com.wire.kalium.logic.data.id.ConversationId>) {
             everySuspend { oneOnOneMigrator.migrateExistingProteus(mokkeryAny()) } returns result
-        }
-
-        fun withIncrementalSyncState(flow: Flow<IncrementalSyncStatus>) {
-            dev.mokkery.every { incrementalSyncRepository.incrementalSyncState } returns flow
         }
     }
 

@@ -11,6 +11,7 @@ import com.wire.kalium.network.api.authenticated.giphy.GiphyGifsResponseDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphyImageDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphyImagesDTO
 import com.wire.kalium.network.api.authenticated.giphy.GiphyPaginationDTO
+import com.wire.kalium.network.api.authenticated.giphy.GiphyUserDTO
 import com.wire.kalium.network.api.base.authenticated.GiphyApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -47,9 +48,12 @@ class GiphyRepositoryTest {
     }
 
     @Test
-    fun givenGiphyGif_whenMapping_thenUsesDownsizedForSendingAndCleansTheTitle() = runTest {
+    fun givenGiphyGif_whenMapping_thenUsesDownsizedForSendingCleansTheTitleAndKeepsTheCreator() = runTest {
         val (api, repository) = arrange()
-        everySuspend { api.trending(any(), any(), any()) } returns success(page(gifDto("a", title = "Happy Friday Dance GIF by Studio")))
+        val user = GiphyUserDTO(username = "studio", isVerified = true)
+        everySuspend { api.trending(any(), any(), any()) } returns success(
+            page(gifDto("a", title = "Happy Friday Dance GIF by Studio", user = user))
+        )
 
         val gif = assertIs<Either.Right<GifPage>>(repository.trending(0)).value.gifs.single()
 
@@ -57,6 +61,7 @@ class GiphyRepositoryTest {
         assertEquals("Happy Friday Dance", gif.title)
         assertEquals(GifRendition("https://media.giphy.com/a/downsized.gif", 480, 270, 1_000L), gif.original)
         assertEquals(GifRendition("https://media.giphy.com/a/200w_d.gif", 200, 113, 100L), gif.preview)
+        assertEquals(GifCreator("studio", isVerified = true), gif.creator)
     }
 
     @Test
@@ -206,9 +211,15 @@ class GiphyRepositoryTest {
     private fun page(vararg gifs: GiphyGifDTO, pagination: GiphyPaginationDTO? = null) =
         GiphyGifsResponseDTO(data = gifs.toList(), pagination = pagination)
 
-    private fun gifDto(id: String, title: String = "Title", downsizedSize: String? = "1000") = GiphyGifDTO(
+    private fun gifDto(
+        id: String,
+        title: String = "Title",
+        downsizedSize: String? = "1000",
+        user: GiphyUserDTO? = null,
+    ) = GiphyGifDTO(
         id = id,
         title = title,
+        user = user,
         images = GiphyImagesDTO(
             downsized = GiphyImageDTO("https://media.giphy.com/$id/downsized.gif", "480", "270", downsizedSize),
             fixedWidth = GiphyImageDTO("https://media.giphy.com/$id/200w.gif", "200", "113", "300"),
