@@ -198,6 +198,7 @@ class NotificationProcessor(
             cleanupConversations()
             if (recovery == null) events.markProcessed(listOf(next.eventId), emptyMap())
             else recovery.acknowledge(listOf(next.eventId))
+            diagnostics?.eventProcessed()
             if (next.eventId == targetId) {
                 queueEnd.reached(effects.message, "DEFERRED_PRESENTATION_POLICY".takeIf { deferred.isNotEmpty() })
             } else if (effects.message?.let { it.shouldNotify && it.type != ReceivedNotificationType.MESSAGE } == true) {

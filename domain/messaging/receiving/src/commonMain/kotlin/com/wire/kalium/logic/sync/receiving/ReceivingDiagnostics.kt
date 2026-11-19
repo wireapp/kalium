@@ -17,6 +17,12 @@ import okio.ByteString.Companion.encodeUtf8
 
 /** One receiving attempt. Holds only code-defined labels and a short hash of the current event ID. */
 public class ReceivingDiagnostics {
+    /** Acknowledgements that returned successfully; interruption can leave a final committed event unobserved. */
+    public var processedEventCount: Int = 0
+        private set
+
+    internal fun eventProcessed() { processedEventCount++ }
+
     internal var stage: String = "OPEN_ACCOUNT"
     internal var eventType: String? = null
         private set

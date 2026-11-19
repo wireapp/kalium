@@ -222,6 +222,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         observer: KaliumNSEObserver? = null,
     ): KaliumNSEResult = processOwned(request, delivery, observer)
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun processOwned(
         request: KaliumNSERequest,
         delivery: KaliumNSEMessageDelivery?,
@@ -230,9 +231,14 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         // An extension has a bounded host budget; this flag controls diagnostic verbosity only.
         AppleSuspensionDiagnostics.setBackgrounded(true)
         AppleSuspensionDiagnostics.snapshot("NSE_BEGIN")
+        val observation = NSEProcessingObservation()
         return try {
-            processObserved(request, delivery, observer)
+            processObserved(request, delivery, observer, observation).also { observation.returned(it) }
+        } catch (failure: Throwable) {
+            observation.failed(failure is CancellationException)
+            throw failure
         } finally {
+            observer.record(observation.summary())
             AppleSuspensionDiagnostics.snapshot("NSE_END")
             observer.record(KaliumNSEStage.RECEIVER_FINISHED)
         }
@@ -242,8 +248,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         request: KaliumNSERequest,
         delivery: KaliumNSEMessageDelivery?,
         observer: KaliumNSEObserver?,
+        observation: NSEProcessingObservation,
     ): KaliumNSEResult {
-        val diagnostics = ReceivingDiagnostics()
+        val diagnostics = observation.diagnostics
         if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) {
             observer.record(KaliumNSEStage.CLEANUP_NOT_NEEDED)
             return failure("INVALID_REQUEST").also { diagnostics.record("FAILED", it.failureReason, false) }
@@ -259,7 +266,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 val result = configuration.useAccount(userId, diagnostics, BUSY_RETRY, observer) { runtime ->
                     observer.record(KaliumNSEStage.ACCOUNT_LOADED)
                     // The badge is auxiliary: a slow count read must not discard already-produced alerts.
-                    val received = receive(runtime, request, diagnostics, started, delivery, observer).also { produced = it }
+                    val received = receive(runtime, request, started, delivery, observer, observation).also { produced = it }
                     received.copy(
                         unreadConversationBadgeCount = runtime.readUnreadConversationBadgeCount().getOrNull()
                     ).also { produced = it }
@@ -282,11 +289,12 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     private suspend fun receive(
         runtime: AppleAccountRuntime,
         request: KaliumNSERequest,
-        diagnostics: ReceivingDiagnostics,
         started: TimeSource.Monotonic.ValueTimeMark,
         delivery: KaliumNSEMessageDelivery?,
         observer: KaliumNSEObserver?,
+        observation: NSEProcessingObservation,
     ): KaliumNSEResult {
+        val diagnostics = observation.diagnostics
         runtime.database.messageDAO.rememberNotificationMessages(request.deliveredNotifications.map { it.messageKey() })
         val processor = runtime.notificationProcessor(
             ReceivingOptions(
@@ -308,12 +316,14 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         val catchUpStarted = TimeSource.Monotonic.markNow()
         // As the app does, catch up over the WebSocket, then process the stored queue to its end. Soft deadlines
         // leave time to present and to close the runtime within the budget.
+        observation.started()
         observer.record(KaliumNSEStage.SYNC_STARTED)
         val caughtUp = if (handledEarlier) CatchUpOutcome.LIVE else runtime.catchUp(budget * CATCH_UP_SHARE - started.elapsedNow())
         val received = processor.processToLive(request.notificationId) { started.elapsedNow() > budget * PROCESS_SHARE }.let {
             if (caughtUp == CatchUpOutcome.LIVE || it.stoppedReason != QUEUE_END) it
             else it.copy(stoppedReason = "CATCH_UP_${caughtUp.name}")
         }
+        observation.processed(caughtUp, received)
         observer.record(KaliumNSEStage.SYNC_FINISHED)
         val claims = UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId)
         claims.pending.acknowledge(request.deliveredNotifications.map { it.messageKey() })

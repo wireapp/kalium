@@ -8,6 +8,7 @@ package com.wire.kalium.nse
  */
 public interface KaliumNSEObserver {
     public fun onStage(stage: KaliumNSEStage)
+    public fun onProcessingSummary(summary: KaliumNSEProcessingSummary) {}
 }
 
 public enum class KaliumNSEStage {
@@ -19,4 +20,9 @@ public enum class KaliumNSEStage {
 @Suppress("TooGenericExceptionCaught")
 internal fun KaliumNSEObserver?.record(stage: KaliumNSEStage) {
     try { this?.onStage(stage) } catch (_: Throwable) { /* Telemetry must not change receiving or cleanup. */ }
+}
+
+@Suppress("TooGenericExceptionCaught")
+internal fun KaliumNSEObserver?.record(summary: KaliumNSEProcessingSummary) {
+    try { this?.onProcessingSummary(summary) } catch (_: Throwable) { /* Diagnostics do not own receiving. */ }
 }

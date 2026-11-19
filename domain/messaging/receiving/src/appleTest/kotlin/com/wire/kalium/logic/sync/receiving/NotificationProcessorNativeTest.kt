@@ -293,7 +293,8 @@ class NotificationProcessorNativeTest {
                 val target = fixture.event("target", fixture.encrypt("target", protocolMLS = false),
                     protocolMLS = false, conversationId = DELETE_TARGET)
                 fixture.releasePrepared()
-                val result = fixture.receive(listOf(commit, following, target), "target",
+                val diagnostics = ReceivingDiagnostics()
+                val result = fixture.receive(listOf(commit, following, target), "target", diagnostics = diagnostics,
                     nowEpochMillis = { 1_000L }, decorateMLSContext = { context ->
                         object : MlsCoreCryptoContext by context {
                             override suspend fun getGroupState(groupId: String): com.wire.kalium.cryptography.E2EIConversationState {
@@ -305,6 +306,7 @@ class NotificationProcessorNativeTest {
                     })
                 val received = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 assertEquals("target", received.messageId)
+                assertEquals(1, diagnostics.processedEventCount)
                 assertFalse(received.shouldNotify)
                 assertNull(received.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
@@ -313,7 +315,9 @@ class NotificationProcessorNativeTest {
                     assertNull(runtime.database.messageDAO.getMessageById("following", CONVERSATION_ID))
                     assertEquals(31_000L, runtime.database.notificationEventStore.deferredUntil("commit"))
                 })
-                val resumed = fixture.receive(emptyList(), "following", nowEpochMillis = { 32_000L })
+                val resumedDiagnostics = ReceivingDiagnostics()
+                val resumed = fixture.receive(emptyList(), "following", diagnostics = resumedDiagnostics, nowEpochMillis = { 32_000L })
+                assertEquals(2, resumedDiagnostics.processedEventCount)
                 assertEquals("following", assertIs<Either.Right<ReceivedMessageResult?>>(resumed).value?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("commit")).isProcessed)
@@ -457,7 +461,10 @@ class NotificationProcessorNativeTest {
                     val first = fixture.event("first", fixture.encrypt("first"))
                     val target = fixture.event("target", fixture.encrypt("target"))
                     fixture.releasePrepared()
-                    assertIs<Either.Left<*>>(fixture.receive(listOf(first, target), "target", interruption = interruption))
+                    val diagnostics = ReceivingDiagnostics()
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(first, target), "target",
+                        diagnostics = diagnostics, interruption = interruption))
+                    assertEquals(0, diagnostics.processedEventCount)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("first")).isProcessed)
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("target")).isProcessed)
@@ -10226,7 +10233,8 @@ class NotificationProcessorNativeTest {
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 val event = fixture.batch("notification", fixture.event("text", first), fixture.event("unsupported", tail))
-                val result = fixture.receive(listOf(event), "notification", nowEpochMillis = { 1_000L }, decorateMLSContext = { context ->
+                val diagnostics = ReceivingDiagnostics()
+                val result = fixture.receive(listOf(event), "notification", diagnostics = diagnostics, nowEpochMillis = { 1_000L }, decorateMLSContext = { context ->
                     object : MlsCoreCryptoContext by context {
                         override suspend fun decryptMessage(groupId: MLSGroupId, message: ByteArray): MLSDecryptResult {
                             val decrypted = context.decryptMessage(groupId, message)
@@ -10239,6 +10247,7 @@ class NotificationProcessorNativeTest {
                 })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 assertEquals("QUEUE_END", fixture.receivedStop)
+                assertEquals(0, diagnostics.processedEventCount)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
                     assertEquals(31_000L, runtime.database.notificationEventStore.deferredUntil("notification"))
@@ -10247,7 +10256,10 @@ class NotificationProcessorNativeTest {
                     assertTrue(runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).isEmpty())
                 })
                 // The real decryptions must roll back before deferral and remain replayable after the cooldown.
-                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification", nowEpochMillis = { 32_000L })).value?.text)
+                val replayDiagnostics = ReceivingDiagnostics()
+                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification",
+                    diagnostics = replayDiagnostics, nowEpochMillis = { 32_000L })).value?.text)
+                assertEquals(1, replayDiagnostics.processedEventCount) // One event containing two message payloads.
                 fixture.verifyStoredAndNext(next, "tail", listOf("first", "tail"))
             }
         }
@@ -10362,10 +10374,12 @@ class NotificationProcessorNativeTest {
                     runtime.database.eventDAO.storeFetchedPage(events.map { NewEventEntity(it.id, it.payload, false, false) })
                 })
 
-                val result = fixture.receive(emptyList(), "target", toLive = { false })
+                val diagnostics = ReceivingDiagnostics()
+                val result = fixture.receive(emptyList(), "target", diagnostics = diagnostics, toLive = { false })
 
                 assertEquals("target", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
                 assertEquals("QUEUE_END", fixture.receivedStop)
+                assertEquals(3, diagnostics.processedEventCount)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(events.all { checkNotNull(runtime.database.eventDAO.getEventById(it.id)).isProcessed })
                     assertEquals(listOf("earlier", "target", "later"), UnnotifiedMessageAlerts(runtime.database, SELF) { TIME + 10.seconds }.take().map { it.text })
@@ -10386,15 +10400,40 @@ class NotificationProcessorNativeTest {
                     runtime.database.eventDAO.storeFetchedPage(events.map { NewEventEntity(it.id, it.payload, false, false) })
                 })
                 var checks = 0
+                val diagnostics = ReceivingDiagnostics()
 
-                val result = fixture.receive(emptyList(), "target",
+                val result = fixture.receive(emptyList(), "target", diagnostics = diagnostics,
                     toLive = { checks++ >= 1 })
 
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 assertEquals("BUDGET", fixture.receivedStop)
+                assertEquals(1, diagnostics.processedEventCount)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertEquals(listOf(true, false, false), events.map { checkNotNull(runtime.database.eventDAO.getEventById(it.id)).isProcessed })
                     assertEquals(listOf("earlier"), UnnotifiedMessageAlerts(runtime.database, SELF) { TIME + 10.seconds }.take().map { it.text })
+                })
+            }
+        }
+    }
+
+    @Test
+    fun cancellationRetainsPreviouslyAcknowledgedEventCount() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                val events = listOf("first", "second").map { fixture.event(it, fixture.encrypt(it)) }
+                fixture.releasePrepared()
+                val diagnostics = ReceivingDiagnostics()
+                var checks = 0
+                assertFailsWith<CancellationException> {
+                    fixture.receive(events, "second", diagnostics = diagnostics, toLive = {
+                        if (checks++ == 1) throw CancellationException("cancel before second event")
+                        false
+                    })
+                }
+                assertEquals(1, diagnostics.processedEventCount)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("first")).isProcessed)
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("second")).isProcessed)
                 })
             }
         }
