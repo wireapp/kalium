@@ -631,6 +631,8 @@ import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import com.wire.kalium.logic.data.mfa.FakeMFARepository
+import com.wire.kalium.logic.feature.mfa.MFAScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
@@ -677,6 +679,8 @@ public class UserSessionScope internal constructor(
         com.wire.kalium.cryptography.coreCryptoCentral(root, key)
     },
 ) : CoroutineScope {
+    public val mfa: MFAScope by lazy { MFAScope(FakeMFARepository()) }
+
     private val notificationEventsManager = NotificationEventsManagerImpl()
 
     override val coroutineContext: CoroutineContext = SupervisorJob()

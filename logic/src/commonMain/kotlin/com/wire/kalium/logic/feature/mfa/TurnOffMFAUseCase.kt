@@ -1,0 +1,45 @@
+/*
+ * Wire
+ * Copyright (C) 2026 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+package com.wire.kalium.logic.feature.mfa
+
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.mfa.MFAFailure
+import com.wire.kalium.logic.data.mfa.MFARepository
+
+/**
+ * Confirms credentials, disables MFA, invalidates pending enrollments, and publishes the disabled state.
+ *
+ * **Warning:** Currently backed by a temporary dummy implementation.
+ */
+public interface TurnOffMFAUseCase {
+    public suspend operator fun invoke(password: String, code: String): TurnOffMFAResult
+}
+
+internal class TurnOffMFAUseCaseImpl(private val repository: MFARepository) : TurnOffMFAUseCase {
+    override suspend fun invoke(password: String, code: String): TurnOffMFAResult = repository.turnOff(password, code).fold(
+        { TurnOffMFAResult.Failure(it) },
+        { TurnOffMFAResult.Success },
+    )
+}
+
+public sealed interface TurnOffMFAResult {
+    public data object Success : TurnOffMFAResult
+
+    public data class Failure(public val failure: MFAFailure) : TurnOffMFAResult
+}
