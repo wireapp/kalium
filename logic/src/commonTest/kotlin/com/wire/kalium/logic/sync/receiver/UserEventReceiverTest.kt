@@ -25,13 +25,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -40,18 +40,18 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
@@ -278,48 +278,42 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(any())
         }
+        assertEquals(emptyList<Duration>(), arrangement.resolutionDelays)
     }
 
     @Test
-    fun givenNonLiveNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduled() = runTest {
+    fun givenNonLiveNewConnectionEventWithStatusAccepted_thenOneOnOneResolutionIsQueued() = runTest {
         val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
         val (arrangement, eventReceiver) = arrange {
             withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
-            withScheduleResolveOneOnOneConversationWithUserId()
         }
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), event.connection.qualifiedToId, ZERO)
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(event.connection.qualifiedToId)
         }
+        assertEquals(listOf(ZERO), arrangement.resolutionDelays)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenLiveNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduledWithDelay() =
-        runTest(TestKaliumDispatcher.default) {
-            val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
-            val (arrangement, eventReceiver) = arrange {
-                withFetchUserInfoReturning(Either.Right(Unit))
-                withInsertConnectionFromEventSucceeding()
-                withScheduleResolveOneOnOneConversationWithUserId()
-            }
-
-            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-            advanceUntilIdle()
-
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
-                    any(),
-                    event.connection.qualifiedToId,
-                    3.seconds
-                )
-            }
+    fun givenLiveNewConnectionEventWithStatusAccepted_thenOneOnOneResolutionIsQueuedWithDelay() = runTest {
+        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
+        val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Right(Unit))
+            withInsertConnectionFromEventSucceeding()
         }
+
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(event.connection.qualifiedToId)
+        }
+        assertEquals(listOf(3.seconds), arrangement.resolutionDelays)
+    }
 
     @Test
     fun givenNewConnectionEvent_whenHandlingEvent_thenHandlePotentialLegalHoldChange() =
@@ -329,7 +323,6 @@ class UserEventReceiverTest {
             val (arrangement, eventReceiver) = arrange {
                 withFetchUserInfoReturning(Either.Right(Unit))
                 withInsertConnectionFromEventSucceeding()
-                withScheduleResolveOneOnOneConversationWithUserId()
             }
             // when
             eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
@@ -342,7 +335,8 @@ class UserEventReceiverTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val userRepository = mock<UserRepository>()
-        val oneOnOneResolver = mock<OneOnOneResolver>()
+        val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
+        val resolutionDelays = mutableListOf<Duration>()
         val connectionRepository = mock<ConnectionRepository>()
         val logoutUseCase = mock<LogoutUseCase>()
         private val currentClientIdProvider = mock<CurrentClientIdProvider>()
@@ -356,7 +350,8 @@ class UserEventReceiverTest {
             connectionRepository,
             userRepository,
             logoutUseCase,
-            oneOnOneResolver,
+            pendingActionsRepository,
+            { resolutionDelays += it },
             SELF_USER_ID,
             currentClientIdProvider,
             legalHoldRequestHandler,
@@ -422,12 +417,6 @@ class UserEventReceiverTest {
             everySuspend {
                 userRepository.fetchUserInfo(any())
             } returns result
-        }
-
-        suspend fun withScheduleResolveOneOnOneConversationWithUserId() = apply {
-            everySuspend {
-                oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any(), any())
-            } returns Job()
         }
 
         suspend fun arrange() = run {
