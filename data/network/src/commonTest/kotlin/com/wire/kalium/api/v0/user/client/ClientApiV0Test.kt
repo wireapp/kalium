@@ -94,7 +94,7 @@ internal class ClientApiV0Test : ApiTest() {
         val errorResponse = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
-        assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
+        assertEquals(errorResponse.kException.errorResponse, ERROR_RESPONSE)
     }
 
     @Test
