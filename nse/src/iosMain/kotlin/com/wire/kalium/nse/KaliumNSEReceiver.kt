@@ -637,11 +637,13 @@ private suspend fun <T> KaliumNSEConfiguration.useAccount(
             busyRetry = busyRetry,
             observeCleanup = { stage ->
                 cleanupObserved = true
-                observer.record(when (stage) {
-                    AccountCleanupStage.STARTED -> KaliumNSEStage.CLEANUP_STARTED
-                    AccountCleanupStage.COMPLETED -> KaliumNSEStage.CLEANUP_COMPLETED
-                    AccountCleanupStage.FAILED -> KaliumNSEStage.CLEANUP_FAILED
-                })
+                observer.record(
+                    when (stage) {
+                        AccountCleanupStage.STARTED -> KaliumNSEStage.CLEANUP_STARTED
+                        AccountCleanupStage.COMPLETED -> KaliumNSEStage.CLEANUP_COMPLETED
+                        AccountCleanupStage.FAILED -> KaliumNSEStage.CLEANUP_FAILED
+                    }
+                )
             },
             block = block,
         )
