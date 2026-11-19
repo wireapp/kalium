@@ -193,6 +193,7 @@ internal class CallManagerImpl internal constructor(
     private var signalJournal: com.wire.kalium.logic.sync.receiving.CallSignalStore? = null
     private val signalGeneration = Uuid.random().toString()
     private var signalReplay: CallSignalReplay? = null
+    private val signalScope = AppleCallSignalScope()
     private val callEffects = kotlinx.coroutines.channels.Channel<suspend () -> Unit>(kotlinx.coroutines.channels.Channel.UNLIMITED)
     init {
         scope.launch {
@@ -212,6 +213,7 @@ internal class CallManagerImpl internal constructor(
         check(signalJournal == null)
         signalJournal = journal
         signalReplay = CallSignalReplay(journal, signalGeneration, ::submitSignal) { signal ->
+            signalScope.include(signal)
             AppleCallTrace.record(
                 CallTraceEvent.NATIVE_ENQUEUE,
                 traceContext(ConversationId(signal.conversationValue, signal.conversationDomain)).withSignal(signal.id),
@@ -278,6 +280,7 @@ internal class CallManagerImpl internal constructor(
                     isSelfMessage = sender == selfUserId, expirationData = null,
                 ),
                 content,
+                signal,
             )
         } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
             AppleCallTrace.record(
@@ -297,7 +300,11 @@ internal class CallManagerImpl internal constructor(
         AppleCallTrace.record(CallTraceEvent.NATIVE_ENQUEUE, trace, CallTraceResult.ACCEPTED)
     }
 
-    private suspend fun receiveSignal(message: Message.Signaling, content: MessageContent.Calling) = withCalling { handle ->
+    private suspend fun receiveSignal(
+        message: Message.Signaling,
+        content: MessageContent.Calling,
+        signal: com.wire.kalium.logic.sync.receiving.CallSignalRecord? = null,
+    ) = withCalling { handle ->
         ensureServerTimeOffsetComputed()
         callingLogger.i("$tagWithUserId: onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
         val targetConversationId = if (message.isSelfMessage) {
@@ -307,17 +314,26 @@ internal class CallManagerImpl internal constructor(
         }
         val (callConversationType, isMeeting) = getCallConversationType(targetConversationId)
         val type = callMapper.toConversationType(callConversationType)
-        val received = avs.receiveCallingMessage(
-            handle = handle,
-            payload = content.value.encodeToByteArray(),
-            currentTimeSeconds = serverTimeHandler.toServerTimestamp().toUInt(),
-            messageTimeSeconds = message.date.epochSeconds.toUInt(),
-            conversationId = federatedIdMapper.parseToFederatedId(targetConversationId),
-            senderUserId = federatedIdMapper.parseToFederatedId(message.senderUserId),
-            senderClientId = message.senderClientId.value,
-            conversationType = callMapper.toConversationTypeCalling(type).avsValue,
-            meeting = isMeeting
-        )
+        val nativeConversation = federatedIdMapper.parseToFederatedId(targetConversationId)
+        val nativeSender = federatedIdMapper.parseToFederatedId(message.senderUserId)
+        // Include after suspendable preparation, before AVS can synchronously deliver a close callback.
+        signal?.let(signalScope::include)
+        val received = try {
+            avs.receiveCallingMessage(
+                handle = handle,
+                payload = content.value.encodeToByteArray(),
+                currentTimeSeconds = serverTimeHandler.toServerTimestamp().toUInt(),
+                messageTimeSeconds = message.date.epochSeconds.toUInt(),
+                conversationId = nativeConversation,
+                senderUserId = nativeSender,
+                senderClientId = message.senderClientId.value,
+                conversationType = callMapper.toConversationTypeCalling(type).avsValue,
+                meeting = isMeeting
+            )
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+            signal?.let { signalScope.forget(targetConversationId, setOf(it.id)) }
+            throw failure
+        }
         received
     }
 
@@ -542,6 +558,7 @@ internal class CallManagerImpl internal constructor(
                 AppleCallTrace.record(CallTraceEvent.ENGINE_RELEASE, engineContext(), CallTraceResult.COMPLETED)
                 nativeHandle = null
             }
+            signalScope.clear()
         }
     }
 
@@ -840,6 +857,7 @@ internal class CallManagerImpl internal constructor(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         val closeContext = traceContext(conversationIdWithDomain, Uuid.random().toString())
+        val handledSignals = signalScope.snapshot(conversationIdWithDomain)
         AppleCallTrace.record(CallTraceEvent.AVS_CLOSED, closeContext, code = reason)
         callEffects.trySend {
             var callContinues = false
@@ -879,21 +897,28 @@ internal class CallManagerImpl internal constructor(
                 }
                 createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
             } finally {
-                // A group call that continues keeps its signals, so Join comes back after a restart.
-                // An ended call forgets them, so a restart cannot replay it and record it again.
-                val endedId = signalJournal?.closed(
-                    conversationIdWithDomain.value,
-                    conversationIdWithDomain.domain,
+                closeSignalJournal(
+                    conversationIdWithDomain,
                     reason,
-                    handledBy = signalGeneration.takeUnless { callContinues },
-                )
-                if (endedId != null) AppleCallTrace.record(
-                    CallTraceEvent.JOURNAL_CLOSED,
-                    closeContext.withSignal(endedId),
-                    code = reason,
+                    if (callContinues) emptySet() else handledSignals,
+                    closeContext,
                 )
             }
         }
+    }
+
+    private suspend fun closeSignalJournal(
+        conversationId: ConversationId,
+        reason: Int,
+        handledSignals: Set<String>,
+        closeContext: CallTraceContext,
+    ) {
+        // An empty scope retains signals for a continuing group. Forget tracking only after commit.
+        val closed = signalJournal?.closed(
+            conversationId.value, conversationId.domain, reason, handledSignalIds = handledSignals
+        ) ?: return
+        signalScope.forget(conversationId, handledSignals)
+        closed.traceClosed(closeContext, reason)
     }
 
     private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean = when {
@@ -980,4 +1005,12 @@ internal class CallManagerImpl internal constructor(
         private const val TAG = "CallManager"
         private val DEFAULT_WAIT_UNTIL_CONNECTED_TIMEOUT = 15.seconds
     }
+}
+
+private fun com.wire.kalium.logic.sync.receiving.CallSignalCloseResult.traceClosed(closeContext: CallTraceContext, reason: Int) {
+    if (presentationId != null) AppleCallTrace.record(
+        CallTraceEvent.JOURNAL_CLOSED,
+        closeContext.withSignal(presentationId),
+        code = reason,
+    )
 }

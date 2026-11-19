@@ -62,6 +62,9 @@ data class IncomingCallReference(
     val messageTimeSeconds: Long,
 )
 
+/** The durable result of closing a presentation and pruning its captured signal scope. */
+data class CallSignalCloseResult(val presentationId: String?, val removedSignalIds: Set<String> = emptySet())
+
 /** Durable signaling and presentation decisions, independently of the native handle lifetime. */
 interface CallSignalStore {
     suspend fun signals(): List<CallSignalRecord>
@@ -77,10 +80,16 @@ interface CallSignalStore {
     ): CallPresentationRecord?
 
     /**
-     * Ends the conversation's latest presentation. With [handledBy], also forgets the conversation's signals
-     * that engine generation already handled, so a restart cannot replay a call that has ended.
+     * Ends the latest presentation in ordered callback processing. Removes only [handledSignalIds] captured
+     * at native close receipt, never signals selected after suspendable cleanup. Empty scope retains signals
+     * for a group call that continues. Returned IDs describe actual removals after the transaction succeeds.
      */
-    suspend fun closed(conversationValue: String, conversationDomain: String, reason: Int, handledBy: String? = null): String?
+    suspend fun closed(
+        conversationValue: String,
+        conversationDomain: String,
+        reason: Int,
+        handledSignalIds: Set<String> = emptySet(),
+    ): CallSignalCloseResult
 }
 
 /**
@@ -193,17 +202,17 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         conversationValue: String,
         conversationDomain: String,
         reason: Int,
-        handledBy: String?,
-    ): String? = database.writeMessageEffects {
+        handledSignalIds: Set<String>,
+    ): CallSignalCloseResult = database.writeMessageEffects {
         val state = read(metadata)
         val current = state.presentations.lastOrNull {
             it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
         }
-        val signals = state.signals.filterNot {
-            handledBy != null && it.submittedGeneration == handledBy &&
-                it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
-        }
-        if (current == null && signals.size == state.signals.size) return@writeMessageEffects null
+        val removed = state.signals.filter {
+            it.id in handledSignalIds && it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
+        }.map { it.id }.toSet()
+        val signals = state.signals.filterNot { it.id in removed }
+        if (current == null && removed.isEmpty()) return@writeMessageEffects CallSignalCloseResult(null)
         write(
             metadata,
             state.copy(
@@ -213,7 +222,7 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
                 },
             )
         )
-        current?.id
+        CallSignalCloseResult(current?.id, removed)
     }
 
     private fun CallSignalRecord.isStartRequest(): Boolean = runCatching {
@@ -227,8 +236,11 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         internal const val KEY = "apple_call_signal_journal_v1"
         private const val MILLISECONDS_PER_SECOND = 1000L
 
-        /** AVS ignores conference starts older than 120 s and only reports a 1:1 start older than 60 s as missed. */
-        internal const val SIGNAL_RETENTION_MS = 3 * 60 * MILLISECONDS_PER_SECOND
+        /**
+         * Shared retention bound for durable signals and the live engine's cleanup tracking.
+         * AVS ignores conference starts older than 120 s and reports a 1:1 start older than 60 s as missed.
+         */
+        const val SIGNAL_RETENTION_MS = 3 * 60 * MILLISECONDS_PER_SECOND
         private const val PRESENTATION_RETENTION_MS = 24 * 60 * 60 * MILLISECONDS_PER_SECOND
 
         /** Called inside the SAME SQL transaction as receiving effects, before the processed marker. */

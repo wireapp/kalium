@@ -48,7 +48,7 @@ class CallSignalJournalTest {
             val first = journal.append(start("first"))
             journal.append(start("second"))
             journal.incoming(reference(), true, true, "engine-one")
-            assertEquals(first.id, journal.closed(CONVERSATION.value, CONVERSATION.domain, 5))
+            assertEquals(first.id, journal.closed(CONVERSATION.value, CONVERSATION.domain, 5).presentationId)
 
             val reopened = CallSignalJournal(database.builder)
             for (generation in listOf("engine-one", "engine-two")) {
@@ -75,7 +75,7 @@ class CallSignalJournalTest {
 
             val reopened = CallSignalJournal(database.builder)
             assertFalse(checkNotNull(reopened.incoming(reference(), true, false, "engine-two")).ringing)
-            assertEquals(first.id, reopened.closed(CONVERSATION.value, CONVERSATION.domain, 5))
+            assertEquals(first.id, reopened.closed(CONVERSATION.value, CONVERSATION.domain, 5).presentationId)
             assertTrue(checkNotNull(reopened.incoming(nextReference, true, false, "engine-two")).ringing)
             assertEquals(next.id, reopened.presentations().last().id)
         }
@@ -217,8 +217,30 @@ class CallSignalJournalTest {
 
             journal.closed(CONVERSATION.value, CONVERSATION.domain, 5)
             assertEquals(2, journal.signals().size)
-            journal.closed(CONVERSATION.value, CONVERSATION.domain, 5, handledBy = "engine")
+            journal.closed(CONVERSATION.value, CONVERSATION.domain, 5, handledSignalIds = setOf(handled.id))
             assertEquals(listOf(pending.id), journal.signals().map { it.id })
+        }
+    }
+
+    @Test
+    fun delayedClosePreservesNewlySubmittedStartAcrossReopening() = runTest {
+        withJournal { journal, database ->
+            val old = journal.append(start("old"))
+            journal.submitted(old.id, "engine")
+            journal.incoming(reference(), true, false, "engine")
+            val closeScope = setOf(old.id)
+            val nextTime = CALL_TIME + 2.seconds
+            val next = journal.append(start("next").copy(time = nextTime))
+            journal.submitted(next.id, "engine")
+
+            val closed = journal.closed(CONVERSATION.value, CONVERSATION.domain, 0, closeScope)
+            assertEquals(setOf(old.id), closed.removedSignalIds)
+            assertTrue(journal.closed(CONVERSATION.value, CONVERSATION.domain, 0, closeScope).removedSignalIds.isEmpty())
+            val reopened = CallSignalJournal(database.builder)
+            assertEquals(listOf(next.id), reopened.signals().map { it.id })
+            val incoming = reopened.incoming(reference().copy(messageTimeSeconds = nextTime.epochSeconds), true, false, "new-engine")
+            assertEquals(next.id, incoming?.id)
+            assertTrue(checkNotNull(incoming).ringing)
         }
     }
 
@@ -253,7 +275,7 @@ class CallSignalJournalTest {
             journal.submitted(old.id, "engine")
             journal.submitted(cancel.id, "engine")
             assertEquals(live, journal.presentations().last())
-            assertEquals(newer.id, journal.closed(CONVERSATION.value, CONVERSATION.domain, 5))
+            assertEquals(newer.id, journal.closed(CONVERSATION.value, CONVERSATION.domain, 5).presentationId)
             assertEquals(4, journal.presentations().single { it.id == old.id }.endReason)
         }
         withJournal { journal, _ ->

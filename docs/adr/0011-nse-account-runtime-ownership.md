@@ -328,7 +328,13 @@ kept for three minutes, because a new full engine ignores anything older: AVS dr
 conference starts older than 120 s and only reports a 1:1 start older than 60 s as
 missed. When the full engine closes a call that does not continue for others, the
 signals it handled in that conversation are dropped, so a restart cannot replay an
-ended call. Besides
+ended call. The Apple adapter captures the eligible signal IDs at close-callback receipt,
+before queued callback effects or MLS cleanup can suspend. The eventual journal transaction
+removes only that captured set; a newer signal submitted meanwhile survives. Signals enter
+the adapter's tracking immediately before native receive, which may synchronously call back.
+A continuing group retains its signals. AVS supplies only a conversation for close callbacks;
+an old close arriving after a newer start remains an attribution limitation, not a guarantee
+provided by this boundary. Besides
 storing committed signals, the NSE writes only a once-per-signal missed-call claim.
 AVS exposes no message or session identity, so identical callback references cannot
 distinguish separate real calls. As with ordinary alerts, interruption after

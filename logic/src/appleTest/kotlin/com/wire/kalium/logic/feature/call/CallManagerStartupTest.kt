@@ -308,6 +308,89 @@ class CallManagerStartupTest {
         manager.cancelJobs()
     }
 
+    @Test
+    fun closeScopeIsCapturedBeforeQueuedEffectsAndSuspendedCleanup() = runTest {
+        fun id(n: Int) = "00000000-0000-0000-0000-${n.toString().padStart(12, '0')}"
+        for (delayBeforeEffect in listOf(true, false)) {
+            val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher(), mls = true)
+            f.metadata = TestCall.oneOnOneCallMetadata().copy(protocol = Conversation.ProtocolInfo.MLS(
+                GroupID("group"), Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                1uL, Instant.DISTANT_PAST, CipherSuite.fromTag(1)
+            ))
+            val release = kotlinx.coroutines.CompletableDeferred<Unit>()
+            everySuspend { f.repository.leaveMlsConference(any()) } calls { release.await() }
+            val journal = mock<com.wire.kalium.logic.sync.receiving.CallSignalStore>()
+            val signals = mutableListOf<com.wire.kalium.logic.sync.receiving.CallSignalRecord>()
+            everySuspend { journal.signals() } calls { signals.toList() }
+            everySuspend { journal.submitted(any(), any()) } calls {
+                val index = signals.indexOfFirst { signal -> signal.id == it.arg<String>(0) }
+                if (index >= 0) signals[index] = signals[index].copy(submittedGeneration = it.arg(1))
+            }
+            var removed = emptySet<String>()
+            everySuspend { journal.closed(any(), any(), any(), any()) } calls {
+                removed = it.arg(3)
+                signals.removeAll { signal -> signal.id in removed }
+                com.wire.kalium.logic.sync.receiving.CallSignalCloseResult(null, removed)
+            }
+            val manager = f.manager()
+            manager.attachSignalJournal(journal)
+            fun add(id: String) {
+                signals += com.wire.kalium.logic.sync.receiving.CallSignalRecord(
+                    id, id, CONVERSATION.value, CONVERSATION.domain, "peer", "example.com", "peer-client",
+                    """{"type":"SETUP","resp":false,"sessid":"$id"}""", 1000L, false, true,
+                    kotlin.time.Clock.System.now().toEpochMilliseconds(), ready = true
+                )
+            }
+            try {
+                add(id(1))
+                manager.replayPendingSignals()
+                add(id(2))
+                signals[signals.lastIndex] = signals.last().copy(timeMillis = 999L)
+                manager.replayPendingSignals()
+                f.callbacks.onClosedCall(CallClosedReason.NORMAL.avsValue, "call@example.com", 1u, "peer@example.com", "peer-client")
+                if (!delayBeforeEffect) runCurrent()
+                add(id(3))
+                manager.replayPendingSignals()
+                release.complete(Unit)
+                runCurrent()
+                assertEquals(setOf(id(1), id(2)), removed)
+                assertEquals(listOf(id(3)), signals.map { it.id })
+                manager.replayIncomingCallSignals(id(3))
+            } finally { manager.cancelJobs() }
+        }
+    }
+
+    @Test
+    fun synchronousCloseDuringNativeReceiveIncludesCurrentSignal() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        f.metadata = TestCall.oneOnOneCallMetadata()
+        val journal = mock<com.wire.kalium.logic.sync.receiving.CallSignalStore>()
+        var pending = true
+        everySuspend { journal.signals() } calls {
+            if (!pending) emptyList() else listOf(com.wire.kalium.logic.sync.receiving.CallSignalRecord(
+                "current", "message", CONVERSATION.value, CONVERSATION.domain, "peer", "example.com", "client",
+                "{}", 1000L, false, false, kotlin.time.Clock.System.now().toEpochMilliseconds(), ready = true
+            ))
+        }
+        everySuspend { journal.submitted(any(), any()) } calls { pending = false }
+        var removed = emptySet<String>()
+        everySuspend { journal.closed(any(), any(), any(), any()) } calls {
+            removed = it.arg(3)
+            com.wire.kalium.logic.sync.receiving.CallSignalCloseResult(null, removed)
+        }
+        every { f.avs.receiveCallingMessage(any(), any(), any(), any(), any(), any(), any(), any(), any()) } calls {
+            f.callbacks.onClosedCall(CallClosedReason.NORMAL.avsValue, "call@example.com", 1u, "peer@example.com", "client")
+            true
+        }
+        val manager = f.manager()
+        manager.attachSignalJournal(journal)
+        try {
+            manager.replayPendingSignals()
+            runCurrent()
+            assertEquals(setOf("current"), removed)
+        } finally { manager.cancelJobs() }
+    }
+
     private suspend fun CallManager.start() = startCall(CONVERSATION, CallType.AUDIO, ConversationTypeCalling.OneOnOne, false, false)
 
     private class Fixture(
@@ -323,8 +406,13 @@ class CallManagerStartupTest {
         private val federated = mock<FederatedIdMapper>()
         val qualified = mock<QualifiedIdMapper>()
         private val network = mock<NetworkStateObserver>()
+        private val types = mock<com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider>()
 
         init {
+            everySuspend { repository.fetchServerTime() } returns null
+            everySuspend { types(any()) } returns
+                com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider.Result(ConversationTypeCalling.OneOnOne, false)
+            every { avs.receiveCallingMessage(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns true
             everySuspend { client() } returns ClientId("client").right()
             everySuspend { federated.parseToFederatedId(any<QualifiedID>()) } calls {
                 val id = it.arg<QualifiedID>(0)
@@ -363,7 +451,7 @@ class CallManagerStartupTest {
 
         fun manager() = CallManagerImpl(
             repository, client, mock(), mock(), CallMapperImpl(qualified), federated, qualified,
-            mock(), mock(MockMode.autoUnit), mock(MockMode.autoUnit), network, mock(), mock(), KaliumConfigs(),
+            mock(), mock(MockMode.autoUnit), mock(MockMode.autoUnit), network, types, mock(), KaliumConfigs(),
             mock(MockMode.autoUnit), mock(MockMode.autoUnit), mock(MockMode.autoUnit), UserId("self", "example.com"),
             kaliumDispatchers = dispatcher, avs = avs
         )
