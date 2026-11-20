@@ -1665,7 +1665,6 @@ public class UserSessionScope internal constructor(
             consumePendingConversationCleanup = {
                 finishPendingConversationCleanup(
                     userStorage.database,
-                    clientRepository.currentClientId().getOrNull()?.value,
                     cryptoTransactionProvider,
                 ) { kaliumFileSystem.delete(it.toPath(), mustExist = false) }
             },

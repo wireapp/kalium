@@ -67,25 +67,13 @@ class NotificationEventStore internal constructor(
         }
     }
 
-    /** Acknowledge received events and retire their operation records in the same SQL commit. */
-    suspend fun markProcessed(
-        eventIds: List<String>,
-        metadataKeysByEvent: Map<String, List<String>>,
-    ) = withContext(writeDispatcher.value) {
-        require(metadataKeysByEvent.keys.all { it in eventIds })
+    /** Acknowledge received events and drop their retry hints in the same SQL commit. */
+    suspend fun markProcessed(eventIds: List<String>) = withContext(writeDispatcher.value) {
         database.transaction {
-            // Missing history is not proof that an outstanding operation was acknowledged.
-            // Only recovery-bearing events need this check; ordinary markers add no reads.
-            metadataKeysByEvent.keys.forEach { eventId ->
-                check(database.eventsQueries.getById(eventId).awaitAsOneOrNull() != null) {
-                    "Cannot retire an operation without its event"
-                }
-            }
             eventIds.forEach {
                 database.eventsQueries.markEventAsProcessed(it)
                 database.metadataQueries.deleteValue(DEFERRED_PREFIX + it)
             }
-            metadataKeysByEvent.values.flatten().distinct().forEach { database.metadataQueries.deleteValue(it) }
         }
     }
 

@@ -79,11 +79,6 @@ public suspend fun AppleAccountRuntime.notificationProcessor(
         evaluateCalls = { events -> evaluateCallingEvents(events, prepared.userId, prepared.clientId, database) },
         diagnostics = diagnostics,
         invalidateReceiving = { invalidateReceiving() },
-        recovery = if (mls == null) null else MLSReceiveRecovery(
-            MLSReceiveRecoveryStore(database.metadataDAO, database.notificationEventStore, prepared.clientId),
-            network.conversationApi,
-            prepared.userId,
-            rejoin::join,
-        ),
+        recovery = if (mls == null) null else MLSReceiveRecovery(network.conversationApi, prepared.userId, rejoin::join),
     )
 }

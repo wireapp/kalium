@@ -5,7 +5,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.logic.sync.receiving.MLSReceiveRecoveryStore
 import com.wire.kalium.logic.sync.receiving.PendingConversationCleanup
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
@@ -13,16 +12,12 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
 internal suspend fun finishPendingConversationCleanup(
     database: UserDatabaseBuilder,
-    clientId: String?,
     transactionProvider: CryptoTransactionProvider,
     deleteFile: (String) -> Unit,
 ) {
     val cleanup = PendingConversationCleanup(database, deleteFile)
     cleanup.discardLegacyRequests()
-    if (clientId != null) {
-        MLSReceiveRecoveryStore(database.metadataDAO, database.notificationEventStore, clientId)
-            .drainDeletions { groupId -> cleanup.queueWipe(groupId) }
-    }
+    cleanup.discardLegacyReceiveRecovery()
     wipePendingMLSGroups(cleanup, database.pendingActionDAO, transactionProvider)
 }
 
