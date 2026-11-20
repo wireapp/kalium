@@ -41,7 +41,7 @@ jobs:
         uses: ./.github/actions/skip-tested-merge
 
       - name: Fetch develop for affected module detection
-        run: git fetch --no-tags --depth=1 origin develop:refs/remotes/origin/develop
+        run: git fetch --no-tags --depth=1 origin +develop:refs/remotes/origin/develop
 
       # trying https://github.com/actions/runner-images/issues/10386#issuecomment-2271613335
       - name: Free Disk Space Before Build
