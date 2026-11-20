@@ -1,9 +1,8 @@
 name: Deploy Dokka docs
 
 on:
-  push:
-    branches:
-      - develop # later on we should stick to main, since there will be the releases
+  schedule:
+    - cron: '17 2 * * *'
   workflow_dispatch:
 
 concurrency:
