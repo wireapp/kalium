@@ -4,6 +4,8 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
@@ -232,6 +234,16 @@ class MLSReceiveRecoveryTest {
         }
     }
 
+    @Test
+    fun staleExternalCommitRetriesOnceWithFreshGroupInfo() = runTest {
+        withFixture { f ->
+            f.failOnce = KaliumSyncException("rejected", MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.StaleMessage))
+            assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+            assertEquals(2, f.joins)
+            assertEquals(2, f.api.groupInfoReads)
+        }
+    }
+
     private suspend fun TestScope.withFixture(block: suspend (Fixture) -> Unit) {
         withTestUserDatabase(UserIDEntity("recovery-test", "example.com")) { block(Fixture(it)) }
     }
@@ -243,6 +255,7 @@ class MLSReceiveRecoveryTest {
         val api = FakeApi()
         var joins = 0
         var failure: Exception? = null
+        var failOnce: Exception? = null
         val recovery = MLSReceiveRecovery(store, api, SELF) { context, groupId, groupInfo ->
             assertEquals(native, context)
             assertEquals(GROUP_ID, groupId)
@@ -250,6 +263,7 @@ class MLSReceiveRecoveryTest {
             assertNotNull(store.find(EVENT.id) { CIPHERTEXT })
             joins++
             failure?.let { throw it }
+            failOnce?.let { failOnce = null; throw it }
             native.exists = true
             native.epoch++
             native.epoch

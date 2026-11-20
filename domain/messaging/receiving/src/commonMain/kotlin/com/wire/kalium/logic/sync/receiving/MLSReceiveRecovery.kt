@@ -1,6 +1,9 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.commonizeMLSException
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
@@ -142,12 +145,16 @@ class MLSReceiveRecovery(
     } catch (failure: CancellationException) {
         throw failure
     } catch (failure: Exception) {
-        val cause = (failure as? KaliumSyncException)?.coreFailureCause
-        if (cause?.isTransientNetworkFailure() == true || context.conversationExists(groupId)) throw failure
+        val cause = failure.coreFailure()
+        if (cause.isTransientNetworkFailure() || context.conversationExists(groupId)) throw failure
         store.find(event.id) { Base64.decode(event.content) }?.let { store.abandon(it) }
-        kaliumLogger.w("Skipping an MLS message whose missing group failed to rejoin: ${(cause ?: failure)::class.simpleName}")
+        kaliumLogger.w("Skipping an MLS message whose missing group failed to rejoin: ${cause::class.simpleName}")
         null
     }
+
+    /** The app's join callback throws CoreCrypto's own exceptions; the NSE's wraps them. */
+    private fun Exception.coreFailure(): CoreFailure =
+        (this as? KaliumSyncException)?.coreFailureCause ?: commonizeMLSException(this).failure
 
     private suspend fun fetchDetails(event: Event.Conversation.NewMLSMessage) =
         wrapApiRequest { conversationApi.fetchConversationDetails(event.conversationId.toApi()) }
@@ -164,18 +171,39 @@ class MLSReceiveRecovery(
         return response
     }
 
+    @Suppress("TooGenericExceptionCaught") // Both join callbacks throw untyped exceptions; only a stale commit is retried.
     private suspend fun rejoin(
         context: MlsCoreCryptoContext,
         response: ConversationResponse,
         operation: PendingMLSReceiveRecovery,
     ): MLSReceiveRecoveryResult {
-        val groupInfo = wrapApiRequest { conversationApi.fetchGroupInfo(response.id) }.orThrow()
-        check(groupInfo.isNotEmpty()) { "MLS recovery requires group info" }
-        val joinedEpoch = join(context, operation.groupId, groupInfo)
+        val joinedEpoch = try {
+            joinCurrentGroupInfo(context, response, operation)
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (failure: Exception) {
+            // Another commit moved the group between reading its group info and our POST. Join the newer one, once.
+            if (failure.coreFailure() != STALE_COMMIT) throw failure
+            joinCurrentGroupInfo(context, response, operation)
+        }
         check(context.conversationExists(operation.groupId)) { "External join did not establish the MLS group" }
         val epoch = context.conversationEpoch(operation.groupId)
         check(epoch > 0uL && epoch == joinedEpoch) { "External join did not return the current native epoch" }
         store.complete(context, operation)
         return MLSReceiveRecoveryResult(response, operation, epoch)
+    }
+
+    private suspend fun joinCurrentGroupInfo(
+        context: MlsCoreCryptoContext,
+        response: ConversationResponse,
+        operation: PendingMLSReceiveRecovery,
+    ): ULong {
+        val groupInfo = wrapApiRequest { conversationApi.fetchGroupInfo(response.id) }.orThrow()
+        check(groupInfo.isNotEmpty()) { "MLS recovery requires group info" }
+        return join(context, operation.groupId, groupInfo)
+    }
+
+    private companion object {
+        val STALE_COMMIT = MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.StaleMessage)
     }
 }
