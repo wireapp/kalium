@@ -31,9 +31,11 @@ import com.wire.kalium.persistence.ConversationDetailsWithMembersQueries
 import com.wire.kalium.persistence.ConversationListQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
+import com.wire.kalium.persistence.PendingActionsQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
@@ -65,6 +67,7 @@ internal class ConversationDAOImpl internal constructor(
     private val conversationListQueries: ConversationListQueries,
     private val memberQueries: MembersQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
+    private val pendingActionsQueries: PendingActionsQueries,
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : ConversationDAO {
@@ -467,6 +470,19 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.transactionWithResult {
             conversationQueries.deleteConversation(qualifiedID).await()
             conversationQueries.selectChanges().awaitAsOne() > 0
+        }
+    }
+
+    override suspend fun deleteConversationQueueingGroupWipe(
+        qualifiedID: QualifiedIDEntity,
+        groupId: String,
+        queuedAt: Long,
+    ) = withContext(writeDispatcher.value) {
+        conversationQueries.transactionWithResult {
+            conversationQueries.deleteConversation(qualifiedID).await()
+            val deleted = conversationQueries.selectChanges().awaitAsOne() > 0
+            pendingActionsQueries.upsert(PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity(groupId, "mls"), queuedAt)
+            deleted
         }
     }
 

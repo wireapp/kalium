@@ -79,6 +79,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 internal data class ConversationMemberCounts(
@@ -256,6 +257,17 @@ internal interface ConversationRepository : SendingConversations {
         replaceWith = ReplaceWith("com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase")
     )
     suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Boolean>
+
+    /**
+     * Deletes the conversation and queues its native group wipe in one SQL write, so the wipe survives
+     * a native rollback or a kill before the caller's crypto transaction commits.
+     * @see DeleteConversationUseCase
+     */
+    @DelicateKaliumApi(
+        message = "Calling this function directly does not wipe the MLS group",
+        replaceWith = ReplaceWith("com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase")
+    )
+    suspend fun deleteMLSConversationLocally(conversationId: ConversationId, groupId: GroupID): Either<CoreFailure, Boolean>
 
     suspend fun setConversationDeletedLocally(conversationId: ConversationId, deletedLocally: Boolean): Either<CoreFailure, Unit>
 
@@ -877,6 +889,14 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun deleteConversationLocally(conversationId: ConversationId) = wrapStorageRequest {
         conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
+    }
+
+    override suspend fun deleteMLSConversationLocally(conversationId: ConversationId, groupId: GroupID) = wrapStorageRequest {
+        conversationDAO.deleteConversationQueueingGroupWipe(
+            conversationId.toDao(),
+            groupId.value,
+            Clock.System.now().toEpochMilliseconds(),
+        )
     }
 
     override suspend fun setConversationDeletedLocally(conversationId: ConversationId, deletedLocally: Boolean) = wrapStorageRequest {

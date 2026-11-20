@@ -25,7 +25,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
@@ -459,7 +458,6 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.network.guardedBy
 import com.wire.kalium.logic.sync.AvsSyncStateReporter
 import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
-import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
 import com.wire.kalium.logic.sync.SendPendingMessagesUseCase
@@ -482,6 +480,7 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
+import com.wire.kalium.logic.sync.incremental.wipePendingMLSGroups
 import com.wire.kalium.logic.sync.local.LocalEventManagerImpl
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.local.LocalEventRepositoryImpl
@@ -618,7 +617,6 @@ import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
-import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
@@ -1702,23 +1700,16 @@ public class UserSessionScope internal constructor(
             logger = userScopedLogger,
             consumePendingLegalHoldTransitions = { legalHoldHandler.recoverPendingTransitions() },
             consumePendingConversationCleanup = {
+                val cleanup = PendingConversationCleanup(userStorage.database) {
+                    kaliumFileSystem.delete(it.toPath(), mustExist = false)
+                }
+                // Only the NSE writes clear/remove requests and receive-recovery deletion records.
                 if (enableDurableMLSReceiveRecovery) {
-                    val cleanup = PendingConversationCleanup(userStorage.database) {
-                        kaliumFileSystem.delete(it.toPath(), mustExist = false)
-                    }
                     cleanup.discardLegacyRequests()
                     receiveRecovery()?.drainDeletions { cleanup.queueWipe(it) }
-                    if (userStorage.database.pendingActionDAO.getByActionType(
-                            PendingActionType.WIPE_MLS_GROUP
-                        ).isNotEmpty()
-                    ) {
-                        cryptoTransactionProvider.transaction("pending-local-conversation-cleanup") { context ->
-                            Either.Right(cleanup.wipePending(context.mls))
-                        }.getOrFail {
-                            throw KaliumSyncException("Pending local conversation cleanup failed", it)
-                        }.let { cleanup.committed(it) }
-                    }
                 }
+                // The app queues group wipes with its own MLS conversation deletions on every platform.
+                wipePendingMLSGroups(cleanup, userStorage.database.pendingActionDAO, cryptoTransactionProvider)
             },
             consumePendingAccountInvalidation = {
                 val client = clientRepository.currentClientId().getOrNull()

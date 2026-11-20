@@ -59,7 +59,40 @@ class DeleteConversationUseCaseTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.deleteMLSConversationLocally(CONVERSATION_ID, GROUP_ID)
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.deleteConversationLocally(any()) }
+    }
+
+    @Test
+    fun mixedDeletionQueuesTheGroupWipeWithTheSqlDeletion() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange {
+            withGetConversationProtocolInfo(Either.Right(MIXED_PROTOCOL_INFO))
+            withSuccessfulLeaveGroup(GROUP_ID)
+            withDeletingConversationLocallySucceeding()
+        }
+
+        useCase(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.deleteMLSConversationLocally(CONVERSATION_ID, GROUP_ID)
+        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID) }
+    }
+
+    @Test
+    fun mlsDeletionWithoutMlsClientQueuesNoWipeItCouldNeverRun() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange {
+            withGetConversationProtocolInfo(Either.Right(MIXED_PROTOCOL_INFO))
+            withDeletingConversationLocallySucceeding()
+            every { transactionContext.mls } returns null
+        }
+
+        useCase(arrangement.transactionContext, CONVERSATION_ID).shouldFail()
+
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.deleteMLSConversationLocally(any(), any()) }
     }
 
     @Test
@@ -73,7 +106,9 @@ class DeleteConversationUseCaseTest {
         val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
         result.shouldFail()
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.deleteMLSConversationLocally(CONVERSATION_ID, GROUP_ID)
+        }
         verifySuspend(VerifyMode.not) { arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID) }
     }
 
@@ -89,7 +124,9 @@ class DeleteConversationUseCaseTest {
         val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
         result.shouldFail()
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.deleteMLSConversationLocally(CONVERSATION_ID, GROUP_ID)
+        }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), GROUP_ID) }
     }
 
@@ -104,6 +141,7 @@ class DeleteConversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(CONVERSATION_ID) }
         verifySuspend(VerifyMode.not) { arrangement.mlsConversationRepository.leaveGroup(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.deleteMLSConversationLocally(any(), any()) }
     }
 
     private class Arrangement {
@@ -129,12 +167,13 @@ class DeleteConversationUseCaseTest {
 
         suspend fun withDeletingConversationLocallySucceeding() {
             everySuspend { conversationRepository.deleteConversationLocally(any()) } returns Either.Right(true)
+            everySuspend { conversationRepository.deleteMLSConversationLocally(any(), any()) } returns Either.Right(true)
         }
 
         suspend fun withDeletingConversationLocallyFailing() {
-            everySuspend {
-                conversationRepository.deleteConversationLocally(any())
-            } returns Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
+            val failure = Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
+            everySuspend { conversationRepository.deleteConversationLocally(any()) } returns failure
+            everySuspend { conversationRepository.deleteMLSConversationLocally(any(), any()) } returns failure
         }
 
         suspend fun withSuccessfulLeaveGroup(groupId: GroupID) {
@@ -151,6 +190,14 @@ class DeleteConversationUseCaseTest {
         val CONVERSATION_ID = ConversationId("conv_id", "conv_domain")
 
         val MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
+            GROUP_ID,
+            Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+            epoch = 1UL,
+            keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+            cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        )
+
+        val MIXED_PROTOCOL_INFO = Conversation.ProtocolInfo.Mixed(
             GROUP_ID,
             Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
             epoch = 1UL,

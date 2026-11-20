@@ -111,6 +111,9 @@ interface ConversationDAO {
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Boolean
+
+    /** Deletes the conversation and queues its native group wipe in the same SQL transaction. */
+    suspend fun deleteConversationQueueingGroupWipe(qualifiedID: QualifiedIDEntity, groupId: String, queuedAt: Long): Boolean
     suspend fun insertAdminlessGroupDelete(conversationId: QualifiedIDEntity, deletionTimestamp: Instant)
     suspend fun setConversationDeletedLocally(qualifiedID: QualifiedIDEntity, deletedLocally: Boolean)
 

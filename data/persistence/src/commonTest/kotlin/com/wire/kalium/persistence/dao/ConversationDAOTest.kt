@@ -46,6 +46,9 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
@@ -85,6 +88,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var memberDAO: MemberDAO
     private lateinit var assertDAO: AssetDAO
     private lateinit var callDAO: CallDAO
+    private lateinit var pendingActionDAO: PendingActionDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -101,6 +105,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO = db.memberDAO
         assertDAO = db.assetDAO
         callDAO = db.callDAO
+        pendingActionDAO = db.pendingActionDAO
     }
 
     @Test
@@ -158,6 +163,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
         assertTrue(deleteResult)
         assertNull(getResult)
+    }
+
+    @Test
+    fun deletingMlsConversationQueuesItsGroupWipeInTheSameWrite() = runTest(dispatcher) {
+        conversationDAO.insertConversation(conversationEntity2)
+        val groupId = (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+
+        assertTrue(conversationDAO.deleteConversationQueueingGroupWipe(conversationEntity2.id, groupId, 7L))
+
+        assertNull(conversationDAO.getConversationById(conversationEntity2.id))
+        assertEquals(
+            listOf(PendingActionEntity(QualifiedIDEntity(groupId, "mls"), 7L)),
+            pendingActionDAO.getByActionType(PendingActionType.WIPE_MLS_GROUP)
+        )
     }
 
     @Test

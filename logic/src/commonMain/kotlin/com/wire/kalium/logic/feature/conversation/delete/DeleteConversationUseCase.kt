@@ -33,6 +33,8 @@ import com.wire.kalium.logic.data.id.ConversationId
  *
  * - For **Proteus** conversations, this simply deletes the local database entry.
  * - For **MLS** conversations, this deletes the local conversation and also wipes it from the MLS client.
+ *   The SQL deletion also queues the group's wipe, so a kill or native rollback before the caller's crypto
+ *   transaction commits can't leave the group behind; the incremental sync cleanup acknowledges it.
  */
 
 internal interface DeleteConversationUseCase {
@@ -47,7 +49,12 @@ internal class DeleteConversationUseCaseImpl(
         return conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is Conversation.ProtocolInfo.MLSCapable -> {
-                    conversationRepository.deleteConversationLocally(conversationId).flatMap {
+                    // Without an MLS client there is no native group to lose, and nothing could wipe a queued one.
+                    if (transactionContext.mls != null) {
+                        conversationRepository.deleteMLSConversationLocally(conversationId, protocolInfo.groupId)
+                    } else {
+                        conversationRepository.deleteConversationLocally(conversationId)
+                    }.flatMap {
                         transactionContext.wrapInMLSContext {
                             mlsConversationRepository.leaveGroup(it, protocolInfo.groupId)
                         }

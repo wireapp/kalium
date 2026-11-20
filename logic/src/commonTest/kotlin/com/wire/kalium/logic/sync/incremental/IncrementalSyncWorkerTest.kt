@@ -34,11 +34,14 @@ import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueueImpl
+import com.wire.kalium.logic.sync.receiving.PendingConversationCleanup
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -93,6 +96,31 @@ class IncrementalSyncWorkerTest {
             .arrange(consumeCleanup = { order += "cleanup" })
         worker.processEventsFlow().collect()
         assertEquals(listOf("cleanup", "gather"), order)
+    }
+
+    @Test
+    fun appQueuedGroupWipeRunsWithoutTheDurableReceiveFlagAndIsAcknowledged() = runTest(TestKaliumDispatcher.default) {
+        val database = Arrangement().database.builder
+        val crypto = CryptoTransactionProviderArrangementImpl().apply { withTransactionReturning(Either.Right(Unit)) }
+        everySuspend { crypto.mlsContext.conversationExists(any()) } returns true
+        database.pendingActionDAO.upsert(PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity("orphan", "mls"), 1L)
+
+        wipePendingMLSGroups(PendingConversationCleanup(database) {}, database.pendingActionDAO, crypto.cryptoTransactionProvider)
+
+        verifySuspend(VerifyMode.exactly(1)) { crypto.mlsContext.wipeConversation("orphan") }
+        assertEquals(emptyList(), database.pendingActionDAO.getByActionType(PendingActionType.WIPE_MLS_GROUP))
+    }
+
+    @Test
+    fun queuedGroupWipeStaysQueuedWithoutAnMlsClient() = runTest(TestKaliumDispatcher.default) {
+        val database = Arrangement().database.builder
+        val crypto = CryptoTransactionProviderArrangementImpl().apply { withTransactionReturning(Either.Right(Unit)) }
+        every { crypto.transactionContext.mls } returns null
+        database.pendingActionDAO.upsert(PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity("orphan", "mls"), 1L)
+
+        wipePendingMLSGroups(PendingConversationCleanup(database) {}, database.pendingActionDAO, crypto.cryptoTransactionProvider)
+
+        assertEquals(1, database.pendingActionDAO.getByActionType(PendingActionType.WIPE_MLS_GROUP).size)
     }
 
     @Test
