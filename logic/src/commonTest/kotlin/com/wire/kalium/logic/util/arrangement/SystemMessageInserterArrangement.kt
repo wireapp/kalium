@@ -46,7 +46,7 @@ internal class SystemMessageInserterArrangementImpl: SystemMessageInserterArrang
 
     override suspend fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>) {
         everySuspend {
-            systemMessageInserter.insertLostCommitSystemMessage(any(), any())
+            systemMessageInserter.insertLostCommitSystemMessage(any(), any(), any(), any())
         }.returns(result)
     }
 }
