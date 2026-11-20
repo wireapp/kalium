@@ -50,6 +50,7 @@ actual fun commonizeMLSException(exception: Exception): CommonizedMLSException {
             is MlsException.OrphanWelcome -> MLSFailure.OrphanWelcome
             is MlsException.BufferedCommit -> MLSFailure.BufferedCommit
             is MlsException.MessageRejected -> mapMessageRejected(mlsError)
+            is MlsException.InvalidCredentials -> MLSFailure.InvalidCredentials
         }
     } else {
         MLSFailure.Generic(exception)

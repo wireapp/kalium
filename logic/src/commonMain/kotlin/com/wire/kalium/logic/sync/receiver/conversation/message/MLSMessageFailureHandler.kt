@@ -73,6 +73,7 @@ internal object MLSMessageFailureHandler {
             MLSFailure.CommitForMissingProposal,
             MLSFailure.ConversationNotFound,
             MLSFailure.OrphanWelcome,
+            MLSFailure.InvalidCredentials,
             is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
 
             MLSFailure.ConversationAlreadyExists,
