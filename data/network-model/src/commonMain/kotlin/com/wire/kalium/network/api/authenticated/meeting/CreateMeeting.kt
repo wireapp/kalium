@@ -34,6 +34,7 @@ data class CreateMeetingRequest(
     @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
     @SerialName("type") val type: MeetingTypeDTO,
     @SerialName("password") val password: String? = null,
+    @SerialName("invited_emails") val invitedEmails: List<String> = emptyList(),
 )
 
 @Serializable
@@ -43,6 +44,7 @@ data class CreateMeetingRequestV17(
     @SerialName("tzid") val tzid: String,
     @SerialName("title") val title: String,
     @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
+    @SerialName("invited_emails") val invitedEmails: List<String> = emptyList(),
 )
 
 @Serializable
@@ -53,6 +55,7 @@ data class UpdateMeetingRequest(
     @SerialName("title") val title: String,
     @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
     @SerialName("type") val type: MeetingTypeDTO,
+    @SerialName("invited_emails") val invitedEmails: List<String> = emptyList(),
 )
 
 @Serializable
@@ -62,6 +65,7 @@ data class UpdateMeetingRequestV17(
     @SerialName("tzid") val tzid: String,
     @SerialName("title") val title: String,
     @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
+    @SerialName("invited_emails") val invitedEmails: List<String> = emptyList(),
 )
 
 @Serializable
@@ -80,6 +84,12 @@ data class UpsertMeetingResponse(
     @SerialName("type") val type: MeetingTypeDTO = MeetingTypeDTO.SCHEDULED,
     @SerialName("link") val link: String? = null,
     @SerialName("has_password") val hasPassword: Boolean = false,
+    @SerialName("invited_emails") val invitedEmails: List<String> = emptyList(),
+)
+
+@Serializable
+data class MeetingInvitationsRequest(
+    @SerialName("emails") val emails: List<String>,
 )
 
 fun UpsertMeetingResponse.toMeetingDTO(): MeetingDTO = MeetingDTO(
@@ -96,4 +106,5 @@ fun UpsertMeetingResponse.toMeetingDTO(): MeetingDTO = MeetingDTO(
     type = type,
     link = link,
     hasPassword = hasPassword,
+    invitedEmails = invitedEmails,
 )

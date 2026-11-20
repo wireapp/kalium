@@ -50,6 +50,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.authenticated.meeting.MeetingInvitationsRequest
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO
@@ -1288,6 +1289,103 @@ class MeetingRepositoryTest {
             .arrange()
 
         assertEquals(entities.map { arrangement.meetingMapper.fromDaoToModel(it) }, repository.getMeetingRemindersWithin(start, end))
+    }
+
+    @Test
+    fun givenChangedEmailInvitees_whenUpdating_thenOnlyAddedAndRemovedAddressesUseInvitationEndpoints() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val meeting = UPDATE_MEETING.copy(invitedEmails = listOf("kept@example.com", "added@example.com"))
+        val response = upsertMeetingResponse(epoch = 1UL).copy(invitedEmails = meeting.invitedEmails)
+        val conversationId = response.conversationId.toModel()
+        val arrangement = Arrangement()
+            .withStoredMeeting(MEETING_ENTITY.copy(
+                meetingId = meetingId.toDao(), conversationId = conversationId.toDao(),
+                invitedEmails = listOf("KEPT@example.com", "removed@example.com")
+            ))
+            .withConversation(meetingConversation(conversationId = conversationId))
+            .withConversationMembers(conversationId, listOf(TestUser.SELF.id) + meeting.otherParticipants)
+            .withUpdateMeetingSuccess(meetingId, meeting, response)
+            .withChangeConversationNameSuccess(conversationId, meeting.title)
+            .withPersistConversationsSuccess()
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(response.creatorId.toModel()))
+            .withFetchUsersIfUnknownSuccess(setOf(response.creatorId.toModel()))
+        everySuspend { arrangement.meetingApi.addInvitations(any(), any()) } returns
+            NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value)
+        everySuspend { arrangement.meetingApi.deleteInvitations(any(), any()) } returns
+            NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value)
+        val (_, repository) = arrangement.arrange()
+
+        val result = repository.updateMeeting(meetingId, meeting, transactionContext = arrangement.transactionContext)
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingApi.addInvitations(meetingId.toApi(), MeetingInvitationsRequest(listOf("added@example.com")))
+            arrangement.meetingApi.deleteInvitations(meetingId.toApi(), MeetingInvitationsRequest(listOf("removed@example.com")))
+            arrangement.meetingDao.upsertMeetings(
+                meetings = listOf(requireNotNull(arrangement.meetingMapper.fromApiToDao(response.toMeetingDTO()))),
+                generateOccurrencesWindow = any(),
+            )
+        }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.meetingApi.fetchMeeting(any()) }
+    }
+
+    @Test
+    fun givenInvitationRequestFails_whenUpdating_thenFailureIsReturnedAndMeetingIsNotUpdated() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val arrangement = Arrangement().withStoredMeeting(MEETING_ENTITY.copy(meetingId = meetingId.toDao()))
+        everySuspend { arrangement.meetingApi.addInvitations(any(), any()) } returns NetworkResponse.Error(TestNetworkException.generic)
+        val (_, repository) = arrangement.arrange()
+
+        val result = repository.updateMeeting(
+            meetingId, UPDATE_MEETING.copy(invitedEmails = listOf("added@example.com")),
+            transactionContext = arrangement.transactionContext,
+        )
+
+        assertTrue(result is Either.Left)
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.meetingApi.updateMeeting(any(), any())
+            arrangement.meetingApi.fetchMeeting(any())
+        }
+    }
+
+    @Test
+    fun givenOneInvitationRequestFails_whenUpdating_thenReturnsFailureWithoutFetchingOrUpdatingMeeting() = runTest {
+        listOf(true, false).forEach { removalFails ->
+            val meetingId = MeetingId("meeting1", "domain")
+            val arrangement = Arrangement()
+                .withStoredMeeting(MEETING_ENTITY.copy(
+                    meetingId = meetingId.toDao(),
+                    invitedEmails = listOf("removed@example.com")
+                ))
+            everySuspend { arrangement.meetingApi.addInvitations(any(), any()) } returns if (removalFails) {
+                NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value)
+            } else {
+                NetworkResponse.Error(TestNetworkException.generic)
+            }
+            everySuspend { arrangement.meetingApi.deleteInvitations(any(), any()) } returns if (removalFails) {
+                NetworkResponse.Error(TestNetworkException.generic)
+            } else {
+                NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value)
+            }
+            val (_, repository) = arrangement.arrange()
+
+            val result = repository.updateMeeting(
+                meetingId,
+                UPDATE_MEETING.copy(invitedEmails = listOf("added@example.com")),
+                transactionContext = arrangement.transactionContext,
+            )
+
+            assertTrue(result is Either.Left)
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.meetingApi.addInvitations(meetingId.toApi(), MeetingInvitationsRequest(listOf("added@example.com")))
+                arrangement.meetingApi.deleteInvitations(meetingId.toApi(), MeetingInvitationsRequest(listOf("removed@example.com")))
+            }
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.meetingApi.updateMeeting(any(), any())
+                arrangement.meetingApi.fetchMeeting(any())
+                arrangement.meetingDao.upsertMeetings(any(), any(), any())
+            }
+        }
     }
 
     inner class Arrangement {

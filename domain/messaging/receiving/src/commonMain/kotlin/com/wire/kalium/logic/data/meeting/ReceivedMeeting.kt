@@ -33,6 +33,7 @@ fun MeetingDTO.toMeetingEntity(): MeetingEntity? {
         type = MeetingEntity.Type.valueOf(type.name),
         link = link,
         hasPassword = hasPassword,
+        invitedEmails = invitedEmails,
     )
 }
 

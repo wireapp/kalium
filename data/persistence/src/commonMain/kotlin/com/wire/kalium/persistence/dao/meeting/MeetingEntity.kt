@@ -35,6 +35,7 @@ data class MeetingEntity(
     val type: Type = Type.SCHEDULED,
     val link: String? = null,
     val hasPassword: Boolean = false,
+    val invitedEmails: List<String> = emptyList(),
 ) {
     enum class Type { IMMEDIATE, SCHEDULED }
     data class RecurrenceEntity(
