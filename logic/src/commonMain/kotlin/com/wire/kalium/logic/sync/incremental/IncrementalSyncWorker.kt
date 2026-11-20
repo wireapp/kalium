@@ -55,8 +55,8 @@ internal class IncrementalSyncWorkerImpl(
         if (consumePendingAccountInvalidation()) awaitCancellation()
         consumePendingConversationCleanup()
         consumePendingLegalHoldTransitions()
-        // A rejoin queued before the app stopped; its batch is the first one gathered again.
-        rejoinQueue?.rejoinQueued()
+        // A rejoin queued before the app stopped (its batch is the first one gathered again) or deferred by a failure.
+        rejoinQueue?.rejoinAtSyncStart()
 
         logger.d("$TAG gatherEvents starting...")
         eventGatherer.gatherEvents()
@@ -69,7 +69,7 @@ internal class IncrementalSyncWorkerImpl(
         logger.i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()
 
-    /** A batch that queued rejoins is replayed after them; a group is rejoined once per replay, so this ends. */
+    /** A batch that queued rejoins is replayed after them; a group is tried once per replay, so this ends. */
     private suspend fun processBatch(events: List<EventEnvelope>) {
         while (true) {
             try {

@@ -75,10 +75,25 @@ class MLSRejoinQueueTest {
         }
 
     @Test
-    fun givenRejoinCanSucceedLater_whenRejoining_thenItThrowsAndKeepsTheRejoinQueued() = runTest {
+    fun givenNoNetwork_whenRejoining_thenItThrowsAndKeepsTheRejoinQueued() = runTest {
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        withTestUserDatabase(USER) { database ->
+            val arrangement = Arrangement(database).withVerifyEpoch(FIRST, Either.Left(failure))
+            arrangement.queue.request(FIRST)
+
+            listOf<suspend () -> Unit>({ arrangement.queue.rejoinQueued() }, { arrangement.queue.rejoinAtSyncStart() }).forEach {
+                val thrown = runCatching { it() }.exceptionOrNull()
+                assertEquals(failure, (thrown as KaliumSyncException).coreFailureCause)
+                assertEquals(listOf(FIRST), arrangement.queued())
+            }
+            assertTrue(arrangement.queue.request(FIRST))
+        }
+    }
+
+    @Test
+    fun givenRejoinCanSucceedLater_whenRejoining_thenItWaitsQueuedForTheNextSyncStartWithoutFailingSync() = runTest {
         val serverError = KaliumException.ServerError(GenericAPIErrorResponse(500, "down", "server_error"))
         val failures = listOf(
-            NetworkFailure.NoNetworkConnection(null),
             MLSFailure.TransportUnavailable,
             NetworkFailure.ServerMiscommunication(serverError),
             NetworkFailure.FederatedBackendFailure.FailedDomains(listOf("other.example")),
@@ -90,13 +105,21 @@ class MLSRejoinQueueTest {
                 arrangement.withVerifyEpoch(conversationId, Either.Left(failure))
                 arrangement.queue.request(conversationId)
 
-                val thrown = runCatching { arrangement.queue.rejoinQueued() }.exceptionOrNull()
-
-                assertEquals(failure, (thrown as KaliumSyncException).coreFailureCause)
+                // The replay ignores the group's messages, and neither a replay nor a later batch tries it again.
+                assertTrue(arrangement.queue.rejoinQueued())
+                assertFalse(arrangement.queue.request(conversationId))
+                assertFalse(arrangement.queue.rejoinQueued())
+                arrangement.queue.onBatchAcknowledged()
+                assertFalse(arrangement.queue.request(conversationId))
                 assertEquals(listOf(conversationId), arrangement.queued())
-                assertTrue(arrangement.queue.request(conversationId))
+
+                arrangement.queue.rejoinAtSyncStart()
+                assertEquals(listOf(conversationId), arrangement.queued())
+                verifySuspend(VerifyMode.exactly(2)) { arrangement.staleEpochVerifier.verifyEpoch(any(), conversationId, null, any()) }
+
                 arrangement.withVerifyEpoch(conversationId, Either.Right(Unit))
-                arrangement.queue.rejoinQueued()
+                arrangement.queue.rejoinAtSyncStart()
+                assertEquals(emptyList(), arrangement.queued())
             }
         }
     }

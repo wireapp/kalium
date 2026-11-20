@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -41,13 +42,20 @@ import kotlin.time.Instant
  * Rejoins MLS groups that received messages found stale or lost, each in its own CoreCrypto transaction
  * instead of the event batch's. The receive path queues a rejoin and fails the batch; the sync worker
  * rejoins and replays it. Only the app's standard receive path uses this queue.
+ *
+ * Only a missing network fails sync. A rejoin that fails in a way that can succeed later stays queued for the
+ * next sync start and its group's messages are ignored until then: a later rejoin enters at the remote epoch,
+ * so holding the batch back would decrypt none of them and would stop receiving in every conversation.
  */
 internal interface MLSRejoinQueue {
-    /** Queues a rejoin. False when one already ran for the batch being replayed: ignore the message then. */
+    /** Queues a rejoin. False when one ran for the batch being replayed or waits for the next sync start: ignore the message. */
     suspend fun request(conversationId: ConversationId): Boolean
 
-    /** Rejoins every queued group. True when any was queued. Throws, keeping the rest queued, when one can succeed later. */
+    /** Rejoins the queued groups not waiting for the next sync start. True when any was queued. Throws without network. */
     suspend fun rejoinQueued(): Boolean
+
+    /** Rejoins every queued group, including those waiting for this sync start. Throws without network. */
+    suspend fun rejoinAtSyncStart()
 
     /** A batch was acknowledged, so later stale messages may queue a rejoin again. */
     fun onBatchAcknowledged()
@@ -64,32 +72,55 @@ internal class MLSRejoinQueueImpl(
     // a message that still fails would otherwise fail the batch forever.
     private val rejoined = mutableSetOf<ConversationId>()
 
+    // Still queued after a failure that can succeed later; tried again at the next sync start only.
+    private val deferred = mutableSetOf<ConversationId>()
+
     override suspend fun request(conversationId: ConversationId): Boolean {
-        if (conversationId in rejoined) return false
+        if (conversationId in rejoined || conversationId in deferred) return false
         pendingActions.upsert(TYPE, conversationId.toDao(), Clock.System.now().toEpochMilliseconds())
         return true
     }
 
     override suspend fun rejoinQueued(): Boolean {
-        val queued = pendingActions.getByActionType(TYPE)
-        queued.forEach { action ->
-            val conversationId = action.qualifiedId.toModel()
-            val result = withContext(NonCancellable) {
-                transactionProvider.transaction("rejoinStaleMLSGroup") {
-                    // The verifier rejoins only when CoreCrypto is behind the remote epoch or has no group.
-                    staleEpochVerifier.verifyEpoch(it, conversationId, timestamp = Instant.fromEpochMilliseconds(action.createdAt))
-                }
-            }
-            if (result is Either.Left) {
-                if (result.value.canRejoinLater()) throw KaliumSyncException("Rejoining a stale MLS group failed", result.value)
-                logger.w("Giving up the rejoin of ${conversationId.toLogString()}, its stale messages are ignored: ${result.value}")
-            }
-            pendingActions.acknowledge(TYPE, action)
-            rejoined += conversationId
-        }
+        val queued = pendingActions.getByActionType(TYPE).filterNot { it.qualifiedId.toModel() in deferred }
+        queued.forEach { rejoin(it) }
         return queued.isNotEmpty()
     }
 
+    override suspend fun rejoinAtSyncStart() {
+        deferred.clear()
+        pendingActions.getByActionType(TYPE).forEach { rejoin(it) }
+    }
+
+    private suspend fun rejoin(action: PendingActionEntity) {
+        val conversationId = action.qualifiedId.toModel()
+        val result = withContext(NonCancellable) {
+            transactionProvider.transaction("rejoinStaleMLSGroup") {
+                // The verifier rejoins only when CoreCrypto is behind the remote epoch or has no group.
+                staleEpochVerifier.verifyEpoch(it, conversationId, timestamp = Instant.fromEpochMilliseconds(action.createdAt))
+            }
+        }
+        val failure = (result as? Either.Left)?.value
+        when {
+            failure == null -> {
+                pendingActions.acknowledge(TYPE, action)
+                rejoined += conversationId
+            }
+            // Sync cannot make progress offline anyway; the batch is replayed once the network is back.
+            failure is NetworkFailure.NoNetworkConnection -> throw KaliumSyncException("Rejoining a stale MLS group failed", failure)
+            failure.canRejoinLater() -> {
+                logger.w("Deferring the rejoin of ${conversationId.toLogString()} to the next sync start: $failure")
+                deferred += conversationId
+            }
+            else -> {
+                logger.w("Giving up the rejoin of ${conversationId.toLogString()}, its stale messages are ignored: $failure")
+                pendingActions.acknowledge(TYPE, action)
+                rejoined += conversationId
+            }
+        }
+    }
+
+    // Deferred groups keep their messages ignored until the next sync start.
     override fun onBatchAcknowledged() = rejoined.clear()
 
     private companion object {
@@ -97,10 +128,10 @@ internal class MLSRejoinQueueImpl(
     }
 }
 
-/** The NSE's network rule, except conflicting federated backends, which no retry resolves. */
+/** Server and federation failures a later rejoin can get past; conflicting federated backends never resolve. */
 private fun CoreFailure.canRejoinLater(): Boolean = when (this) {
     is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> false
-    is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
+    MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
     is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
     else -> false
 }

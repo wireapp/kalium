@@ -22,14 +22,22 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueueImpl
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -267,25 +275,22 @@ class IncrementalSyncWorkerTest {
             order += "rejoin"
             queued.also { queued = false }
         }
+        everySuspend { fixture.rejoinQueue.rejoinAtSyncStart() } calls { order += "start" }
         every { fixture.rejoinQueue.onBatchAcknowledged() } calls { order += "acknowledged" }
 
         fixture.arrange().second.processEventsFlow().collect()
 
-        // The first rejoin is the start-of-sync pass, which found nothing queued.
-        assertEquals(listOf("rejoin", "batch", "rejoin", "batch", "acknowledged"), order)
+        assertEquals(listOf("start", "batch", "rejoin", "batch", "acknowledged"), order)
     }
 
     @Test
-    fun givenRejoinCanSucceedLater_whenProcessing_thenSyncFailsWithoutReplayingTheBatch() = runTest {
+    fun givenRejoinHasNoNetwork_whenProcessing_thenSyncFailsWithoutReplayingTheBatch() = runTest {
         val envelope = TestEvent.newMLSMessageEvent(Instant.DISTANT_PAST).wrapInEnvelope()
         val networkFailure = NetworkFailure.NoNetworkConnection(null)
         val fixture = Arrangement()
             .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
             .withBatchFailure(MLSFailure.WrongEpoch)
-        var starting = true
-        everySuspend { fixture.rejoinQueue.rejoinQueued() } calls {
-            if (starting) false.also { starting = false } else throw KaliumSyncException("Rejoin failed", networkFailure)
-        }
+        everySuspend { fixture.rejoinQueue.rejoinQueued() } calls { throw KaliumSyncException("Rejoin failed", networkFailure) }
 
         val thrown = assertFailsWith<KaliumSyncException> { fixture.arrange().second.processEventsFlow().collect() }
 
@@ -311,11 +316,36 @@ class IncrementalSyncWorkerTest {
     fun givenRejoinQueuedBeforeTheAppStopped_whenSyncStarts_thenRejoinsBeforeGathering() = runTest {
         val order = mutableListOf<String>()
         val fixture = Arrangement().withEventGathererReturning(flow { order += "gather" })
-        everySuspend { fixture.rejoinQueue.rejoinQueued() } calls { order += "rejoin"; true }
+        everySuspend { fixture.rejoinQueue.rejoinAtSyncStart() } calls { order += "rejoin" }
 
         fixture.arrange(consumeLegalHold = { order += "legalhold" }).second.processEventsFlow().collect()
 
         assertEquals(listOf("legalhold", "rejoin", "gather"), order)
+    }
+
+    @Test
+    fun givenRejoinCanSucceedLater_whenProcessing_thenMessagesAreIgnoredUntilTheNextSyncStart() = runTest(TestKaliumDispatcher.default) {
+        val envelope = TestEvent.newMLSMessageEvent(Instant.DISTANT_PAST).wrapInEnvelope()
+        val serverError = NetworkFailure.ServerMiscommunication(KaliumException.ServerError(GenericAPIErrorResponse(503, "down", "")))
+        val fixture = Arrangement().withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
+        val crypto = CryptoTransactionProviderArrangementMokkeryImpl().apply { withTransactionReturning(Either.Right(Unit)) }
+        val verifier = mock<StaleEpochVerifier>()
+        everySuspend { verifier.verifyEpoch(any(), any(), any(), any()) } returns Either.Left(serverError)
+        val pendingActions = fixture.database.builder.pendingActionDAO
+        val queue = MLSRejoinQueueImpl(pendingActions, crypto.cryptoTransactionProvider, verifier)
+        var ignored = 0
+        everySuspend { fixture.batchProcessor.processBatch(any()) } calls {
+            if (queue.request(ConversationId("stale", "domain"))) throw KaliumSyncException("Stale group", MLSFailure.WrongEpoch)
+            ignored++
+        }
+        val worker = fixture.arrange(rejoinQueue = queue).second
+
+        worker.processEventsFlow().collect()
+        worker.processEventsFlow().collect()
+
+        assertEquals(2, ignored)
+        verifySuspend(VerifyMode.exactly(2)) { verifier.verifyEpoch(any(), any(), any(), any()) }
+        assertEquals(1, pendingActions.getByActionType(PendingActionType.REJOIN_STALE_MLS_GROUP).size)
     }
 
     private class Arrangement {
@@ -330,6 +360,7 @@ class IncrementalSyncWorkerTest {
         init {
             everySuspend { batchProcessor.processBatch(any()) } returns Unit
             everySuspend { rejoinQueue.rejoinQueued() } returns false
+            everySuspend { rejoinQueue.rejoinAtSyncStart() } returns Unit
         }
 
         suspend fun withEventGathererReturning(eventFlow: Flow<EventStreamData>) = apply {
@@ -344,6 +375,7 @@ class IncrementalSyncWorkerTest {
             consumeInvalidation: suspend () -> Boolean = { false },
             consumeCleanup: suspend () -> Unit = {},
             consumeLegalHold: suspend () -> Unit = {},
+            rejoinQueue: MLSRejoinQueue = this.rejoinQueue,
         ) =
             this to IncrementalSyncWorkerImpl(
                 eventGatherer, batchProcessor, consumePendingAccountInvalidation = consumeInvalidation,
