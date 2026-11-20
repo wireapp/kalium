@@ -412,7 +412,8 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val conversationId: ConversationId,
             val protocol: Protocol,
-            val senderUserId: UserId
+            val senderUserId: UserId,
+            val systemMessageId: String = id,
         ) : Conversation(id, conversationId) {
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.ConversationProtocol",

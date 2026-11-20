@@ -66,18 +66,21 @@ internal class ProtocolUpdateEventHandlerImpl(
                 }
             }
             .onSuccess { updated ->
+                // The NSE's ID; a replayed event reports an update again, so the IDs must not change.
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
                         event.conversationId,
                         event.senderUserId,
-                        event.protocol
+                        event.protocol,
+                        event.systemMessageId
                     )
                     if (callRepository.establishedCallsFlow().first().isNotEmpty() &&
                         event.protocol == Conversation.Protocol.MIXED
                     ) {
                         systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(
                             event.conversationId,
-                            event.senderUserId
+                            event.senderUserId,
+                            "${event.systemMessageId}:during-call"
                         )
                     }
                 }

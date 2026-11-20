@@ -31,15 +31,18 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 internal interface SystemMessageInserter {
+    /** Pass a [messageId] derived from the event on the receive path, so a replayed event does not add the message again. */
     suspend fun insertProtocolChangedSystemMessage(
         conversationId: ConversationId,
         senderUserId: UserId,
-        protocol: Conversation.Protocol
+        protocol: Conversation.Protocol,
+        messageId: String? = null,
     )
 
     suspend fun insertProtocolChangedDuringACallSystemMessage(
         conversationId: ConversationId,
-        senderUserId: UserId
+        senderUserId: UserId,
+        messageId: String? = null,
     )
 
     suspend fun insertHistoryLostProtocolChangedSystemMessage(
@@ -69,10 +72,11 @@ internal class SystemMessageInserterImpl(
     override suspend fun insertProtocolChangedSystemMessage(
         conversationId: ConversationId,
         senderUserId: UserId,
-        protocol: Conversation.Protocol
+        protocol: Conversation.Protocol,
+        messageId: String?,
     ) {
         val message = Message.System(
-            Uuid.random().toString(),
+            messageId ?: Uuid.random().toString(),
             MessageContent.ConversationProtocolChanged(
                 protocol = protocol
             ),
@@ -89,10 +93,11 @@ internal class SystemMessageInserterImpl(
 
     override suspend fun insertProtocolChangedDuringACallSystemMessage(
         conversationId: ConversationId,
-        senderUserId: UserId
+        senderUserId: UserId,
+        messageId: String?,
     ) {
         val message = Message.System(
-            Uuid.random().toString(),
+            messageId ?: Uuid.random().toString(),
             MessageContent.ConversationProtocolChangedDuringACall,
             conversationId,
             Clock.System.now(),

@@ -126,7 +126,7 @@ internal class EventMapper(
             is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO)
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, payloadIndex)
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO)
-            is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
+            is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO, payloadIndex)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.MlsResetConversationDTO -> mlsConversationReset(id, eventContentDTO)
             is EventContentDTO.Conversation.NewMeetingConversationDTO -> newMeetingConversation(id, eventContentDTO)
@@ -158,11 +158,13 @@ internal class EventMapper(
     private fun conversationProtocolUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ProtocolUpdate,
+        payloadIndex: Int,
     ): Event = Event.Conversation.ConversationProtocol(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         protocol = eventContentDTO.data.protocol.toModel(),
-        senderUserId = eventContentDTO.qualifiedFrom.toModel()
+        senderUserId = eventContentDTO.qualifiedFrom.toModel(),
+        systemMessageId = metadataSystemMessageId(id, payloadIndex),
     )
 
     internal fun conversationMessageTimerUpdate(

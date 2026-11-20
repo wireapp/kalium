@@ -63,13 +63,13 @@ class ProtocolUpdateEventHandlerTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any(), any())
         }
     }
 
     @Test
-    fun givenProtocolUpdatedDuringACall_whenHandlingEvent_ThenInsertSystemMessages() = runTest {
-        val event = TestEvent.newConversationProtocolEvent()
+    fun givenProtocolUpdatedDuringACallAndTheEventReplayed_whenHandlingEvent_ThenInsertSystemMessagesWithTheSameIds() = runTest {
+        val event = TestEvent.newConversationProtocolEvent().copy(systemMessageId = "event-id:1")
 
         val (arrangement, useCase) = arrange {
             withUpdateProtocolUpdateReturns(Either.Right(true))
@@ -77,18 +77,14 @@ class ProtocolUpdateEventHandlerTest {
             withEstablishedCall()
         }
 
-        useCase.handle(arrangement.transactionContext, event).shouldSucceed()
+        repeat(2) { useCase.handle(arrangement.transactionContext, event).shouldSucceed() }
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.updateConversationProtocol(any(), event.conversationId, event.protocol, true)
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any(), "event-id:1")
         }
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(any(), any())
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(any(), any(), "event-id:1:during-call")
         }
     }
 
@@ -123,7 +119,7 @@ class ProtocolUpdateEventHandlerTest {
         useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any(), any())
         }
     }
 
@@ -185,7 +181,8 @@ class ProtocolUpdateEventHandlerTest {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(
                 event.conversationId,
                 event.senderUserId,
-                event.protocol
+                event.protocol,
+                any()
             )
         }
     }
@@ -210,7 +207,7 @@ class ProtocolUpdateEventHandlerTest {
 
         suspend fun withInsertProtocolChangedSystemMessage() {
             everySuspend {
-                systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+                systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any(), any())
             } returns Unit
         }
 
