@@ -44,7 +44,9 @@ class PendingConversationCleanup(private val database: UserDatabaseBuilder, priv
     }
 
     suspend fun queueWipe(groupId: String) = database.pendingActionDAO.upsert(
-        PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity(groupId, "mls"), Clock.System.now().toEpochMilliseconds()
+        PendingActionType.WIPE_MLS_GROUP,
+        QualifiedIDEntity(groupId, "mls"),
+        Clock.System.now().toEpochMilliseconds(),
     )
 
     /** Caller serializes native mutations with its existing crypto transaction provider. */

@@ -46,7 +46,6 @@ import com.wire.kalium.logic.data.event.newMessage
 import com.wire.kalium.logic.data.event.updateUserProperties
 import com.wire.kalium.logic.data.event.userUpdate
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
