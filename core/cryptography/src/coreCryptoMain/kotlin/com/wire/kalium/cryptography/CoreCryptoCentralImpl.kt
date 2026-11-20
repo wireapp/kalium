@@ -53,6 +53,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.io.encoding.Base64
+import com.wire.crypto.MlsException as CoreCryptoMlsException
 import com.wire.crypto.MlsTransportException as CoreCryptoMlsTransportException
 import com.wire.crypto.PkiEnvironmentHooks as CoreCryptoPkiEnvironmentHooks
 import com.wire.crypto.PkiEnvironmentHooksException as CoreCryptoPkiEnvironmentHooksException
@@ -210,7 +211,12 @@ class CoreCryptoCentralImpl(
 
     override suspend fun checkCredentials() = pkiEnvironmentMutex.withLock {
         cc.transaction("checkCredentials") {
-            it.checkCredentials()
+            try {
+                it.checkCredentials()
+            } catch (failure: CoreCryptoException.Mls) {
+                if (failure.mlsError !is CoreCryptoMlsException.InvalidCredentials) throw failure
+                kaliumLogger.e("Self credentials are invalid/revoked: $failure")
+            }
         }
     }
 
