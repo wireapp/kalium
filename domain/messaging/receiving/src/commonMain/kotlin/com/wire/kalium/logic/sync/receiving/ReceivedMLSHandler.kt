@@ -176,7 +176,11 @@ internal class ReceivedMLSHandler(
         if (adoptGroup && event.conversationId !in removed) {
             val groupId = protocol.groupId
             val reset = ReceivedPayload.MLSReset(
-                event.conversationId, groupId, groupId, context.conversationEpoch(groupId), ConversationEntity.GroupState.ESTABLISHED
+                conversationId = event.conversationId,
+                oldGroupId = groupId,
+                newGroupId = groupId,
+                epoch = context.conversationEpoch(groupId),
+                state = ConversationEntity.GroupState.ESTABLISHED,
             )
             conversations.resetGroup(reset)
             // First, so persisting it can't clear a proposal timer this message set.
