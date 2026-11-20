@@ -1,0 +1,18 @@
+name: Detekt
+
+on:
+  merge_group:
+  pull_request:
+    types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
+jobs:
+  detekt:
+    name: Kalium Detekt
+    uses: ./.github/workflows/codestyle.yml

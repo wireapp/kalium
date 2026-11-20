@@ -16,12 +16,8 @@ permissions:
   contents: read # required for actions/checkout and repository metadata reads
 
 jobs:
-  detekt:
-    name: Detekt
-    uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
     name: Gradle Run Tests
-    needs: [ detekt ]
     outputs:
       skip-tests: ${{ steps.tested-merge.outputs.skip-tests }}
     permissions:
@@ -158,6 +154,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action/linux@c950f6fb443cb5af20a377fd0dfaa78838901040
         if: ${{ always() && steps.tested-merge.outputs.skip-tests != 'true' }}
         with:
+          check_name: Android Instrumented Test Results
           files: |
             **/build/test-results/**/*.xml
             **/build/outputs/androidTest-results/**/*.xml
@@ -170,7 +167,7 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
   upload-test-results-datadadog:
-    name: Upload Test Results Datadadog
+    name: Upload Android Instrumented Test Results to Datadog
     runs-on: ubuntu-latest
     needs: gradle-run-tests
     if: ${{ always() && needs.gradle-run-tests.outputs.skip-tests != 'true' }}
