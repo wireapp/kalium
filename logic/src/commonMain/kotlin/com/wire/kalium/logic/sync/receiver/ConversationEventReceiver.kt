@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.common.functional.Either
@@ -115,9 +114,9 @@ internal class ConversationEventReceiverImpl(
 
             is Event.Conversation.MLSWelcome -> {
                 val result = mlsWelcomeHandler.handle(transactionContext, event)
-                // Network failures must be retried, otherwise the welcome is lost and the conversation never appears.
-                val isNetworkFailure = (result as? Either.Left)?.value is NetworkFailure.NoNetworkConnection
-                if (transactionContext is DurableMLSReceiveContext || isNetworkFailure) result else Either.Right(Unit)
+                // Failures a retry can fix fail the batch, otherwise the welcome is lost and the conversation never appears.
+                val canSucceedLater = (result as? Either.Left)?.value?.canSucceedLater() == true
+                if (transactionContext is DurableMLSReceiveContext || canSucceedLater) result else Either.Right(Unit)
             }
 
             is Event.Conversation.RenamedConversation -> {

@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -49,6 +50,8 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -246,15 +249,27 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenMLSWelcomeHandlerFailsWithNoNetwork_whenStandardReceive_thenFailureIsPropagated() = runTest {
+    fun givenMLSWelcomeHandlerFailsWithRetryableFailure_whenStandardReceive_thenOnlyThatFailureIsPropagated() = runTest {
         val event = TestEvent.newMLSWelcomeEvent()
-        val networkFailure = NetworkFailure.NoNetworkConnection(null)
-        val (arrangement, receiver) = Arrangement().arrange {
-            everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(networkFailure)
-        }
+        val retryable = listOf(
+            NetworkFailure.NoNetworkConnection(null),
+            MLSFailure.TransportUnavailable,
+            NetworkFailure.ServerMiscommunication(KaliumException.ServerError(GenericAPIErrorResponse(503, "unavailable", "server-error"))),
+            NetworkFailure.FederatedBackendFailure.FailedDomains(listOf("remote.example")),
+        )
+        val notRetryable = listOf(
+            NetworkFailure.FederatedBackendFailure.ConflictingBackends(listOf("remote.example")),
+            NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "denied", "forbidden"))),
+        )
+        (retryable + notRetryable).forEach { failure ->
+            val (arrangement, receiver) = Arrangement().arrange {
+                everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(failure)
+            }
 
-        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-            .shouldFail { assertEquals(networkFailure, it) }
+            val result = receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+            assertEquals(if (failure in retryable) Either.Left(failure) else Either.Right(Unit), result, "$failure")
+        }
     }
 
     @Test
