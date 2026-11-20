@@ -16,12 +16,8 @@ permissions:
   contents: read # required for actions/checkout and repository metadata reads
 
 jobs:
-  detekt:
-    name: Detekt
-    uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
-    name: Gradle Run Tests
-    needs: [ detekt ]
+    name: Database Tests
     runs-on: ubuntu-latest
     env:
       GRADLE_OPTS: -Xmx6G -XX:+UseParallelGC -XX:MaxMetaspaceSize=2g
