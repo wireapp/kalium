@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation.delete
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.LocalDeletionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 import dev.mokkery.MockMode
@@ -49,7 +50,7 @@ class DeleteConversationLocallyUseCaseTest {
 
         assertIs<ClearConversationContentUseCase.Result.Success>(result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), true) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.localDeletionStore.acknowledge(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.localDeletionRepository.acknowledge(CONVERSATION_ID) }
     }
 
     @Test
@@ -62,13 +63,13 @@ class DeleteConversationLocallyUseCaseTest {
 
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), true) }
-        verifySuspend(VerifyMode.not) { arrangement.localDeletionStore.acknowledge(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.localDeletionRepository.acknowledge(any()) }
     }
 
     private class Arrangement {
 
         val clearConversationContent = mock<ClearConversationContentUseCase>(mode = MockMode.autoUnit)
-        val localDeletionStore = mock<LocalDeletionStore>(mode = MockMode.autoUnit)
+        val localDeletionRepository = mock<LocalDeletionRepository>(mode = MockMode.autoUnit)
 
         suspend fun withClearLocalAsset(isSuccess: Boolean) = apply {
             everySuspend { clearConversationContent(any(), any()) } returns (
@@ -78,8 +79,8 @@ class DeleteConversationLocallyUseCaseTest {
         }
 
         fun arrange(): Pair<Arrangement, DeleteConversationLocallyUseCase> = run {
-            everySuspend { localDeletionStore.acknowledge(any()) } returns Either.Right(Unit)
-            val useCase = DeleteConversationLocallyUseCaseImpl(clearConversationContent, localDeletionStore)
+            everySuspend { localDeletionRepository.acknowledge(any()) } returns Either.Right(Unit)
+            val useCase = DeleteConversationLocallyUseCaseImpl(clearConversationContent, localDeletionRepository)
             this to useCase
         }
     }

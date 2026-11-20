@@ -7,7 +7,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-package com.wire.kalium.logic.feature.conversation.delete
+package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageRequest
@@ -20,15 +20,15 @@ import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlin.time.Clock
 
-internal interface LocalDeletionStore {
+internal interface LocalDeletionRepository {
     suspend fun markPending(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun getPending(): Either<CoreFailure, List<ConversationId>>
     suspend fun acknowledge(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
-internal class PersistentLocalDeletionStore(
+internal class PersistentLocalDeletionRepository(
     private val database: UserDatabaseBuilder,
-) : LocalDeletionStore {
+) : LocalDeletionRepository {
     override suspend fun markPending(conversationId: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
         database.writeMessageEffects {
             conversations.setConversationDeletedLocally(conversationId.toDao(), true)

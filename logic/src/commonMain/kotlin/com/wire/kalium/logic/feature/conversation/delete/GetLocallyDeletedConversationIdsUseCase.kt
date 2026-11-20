@@ -11,6 +11,7 @@ package com.wire.kalium.logic.feature.conversation.delete
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.conversation.LocalDeletionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
 /** Returns conversations hidden locally whose durable deletion still needs to finish. */
@@ -24,10 +25,10 @@ public sealed interface GetLocallyDeletedConversationIdsResult {
 }
 
 internal class GetLocallyDeletedConversationIdsUseCaseImpl(
-    private val localDeletionStore: LocalDeletionStore,
+    private val localDeletionRepository: LocalDeletionRepository,
 ) : GetLocallyDeletedConversationIdsUseCase {
     override suspend fun invoke(): GetLocallyDeletedConversationIdsResult =
-        localDeletionStore.getPending().fold(
+        localDeletionRepository.getPending().fold(
             { GetLocallyDeletedConversationIdsResult.Failure(it) },
             { GetLocallyDeletedConversationIdsResult.Success(it) },
         )
