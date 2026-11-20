@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.time.Clock
 
 /** Apple handle replay. Each lock covers one enqueue, so a foreground request can interrupt a drain. */
 internal class CallSignalReplay(
@@ -55,6 +56,8 @@ internal class CallSignalReplay(
         } else {
             pending.firstOrNull { it.conversation in priorities } ?: pending.firstOrNull()
         } ?: return false
+        // Before native enqueue: AVS may raise a close callback synchronously from it.
+        val submittedAt = Clock.System.now().toEpochMilliseconds()
         if (signal.id !in accepted) {
             val watermark = watermarks[signal.conversation]
             if (watermark != null && signal.timeMillis < watermark) {
@@ -68,7 +71,7 @@ internal class CallSignalReplay(
         // into this live handle; a new generation still replays the retained journal after a crash.
         accepted.add(signal.id)
         withContext(NonCancellable) {
-            journal.submitted(signal.id, generation)
+            journal.submitted(signal.id, generation, submittedAt)
             accepted.remove(signal.id)
         }
         return true

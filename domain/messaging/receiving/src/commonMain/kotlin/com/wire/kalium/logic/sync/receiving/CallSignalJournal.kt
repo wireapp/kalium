@@ -32,6 +32,7 @@ data class CallSignalRecord(
     @SerialName("isMLS") val isMLS: Boolean,
     @SerialName("storedAtMillis") val storedAtMillis: Long,
     @SerialName("submittedGeneration") val submittedGeneration: String? = null,
+    @SerialName("submittedAtMillis") val submittedAtMillis: Long = 0L,
     @SerialName("incomingGeneration") val incomingGeneration: String? = null,
     @SerialName("ready") val ready: Boolean = false,
     @SerialName("missedNotificationClaimed") val missedNotificationClaimed: Boolean = false,
@@ -67,7 +68,9 @@ interface CallSignalStore {
     suspend fun signals(): List<CallSignalRecord>
     suspend fun presentations(): List<CallPresentationRecord>
     suspend fun append(event: ReceivedCallEvent): CallSignalRecord
-    suspend fun submitted(id: String, generation: String)
+
+    /** [atMillis] is taken before native enqueue, so a close callback raised by that enqueue covers the signal. */
+    suspend fun submitted(id: String, generation: String, atMillis: Long = Clock.System.now().toEpochMilliseconds())
 
     suspend fun incoming(
         reference: IncomingCallReference,
@@ -78,9 +81,16 @@ interface CallSignalStore {
 
     /**
      * Ends the conversation's latest presentation. With [handledBy], also forgets the conversation's signals
-     * that engine generation already handled, so a restart cannot replay a call that has ended.
+     * that engine generation handled up to [handledBeforeMillis], so a restart cannot replay a call that has
+     * ended. Cleanup can run long after the close callback; signals submitted since then belong to a newer call.
      */
-    suspend fun closed(conversationValue: String, conversationDomain: String, reason: Int, handledBy: String? = null): String?
+    suspend fun closed(
+        conversationValue: String,
+        conversationDomain: String,
+        reason: Int,
+        handledBy: String? = null,
+        handledBeforeMillis: Long = Long.MAX_VALUE,
+    ): String?
 }
 
 /**
@@ -115,10 +125,12 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         }
     }
 
-    override suspend fun submitted(id: String, generation: String) = database.writeMessageEffects {
+    override suspend fun submitted(id: String, generation: String, atMillis: Long) = database.writeMessageEffects {
         val state = read(metadata)
         val acknowledged = state.copy(
-            signals = state.signals.map { if (it.id == id) it.copy(submittedGeneration = generation) else it },
+            signals = state.signals.map {
+                if (it.id == id) it.copy(submittedGeneration = generation, submittedAtMillis = atMillis) else it
+            },
         )
         write(metadata, acknowledged.reconcilingSuppressedCancellation(id, generation))
     }
@@ -194,13 +206,14 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         conversationDomain: String,
         reason: Int,
         handledBy: String?,
+        handledBeforeMillis: Long,
     ): String? = database.writeMessageEffects {
         val state = read(metadata)
         val current = state.presentations.lastOrNull {
             it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
         }
         val signals = state.signals.filterNot {
-            handledBy != null && it.submittedGeneration == handledBy &&
+            handledBy != null && it.submittedGeneration == handledBy && it.submittedAtMillis <= handledBeforeMillis &&
                 it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
         }
         if (current == null && signals.size == state.signals.size) return@writeMessageEffects null
