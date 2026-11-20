@@ -479,6 +479,7 @@ sealed class Event(open val id: String) {
             override val teamId: String,
             val memberId: String,
             val dateTime: Instant,
+            val systemMessageId: String = id,
         ) : Team(id, teamId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Team.MemberLeave",

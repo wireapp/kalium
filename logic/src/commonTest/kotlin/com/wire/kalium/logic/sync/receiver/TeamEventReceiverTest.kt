@@ -31,6 +31,7 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -66,8 +67,8 @@ class TeamEventReceiverTest {
     }
 
     @Test
-    fun givenMemberLeaveEvent_RepoAndPersisMessageAreInvoked() = runTest {
-        val event = TestEvent.teamMemberLeave()
+    fun givenMemberLeaveEventReplayed_RepoAndPersisMessageAreInvokedWithTheSameMessageId() = runTest {
+        val event = TestEvent.teamMemberLeave().copy(systemMessageId = "event-id:1")
         val (arrangement, eventReceiver) = Arrangement()
             .arrange {
                 withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
@@ -76,16 +77,11 @@ class TeamEventReceiverTest {
                 withPersistMessageSuccess()
             }
 
-        eventReceiver.onEvent(
-            arrangement.transactionContext,
-            event,
-            TestEvent.liveDeliveryInfo
-        )
+        repeat(2) { eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo) }
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessageUseCase.invoke(any())
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.persistMessageUseCase.invoke(matches { it.id == "event-id:1" })
         }
-
     }
 
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl(),

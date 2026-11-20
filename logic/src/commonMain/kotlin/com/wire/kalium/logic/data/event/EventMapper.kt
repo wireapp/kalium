@@ -116,7 +116,7 @@ internal class EventMapper(
             is EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO -> adminlessDeleteReminder(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, payloadIndex)
             is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO)
-            is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
+            is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, payloadIndex)
             is EventContentDTO.User.UpdateDTO -> userUpdate(selfUserId, id, eventContentDTO)
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(selfUserId, id, eventContentDTO)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO)
@@ -325,11 +325,13 @@ internal class EventMapper(
     private fun teamMemberLeft(
         id: String,
         event: EventContentDTO.Team.MemberLeave,
+        payloadIndex: Int,
     ) = Event.Team.MemberLeave(
         id = id,
         teamId = event.teamId,
         memberId = event.teamMember.nonQualifiedUserId,
-        dateTime = event.time
+        dateTime = event.time,
+        systemMessageId = metadataSystemMessageId(id, payloadIndex),
     )
 
     private fun meetingCreate(

@@ -95,6 +95,14 @@ class EventMapperTest {
     }
 
     @Test
+    fun teamMemberLeavePayloadsHaveDistinctSystemIdentities() {
+        val dto = EventContentDTO.Team.MemberLeave(TeamMemberIdData("user"), "team", Instant.parse("2026-07-24T12:00:00.000Z"))
+        val events = MapperProvider.eventMapper(TestUser.SELF.id).fromStoredDTO("notification", listOf(dto, dto), false)
+            .map { assertIs<Event.Team.MemberLeave>(it.event) }
+        assertEquals(listOf("notification", "notification:1"), events.map { it.systemMessageId })
+    }
+
+    @Test
     fun givenSessionRefreshSuggestedDTO_whenMapping_thenSessionRefreshSuggestedEventIsReturned() {
         val eventId = "event-id"
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
