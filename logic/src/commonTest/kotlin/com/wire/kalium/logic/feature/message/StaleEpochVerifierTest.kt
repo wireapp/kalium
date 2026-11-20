@@ -325,6 +325,27 @@ class StaleEpochVerifierTest {
     }
 
     @Test
+    fun givenRejoinResetsTheConversation_whenVerifying_thenShouldWarnForTheNewGroup() = runTest {
+        val newGroupId = GroupID("reset-group")
+        val (arrangement, staleEpochHandler) = arrange {
+            withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
+            withLocalGroupEpoch(Either.Right(REMOTE_EPOCH - 1UL))
+            withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
+            withInsertLostCommitSystemMessage(Either.Right(Unit))
+            everySuspend { conversationRepository.getConversationProtocolInfo(mokkeryAny()) } sequentiallyReturns listOf(
+                Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(epoch = REMOTE_EPOCH)),
+                Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(groupId = newGroupId, epoch = 1UL)),
+            )
+        }
+
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(CONVERSATION_ID, newGroupId, mokkeryAny(), mokkeryAny())
+        }
+    }
+
+    @Test
     fun givenRejoinLeavesNoLocalGroup_whenVerifying_thenShouldNotWarn() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
             withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
