@@ -41,6 +41,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandl
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
@@ -73,6 +74,7 @@ internal class ConversationEventReceiverImpl(
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler,
     private val accessUpdateEventHandler: AccessUpdateEventHandler,
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler,
+    private val rejoinQueue: MLSRejoinQueue,
 ) : ConversationEventReceiver {
     override suspend fun onEvent(
         transactionContext: CryptoTransactionContext,
@@ -115,10 +117,15 @@ internal class ConversationEventReceiverImpl(
 
             is Event.Conversation.MLSWelcome -> {
                 val result = mlsWelcomeHandler.handle(transactionContext, event)
-                // Sync cannot progress offline anyway. A Welcome lost to another failure is recovered by a rejoin:
-                // the group's next message finds no local group and queues one, so this batch need not wait.
-                val isNetworkFailure = (result as? Either.Left)?.value is NetworkFailure.NoNetworkConnection
-                if (transactionContext is DurableMLSReceiveContext || isNetworkFailure) result else Either.Right(Unit)
+                val failure = (result as? Either.Left)?.value
+                when {
+                    // Sync cannot progress offline anyway.
+                    transactionContext is DurableMLSReceiveContext || failure is NetworkFailure.NoNetworkConnection -> result
+                    // A lost Welcome is recovered by a rejoin. Its conversation may be unknown, so its messages cannot
+                    // queue one: queue it here and fail the batch once, like a stale message; the rejoin's own rules apply.
+                    failure != null && rejoinQueue.request(event.conversationId) -> result
+                    else -> Either.Right(Unit)
+                }
             }
 
             is Event.Conversation.RenamedConversation -> {

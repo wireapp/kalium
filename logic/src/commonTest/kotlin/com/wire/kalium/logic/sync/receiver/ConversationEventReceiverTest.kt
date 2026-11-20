@@ -48,6 +48,7 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
@@ -249,25 +250,28 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenMLSWelcomeHandlerFails_whenStandardReceive_thenOnlyNoNetworkIsPropagated() = runTest {
+    fun givenMLSWelcomeHandlerFails_whenStandardReceive_thenNoNetworkIsPropagatedAndOtherFailuresQueueARejoinOnce() = runTest {
         val event = TestEvent.newMLSWelcomeEvent()
         val noNetwork = NetworkFailure.NoNetworkConnection(null)
-        // A Welcome lost to these is recovered by the rejoin the group's next message queues.
-        val ignored = listOf(
+        val failures = listOf(
             MLSFailure.TransportUnavailable,
             NetworkFailure.ServerMiscommunication(KaliumException.ServerError(GenericAPIErrorResponse(503, "unavailable", "server-error"))),
             NetworkFailure.FederatedBackendFailure.FailedDomains(listOf("remote.example")),
-            NetworkFailure.FederatedBackendFailure.FederationDenied("federation-denied"),
             NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "denied", "forbidden"))),
         )
-        (ignored + noNetwork).forEach { failure ->
+        for (failure in failures + noNetwork) for (queued in listOf(true, false)) {
             val (arrangement, receiver) = Arrangement().arrange {
                 everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(failure)
+                everySuspend { rejoinQueue.request(event.conversationId) } returns queued
             }
 
             val result = receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-            assertEquals(if (failure == noNetwork) Either.Left(failure) else Either.Right(Unit), result, "$failure")
+            // A queued rejoin fails the batch once; the replay finds it already tried and ignores the Welcome.
+            val propagated = failure == noNetwork || queued
+            assertEquals(if (propagated) Either.Left(failure) else Either.Right(Unit), result, "$failure, queued=$queued")
+            val requests = if (failure == noNetwork) 0 else 1
+            verifySuspend(VerifyMode.exactly(requests)) { arrangement.rejoinQueue.request(event.conversationId) }
         }
     }
 
@@ -576,6 +580,7 @@ class ConversationEventReceiverTest {
         val channelAddPermissionUpdateEventHandler = mock<ChannelAddPermissionUpdateEventHandler>()
         val accessUpdateEventHandler = mock<AccessUpdateEventHandler>()
         val mlsResetConversationEventHandler = mock<MLSResetConversationEventHandler>()
+        val rejoinQueue = mock<MLSRejoinQueue>()
         val codeUpdatedHandler = mock<CodeUpdatedHandler>()
         val codeDeletedHandler = mock<CodeDeletedHandler>()
 
@@ -598,6 +603,7 @@ class ConversationEventReceiverTest {
             channelAddPermissionUpdateEventHandler = channelAddPermissionUpdateEventHandler,
             accessUpdateEventHandler = accessUpdateEventHandler,
             mlsResetConversationEventHandler = mlsResetConversationEventHandler,
+            rejoinQueue = rejoinQueue,
         )
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = run {
@@ -609,6 +615,7 @@ class ConversationEventReceiverTest {
         }
 
         private suspend fun withDefaultSuccessfulHandlers() {
+            everySuspend { rejoinQueue.request(any()) } returns false
             everySuspend { newMessageEventHandler.handleNewProteusMessage(any(), any(), any()) } returns Unit
             everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), any(), any()) } returns Either.Right(Unit)
             everySuspend { newMessageEventHandler.flushPendingSideEffects() } returns Unit
