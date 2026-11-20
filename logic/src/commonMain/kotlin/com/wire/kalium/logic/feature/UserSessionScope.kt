@@ -2120,7 +2120,13 @@ public class UserSessionScope internal constructor(
         )
 
     private val mlsRejoinQueue: MLSRejoinQueue by lazy {
-        MLSRejoinQueueImpl(userStorage.database.pendingActionDAO, cryptoTransactionProvider, staleEpochVerifier)
+        MLSRejoinQueueImpl(
+            userStorage.database.pendingActionDAO,
+            cryptoTransactionProvider,
+            staleEpochVerifier,
+            conversationRepository,
+            mlsConversationRepository,
+        )
     }
 
     private val newMessageHandler: NewMessageEventHandler

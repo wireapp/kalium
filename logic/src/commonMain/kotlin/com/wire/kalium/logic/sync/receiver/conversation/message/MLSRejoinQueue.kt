@@ -21,9 +21,17 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -46,6 +54,9 @@ import kotlin.time.Instant
  * Only a missing network fails sync. A rejoin that fails in a way that can succeed later stays queued for the
  * next sync start and its group's messages are ignored until then: a later rejoin enters at the remote epoch,
  * so holding the batch back would decrypt none of them and would stop receiving in every conversation.
+ * The sync start rejoins only groups CoreCrypto lacks: one it has may have been repaired meanwhile and only
+ * be behind the backlog, which a rejoin would make undecryptable. If it is still stale, its next message queues
+ * a rejoin again.
  */
 internal interface MLSRejoinQueue {
     /** Queues a rejoin. False when one ran for the batch being replayed or waits for the next sync start: ignore the message. */
@@ -54,7 +65,10 @@ internal interface MLSRejoinQueue {
     /** Rejoins the queued groups not waiting for the next sync start. True when any was queued. Throws without network. */
     suspend fun rejoinQueued(): Boolean
 
-    /** Rejoins every queued group, including those waiting for this sync start. Throws without network. */
+    /**
+     * Rejoins every queued group CoreCrypto lacks, including those waiting for this sync start, and drops the
+     * others for the backlog to catch up. Throws without network.
+     */
     suspend fun rejoinAtSyncStart()
 
     /** A batch was acknowledged, so later stale messages may queue a rejoin again. */
@@ -65,6 +79,8 @@ internal class MLSRejoinQueueImpl(
     private val pendingActions: PendingActionDAO,
     private val transactionProvider: CryptoTransactionProvider,
     private val staleEpochVerifier: StaleEpochVerifier,
+    private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
 ) : MLSRejoinQueue {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC) }
 
@@ -89,22 +105,32 @@ internal class MLSRejoinQueueImpl(
 
     override suspend fun rejoinAtSyncStart() {
         deferred.clear()
-        pendingActions.getByActionType(TYPE).forEach { rejoin(it) }
+        pendingActions.getByActionType(TYPE).forEach { rejoin(it, onlyMissingGroup = true) }
     }
 
-    private suspend fun rejoin(action: PendingActionEntity) {
+    private suspend fun rejoin(action: PendingActionEntity, onlyMissingGroup: Boolean = false) {
         val conversationId = action.qualifiedId.toModel()
         val result = withContext(NonCancellable) {
-            transactionProvider.transaction("rejoinStaleMLSGroup") {
-                // The verifier rejoins only when CoreCrypto is behind the remote epoch or has no group.
-                staleEpochVerifier.verifyEpoch(it, conversationId, timestamp = Instant.fromEpochMilliseconds(action.createdAt))
+            transactionProvider.transaction("rejoinStaleMLSGroup") { context ->
+                if (onlyMissingGroup && hasLocalGroup(context, conversationId)) {
+                    Either.Right(false)
+                } else {
+                    // The verifier rejoins only when CoreCrypto is behind the remote epoch or has no group.
+                    staleEpochVerifier.verifyEpoch(context, conversationId, timestamp = Instant.fromEpochMilliseconds(action.createdAt))
+                        .map { true }
+                }
             }
         }
         val failure = (result as? Either.Left)?.value
         when {
-            failure == null -> {
+            failure == null && result.getOrElse(false) -> {
                 pendingActions.acknowledge(TYPE, action)
                 rejoined += conversationId
+            }
+            // Not marked as rejoined, so a message the backlog leaves stale queues a rejoin again.
+            failure == null -> {
+                logger.i("Dropping the rejoin of ${conversationId.toLogString()}: CoreCrypto has its group, the backlog may catch it up")
+                pendingActions.acknowledge(TYPE, action)
             }
             // Sync cannot make progress offline anyway; the batch is replayed once the network is back.
             failure is NetworkFailure.NoNetworkConnection -> throw KaliumSyncException("Rejoining a stale MLS group failed", failure)
@@ -119,6 +145,16 @@ internal class MLSRejoinQueueImpl(
             }
         }
     }
+
+    // A conversation or group that can't be resolved locally is rejoined as before.
+    private suspend fun hasLocalGroup(context: CryptoTransactionContext, conversationId: ConversationId): Boolean =
+        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
+            if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
+                context.wrapInMLSContext { mlsConversationRepository.hasEstablishedMLSGroup(it, protocolInfo.groupId) }
+            } else {
+                Either.Right(false)
+            }
+        }.getOrElse(false)
 
     // Deferred groups keep their messages ignored until the next sync start.
     override fun onBatchAcknowledged() = rejoined.clear()

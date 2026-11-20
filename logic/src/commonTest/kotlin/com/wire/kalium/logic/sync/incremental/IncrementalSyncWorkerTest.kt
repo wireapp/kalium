@@ -22,7 +22,9 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
@@ -332,7 +334,10 @@ class IncrementalSyncWorkerTest {
         val verifier = mock<StaleEpochVerifier>()
         everySuspend { verifier.verifyEpoch(any(), any(), any(), any()) } returns Either.Left(serverError)
         val pendingActions = fixture.database.builder.pendingActionDAO
-        val queue = MLSRejoinQueueImpl(pendingActions, crypto.cryptoTransactionProvider, verifier)
+        // The conversation can't be resolved locally, so the sync start retries the rejoin.
+        val conversations = mock<ConversationRepository>()
+        everySuspend { conversations.getConversationProtocolInfo(any()) } returns Either.Left(StorageFailure.DataNotFound)
+        val queue = MLSRejoinQueueImpl(pendingActions, crypto.cryptoTransactionProvider, verifier, conversations, mock())
         var ignored = 0
         everySuspend { fixture.batchProcessor.processBatch(any()) } calls {
             if (queue.request(ConversationId("stale", "domain"))) throw KaliumSyncException("Stale group", MLSFailure.WrongEpoch)
