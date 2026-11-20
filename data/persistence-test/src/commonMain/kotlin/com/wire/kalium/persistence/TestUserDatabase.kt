@@ -47,8 +47,11 @@ suspend fun TestScope.withTestUserDatabase(userId: UserIDEntity, block: suspend 
     try {
         block(database)
     } finally {
-        database.builder.close()
-        database.delete()
+        try {
+            database.builder.close()
+        } finally {
+            database.delete()
+        }
     }
 }
 

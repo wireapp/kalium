@@ -17,39 +17,36 @@
  */
 package com.wire.kalium.persistence.db
 
-import com.wire.kalium.persistence.dao.UserIDEntity
-
 /**
  * Provides an in-memory cache for in-memory databases.
  *
  * On iOS, SQLiter uses "file:{name}?mode=memory&cache=shared" for named in-memory databases,
  * which means databases with the same name share data. This cache allows us to:
- * 1. Reuse database instances across calls with the same userId
+ * 1. Reuse database instances across calls with the same name
  * 2. Properly close and clear databases between tests to ensure isolation
  *
  * When [clearEntry] is called, the database driver is closed, which causes SQLite to
  * automatically delete the shared in-memory database (since it's the last connection).
  */
 internal object InMemoryDatabaseCache {
-    private val cache = mutableMapOf<UserIDEntity, UserDatabaseBuilder>()
+    private val cache = mutableMapOf<String, UserDatabaseBuilder>()
 
     fun getOrCreate(
-        userIDEntity: UserIDEntity,
+        databaseName: String,
         create: () -> UserDatabaseBuilder
     ): UserDatabaseBuilder {
-        return cache.getOrPut(userIDEntity) { create() }
+        return cache.getOrPut(databaseName) { create() }
     }
 
     /**
-     * Clears an entry from the cache based on the provided [userIDEntity].
+     * Clears the entry for [databaseName] from the cache.
      * This also closes the database driver, which causes SQLite to delete
      * the shared in-memory database.
      *
-     * @param userIDEntity The [UserIDEntity] representing the entry to be cleared.
      * @return `true` if the entry was successfully cleared, `false` if it didn't exist.
      */
-    fun clearEntry(userIDEntity: UserIDEntity): Boolean {
-        val builder = cache.remove(userIDEntity)
+    fun clearEntry(databaseName: String): Boolean {
+        val builder = cache.remove(databaseName)
         builder?.nuke()
         return builder != null
     }

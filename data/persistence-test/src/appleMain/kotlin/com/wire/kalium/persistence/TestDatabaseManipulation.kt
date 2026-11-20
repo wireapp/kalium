@@ -33,13 +33,19 @@ import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
+import kotlin.uuid.Uuid
+
+// Named in-memory databases share data, so a database left open by a failed close would leak rows into the next test for that user.
+private val testDatabaseNames = mutableMapOf<UserIDEntity, String>()
 
 internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder {
-    return inMemoryDatabase(userId, dispatcher)
+    val databaseName = "${FileNameUtil.userDBName(userId)}-${Uuid.random()}"
+    testDatabaseNames[userId] = databaseName
+    return inMemoryDatabase(userId, dispatcher, databaseName)
 }
 
 internal actual fun deleteTestDatabase(userId: UserIDEntity) {
-    clearInMemoryDatabase(userId)
+    testDatabaseNames.remove(userId)?.let { clearInMemoryDatabase(databaseName = it) }
 }
 
 internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {

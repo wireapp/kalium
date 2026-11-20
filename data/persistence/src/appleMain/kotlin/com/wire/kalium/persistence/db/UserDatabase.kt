@@ -110,13 +110,15 @@ actual fun userDatabaseDriverByPath(
  *
  * @param userId The ID of the user for whom the database is created.
  * @param dispatcher The coroutine dispatcher to be used for executing database operations.
+ * @param databaseName The shared in-memory database to use. Databases with the same name share their data.
  * @return The user database builder.
  */
 fun inMemoryDatabase(
     userId: UserIDEntity,
-    dispatcher: CoroutineDispatcher
-): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
-    val rawDriver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema.synchronous()) {
+    dispatcher: CoroutineDispatcher,
+    databaseName: String = FileNameUtil.userDBName(userId)
+): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(databaseName) {
+    val rawDriver = databaseDriver(null, databaseName, UserDatabase.Schema.synchronous()) {
         isWALEnabled = false
     }
 
@@ -148,8 +150,11 @@ fun inMemoryDatabase(
  * @param userId The ID of the user whose database should be cleared.
  * @return `true` if the database was cleared, `false` if it didn't exist.
  */
-fun clearInMemoryDatabase(userId: UserIDEntity): Boolean {
-    return InMemoryDatabaseCache.clearEntry(userId)
+fun clearInMemoryDatabase(userId: UserIDEntity): Boolean = clearInMemoryDatabase(FileNameUtil.userDBName(userId))
+
+/** Clears the in-memory database that [inMemoryDatabase] created under [databaseName]. */
+fun clearInMemoryDatabase(databaseName: String): Boolean {
+    return InMemoryDatabaseCache.clearEntry(databaseName)
 }
 internal actual fun nuke(
     userId: UserIDEntity,
