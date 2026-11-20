@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -35,7 +37,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.logic.sync.receiver.canSucceedLater
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
@@ -132,7 +134,7 @@ internal class MLSRejoinQueueImpl(
             }
             // Sync cannot make progress offline anyway; the batch is replayed once the network is back.
             failure is NetworkFailure.NoNetworkConnection -> throw KaliumSyncException("Rejoining a stale MLS group failed", failure)
-            failure.canSucceedLater() -> {
+            failure.canRejoinLater() -> {
                 logger.w("Deferring the rejoin of ${conversationId.toLogString()} to the next sync start: $failure")
                 deferred += conversationId
             }
@@ -160,4 +162,18 @@ internal class MLSRejoinQueueImpl(
     private companion object {
         val TYPE = PendingActionType.REJOIN_STALE_MLS_GROUP
     }
+}
+
+/**
+ * Server and federation failures a later rejoin can get past. Federation that is refused or conflicting
+ * never resolves, so retrying it would only keep the group's messages ignored.
+ */
+private fun CoreFailure.canRejoinLater(): Boolean = when (this) {
+    is NetworkFailure.FederatedBackendFailure.ConflictingBackends,
+    is NetworkFailure.FederatedBackendFailure.FederationDenied,
+    is NetworkFailure.FederatedBackendFailure.FederationNotEnabled,
+    is NetworkFailure.FederatedBackendFailure.FederationNotImplemented -> false
+    MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
+    is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
+    else -> false
 }

@@ -249,30 +249,25 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenMLSWelcomeHandlerFailsWithRetryableFailure_whenStandardReceive_thenOnlyThatFailureIsPropagated() = runTest {
+    fun givenMLSWelcomeHandlerFails_whenStandardReceive_thenOnlyNoNetworkIsPropagated() = runTest {
         val event = TestEvent.newMLSWelcomeEvent()
-        val retryable = listOf(
-            NetworkFailure.NoNetworkConnection(null),
+        val noNetwork = NetworkFailure.NoNetworkConnection(null)
+        // A Welcome lost to these is recovered by the rejoin the group's next message queues.
+        val ignored = listOf(
             MLSFailure.TransportUnavailable,
             NetworkFailure.ServerMiscommunication(KaliumException.ServerError(GenericAPIErrorResponse(503, "unavailable", "server-error"))),
             NetworkFailure.FederatedBackendFailure.FailedDomains(listOf("remote.example")),
-            NetworkFailure.FederatedBackendFailure.General("federation-remote-error"),
-        )
-        val notRetryable = listOf(
-            NetworkFailure.FederatedBackendFailure.ConflictingBackends(listOf("remote.example")),
             NetworkFailure.FederatedBackendFailure.FederationDenied("federation-denied"),
-            NetworkFailure.FederatedBackendFailure.FederationNotEnabled("federation-not-enabled"),
-            NetworkFailure.FederatedBackendFailure.FederationNotImplemented("federation-not-implemented"),
             NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "denied", "forbidden"))),
         )
-        (retryable + notRetryable).forEach { failure ->
+        (ignored + noNetwork).forEach { failure ->
             val (arrangement, receiver) = Arrangement().arrange {
                 everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(failure)
             }
 
             val result = receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-            assertEquals(if (failure in retryable) Either.Left(failure) else Either.Right(Unit), result, "$failure")
+            assertEquals(if (failure == noNetwork) Either.Left(failure) else Either.Right(Unit), result, "$failure")
         }
     }
 
