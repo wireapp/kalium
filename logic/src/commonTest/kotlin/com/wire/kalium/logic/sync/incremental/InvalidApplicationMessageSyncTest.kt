@@ -56,17 +56,15 @@ import kotlin.time.Instant
 class InvalidApplicationMessageSyncTest {
     @Test
     fun givenInvalidMLSContent_whenSyncing_thenConsumeItAndProcessFollowingEvents() = runTest(TestKaliumDispatcher.default) {
-        verifyInvalidContent(isMLS = true, durable = false)
-        verifyInvalidContent(isMLS = true, durable = true)
+        verifyInvalidContent(isMLS = true)
     }
 
     @Test
     fun givenInvalidProteusContent_whenSyncing_thenConsumeItAndProcessFollowingEvents() = runTest(TestKaliumDispatcher.default) {
-        verifyInvalidContent(isMLS = false, durable = false)
-        verifyInvalidContent(isMLS = false, durable = true)
+        verifyInvalidContent(isMLS = false)
     }
 
-    private suspend fun verifyInvalidContent(isMLS: Boolean, durable: Boolean) {
+    private suspend fun verifyInvalidContent(isMLS: Boolean) {
         val crypto = CryptoTransactionProviderArrangementMokkeryImpl()
         crypto.withTransactionReturning(Either.Right(Unit))
         val database = TestUserDatabase(TestUser.SELF.id.toDao(), dispatcher = TestKaliumDispatcher.default).builder
@@ -74,7 +72,6 @@ class InvalidApplicationMessageSyncTest {
         val mlsRepository = mock<MLSConversationRepository>()
         val mapper = ProtoContentMapperImpl(selfUserId = TestUser.SELF.id)
         val processed = mutableListOf<String>()
-        val recorded = mutableListOf<String>()
         val applications = mock<ApplicationMessageHandler>(MockMode.autoUnit)
         val calling = CallingMessageHandlerImpl(
             TestUser.SELF.id, mock(), lazy { mock(MockMode.autoUnit) }, conversationRepository, mock(), mock(),
@@ -136,25 +133,13 @@ class InvalidApplicationMessageSyncTest {
             database.eventDAO.markEventsAsProcessed(call.args[0] as List<String>)
             Either.Right(Unit)
         }
-        val recovery = mock<EventBatchRecovery>()
-        everySuspend { recovery.wereEffectsProcessed(any(), any()) } returns false
-        everySuspend { recovery.recordProcessed(any(), any()) } calls { call ->
-            @Suppress("UNCHECKED_CAST")
-            recorded += (call.args[1] as List<EventEnvelope>).map { it.event.id }
-        }
-        everySuspend { recovery.acknowledge(any()) } calls { call ->
-            @Suppress("UNCHECKED_CAST")
-            database.eventDAO.markEventsAsProcessed(call.args[0] as List<String>)
-        }
-        val processor = if (durable) EventBatchProcessor.durable(eventProcessor, crypto.cryptoTransactionProvider, database, { recovery })
-        else EventBatchProcessor.standard(eventProcessor, crypto.cryptoTransactionProvider, database, repository)
+        val processor = EventBatchProcessor.standard(eventProcessor, crypto.cryptoTransactionProvider, database, repository)
 
         processor.processBatch(envelopes)
 
         assertEquals(listOf("valid-0", "valid-1", "valid-2"), processed)
         assertTrue(database.eventDAO.observeUnprocessedEvents().first().isEmpty())
         envelopes.forEach { assertTrue(database.eventDAO.getEventById(it.event.id)!!.isProcessed) }
-        if (durable) assertEquals(envelopes.map { it.event.id }, recorded)
     }
 
     private fun malformedPayloads(): List<ByteArray> = listOf(

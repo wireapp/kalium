@@ -21,17 +21,23 @@ package com.wire.kalium.logic.sync.incremental
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
+import com.wire.kalium.logic.sync.receiving.PendingConversationCleanup
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
@@ -44,6 +50,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import okio.ByteString.Companion.encodeUtf8
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -79,6 +86,39 @@ class IncrementalSyncWorkerTest {
             .arrange(consumeCleanup = { order += "cleanup" })
         worker.processEventsFlow().collect()
         assertEquals(listOf("cleanup", "gather"), order)
+    }
+
+    @Test
+    fun pendingCleanupDrainsOldNSERecordsAndWipesQueuedGroups() = runTest(TestKaliumDispatcher.default) {
+        val database = Arrangement().database.builder
+        val crypto = CryptoTransactionProviderArrangementImpl().apply { withTransactionReturning(Either.Right(Unit)) }
+        everySuspend { crypto.mlsContext.conversationExists(any()) } returns true
+        database.pendingActionDAO.upsert(PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity("orphan", "mls"), 1L)
+        database.pendingActionDAO.upsert(PendingActionType.CLEAR_CONVERSATION_CONTENT, QualifiedIDEntity("legacy", "domain"), 1L)
+        // A receive-recovery deletion record as older NSE versions wrote it.
+        val receipt = """{"eventId":"delete-event","payloadHash":"${"a".repeat(64)}"}"""
+        val key = "mls_receive_recovery_v2:${"client".encodeUtf8().sha256().hex()}:deletion:${receipt.encodeUtf8().sha256().hex()}"
+        database.metadataDAO.insertValue(receipt.dropLast(1) + ""","groupId":"deleted"}""", key)
+
+        finishPendingConversationCleanup(database, "client", crypto.cryptoTransactionProvider) {}
+
+        verifySuspend(VerifyMode.exactly(1)) { crypto.mlsContext.wipeConversation("orphan") }
+        verifySuspend(VerifyMode.exactly(1)) { crypto.mlsContext.wipeConversation("deleted") }
+        assertEquals(emptyList(), database.pendingActionDAO.getByActionType(PendingActionType.WIPE_MLS_GROUP))
+        assertEquals(emptyList(), database.pendingActionDAO.getByActionType(PendingActionType.CLEAR_CONVERSATION_CONTENT))
+        assertEquals(null, database.metadataDAO.valueByKey(key))
+    }
+
+    @Test
+    fun queuedGroupWipeStaysQueuedWithoutAnMlsClient() = runTest(TestKaliumDispatcher.default) {
+        val database = Arrangement().database.builder
+        val crypto = CryptoTransactionProviderArrangementImpl().apply { withTransactionReturning(Either.Right(Unit)) }
+        every { crypto.transactionContext.mls } returns null
+        database.pendingActionDAO.upsert(PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity("orphan", "mls"), 1L)
+
+        wipePendingMLSGroups(PendingConversationCleanup(database) {}, database.pendingActionDAO, crypto.cryptoTransactionProvider)
+
+        assertEquals(1, database.pendingActionDAO.getByActionType(PendingActionType.WIPE_MLS_GROUP).size)
     }
 
     @Test

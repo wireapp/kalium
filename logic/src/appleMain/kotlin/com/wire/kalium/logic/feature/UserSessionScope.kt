@@ -82,7 +82,6 @@ internal fun UserSessionScope(
         networkStateObserver,
         logoutCallback,
         syncShutdownCoordinator,
-        enableDurableMLSReceiveRecovery = true,
         resourceAccess = platformUserStorageProperties.accountResourceAccess,
         coreCryptoCentralFactory = coreCryptoCentralFactory,
     )

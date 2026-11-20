@@ -25,7 +25,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
@@ -460,7 +459,6 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.network.guardedBy
 import com.wire.kalium.logic.sync.AvsSyncStateReporter
 import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
-import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
 import com.wire.kalium.logic.sync.SendPendingMessagesUseCase
@@ -483,6 +481,7 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
+import com.wire.kalium.logic.sync.incremental.finishPendingConversationCleanup
 import com.wire.kalium.logic.sync.local.LocalEventManagerImpl
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.local.LocalEventRepositoryImpl
@@ -536,7 +535,6 @@ import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHa
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
-import com.wire.kalium.logic.sync.receiver.conversation.message.AppMLSReceiveRecovery
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
@@ -547,7 +545,6 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
-import com.wire.kalium.logic.sync.receiver.conversation.message.recoveryOrThrow
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
@@ -595,8 +592,6 @@ import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiving.CallPresentationRecord
 import com.wire.kalium.logic.sync.receiving.CallSignalJournal
-import com.wire.kalium.logic.sync.receiving.MLSReceiveRecovery
-import com.wire.kalium.logic.sync.receiving.MLSReceiveRecoveryStore
 import com.wire.kalium.logic.sync.receiving.PendingConversationCleanup
 import com.wire.kalium.logic.sync.receiving.persistAcceptedConnection
 import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
@@ -619,7 +614,6 @@ import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
-import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
@@ -648,7 +642,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
@@ -675,7 +668,6 @@ public class UserSessionScope internal constructor(
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
     private val syncShutdownCoordinator: SyncShutdownCoordinator,
-    private val enableDurableMLSReceiveRecovery: Boolean = false,
     private val resourceAccess: com.wire.kalium.util.AccountResourceAccess? = null,
     private val coreCryptoCentralFactory: suspend (String, ByteArray) -> com.wire.kalium.cryptography.CoreCryptoCentral = { root, key ->
         com.wire.kalium.cryptography.coreCryptoCentral(root, key)
@@ -708,7 +700,6 @@ public class UserSessionScope internal constructor(
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
         override fun invoke() {
             _clientId = null
-            appMLSReceiveRecovery = null
         }
     }
 
@@ -944,8 +935,6 @@ public class UserSessionScope internal constructor(
 
     /** Resume after ownership returns. */
     internal fun resumeSync() {
-        // The extension may have added or retired recovery records meanwhile; reload them on next use.
-        appMLSReceiveRecovery = null
         syncExecutorImpl.resumeExecution()
     }
 
@@ -1659,36 +1648,6 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    private var appMLSReceiveRecovery: AppMLSReceiveRecovery? = null
-    private val receiveRecoveryMutex = Mutex()
-
-    // Apple constructs this scope only while holding the account lease. One cached coordinator
-    // shares its operation index across handlers and batches for this registered client.
-    private suspend fun receiveRecovery(): AppMLSReceiveRecovery? {
-        if (!enableDurableMLSReceiveRecovery) return null
-        return receiveRecoveryMutex.withLock {
-            appMLSReceiveRecovery ?: AppMLSReceiveRecovery(
-                recovery = MLSReceiveRecovery(
-                    MLSReceiveRecoveryStore(
-                        userStorage.database.metadataDAO,
-                        userStorage.database.notificationEventStore,
-                        clientId().recoveryOrThrow().value,
-                    ),
-                    authenticatedNetworkContainer.conversationApi,
-                    userId,
-                ) { context, groupId, groupInfo ->
-                    check(context.joinByExternalCommit(groupInfo) == groupId) { "External join changed the MLS group" }
-                    context.conversationEpoch(groupId)
-                },
-                conversations = conversationRepository,
-                mlsConversations = mlsConversationRepository,
-                persistMessage = persistMessage,
-                selfUserId = userId,
-                selfTeamId = selfTeamId,
-            ).also { appMLSReceiveRecovery = it }
-        }
-    }
-
     private val incrementalSyncWorker: IncrementalSyncWorker by lazy { createIncrementalSyncWorker() }
 
     internal fun createIncrementalSyncWorker(eventGatherer: EventGatherer = this.eventGatherer): IncrementalSyncWorker =
@@ -1704,23 +1663,11 @@ public class UserSessionScope internal constructor(
             logger = userScopedLogger,
             consumePendingLegalHoldTransitions = { legalHoldHandler.recoverPendingTransitions() },
             consumePendingConversationCleanup = {
-                if (enableDurableMLSReceiveRecovery) {
-                    val cleanup = PendingConversationCleanup(userStorage.database) {
-                        kaliumFileSystem.delete(it.toPath(), mustExist = false)
-                    }
-                    cleanup.discardLegacyRequests()
-                    receiveRecovery()?.drainDeletions { cleanup.queueWipe(it) }
-                    if (userStorage.database.pendingActionDAO.getByActionType(
-                            PendingActionType.WIPE_MLS_GROUP
-                        ).isNotEmpty()
-                    ) {
-                        cryptoTransactionProvider.transaction("pending-local-conversation-cleanup") { context ->
-                            Either.Right(cleanup.wipePending(context.mls))
-                        }.getOrFail {
-                            throw KaliumSyncException("Pending local conversation cleanup failed", it)
-                        }.let { cleanup.committed(it) }
-                    }
-                }
+                finishPendingConversationCleanup(
+                    userStorage.database,
+                    clientRepository.currentClientId().getOrNull()?.value,
+                    cryptoTransactionProvider,
+                ) { kaliumFileSystem.delete(it.toPath(), mustExist = false) }
             },
             consumePendingAccountInvalidation = {
                 val client = clientRepository.currentClientId().getOrNull()
@@ -2062,10 +2009,9 @@ public class UserSessionScope internal constructor(
                 conversations.clearConversationAssetsLocally,
                 deleteConversationUseCase,
                 recoverNSEClear = { message, content ->
-                    enableDurableMLSReceiveRecovery &&
-                        PendingConversationCleanup(userStorage.database) {
-                            kaliumFileSystem.delete(it.toPath(), mustExist = false)
-                        }.recover(message.conversationId.toDao(), message.id, content.conversationId.toDao())
+                    PendingConversationCleanup(userStorage.database) {
+                        kaliumFileSystem.delete(it.toPath(), mustExist = false)
+                    }.recover(message.conversationId.toDao(), message.id, content.conversationId.toDao())
                 },
             ),
             DeleteForMeHandlerImpl(
