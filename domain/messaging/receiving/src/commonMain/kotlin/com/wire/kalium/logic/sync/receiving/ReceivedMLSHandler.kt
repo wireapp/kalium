@@ -129,7 +129,8 @@ internal class ReceivedMLSHandler(
         val staleCommit = result is Either.Left && result.value == MLSFailure.StaleCommit
         // After an external join, CoreCrypto reports a message from the replaced epoch as a generic failure,
         // not MessageEpochTooOld. A past epoch's message it cannot decrypt now never becomes decryptable.
-        val pastEpoch = result is Either.Left && result.value is MLSFailure.Other &&
+        // Only that exact failure: CoreCrypto also reports storage errors as Other, and those may pass on retry.
+        val pastEpoch = result is Either.Left && result.value == MLSFailure.Other(CORE_CRYPTO_DECRYPT_FAILURE) &&
             mlsMessageEpoch(message)?.let { it < epoch } == true
         val noBundles = pastEpoch || result is Either.Left && result.value in listOf(
             MLSFailure.StaleCommit, MLSFailure.StaleProposal, MLSFailure.DuplicateMessage,
@@ -174,17 +175,9 @@ internal class ReceivedMLSHandler(
             snapshotVerification(context, event.conversationId, protocol.groupId, payloadId, event.messageInstant)
         }
         if (adoptGroup && event.conversationId !in removed) {
-            val groupId = protocol.groupId
-            val reset = ReceivedPayload.MLSReset(
-                conversationId = event.conversationId,
-                oldGroupId = groupId,
-                newGroupId = groupId,
-                epoch = context.conversationEpoch(groupId),
-                state = ConversationEntity.GroupState.ESTABLISHED,
-            )
-            conversations.resetGroup(reset)
-            // First, so persisting it can't clear a proposal timer this message set.
-            effects.add(0, reset)
+            val epoch = context.conversationEpoch(protocol.groupId)
+            conversations.established(event.conversationId, protocol.groupId, epoch)
+            effects += ReceivedPayload.MLSEstablished(event.conversationId, protocol.groupId, epoch)
         }
         decryptedConversations += event.conversationId
         touchedGroups += protocol.groupId
@@ -394,6 +387,7 @@ internal fun mlsMessageEpoch(message: ByteArray): ULong? = runCatching {
     buffer.readLong().toULong()
 }.getOrNull()
 
+private const val CORE_CRYPTO_DECRYPT_FAILURE = "An application message failed to decrypt"
 private const val MLS_10 = 1
 private const val PUBLIC_MESSAGE = 1
 private const val PRIVATE_MESSAGE = 2
