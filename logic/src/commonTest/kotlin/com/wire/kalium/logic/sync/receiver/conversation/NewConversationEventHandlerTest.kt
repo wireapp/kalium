@@ -222,7 +222,8 @@ class NewConversationEventHandlerTest {
                 event.conversationId,
                 conversationTeamId,
                 true,
-                event.dateTime
+                event.dateTime,
+                any()
             )
         }
     }
@@ -257,7 +258,8 @@ class NewConversationEventHandlerTest {
                 event.conversationId,
                 event.conversation.teamId,
                 false,
-                event.dateTime
+                event.dateTime,
+                any()
             )
         }
     }
@@ -292,7 +294,8 @@ class NewConversationEventHandlerTest {
                 any<ConversationId>(),
                 any<String?>(),
                 any<Boolean>(),
-                any<Instant>()
+                any<Instant>(),
+                any<String>()
             )
         }
     }
@@ -439,7 +442,8 @@ class NewConversationEventHandlerTest {
                     any<ConversationId>(),
                     any<String?>(),
                     any<Boolean>(),
-                    any<Instant>()
+                    any<Instant>(),
+                    any<String>()
                 )
             } returns Unit.right()
         }
@@ -525,7 +529,8 @@ class NewConversationEventHandlerTest {
                     any<ConversationId>(),
                     any<String?>(),
                     any<Boolean>(),
-                    any<Instant>()
+                    any<Instant>(),
+                    any<String>()
                 )
             } returns Unit.right()
         }
