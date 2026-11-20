@@ -43,7 +43,7 @@ internal class DeferredNotification(val failure: KaliumSyncException) : Exceptio
 internal class NotificationOrderingBarrier : Exception("Notification requires the complete event prefix")
 
 internal fun CoreFailure.canDeferNotification(): Boolean = when (this) {
-    is NetworkFailure.NoNetworkConnection, is NetworkFailure.FederatedBackendFailure -> true
+    is NetworkFailure.NoNetworkConnection, MLSFailure.TransportNoNetwork, is NetworkFailure.FederatedBackendFailure -> true
     is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
     MLSFailure.WrongEpoch, MLSFailure.UnmergedPendingGroup, MLSFailure.CommitForMissingProposal,
     MLSFailure.ConversationNotFound, MLSFailure.OrphanWelcome -> true

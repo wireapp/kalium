@@ -5091,6 +5091,55 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun rejoinWithoutNetworkDefersAndRetriesTheSameEvent() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.commit()
+                fixture.commit()
+                val future = fixture.event("future", fixture.encrypt("future"))
+                val groupInfo = checkNotNull(fixture.transport.bundle).groupInfoBundle.payload.drop(4).toByteArray()
+                var online = false
+                val commits = object : com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi by CommitApi() {
+                    override suspend fun sendCommitBundle(bundle: com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi.CommitBundle) =
+                        if (online) CommitApi().sendCommitBundle(bundle) else NetworkResponse.Error(KaliumException.NoNetwork())
+                }
+                var rejoin: ReceivedMLSRejoin? = null
+                val transport = object : MLSTransporter {
+                    override suspend fun sendCommitBundle(commitBundle: CommitBundle) = checkNotNull(rejoin).sendCommitBundle(commitBundle)
+                }
+                val recoveryFactory: (AppleAccountRuntime) -> MLSReceiveRecovery = { runtime ->
+                    val api = object : ConversationApi by runtime.network.conversationApi {
+                        override suspend fun fetchConversationDetails(conversationId: com.wire.kalium.network.api.model.ConversationId) =
+                            NetworkResponse.Success(fixture.creationResponse().copy(epoch = 3uL), emptyMap(), 200)
+                        override suspend fun fetchGroupInfo(conversationId: com.wire.kalium.network.api.model.QualifiedID) =
+                            NetworkResponse.Success(groupInfo, emptyMap(), 200)
+                    }
+                    val received = ReceivedMLSRejoin(commits, runtime.database.metadataDAO).also { rejoin = it }
+                    MLSReceiveRecovery(
+                        MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT),
+                        api, SELF, received::join,
+                    )
+                }
+                fixture.releasePrepared()
+                // The commit POST fails offline: the notification is deferred, not failed or acknowledged.
+                assertIs<Either.Right<*>>(fixture.receive(listOf(future), future.id, recoveryFactory = recoveryFactory, mlsTransport = transport))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(future.id)).isProcessed)
+                    assertEquals(1uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                })
+                online = true
+                val later = Clock.System.now().toEpochMilliseconds() + 60_000
+                assertIs<Either.Right<*>>(fixture.receive(listOf(future), future.id, recoveryFactory = recoveryFactory,
+                    mlsTransport = transport, nowEpochMillis = { later }))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(future.id)).isProcessed)
+                    assertEquals(4uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                })
+            }
+        }
+    }
+
+    @Test
     fun mlsWrongEpochDefersConversationAndKeepsLaterQueuePending() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->

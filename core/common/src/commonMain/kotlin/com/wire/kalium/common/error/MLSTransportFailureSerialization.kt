@@ -34,6 +34,9 @@ internal sealed interface MLSTransportFailure {
     ) : MLSTransportFailure
 
     @Serializable
+    data object NoNetwork : MLSTransportFailure
+
+    @Serializable
     data class Other(
         @SerialName("message") val message: String
     ) : MLSTransportFailure
@@ -44,6 +47,7 @@ object MLSTransportFailureSerialization {
         return when (val failure = KtxSerializer.json.decodeFromString<MLSTransportFailure>(string)) {
             is MLSTransportFailure.MessageRejected -> MLSFailure.MessageRejected(failure.reason)
             is MLSTransportFailure.FederatedBackendConflict -> MLSFailure.FederatedBackendConflict(failure.domains)
+            is MLSTransportFailure.NoNetwork -> MLSFailure.TransportNoNetwork
             is MLSTransportFailure.Other -> MLSFailure.Other(failure.message)
         }
     }
@@ -57,6 +61,8 @@ object MLSTransportFailureSerialization {
             is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
                 MLSTransportFailure.FederatedBackendConflict(failure.domains)
             }
+
+            is NetworkFailure.NoNetworkConnection -> MLSTransportFailure.NoNetwork
 
             else -> MLSTransportFailure.Other(failure.toString())
         }
