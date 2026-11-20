@@ -419,6 +419,22 @@ class LegalHoldHandlerTest {
     }
 
     @Test
+    fun givenDegradedConversation_whenNewMessageWithLegalHoldEnabledIsReplayed_thenTheWarningKeepsTheSameId() = runTest {
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DEGRADED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DEGRADED)
+            .arrange()
+
+        repeat(2) { handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED), false) }
+
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(
+                TestConversation.CONVERSATION.id, any(), "messageUID:legal-hold"
+            )
+        }
+    }
+
+    @Test
     fun givenConversationWithLegalHoldEnabled_whenNewMessageWithLegalHoldEnabled_thenDoNotHandleDisabledForConversation() = runTest {
         // given
         val (arrangement, handler) = Arrangement()

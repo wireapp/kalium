@@ -246,8 +246,13 @@ internal class LegalHoldHandlerImpl internal constructor(
     override suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, isLive: Boolean): Either<CoreFailure, Unit> {
         val systemMessageInstant = message.instant - 1.milliseconds
         val isStatusChangedForConversation = when (val legalHoldStatus = message.content.legalHoldStatus) {
-            Conversation.LegalHoldStatus.ENABLED, Conversation.LegalHoldStatus.DISABLED ->
-                handleForConversation(message.conversationId, legalHoldStatus, systemMessageInstant)
+            // Derived from the message, so a replayed message adds no second notice.
+            Conversation.LegalHoldStatus.ENABLED, Conversation.LegalHoldStatus.DISABLED -> handleForConversation(
+                message.conversationId,
+                legalHoldStatus,
+                systemMessageInstant,
+                "${message.content.messageUid}:legal-hold"
+            )
 
             else -> false
         }
@@ -346,8 +351,8 @@ internal class LegalHoldHandlerImpl internal constructor(
         }
         if (current == newStatus) return@withLock false
         if (current == Conversation.LegalHoldStatus.DEGRADED && newStatus == Conversation.LegalHoldStatus.ENABLED) {
-            // This warning does not mutate status. Keep its existing policy until callers
-            // supply durable event identities; startup replay must not add another warning.
+            // This warning does not mutate status. Only a caller's durable event identity in
+            // noticeId keeps a replay from adding another warning.
             legalHoldSystemMessagesHandler.handleEnabledForConversation(conversationId, systemMessageInstant, noticeId)
             return@withLock true
         }
