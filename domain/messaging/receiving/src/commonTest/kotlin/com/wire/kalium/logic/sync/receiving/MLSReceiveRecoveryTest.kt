@@ -48,6 +48,7 @@ import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.withTestUserDatabase
 import kotlin.io.encoding.Base64
+import okio.ByteString.Companion.encodeUtf8
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -244,13 +245,30 @@ class MLSReceiveRecoveryTest {
         }
     }
 
+    @Test
+    fun deletionFromAnOlderVersionMovesToTheWipeQueueOnce() = runTest {
+        withFixture { f ->
+            // Written exactly as older versions stored it, so the store must still parse it.
+            val receipt = """{"eventId":"delete-event","payloadHash":"${"a".repeat(64)}"}"""
+            val prefix = "mls_receive_recovery_v2:${"client".encodeUtf8().sha256().hex()}:"
+            val key = prefix + "deletion:" + receipt.encodeUtf8().sha256().hex()
+            f.metadata.insertValue(receipt.dropLast(1) + ""","groupId":"$GROUP_ID"}""", key)
+            val queued = mutableListOf<String>()
+            repeat(2) { f.recovery.drainDeletions { queued += it } }
+            MLSReceiveRecoveryStore(f.metadata, f.events, "client").drainDeletions { queued += it }
+            assertEquals(listOf(GROUP_ID), queued)
+            assertTrue(f.metadata.values.isEmpty())
+        }
+    }
+
     private suspend fun TestScope.withFixture(block: suspend (Fixture) -> Unit) {
         withTestUserDatabase(UserIDEntity("recovery-test", "example.com")) { block(Fixture(it)) }
     }
 
     private class Fixture(database: TestUserDatabase) {
         val metadata = FakeMetadata()
-        val store = MLSReceiveRecoveryStore(metadata, database.builder.notificationEventStore, "client")
+        val events = database.builder.notificationEventStore
+        val store = MLSReceiveRecoveryStore(metadata, events, "client")
         val native = FakeMlsContext()
         val api = FakeApi()
         var joins = 0
