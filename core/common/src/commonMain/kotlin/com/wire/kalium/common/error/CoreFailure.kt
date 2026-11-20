@@ -251,8 +251,8 @@ sealed interface MLSFailure : CoreFailure {
     data class MessageRejected(val cause: NetworkFailure.MlsMessageRejectedFailure) : MLSFailure
     data class FederatedBackendConflict(val domains: List<String>) : MLSFailure
 
-    /** CoreCrypto could not send a commit because there was no network. Sending it later may succeed. */
-    data object TransportNoNetwork : MLSFailure
+    /** CoreCrypto could not send a commit: no network, a server error or a federation failure. Sending it later may succeed. */
+    data object TransportUnavailable : MLSFailure
 
     data class Other(val message: String) : MLSFailure
     data class Generic(val rootCause: Throwable) : MLSFailure

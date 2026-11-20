@@ -93,7 +93,7 @@ internal object MLSMessageFailureHandler {
             is NetworkFailure.FederatedBackendFailure.FederationNotImplemented,
             is NetworkFailure.FederatedBackendFailure.General,
             is NetworkFailure.NoNetworkConnection,
-            MLSFailure.TransportNoNetwork,
+            MLSFailure.TransportUnavailable,
             is NetworkFailure.ProxyError,
             is NetworkFailure.ServerMiscommunication,
             is ProteusFailure,

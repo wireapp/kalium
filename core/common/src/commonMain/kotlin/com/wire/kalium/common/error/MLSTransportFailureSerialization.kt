@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.common.error
 
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -34,7 +35,7 @@ internal sealed interface MLSTransportFailure {
     ) : MLSTransportFailure
 
     @Serializable
-    data object NoNetwork : MLSTransportFailure
+    data object Unavailable : MLSTransportFailure
 
     @Serializable
     data class Other(
@@ -47,7 +48,7 @@ object MLSTransportFailureSerialization {
         return when (val failure = KtxSerializer.json.decodeFromString<MLSTransportFailure>(string)) {
             is MLSTransportFailure.MessageRejected -> MLSFailure.MessageRejected(failure.reason)
             is MLSTransportFailure.FederatedBackendConflict -> MLSFailure.FederatedBackendConflict(failure.domains)
-            is MLSTransportFailure.NoNetwork -> MLSFailure.TransportNoNetwork
+            is MLSTransportFailure.Unavailable -> MLSFailure.TransportUnavailable
             is MLSTransportFailure.Other -> MLSFailure.Other(failure.message)
         }
     }
@@ -62,7 +63,12 @@ object MLSTransportFailureSerialization {
                 MLSTransportFailure.FederatedBackendConflict(failure.domains)
             }
 
-            is NetworkFailure.NoNetworkConnection -> MLSTransportFailure.NoNetwork
+            is NetworkFailure.NoNetworkConnection, is NetworkFailure.FederatedBackendFailure -> MLSTransportFailure.Unavailable
+            is NetworkFailure.ServerMiscommunication -> if (failure.kaliumException is KaliumException.ServerError) {
+                MLSTransportFailure.Unavailable
+            } else {
+                MLSTransportFailure.Other(failure.toString())
+            }
 
             else -> MLSTransportFailure.Other(failure.toString())
         }
