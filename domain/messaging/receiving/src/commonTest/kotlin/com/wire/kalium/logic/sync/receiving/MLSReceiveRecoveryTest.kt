@@ -4,6 +4,9 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
@@ -216,6 +219,31 @@ class MLSReceiveRecoveryTest {
         }
     }
 
+    @Test
+    fun missingGroupRetriesNetworkFailuresButSkipsAnyOtherRejoinFailure() = runTest {
+        withFixture { f ->
+            f.native.exists = false
+            f.api.groupInfoFailure = KaliumException.NoNetwork()
+            assertFailsWith<KaliumSyncException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
+            assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
+            f.api.groupInfoFailure = null
+            f.failure = IllegalStateException("External commit rejected")
+            assertNull(f.recovery.resume(f.native, EVENT))
+            assertNull(f.store.find(EVENT.id) { CIPHERTEXT })
+            f.store.recordProcessed(f.native, listOf(EVENT)) // The skipped event can still be acknowledged.
+        }
+    }
+
+    @Test
+    fun staleExternalCommitRetriesOnceWithFreshGroupInfo() = runTest {
+        withFixture { f ->
+            f.failOnce = KaliumSyncException("rejected", MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.StaleMessage))
+            assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+            assertEquals(2, f.joins)
+            assertEquals(2, f.api.groupInfoReads)
+        }
+    }
+
     private suspend fun TestScope.withFixture(block: suspend (Fixture) -> Unit) {
         withTestUserDatabase(UserIDEntity("recovery-test", "example.com")) { block(Fixture(it)) }
     }
@@ -227,6 +255,7 @@ class MLSReceiveRecoveryTest {
         val api = FakeApi()
         var joins = 0
         var failure: Exception? = null
+        var failOnce: Exception? = null
         val recovery = MLSReceiveRecovery(store, api, SELF) { context, groupId, groupInfo ->
             assertEquals(native, context)
             assertEquals(GROUP_ID, groupId)
@@ -234,6 +263,7 @@ class MLSReceiveRecoveryTest {
             assertNotNull(store.find(EVENT.id) { CIPHERTEXT })
             joins++
             failure?.let { throw it }
+            failOnce?.let { failOnce = null; throw it }
             native.exists = true
             native.epoch++
             native.epoch
@@ -246,6 +276,7 @@ class MLSReceiveRecoveryTest {
         var groupInfoReads = 0
         var groupInfo = byteArrayOf(1, 2)
         var detailsFailure: KaliumException? = null
+        var groupInfoFailure: KaliumException? = null
         override suspend fun fetchConversationsIds(
             pagingState: String?
         ): NetworkResponse<ConversationPagingResponse> = error("Unexpected API call")
@@ -292,7 +323,10 @@ class MLSReceiveRecoveryTest {
         ): NetworkResponse<ConversationRenameResponse> = error("Unexpected API call")
         override suspend fun fetchGroupInfo(
             conversationId: QualifiedID
-        ): NetworkResponse<ByteArray> { groupInfoReads++; return NetworkResponse.Success(groupInfo, emptyMap(), 200) }
+        ): NetworkResponse<ByteArray> {
+            groupInfoReads++
+            return groupInfoFailure?.let { NetworkResponse.Error(it) } ?: NetworkResponse.Success(groupInfo, emptyMap(), 200)
+        }
         override suspend fun joinConversation(
             code: String,
             key: String,

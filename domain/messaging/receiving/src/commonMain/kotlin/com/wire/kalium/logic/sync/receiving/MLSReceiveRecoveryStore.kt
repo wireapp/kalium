@@ -74,6 +74,17 @@ class MLSReceiveRecoveryStore(
         operation
     }
 
+    /** Retires an unfinished intent, so its event can be acknowledged without a completed join. */
+    suspend fun abandon(operation: PendingMLSReceiveRecovery) = mutex.withLock {
+        val entries = load()
+        val key = prefix + operation.id
+        if (key !in entries.operations) return@withLock
+        uncertainWrite {
+            metadata.deleteValue(key)
+            pending = entries.copy(operations = entries.operations - key)
+        }
+    }
+
     /** Preserve the exact group before SQL deletion; acknowledgement alone retires this intent. */
     suspend fun prepareDeletion(
         payload: ReceivedPayloadIdentity,

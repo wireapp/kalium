@@ -39,11 +39,16 @@ internal fun notificationDependencies(payload: List<EventContentDTO>): Set<Notif
 internal class DeferredNotification(val failure: KaliumSyncException) : Exception("Notification dependency deferred", failure)
 internal class NotificationOrderingBarrier : Exception("Notification requires the complete event prefix")
 
-internal fun CoreFailure.canDeferNotification(): Boolean = when (this) {
-    is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
-    is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
+internal fun CoreFailure.canDeferNotification(): Boolean = isTransientNetworkFailure() || when (this) {
     MLSFailure.WrongEpoch, MLSFailure.UnmergedPendingGroup, MLSFailure.CommitForMissingProposal,
     MLSFailure.ConversationNotFound, MLSFailure.OrphanWelcome -> true
+    else -> false
+}
+
+/** No connection, a federated backend failure, or a server error: the same request may succeed later. */
+internal fun CoreFailure.isTransientNetworkFailure(): Boolean = when (this) {
+    is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
+    is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
     else -> false
 }
 
@@ -56,6 +61,7 @@ internal fun ReceivedPayload.canCrossNotificationGap(): Boolean = when (this) {
         else -> false
     }
     is ReceivedPayload.Creation, is ReceivedPayload.System, is ReceivedPayload.Profiles,
-    is ReceivedPayload.DecryptionFailure, is ReceivedPayload.Proposal, is ReceivedPayload.ClearProposalTimer -> true
+    is ReceivedPayload.DecryptionFailure, is ReceivedPayload.Proposal, is ReceivedPayload.ClearProposalTimer,
+    is ReceivedPayload.MLSEstablished -> true
     else -> false
 }

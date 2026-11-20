@@ -165,7 +165,9 @@ internal class NewMessageEventHandlerImpl(
         val result: Either<CoreFailure, Unit> = when (unpackResult) {
             is Either.Left -> {
                 val failure = unpackResult.value
-                if (failure is MLSFailure.WrongEpoch && event.subconversationId == null &&
+                // No local group for the main conversation means local state was lost; subconversations stay ignored.
+                val needsRejoin = failure is MLSFailure.WrongEpoch || failure is MLSFailure.ConversationNotFound
+                if (needsRejoin && event.subconversationId == null &&
                     recovery?.invoke(transactionContext, event, true) == true
                 ) return Either.Right(Unit)
                 when (MLSMessageFailureHandler.handleFailure(failure)) {
