@@ -41,7 +41,6 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
@@ -104,14 +103,13 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenNewMLSMessageHandlerFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
+    fun givenNewMLSMessageHandlerFails_thenFailureIsPropagated() = runTest {
         val event = TestEvent.newMLSMessageEvent(Instant.DISTANT_FUTURE)
         val (arrangement, receiver) = Arrangement().arrange {
             everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), event, any()) } returns Either.Left(failure)
         }
 
-        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
-        receiver.onEvent(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
+        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             .shouldFail { assertEquals(failure, it) }
     }
 
@@ -232,18 +230,6 @@ class ConversationEventReceiverTest {
             arrangement.mlsWelcomeEventHandler.handle(any(), mlsWelcomeEvent)
         }
         result.shouldSucceed()
-    }
-
-    @Test
-    fun givenMLSWelcomeHandlerFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
-        val event = TestEvent.newMLSWelcomeEvent()
-        val (arrangement, receiver) = Arrangement().arrange {
-            everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(failure)
-        }
-
-        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
-        receiver.onEvent(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
-            .shouldFail { assertEquals(failure, it) }
     }
 
     @Test

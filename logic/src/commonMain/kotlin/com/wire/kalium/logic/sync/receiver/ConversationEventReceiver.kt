@@ -40,7 +40,6 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
@@ -91,10 +90,7 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.NewMLSMessage -> {
-                val result = newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
-                if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
-            }
+            is Event.Conversation.NewMLSMessage -> newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
 
             is Event.Conversation.NewConversation -> {
                 newConversationHandler.handle(transactionContext, event)
@@ -123,7 +119,7 @@ internal class ConversationEventReceiverImpl(
                 // Network failures must be retried, otherwise the welcome is lost and the conversation never appears.
                 // Any other lost Welcome is recovered by a rejoin. Its conversation may be unknown, so its messages
                 // cannot queue one: queue it here, after this batch.
-                val propagate = transactionContext is DurableMLSReceiveContext || failure is NetworkFailure.NoNetworkConnection
+                val propagate = failure is NetworkFailure.NoNetworkConnection
                 if (failure == null || propagate) result else Either.Right(Unit).also { rejoinQueue.request(event.conversationId) }
             }
 
