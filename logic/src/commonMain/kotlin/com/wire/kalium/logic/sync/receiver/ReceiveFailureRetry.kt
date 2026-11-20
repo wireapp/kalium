@@ -24,10 +24,14 @@ import com.wire.kalium.network.exceptions.KaliumException
 
 /**
  * Whether receiving work that failed this way can succeed when its event is processed again.
- * The NSE's network rule, except conflicting federated backends, which no retry resolves.
+ * The NSE's network rule, except federation that is refused or conflicting, which no retry resolves:
+ * retrying those would fail the same batch on every sync restart.
  */
 internal fun CoreFailure.canSucceedLater(): Boolean = when (this) {
-    is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> false
+    is NetworkFailure.FederatedBackendFailure.ConflictingBackends,
+    is NetworkFailure.FederatedBackendFailure.FederationDenied,
+    is NetworkFailure.FederatedBackendFailure.FederationNotEnabled,
+    is NetworkFailure.FederatedBackendFailure.FederationNotImplemented -> false
     is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
     is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
     else -> false

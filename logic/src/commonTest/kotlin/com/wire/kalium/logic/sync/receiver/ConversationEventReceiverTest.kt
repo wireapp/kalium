@@ -256,9 +256,13 @@ class ConversationEventReceiverTest {
             MLSFailure.TransportUnavailable,
             NetworkFailure.ServerMiscommunication(KaliumException.ServerError(GenericAPIErrorResponse(503, "unavailable", "server-error"))),
             NetworkFailure.FederatedBackendFailure.FailedDomains(listOf("remote.example")),
+            NetworkFailure.FederatedBackendFailure.General("federation-remote-error"),
         )
         val notRetryable = listOf(
             NetworkFailure.FederatedBackendFailure.ConflictingBackends(listOf("remote.example")),
+            NetworkFailure.FederatedBackendFailure.FederationDenied("federation-denied"),
+            NetworkFailure.FederatedBackendFailure.FederationNotEnabled("federation-not-enabled"),
+            NetworkFailure.FederatedBackendFailure.FederationNotImplemented("federation-not-implemented"),
             NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "denied", "forbidden"))),
         )
         (retryable + notRetryable).forEach { failure ->
