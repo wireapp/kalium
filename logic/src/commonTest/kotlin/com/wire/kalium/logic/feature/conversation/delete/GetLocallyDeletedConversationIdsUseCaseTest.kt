@@ -10,7 +10,6 @@
 package com.wire.kalium.logic.feature.conversation.delete
 
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -23,12 +22,12 @@ import kotlin.test.assertEquals
 class GetLocallyDeletedConversationIdsUseCaseTest {
     @Test
     fun givenLocallyDeletedConversations_whenInvoked_thenReturnsTheirIds() = runTest {
-        val repository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val store = mock<LocalDeletionStore>(mode = MockMode.autoUnit)
         val expected = listOf(ConversationId("conversation", "example.com"))
-        everySuspend { repository.getLocallyDeletedConversationIds() } returns Either.Right(expected)
+        everySuspend { store.getPending() } returns Either.Right(expected)
 
-        val result = GetLocallyDeletedConversationIdsUseCaseImpl(repository)()
+        val result = GetLocallyDeletedConversationIdsUseCaseImpl(store)()
 
-        assertEquals(Either.Right(expected), result)
+        assertEquals(GetLocallyDeletedConversationIdsResult.Success(expected), result)
     }
 }

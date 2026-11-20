@@ -49,6 +49,7 @@ class DeleteConversationLocallyUseCaseTest {
 
         assertIs<ClearConversationContentUseCase.Result.Success>(result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), true) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.localDeletionStore.acknowledge(CONVERSATION_ID) }
     }
 
     @Test
@@ -61,11 +62,13 @@ class DeleteConversationLocallyUseCaseTest {
 
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), true) }
+        verifySuspend(VerifyMode.not) { arrangement.localDeletionStore.acknowledge(any()) }
     }
 
     private class Arrangement {
 
         val clearConversationContent = mock<ClearConversationContentUseCase>(mode = MockMode.autoUnit)
+        val localDeletionStore = mock<LocalDeletionStore>(mode = MockMode.autoUnit)
 
         suspend fun withClearLocalAsset(isSuccess: Boolean) = apply {
             everySuspend { clearConversationContent(any(), any()) } returns (
@@ -75,7 +78,8 @@ class DeleteConversationLocallyUseCaseTest {
         }
 
         fun arrange(): Pair<Arrangement, DeleteConversationLocallyUseCase> = run {
-            val useCase = DeleteConversationLocallyUseCaseImpl(clearConversationContent = clearConversationContent)
+            everySuspend { localDeletionStore.acknowledge(any()) } returns Either.Right(Unit)
+            val useCase = DeleteConversationLocallyUseCaseImpl(clearConversationContent, localDeletionStore)
             this to useCase
         }
     }
