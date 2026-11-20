@@ -21,6 +21,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -28,7 +29,11 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import com.wire.kalium.logic.data.id.GroupID
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.time.Instant
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 
@@ -248,6 +253,22 @@ class SystemMessageInserterTest {
                 }
             )
         }
+    }
+
+    @Test
+    fun givenTheSameRejoin_whenInsertingLostCommitMessageTwice_thenBothUseTheSameId() = runTest {
+        val (arrangement, systemMessageInserter) = Arrangement().arrange()
+        val ids = mutableListOf<String>()
+        everySuspend { arrangement.persistMessage(any()) } calls {
+            ids += (it.args[0] as Message.Standalone).id
+            Unit.right()
+        }
+
+        repeat(2) { systemMessageInserter.insertLostCommitSystemMessage(MockConversation.ID, GroupID("group"), 5UL, Instant.DISTANT_PAST) }
+        systemMessageInserter.insertLostCommitSystemMessage(MockConversation.ID, GroupID("group"), 6UL, Instant.DISTANT_PAST)
+
+        assertEquals(ids[0], ids[1])
+        assertNotEquals(ids[0], ids[2])
     }
 
     private class Arrangement {

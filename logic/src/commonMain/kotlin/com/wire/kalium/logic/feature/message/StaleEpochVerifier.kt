@@ -90,20 +90,43 @@ internal class StaleEpochVerifierImpl(
                 groupId = remoteMlsInfo.groupId,
                 remoteEpoch = remoteMlsInfo.epoch,
                 timestamp = timestamp
-            ).map { it.isLocalEpochStale }
-        }.flatMap { hasMissedCommits ->
-            if (hasMissedCommits) {
-                logger.w("Epoch stale due to missing commits, re-joining")
-                joinExistingMLSConversation(transactionContext, conversationId).flatMap {
-                    systemMessageInserter.insertLostCommitSystemMessage(
-                        conversationId,
-                        Clock.System.now()
-                    )
+            ).flatMap { comparison ->
+                if (comparison.isLocalEpochStale) {
+                    logger.w("Epoch stale due to missing commits, re-joining")
+                    rejoinAndWarn(transactionContext, conversationId)
+                } else {
+                    logger.i("Epoch stale due to unprocessed events")
+                    Either.Right(Unit)
                 }
-            } else {
-                logger.i("Epoch stale due to unprocessed events")
-                Either.Right(Unit)
             }
+        }
+    }
+
+    @OptIn(ConversationPersistenceApi::class)
+    private suspend fun rejoinAndWarn(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> = joinExistingMLSConversation(transactionContext, conversationId).flatMap {
+        // A join that resets the conversation moves it to a new group, so read the group again.
+        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { it.toRemoteMLSConversationInfo() }
+    }.flatMap { (groupId) ->
+        localEpochIfGroupExists(transactionContext, groupId).flatMap { rejoinedEpoch ->
+            if (rejoinedEpoch == null) {
+                // The join use case skips some failures (for example missing group info) without joining.
+                logger.w("Rejoin left no local group for ${conversationId.toLogString()}")
+                Either.Right(Unit)
+            } else {
+                systemMessageInserter.insertLostCommitSystemMessage(conversationId, groupId, rejoinedEpoch, Clock.System.now())
+            }
+        }
+    }
+
+    private suspend fun localEpochIfGroupExists(
+        transactionContext: CryptoTransactionContext,
+        groupId: GroupID
+    ): Either<CoreFailure, ULong?> = transactionContext.wrapInMLSContext { mlsContext ->
+        mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, groupId).flatMap { exists ->
+            if (exists) mlsConversationRepository.getLocalGroupEpoch(mlsContext, groupId) else Either.Right(null)
         }
     }
 
@@ -151,9 +174,26 @@ internal class StaleEpochVerifierImpl(
         groupId: GroupID,
         remoteEpoch: ULong,
         timestamp: Instant?
-    ): Either<CoreFailure, EpochComparison> = transactionContext.wrapInMLSContext {
-        mlsConversationRepository.getLocalGroupEpoch(it, groupId)
-    }.map { localEpoch ->
+    ): Either<CoreFailure, EpochComparison> {
+        val localEpoch = if (subConversationId == null) {
+            // A main conversation's group CoreCrypto lacks was lost locally: it is behind any remote epoch.
+            localEpochIfGroupExists(transactionContext, groupId)
+        } else {
+            // Leaving a subconversation removes its group on purpose, so a missing one stays a failure.
+            transactionContext.wrapInMLSContext { mlsConversationRepository.getLocalGroupEpoch(it, groupId) }
+        }
+        return localEpoch.map { compareAndLog(it, remoteEpoch, conversationId, subConversationId, groupId, timestamp) }
+    }
+
+    @Suppress("LongParameterList")
+    private fun compareAndLog(
+        localEpoch: ULong?,
+        remoteEpoch: ULong,
+        conversationId: ConversationId,
+        subConversationId: SubconversationId?,
+        groupId: GroupID,
+        timestamp: Instant?
+    ): EpochComparison =
         EpochComparison(localEpoch, remoteEpoch).also { comparison ->
             logger.logStructuredJson(
                 level = if (comparison.isLocalEpochStale) KaliumLogLevel.WARN else KaliumLogLevel.INFO,
@@ -162,9 +202,9 @@ internal class StaleEpochVerifierImpl(
                     "conversationId" to conversationId.toLogString(),
                     "subConversationId" to subConversationId?.toLogString(),
                     "groupId" to groupId.toLogString(),
-                    "localEpoch" to comparison.localEpoch.toString(),
+                    "localEpoch" to (comparison.localEpoch?.toString() ?: "MISSING"),
                     "remoteEpoch" to comparison.remoteEpoch.toString(),
-                    "epochGap" to comparison.epochGap.toString(),
+                    "epochGap" to comparison.epochGap?.toString(),
                     "epochState" to comparison.state.name,
                     "trigger" to if (timestamp == null) "SEND_FAILURE" else "RECEIVE_FAILURE",
                     "messageTimestamp" to timestamp,
@@ -176,7 +216,6 @@ internal class StaleEpochVerifierImpl(
                 )
             )
         }
-    }
 
     @OptIn(ConversationPersistenceApi::class)
     private suspend fun getUpdatedConversationProtocolInfo(
@@ -196,7 +235,7 @@ internal class StaleEpochVerifierImpl(
 
     private fun Conversation.ProtocolInfo.toRemoteMLSConversationInfo(): Either<CoreFailure, RemoteMLSConversationInfo> {
         return when (this) {
-            !is Conversation.ProtocolInfo.MLS ->
+            !is Conversation.ProtocolInfo.MLSCapable ->
                 Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
 
             else ->
@@ -209,19 +248,22 @@ internal class StaleEpochVerifierImpl(
         val epoch: ULong
     )
 
+    /** A null [localEpoch] means CoreCrypto has no group for the conversation. */
     private data class EpochComparison(
-        val localEpoch: ULong,
+        val localEpoch: ULong?,
         val remoteEpoch: ULong
     ) {
-        val isLocalEpochStale: Boolean = localEpoch < remoteEpoch
-        val epochGap: ULong = if (isLocalEpochStale) remoteEpoch - localEpoch else localEpoch - remoteEpoch
+        val isLocalEpochStale: Boolean = localEpoch == null || localEpoch < remoteEpoch
+        val epochGap: ULong? = localEpoch?.let { if (it < remoteEpoch) remoteEpoch - it else it - remoteEpoch }
         val state: State = when {
-            isLocalEpochStale -> State.LOCAL_BEHIND_REMOTE
+            localEpoch == null -> State.LOCAL_GROUP_MISSING
+            localEpoch < remoteEpoch -> State.LOCAL_BEHIND_REMOTE
             localEpoch > remoteEpoch -> State.LOCAL_AHEAD_OF_REMOTE
             else -> State.IN_SYNC
         }
 
         enum class State {
+            LOCAL_GROUP_MISSING,
             LOCAL_BEHIND_REMOTE,
             IN_SYNC,
             LOCAL_AHEAD_OF_REMOTE

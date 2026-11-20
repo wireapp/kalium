@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.conversation.isPastEpochDecryptFailure
 import com.wire.kalium.logic.data.conversation.proposalCommitDeadline
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -199,7 +200,7 @@ internal class MLSMessageUnpackerImpl(
         messageEvent: Event.Conversation.NewMLSMessage,
         groupId: GroupID
     ): Either<CoreFailure, List<DecryptedMessageBundle>> {
-        val result = mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), groupId)
+        val result = decryptMessage(mlsContext, messageEvent, groupId)
         val bufferType = when ((result as? Either.Left)?.value) {
             MLSFailure.BufferedFutureMessage -> "FUTURE_MESSAGE"
             MLSFailure.BufferedCommit -> "COMMIT"
@@ -218,6 +219,26 @@ internal class MLSMessageUnpackerImpl(
             }
         )
         return result
+    }
+
+    private suspend fun decryptMessage(
+        mlsContext: MlsCoreCryptoContext,
+        messageEvent: Event.Conversation.NewMLSMessage,
+        groupId: GroupID
+    ): Either<CoreFailure, List<DecryptedMessageBundle>> {
+        val message = Base64.decode(messageEvent.content)
+        val result = mlsConversationRepository.decryptMessage(mlsContext, message, groupId)
+        // An external rejoin replaces the group, so a message from before it fails generically and never decrypts.
+        val pastEpoch = result is Either.Left && isPastEpochDecryptFailure(result.value, message) {
+            mlsConversationRepository.getLocalGroupEpoch(mlsContext, groupId).getOrNull()
+        }
+        if (!pastEpoch) return result
+        logger.logStructuredJson(
+            level = KaliumLogLevel.INFO,
+            leadingMessage = "Skipping MLS message from a past epoch",
+            jsonStringKeyValues = messageEvent.toLogMap() + ("groupId" to groupId.toLogString())
+        )
+        return Either.Left(MLSFailure.MessageEpochTooOld)
     }
 }
 
