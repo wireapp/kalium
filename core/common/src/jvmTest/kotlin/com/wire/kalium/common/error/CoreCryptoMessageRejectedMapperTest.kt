@@ -67,4 +67,12 @@ class CoreCryptoMessageRejectedMapperTest {
         assertSame(original, result.cause)
     }
 
+    @Test
+    fun givenNoNetworkTransportRejection_whenCommonizing_thenStaysANetworkFailure() {
+        val serializedReason = MLSTransportFailureSerialization.serialize(NetworkFailure.NoNetworkConnection(null))
+
+        val result = commonizeMLSException(CoreCryptoException.Mls(MlsException.MessageRejected(serializedReason)))
+
+        assertEquals(MLSFailure.TransportNoNetwork, result.failure)
+    }
 }
