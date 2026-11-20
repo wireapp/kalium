@@ -1662,8 +1662,9 @@ public class UserSessionScope internal constructor(
     private var appMLSReceiveRecovery: AppMLSReceiveRecovery? = null
     private val receiveRecoveryMutex = Mutex()
 
-    // Apple constructs this scope only while holding the account lease. One cached coordinator
-    // shares its operation index across handlers and batches for this registered client.
+    // Apple constructs this scope only while holding the account lease. The app receives events with
+    // the standard batch processor; this coordinator stays only for records the notification
+    // extension's recovery store hands over, until that store is removed.
     private suspend fun receiveRecovery(): AppMLSReceiveRecovery? {
         if (!enableDurableMLSReceiveRecovery) return null
         return receiveRecoveryMutex.withLock {
@@ -1694,23 +1695,13 @@ public class UserSessionScope internal constructor(
     internal fun createIncrementalSyncWorker(eventGatherer: EventGatherer = this.eventGatherer): IncrementalSyncWorker =
         IncrementalSyncWorkerImpl(
             eventGatherer,
-            batchProcessor = if (enableDurableMLSReceiveRecovery) {
-                EventBatchProcessor.durable(
-                    eventProcessor = eventProcessor,
-                    transactionProvider = cryptoTransactionProvider,
-                    databaseBuilder = userStorage.database,
-                    recovery = { checkNotNull(receiveRecovery()) },
-                    logger = userScopedLogger,
-                )
-            } else {
-                EventBatchProcessor.standard(
-                    eventProcessor = eventProcessor,
-                    transactionProvider = cryptoTransactionProvider,
-                    databaseBuilder = userStorage.database,
-                    eventRepository = eventRepository,
-                    logger = userScopedLogger,
-                )
-            },
+            batchProcessor = EventBatchProcessor.standard(
+                eventProcessor = eventProcessor,
+                transactionProvider = cryptoTransactionProvider,
+                databaseBuilder = userStorage.database,
+                eventRepository = eventRepository,
+                logger = userScopedLogger,
+            ),
             logger = userScopedLogger,
             consumePendingLegalHoldTransitions = { legalHoldHandler.recoverPendingTransitions() },
             consumePendingConversationCleanup = {
@@ -2150,9 +2141,6 @@ public class UserSessionScope internal constructor(
                 resetMLSConversation = resetMlsConversation,
             ),
             mlsRejoinQueue,
-            receiveRecovery = if (enableDurableMLSReceiveRecovery) {
-                { context, event, needsRejoin -> receiveRecovery()?.handle(context, event, needsRejoin) == true }
-            } else null,
         )
 
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
