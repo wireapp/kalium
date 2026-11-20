@@ -149,6 +149,10 @@ abstract fun interface com.wire.kalium.logic.feature.connection/UnblockUserUseCa
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.connection/UnblockUserResult // com.wire.kalium.logic.feature.connection/UnblockUserUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
+abstract fun interface com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsUseCase { // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsUseCase.invoke|invoke(){}[0]
+}
+
 abstract fun interface com.wire.kalium.logic.feature.conversation.folder/GetFavoriteFolderUseCase { // com.wire.kalium.logic.feature.conversation.folder/GetFavoriteFolderUseCase|null[0]
     abstract suspend fun invoke(): com.wire.kalium.logic.feature.conversation.folder/GetFavoriteFolderUseCase.Result // com.wire.kalium.logic.feature.conversation.folder/GetFavoriteFolderUseCase.invoke|invoke(){}[0]
 
@@ -3018,6 +3022,34 @@ sealed interface com.wire.kalium.logic.feature.conversation.createconversation/C
     }
 }
 
+sealed interface com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult { // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult|null[0]
+    final class Failure : com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult { // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val failure // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure.failure|{}failure[0]
+            final fun <get-failure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+
+        final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Failure.toString|toString(){}[0]
+    }
+
+    final class Success : com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult { // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success|null[0]
+        constructor <init>(kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID>) // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success.<init>|<init>(kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>){}[0]
+
+        final val conversationIds // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success.conversationIds|{}conversationIds[0]
+            final fun <get-conversationIds>(): kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success.conversationIds.<get-conversationIds>|<get-conversationIds>(){}[0]
+
+        final fun component1(): kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success.component1|component1(){}[0]
+        final fun copy(kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> = ...): com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success.copy|copy(kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsResult.Success.toString|toString(){}[0]
+    }
+}
+
 sealed interface com.wire.kalium.logic.feature.conversation.guestroomlink/GenerateGuestRoomLinkResult { // com.wire.kalium.logic.feature.conversation.guestroomlink/GenerateGuestRoomLinkResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.conversation.guestroomlink/GenerateGuestRoomLinkResult { // com.wire.kalium.logic.feature.conversation.guestroomlink/GenerateGuestRoomLinkResult.Failure|null[0]
         constructor <init>(com.wire.kalium.common.error/NetworkFailure) // com.wire.kalium.logic.feature.conversation.guestroomlink/GenerateGuestRoomLinkResult.Failure.<init>|<init>(com.wire.kalium.common.error.NetworkFailure){}[0]
@@ -4950,6 +4982,8 @@ final class com.wire.kalium.logic.feature.conversation/ConversationScope { // co
         final fun <get-getConversations>(): com.wire.kalium.logic.feature.conversation/GetConversationsUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.getConversations.<get-getConversations>|<get-getConversations>(){}[0]
     final val getFavoriteFolder // com.wire.kalium.logic.feature.conversation/ConversationScope.getFavoriteFolder|{}getFavoriteFolder[0]
         final fun <get-getFavoriteFolder>(): com.wire.kalium.logic.feature.conversation.folder/GetFavoriteFolderUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.getFavoriteFolder.<get-getFavoriteFolder>|<get-getFavoriteFolder>(){}[0]
+    final val getLocallyDeletedConversationIdsUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.getLocallyDeletedConversationIdsUseCase|{}getLocallyDeletedConversationIdsUseCase[0]
+        final fun <get-getLocallyDeletedConversationIdsUseCase>(): com.wire.kalium.logic.feature.conversation.delete/GetLocallyDeletedConversationIdsUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.getLocallyDeletedConversationIdsUseCase.<get-getLocallyDeletedConversationIdsUseCase>|<get-getLocallyDeletedConversationIdsUseCase>(){}[0]
     final val getMembersToMention // com.wire.kalium.logic.feature.conversation/ConversationScope.getMembersToMention|{}getMembersToMention[0]
         final fun <get-getMembersToMention>(): com.wire.kalium.logic.feature.conversation/MembersToMentionUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.getMembersToMention.<get-getMembersToMention>|<get-getMembersToMention>(){}[0]
     final val getOneToOneConversation // com.wire.kalium.logic.feature.conversation/ConversationScope.getOneToOneConversation|{}getOneToOneConversation[0]

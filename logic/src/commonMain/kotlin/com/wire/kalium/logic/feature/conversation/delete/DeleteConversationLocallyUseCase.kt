@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.conversation.delete
 
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.conversation.LocalDeletionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 
@@ -36,10 +38,19 @@ public interface DeleteConversationLocallyUseCase {
 }
 
 internal class DeleteConversationLocallyUseCaseImpl(
-    private val clearConversationContent: ClearConversationContentUseCase
+    private val clearConversationContent: ClearConversationContentUseCase,
+    private val localDeletionRepository: LocalDeletionRepository,
 ) : DeleteConversationLocallyUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): ClearConversationContentUseCase.Result {
-        return clearConversationContent(conversationId, true)
+        return when (val result = clearConversationContent(conversationId, true)) {
+            ClearConversationContentUseCase.Result.Success -> {
+                localDeletionRepository.acknowledge(conversationId).fold(
+                    { ClearConversationContentUseCase.Result.Failure(it) },
+                    { result },
+                )
+            }
+            is ClearConversationContentUseCase.Result.Failure -> result
+        }
     }
 }

@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.PersistentLocalDeletionRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -64,6 +65,8 @@ import com.wire.kalium.logic.feature.conversation.createconversation.GroupConver
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationLocallyUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationLocallyUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import com.wire.kalium.logic.feature.conversation.delete.GetLocallyDeletedConversationIdsUseCase
+import com.wire.kalium.logic.feature.conversation.delete.GetLocallyDeletedConversationIdsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.delete.MarkConversationAsDeletedLocallyUseCase
 import com.wire.kalium.logic.feature.conversation.delete.MarkConversationAsDeletedLocallyUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
@@ -367,10 +370,13 @@ public class ConversationScope internal constructor(
         )
 
     public val markConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
-        get() = MarkConversationAsDeletedLocallyUseCaseImpl(conversationRepository)
+        get() = MarkConversationAsDeletedLocallyUseCaseImpl(PersistentLocalDeletionRepository(userStorage.database))
+
+    public val getLocallyDeletedConversationIdsUseCase: GetLocallyDeletedConversationIdsUseCase
+        get() = GetLocallyDeletedConversationIdsUseCaseImpl(PersistentLocalDeletionRepository(userStorage.database))
 
     public val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
-        get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent)
+        get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent, PersistentLocalDeletionRepository(userStorage.database))
 
     public val joinConversationViaCode: JoinConversationViaCodeUseCase
         get() = JoinConversationViaCodeUseCase(
