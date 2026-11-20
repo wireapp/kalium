@@ -16,121 +16,77 @@ import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.tools.KtxSerializer
 import kotlin.io.encoding.Base64
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import okio.ByteString.Companion.encodeUtf8
+import okio.ByteString.Companion.toByteString
 
-/** Validated recovery output; callers persist canonical metadata and warning effects before acknowledgement. */
+/** Validated rejoin output; callers persist canonical metadata and the lost-epoch warning before acknowledgement. */
 data class MLSReceiveRecoveryResult(
     val response: ConversationResponse,
-    val operation: PendingMLSReceiveRecovery,
+    val groupId: String,
     val epoch: ULong,
-) {
-    val warningId: String get() = "mls-recovery:${operation.id}"
-}
+    val warningId: String,
+)
 
 /**
- * Shared by account owners that hold the receive lease. All native work, including the completion
- * checkpoint, uses the caller's transaction. The join callback must explicitly join by external
- * commit and verify the returned group identity; a generic already-joined success is insufficient.
- * Completion covers this recovery operation only. The caller must separately preserve replay of
- * earlier successful MLS payloads when a pending join replaces an already caught-up group.
+ * Rejoins, by external commit in the caller's transaction, an MLS group that CoreCrypto lacks or is behind on.
+ * Nothing is stored: the native transaction, SQL and the queue acknowledgement commit separately, and every
+ * kill between them is safe to replay. Until the MLS commit lands, CoreCrypto is still missing or behind, so
+ * the replay joins again; openmls removes our previous leaf in that second external commit. Once it lands,
+ * CoreCrypto is current, no second commit is sent, and the trigger is skipped as a past-epoch message.
+ * The join callback must explicitly join by external commit; a generic already-joined success is insufficient.
  */
-@Suppress("TooManyFunctions") // One coordinator owns the whole receive-recovery contract.
 class MLSReceiveRecovery(
-    private val store: MLSReceiveRecoveryStore,
     private val conversationApi: ConversationApi,
     private val selfUserId: UserId,
     private val join: suspend (MlsCoreCryptoContext, String, ByteArray) -> ULong,
 ) {
-    /** Check before decrypting; only exact MLS payloads with committed effects can be bypassed. */
-    suspend fun wasProcessed(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): Boolean =
-        store.wasProcessed(context, event)
-
-    /** Call after every payload effect has finished, before the enclosing native transaction commits. */
-    suspend fun recordProcessed(
-        context: MlsCoreCryptoContext,
-        events: List<Event.Conversation.NewMLSMessage>,
-        payloads: List<ReceivedPayloadIdentity> = emptyList(),
-    ) = store.recordProcessed(context, events, payloads)
-
-    suspend fun wereEffectsProcessed(context: MlsCoreCryptoContext, payload: ReceivedPayloadIdentity): Boolean =
-        store.wereEffectsProcessed(context, payload)
-
-    /** Ordinary receives only consult the owner's cached operation index; ciphertext decoding is lazy. */
-    suspend fun resume(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): MLSReceiveRecoveryResult? {
-        val operation = store.find(event.id) { Base64.decode(event.content) } ?: return null
-        return skippingUnrecoverable(context, event, operation.groupId) { resume(context, event, operation) }
-    }
-
-    private suspend fun resume(
-        context: MlsCoreCryptoContext,
-        event: Event.Conversation.NewMLSMessage,
-        operation: PendingMLSReceiveRecovery,
-    ): MLSReceiveRecoveryResult {
-        check(event.subconversationId == null) { "Subconversation recovery is not supported" }
-        val completed = store.isCompleted(context, operation)
-        val response = fetchDetails(event).validated(event, operation.groupId)
-        return if (completed) {
-            MLSReceiveRecoveryResult(response, operation, context.conversationEpoch(operation.groupId))
-        } else {
-            // An outstanding intent requires an explicit join even if the group now looks current.
-            rejoin(context, response, operation)
-        }
-    }
-
     /**
      * Called after WrongEpoch, or for a main-conversation message whose group CoreCrypto doesn't have.
-     * Current native groups keep the caller's existing no-rejoin policy.
+     * A group CoreCrypto has at or beyond the remote epoch keeps the caller's existing no-rejoin policy.
      */
     suspend fun recover(
         context: MlsCoreCryptoContext,
         event: Event.Conversation.NewMLSMessage,
         expectedGroupId: String,
-    ): MLSReceiveRecoveryResult? = skippingUnrecoverable(context, event, expectedGroupId) {
+    ): MLSReceiveRecoveryResult? = skippingUnrecoverable(context, expectedGroupId) {
         rejoinIfBehind(context, event, expectedGroupId)
     }
 
-    @Suppress("ReturnCount") // Pending, current, and completed operations each bypass a new join.
     private suspend fun rejoinIfBehind(
         context: MlsCoreCryptoContext,
         event: Event.Conversation.NewMLSMessage,
         expectedGroupId: String,
     ): MLSReceiveRecoveryResult? {
-        store.find(event.id) { Base64.decode(event.content) }?.let { operation ->
-            check(operation.groupId == expectedGroupId) { "Pending recovery belongs to another MLS group" }
-            return resume(context, event, operation)
-        }
         check(event.subconversationId == null) { "Subconversation recovery is not supported" }
         val details = fetchDetails(event)
-        // Nothing has started yet, so a conversation this account can no longer read keeps the no-rejoin policy.
+        // A conversation this account can no longer read keeps the no-rejoin policy.
         if (details is Either.Left && details.value.isConversationUnavailable()) return null
         val response = details.validated(event, expectedGroupId)
         val remoteEpoch = checkNotNull(response.epoch) { "MLS recovery requires a remote epoch" }
-        if (context.conversationExists(expectedGroupId) && context.conversationEpoch(expectedGroupId) >= remoteEpoch) return null
-
-        val operation = store.begin(event.id, expectedGroupId, Base64.decode(event.content))
-        // This also validates the native checkpoint format before a new remote mutation.
-        if (store.isCompleted(context, operation)) {
-            return MLSReceiveRecoveryResult(response, operation, context.conversationEpoch(expectedGroupId))
-        }
-        return rejoin(context, response, operation)
+        val current = context.conversationExists(expectedGroupId) && context.conversationEpoch(expectedGroupId) >= remoteEpoch
+        return if (current) null else MLSReceiveRecoveryResult(
+            response = response,
+            groupId = expectedGroupId,
+            epoch = rejoin(context, response, expectedGroupId),
+            warningId = warningId(event, expectedGroupId),
+        )
     }
-
-    /** Older versions recorded conversation deletions here; they now go through the wipe queue. */
-    suspend fun drainDeletions(enqueueWipe: suspend (groupId: String) -> Unit) = store.drainDeletions(enqueueWipe)
-
-    suspend fun acknowledge(eventIds: List<String>) = store.acknowledge(eventIds)
 
     /**
      * Before this recovery, a message for a group CoreCrypto doesn't have was skipped. Keep that outcome
      * when the rejoin fails for any reason but the network: retrying the same event cannot fix it, and one
-     * lost group must not block receiving. Retire the intent first, so the skipped event can be acknowledged.
-     * Groups CoreCrypto has, including one joined before a later check failed, keep failing closed.
+     * lost group must not block receiving. Groups CoreCrypto has, including one joined before a later check
+     * failed, keep failing closed.
      */
     @Suppress("TooGenericExceptionCaught") // Any failure but cancellation or the network is final for this event.
     private suspend fun skippingUnrecoverable(
         context: MlsCoreCryptoContext,
-        event: Event.Conversation.NewMLSMessage,
         groupId: String,
         recovery: suspend () -> MLSReceiveRecoveryResult?,
     ): MLSReceiveRecoveryResult? = try {
@@ -140,7 +96,6 @@ class MLSReceiveRecovery(
     } catch (failure: Exception) {
         val cause = failure.coreFailure()
         if (cause.isTransientNetworkFailure() || context.conversationExists(groupId)) throw failure
-        store.find(event.id) { Base64.decode(event.content) }?.let { store.abandon(it) }
         kaliumLogger.w("Skipping an MLS message whose missing group failed to rejoin: ${cause::class.simpleName}")
         null
     }
@@ -164,37 +119,42 @@ class MLSReceiveRecovery(
         return response
     }
 
+    /** Returns the joined epoch. */
     @Suppress("TooGenericExceptionCaught") // Both join callbacks throw untyped exceptions; only a stale commit is retried.
-    private suspend fun rejoin(
-        context: MlsCoreCryptoContext,
-        response: ConversationResponse,
-        operation: PendingMLSReceiveRecovery,
-    ): MLSReceiveRecoveryResult {
+    private suspend fun rejoin(context: MlsCoreCryptoContext, response: ConversationResponse, groupId: String): ULong {
         val joinedEpoch = try {
-            joinCurrentGroupInfo(context, response, operation)
+            joinCurrentGroupInfo(context, response, groupId)
         } catch (failure: CancellationException) {
             throw failure
         } catch (failure: Exception) {
             // Another commit moved the group between reading its group info and our POST. Join the newer one, once.
             if (failure.coreFailure() != STALE_COMMIT) throw failure
-            joinCurrentGroupInfo(context, response, operation)
+            joinCurrentGroupInfo(context, response, groupId)
         }
-        check(context.conversationExists(operation.groupId)) { "External join did not establish the MLS group" }
-        val epoch = context.conversationEpoch(operation.groupId)
+        check(context.conversationExists(groupId)) { "External join did not establish the MLS group" }
+        val epoch = context.conversationEpoch(groupId)
         check(epoch > 0uL && epoch == joinedEpoch) { "External join did not return the current native epoch" }
-        store.complete(context, operation)
-        return MLSReceiveRecoveryResult(response, operation, epoch)
+        return epoch
     }
 
-    private suspend fun joinCurrentGroupInfo(
-        context: MlsCoreCryptoContext,
-        response: ConversationResponse,
-        operation: PendingMLSReceiveRecovery,
-    ): ULong {
+    private suspend fun joinCurrentGroupInfo(context: MlsCoreCryptoContext, response: ConversationResponse, groupId: String): ULong {
         val groupInfo = wrapApiRequest { conversationApi.fetchGroupInfo(response.id) }.orThrow()
         check(groupInfo.isNotEmpty()) { "MLS recovery requires group info" }
-        return join(context, operation.groupId, groupInfo)
+        return join(context, groupId, groupInfo)
     }
+
+    /** Identifies the trigger as the former recovery store did, so a replay across versions adds no second warning. */
+    private fun warningId(event: Event.Conversation.NewMLSMessage, groupId: String): String {
+        val trigger = WarningTrigger(event.id, groupId, Base64.decode(event.content).toByteString().sha256().hex())
+        return "mls-recovery:" + KtxSerializer.json.encodeToString(trigger).encodeUtf8().sha256().hex()
+    }
+
+    @Serializable
+    private data class WarningTrigger(
+        @SerialName("eventId") val eventId: String,
+        @SerialName("groupId") val groupId: String,
+        @SerialName("ciphertextHash") val ciphertextHash: String,
+    )
 
     private companion object {
         val STALE_COMMIT = MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.StaleMessage)

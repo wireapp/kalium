@@ -52,21 +52,13 @@ internal class ReceivedMLSHandler(
     private val wipedGroups = mutableSetOf<String>()
     private val verifications = linkedMapOf<String, MLSVerification>()
 
-    suspend fun resume(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): List<ReceivedPayload>? {
-        val receiver = recovery ?: return null
-        return if (receiver.wasProcessed(context, event)) emptyList() else {
-            check(event.conversationId !in removed) { "Account no longer belongs to the MLS group" }
-            receiver.resume(context, event)?.let { recovered(context, event, it) }
-        }
-    }
-
     private suspend fun recovered(
         context: MlsCoreCryptoContext,
         event: Event.Conversation.NewMLSMessage,
         result: MLSReceiveRecoveryResult,
     ): List<ReceivedPayload> {
         val metadata = conversations.recovered(result.response, context)
-        val groupId = result.operation.groupId
+        val groupId = result.groupId
         snapshotVerification(context, event.conversationId, groupId, result.warningId, event.messageInstant)
         touchedGroups += groupId
         decryptedConversations += event.conversationId

@@ -35,7 +35,6 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.sync.receiving.ReceivedPayloadIdentity
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
@@ -75,7 +74,6 @@ internal class EventMapper(
             EventEnvelope(
                 fromEventContentDTO(id, eventContentDTO, payloadIndex),
                 EventDeliveryInfo(eventSource),
-                ReceivedPayloadIdentity(eventId, eventContentDTO),
             )
         } ?: listOf()
     }
