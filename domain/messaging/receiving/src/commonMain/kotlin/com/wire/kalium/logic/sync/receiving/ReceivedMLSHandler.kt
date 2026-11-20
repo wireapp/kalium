@@ -105,8 +105,13 @@ internal class ReceivedMLSHandler(
         if (recovery != null && event.conversationId !in welcomed && !context.conversationExists(protocol.groupId)) {
             return recovery.recover(context, event, protocol.groupId)?.let { recovered(context, event, it) } ?: emptyList()
         }
+        // CoreCrypto has the group here. A conversation still waiting for its Welcome then lost only its SQL update
+        // (for example a killed migration): decrypt, and record the group as established below.
+        val adoptGroup = protocol.groupState == ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE &&
+            event.conversationId !in welcomed && context.conversationExists(protocol.groupId)
         check(
-            protocol.groupState == ConversationEntity.GroupState.ESTABLISHED || event.conversationId in welcomed || previousRemoval != null
+            protocol.groupState == ConversationEntity.GroupState.ESTABLISHED || event.conversationId in welcomed ||
+                previousRemoval != null || adoptGroup
         ) {
             "MLS conversation requires recovery"
         }
@@ -164,6 +169,9 @@ internal class ReceivedMLSHandler(
         }
         if (event.conversationId !in removed && (staleCommit || context.conversationEpoch(protocol.groupId) != epoch)) {
             snapshotVerification(context, event.conversationId, protocol.groupId, payloadId, event.messageInstant)
+        }
+        if (adoptGroup && event.conversationId !in removed) {
+            conversations.established(event.conversationId, protocol.groupId, context.conversationEpoch(protocol.groupId))
         }
         decryptedConversations += event.conversationId
         touchedGroups += protocol.groupId
