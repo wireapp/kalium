@@ -61,6 +61,7 @@ internal fun ReceivedPayload.canCrossNotificationGap(): Boolean = when (this) {
         else -> false
     }
     is ReceivedPayload.Creation, is ReceivedPayload.System, is ReceivedPayload.Profiles,
-    is ReceivedPayload.DecryptionFailure, is ReceivedPayload.Proposal, is ReceivedPayload.ClearProposalTimer -> true
+    is ReceivedPayload.DecryptionFailure, is ReceivedPayload.Proposal, is ReceivedPayload.ClearProposalTimer,
+    is ReceivedPayload.MLSEstablished -> true
     else -> false
 }

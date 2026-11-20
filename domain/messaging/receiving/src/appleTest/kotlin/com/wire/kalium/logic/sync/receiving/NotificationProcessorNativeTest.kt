@@ -4772,11 +4772,14 @@ class NotificationProcessorNativeTest {
                 // A killed migration: CoreCrypto kept the group, but SQL still waits for a Welcome.
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     runtime.database.conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, GROUP_ID)
+                    runtime.database.conversationDAO.setProposalTimer(com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity(GROUP_ID, TIME))
                 })
                 assertEquals("message", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(message), message.id)).value?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val protocol = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)).protocolInfo
                     assertEquals(ConversationEntity.GroupState.ESTABLISHED, assertIs<ConversationEntity.ProtocolInfo.MLS>(protocol).groupState)
+                    // Adopting the group is not a reset: a pending commit stays scheduled.
+                    assertEquals(1, runtime.database.conversationDAO.getProposalTimers().first().size)
                 })
             }
         }
