@@ -23,12 +23,14 @@ import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ApplicationMessage
+import com.wire.kalium.logic.data.conversation.CORE_CRYPTO_DECRYPT_FAILURE
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubConversation
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.MessageContent
@@ -238,6 +240,39 @@ internal class MLSMessageUnpackerTest {
                 arrangement.mlsConversationRepository.getLocalGroupEpoch(any(), MockConversation.GROUP_ID)
             }
         }
+    }
+
+    @Test
+    fun givenUndecryptableMessageFromBeforeLocalEpoch_whenUnpacking_thenTreatItAsTooOld() = runTest {
+        val (arrangement, mlsUnpacker) = Arrangement()
+            .withGetConversationProtocolInfoSuccessful(MockConversation.MLS_PROTOCOL_INFO)
+            .withDecryptMessageReturning(Either.Left(MLSFailure.Other(CORE_CRYPTO_DECRYPT_FAILURE)))
+            .withLocalGroupEpoch(Either.Right(5UL))
+            .arrange()
+
+        val result = mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, mlsMessageEvent(epoch = 4UL))
+
+        result.shouldFail { assertEquals(MLSFailure.MessageEpochTooOld, it) }
+    }
+
+    @Test
+    fun givenUndecryptableMessageFromCurrentEpoch_whenUnpacking_thenKeepTheFailure() = runTest {
+        val failure = MLSFailure.Other(CORE_CRYPTO_DECRYPT_FAILURE)
+        val (arrangement, mlsUnpacker) = Arrangement()
+            .withGetConversationProtocolInfoSuccessful(MockConversation.MLS_PROTOCOL_INFO)
+            .withDecryptMessageReturning(Either.Left(failure))
+            .withLocalGroupEpoch(Either.Right(5UL))
+            .arrange()
+
+        val result = mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, mlsMessageEvent(epoch = 5UL))
+
+        result.shouldFail { assertEquals(failure, it) }
+    }
+
+    private fun mlsMessageEvent(epoch: ULong): Event.Conversation.NewMLSMessage {
+        // mls10, private message, a 3-byte group ID, then the big-endian epoch.
+        val header = byteArrayOf(0, 1, 0, 2, 3, 1, 2, 3) + ByteArray(Long.SIZE_BYTES) { (epoch shr (56 - 8 * it)).toByte() }
+        return TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant()).copy(content = Base64.encode(header))
     }
 
     @Test
