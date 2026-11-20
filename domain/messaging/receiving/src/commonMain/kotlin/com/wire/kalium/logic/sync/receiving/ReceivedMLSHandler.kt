@@ -174,7 +174,13 @@ internal class ReceivedMLSHandler(
             snapshotVerification(context, event.conversationId, protocol.groupId, payloadId, event.messageInstant)
         }
         if (adoptGroup && event.conversationId !in removed) {
-            conversations.established(event.conversationId, protocol.groupId, context.conversationEpoch(protocol.groupId))
+            val groupId = protocol.groupId
+            val reset = ReceivedPayload.MLSReset(
+                event.conversationId, groupId, groupId, context.conversationEpoch(groupId), ConversationEntity.GroupState.ESTABLISHED
+            )
+            conversations.resetGroup(reset)
+            // First, so persisting it can't clear a proposal timer this message set.
+            effects.add(0, reset)
         }
         decryptedConversations += event.conversationId
         touchedGroups += protocol.groupId
