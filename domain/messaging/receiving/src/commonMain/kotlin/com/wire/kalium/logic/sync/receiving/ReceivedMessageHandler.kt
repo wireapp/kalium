@@ -97,13 +97,12 @@ internal class ReceivedMessageHandler(
         event: com.wire.kalium.logic.data.event.Event.Conversation.DeletedConversation,
         requiredByEarlierPayload: Boolean,
         recreatedLater: Boolean,
-        preparedDeletionGroupId: String? = null,
     ) {
         val id = event.conversationId.toDao()
         val conversation = data.conversations.getConversationById(id) ?: return
         val protocol = conversation.protocolInfo
-        check(protocol !is ConversationEntity.ProtocolInfo.MLSCapable || protocol.groupId == preparedDeletionGroupId) {
-            "MLS conversation deletion requires its group identity after SQL deletion/native rollback"
+        check(protocol !is ConversationEntity.ProtocolInfo.MLSCapable || mlsEnabled) {
+            "MLS conversation deletion requires the account's MLS engine"
         }
         check(!recreatedLater) { "Deletion and recreation in one notification require native plaintext replay" }
         check(!requiredByEarlierPayload) {
@@ -114,8 +113,12 @@ internal class ReceivedMessageHandler(
             meetingAlerts += data.meetingCancellations(event.id, id, event.dateTime, event.senderUserId)
         }
         data.assets.deleteConversationFiles(id, deleteFile)
-        (conversation.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.let {
+        (protocol as? ConversationEntity.ProtocolInfo.MLSCapable)?.let {
             data.conversations.clearProposalTimer(it.groupId)
+            // Queued in the same SQL write as the deletion, so a native rollback can't lose the group ID.
+            data.pendingActions.upsert(
+                PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity(it.groupId, "mls"), event.dateTime.toEpochMilliseconds()
+            )
         }
         data.conversations.deleteConversationByQualifiedID(id)
         candidates += MessageCandidate(

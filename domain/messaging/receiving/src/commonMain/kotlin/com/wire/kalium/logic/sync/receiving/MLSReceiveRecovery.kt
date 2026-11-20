@@ -119,15 +119,8 @@ class MLSReceiveRecovery(
         return rejoin(context, response, operation)
     }
 
-    /** Must run before deleting canonical metadata; this does not mutate native state. */
-    suspend fun prepareDeletion(
-        payload: ReceivedPayloadIdentity,
-        groupId: String?,
-    ): Boolean = store.prepareDeletion(payload, groupId)
-
-    /** Replays an exact pending deletion when SQL has committed but native state may not have. */
-    suspend fun resumeDeletion(context: MlsCoreCryptoContext, payload: ReceivedPayloadIdentity): Boolean =
-        store.resumeDeletion(context, payload)
+    /** Older versions recorded conversation deletions here; they now go through the wipe queue. */
+    suspend fun drainDeletions(enqueueWipe: suspend (groupId: String) -> Unit) = store.drainDeletions(enqueueWipe)
 
     suspend fun acknowledge(eventIds: List<String>) = store.acknowledge(eventIds)
 
