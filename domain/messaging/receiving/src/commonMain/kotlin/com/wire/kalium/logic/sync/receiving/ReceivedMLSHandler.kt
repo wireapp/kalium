@@ -121,6 +121,10 @@ internal class ReceivedMLSHandler(
         val bundles = if (noBundles) emptyList() else result.orThrow()
         val effects = mutableListOf<ReceivedPayload>()
         var bundleEpoch = epoch
+        // CoreCrypto 11 reports the group's final activity on every commit of one decrypt call, so a commit
+        // that releases a buffered removal is also inactive. Nothing decrypts after a removal: only the
+        // last commit can be it.
+        val lastCommit = bundles.lastOrNull { it is DecryptedMessageBundle.Commit }
         bundles.forEach { bundle ->
             check(event.conversationId !in removed) { "MLS work follows an inactive removal commit" }
             when (bundle) {
@@ -130,7 +134,7 @@ internal class ReceivedMLSHandler(
                     )
                 }
                 is DecryptedMessageBundle.Commit -> {
-                    if (!bundle.isActive) {
+                    if (!bundle.isActive && bundle === lastCommit) {
                         check(event.conversationId !in welcomed && event.conversationId !in decryptedConversations && effects.isEmpty()) {
                             "An inactive commit after other MLS payloads requires app synchronization"
                         }
@@ -239,9 +243,8 @@ internal class ReceivedMLSHandler(
         payloadId: String,
         removalId: String,
     ): List<ReceivedPayload> {
-        // CoreCrypto 10.4 wipes top-level removal commits, but its recursive
-        // buffer restore leaves the inactive group. Finish the same cleanup here.
-        if (context.conversationExists(groupId)) context.wipeConversation(groupId)
+        // CoreCrypto wipes the inactive group, including after a recursive buffer restore.
+        check(!context.conversationExists(groupId)) { "CoreCrypto left an inactive MLS group" }
         // Once the native group is wiped, earlier ciphertext cannot be replayed.
         removed += event.conversationId
         inactive += event.conversationId

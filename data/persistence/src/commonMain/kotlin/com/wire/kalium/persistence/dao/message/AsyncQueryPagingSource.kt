@@ -90,7 +90,6 @@ internal class AsyncQueryPagingSource<RowType : Any, ItemType : Any>(
                     is LoadParams.Append<*> -> key.toInt()
                     is LoadParams.Refresh<*> ->
                         if (key >= count - params.loadSize) maxOf(0, count - params.loadSize) else key.toInt()
-                    else -> error("Unknown PagingSourceLoadParams ${params::class}")
                 }
                 val data = queryProvider(limit, offset.toLong())
                     .also { currentQuery = it }

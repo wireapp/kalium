@@ -40,7 +40,7 @@ internal suspend fun prepareReceivedAsset(
     return if (strategy == AssetRestrictionContinuationStrategy.RESTRICT) message.restrictedAssetMessage() else {
         prepareReceivedAssetMessage(
             message,
-            (existing as? MessageEntity.Regular)?.let(mapper::fromEntity),
+            existing?.let(mapper::fromEntity),
             strategy == AssetRestrictionContinuationStrategy.RESTRICT_WITHOUT_PREVIEW
         )
     }

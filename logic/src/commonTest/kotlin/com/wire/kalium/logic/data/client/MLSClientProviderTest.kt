@@ -18,12 +18,14 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CoreCryptoOpenCleanupException
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
@@ -55,6 +57,7 @@ import dev.mokkery.verifySuspend
 import io.ktor.util.reflect.instanceOf
 import okio.FileSystem
 import kotlin.uuid.Uuid
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -62,6 +65,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -244,6 +248,43 @@ class MLSClientProviderTest {
         FileUtil.deleteDirectory(arrangement.rootKeyStorePath)
     }
 
+    @Test
+    fun givenMLSClientInitializationThrows_whenGettingMLSClient_thenReturnsFailureAndRetriesUntilSuccess() =
+        runTest(testDispatchers.io) {
+            val mlsClient = mock<MLSClient>()
+            val (arrangement, provider) = Arrangement(this).arrange {
+                withPassphraseStorage()
+                withMLSClientInitializationReady()
+            }
+            everySuspend {
+                arrangement.coreCryptoCentral.mlsClient(any(), any(), any(), any(), any())
+            } throws IllegalStateException("MLS initialization failed")
+
+            provider.getMLSClient(TestClient.CLIENT_ID).shouldFail { assertIs<MLSFailure>(it) }
+            assertFalse(provider.isMLSClientInitialised())
+
+            everySuspend { arrangement.coreCryptoCentral.mlsClient(any(), any(), any(), any(), any()) } returns mlsClient
+            provider.getMLSClient(TestClient.CLIENT_ID).shouldSucceed { assertSame(mlsClient, it) }
+            provider.getMLSClient(TestClient.CLIENT_ID).shouldSucceed { assertSame(mlsClient, it) }
+
+            assertTrue(provider.isMLSClientInitialised())
+            verifySuspend(VerifyMode.exactly(2)) { arrangement.coreCryptoCentral.mlsClient(any(), any(), any(), any(), any()) }
+            FileUtil.deleteDirectory(arrangement.rootKeyStorePath)
+        }
+
+    @Test
+    fun givenMLSClientInitializationCancelled_whenGettingMLSClient_thenCancellationPropagates() = runTest(testDispatchers.io) {
+        val (arrangement, provider) = Arrangement(this).arrange {
+            withPassphraseStorage()
+            withMLSClientInitializationReady()
+        }
+        everySuspend { arrangement.coreCryptoCentral.mlsClient(any(), any(), any(), any(), any()) } throws CancellationException()
+
+        assertFailsWith<CancellationException> { provider.getMLSClient(TestClient.CLIENT_ID) }
+        assertFalse(provider.isMLSClientInitialised())
+        FileUtil.deleteDirectory(arrangement.rootKeyStorePath)
+    }
+
     private inner class Arrangement(
         val processingScope: CoroutineScope
     ) {
@@ -296,6 +337,16 @@ class MLSClientProviderTest {
 
         suspend fun withGetMLSEnabledReturning(result: com.wire.kalium.common.functional.Either<StorageFailure, Boolean>) = apply {
             everySuspend { userConfigRepository.isMLSEnabled() }.returns(result)
+        }
+
+        suspend fun withMLSClientInitializationReady() = apply {
+            withGetMLSEnabledReturning(true.right())
+            withGetSupportedCipherSuitesReturning(
+                SupportedCipherSuite(
+                    supported = listOf(CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256),
+                    default = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+                ).right()
+            )
         }
 
         suspend fun withCurrentClientIdFailure(error: CoreFailure) = apply {
