@@ -93,7 +93,7 @@ internal class StaleEpochVerifierImpl(
             ).flatMap { comparison ->
                 if (comparison.isLocalEpochStale) {
                     logger.w("Epoch stale due to missing commits, re-joining")
-                    rejoinAndWarn(transactionContext, conversationId, remoteMlsInfo.groupId)
+                    rejoinAndWarn(transactionContext, conversationId)
                 } else {
                     logger.i("Epoch stale due to unprocessed events")
                     Either.Right(Unit)
@@ -102,19 +102,22 @@ internal class StaleEpochVerifierImpl(
         }
     }
 
+    @OptIn(ConversationPersistenceApi::class)
     private suspend fun rejoinAndWarn(
         transactionContext: CryptoTransactionContext,
-        conversationId: ConversationId,
-        groupId: GroupID
+        conversationId: ConversationId
     ): Either<CoreFailure, Unit> = joinExistingMLSConversation(transactionContext, conversationId).flatMap {
-        localEpochIfGroupExists(transactionContext, groupId)
-    }.flatMap { rejoinedEpoch ->
-        if (rejoinedEpoch == null) {
-            // The join use case skips some failures (for example missing group info) without joining.
-            logger.w("Rejoin left no local group for ${conversationId.toLogString()}")
-            Either.Right(Unit)
-        } else {
-            systemMessageInserter.insertLostCommitSystemMessage(conversationId, groupId, rejoinedEpoch, Clock.System.now())
+        // A join that resets the conversation moves it to a new group, so read the group again.
+        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { it.toRemoteMLSConversationInfo() }
+    }.flatMap { (groupId) ->
+        localEpochIfGroupExists(transactionContext, groupId).flatMap { rejoinedEpoch ->
+            if (rejoinedEpoch == null) {
+                // The join use case skips some failures (for example missing group info) without joining.
+                logger.w("Rejoin left no local group for ${conversationId.toLogString()}")
+                Either.Right(Unit)
+            } else {
+                systemMessageInserter.insertLostCommitSystemMessage(conversationId, groupId, rejoinedEpoch, Clock.System.now())
+            }
         }
     }
 
