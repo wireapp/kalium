@@ -165,6 +165,8 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okio.ByteString.Companion.encodeUtf8
+import okio.ByteString.Companion.toByteString
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import platform.Foundation.NSTemporaryDirectory
@@ -5269,6 +5271,181 @@ class NotificationProcessorNativeTest {
                 })
             }
         }
+    }
+
+    @Test
+    fun rejoinKilledBeforeItsNativeCommitRejoinsAgainOnReplay() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.commit()
+                fixture.commit()
+                val trigger = fixture.encrypt("trigger")
+                val event = fixture.event("trigger", trigger)
+                val backend = RejoinBackend(fixture)
+                fixture.releasePrepared()
+                // Killed after the backend accepted the external commit, before CoreCrypto committed it.
+                assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, Interruption.BEFORE_COMMIT,
+                    recoveryFactory = backend.recovery, mlsTransport = backend.transport))
+                assertEquals(1, backend.posts)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertEquals(1uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                })
+                // CoreCrypto is still behind, so the replay joins again. Our first leaf is already in the group:
+                // the second external commit removes it, and the sender accepts it.
+                assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id,
+                    recoveryFactory = backend.recovery, mlsTransport = backend.transport))
+                assertEquals(2, backend.posts)
+                assertEquals(5uL, checkNotNull(fixture.senderMLS).transaction { it.conversationEpoch(GROUP_ID) })
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertEquals(5uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                    assertNotNull(runtime.database.messageDAO.getMessageById(lostEpochWarningId(event.id, trigger), CONVERSATION_ID))
+                })
+                backend.assertFollowingMessageDecrypts()
+            }
+        }
+    }
+
+    @Test
+    fun rejoinWhoseAcknowledgementFailedIsNotSentAgain() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.commit()
+                fixture.commit()
+                val trigger = fixture.encrypt("trigger")
+                val event = fixture.event("trigger", trigger)
+                val backend = RejoinBackend(fixture)
+                fixture.releasePrepared()
+                // Both native stores committed the rejoin; only the queue marker failed.
+                assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, Interruption.MARKER,
+                    recoveryFactory = backend.recovery, mlsTransport = backend.transport))
+                assertEquals(1, backend.posts)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertEquals(4uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                    fixture.sql("DROP TRIGGER interrupt_receive")
+                })
+                // CoreCrypto is current: no second commit, the trigger from before the rejoin is skipped.
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id,
+                    recoveryFactory = backend.recovery, mlsTransport = backend.transport)).value)
+                assertEquals(1, backend.posts)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertEquals(4uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                    assertNotNull(runtime.database.messageDAO.getMessageById(lostEpochWarningId(event.id, trigger), CONVERSATION_ID))
+                })
+                backend.assertFollowingMessageDecrypts()
+            }
+        }
+    }
+
+    @Test
+    fun rejoinWhoseProteusTransactionRolledBackDecryptsProteusAgain() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.seedProteusConversation()
+                fixture.commit()
+                fixture.commit()
+                val trigger = fixture.encrypt("trigger")
+                val proteus = fixture.event("proteus", fixture.encrypt("proteus", protocolMLS = false),
+                    protocolMLS = false, conversationId = DELETE_TARGET)
+                val notification = fixture.batch("notification", proteus, fixture.event("trigger", trigger))
+                val backend = RejoinBackend(fixture)
+                var proteusDecryptions = 0
+                val observeProteus: (ProteusCoreCryptoContext) -> ProteusCoreCryptoContext = { context ->
+                    object : ProteusCoreCryptoContext by context {
+                        override suspend fun <T : Any> decryptMessage(sessionId: CryptoSessionId, message: ByteArray,
+                            handleDecryptedMessage: suspend (ByteArray) -> T): T = context.decryptMessage(sessionId, message) {
+                            proteusDecryptions++
+                            handleDecryptedMessage(it)
+                        }
+                    }
+                }
+                fixture.releasePrepared()
+                // SQL and the MLS rejoin committed; the outer Proteus transaction rolled back.
+                assertIs<Either.Left<*>>(fixture.receive(listOf(notification), notification.id, Interruption.AFTER_COMMIT,
+                    decorateProteusContext = observeProteus, recoveryFactory = backend.recovery, mlsTransport = backend.transport))
+                assertEquals(1, backend.posts)
+                assertEquals(1, proteusDecryptions)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(notification.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("proteus", DELETE_TARGET))
+                    assertEquals(4uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                })
+                assertIs<Either.Right<*>>(fixture.receive(listOf(notification), notification.id,
+                    decorateProteusContext = observeProteus, recoveryFactory = backend.recovery, mlsTransport = backend.transport))
+                assertEquals(1, backend.posts)
+                assertEquals(2, proteusDecryptions, "The replay must advance the rolled-back Proteus session")
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(notification.id)).isProcessed)
+                    assertEquals(1L, fixture.sqlValue("SELECT COUNT(*) FROM Message WHERE id = 'proteus'")?.toLong())
+                    assertNotNull(runtime.database.messageDAO.getMessageById(lostEpochWarningId(notification.id, trigger), CONVERSATION_ID))
+                })
+                // The committed Proteus session continues with the sender's next message.
+                assertIs<Either.Right<*>>(fixture.decryptAndCheck(fixture.encrypt("proteus-next", protocolMLS = false),
+                    "proteus-next", protocolMLS = false))
+                backend.assertFollowingMessageDecrypts()
+            }
+        }
+    }
+
+    /**
+     * The backend side of the NSE's rejoin: [ReceivedMLSRejoin] gates the POST, an accepted commit moves the
+     * sender's group, and the group info it carried is what the next fetch returns.
+     */
+    private class RejoinBackend(private val fixture: Fixture) {
+        var posts = 0
+        private var groupInfo: ByteArray? = null
+        private var rejoin: ReceivedMLSRejoin? = null
+
+        val transport = object : MLSTransporter {
+            override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
+                checkNotNull(rejoin).sendCommitBundle(commitBundle)
+                posts++
+                assertIs<MLSDecryptResult.Success>(
+                    checkNotNull(fixture.senderMLS).transaction { it.decryptMessage(GROUP_ID, commitBundle.commit) }
+                )
+                groupInfo = commitBundle.groupInfoBundle.payload
+            }
+        }
+
+        val recovery: (AppleAccountRuntime) -> MLSReceiveRecovery = { runtime ->
+            val api = object : ConversationApi by runtime.network.conversationApi {
+                override suspend fun fetchConversationDetails(conversationId: com.wire.kalium.network.api.model.ConversationId)
+                    : NetworkResponse<ConversationResponse> {
+                    val epoch = checkNotNull(fixture.senderMLS).transaction { it.conversationEpoch(GROUP_ID) }
+                    return NetworkResponse.Success(fixture.creationResponse().copy(epoch = epoch), emptyMap(), 200)
+                }
+                override suspend fun fetchGroupInfo(conversationId: com.wire.kalium.network.api.model.QualifiedID)
+                    : NetworkResponse<ByteArray> {
+                    val wrapped = groupInfo ?: checkNotNull(fixture.transport.bundle).groupInfoBundle.payload
+                    assertContentEquals(byteArrayOf(0, 1, 0, 4), wrapped.copyOfRange(0, 4))
+                    return NetworkResponse.Success(wrapped.copyOfRange(4, wrapped.size), emptyMap(), 200)
+                }
+            }
+            val received = ReceivedMLSRejoin(CommitApi(), runtime.database.metadataDAO).also { rejoin = it }
+            MLSReceiveRecovery(
+                MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT),
+                api, SELF, received::join,
+            )
+        }
+
+        suspend fun assertFollowingMessageDecrypts() {
+            val following = fixture.event("following", fixture.encrypt("following"))
+            assertEquals("following", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(
+                listOf(following), following.id, recoveryFactory = recovery, mlsTransport = transport)).value?.text)
+        }
+    }
+
+    /** The lost-epoch warning's ID; it must stay stable so a replay after an upgrade adds no second warning. */
+    private fun lostEpochWarningId(eventId: String, ciphertext: ByteArray): String {
+        val operation = JsonObject(mapOf(
+            "eventId" to JsonPrimitive(eventId),
+            "groupId" to JsonPrimitive(GROUP_ID),
+            "ciphertextHash" to JsonPrimitive(ciphertext.toByteString().sha256().hex()),
+        ))
+        return "mls-recovery:" + operation.toString().encodeUtf8().sha256().hex()
     }
 
     @Test
