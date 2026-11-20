@@ -129,11 +129,11 @@ class PendingActionsRepositoryTest {
             )
             .arrange()
 
-        val result = repository.getPendingMLSGroupJoins()
+        val result = repository.getPendingMLSGroupJoinEntries().map { it.qualifiedId }
 
-        assertEquals(listOf(conversation1, conversation2), result)
+        assertEquals(listOf(conversation1.toDao(), conversation2.toDao()), result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionDAO.getByActionType(PendingActionType.JOIN_MLS_GROUP_CONVERSATION)
+            arrangement.pendingActionDAO.getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION)
         }
         verifySuspend(VerifyMode.not) { arrangement.pendingActionDAO.deleteByActionTypeAndIds(any(), any()) }
     }
@@ -169,7 +169,7 @@ class PendingActionsRepositoryTest {
 
         suspend fun withPendingGroupRows(vararg rows: PendingActionEntity) = apply {
             everySuspend {
-                pendingActionDAO.getByActionType(PendingActionType.JOIN_MLS_GROUP_CONVERSATION)
+                pendingActionDAO.getByActionType(PendingActionType.RECOVER_MLS_GROUP_CONVERSATION)
             } returns rows.toList()
         }
 

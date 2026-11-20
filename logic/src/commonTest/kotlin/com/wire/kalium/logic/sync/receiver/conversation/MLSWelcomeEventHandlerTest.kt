@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
@@ -246,7 +245,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), true)
+            arrangement.pendingActionsRepository.requestMLSGroupJoin(any())
         }
 
         verifySuspend(VerifyMode.not) {
@@ -255,7 +254,7 @@ class MLSWelcomeEventHandlerTest {
     }
 
     @Test
-    fun givenOrphanWelcomeAndLocalGroupNotEstablished_whenHandlingWelcome_thenShouldRejoinByExternalCommit() = runTest {
+    fun givenOrphanWelcomeAndLocalGroupNotEstablished_whenHandlingWelcome_thenShouldQueueExactIdRecovery() = runTest {
         val orphanWelcomeException = CommonizedMLSException(
             MLSFailure.OrphanWelcome,
             IllegalStateException("key package already deleted locally")
@@ -270,14 +269,15 @@ class MLSWelcomeEventHandlerTest {
                     )
                 )
             )
-            withJoinExistingMLSConversationReturning(Either.Right(Unit))
+            withPendingMLSGroupJoinSucceeding()
         }
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversation.invoke(any(), CONVERSATION_ID, any(), true)
+            arrangement.pendingActionsRepository.requestMLSGroupJoin(CONVERSATION_ID)
         }
+        assertEquals(1, arrangement.joinTriggers)
     }
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
@@ -286,7 +286,7 @@ class MLSWelcomeEventHandlerTest {
         val pendingActionsRepository = mock<PendingActionsRepository>()
         var resolutionTriggers = 0
         val keyPackageManager = mock<KeyPackageManager>(mode = MockMode.autoUnit)
-        val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>()
+        var joinTriggers = 0
 
         suspend fun withMLSClientProcessingOfWelcomeMessageFailsWith(exception: Exception) = apply {
             everySuspend {
@@ -306,10 +306,8 @@ class MLSWelcomeEventHandlerTest {
             } returns exists
         }
 
-        suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend {
-                joinExistingMLSConversation.invoke(any(), any(), any(), true)
-            } returns result
+        suspend fun withPendingMLSGroupJoinSucceeding() = apply {
+            everySuspend { pendingActionsRepository.requestMLSGroupJoin(any()) } returns true
         }
         suspend fun withFetchConversationIfUnknownSucceeding() = apply {
             everySuspend { fetchConversationIfUnknown(any(), any(), any()) } returns Either.Right(Unit)
@@ -341,7 +339,7 @@ class MLSWelcomeEventHandlerTest {
                 conversationRepository = conversationRepository,
                 pendingActionsRepository = pendingActionsRepository,
                 resolvePendingOneOnOnes = { resolutionTriggers++ },
-                joinExistingMLSConversation = joinExistingMLSConversation,
+                joinPendingMLSGroups = { joinTriggers++ },
                 fetchConversationIfUnknown = fetchConversationIfUnknown,
                 keyPackageManager = keyPackageManager
             )

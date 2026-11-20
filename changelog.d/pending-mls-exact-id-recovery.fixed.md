@@ -1,0 +1,1 @@
+Fixed pending MLS recovery to join the original conversation without blocking later background messages and calls. Recovering a team-backed one-to-one group preserves its separation from the canonical teamless one-to-one.

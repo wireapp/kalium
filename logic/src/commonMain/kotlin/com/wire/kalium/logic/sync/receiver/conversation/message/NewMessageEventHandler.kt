@@ -80,6 +80,7 @@ internal class NewMessageEventHandlerImpl(
     private val resetMLSConversation: ResetMLSConversationUseCase,
     private val receiveRecovery: MLSReceiveRecoveryHandler? = null,
     private val bufferedMLSMessageRecoveryTracker: BufferedMLSMessageRecoveryTracker = BufferedMLSMessageRecoveryTracker(),
+    private val recoverMissingMLSGroup: suspend (ConversationId) -> Unit = {},
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -170,6 +171,9 @@ internal class NewMessageEventHandlerImpl(
                 ) return Either.Right(Unit)
                 when (MLSMessageFailureHandler.handleFailure(failure)) {
                     is MLSMessageFailureResolution.Ignore -> {
+                        if (failure == MLSFailure.ConversationNotFound && event.subconversationId == null &&
+                            (transactionContext as? DurableMLSReceiveContext)?.effectsAlreadyPersisted != true
+                        ) recoverMissingMLSGroup(event.conversationId)
                         eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
                         Either.Right(Unit)
                     }

@@ -90,6 +90,7 @@ internal class NotificationEffects(
         database.writeMessageEffects {
             val calls = mutableListOf<ReceivedCallEvent>()
             val meetingAlerts = mutableListOf<LocalNotification.Meeting>()
+            var newMLSGroupRecovery = false
             // Distinct settings reset the wall-clock grace deadline on every replay. The final
             // settings row cannot recover the first attempt's deadline after an intervening change.
             val e2ei = payload.filterIsInstance<ReceivedPayload.Configuration>()
@@ -209,6 +210,11 @@ internal class NotificationEffects(
                             if (target !in recreatedEarlier) requiredEarlier += target
                         }
                     }
+                    is ReceivedPayload.PendingMLSGroupJoin -> {
+                        newMLSGroupRecovery = pendingActions.requestMLSGroupJoin(
+                            received.conversationId.toDao(), kotlin.time.Clock.System.now().toEpochMilliseconds(), evidence = true
+                        ) || newMLSGroupRecovery
+                    }
                     is ReceivedPayload.System -> persistMessage(received.message).orThrow()
                     is ReceivedPayload.Proposal -> conversations.setProposalTimer(received.timer)
                     is ReceivedPayload.ClearProposalTimer -> conversations.clearProposalTimer(received.groupId)
@@ -276,7 +282,7 @@ internal class NotificationEffects(
                 recordConversationDependencies(received, recreatedEarlier, requiredEarlier)
             }
             verifications.forEach { persistVerification(this, it, persistMessage) }
-            NotificationEffectsResult(messageHandler.finish(), calls, meetingAlerts)
+            NotificationEffectsResult(messageHandler.finish(), calls, meetingAlerts, newMLSGroupRecovery)
         }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
@@ -424,6 +430,7 @@ internal class NotificationEffects(
                 is ReceivedPayload.System -> listOf(effect.message.conversationId.toDao())
                 is ReceivedPayload.ProtocolUpdate -> listOf(effect.conversationId.toDao())
                 is ReceivedPayload.MLSReset -> listOf(effect.conversationId.toDao())
+                is ReceivedPayload.PendingMLSGroupJoin -> listOf(effect.conversationId.toDao())
                 is ReceivedPayload.Creation -> listOf(effect.creation.conversation.id)
                 is ReceivedPayload.MeetingUpsert -> listOf(effect.meeting.conversationId)
                 is ReceivedPayload.Connection -> if (effect.connection.status ==
@@ -482,6 +489,7 @@ internal class NotificationEffects(
 }
 
 internal sealed interface ReceivedPayload {
+    data class PendingMLSGroupJoin(val conversationId: com.wire.kalium.logic.data.id.ConversationId) : ReceivedPayload
     data class Connection(
         val connection: com.wire.kalium.persistence.dao.ConnectionEntity,
         val profiles: com.wire.kalium.logic.data.user.UserProfiles,
