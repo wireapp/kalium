@@ -264,6 +264,7 @@ class NotificationProcessor(
     private suspend fun cleanupConversations() {
         val cleanup = PendingConversationCleanup(database, deleteFile)
         cleanup.discardLegacyRequests()
+        recovery?.drainDeletions { cleanup.queueWipe(it) }
         if (database.pendingActionDAO.getByActionType(
                 PendingActionType.WIPE_MLS_GROUP
             ).isEmpty()
@@ -371,12 +372,6 @@ class NotificationProcessor(
                 serverConfigLinks = serverConfigLinks,
             ).persist(decoded, verifications).also {
                 if (mlsContext != null && recovery != null) {
-                    // SQL can commit before native rollback. The durable identity survives that gap.
-                    payload.filter {
-                        it is EventContentDTO.Conversation.DeletedConversationDTO ||
-                            it is EventContentDTO.Conversation.SystemDeletedConversationDTO ||
-                            it is EventContentDTO.Conversation.DeletedMeetingConversationDTO
-                    }.forEach { recovery.resumeDeletion(mlsContext, ReceivedPayloadIdentity(eventId, it)) }
                     recovery.recordProcessed(
                         mlsContext,
                         payload.filterIsInstance<EventContentDTO.Conversation.NewMLSMessageDTO>()
@@ -390,18 +385,6 @@ class NotificationProcessor(
             // canonical references before deleting files from a failed or interrupted attempt.
             kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { previewImages.cleanupCreated(database.assetDAO) }
         }
-    }
-
-    private suspend fun prepareDeletion(
-        eventId: String,
-        content: EventContentDTO,
-        conversationId: ConversationId,
-        context: MlsCoreCryptoContext?,
-    ): String? {
-        if (context == null || recovery == null) return null
-        val protocol = database.conversationDAO.getConversationById(conversationId.toDao())?.protocolInfo
-        val groupId = (protocol as? ConversationEntity.ProtocolInfo.MLSCapable)?.groupId
-        return if (recovery.prepareDeletion(ReceivedPayloadIdentity(eventId, content), groupId)) groupId else null
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod", "LongParameterList")
@@ -498,7 +481,6 @@ class NotificationProcessor(
             is EventContentDTO.Conversation.SystemDeletedConversationDTO -> listOf(
                 ReceivedPayload.Deletion(
                     systemDeletedConversation(metadataSystemMessageId(eventId, index), content),
-                    preparedDeletionGroupId = prepareDeletion(eventId, content, content.qualifiedConversation.toModel(), mlsContext),
                 )
             )
             is EventContentDTO.Conversation.DeletedConversationDTO -> listOf(
@@ -509,7 +491,6 @@ class NotificationProcessor(
                         content.qualifiedFrom.toModel(),
                         kotlin.time.Instant.parse(content.time)
                     ),
-                    preparedDeletionGroupId = prepareDeletion(eventId, content, content.qualifiedConversation.toModel(), mlsContext),
                 )
             )
             is EventContentDTO.Conversation.DeletedMeetingConversationDTO -> listOf(
@@ -520,7 +501,6 @@ class NotificationProcessor(
                         content.qualifiedFrom.toModel(),
                         kotlin.time.Instant.parse(content.time)
                     ),
-                    preparedDeletionGroupId = prepareDeletion(eventId, content, content.qualifiedConversation.toModel(), mlsContext),
                 )
             )
             is EventContentDTO.Conversation.MlsResetConversationDTO ->

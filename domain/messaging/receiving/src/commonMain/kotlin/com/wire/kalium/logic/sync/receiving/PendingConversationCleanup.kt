@@ -9,6 +9,7 @@ import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.MessageEffectDAOs
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -41,6 +42,10 @@ class PendingConversationCleanup(private val database: UserDatabaseBuilder, priv
             }
         }
     }
+
+    suspend fun queueWipe(groupId: String) = database.pendingActionDAO.upsert(
+        PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity(groupId, "mls"), Clock.System.now().toEpochMilliseconds()
+    )
 
     /** Caller serializes native mutations with its existing crypto transaction provider. */
     suspend fun wipePending(context: MlsCoreCryptoContext?): List<PendingActionEntity> {
