@@ -282,6 +282,7 @@ class MemberJoinEventHandlerTest {
                 conversationTeamId = conversation.teamId?.value,
                 isCellEnabled = true,
                 instant = event.dateTime,
+                messageId = "${event.systemMessageId}:cell-access",
             )
         }
     }
@@ -301,7 +302,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(any(), any(), any(), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(any(), any(), any(), any(), any())
         }
     }
 
@@ -320,7 +321,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(any(), any(), any(), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(any(), any(), any(), any(), any())
         }
     }
 

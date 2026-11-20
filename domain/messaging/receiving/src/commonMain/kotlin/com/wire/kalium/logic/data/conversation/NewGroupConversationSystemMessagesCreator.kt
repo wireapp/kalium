@@ -68,12 +68,14 @@ interface NewGroupConversationSystemMessagesCreator {
 
     /**
      * Creates the system message telling the self user which access they have to the Shared Drive of the conversation.
+     * Pass a [messageId] derived from the event so a replayed event does not add the message again.
      */
     suspend fun conversationCellAccessStatus(
         conversationId: ConversationId,
         conversationTeamId: String?,
         isCellEnabled: Boolean,
         instant: Instant = Clock.System.now(),
+        messageId: String = LocalId.generate(),
     ): Either<CoreFailure, Unit>
 
     suspend fun conversationAppsAccessIfEnabled(
@@ -260,6 +262,7 @@ class NewGroupConversationSystemMessagesCreatorImpl(
         conversationTeamId: String?,
         isCellEnabled: Boolean,
         instant: Instant,
+        messageId: String,
     ): Either<CoreFailure, Unit> = run {
         if (!isCellEnabled) {
             return Either.Right(Unit)
@@ -269,7 +272,7 @@ class NewGroupConversationSystemMessagesCreatorImpl(
 
         persistMessage(
             Message.System(
-                LocalId.generate(),
+                messageId,
                 if (isViewer) MessageContent.CellViewerAccessMessage else MessageContent.CellEditorAccessMessage,
                 conversationId,
                 instant,
