@@ -355,6 +355,21 @@ class NewGroupConversationSystemMessagesCreatorTest {
             }
         }
 
+    @Test
+    fun givenMessageId_whenPersistingCellAccessStatus_thenTheMessageUsesIt() = runTest {
+        val (arrangement, sysMessageCreator) = Arrangement()
+            .withPersistMessageSuccess()
+            .withIsASelfTeamMember()
+            .arrange()
+
+        sysMessageCreator.conversationCellAccessStatus(MockConversation.ID, null, true, messageId = "event:cell-access")
+            .shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matches { it.id == "event:cell-access" })
+        }
+    }
+
     private class Arrangement {
                 val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
         val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
