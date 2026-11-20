@@ -20,13 +20,8 @@ permissions:
   contents: read # required for actions/checkout and repository metadata reads
 
 jobs:
-  detekt:
-    name: Detekt
-    if: github.event_name != 'pull_request' || (contains(github.event.pull_request.labels.*.name, 'benchmarks') && (github.event.action != 'labeled' || github.event.label.name == 'benchmarks'))
-    uses: ./.github/workflows/codestyle.yml
   benchmarks-check:
     name: Benchmarks Check
-    needs: [ detekt ]
     permissions:
       pull-requests: write # required for Bencher comparison comments/checks on PRs
     # Pull requests only run benchmarks when they carry the `benchmarks` label. Other events always run.

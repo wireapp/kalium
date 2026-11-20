@@ -9,12 +9,20 @@ import okio.Path
  * @property title Giphy's title without its "GIF by …" suffix; may be empty.
  * @property preview A small rendition for result grids.
  * @property original The rendition that is sent; never larger than 3 MiB.
+ * @property creator Who made the GIF, null when Giphy names no one.
  */
 public data class Gif(
     val id: String,
     val title: String,
     val preview: GifRendition,
     val original: GifRendition,
+    val creator: GifCreator? = null,
+)
+
+/** The Giphy channel or user that made a GIF, shown as its attribution. */
+public data class GifCreator(
+    val username: String,
+    val isVerified: Boolean,
 )
 
 /** One file Giphy offers for a GIF. [sizeInBytes] is null when Giphy does not report it. */
