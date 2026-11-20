@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class FederationEventReceiverTest {
 
@@ -211,6 +212,28 @@ class FederationEventReceiverTest {
                 arrangement.persistMessageUseCase.invoke(any())
             }
         }
+
+    @Test
+    fun givenFederationDeleteEventReplayed_whenHandlingItAgain_thenTheSameSystemMessageIdsArePersisted() = runTest {
+        val oneOnOne = defederatedConversation.copy("def1on1")
+        val members = listOf(UserId("defId", defederatedDomain), UserId("selfId", selfDomain))
+        val persisted = mutableSetOf<Pair<String, ConversationId>>()
+        val (arrangement, useCase) = arrange {
+            dispatcher = testKaliumDispatcher
+            withGetConnections(Either.Right(flowOf(emptyList())))
+            withGetGroupConversationsWithMembersWithBothDomains(Either.Right(mapOf(selfConversation to members)))
+            withGetOneOnOneConversationsWithFederatedMember(Either.Right(mapOf(oneOnOne to UserId("someDef", defederatedDomain))))
+            withDefederateUser(Either.Right(Unit))
+            withDeleteMembersByQualifiedID(1L)
+            withPersistingMessage(Either.Right(Unit)) { persisted.add(it.id to it.conversationId); true }
+        }
+        val event = Event.Federation.Delete("id", defederatedDomain)
+
+        repeat(2) { useCase.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed() }
+
+        verifySuspend(VerifyMode.exactly(6)) { arrangement.persistMessageUseCase.invoke(any()) }
+        assertEquals(setOf("id" to oneOnOne, "id" to selfConversation, "id:members" to selfConversation), persisted)
+    }
 
     private companion object {
         const val selfDomain = "selfdomain.com"

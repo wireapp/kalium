@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
@@ -92,7 +91,7 @@ internal class FederationEventReceiverImpl internal constructor(
             .onSuccess { conversationsWithMembers ->
                 // mark users as defederated to hold conversation history in oneOnOne conversations
                 conversationsWithMembers.forEach { (conversationId, userId) ->
-                    handleFederationDeleteEvent(conversationId, event.domain)
+                    handleFederationDeleteEvent(event.id, conversationId, event.domain)
                     userRepository.defederateUser(userId)
                 }
             }
@@ -100,8 +99,9 @@ internal class FederationEventReceiverImpl internal constructor(
         conversationRepository.getGroupConversationsWithMembersWithBothDomains(event.domain, selfUserId.domain)
             .onSuccess { conversationsWithMembers ->
                 conversationsWithMembers.forEach { (conversationId, userIds) ->
-                    handleFederationDeleteEvent(conversationId, event.domain)
+                    handleFederationDeleteEvent(event.id, conversationId, event.domain)
                     removeMembersFromConversation(
+                        event.id,
                         conversationId,
                         event.membersToRemove(conversationId.domain, selfUserId.domain, userIds)
                     )
@@ -129,8 +129,9 @@ internal class FederationEventReceiverImpl internal constructor(
         conversationRepository.getGroupConversationsWithMembersWithBothDomains(firstDomain, secondDomain)
             .onSuccess { conversationsWithMembers ->
                 conversationsWithMembers.forEach { (conversationId, userIds) ->
-                    handleFederationConnectionRemovedEvent(conversationId, event.domains)
+                    handleFederationConnectionRemovedEvent(event.id, conversationId, event.domains)
                     removeMembersFromConversation(
+                        event.id,
                         conversationId,
                         event.membersToRemove(conversationId.domain, selfUserId.domain, userIds)
                     )
@@ -142,10 +143,10 @@ internal class FederationEventReceiverImpl internal constructor(
             .onFailure(eventLogger::logFailure)
     }
 
-    private suspend fun removeMembersFromConversation(conversationID: ConversationId, userIDList: List<UserId>) {
+    private suspend fun removeMembersFromConversation(eventId: String, conversationID: ConversationId, userIDList: List<UserId>) {
         deleteMembers(userIDList, conversationID)
             .onSuccess {
-                handleMemberRemovedEvent(conversationID, userIDList)
+                handleMemberRemovedEvent(eventId, conversationID, userIDList)
             }
     }
 
@@ -160,9 +161,10 @@ internal class FederationEventReceiverImpl internal constructor(
             )
         }.map { }
 
-    private suspend fun handleMemberRemovedEvent(conversationID: ConversationId, userIDList: List<UserId>) {
+    // Message IDs match the NSE's, so a replayed event or one both receive stores each message once.
+    private suspend fun handleMemberRemovedEvent(eventId: String, conversationID: ConversationId, userIDList: List<UserId>) {
         val message = federationSystemMessage(
-            id = Uuid.random().toString(),
+            id = "$eventId:members",
             content = MessageContent.MemberChange.FederationRemoved(members = userIDList),
             conversationId = conversationID,
             date = Clock.System.now(),
@@ -171,9 +173,9 @@ internal class FederationEventReceiverImpl internal constructor(
         persistMessage(message)
     }
 
-    private suspend fun handleFederationDeleteEvent(conversationID: ConversationId, domain: String) {
+    private suspend fun handleFederationDeleteEvent(eventId: String, conversationID: ConversationId, domain: String) {
         val message = federationSystemMessage(
-            id = Uuid.random().toString(),
+            id = eventId,
             content = MessageContent.FederationStopped.Removed(domain),
             conversationId = conversationID,
             date = Clock.System.now(),
@@ -182,9 +184,9 @@ internal class FederationEventReceiverImpl internal constructor(
         persistMessage(message)
     }
 
-    private suspend fun handleFederationConnectionRemovedEvent(conversationID: ConversationId, domainList: List<String>) {
+    private suspend fun handleFederationConnectionRemovedEvent(eventId: String, conversationID: ConversationId, domainList: List<String>) {
         val message = federationSystemMessage(
-            id = Uuid.random().toString(),
+            id = eventId,
             content = MessageContent.FederationStopped.ConnectionRemoved(domainList),
             conversationId = conversationID,
             date = Clock.System.now(),
