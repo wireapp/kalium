@@ -4764,6 +4764,25 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun groupWaitingForWelcomeThatCoreCryptoHasIsAdopted() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val message = fixture.event("message", fixture.encrypt("message"))
+                fixture.releasePrepared()
+                // A killed migration: CoreCrypto kept the group, but SQL still waits for a Welcome.
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    runtime.database.conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, GROUP_ID)
+                })
+                assertEquals("message", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(message), message.id)).value?.text)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val protocol = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)).protocolInfo
+                    assertEquals(ConversationEntity.GroupState.ESTABLISHED, assertIs<ConversationEntity.ProtocolInfo.MLS>(protocol).groupState)
+                })
+            }
+        }
+    }
+
+    @Test
     fun lostNativeGroupRejoinsInsteadOfFailingTheNotification() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
