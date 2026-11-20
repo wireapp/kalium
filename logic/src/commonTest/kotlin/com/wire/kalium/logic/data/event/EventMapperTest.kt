@@ -85,6 +85,16 @@ class EventMapperTest {
     }
 
     @Test
+    fun federationPayloadsHaveDistinctSystemIdentities() {
+        val events = MapperProvider.eventMapper(TestUser.SELF.id).fromStoredDTO(
+            "notification",
+            listOf(EventContentDTO.Federation.FederationDeleteDTO("b.com"), EventContentDTO.Federation.FederationDeleteDTO("c.com")),
+            false
+        ).map { assertIs<Event.Federation.Delete>(it.event) }
+        assertEquals(listOf("notification", "notification:1"), events.map { it.systemMessageId })
+    }
+
+    @Test
     fun givenSessionRefreshSuggestedDTO_whenMapping_thenSessionRefreshSuggestedEventIsReturned() {
         val eventId = "event-id"
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)

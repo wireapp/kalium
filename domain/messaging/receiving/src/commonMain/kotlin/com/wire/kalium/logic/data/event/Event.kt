@@ -873,6 +873,7 @@ sealed class Event(open val id: String) {
         data class Delete(
             override val id: String,
             val domain: String,
+            val systemMessageId: String = id,
         ) : Federation(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Federation.Delete",
@@ -884,6 +885,7 @@ sealed class Event(open val id: String) {
         data class ConnectionRemoved(
             override val id: String,
             val domains: List<String>,
+            val systemMessageId: String = id,
         ) : Federation(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Federation.ConnectionRemoved",

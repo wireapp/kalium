@@ -91,7 +91,7 @@ internal class FederationEventReceiverImpl internal constructor(
             .onSuccess { conversationsWithMembers ->
                 // mark users as defederated to hold conversation history in oneOnOne conversations
                 conversationsWithMembers.forEach { (conversationId, userId) ->
-                    handleFederationDeleteEvent(event.id, conversationId, event.domain)
+                    handleFederationDeleteEvent(event.systemMessageId, conversationId, event.domain)
                     userRepository.defederateUser(userId)
                 }
             }
@@ -99,9 +99,9 @@ internal class FederationEventReceiverImpl internal constructor(
         conversationRepository.getGroupConversationsWithMembersWithBothDomains(event.domain, selfUserId.domain)
             .onSuccess { conversationsWithMembers ->
                 conversationsWithMembers.forEach { (conversationId, userIds) ->
-                    handleFederationDeleteEvent(event.id, conversationId, event.domain)
+                    handleFederationDeleteEvent(event.systemMessageId, conversationId, event.domain)
                     removeMembersFromConversation(
-                        event.id,
+                        event.systemMessageId,
                         conversationId,
                         event.membersToRemove(conversationId.domain, selfUserId.domain, userIds)
                     )
@@ -129,9 +129,9 @@ internal class FederationEventReceiverImpl internal constructor(
         conversationRepository.getGroupConversationsWithMembersWithBothDomains(firstDomain, secondDomain)
             .onSuccess { conversationsWithMembers ->
                 conversationsWithMembers.forEach { (conversationId, userIds) ->
-                    handleFederationConnectionRemovedEvent(event.id, conversationId, event.domains)
+                    handleFederationConnectionRemovedEvent(event.systemMessageId, conversationId, event.domains)
                     removeMembersFromConversation(
-                        event.id,
+                        event.systemMessageId,
                         conversationId,
                         event.membersToRemove(conversationId.domain, selfUserId.domain, userIds)
                     )

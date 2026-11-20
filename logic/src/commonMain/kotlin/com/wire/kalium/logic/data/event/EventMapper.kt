@@ -124,7 +124,7 @@ internal class EventMapper(
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, payloadIndex)
             is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO)
             is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO)
-            is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO)
+            is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, payloadIndex)
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
@@ -137,16 +137,18 @@ internal class EventMapper(
             is EventContentDTO.Meeting.MeetingMemberAddDTO -> meetingMemberAdd(id, eventContentDTO)
         }
 
-    private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation): Event =
+    private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, payloadIndex: Int): Event =
         when (eventContentDTO) {
             is EventContentDTO.Federation.FederationConnectionRemovedDTO -> Event.Federation.ConnectionRemoved(
                 id,
-                eventContentDTO.domains
+                eventContentDTO.domains,
+                metadataSystemMessageId(id, payloadIndex)
             )
 
             is EventContentDTO.Federation.FederationDeleteDTO -> Event.Federation.Delete(
                 id,
-                eventContentDTO.domain
+                eventContentDTO.domain,
+                metadataSystemMessageId(id, payloadIndex)
             )
         }
 
