@@ -26,6 +26,7 @@ import com.wire.backup.data.BackupUser
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
@@ -46,7 +47,6 @@ import com.wire.kalium.logic.feature.backup.provider.ImportDataPagerForMocking
 import com.wire.kalium.logic.feature.backup.provider.ImportResult
 import com.wire.kalium.logic.feature.backup.provider.ImportResultPagerForMocking
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
@@ -116,7 +116,7 @@ class RestoreMPBackupUseCaseTest {
 
         assertEquals(RestoreBackupResult.Success, useCase(arrangement.storedPath, null) {})
 
-        assertEquals(listOf(setOf(TestConversation.CONVERSATION.id)), captured)
+        assertEquals(listOf(setOf(MockConversation.CONVERSATION.id)), captured)
     }
 
     @Test
@@ -823,7 +823,7 @@ class RestoreMPBackupUseCaseTest {
 
             var conversationsHasMorePagesIndex = 0
             every { conversationsPager.hasMorePages() } calls { conversationsHasMorePagesIndex++ == 0 }
-            every { conversationsPager.nextPage() } returns (arrayOf(TestConversation.CONVERSATION.toBackupConversation()))
+            every { conversationsPager.nextPage() } returns (arrayOf(MockConversation.CONVERSATION.toBackupConversation()))
 
             var messagesHasMorePagesIndex = 0
             every { messagesPager.hasMorePages() } calls { messagesHasMorePagesIndex++ < messagePageCount }

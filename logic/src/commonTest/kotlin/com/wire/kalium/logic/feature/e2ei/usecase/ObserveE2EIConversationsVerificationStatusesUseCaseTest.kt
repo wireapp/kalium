@@ -18,9 +18,9 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.GroupWithEpoch
-import com.wire.kalium.logic.framework.TestConversation
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -39,13 +39,13 @@ class ObserveE2EIConversationsVerificationStatusesUseCaseTest {
     @Test
     fun givenEpochChanged_thenFetchingMLSVerificationIsCalled() = runTest {
         val (arrangement, handler) = arrange {
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_WITH_EPOCH))
+            withObserveEpochChanges(flowOf(GroupWithEpoch(MockConversation.GROUP_ID, 1UL)))
         }
 
         handler()
         advanceUntilIdle()
 
-        verifySuspend { arrangement.fetchMLSVerificationStatusUseCase(TestConversation.GROUP_ID) }
+        verifySuspend { arrangement.fetchMLSVerificationStatusUseCase(MockConversation.GROUP_ID) }
     }
 
     private suspend fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()

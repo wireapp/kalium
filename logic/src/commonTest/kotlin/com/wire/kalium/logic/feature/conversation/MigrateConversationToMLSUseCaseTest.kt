@@ -20,11 +20,11 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.answering.returns
@@ -43,7 +43,7 @@ class MigrateConversationToMLSUseCaseTest {
     @Test
     fun givenMLSConversation_whenMigratingToMLS_thenReturnSuccessWithoutTransaction() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withConversationProtocolInfo(TestConversation.MLS_PROTOCOL_INFO)
+            .withConversationProtocolInfo(MockConversation.MLS_PROTOCOL_INFO)
             .arrange()
 
         val result = useCase(CONVERSATION_ID)
@@ -63,7 +63,7 @@ class MigrateConversationToMLSUseCaseTest {
     @Test
     fun givenMixedConversation_whenMigratingToMLS_thenFinaliseConversation() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withConversationProtocolInfo(TestConversation.MIXED_PROTOCOL_INFO)
+            .withConversationProtocolInfo(MockConversation.MIXED_PROTOCOL_INFO)
             .withFinaliseResult(Either.Right(Unit))
             .arrange()
 

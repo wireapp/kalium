@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -739,11 +739,11 @@ class EventRepositoryIntegrationTest {
         )
 
         fun memberJoinEvent(time: Instant) = EventContentDTO.Conversation.MemberJoinDTO(
-            TestConversation.NETWORK_ID,
-            TestConversation.NETWORK_USER_ID1,
+            MockConversation.NETWORK_ID,
+            MockConversation.NETWORK_USER_ID1,
             time,
             ConversationMembers(emptyList(), emptyList()),
-            TestConversation.NETWORK_USER_ID1.value
+            MockConversation.NETWORK_USER_ID1.value
         )
 
         fun timestampForId(id: String): Instant {

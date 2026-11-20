@@ -18,9 +18,9 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -43,10 +43,10 @@ class SendTypingEventUseCaseTest {
             .withTypingIndicatorStatusAndResult(Conversation.TypingIndicatorMode.STOPPED)
             .arrange()
 
-        useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STOPPED)
+        useCase(MockConversation.ID, Conversation.TypingIndicatorMode.STOPPED)
 
         verifySuspend(VerifyMode.atLeast(1)) {
-            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(TestConversation.ID, Conversation.TypingIndicatorMode.STOPPED)
+            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(MockConversation.ID, Conversation.TypingIndicatorMode.STOPPED)
         }
     }
 
@@ -59,10 +59,10 @@ class SendTypingEventUseCaseTest {
             )
             .arrange()
 
-        val result = useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STARTED)
+        val result = useCase(MockConversation.ID, Conversation.TypingIndicatorMode.STARTED)
 
         verifySuspend(VerifyMode.atLeast(1)) {
-            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(TestConversation.ID, Conversation.TypingIndicatorMode.STARTED)
+            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(MockConversation.ID, Conversation.TypingIndicatorMode.STARTED)
         }
         assertEquals(Unit, result)
     }

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.feature.asset.upload.AssetUploadCompletion
 import com.wire.kalium.logic.feature.asset.upload.TrackedAssetUploadImpl
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
@@ -61,7 +62,6 @@ import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Compa
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_PROTOCOL_INFO_FAILURE
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.arrange
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.feature.mls.FakeMLSMissingUsersRejectionHandler
@@ -1888,7 +1888,7 @@ class MessageSenderTest {
         companion object {
             fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
-            val TEST_CONVERSATION_ID = TestConversation.ID
+            val TEST_CONVERSATION_ID = MockConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"
             val MESSAGE_SENT_TIME = Instant.UNIX_FIRST_DATE
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".encodeToByteArray())

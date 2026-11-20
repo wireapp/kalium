@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -37,7 +38,6 @@ import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
@@ -194,9 +194,9 @@ class ResetMLSConversationUseCaseTest {
                 Unit.right()
             )
             .withRemoteConversationResponse(
-                TestConversation.CONVERSATION_RESPONSE.copy(
+                MockConversation.CONVERSATION_RESPONSE.copy(
                     protocol = ConvProtocol.MLS,
-                    groupId = TestConversation.GROUP_ID.value,
+                    groupId = MockConversation.GROUP_ID.value,
                     epoch = remoteEpoch
                 )
             )
@@ -205,7 +205,7 @@ class ResetMLSConversationUseCaseTest {
         useCase(TEST_CONVERSATION_ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.resetMlsConversation(TestConversation.GROUP_ID, 15UL)
+            arrangement.conversationRepository.resetMlsConversation(MockConversation.GROUP_ID, 15UL)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -213,7 +213,7 @@ class ResetMLSConversationUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.resetMlsConversation(TestConversation.GROUP_ID, remoteEpoch)
+            arrangement.conversationRepository.resetMlsConversation(MockConversation.GROUP_ID, remoteEpoch)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -242,26 +242,26 @@ class ResetMLSConversationUseCaseTest {
                 ).left()
             )
             .withRemoteConversationResponses(
-                TestConversation.CONVERSATION_RESPONSE.copy(
+                MockConversation.CONVERSATION_RESPONSE.copy(
                     protocol = ConvProtocol.MLS,
-                    groupId = TestConversation.GROUP_ID.value,
+                    groupId = MockConversation.GROUP_ID.value,
                     epoch = refreshedEpoch
                 ),
-                TestConversation.CONVERSATION_RESPONSE.copy(
+                MockConversation.CONVERSATION_RESPONSE.copy(
                     protocol = ConvProtocol.MLS,
                     groupId = updatedGroupId,
                     epoch = refreshedEpoch
                 )
             )
             .withConversations(
-                TestConversation.MLS_CONVERSATION,
-                TestConversation.MLS_CONVERSATION.copy(
+                MockConversation.MLS_CONVERSATION,
+                MockConversation.MLS_CONVERSATION.copy(
                     protocol = Conversation.ProtocolInfo.MLS(
                         groupId = GroupID(updatedGroupId),
-                        groupState = TestConversation.MLS_PROTOCOL_INFO.groupState,
+                        groupState = MockConversation.MLS_PROTOCOL_INFO.groupState,
                         epoch = refreshedEpoch,
-                        keyingMaterialLastUpdate = TestConversation.MLS_PROTOCOL_INFO.keyingMaterialLastUpdate,
-                        cipherSuite = TestConversation.MLS_PROTOCOL_INFO.cipherSuite
+                        keyingMaterialLastUpdate = MockConversation.MLS_PROTOCOL_INFO.keyingMaterialLastUpdate,
+                        cipherSuite = MockConversation.MLS_PROTOCOL_INFO.cipherSuite
                     )
                 )
             )
@@ -270,11 +270,11 @@ class ResetMLSConversationUseCaseTest {
         useCase(TEST_CONVERSATION_ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.resetMlsConversation(TestConversation.GROUP_ID, 15UL)
+            arrangement.conversationRepository.resetMlsConversation(MockConversation.GROUP_ID, 15UL)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.resetMlsConversation(TestConversation.GROUP_ID, refreshedEpoch)
+            arrangement.conversationRepository.resetMlsConversation(MockConversation.GROUP_ID, refreshedEpoch)
         }
 
         verifySuspend(VerifyMode.exactly(2)) {
@@ -348,7 +348,7 @@ class ResetMLSConversationUseCaseTest {
     fun givenMLSProtocol_whenUseCaseCalled_thenSuccess() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withFeatureEnabled()
-            .withConversation(TestConversation.MLS_CONVERSATION)
+            .withConversation(MockConversation.MLS_CONVERSATION)
             .arrange()
 
         val result = useCase(TEST_CONVERSATION_ID).toEither()
@@ -364,7 +364,7 @@ class ResetMLSConversationUseCaseTest {
     fun givenMixedProtocol_whenUseCaseCalled_thenSuccess() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withFeatureEnabled()
-            .withConversation(TestConversation.MIXED_CONVERSATION)
+            .withConversation(MockConversation.MIXED_CONVERSATION)
             .arrange()
 
         val result = useCase(TEST_CONVERSATION_ID).toEither()
@@ -441,13 +441,13 @@ class ResetMLSConversationUseCaseTest {
         val fetchConversationUseCase: FetchConversationUseCase = mock(mode = MockMode.autoUnit)
         val endCallOnMLSReset: EndCallOnMLSResetUseCase = mock(mode = MockMode.autoUnit)
         var kaliumConfigs = KaliumConfigs(isMlsResetEnabled = true)
-        private var remoteConversationResponses: List<ConversationResponse> = listOf(TestConversation.CONVERSATION_RESPONSE.copy(
+        private var remoteConversationResponses: List<ConversationResponse> = listOf(MockConversation.CONVERSATION_RESPONSE.copy(
             protocol = ConvProtocol.MLS,
-            groupId = TestConversation.GROUP_ID.value,
+            groupId = MockConversation.GROUP_ID.value,
             epoch = 21UL
         ))
         private var resetConversationResults: List<Either<NetworkFailure, Unit>> = listOf(Unit.right())
-        private var conversations: List<Conversation> = listOf(TestConversation.MLS_CONVERSATION)
+        private var conversations: List<Conversation> = listOf(MockConversation.MLS_CONVERSATION)
         private var fetchConversationResult: Either<CoreFailure, Unit> = Unit.right()
 
         fun withCompileTimeFlagDisabled() = apply {

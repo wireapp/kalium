@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.asset.upload
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetAuditFeatureHandler
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
@@ -29,7 +30,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
@@ -138,7 +138,7 @@ class PersistAssetPreviewTest {
         private val originalSource = files.tempFilePath("caller-video.mp4")
         private val previewSource = files.tempFilePath("caller-preview.png")
         val params = AssetUploadParams(
-            TestConversation.ID, originalSource, 11, "video.mp4", "video/mp4", 1920, 1080, 0, null,
+            MockConversation.ID, originalSource, 11, "video.mp4", "video/mp4", 1920, 1080, 0, null,
             AssetPreviewUploadParams(previewSource, 13, "image/png", 512, 288),
         )
         private val properties = mock<UserPropertyRepository>()

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.asset.upload
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.common.functional.Either
@@ -28,7 +29,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.util.getExtensionFromMimeType
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
@@ -63,11 +63,11 @@ class AssetPreviewUploadTest {
         everySuspend {
             assets.uploadAndPersistPrivateAsset(
                 "image/jpeg", path, AES256Key(preview.remoteData.otrKey), extension,
-                TestConversation.ID.toApi(), "preview.$extension", "image/jpeg",
+                MockConversation.ID.toApi(), "preview.$extension", "image/jpeg",
             )
         } returns Either.Right(uploaded to hash)
 
-        val result = assets.uploadPreviewIfNeeded(preview, TestConversation.ID)
+        val result = assets.uploadPreviewIfNeeded(preview, MockConversation.ID)
 
         assertEquals(preview.copy(remoteData = preview.remoteData.copy(
             assetId = uploaded.key, assetDomain = uploaded.domain, assetToken = uploaded.assetToken, sha256 = hash.data,
@@ -75,7 +75,7 @@ class AssetPreviewUploadTest {
         verifySuspend(VerifyMode.exactly(1)) {
             assets.uploadAndPersistPrivateAsset(
                 "image/jpeg", path, AES256Key(preview.remoteData.otrKey), extension,
-                TestConversation.ID.toApi(), "preview.$extension", "image/jpeg",
+                MockConversation.ID.toApi(), "preview.$extension", "image/jpeg",
             )
         }
     }
@@ -87,14 +87,14 @@ class AssetPreviewUploadTest {
             Either.Right(FetchedAssetData("preview.jpg".toPath(), false))
         everySuspend { assets.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any()) } returns
             Either.Left(NetworkFailure.NoNetworkConnection(null))
-        assertNull(assets.uploadPreviewIfNeeded(preview, TestConversation.ID))
+        assertNull(assets.uploadPreviewIfNeeded(preview, MockConversation.ID))
     }
 
     @Test
     fun uploadedPreviewIsReusedWhenRetryingMessageSend() = runTest {
         val assets = mock<AssetRepository>()
         val uploaded = preview.copy(remoteData = preview.remoteData.copy(sha256 = ByteArray(32) { 2 }))
-        assertEquals(uploaded, assets.uploadPreviewIfNeeded(uploaded, TestConversation.ID))
+        assertEquals(uploaded, assets.uploadPreviewIfNeeded(uploaded, MockConversation.ID))
         verifySuspend(VerifyMode.exactly(0)) {
             assets.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
         }
@@ -105,9 +105,9 @@ class AssetPreviewUploadTest {
         val assets = mock<AssetRepository>()
         val oversized = preview.copy(sizeInBytes = AssetContent.Preview.MAX_SIZE_IN_BYTES + 1)
 
-        assertNull(assets.uploadPreviewIfNeeded(oversized, TestConversation.ID))
+        assertNull(assets.uploadPreviewIfNeeded(oversized, MockConversation.ID))
         assertNull(assets.uploadPreviewIfNeeded(
-            oversized.copy(remoteData = oversized.remoteData.copy(sha256 = ByteArray(32) { 2 })), TestConversation.ID
+            oversized.copy(remoteData = oversized.remoteData.copy(sha256 = ByteArray(32) { 2 })), MockConversation.ID
         ))
 
         verifySuspend(VerifyMode.exactly(0)) {
@@ -127,7 +127,7 @@ class AssetPreviewUploadTest {
             preview.copy(remoteData = preview.remoteData.copy(sha256 = ByteArray(1))),
             preview.copy(remoteData = preview.remoteData.copy(otrKey = ByteArray(33), sha256 = ByteArray(32))),
         )
-        invalid.forEach { assertNull(assets.uploadPreviewIfNeeded(it, TestConversation.ID)) }
+        invalid.forEach { assertNull(assets.uploadPreviewIfNeeded(it, MockConversation.ID)) }
         verifySuspend(VerifyMode.exactly(0)) {
             assets.fetchPreviewAsset(any())
             assets.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
@@ -140,6 +140,6 @@ class AssetPreviewUploadTest {
         everySuspend {
             assets.fetchPreviewAsset(any())
         } throws CancellationException()
-        assertFailsWith<CancellationException> { assets.uploadPreviewIfNeeded(preview, TestConversation.ID) }
+        assertFailsWith<CancellationException> { assets.uploadPreviewIfNeeded(preview, MockConversation.ID) }
     }
 }

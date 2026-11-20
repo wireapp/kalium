@@ -20,11 +20,11 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
+import com.wire.kalium.logic.data.MockConversation.CONVERSATION_RESPONSE_DTO
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE_DTO
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -49,7 +49,7 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
     fun givenConversationsWithoutMetadata_whenRefreshing_thenShouldFetchAndPersist() = runTest {
         // Given
         val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
-            .withConversationIdsWithoutMetadata(listOf(TestConversation.ID))
+            .withConversationIdsWithoutMetadata(listOf(MockConversation.ID))
             .withFetchConversationListDetailsSuccess()
             .withPersistConversationsSuccess()
             .arrange()
@@ -88,12 +88,12 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
     @Test
     fun givenNotFoundConversation_whenRefreshing_thenKeepHistoryWithoutPersistingReplacementMetadata() = runTest {
         val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
-            .withConversationIdsWithoutMetadata(listOf(TestConversation.ID)).arrange()
+            .withConversationIdsWithoutMetadata(listOf(MockConversation.ID)).arrange()
         everySuspend { arrangement.conversationRepository.fetchConversationListDetails(any()) } returns Either.Right(
             CONVERSATION_RESPONSE_DTO.copy(
                 conversationsFound = emptyList(),
                 conversationsFailed = emptyList(),
-                conversationsNotFound = listOf(TestConversation.NETWORK_ID)
+                conversationsNotFound = listOf(MockConversation.NETWORK_ID)
             )
         )
         useCase()
@@ -103,7 +103,7 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
     @Test
     fun givenTemporaryFetchFailure_whenRefreshingAgain_thenConversationCanBeResolved() = runTest {
         val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
-            .withConversationIdsWithoutMetadata(listOf(TestConversation.ID))
+            .withConversationIdsWithoutMetadata(listOf(MockConversation.ID))
             .withPersistConversationsSuccess().arrange()
         everySuspend { arrangement.conversationRepository.fetchConversationListDetails(any()) } returns
             Either.Left(NetworkFailure.NoNetworkConnection(null))

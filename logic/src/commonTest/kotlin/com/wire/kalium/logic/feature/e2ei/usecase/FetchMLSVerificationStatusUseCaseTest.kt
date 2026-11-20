@@ -27,6 +27,7 @@ import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -40,7 +41,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseTest.Arrangement.Companion.getMockedIdentity
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -59,14 +60,14 @@ class FetchMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenNotVerifiedConversation_whenNotVerifiedStatusComes_thenNothingChanged() = runTest {
-        val conversationDetails = TestConversation.MLS_CONVERSATION
+        val conversationDetails = MockConversation.MLS_CONVERSATION
         val (arrangement, handler) = arrange {
             withGetMLSClientSuccess()
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
             withConversationByMLSGroupId(Either.Right(conversationDetails))
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(MockConversation.GROUP_ID)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.not) {
@@ -84,7 +85,7 @@ class FetchMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenVerifiedConversation_whenNotVerifiedStatusComes_thenStatusSetToDegradedAndSystemMessageAdded() = runTest {
-        val conversationDetails = TestConversation.GROUP().copy(
+        val conversationDetails = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(
             mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED
         )
         val (arrangement, handler) = arrange {
@@ -93,7 +94,7 @@ class FetchMLSVerificationStatusUseCaseTest {
             withConversationByMLSGroupId(Either.Right(conversationDetails))
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(MockConversation.GROUP_ID)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -114,7 +115,7 @@ class FetchMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenDegradedConversation_whenNotVerifiedStatusComes_thenNothingChanged() = runTest {
-        val conversationDetails = TestConversation.GROUP().copy(
+        val conversationDetails = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(
             mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED
         )
 
@@ -124,7 +125,7 @@ class FetchMLSVerificationStatusUseCaseTest {
             withConversationByMLSGroupId(Either.Right(conversationDetails))
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(MockConversation.GROUP_ID)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.not) {
@@ -147,7 +148,7 @@ class FetchMLSVerificationStatusUseCaseTest {
         val user2 = QualifiedID("user2", "domain2") to NameAndHandle("name2", "device2")
 
         val epochChangedData = EpochChangesData(
-            conversationId = TestConversation.CONVERSATION.id,
+            conversationId = MockConversation.CONVERSATION.id,
             members = mapOf(user1, user2),
             mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED
         )
@@ -167,7 +168,7 @@ class FetchMLSVerificationStatusUseCaseTest {
             withGetMembersIdentities(ccMembersIdentity)
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(MockConversation.GROUP_ID)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -193,7 +194,7 @@ class FetchMLSVerificationStatusUseCaseTest {
         val user2 = QualifiedID("user2", "domain2") to NameAndHandle("name2", "device2")
 
         val epochChangedData = EpochChangesData(
-            conversationId = TestConversation.CONVERSATION.id,
+            conversationId = MockConversation.CONVERSATION.id,
             members = mapOf(user1, user2),
             mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED
         )
@@ -213,7 +214,7 @@ class FetchMLSVerificationStatusUseCaseTest {
             withGetMembersIdentities(ccMembersIdentity)
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(MockConversation.GROUP_ID)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {

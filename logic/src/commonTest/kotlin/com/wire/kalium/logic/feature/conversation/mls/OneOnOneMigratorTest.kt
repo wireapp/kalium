@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -33,7 +34,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.NoClientsForUser
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -60,11 +61,11 @@ class OneOnOneMigratorTest {
     @Test
     fun givenOneOnOneIsAlreadyProteus_whenMigratingToProteus_thenShouldNotDoAnythingElseAndSucceed() = runTest {
         val user = TestUser.OTHER.copy(
-            activeOneOnOneConversationId = TestConversation.ID
+            activeOneOnOneConversationId = MockConversation.ID
         )
 
         val (arrangement, oneOneMigrator) = arrange {
-            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ID)))
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(MockConversation.ID)))
         }
 
         oneOneMigrator.migrateToProteus(user)
@@ -84,7 +85,7 @@ class OneOnOneMigratorTest {
         )
 
         val (arrangement, oneOneMigrator) = arrange {
-            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ID)))
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(MockConversation.ID)))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
         }
 
@@ -92,7 +93,7 @@ class OneOnOneMigratorTest {
             .shouldSucceed()
 
         verifySuspend(VerifyMode.atLeast(1)) {
-            arrangement.userRepository.updateActiveOneOnOneConversation(user.id, TestConversation.ID)
+            arrangement.userRepository.updateActiveOneOnOneConversation(user.id, MockConversation.ID)
         }
     }
 
@@ -107,7 +108,7 @@ class OneOnOneMigratorTest {
             withFetchOtherUserClientsReturning(
                 Either.Right(mapOf(user.id.toApi() to listOf(SimpleClientResponse("registered-client"))))
             )
-            withCreateGroupConversationReturning(Either.Right(TestConversation.ONE_ON_ONE()))
+            withCreateGroupConversationReturning(Either.Right(MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID)))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
         }
 
@@ -123,7 +124,10 @@ class OneOnOneMigratorTest {
         }
 
         verifySuspend(VerifyMode.atLeast(1)) {
-            arrangement.userRepository.updateActiveOneOnOneConversation(TestUser.OTHER.id, TestConversation.ONE_ON_ONE().id)
+            arrangement.userRepository.updateActiveOneOnOneConversation(
+                TestUser.OTHER.id,
+                MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID).id
+            )
         }
     }
 
@@ -184,11 +188,11 @@ class OneOnOneMigratorTest {
     @Test
     fun givenOneOnOneIsAlreadyMLS_whenMigratingToMLS_thenShouldNotDoAnythingElseAndSucceed() = runTest {
         val user = TestUser.OTHER.copy(
-            activeOneOnOneConversationId = TestConversation.ID
+            activeOneOnOneConversationId = MockConversation.ID
         )
 
         val (arrangement, oneOneMigrator) = arrange {
-            withResolveConversationReturning(Either.Right(TestConversation.ID))
+            withResolveConversationReturning(Either.Right(MockConversation.ID))
         }
 
         oneOneMigrator.migrateToMLS(arrangement.transactionContext, user)
@@ -214,7 +218,7 @@ class OneOnOneMigratorTest {
         )
 
         val (arrangement, oneOneMigrator) = arrange {
-            withResolveConversationReturning(Either.Right(TestConversation.ID))
+            withResolveConversationReturning(Either.Right(MockConversation.ID))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(emptyList()))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
         }
@@ -254,8 +258,8 @@ class OneOnOneMigratorTest {
             activeOneOnOneConversationId = null
         )
         val (arrangement, oneOneMigrator) = arrange {
-            withResolveConversationReturning(Either.Right(TestConversation.ID))
-            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ID)))
+            withResolveConversationReturning(Either.Right(MockConversation.ID))
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(MockConversation.ID)))
             withMoveMessagesToAnotherConversation(Either.Left(failure))
         }
 
@@ -280,9 +284,9 @@ class OneOnOneMigratorTest {
             activeOneOnOneConversationId = null
         )
         val (arrangement, oneOneMigrator) = arrange {
-            withResolveConversationReturning(Either.Right(TestConversation.ID))
-            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ID)))
-            withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = TestConversation.ID))
+            withResolveConversationReturning(Either.Right(MockConversation.ID))
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(MockConversation.ID)))
+            withGetConversationByIdReturning(MockConversation.CONVERSATION.copy(id = MockConversation.ID))
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Left(failure))
             withUpdateConversationModifiedDate(Either.Right(Unit))
@@ -304,7 +308,7 @@ class OneOnOneMigratorTest {
         val (arrangement, oneOneMigrator) = arrange {
             withResolveConversationReturning(Either.Right(resolvedConversationId))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(originalConversationId)))
-            withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = originalConversationId))
+            withGetConversationByIdReturning(MockConversation.CONVERSATION.copy(id = originalConversationId))
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
             withUpdateConversationModifiedDate(Either.Right(Unit))
@@ -332,7 +336,7 @@ class OneOnOneMigratorTest {
         val (arrangement, oneOneMigrator) = arrange {
             withResolveConversationReturning(Either.Right(resolvedConversationId))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(originalConversationId)))
-            withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = originalConversationId))
+            withGetConversationByIdReturning(MockConversation.CONVERSATION.copy(id = originalConversationId))
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
             withUpdateConversationModifiedDate(Either.Right(Unit))
@@ -353,7 +357,7 @@ class OneOnOneMigratorTest {
     @Test
     fun givenProteusConversation_whenMigratingToMLS_thenUpdateLastModifiedDateFromOriginalConversation() = runTest {
         val lastModified = DateTimeUtil.currentInstant()
-        val originalConversation = TestConversation.CONVERSATION.copy(
+        val originalConversation = MockConversation.CONVERSATION.copy(
             id = ConversationId("someRandomConversationId", "testDomain"),
             lastModifiedDate = lastModified
         )

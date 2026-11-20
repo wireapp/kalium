@@ -21,13 +21,14 @@ package com.wire.kalium.logic.feature.conversation
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import dev.mokkery.answering.returns
@@ -56,8 +57,8 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
         // Given
-        val groupConversation = TestConversation.GROUP()
-        val selfConversation = TestConversation.SELF()
+        val groupConversation = MockConversation.group(teamId = TestTeam.TEAM_ID)
+        val selfConversation = MockConversation.self(teamId = TestTeam.TEAM_ID)
         val conversations = listOf(selfConversation, groupConversation)
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val fetchArchivedConversations = false
@@ -88,10 +89,10 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversationsWithArchivedValues_whenFetchingOnlyNonArchived_thenTheseConversationsShouldNotBeReturned() = runTest {
         // Given
-        val groupConversation1 = TestConversation.GROUP().copy(archived = true)
+        val groupConversation1 = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(archived = true)
         val group2Id = ConversationId("OtherId", "someDomain")
-        val groupConversation2 = TestConversation.GROUP().copy(id = group2Id, archived = false)
-        val selfConversation = TestConversation.SELF()
+        val groupConversation2 = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(id = group2Id, archived = false)
+        val selfConversation = MockConversation.self(teamId = TestTeam.TEAM_ID)
         val conversations = listOf(selfConversation, groupConversation1, groupConversation2)
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val fetchArchivedConversations = false
@@ -129,8 +130,8 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
         // Given
-        val selfConversation = TestConversation.SELF()
-        val groupConversation = TestConversation.GROUP()
+        val selfConversation = MockConversation.self(teamId = TestTeam.TEAM_ID)
+        val groupConversation = MockConversation.group(teamId = TestTeam.TEAM_ID)
         val conversations = listOf(selfConversation, groupConversation)
         val fetchArchivedConversations = false
 
@@ -162,8 +163,8 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversationsDetailsAreUpdated_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         // Given
-        val oneOnOneConversation = TestConversation.ONE_ON_ONE()
-        val groupConversation = TestConversation.GROUP()
+        val oneOnOneConversation = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID)
+        val groupConversation = MockConversation.group(teamId = TestTeam.TEAM_ID)
         val conversations = listOf(groupConversation, oneOnOneConversation)
         val fetchArchivedConversations = false
 
@@ -213,7 +214,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         // Given
-        val groupConversation = TestConversation.GROUP()
+        val groupConversation = MockConversation.group(teamId = TestTeam.TEAM_ID)
         val fetchArchivedConversations = false
         val groupConversationDetails = ConversationDetails.Group.Regular(
             groupConversation,
@@ -221,7 +222,7 @@ class ObserveConversationListDetailsUseCaseTest {
             selfRole = Conversation.Member.Role.Member
         )
 
-        val selfConversation = TestConversation.SELF()
+        val selfConversation = MockConversation.self(teamId = TestTeam.TEAM_ID)
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
 
         val firstConversationsList = listOf(groupConversation)
@@ -247,9 +248,9 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenConversationDetailsFailure_whenObservingDetailsList_thenIgnoreConversationWithFailure() = runTest {
         // Given
-        val successConversation = TestConversation.ONE_ON_ONE().copy(id = ConversationId("successId", "domain"))
+        val successConversation = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID).copy(id = ConversationId("successId", "domain"))
         val successConversationDetails = TestConversationDetails.CONVERSATION_ONE_ONE.copy(conversation = successConversation)
-        val failureConversation = TestConversation.ONE_ON_ONE().copy(id = ConversationId("failedId", "domain"))
+        val failureConversation = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID).copy(id = ConversationId("failedId", "domain"))
         val fetchArchivedConversations = false
 
         val (_, observeConversationsUseCase) = Arrangement()

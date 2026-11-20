@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation.Access
 import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -65,8 +65,8 @@ class AccessUpdateHandlerTest {
             arrangement.conversationDAO.updateAccess(
                 matches {
                     it == PersistenceQualifiedId(
-                        value = TestConversation.ID.value,
-                        domain = TestConversation.ID.domain
+                        value = MockConversation.ID.value,
+                        domain = MockConversation.ID.domain
                     )
                 },
                 matches {
@@ -309,7 +309,7 @@ class AccessUpdateHandlerTest {
 
         suspend fun withExistingConversationAccessRole(accessRoles: List<ConversationEntity.AccessRole>?) = apply {
             val conversationEntity = if (accessRoles != null) {
-                TestConversation.ENTITY.copy(accessRole = accessRoles)
+                MockConversation.entity().copy(accessRole = accessRoles)
             } else {
                 null
             }

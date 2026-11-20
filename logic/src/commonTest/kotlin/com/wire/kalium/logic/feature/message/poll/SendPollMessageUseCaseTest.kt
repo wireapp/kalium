@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.message.poll
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -28,7 +29,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
@@ -55,7 +55,7 @@ class SendPollMessageUseCaseTest {
     fun givenValidPoll_whenSending_thenTrimmedPollIsPersistedAndSent() = runTest {
         val arrangement = arrangement()
 
-        val result = arrangement.useCase(TestConversation.ID, " Lunch? ", listOf(" Pizza", "Sushi "), true)
+        val result = arrangement.useCase(MockConversation.ID, " Lunch? ", listOf(" Pizza", "Sushi "), true)
 
         assertIs<MessageOperationResult.Success>(result)
         verifySuspend {
@@ -81,7 +81,7 @@ class SendPollMessageUseCaseTest {
             "Lunch?" to listOf("Pizza", "pizza "),
             "Lunch?" to List(SendPollMessageUseCase.MAX_OPTIONS + 1) { "Option $it" },
         ).forEach { (question, options) ->
-            assertIs<MessageOperationResult.Failure>(arrangement.useCase(TestConversation.ID, question, options, false))
+            assertIs<MessageOperationResult.Failure>(arrangement.useCase(MockConversation.ID, question, options, false))
         }
 
         verifySuspend(VerifyMode.not) { arrangement.persistMessage(any()) }
@@ -91,7 +91,7 @@ class SendPollMessageUseCaseTest {
     fun givenSendingFails_whenSending_thenFailureIsHandledAndReturned() = runTest {
         val arrangement = arrangement().withSendReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
 
-        val result = arrangement.useCase(TestConversation.ID, "Lunch?", listOf("Pizza", "Sushi"), false)
+        val result = arrangement.useCase(MockConversation.ID, "Lunch?", listOf("Pizza", "Sushi"), false)
 
         assertIs<MessageOperationResult.Failure>(result)
         verifySuspend {

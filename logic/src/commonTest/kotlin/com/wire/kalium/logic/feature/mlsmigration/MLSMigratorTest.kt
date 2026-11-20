@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.mlsmigration
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -32,7 +33,6 @@ import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
@@ -62,7 +62,7 @@ class MLSMigratorTest {
 
     @Test
     fun givenTeamConversation_whenMigrating_thenProtocolIsUpdatedToMixedAndGroupIsEstablished() = runTest {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
@@ -102,7 +102,7 @@ class MLSMigratorTest {
 
     @Test
     fun givenAnOngoingCall_whenMigrating_thenInsertSystemMessages() = runTest {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
@@ -149,7 +149,7 @@ class MLSMigratorTest {
 
     @Test
     fun givenAnError_whenMigrating_thenStillConsiderItASuccess() = runTest {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
@@ -170,7 +170,7 @@ class MLSMigratorTest {
 
     @Test
     fun givenTeamConversation_whenFinalising_thenKnownUsersAreFetchedAndProtocolIsUpdatedToMls() = runTest {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
@@ -195,7 +195,7 @@ class MLSMigratorTest {
 
     @Test
     fun givenAnError_whenFinalising_thenStillConsiderItASuccess() = runTest {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             type = Conversation.Type.Group.Regular,
             teamId = TestTeam.TEAM_ID
         )
@@ -314,14 +314,14 @@ class MLSMigratorTest {
             val MEMBERS = listOf(TestUser.USER_ID)
             val SUCCESSFUL_ADDITION_RESULT = MLSAdditionResult(MEMBERS.toSet(), emptySet(), emptySet())
             val MIXED_PROTOCOL_INFO = Conversation.ProtocolInfo.Mixed(
-                TestConversation.GROUP_ID,
+                MockConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = CIPHER_SUITE
             )
             val MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
-                TestConversation.GROUP_ID,
+                MockConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
