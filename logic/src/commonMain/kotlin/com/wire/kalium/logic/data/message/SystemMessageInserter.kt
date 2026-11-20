@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.appsAccessChangedMessage
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.mlsEpochWarningMessage
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.LocalId
 import kotlin.uuid.Uuid
@@ -45,7 +46,13 @@ internal interface SystemMessageInserter {
         conversationId: ConversationId
     )
 
-    suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit>
+    /** The ID comes from the group and the epoch the rejoin reached, so replaying the same rejoin adds no second warning. */
+    suspend fun insertLostCommitSystemMessage(
+        conversationId: ConversationId,
+        groupId: GroupID,
+        epoch: ULong,
+        instant: Instant
+    ): Either<CoreFailure, Unit>
 
     suspend fun insertConversationAppsAccessChanged(
         eventId: String = LocalId.generate(),
@@ -113,8 +120,14 @@ internal class SystemMessageInserterImpl(
         persistMessage(message)
     }
 
-    override suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit> {
-        val mlsEpochWarningMessage = mlsEpochWarningMessage(Uuid.random().toString(), conversationId, selfUserId, instant)
+    override suspend fun insertLostCommitSystemMessage(
+        conversationId: ConversationId,
+        groupId: GroupID,
+        epoch: ULong,
+        instant: Instant
+    ): Either<CoreFailure, Unit> {
+        val id = "$conversationId:${groupId.value}:$epoch:mls-lost-commit"
+        val mlsEpochWarningMessage = mlsEpochWarningMessage(id, conversationId, selfUserId, instant)
         return persistMessage(mlsEpochWarningMessage)
     }
 
