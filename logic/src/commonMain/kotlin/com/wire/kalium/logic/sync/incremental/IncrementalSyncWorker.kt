@@ -21,6 +21,9 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.data.event.EventEnvelope
+import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -34,6 +37,7 @@ internal interface IncrementalSyncWorker {
     suspend fun processEventsFlow(): Flow<EventSource>
 }
 
+@Suppress("LongParameterList") // Each start-of-sync step is a separate injected owner.
 internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
     private val batchProcessor: EventBatchProcessor,
@@ -41,6 +45,7 @@ internal class IncrementalSyncWorkerImpl(
     private val consumePendingAccountInvalidation: suspend () -> Boolean = { false },
     private val consumePendingLegalHoldTransitions: suspend () -> Unit = {},
     private val consumePendingConversationCleanup: suspend () -> Unit = {},
+    private val rejoinQueue: MLSRejoinQueue? = null,
 ) : IncrementalSyncWorker {
     private val logger = logger.withFeatureId(SYNC)
 
@@ -50,6 +55,8 @@ internal class IncrementalSyncWorkerImpl(
         if (consumePendingAccountInvalidation()) awaitCancellation()
         consumePendingConversationCleanup()
         consumePendingLegalHoldTransitions()
+        // A rejoin queued before the app stopped; its batch is the first one gathered again.
+        rejoinQueue?.rejoinQueued()
 
         logger.d("$TAG gatherEvents starting...")
         eventGatherer.gatherEvents()
@@ -57,10 +64,24 @@ internal class IncrementalSyncWorkerImpl(
             .filterIsInstance<EventStreamData.NewEvents>()
             .collect { streamData ->
                 logger.d("$TAG Received ${streamData.eventList.size} events to process")
-                batchProcessor.processBatch(streamData.eventList)
+                processBatch(streamData.eventList)
             }
         logger.i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()
+
+    /** A batch that queued rejoins is replayed after them; a group is rejoined once per replay, so this ends. */
+    private suspend fun processBatch(events: List<EventEnvelope>) {
+        while (true) {
+            try {
+                batchProcessor.processBatch(events)
+                rejoinQueue?.onBatchAcknowledged()
+                return
+            } catch (failure: KaliumSyncException) {
+                if (rejoinQueue?.rejoinQueued() != true) throw failure
+                logger.i("$TAG Replaying the batch after rejoining stale MLS groups")
+            }
+        }
+    }
 
     companion object {
         const val TAG = "[IncrementalSyncWorker]"

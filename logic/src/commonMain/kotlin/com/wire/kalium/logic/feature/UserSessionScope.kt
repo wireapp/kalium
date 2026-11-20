@@ -540,6 +540,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessa
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueueImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
@@ -1741,6 +1743,7 @@ public class UserSessionScope internal constructor(
                 }
                 pending != null
             },
+            rejoinQueue = mlsRejoinQueue,
         )
 
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
@@ -2116,6 +2119,10 @@ public class UserSessionScope internal constructor(
             subconversationRepository = subconversationRepository
         )
 
+    private val mlsRejoinQueue: MLSRejoinQueue by lazy {
+        MLSRejoinQueueImpl(userStorage.database.pendingActionDAO, cryptoTransactionProvider, staleEpochVerifier)
+    }
+
     private val newMessageHandler: NewMessageEventHandler
         get() = NewMessageEventHandlerImpl(
             proteusUnpacker,
@@ -2131,6 +2138,7 @@ public class UserSessionScope internal constructor(
             userId,
             staleEpochVerifier,
             resetMlsConversation,
+            mlsRejoinQueue,
             receiveRecovery = if (enableDurableMLSReceiveRecovery) {
                 { context, event, needsRejoin -> receiveRecovery()?.handle(context, event, needsRejoin) == true }
             } else null,

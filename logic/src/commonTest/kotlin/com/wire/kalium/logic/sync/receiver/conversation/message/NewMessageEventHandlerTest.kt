@@ -156,14 +156,14 @@ class NewMessageEventHandlerTest {
     fun nonQueueReceiveDoesNotUseDurableRecoveryEvenWithPendingDeliverySource() = runTest {
         val (arrangement, handler) = Arrangement { _, _, _ -> error("Local events must not create recovery intents") }
             .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
-            .withVerifyEpoch(Either.Right(Unit))
+            .withRejoinRequest(true)
             .arrange()
         val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        handler.handleNewMLSMessage(arrangement.transactionContext, event, EventDeliveryInfo(EventSource.PENDING)).shouldSucceed()
+        handler.handleNewMLSMessage(arrangement.transactionContext, event, EventDeliveryInfo(EventSource.PENDING)).shouldFail()
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), event) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId) }
     }
 
     @Test
@@ -720,30 +720,54 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
-    fun givenMLSEventFailsWithWrongEpoch_whenHandling_shouldCallWrongEpochHandler() = runTest {
-        val (arrangement, newMessageEventHandler) = Arrangement()
-            .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
-            .withVerifyEpoch(Either.Right(Unit))
-            .arrange()
+    fun givenMainConversationNeedsRejoin_whenHandling_thenQueuesItAndFailsTheBatchWithoutJoiningInline() = runTest {
+        for (failure in listOf(MLSFailure.WrongEpoch, MLSFailure.ConversationNotFound)) {
+            val (arrangement, handler) = Arrangement()
+                .withMLSUnpackerReturning(Either.Left(failure))
+                .withRejoinRequest(true)
+                .arrange()
+            val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+            handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+                .shouldFail { assertEquals(failure, it) }
 
-        val result = newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
-
-        result.shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.staleEpochVerifier.verifyEpoch(
-                any(),
-                newMessageEvent.conversationId,
-                any(),
-                newMessageEvent.messageInstant
-            )
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId) }
+            verifySuspend(VerifyMode.not) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
         }
     }
 
     @Test
-    fun givenEpochVerifierFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
+    fun givenRejoinAlreadyRanForTheReplay_whenHandling_thenTheMessageIsIgnored() = runTest {
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val (arrangement, handler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
+            .withRejoinRequest(false)
+            .arrange()
+
+        handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun givenSubconversationNeedsRejoin_whenHandling_thenItIsStillVerifiedInline() = runTest {
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), subConversationId = SubconversationId("sub"))
+        val (arrangement, handler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
+            .withVerifyEpoch(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.staleEpochVerifier.verifyEpoch(any(), event.conversationId, event.subconversationId, event.messageInstant)
+        }
+        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
+    }
+
+    @Test
+    fun givenEpochVerifierFailsOnDurableReceive_thenFailureIsPropagated() = runTest {
         val failure = StorageFailure.DataNotFound
         val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
         val (arrangement, handler) = Arrangement()
@@ -751,9 +775,9 @@ class NewMessageEventHandlerTest {
             .withVerifyEpoch(Either.Left(failure))
             .arrange()
 
-        handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
         handler.handleNewMLSMessage(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
             .shouldFail { assertEquals(failure, it) }
+        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
     }
 
     @Test
@@ -761,7 +785,7 @@ class NewMessageEventHandlerTest {
         runTest {
             val (arrangement, newMessageEventHandler) = Arrangement()
                 .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
-                .withVerifyEpoch(Either.Right(Unit))
+                .withRejoinRequest(true)
                 .arrange()
 
             val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
@@ -782,7 +806,7 @@ class NewMessageEventHandlerTest {
                 Either.Left(MLSFailure.WrongEpoch),
                 Either.Left(MLSFailure.BufferedFutureMessage)
             )
-            .withVerifyEpoch(Either.Right(Unit))
+            .withRejoinRequest(true)
             .arrange()
 
         listOf(firstTimestamp, firstTimestamp + 2.minutes, firstTimestamp + 4.minutes).forEach { timestamp ->
@@ -793,7 +817,8 @@ class NewMessageEventHandlerTest {
             )
         }
 
-        verifySuspend(VerifyMode.exactly(1)) {
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(any()) }
+        verifySuspend(VerifyMode.not) {
             arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
         }
     }
@@ -858,14 +883,15 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
-    fun givenIgnoredMLSError_whenHandling_thenMessageIsConsumed() = runTest {
-        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+    fun givenSubconversationGroupIsMissing_whenHandling_thenMessageIsConsumed() = runTest {
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), subConversationId = SubconversationId("sub"))
         val (arrangement, handler) = Arrangement()
             .withMLSUnpackerReturning(Either.Left(MLSFailure.ConversationNotFound))
             .arrange()
 
         handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             .shouldSucceed()
+        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
     }
 
     @Test
@@ -929,6 +955,7 @@ class NewMessageEventHandlerTest {
         val confirmationDeliveryHandler = mock<ConfirmationDeliveryHandler>(mode = MockMode.autoUnit)
         val legalHoldHandler = mock<LegalHoldHandler>()
         val resetMlsConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val rejoinQueue = mock<MLSRejoinQueue>()
 
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
             proteusMessageUnpacker,
@@ -947,6 +974,7 @@ class NewMessageEventHandlerTest {
             SELF_USER_ID,
             staleEpochVerifier,
             resetMlsConversation,
+            rejoinQueue,
             recovery,
         )
 
@@ -991,6 +1019,10 @@ class NewMessageEventHandlerTest {
             everySuspend {
                 staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
             }.returns(result)
+        }
+
+        suspend fun withRejoinRequest(queued: Boolean) = apply {
+            everySuspend { rejoinQueue.request(any()) } returns queued
         }
 
         suspend fun withResetConversationReturning(result: ResetMLSConversationResult) = apply {

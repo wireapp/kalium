@@ -89,10 +89,8 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.NewMLSMessage -> {
-                val result = newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
-                if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
-            }
+            // Outside the durable path the handler fails only to rejoin a stale group outside this batch.
+            is Event.Conversation.NewMLSMessage -> newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
 
             is Event.Conversation.NewConversation -> {
                 newConversationHandler.handle(transactionContext, event)

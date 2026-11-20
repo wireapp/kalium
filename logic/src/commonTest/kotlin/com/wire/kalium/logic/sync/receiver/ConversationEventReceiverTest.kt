@@ -101,13 +101,15 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenNewMLSMessageHandlerFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
+    fun givenNewMLSMessageHandlerFails_thenTheFailureIsPropagatedSoTheEventIsKept() = runTest {
         val event = TestEvent.newMLSMessageEvent(Instant.DISTANT_FUTURE)
         val (arrangement, receiver) = Arrangement().arrange {
             everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), event, any()) } returns Either.Left(failure)
         }
 
-        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+        // The handler fails on the standard path only when it queued a rejoin outside this batch.
+        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+            .shouldFail { assertEquals(failure, it) }
         receiver.onEvent(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
             .shouldFail { assertEquals(failure, it) }
     }
