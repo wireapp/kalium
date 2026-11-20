@@ -117,7 +117,9 @@ internal class ReceivedMessageHandler(
             data.conversations.clearProposalTimer(it.groupId)
             // Queued in the same SQL write as the deletion, so a native rollback can't lose the group ID.
             data.pendingActions.upsert(
-                PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity(it.groupId, "mls"), event.dateTime.toEpochMilliseconds()
+                PendingActionType.WIPE_MLS_GROUP,
+                QualifiedIDEntity(it.groupId, "mls"),
+                event.dateTime.toEpochMilliseconds(),
             )
         }
         data.conversations.deleteConversationByQualifiedID(id)
