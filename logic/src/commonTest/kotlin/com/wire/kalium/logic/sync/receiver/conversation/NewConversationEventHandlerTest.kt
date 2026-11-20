@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
@@ -59,6 +60,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class NewConversationEventHandlerTest {
 
@@ -417,6 +419,33 @@ class NewConversationEventHandlerTest {
             }
         }
 
+    @Test
+    fun givenGroupStillWaitingForWelcome_whenTheEventIsReplayed_thenTheSameSystemMessageIdsArePersisted() = runTest {
+        val event = testNewConversationEvent(TestConversation.CONVERSATION_RESPONSE.copy(receiptMode = ReceiptMode.ENABLED))
+        val persisted = mutableListOf<String>()
+        val (arrangement, _) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(true)) // a group not yet ESTABLISHED stays new on replay
+            .withFetchUsersIfUnknownIds(event.conversation.members.otherMembers.map { it.id.toModel() }.toSet())
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
+            .arrange()
+        val creator = NewGroupConversationSystemMessagesCreatorImpl(
+            { persisted += it.id; Either.Right(Unit) }, arrangement.selfTeamIdProvider, QualifiedIdMapper(TestUser.SELF.id), TestUser.SELF.id
+        )
+        val handler = NewConversationEventHandlerImpl(
+            arrangement.conversationRepository, arrangement.userRepository, arrangement.selfTeamIdProvider,
+            creator, arrangement.oneOnOneResolver, arrangement.persistConversation
+        )
+
+        handler.handle(arrangement.transactionContext, event)
+        val firstAttempt = persisted.toList()
+        persisted.clear()
+        handler.handle(arrangement.transactionContext, event)
+
+        assertEquals("${event.conversationId}:${event.dateTime}:creation:0", firstAttempt.first())
+        assertEquals(firstAttempt, persisted)
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val conversationRepository = mock<ConversationRepository>()
         val userRepository = mock<UserRepository>()
@@ -427,6 +456,7 @@ class NewConversationEventHandlerTest {
         val persistConversation = mock<PersistConversationUseCase>()
 
         init {
+            every { newGroupConversationSystemMessagesCreator.forNewConversation(any()) } returns newGroupConversationSystemMessagesCreator
             everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
                     any<String>(),

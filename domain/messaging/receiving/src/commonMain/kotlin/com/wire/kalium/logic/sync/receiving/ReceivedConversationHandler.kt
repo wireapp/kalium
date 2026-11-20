@@ -486,22 +486,14 @@ internal data class ConversationCreation(
         if (refreshMembers && conversation.type.isGroup) data.members.updateFullMemberList(members, conversation.id)
         else data.members.insertMembersWithQualifiedId(members, conversation.id)
         if (event != null && createMessages) {
-            var index = 0
             val creator = NewGroupConversationSystemMessagesCreatorImpl(
-                PersistMessageUseCase { message ->
-                    check(message is Message.System)
-                    // A duplicated server creation can have a different notification ID. Its
-                    // conversation and creation time still identify the same system messages.
-                    // Fail here even when the shared app creator treats a write as best effort.
-                    persistMessage(
-                        message.copy(id = "${event.conversationId}:${event.dateTime}:creation:${index++}", date = event.dateTime)
-                    ).also { it.orThrow() }
-                },
+                // Fail here even when the shared app creator treats a write as best effort.
+                PersistMessageUseCase { message -> persistMessage(message).also { it.orThrow() } },
                 { Either.Right(selfTeam) },
                 QualifiedIdMapper(selfUserId),
                 selfUserId,
             )
-            creator.createForEvent(event, selfTeam).orThrow()
+            creator.forNewConversation(event).createForEvent(event, selfTeam).orThrow()
         }
         if (event != null) data.conversations.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentInstant())
     }

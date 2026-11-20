@@ -93,6 +93,12 @@ interface NewGroupConversationSystemMessagesCreator {
         creatorId: UserId,
         type: ConversationResponse.Type
     ): Either<CoreFailure, Unit>
+
+    /**
+     * Returns a creator that gives the messages it persists IDs and a date derived from [event], the same in the app
+     * and the NSE, so a replayed event or one both receive stores each creation message once.
+     */
+    fun forNewConversation(event: Event.Conversation.NewConversation): NewGroupConversationSystemMessagesCreator
 }
 
 @Suppress("TooManyFunctions")
@@ -333,6 +339,17 @@ class NewGroupConversationSystemMessagesCreatorImpl(
         )
     } else {
         Unit.right()
+    }
+
+    override fun forNewConversation(event: Event.Conversation.NewConversation): NewGroupConversationSystemMessagesCreator {
+        var index = 0
+        val persistWithEventIds = PersistMessageUseCase { message ->
+            check(message is Message.System)
+            // A duplicated server creation can have a different notification ID. Its
+            // conversation and creation time still identify the same system messages.
+            persistMessage(message.copy(id = "${event.conversationId}:${event.dateTime}:creation:${index++}", date = event.dateTime))
+        }
+        return NewGroupConversationSystemMessagesCreatorImpl(persistWithEventIds, selfTeamIdProvider, qualifiedIdMapper, selfUserId)
     }
 
     private suspend fun isSelfATeamMember() = selfTeamIdProvider().fold({ false }, { it != null })

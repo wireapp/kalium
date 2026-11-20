@@ -76,7 +76,10 @@ internal class NewConversationEventHandlerImpl(
                     }
                     .map { isNewUnhandledConversation }
             }.onSuccess { isNewUnhandledConversation ->
-                if (isNewUnhandledConversation) newGroupConversationSystemMessagesCreator.createForEvent(event, selfUserTeamId)
+                // An MLS group still waiting for its Welcome stays "new" on replay; event-derived IDs keep its messages single.
+                if (isNewUnhandledConversation) {
+                    newGroupConversationSystemMessagesCreator.forNewConversation(event).createForEvent(event, selfUserTeamId)
+                }
                 eventLogger.logSuccess()
             }.onFailure {
                 eventLogger.logFailure(it)
