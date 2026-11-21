@@ -84,7 +84,6 @@ class MLSReceiveRecoveryStore(
         }
     }
 
-    /** Hands deletions recorded by older versions to the wipe queue, then forgets them. */
     suspend fun drainDeletions(enqueueWipe: suspend (groupId: String) -> Unit) = mutex.withLock {
         val entries = load()
         if (entries.deletions.isEmpty()) return@withLock

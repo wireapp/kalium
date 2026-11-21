@@ -4481,7 +4481,6 @@ class NotificationProcessorNativeTest {
                         assertNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(deleted.id)).isProcessed)
                         assertNull(runtime.database.messageDAO.getMessageById(first.id, DELETE_TARGET))
-                        // The wipe is queued with the SQL deletion and runs after the notification's native commit.
                         val queued = interruption != Interruption.MARKER
                         assertEquals(queued, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
                         assertEquals(queued, runtime.database.pendingActionDAO.getByActionType(PendingActionType.WIPE_MLS_GROUP).isNotEmpty())

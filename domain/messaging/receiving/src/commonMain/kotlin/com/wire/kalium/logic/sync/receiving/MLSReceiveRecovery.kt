@@ -119,7 +119,6 @@ class MLSReceiveRecovery(
         return rejoin(context, response, operation)
     }
 
-    /** Older versions recorded conversation deletions here; they now go through the wipe queue. */
     suspend fun drainDeletions(enqueueWipe: suspend (groupId: String) -> Unit) = store.drainDeletions(enqueueWipe)
 
     suspend fun acknowledge(eventIds: List<String>) = store.acknowledge(eventIds)

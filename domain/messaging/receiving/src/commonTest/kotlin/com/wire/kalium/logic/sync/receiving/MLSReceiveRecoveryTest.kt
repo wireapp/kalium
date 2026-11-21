@@ -265,7 +265,6 @@ class MLSReceiveRecoveryTest {
     @Test
     fun deletionFromAnOlderVersionMovesToTheWipeQueueOnce() = runTest {
         withFixture { f ->
-            // Written exactly as older versions stored it, so the store must still parse it.
             val receipt = """{"eventId":"delete-event","payloadHash":"${"a".repeat(64)}"}"""
             val prefix = "mls_receive_recovery_v2:${"client".encodeUtf8().sha256().hex()}:"
             val key = prefix + "deletion:" + receipt.encodeUtf8().sha256().hex()
