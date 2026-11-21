@@ -12151,7 +12151,9 @@ class NotificationProcessorNativeTest {
             try {
                 val source = checkNotNull(database.conversationDAO.getConversationById(CONVERSATION_ID))
                 val protocol = source.protocolInfo as ConversationEntity.ProtocolInfo.MLS
-                database.conversationDAO.insertConversation(source.copy(id = id, protocolInfo = protocol.copy(groupId = "blocked-group")))
+                // A group this client never joined; CoreCrypto reads its ID, so it must be valid base64.
+                val groupId = Base64.encode("blocked-group".encodeToByteArray())
+                database.conversationDAO.insertConversation(source.copy(id = id, protocolInfo = protocol.copy(groupId = groupId)))
             } finally { database.close() }
         }
 
