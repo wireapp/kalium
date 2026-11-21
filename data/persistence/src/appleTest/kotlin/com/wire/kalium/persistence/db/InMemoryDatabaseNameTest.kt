@@ -54,11 +54,14 @@ class InMemoryDatabaseNameTest {
         val user = UserIDEntity("nuke-user", "example.com")
         val name = "in-memory-name-test-nuke"
         val database = inMemoryDatabase(user, StandardTestDispatcher(testScheduler), databaseName = name)
+        try {
+            val nuked = database.nuke()
 
-        val nuked = database.nuke()
-
-        assertTrue(nuked)
-        assertFalse(clearInMemoryDatabase(databaseName = name))
+            assertTrue(nuked)
+            assertFalse(clearInMemoryDatabase(databaseName = name))
+        } finally {
+            clearInMemoryDatabase(databaseName = name)
+        }
     }
 
     @Test

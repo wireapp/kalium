@@ -59,7 +59,11 @@ actual fun userDatabaseBuilder(
         }
 
         StorageData.InMemory ->
-            databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema.synchronous()) {
+            databaseDriver(
+                null,
+                platformDatabaseData.inMemoryDatabaseName ?: FileNameUtil.userDBName(userId),
+                UserDatabase.Schema.synchronous()
+            ) {
                 isWALEnabled = false
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
