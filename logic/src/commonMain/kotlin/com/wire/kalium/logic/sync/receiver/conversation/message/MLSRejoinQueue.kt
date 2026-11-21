@@ -50,7 +50,7 @@ import kotlin.time.Instant
  * Rejoins MLS groups that received messages found stale or lost, each in its own CoreCrypto transaction
  * instead of the event batch's. The receive path queues a rejoin and ignores the message: a rejoin enters at
  * the remote epoch, so no message already received for the group can be decrypted after it. The sync worker
- * rejoins after the batch is acknowledged. Only the app's standard receive path uses this queue.
+ * rejoins after the batch is acknowledged. The notification extension does not use this queue.
  *
  * A rejoin never fails sync. One that can succeed later stays queued and is tried again at the next sync
  * start only. The sync start rejoins only groups CoreCrypto lacks: one it has may have been repaired meanwhile
