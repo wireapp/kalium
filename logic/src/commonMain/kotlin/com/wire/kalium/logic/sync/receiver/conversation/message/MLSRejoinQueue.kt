@@ -136,9 +136,15 @@ internal class MLSRejoinQueueImpl(
     }
 }
 
-/** Network, server and federation failures a later rejoin can get past; conflicting federated backends never resolve. */
+/**
+ * Network, server and federation failures a later rejoin can get past. Federation that is refused or conflicting
+ * never resolves, so retrying it would only keep the group's messages ignored.
+ */
 private fun CoreFailure.canRejoinLater(): Boolean = when (this) {
-    is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> false
+    is NetworkFailure.FederatedBackendFailure.ConflictingBackends,
+    is NetworkFailure.FederatedBackendFailure.FederationDenied,
+    is NetworkFailure.FederatedBackendFailure.FederationNotEnabled,
+    is NetworkFailure.FederatedBackendFailure.FederationNotImplemented -> false
     is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
     is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
     else -> false

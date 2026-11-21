@@ -40,7 +40,7 @@ internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGrou
 
     override suspend fun withPersistCellAccessMessageSuccess() = apply {
         everySuspend {
-            newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(any(), any(), any(), any())
+            newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(any(), any(), any(), any(), any())
         }.returns(Either.Right(Unit))
     }
 

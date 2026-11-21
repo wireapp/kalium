@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -42,6 +43,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHa
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
@@ -49,6 +51,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -253,6 +256,19 @@ class ConversationEventReceiverTest {
 
         receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             .shouldFail { assertEquals(networkFailure, it) }
+        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
+    }
+
+    @Test
+    fun givenMLSWelcomeHandlerFailsOtherwise_whenStandardReceive_thenQueuesARejoinWithoutFailingTheBatch() = runTest {
+        val event = TestEvent.newMLSWelcomeEvent()
+        val (arrangement, receiver) = Arrangement().arrange {
+            everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(MLSFailure.TransportUnavailable)
+        }
+
+        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId) }
     }
 
     @Test
@@ -560,6 +576,7 @@ class ConversationEventReceiverTest {
         val channelAddPermissionUpdateEventHandler = mock<ChannelAddPermissionUpdateEventHandler>()
         val accessUpdateEventHandler = mock<AccessUpdateEventHandler>()
         val mlsResetConversationEventHandler = mock<MLSResetConversationEventHandler>()
+        val rejoinQueue = mock<MLSRejoinQueue>(MockMode.autoUnit)
         val codeUpdatedHandler = mock<CodeUpdatedHandler>()
         val codeDeletedHandler = mock<CodeDeletedHandler>()
 
@@ -582,6 +599,7 @@ class ConversationEventReceiverTest {
             channelAddPermissionUpdateEventHandler = channelAddPermissionUpdateEventHandler,
             accessUpdateEventHandler = accessUpdateEventHandler,
             mlsResetConversationEventHandler = mlsResetConversationEventHandler,
+            rejoinQueue = rejoinQueue,
         )
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = run {
