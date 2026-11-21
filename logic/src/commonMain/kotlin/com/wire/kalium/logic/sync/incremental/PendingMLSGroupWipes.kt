@@ -5,28 +5,23 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.logic.sync.receiving.MLSReceiveRecoveryStore
 import com.wire.kalium.logic.sync.receiving.PendingConversationCleanup
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
 /**
- * Finishes local conversation cleanup before incremental sync gathers events. Only the NSE writes
- * clear/remove requests and receive-recovery deletion records, so elsewhere these steps find no rows.
+ * Finishes local conversation cleanup before incremental sync gathers events. Only older NSE versions wrote
+ * clear/remove requests and receive-recovery records, so elsewhere these steps find no rows.
  */
 internal suspend fun finishPendingConversationCleanup(
     database: UserDatabaseBuilder,
-    clientId: String?,
     transactionProvider: CryptoTransactionProvider,
     deleteFile: (String) -> Unit,
 ) {
     val cleanup = PendingConversationCleanup(database, deleteFile)
     cleanup.discardLegacyRequests()
-    if (clientId != null) {
-        MLSReceiveRecoveryStore(database.metadataDAO, database.notificationEventStore, clientId)
-            .drainDeletions { groupId -> cleanup.queueWipe(groupId) }
-    }
+    cleanup.discardLegacyReceiveRecovery()
     // The app queues group wipes with its own MLS conversation deletions on every platform.
     wipePendingMLSGroups(cleanup, database.pendingActionDAO, transactionProvider)
 }

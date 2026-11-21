@@ -13,6 +13,9 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Account-owned consumer of NSE clear/remove requests. SQL deletion records the native
@@ -41,6 +44,26 @@ class PendingConversationCleanup(private val database: UserDatabaseBuilder, priv
                 database.pendingActionDAO.acknowledge(type, action)
             }
         }
+    }
+
+    /**
+     * Older NSE versions kept MLS receive-recovery records in SQL metadata. Their conversation deletions still
+     * need a native wipe, so they move to the wipe queue first; every other record is obsolete. One range read
+     * when nothing is left. A kill midway only repeats the idempotent queueing.
+     */
+    suspend fun discardLegacyReceiveRecovery() {
+        val records = database.metadataDAO.valuesByKeyRange(LEGACY_RECOVERY_FROM, LEGACY_RECOVERY_UNTIL)
+        if (records.isEmpty()) return
+        for ((key, value) in records) {
+            // Keys are the prefix, a client hash, then the record kind.
+            if (!key.removePrefix(LEGACY_RECOVERY_FROM).substringAfter(':').startsWith(LEGACY_DELETION)) continue
+            val groupId = runCatching {
+                Json.parseToJsonElement(value).jsonObject["groupId"]?.jsonPrimitive?.contentOrNull
+            }.getOrNull()
+            if (groupId.isNullOrBlank()) kaliumLogger.w("Dropping an unreadable legacy MLS deletion record")
+            else queueWipe(groupId)
+        }
+        for (key in records.keys) database.metadataDAO.deleteValue(key)
     }
 
     suspend fun queueWipe(groupId: String) = database.pendingActionDAO.upsert(
@@ -125,3 +148,6 @@ internal fun clearReplayKey(carrier: QualifiedIDEntity, messageId: String, targe
     "nse-clear-v1:" + Json.encodeToString(listOf(carrier.value, carrier.domain, messageId, target.value, target.domain))
 
 private const val CLEANUP_PAGE_SIZE = 100L
+private const val LEGACY_RECOVERY_FROM = "mls_receive_recovery_v2:"
+private const val LEGACY_RECOVERY_UNTIL = "mls_receive_recovery_v2;"
+private const val LEGACY_DELETION = "deletion:"

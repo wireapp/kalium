@@ -29,11 +29,9 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.logic.sync.receiving.ReceivedPayloadIdentity
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
-import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.persistence.TestUserDatabase
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -182,20 +180,6 @@ class EventBatchProcessorTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.eventRepository.setEventsAsProcessed(listOf(eventId))
         }
-    }
-
-    @Test
-    fun givenPayloadIdentity_whenStandardReceiving_thenHandledEventIdIsRetained() = runTest(TestKaliumDispatcher.default) {
-        val envelope = TestEvent.memberJoin().wrapInEnvelope().copy(
-            payloadIdentity = ReceivedPayloadIdentity("backend-notification", EventContentDTO.Unknown("test.event")),
-        )
-        val (arrangement, processor) = Arrangement()
-            .withEventProcessorReturning(Either.Right(envelope.event.id))
-            .arrange()
-
-        processor.processBatch(listOf(envelope))
-
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventRepository.setEventsAsProcessed(listOf(envelope.event.id)) }
     }
 
     private suspend fun EventBatchProcessor.processBatches(batches: List<List<EventEnvelope>>) {
