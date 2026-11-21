@@ -41,7 +41,9 @@ import platform.posix.getenv
 actual data class PlatformDatabaseData(
     val storageData: StorageData,
     val useGradleSafeSqliterLogging: Boolean = false,
-    val accountResourceAccess: com.wire.kalium.util.AccountResourceAccess? = null
+    val accountResourceAccess: com.wire.kalium.util.AccountResourceAccess? = null,
+    /** Name of the shared in-memory user database this data belongs to; null means the default name of the user. */
+    val inMemoryDatabaseName: String? = null
 )
 
 sealed class StorageData {

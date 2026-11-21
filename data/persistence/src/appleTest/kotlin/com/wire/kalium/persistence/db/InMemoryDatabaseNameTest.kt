@@ -24,6 +24,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.test.assertNull
 
 class InMemoryDatabaseNameTest {
@@ -44,6 +46,37 @@ class InMemoryDatabaseNameTest {
         } finally {
             clearInMemoryDatabase(databaseName = "in-memory-name-test-first")
             clearInMemoryDatabase(databaseName = "in-memory-name-test-second")
+        }
+    }
+
+    @Test
+    fun givenNamedDatabase_whenNuked_thenItReturnsTrueAndItsCacheEntryIsRemoved() = runTest {
+        val user = UserIDEntity("nuke-user", "example.com")
+        val name = "in-memory-name-test-nuke"
+        val database = inMemoryDatabase(user, StandardTestDispatcher(testScheduler), databaseName = name)
+
+        val nuked = database.nuke()
+
+        assertTrue(nuked)
+        assertFalse(clearInMemoryDatabase(databaseName = name))
+    }
+
+    @Test
+    fun givenNamedAndDefaultDatabasesOfOneUser_whenNamedIsNuked_thenDefaultKeepsItsData() = runTest {
+        val user = UserIDEntity("nuke-other-user", "example.com")
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val default = inMemoryDatabase(user, dispatcher)
+        val named = inMemoryDatabase(user, dispatcher, databaseName = "in-memory-name-test-nuke-named")
+        try {
+            default.metadataDAO.insertValue("kept", "key")
+
+            named.nuke()
+
+            assertEquals("kept", default.metadataDAO.valueByKey("key"))
+            assertTrue(clearInMemoryDatabase(user))
+        } finally {
+            clearInMemoryDatabase(user)
+            clearInMemoryDatabase(databaseName = "in-memory-name-test-nuke-named")
         }
     }
 

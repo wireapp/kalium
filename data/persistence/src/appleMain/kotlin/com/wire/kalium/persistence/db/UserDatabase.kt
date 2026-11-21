@@ -136,7 +136,7 @@ fun inMemoryDatabase(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(StorageData.InMemory),
+        PlatformDatabaseData(StorageData.InMemory, inMemoryDatabaseName = databaseName),
         false,
         invalidationController
     )
@@ -162,7 +162,7 @@ internal actual fun nuke(
 ): Boolean {
     return when (platformDatabaseData.storageData) {
         is StorageData.FileBacked -> NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storageData.storePath, null)
-        is StorageData.InMemory -> clearInMemoryDatabase(userId)
+        is StorageData.InMemory -> clearInMemoryDatabase(platformDatabaseData.inMemoryDatabaseName ?: FileNameUtil.userDBName(userId))
     }
 }
 
