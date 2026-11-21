@@ -247,7 +247,7 @@ class IncrementalSyncWorkerTest {
     }
 
     @Test
-    fun givenQueuedRejoins_whenProcessing_thenRejoinsAtSyncStartAndAfterEachAcknowledgedBatch() = runTest {
+    fun givenQueuedRejoins_whenProcessing_thenRejoinsAfterEachAcknowledgedBatch() = runTest {
         val order = mutableListOf<String>()
         val batch = EventStreamData.NewEvents(listOf(TestEvent.memberJoin().wrapInEnvelope()))
         val fixture = Arrangement().withEventGathererReturning(
@@ -258,16 +258,15 @@ class IncrementalSyncWorkerTest {
             }
         )
         everySuspend { fixture.batchProcessor.processBatch(any()) } calls { order += "batch" }
-        everySuspend { fixture.rejoinQueue.rejoinAtSyncStart() } calls { order += "start" }
         everySuspend { fixture.rejoinQueue.rejoinQueued() } calls { order += "rejoin" }
 
-        fixture.arrange(consumeLegalHold = { order += "legalhold" }).second.processEventsFlow().collect()
+        fixture.arrange().second.processEventsFlow().collect()
 
-        assertEquals(listOf("legalhold", "start", "gather", "batch", "rejoin", "batch", "rejoin"), order)
+        assertEquals(listOf("gather", "batch", "rejoin", "batch", "rejoin"), order)
     }
 
     @Test
-    fun givenBatchFails_whenProcessing_thenItsRejoinsWaitForTheNextSyncStart() = runTest {
+    fun givenBatchFails_whenProcessing_thenItsRejoinsWaitForTheNextBatch() = runTest {
         val fixture = Arrangement()
             .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(TestEvent.memberJoin().wrapInEnvelope()))))
             .withBatchFailure(NetworkFailure.NoNetworkConnection(null))

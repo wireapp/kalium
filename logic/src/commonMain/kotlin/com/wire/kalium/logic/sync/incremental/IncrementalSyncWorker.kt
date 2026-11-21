@@ -35,7 +35,7 @@ internal interface IncrementalSyncWorker {
     suspend fun processEventsFlow(): Flow<EventSource>
 }
 
-@Suppress("LongParameterList") // Each start-of-sync step is a separate injected owner.
+@Suppress("LongParameterList") // Each sync step is a separate injected owner.
 internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
     private val batchProcessor: EventBatchProcessor,
@@ -53,7 +53,6 @@ internal class IncrementalSyncWorkerImpl(
         if (consumePendingAccountInvalidation()) awaitCancellation()
         consumePendingConversationCleanup()
         consumePendingLegalHoldTransitions()
-        rejoinQueue?.rejoinAtSyncStart()
 
         logger.d("$TAG gatherEvents starting...")
         eventGatherer.gatherEvents()

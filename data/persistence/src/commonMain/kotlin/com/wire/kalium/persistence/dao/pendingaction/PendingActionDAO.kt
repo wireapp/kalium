@@ -23,8 +23,6 @@ enum class PendingActionType(val dbValue: String) {
     RESOLVE_ONE_ON_ONE_CONVERSATION("resolve_one_on_one_conversation"),
     JOIN_MLS_GROUP_CONVERSATION("join_mls_group_conversation"),
 
-    REJOIN_STALE_MLS_GROUP("rejoin_stale_mls_group"),
-
     // Consumed by PendingConversationCleanup in the app and NSE under account ownership.
     CLEAR_CONVERSATION_CONTENT("clear_conversation_content"),
     DELETE_CONVERSATION_LOCALLY("delete_conversation_locally"),
