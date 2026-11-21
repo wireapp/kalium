@@ -76,6 +76,7 @@ class MLSRejoinQueueTest {
             MLSFailure.TransportUnavailable,
             NetworkFailure.ServerMiscommunication(serverError),
             NetworkFailure.FederatedBackendFailure.FailedDomains(listOf("other.example")),
+            NetworkFailure.FederatedBackendFailure.General("federation-remote-error"),
         )
         withTestUserDatabase(USER) { database ->
             val arrangement = Arrangement(database)
@@ -103,6 +104,9 @@ class MLSRejoinQueueTest {
             NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied),
             NetworkFailure.MlsMessageRejectedFailure.StaleMessage,
             NetworkFailure.FederatedBackendFailure.ConflictingBackends(listOf("other.example")),
+            NetworkFailure.FederatedBackendFailure.FederationDenied("federation-denied"),
+            NetworkFailure.FederatedBackendFailure.FederationNotEnabled("federation-not-enabled"),
+            NetworkFailure.FederatedBackendFailure.FederationNotImplemented("federation-not-implemented"),
         )
         withTestUserDatabase(USER) { database ->
             val arrangement = Arrangement(database)
