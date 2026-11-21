@@ -95,7 +95,6 @@ class IncrementalSyncWorkerTest {
         everySuspend { crypto.mlsContext.conversationExists(any()) } returns true
         database.pendingActionDAO.upsert(PendingActionType.WIPE_MLS_GROUP, QualifiedIDEntity("orphan", "mls"), 1L)
         database.pendingActionDAO.upsert(PendingActionType.CLEAR_CONVERSATION_CONTENT, QualifiedIDEntity("legacy", "domain"), 1L)
-        // A receive-recovery deletion record as older NSE versions wrote it.
         val receipt = """{"eventId":"delete-event","payloadHash":"${"a".repeat(64)}"}"""
         val key = "mls_receive_recovery_v2:${"client".encodeUtf8().sha256().hex()}:deletion:${receipt.encodeUtf8().sha256().hex()}"
         database.metadataDAO.insertValue(receipt.dropLast(1) + ""","groupId":"deleted"}""", key)

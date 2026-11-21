@@ -145,7 +145,6 @@ internal class NewMessageEventHandlerImpl(
         )
     }
 
-    /** Fails only to queue a rejoin of a stale or lost main group; other recovery failures are ignored. */
     @Suppress("LongMethod")
     override suspend fun handleNewMLSMessage(
         transactionContext: CryptoTransactionContext,

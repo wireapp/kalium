@@ -67,7 +67,6 @@ private class EventBatchProcessorImpl(
     override suspend fun processBatch(envelopes: List<EventEnvelope>): Unit = withContext(NonCancellable) {
         transactionProvider.transaction("processEvents") { transactionContext ->
             databaseBuilder.dbInvalidationController.runMuted {
-                // Process the entire batch before collecting failures.
                 envelopes.map { eventProcessor.processEvent(transactionContext, it) }
                     .foldToEitherWhileRight(mutableListOf<String>()) { result, eventIds ->
                         result.map { eventId ->
