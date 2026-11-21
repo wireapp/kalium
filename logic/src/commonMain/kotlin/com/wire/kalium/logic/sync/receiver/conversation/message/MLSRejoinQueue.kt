@@ -47,24 +47,14 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 /**
- * Rejoins MLS groups that received messages found stale or lost, each in its own CoreCrypto transaction
- * instead of the event batch's. The receive path queues a rejoin and ignores the message: a rejoin enters at
- * the remote epoch, so no message already received for the group can be decrypted after it. The sync worker
- * rejoins after the batch is acknowledged. Only the app's standard receive path uses this queue.
- *
- * A rejoin never fails sync. One that can succeed later stays queued and is tried again at the next sync
- * start only. The sync start rejoins only groups CoreCrypto lacks: one it has may have been repaired meanwhile
- * and only be behind the backlog, which a rejoin would make undecryptable. If it is still stale, its next
- * message queues a rejoin again.
+ * Rejoins stale or lost groups outside the event batch. The sync start rejoins only groups CoreCrypto lacks:
+ * rejoining a group that is merely behind the backlog would make that backlog undecryptable.
  */
 internal interface MLSRejoinQueue {
-    /** Queues a rejoin of the conversation's group for after the current batch. */
     suspend fun request(conversationId: ConversationId)
 
-    /** Rejoins the queued groups not waiting for the next sync start. */
     suspend fun rejoinQueued()
 
-    /** Rejoins every queued group CoreCrypto lacks and drops the others for the backlog to catch up. */
     suspend fun rejoinAtSyncStart()
 }
 
@@ -77,7 +67,6 @@ internal class MLSRejoinQueueImpl(
 ) : MLSRejoinQueue {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC) }
 
-    // Still queued after a failure that can succeed later; tried again at the next sync start only.
     private val deferred = mutableSetOf<ConversationId>()
 
     override suspend fun request(conversationId: ConversationId) {
@@ -101,7 +90,6 @@ internal class MLSRejoinQueueImpl(
                 if (onlyMissingGroup && hasLocalGroup(context, conversationId)) {
                     Either.Right(false)
                 } else {
-                    // The verifier rejoins only when CoreCrypto is behind the remote epoch or has no group.
                     staleEpochVerifier.verifyEpoch(context, conversationId, timestamp = Instant.fromEpochMilliseconds(action.createdAt))
                         .map { true }
                 }
@@ -121,7 +109,6 @@ internal class MLSRejoinQueueImpl(
         })
     }
 
-    // A conversation or group that can't be resolved locally is rejoined as before.
     private suspend fun hasLocalGroup(context: CryptoTransactionContext, conversationId: ConversationId): Boolean =
         conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
@@ -136,7 +123,7 @@ internal class MLSRejoinQueueImpl(
     }
 }
 
-/** Network, server and federation failures a later rejoin can get past; conflicting federated backends never resolve. */
+/** Conflicting federation never resolves. */
 private fun CoreFailure.canRejoinLater(): Boolean = when (this) {
     is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> false
     is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true

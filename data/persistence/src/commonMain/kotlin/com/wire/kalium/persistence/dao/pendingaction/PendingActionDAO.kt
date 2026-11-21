@@ -23,7 +23,6 @@ enum class PendingActionType(val dbValue: String) {
     RESOLVE_ONE_ON_ONE_CONVERSATION("resolve_one_on_one_conversation"),
     JOIN_MLS_GROUP_CONVERSATION("join_mls_group_conversation"),
 
-    // A received message found the group stale or lost; the app's sync worker rejoins it outside the event batch.
     REJOIN_STALE_MLS_GROUP("rejoin_stale_mls_group"),
 
     // Consumed by PendingConversationCleanup in the app and NSE under account ownership.

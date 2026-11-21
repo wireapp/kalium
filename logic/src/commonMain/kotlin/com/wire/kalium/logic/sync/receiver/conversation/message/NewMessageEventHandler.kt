@@ -240,7 +240,6 @@ internal class NewMessageEventHandlerImpl(
 
     private fun CoreFailure.isInvalidSignature() = this is MLSFailure.Other && message.startsWith(INVALID_SIGNATURE)
 
-    /** The sync worker rejoins after this batch; the message can't be decrypted after a rejoin, so it is ignored. */
     private suspend fun queueRejoin(
         event: Event.Conversation.NewMLSMessage,
         failure: CoreFailure,

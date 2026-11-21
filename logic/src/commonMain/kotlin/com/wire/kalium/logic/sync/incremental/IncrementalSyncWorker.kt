@@ -53,7 +53,6 @@ internal class IncrementalSyncWorkerImpl(
         if (consumePendingAccountInvalidation()) awaitCancellation()
         consumePendingConversationCleanup()
         consumePendingLegalHoldTransitions()
-        // A rejoin queued before the app stopped or deferred by a failure.
         rejoinQueue?.rejoinAtSyncStart()
 
         logger.d("$TAG gatherEvents starting...")
@@ -63,7 +62,6 @@ internal class IncrementalSyncWorkerImpl(
             .collect { streamData ->
                 logger.d("$TAG Received ${streamData.eventList.size} events to process")
                 batchProcessor.processBatch(streamData.eventList)
-                // Each in its own transaction, after the batch that queued it is acknowledged.
                 rejoinQueue?.rejoinQueued()
             }
         logger.i("SYNC Finished gathering and processing events")
