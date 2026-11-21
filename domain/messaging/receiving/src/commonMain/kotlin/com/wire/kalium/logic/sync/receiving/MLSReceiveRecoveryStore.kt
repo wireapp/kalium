@@ -85,38 +85,17 @@ class MLSReceiveRecoveryStore(
         }
     }
 
-    /** Preserve the exact group before SQL deletion; acknowledgement alone retires this intent. */
-    suspend fun prepareDeletion(
-        payload: ReceivedPayloadIdentity,
-        groupId: String?,
-    ): Boolean = mutex.withLock {
+    /** Hands deletions recorded by older versions to the wipe queue, then forgets them. */
+    suspend fun drainDeletions(enqueueWipe: suspend (groupId: String) -> Unit) = mutex.withLock {
         val entries = load()
-        if (groupId == null && entries.deletions.values.none { it.eventId == payload.eventId }) return@withLock false
-        val receipt = effectReceipt(payload)
-        val key = prefix + DELETION + receipt.id
-        val previous = entries.deletions[key]
-        if (previous == null && groupId == null) return@withLock false
-        require(groupId == null || groupId.isNotBlank())
-        check(previous == null || groupId == null || previous.groupId == groupId) {
-            "Deletion operation belongs to a different MLS group"
-        }
-        val deletion = previous ?: PendingDeletion(receipt.eventId, receipt.payloadHash, checkNotNull(groupId))
-        if (previous == null) {
-            uncertainWrite {
-                metadata.insertValue(KtxSerializer.json.encodeToString(deletion), key)
-                pending = entries.copy(deletions = entries.deletions + (key to deletion))
+        if (entries.deletions.isEmpty()) return@withLock
+        uncertainWrite {
+            for ((key, deletion) in entries.deletions) {
+                enqueueWipe(deletion.groupId)
+                metadata.deleteValue(key)
             }
+            pending = entries.copy(deletions = emptyMap())
         }
-        true
-    }
-
-    /** Restore a pending wipe even when committed SQL effects already removed the conversation. */
-    suspend fun resumeDeletion(context: MlsCoreCryptoContext, payload: ReceivedPayloadIdentity): Boolean = mutex.withLock {
-        val entries = load()
-        if (entries.deletions.values.none { it.eventId == payload.eventId }) return@withLock false
-        val deletion = entries.deletions[prefix + DELETION + effectReceipt(payload).id] ?: return@withLock false
-        if (context.conversationExists(deletion.groupId)) context.wipeConversation(deletion.groupId)
-        true
     }
 
     /** Read before a POST as well as on retry, so an unsupported native format never follows a new remote mutation. */
