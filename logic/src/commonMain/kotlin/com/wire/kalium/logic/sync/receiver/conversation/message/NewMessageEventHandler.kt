@@ -78,6 +78,7 @@ internal class NewMessageEventHandlerImpl(
     private val selfUserId: UserId,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val resetMLSConversation: ResetMLSConversationUseCase,
+    private val rejoinQueue: MLSRejoinQueue,
     private val receiveRecovery: MLSReceiveRecoveryHandler? = null,
     private val bufferedMLSMessageRecoveryTracker: BufferedMLSMessageRecoveryTracker = BufferedMLSMessageRecoveryTracker(),
 ) : NewMessageEventHandler {
@@ -167,9 +168,10 @@ internal class NewMessageEventHandlerImpl(
                 val failure = unpackResult.value
                 // No local group for the main conversation means local state was lost; subconversations stay ignored.
                 val needsRejoin = failure is MLSFailure.WrongEpoch || failure is MLSFailure.ConversationNotFound
-                if (needsRejoin && event.subconversationId == null &&
-                    recovery?.invoke(transactionContext, event, true) == true
-                ) return Either.Right(Unit)
+                if (needsRejoin && event.subconversationId == null) {
+                    if (transactionContext !is DurableMLSReceiveContext) return queueRejoin(event, failure, eventLogger)
+                    if (recovery?.invoke(transactionContext, event, true) == true) return Either.Right(Unit)
+                }
                 when (MLSMessageFailureHandler.handleFailure(failure)) {
                     is MLSMessageFailureResolution.Ignore -> {
                         eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
@@ -225,6 +227,18 @@ internal class NewMessageEventHandlerImpl(
         }
         // Legacy callers performed recovery attempts without propagating their Either failures.
         return if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
+    }
+
+    /** The sync worker rejoins after this batch; the message can't be decrypted after a rejoin, so it is ignored. */
+    private suspend fun queueRejoin(
+        event: Event.Conversation.NewMLSMessage,
+        failure: CoreFailure,
+        eventLogger: EventProcessingLogger
+    ): Either<CoreFailure, Unit> {
+        bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
+        rejoinQueue.request(event.conversationId)
+        eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "REJOIN_QUEUED")
+        return Either.Right(Unit)
     }
 
     private suspend fun persistMLSDecryptionFailure(event: Event.Conversation.NewMLSMessage) {
