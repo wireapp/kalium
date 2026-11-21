@@ -228,7 +228,6 @@ internal class MLSMessageUnpackerImpl(
     ): Either<CoreFailure, List<DecryptedMessageBundle>> {
         val message = Base64.decode(messageEvent.content)
         val result = mlsConversationRepository.decryptMessage(mlsContext, message, groupId)
-        // An external rejoin replaces the group, so a message from before it fails generically and never decrypts.
         val pastEpoch = result is Either.Left && isPastEpochDecryptFailure(result.value, message) {
             mlsConversationRepository.getLocalGroupEpoch(mlsContext, groupId).getOrNull()
         }

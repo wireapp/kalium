@@ -107,7 +107,6 @@ internal class StaleEpochVerifierImpl(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> = joinExistingMLSConversation(transactionContext, conversationId).flatMap {
-        // A join that resets the conversation moves it to a new group, so read the group again.
         conversationRepository.getConversationProtocolInfo(conversationId).flatMap { it.toRemoteMLSConversationInfo() }
     }.flatMap { (groupId) ->
         localEpochIfGroupExists(transactionContext, groupId).flatMap { rejoinedEpoch ->
@@ -176,7 +175,6 @@ internal class StaleEpochVerifierImpl(
         timestamp: Instant?
     ): Either<CoreFailure, EpochComparison> {
         val localEpoch = if (subConversationId == null) {
-            // A main conversation's group CoreCrypto lacks was lost locally: it is behind any remote epoch.
             localEpochIfGroupExists(transactionContext, groupId)
         } else {
             // Leaving a subconversation removes its group on purpose, so a missing one stays a failure.
@@ -248,7 +246,6 @@ internal class StaleEpochVerifierImpl(
         val epoch: ULong
     )
 
-    /** A null [localEpoch] means CoreCrypto has no group for the conversation. */
     private data class EpochComparison(
         val localEpoch: ULong?,
         val remoteEpoch: ULong

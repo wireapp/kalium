@@ -9,11 +9,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import okio.Buffer
 
-/**
- * After an external join, CoreCrypto reports a message from the replaced epoch as this generic failure,
- * not MessageEpochTooOld. A past epoch's message it cannot decrypt now never becomes decryptable.
- * Only this exact failure: CoreCrypto also reports storage errors as Other, and those may pass on retry.
- */
+/** After an external join, CoreCrypto reports a past-epoch message as this failure; storage errors are Other too, so match it exactly. */
 inline fun isPastEpochDecryptFailure(failure: CoreFailure, message: ByteArray, localEpoch: () -> ULong?): Boolean =
     failure == MLSFailure.Other(CORE_CRYPTO_DECRYPT_FAILURE) &&
         mlsMessageHeader(message)?.epoch?.let { messageEpoch -> localEpoch()?.let { messageEpoch < it } } == true
@@ -22,7 +18,6 @@ const val CORE_CRYPTO_DECRYPT_FAILURE = "An application message failed to decryp
 
 class MLSMessageHeader(val groupId: ByteArray, val epoch: ULong)
 
-/** The group ID and epoch in the plaintext header of an RFC 9420 public or private message, or null for anything else. */
 fun mlsMessageHeader(message: ByteArray): MLSMessageHeader? = runCatching {
     val buffer = Buffer().write(message)
     // MLSMessage: version (mls10) and wire format (public or private), then group_id<V> and the epoch.

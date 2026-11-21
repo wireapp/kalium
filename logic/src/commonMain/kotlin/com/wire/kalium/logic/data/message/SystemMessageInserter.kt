@@ -46,7 +46,6 @@ internal interface SystemMessageInserter {
         conversationId: ConversationId
     )
 
-    /** The ID comes from the group and the epoch the rejoin reached, so replaying the same rejoin adds no second warning. */
     suspend fun insertLostCommitSystemMessage(
         conversationId: ConversationId,
         groupId: GroupID,
