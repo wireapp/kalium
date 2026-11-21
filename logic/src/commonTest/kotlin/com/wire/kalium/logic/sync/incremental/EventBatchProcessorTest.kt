@@ -206,7 +206,8 @@ class EventBatchProcessorTest {
         assertEquals(failure, thrown.coreFailureCause)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), first) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), later) }
-        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.flushPendingSideEffects() }
+        // Side effects of the events that succeeded are kept: their messages are already decrypted.
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.flushPendingSideEffects() }
         verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
     }
 
