@@ -46,16 +46,11 @@ class PendingConversationCleanup(private val database: UserDatabaseBuilder, priv
         }
     }
 
-    /**
-     * Older NSE versions kept MLS receive-recovery records in SQL metadata. Their conversation deletions still
-     * need a native wipe, so they move to the wipe queue first; every other record is obsolete. One range read
-     * when nothing is left. A kill midway only repeats the idempotent queueing.
-     */
+    /** Legacy deletion records move to the wipe queue; the rest is dropped. */
     suspend fun discardLegacyReceiveRecovery() {
         val records = database.metadataDAO.valuesByKeyRange(LEGACY_RECOVERY_FROM, LEGACY_RECOVERY_UNTIL)
         if (records.isEmpty()) return
         for ((key, value) in records) {
-            // Keys are the prefix, a client hash, then the record kind.
             if (!key.removePrefix(LEGACY_RECOVERY_FROM).substringAfter(':').startsWith(LEGACY_DELETION)) continue
             val groupId = runCatching {
                 Json.parseToJsonElement(value).jsonObject["groupId"]?.jsonPrimitive?.contentOrNull

@@ -14,7 +14,6 @@ class PendingConversationCleanupTest {
     fun legacyReceiveRecoveryDeletionMovesToTheWipeQueueAndEveryRecordIsDropped() = runTest {
         withTestUserDatabase(UserIDEntity("cleanup-test", "example.com")) { database ->
             val db = database.builder
-            // Records exactly as older NSE versions wrote them.
             val prefix = "mls_receive_recovery_v2:${"client".encodeUtf8().sha256().hex()}:"
             val receipt = """{"eventId":"delete-event","payloadHash":"${"a".repeat(64)}"}"""
             db.metadataDAO.insertValue(receipt.dropLast(1) + ""","groupId":"deleted-group"}""",

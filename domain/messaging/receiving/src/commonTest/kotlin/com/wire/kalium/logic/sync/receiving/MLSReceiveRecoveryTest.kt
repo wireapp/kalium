@@ -65,7 +65,6 @@ class MLSReceiveRecoveryTest {
         assertEquals(GROUP_ID, result.groupId)
         assertEquals(3uL, result.epoch)
         assertEquals(1, f.joins)
-        // The ID older versions derived from their stored operation, so a replay after an upgrade adds no second warning.
         val operation = """{"eventId":"event","groupId":"$GROUP_ID","ciphertextHash":"${CIPHERTEXT.toByteString().sha256().hex()}"}"""
         assertEquals("mls-recovery:" + operation.encodeUtf8().sha256().hex(), result.warningId)
     }

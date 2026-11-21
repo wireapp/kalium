@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlin.test.assertEquals
 
-/** In-memory metadata supporting the plain key reads and writes MLS receiving uses. */
 internal class FakeMetadata(private val failInsert: Boolean = false) : MetadataDAO {
     val values = mutableMapOf<String, String>()
     override suspend fun insertValue(value: String, key: String) {
@@ -38,7 +37,6 @@ internal class FakeMetadata(private val failInsert: Boolean = false) : MetadataD
     override fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> = error("Unexpected observe")
 }
 
-/** One MLS group at [epoch]; counts native reads. */
 internal class FakeMlsContext(private val groupId: MLSGroupId = "group") : UnexpectedMlsContext() {
     var exists = true
     var epoch = 2uL

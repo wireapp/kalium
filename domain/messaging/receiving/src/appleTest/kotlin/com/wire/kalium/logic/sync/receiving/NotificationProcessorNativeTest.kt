@@ -4754,7 +4754,6 @@ class NotificationProcessorNativeTest {
         }
     }
 
-    /** CoreCrypto's own behaviour after an external rejoin, which the NSE's past-epoch skip relies on. */
     private fun externalRejoin(abort: Boolean, advanceEpochs: Boolean = false) = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
@@ -4795,8 +4794,6 @@ class NotificationProcessorNativeTest {
                             return@transaction
                         }
                         val replay = assertFailsWith<Exception> { context.decryptMessage(GROUP_ID, future) }
-                        // CoreCrypto deliberately reports a generic decryption failure after an external rejoin
-                        // replaces the previous epoch's secrets. It is not the typed MessageEpochTooOld case.
                         assertEquals(MLSFailure.Other("An application message failed to decrypt"),
                             com.wire.kalium.common.error.commonizeMLSException(replay).failure)
                         val earlierReplay = assertFailsWith<Exception> { context.decryptMessage(GROUP_ID, prefix) }
@@ -4883,7 +4880,6 @@ class NotificationProcessorNativeTest {
                 val event = fixture.event("trigger", trigger)
                 val backend = RejoinBackend(fixture)
                 fixture.releasePrepared()
-                // Killed after the backend accepted the external commit, before CoreCrypto committed it.
                 assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, Interruption.BEFORE_COMMIT,
                     recoveryFactory = backend.recovery, mlsTransport = backend.transport))
                 assertEquals(1, backend.posts)
@@ -4891,8 +4887,6 @@ class NotificationProcessorNativeTest {
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
                     assertEquals(1uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
                 })
-                // CoreCrypto is still behind, so the replay joins again. Our first leaf is already in the group:
-                // the second external commit removes it, and the sender accepts it.
                 assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id,
                     recoveryFactory = backend.recovery, mlsTransport = backend.transport))
                 assertEquals(2, backend.posts)
@@ -4917,7 +4911,6 @@ class NotificationProcessorNativeTest {
                 val event = fixture.event("trigger", trigger)
                 val backend = RejoinBackend(fixture)
                 fixture.releasePrepared()
-                // Both native stores committed the rejoin; only the queue marker failed.
                 assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, Interruption.MARKER,
                     recoveryFactory = backend.recovery, mlsTransport = backend.transport))
                 assertEquals(1, backend.posts)
@@ -4926,7 +4919,6 @@ class NotificationProcessorNativeTest {
                     assertEquals(4uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
                     fixture.sql("DROP TRIGGER interrupt_receive")
                 })
-                // CoreCrypto is current: no second commit, the trigger from before the rejoin is skipped.
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id,
                     recoveryFactory = backend.recovery, mlsTransport = backend.transport)).value)
                 assertEquals(1, backend.posts)
@@ -4963,7 +4955,6 @@ class NotificationProcessorNativeTest {
                     }
                 }
                 fixture.releasePrepared()
-                // SQL and the MLS rejoin committed; the outer Proteus transaction rolled back.
                 assertIs<Either.Left<*>>(fixture.receive(listOf(notification), notification.id, Interruption.AFTER_COMMIT,
                     decorateProteusContext = observeProteus, recoveryFactory = backend.recovery, mlsTransport = backend.transport))
                 assertEquals(1, backend.posts)
@@ -4982,7 +4973,6 @@ class NotificationProcessorNativeTest {
                     assertEquals(1L, fixture.sqlValue("SELECT COUNT(*) FROM Message WHERE id = 'proteus'")?.toLong())
                     assertNotNull(runtime.database.messageDAO.getMessageById(lostEpochWarningId(notification.id, trigger), CONVERSATION_ID))
                 })
-                // The committed Proteus session continues with the sender's next message.
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(fixture.encrypt("proteus-next", protocolMLS = false),
                     "proteus-next", protocolMLS = false))
                 backend.assertFollowingMessageDecrypts()
@@ -4990,10 +4980,6 @@ class NotificationProcessorNativeTest {
         }
     }
 
-    /**
-     * The backend side of the NSE's rejoin: [ReceivedMLSRejoin] gates the POST, an accepted commit moves the
-     * sender's group, and the group info it carried is what the next fetch returns.
-     */
     private class RejoinBackend(private val fixture: Fixture) {
         var posts = 0
         private var groupInfo: ByteArray? = null
@@ -5035,7 +5021,6 @@ class NotificationProcessorNativeTest {
         }
     }
 
-    /** The lost-epoch warning's ID; it must stay stable so a replay after an upgrade adds no second warning. */
     private fun lostEpochWarningId(eventId: String, ciphertext: ByteArray): String {
         val operation = JsonObject(mapOf(
             "eventId" to JsonPrimitive(eventId),
@@ -12151,7 +12136,6 @@ class NotificationProcessorNativeTest {
             try {
                 val source = checkNotNull(database.conversationDAO.getConversationById(CONVERSATION_ID))
                 val protocol = source.protocolInfo as ConversationEntity.ProtocolInfo.MLS
-                // A group this client never joined; CoreCrypto reads its ID, so it must be valid base64.
                 val groupId = Base64.encode("blocked-group".encodeToByteArray())
                 database.conversationDAO.insertConversation(source.copy(id = id, protocolInfo = protocol.copy(groupId = groupId)))
             } finally { database.close() }

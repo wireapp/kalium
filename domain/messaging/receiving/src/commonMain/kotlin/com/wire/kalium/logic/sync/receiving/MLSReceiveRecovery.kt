@@ -25,7 +25,7 @@ import kotlinx.serialization.encodeToString
 import okio.ByteString.Companion.encodeUtf8
 import okio.ByteString.Companion.toByteString
 
-/** Validated rejoin output; callers persist canonical metadata and the lost-epoch warning before acknowledgement. */
+/** Validated recovery output; callers persist canonical metadata and warning effects before acknowledgement. */
 data class MLSReceiveRecoveryResult(
     val response: ConversationResponse,
     val groupId: String,
@@ -33,14 +33,7 @@ data class MLSReceiveRecoveryResult(
     val warningId: String,
 )
 
-/**
- * Rejoins, by external commit in the caller's transaction, an MLS group that CoreCrypto lacks or is behind on.
- * Nothing is stored: the native transaction, SQL and the queue acknowledgement commit separately, and every
- * kill between them is safe to replay. Until the MLS commit lands, CoreCrypto is still missing or behind, so
- * the replay joins again; openmls removes our previous leaf in that second external commit. Once it lands,
- * CoreCrypto is current, no second commit is sent, and the trigger is skipped as a past-epoch message.
- * The join callback must explicitly join by external commit; a generic already-joined success is insufficient.
- */
+/** Nothing is stored: a replay either joins again or, once the rejoin has committed, is skipped as a past-epoch message. */
 class MLSReceiveRecovery(
     private val conversationApi: ConversationApi,
     private val selfUserId: UserId,
@@ -108,7 +101,6 @@ class MLSReceiveRecovery(
         return response
     }
 
-    /** Returns the joined epoch. */
     @Suppress("TooGenericExceptionCaught") // Both join callbacks throw untyped exceptions; only a stale commit is retried.
     private suspend fun rejoin(context: MlsCoreCryptoContext, response: ConversationResponse, groupId: String): ULong {
         val joinedEpoch = try {
@@ -132,7 +124,7 @@ class MLSReceiveRecovery(
         return join(context, groupId, groupInfo)
     }
 
-    /** Identifies the trigger as the former recovery store did, so a replay across versions adds no second warning. */
+    /** The ID format must not change, or an upgraded client adds a second warning. */
     private fun warningId(event: Event.Conversation.NewMLSMessage, groupId: String): String {
         val trigger = WarningTrigger(event.id, groupId, Base64.decode(event.content).toByteString().sha256().hex())
         return "mls-recovery:" + KtxSerializer.json.encodeToString(trigger).encodeUtf8().sha256().hex()
