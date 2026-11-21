@@ -121,8 +121,6 @@ internal class ConversationEventReceiverImpl(
                 val result = mlsWelcomeHandler.handle(transactionContext, event)
                 val failure = (result as? Either.Left)?.value
                 // Network failures must be retried, otherwise the welcome is lost and the conversation never appears.
-                // Any other lost Welcome is recovered by a rejoin. Its conversation may be unknown, so its messages
-                // cannot queue one: queue it here, after this batch.
                 val propagate = transactionContext is DurableMLSReceiveContext || failure is NetworkFailure.NoNetworkConnection
                 if (failure == null || propagate) result else Either.Right(Unit).also { rejoinQueue.request(event.conversationId) }
             }

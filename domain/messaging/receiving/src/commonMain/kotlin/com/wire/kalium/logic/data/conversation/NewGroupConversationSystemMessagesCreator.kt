@@ -68,7 +68,6 @@ interface NewGroupConversationSystemMessagesCreator {
 
     /**
      * Creates the system message telling the self user which access they have to the Shared Drive of the conversation.
-     * Pass a [messageId] derived from the event so a replayed event does not add the message again.
      */
     suspend fun conversationCellAccessStatus(
         conversationId: ConversationId,

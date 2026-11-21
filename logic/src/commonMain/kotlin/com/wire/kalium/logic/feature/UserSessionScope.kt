@@ -1662,9 +1662,8 @@ public class UserSessionScope internal constructor(
     private var appMLSReceiveRecovery: AppMLSReceiveRecovery? = null
     private val receiveRecoveryMutex = Mutex()
 
-    // Apple constructs this scope only while holding the account lease. The app receives events with
-    // the standard batch processor; this coordinator stays only for records the notification
-    // extension's recovery store hands over, until that store is removed.
+    // Apple constructs this scope only while holding the account lease. One cached coordinator
+    // shares its operation index across handlers and batches for this registered client.
     private suspend fun receiveRecovery(): AppMLSReceiveRecovery? {
         if (!enableDurableMLSReceiveRecovery) return null
         return receiveRecoveryMutex.withLock {
