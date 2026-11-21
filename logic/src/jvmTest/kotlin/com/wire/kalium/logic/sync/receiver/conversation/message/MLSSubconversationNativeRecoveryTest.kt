@@ -343,6 +343,7 @@ class MLSSubconversationNativeRecoveryTest {
             staleEpochVerifier,
             mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit),
             mock(),
+            mock<MLSRejoinQueue>(),
         )
 
         init {

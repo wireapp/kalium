@@ -26,8 +26,10 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.persistence.TestUserDatabase
+import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -244,9 +246,41 @@ class IncrementalSyncWorkerTest {
         assertEquals(coreFailureCause, resultException.coreFailureCause)
     }
 
+    @Test
+    fun givenQueuedRejoins_whenProcessing_thenRejoinsAtSyncStartAndAfterEachAcknowledgedBatch() = runTest {
+        val order = mutableListOf<String>()
+        val batch = EventStreamData.NewEvents(listOf(TestEvent.memberJoin().wrapInEnvelope()))
+        val fixture = Arrangement().withEventGathererReturning(
+            flow {
+                order += "gather"
+                emit(batch)
+                emit(batch)
+            }
+        )
+        everySuspend { fixture.batchProcessor.processBatch(any()) } calls { order += "batch" }
+        everySuspend { fixture.rejoinQueue.rejoinAtSyncStart() } calls { order += "start" }
+        everySuspend { fixture.rejoinQueue.rejoinQueued() } calls { order += "rejoin" }
+
+        fixture.arrange(consumeLegalHold = { order += "legalhold" }).second.processEventsFlow().collect()
+
+        assertEquals(listOf("legalhold", "start", "gather", "batch", "rejoin", "batch", "rejoin"), order)
+    }
+
+    @Test
+    fun givenBatchFails_whenProcessing_thenItsRejoinsWaitForTheNextSyncStart() = runTest {
+        val fixture = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(TestEvent.memberJoin().wrapInEnvelope()))))
+            .withBatchFailure(NetworkFailure.NoNetworkConnection(null))
+
+        assertFailsWith<KaliumSyncException> { fixture.arrange().second.processEventsFlow().collect() }
+
+        verifySuspend(VerifyMode.not) { fixture.rejoinQueue.rejoinQueued() }
+    }
+
     private class Arrangement {
         val batchProcessor: EventBatchProcessor = mock()
         val eventGatherer: EventGatherer = mock()
+        val rejoinQueue: MLSRejoinQueue = mock(MockMode.autoUnit)
         val database = TestUserDatabase(
             userId = QualifiedID("value", "domain").toDao(),
             dispatcher = TestKaliumDispatcher.default,
@@ -273,6 +307,7 @@ class IncrementalSyncWorkerTest {
                 eventGatherer, batchProcessor, consumePendingAccountInvalidation = consumeInvalidation,
                 consumePendingConversationCleanup = consumeCleanup,
                 consumePendingLegalHoldTransitions = consumeLegalHold,
+                rejoinQueue = rejoinQueue,
             )
     }
 }
