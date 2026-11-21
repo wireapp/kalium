@@ -49,8 +49,6 @@ internal fun CoreFailure.canDeferNotification(): Boolean = isTransientNetworkFai
     else -> false
 }
 
-/** No connection, a federated backend failure, a server error or rate limiting: the same request may succeed later. */
-// A commit keeps a conflicting-backends rejection as an MLS failure; it is the same retryable federation failure.
 internal fun CoreFailure.isTransientNetworkFailure(): Boolean = when (val failure = normalizeFederatedBackendConflict()) {
     is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
     is NetworkFailure.ServerMiscommunication -> failure.kaliumException.isRetryableServerResponse()

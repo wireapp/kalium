@@ -74,7 +74,6 @@ class MLSReceiveRecoveryStore(
         operation
     }
 
-    /** Retires an unfinished intent, so its event can be acknowledged without a completed join. */
     suspend fun abandon(operation: PendingMLSReceiveRecovery) = mutex.withLock {
         val entries = load()
         val key = prefix + operation.id

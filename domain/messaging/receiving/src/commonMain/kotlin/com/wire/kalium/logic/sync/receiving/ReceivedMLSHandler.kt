@@ -102,14 +102,11 @@ internal class ReceivedMLSHandler(
             removed += event.conversationId
             return emptyList()
         }
-        // The backend sends main-conversation messages only to clients in the group, and a Welcome before any
-        // message of its epoch. A group CoreCrypto lacks here was lost locally, whatever its canonical state:
-        // rejoin it. Null means the conversation is gone or the rejoin cannot succeed; skip, as the app does.
+        // A group CoreCrypto lacks here was lost locally, so rejoin it.
         if (recovery != null && event.conversationId !in welcomed && !context.conversationExists(protocol.groupId)) {
             return recovery.recover(context, event, protocol.groupId)?.let { recovered(context, event, it) } ?: emptyList()
         }
-        // CoreCrypto has the group here. A conversation still waiting for its Welcome then lost only its SQL update
-        // (for example a killed migration): decrypt, and record the group as established below.
+        // A conversation still waiting for a Welcome while CoreCrypto has the group only lost its SQL update.
         val adoptGroup = protocol.groupState == ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE &&
             event.conversationId !in welcomed && context.conversationExists(protocol.groupId)
         check(
@@ -127,9 +124,8 @@ internal class ReceivedMLSHandler(
             recovery?.recover(context, event, protocol.groupId)?.let { return recovered(context, event, it) }
         }
         val staleCommit = result is Either.Left && result.value == MLSFailure.StaleCommit
-        // After an external join, CoreCrypto reports a message from the replaced epoch as a generic failure,
-        // not MessageEpochTooOld. A past epoch's message it cannot decrypt now never becomes decryptable.
-        // Only that exact failure: CoreCrypto also reports storage errors as Other, and those may pass on retry.
+        // After an external join, CoreCrypto reports a past-epoch message as this generic failure.
+        // Storage errors are Other too, so only this exact failure is matched.
         val pastEpoch = result is Either.Left && result.value == MLSFailure.Other(CORE_CRYPTO_DECRYPT_FAILURE) &&
             mlsMessageEpoch(message)?.let { it < epoch } == true
         val noBundles = pastEpoch || result is Either.Left && result.value in listOf(
@@ -370,7 +366,6 @@ internal data class MLSVerification(
     val active: Boolean = true,
 )
 
-/** The epoch in the plaintext header of an RFC 9420 public or private message, or null for anything else. */
 internal fun mlsMessageEpoch(message: ByteArray): ULong? = runCatching {
     val buffer = Buffer().write(message)
     // MLSMessage: version (mls10) and wire format (public or private), then group_id<V> and the epoch.

@@ -78,10 +78,6 @@ class MLSReceiveRecovery(
         }
     }
 
-    /**
-     * Called after WrongEpoch, or for a main-conversation message whose group CoreCrypto doesn't have.
-     * Current native groups keep the caller's existing no-rejoin policy.
-     */
     suspend fun recover(
         context: MlsCoreCryptoContext,
         event: Event.Conversation.NewMLSMessage,
@@ -128,12 +124,6 @@ class MLSReceiveRecovery(
 
     suspend fun acknowledge(eventIds: List<String>) = store.acknowledge(eventIds)
 
-    /**
-     * Before this recovery, a message for a group CoreCrypto doesn't have was skipped. Keep that outcome
-     * when the rejoin fails for any reason but the network: retrying the same event cannot fix it, and one
-     * lost group must not block receiving. Retire the intent first, so the skipped event can be acknowledged.
-     * Groups CoreCrypto has, including one joined before a later check failed, keep failing closed.
-     */
     @Suppress("TooGenericExceptionCaught") // Any failure but cancellation or the network is final for this event.
     private suspend fun skippingUnrecoverable(
         context: MlsCoreCryptoContext,
@@ -152,7 +142,6 @@ class MLSReceiveRecovery(
         null
     }
 
-    /** The app's join callback throws CoreCrypto's own exceptions; the NSE's wraps them. */
     private fun Exception.coreFailure(): CoreFailure =
         (this as? KaliumSyncException)?.coreFailureCause ?: commonizeMLSException(this).failure
 

@@ -45,7 +45,6 @@ internal class AppMLSReceiveRecovery(
     private val selfUserId: UserId,
     private val selfTeamId: SelfTeamIdProvider,
 ) : EventBatchRecovery {
-    /** [needsRejoin]: decryption failed with WrongEpoch, or CoreCrypto has no group for this message. */
     @Suppress("ReturnCount") // Receipt, resume, and rejoin have intentionally distinct preflight paths.
     @OptIn(ConversationPersistenceApi::class)
     suspend fun handle(context: CryptoTransactionContext, event: Event.Conversation.NewMLSMessage, needsRejoin: Boolean): Boolean {

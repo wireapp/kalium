@@ -694,7 +694,6 @@ class NotificationProcessorNativeTest {
                     assertEquals(RESET_GROUP_ID, (checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
                         .protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
                 })
-                // The SQL group is missing natively, so replay asks the backend; while it cannot answer, replay stays blocked.
                 repeat(2) { assertIs<Either.Left<*>>(fixture.receive(emptyList(), event.id, fetchConversation = metadata,
                     fetchConnectionPeer = fixture::connectionProfile, recoveryFactory = { fixture.unavailableRecovery(it) })) }
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
@@ -4769,7 +4768,6 @@ class NotificationProcessorNativeTest {
             withFixture(true) { fixture ->
                 val message = fixture.event("message", fixture.encrypt("message"))
                 fixture.releasePrepared()
-                // A killed migration: CoreCrypto kept the group, but SQL still waits for a Welcome.
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     runtime.database.conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, GROUP_ID)
                     runtime.database.conversationDAO.setProposalTimer(com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity(GROUP_ID, TIME))
@@ -4778,7 +4776,6 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val protocol = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)).protocolInfo
                     assertEquals(ConversationEntity.GroupState.ESTABLISHED, assertIs<ConversationEntity.ProtocolInfo.MLS>(protocol).groupState)
-                    // Adopting the group is not a reset: a pending commit stays scheduled.
                     assertEquals(1, runtime.database.conversationDAO.getProposalTimers().first().size)
                 })
             }
@@ -4790,7 +4787,6 @@ class NotificationProcessorNativeTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 val lost = fixture.event("lost", fixture.encrypt("lost"))
-                // Sent in the same epoch, so it predates the rejoin and can never be decrypted.
                 val older = fixture.event("older", fixture.encrypt("older"))
                 val groupInfo = checkNotNull(fixture.transport.bundle).groupInfoBundle.payload.drop(4).toByteArray()
                 val transporter = object : MLSTransporter {
@@ -4810,7 +4806,6 @@ class NotificationProcessorNativeTest {
                     ) { context, groupId, info -> assertEquals(groupId, context.joinByExternalCommit(info)); context.conversationEpoch(groupId) }
                 }
                 fixture.releasePrepared()
-                // A killed migration: the server and SQL keep the group, but CoreCrypto rolled it back.
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     checkNotNull(fixture.openMLS(runtime)).transaction { it.wipeConversation(GROUP_ID) }
                     runtime.database.conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, GROUP_ID)
@@ -8765,7 +8760,6 @@ class NotificationProcessorNativeTest {
                                     ConversationEntity.GroupState.ESTABLISHED, null).copy(hasIncompleteMetadata = true))
                     })
                     val result = fixture.receive(page, "notification", fetchConversation = { response })
-                    // A canonical group CoreCrypto lacks is treated as lost; its rejoin waits for unreachable group info.
                     if (kind in listOf("group-mismatch", "missing-welcome")) assertIs<Either.Right<*>>(result)
                     else assertIs<Either.Left<*>>(result)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
@@ -9877,7 +9871,6 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 val page = listOf(fixture.memberLeave("leave-self", SELF), fixture.event("after", after))
                 val result = fixture.receive(page, "after")
-                // The wiped group's message asks the backend whether to rejoin; offline, it stays deferred.
                 if (mls) assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 else assertEquals("after-removal", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.messageId)
                 assertIs<Either.Right<*>>(
@@ -9913,7 +9906,6 @@ class NotificationProcessorNativeTest {
                     interruption
                 )
                 )
-                // The wiped group's message asks the backend whether to rejoin; offline, it stays deferred.
                 assertIs<Either.Right<*>>(fixture.receive(emptyList(), "after"))
                 assertIs<Either.Right<*>>(
                     fixture.open { runtime ->

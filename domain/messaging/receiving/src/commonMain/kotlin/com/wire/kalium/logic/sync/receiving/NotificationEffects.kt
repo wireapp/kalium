@@ -518,7 +518,6 @@ internal sealed interface ReceivedPayload {
         val groupState: ConversationEntity.GroupState?,
     ) : ReceivedPayload
 
-    /** CoreCrypto has the group SQL still waited a Welcome for. Unlike a reset, it keeps proposal timers. */
     data class MLSEstablished(
         val conversationId: com.wire.kalium.logic.data.id.ConversationId,
         val groupId: String,
