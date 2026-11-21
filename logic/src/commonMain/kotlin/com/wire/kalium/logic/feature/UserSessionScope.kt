@@ -2292,6 +2292,7 @@ public class UserSessionScope internal constructor(
             channelAddPermissionUpdateEventHandler,
             conversationAccessUpdateEventHandler,
             mlsResetConversationEventHandler,
+            mlsRejoinQueue,
         )
     }
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(

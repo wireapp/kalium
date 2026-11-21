@@ -41,6 +41,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandl
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
@@ -73,6 +74,7 @@ internal class ConversationEventReceiverImpl(
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler,
     private val accessUpdateEventHandler: AccessUpdateEventHandler,
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler,
+    private val rejoinQueue: MLSRejoinQueue,
 ) : ConversationEventReceiver {
     override suspend fun onEvent(
         transactionContext: CryptoTransactionContext,
@@ -117,9 +119,12 @@ internal class ConversationEventReceiverImpl(
 
             is Event.Conversation.MLSWelcome -> {
                 val result = mlsWelcomeHandler.handle(transactionContext, event)
+                val failure = (result as? Either.Left)?.value
                 // Network failures must be retried, otherwise the welcome is lost and the conversation never appears.
-                val isNetworkFailure = (result as? Either.Left)?.value is NetworkFailure.NoNetworkConnection
-                if (transactionContext is DurableMLSReceiveContext || isNetworkFailure) result else Either.Right(Unit)
+                // Any other lost Welcome is recovered by a rejoin. Its conversation may be unknown, so its messages
+                // cannot queue one: queue it here, after this batch.
+                val propagate = transactionContext is DurableMLSReceiveContext || failure is NetworkFailure.NoNetworkConnection
+                if (failure == null || propagate) result else Either.Right(Unit).also { rejoinQueue.request(event.conversationId) }
             }
 
             is Event.Conversation.RenamedConversation -> {
