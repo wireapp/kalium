@@ -5121,7 +5121,6 @@ class NotificationProcessorNativeTest {
                     )
                 }
                 fixture.releasePrepared()
-                // The commit POST fails offline: the notification is deferred, not failed or acknowledged.
                 assertIs<Either.Right<*>>(fixture.receive(listOf(future), future.id, recoveryFactory = recoveryFactory, mlsTransport = transport))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(future.id)).isProcessed)
