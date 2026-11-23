@@ -18,10 +18,10 @@
 package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase.Result
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -37,7 +37,7 @@ class MoveConversationToFolderUseCaseTest {
 
     @Test
     fun givenValidConversationAndFolder_WhenMoveIsSuccessful_ThenReturnSuccess() = runTest {
-        val testConversationId = TestConversation.ID
+        val testConversationId = MockConversation.ID
         val testFolderId = "test-folder-id"
         val previousFolderId = "previous-folder-id"
 
@@ -66,7 +66,7 @@ class MoveConversationToFolderUseCaseTest {
 
     @Test
     fun givenValidConversationAndFolder_WhenRemoveFails_ThenReturnFailure() = runTest {
-        val testConversationId = TestConversation.ID
+        val testConversationId = MockConversation.ID
         val testFolderId = "test-folder-id"
         val previousFolderId = "previous-folder-id"
 
@@ -85,7 +85,7 @@ class MoveConversationToFolderUseCaseTest {
 
     @Test
     fun givenValidConversationAndFolder_WhenAddFails_ThenReturnFailure() = runTest {
-        val testConversationId = TestConversation.ID
+        val testConversationId = MockConversation.ID
         val testFolderId = "test-folder-id"
         val previousFolderId = "previous-folder-id"
 
@@ -109,7 +109,7 @@ class MoveConversationToFolderUseCaseTest {
 
     @Test
     fun givenValidConversationAndFolder_WhenSyncFails_ThenReturnFailure() = runTest {
-        val testConversationId = TestConversation.ID
+        val testConversationId = MockConversation.ID
         val testFolderId = "test-folder-id"
         val previousFolderId = "previous-folder-id"
 

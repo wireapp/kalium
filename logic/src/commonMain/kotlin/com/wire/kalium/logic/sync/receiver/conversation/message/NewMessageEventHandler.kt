@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.decryptionFailureContent
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.message.typeDescription
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
@@ -276,17 +277,24 @@ internal class NewMessageEventHandlerImpl(
 
     private suspend fun processApplicationMessage(
         transactionContext: CryptoTransactionContext,
-        it: MessageUnpackResult.ApplicationMessage,
+        message: MessageUnpackResult.ApplicationMessage,
         deliveryInfo: EventDeliveryInfo,
         effectsAlreadyPersisted: Boolean = false,
     ) {
-        if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-            legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
+        if (!message.isAcceptedDelivery()) {
+            logger.w(
+                "Rejected ${message.content.messageContent.getType()} message received as " +
+                    "targeted = ${message.targeted}, transient = ${message.transient}"
+            )
+            return
+        }
+        if (message.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
+            legalHoldHandler.handleNewMessage(message, isLive = deliveryInfo.source == EventSource.LIVE)
         }
         // Receipts cover persisted content, not legal-hold work buffered until Live, confirmations,
         // or self-deletion scheduled in another scope. Restore those continuations on Proteus replay.
-        if (!effectsAlreadyPersisted) handleSuccessfulResult(transactionContext, it)
-        onMessageInserted(it)
+        if (!effectsAlreadyPersisted) handleSuccessfulResult(transactionContext, message)
+        onMessageInserted(message)
     }
 
     private val MessageUnpackResult.messageTypeDescription

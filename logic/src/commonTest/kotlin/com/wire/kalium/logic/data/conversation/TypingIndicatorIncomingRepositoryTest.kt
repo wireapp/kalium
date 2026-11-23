@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.logic.framework.TestConversation
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -244,10 +244,10 @@ class TypingIndicatorIncomingRepositoryTest {
     }
 
     private companion object {
-        val conversationOne = TestConversation.ID
-        val conversationTwo = TestConversation.ID.copy(value = "convo-two")
+        val conversationOne = MockConversation.ID
+        val conversationTwo = MockConversation.ID.copy(value = "convo-two")
 
-        val userOne = TestConversation.USER_1
-        val userTwo = TestConversation.USER_2
+        val userOne = MockConversation.USER_1
+        val userTwo = MockConversation.USER_2
     }
 }

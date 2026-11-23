@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationFilter
@@ -27,8 +28,8 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
 import com.wire.kalium.logic.framework.TestCall
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
+import com.wire.kalium.logic.framework.TestTeam
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -154,14 +155,14 @@ class ObserveConversationListDetailsWithEventsUseCaseImplTest {
     private fun groupConversation(conversationId: ConversationId): ConversationDetailsWithEvents =
         ConversationDetailsWithEvents(
             TestConversationDetails.CONVERSATION_GROUP.copy(
-                conversation = TestConversation.GROUP().copy(id = conversationId)
+                conversation = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(id = conversationId)
             )
         )
 
     private fun oneOnOneConversation(conversationId: ConversationId): ConversationDetailsWithEvents =
         ConversationDetailsWithEvents(
             TestConversationDetails.CONVERSATION_ONE_ONE.copy(
-                conversation = TestConversation.ONE_ON_ONE().copy(id = conversationId)
+                conversation = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID).copy(id = conversationId)
             )
         )
 

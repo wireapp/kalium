@@ -24,10 +24,10 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.incremental.EventSource
@@ -570,11 +570,11 @@ class EventRepositoryTest {
     private companion object {
         const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
         val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
-            TestConversation.NETWORK_ID,
-            TestConversation.NETWORK_USER_ID1,
+            MockConversation.NETWORK_ID,
+            MockConversation.NETWORK_USER_ID1,
             Instant.UNIX_FIRST_DATE,
             ConversationMembers(emptyList(), emptyList()),
-            TestConversation.NETWORK_USER_ID1.value
+            MockConversation.NETWORK_USER_ID1.value
         )
     }
 

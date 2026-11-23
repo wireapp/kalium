@@ -18,10 +18,10 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberDetails
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -44,7 +44,7 @@ class CheckConversationLeaveConditionsUseCaseTest {
             .withMembers(members)
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         assertIs<CheckConversationLeaveConditionsUseCase.Result.Allow>(result)
     }
@@ -58,7 +58,7 @@ class CheckConversationLeaveConditionsUseCaseTest {
             .withMembers(members)
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         assertIs<CheckConversationLeaveConditionsUseCase.Result.Allow>(result)
     }
@@ -73,7 +73,7 @@ class CheckConversationLeaveConditionsUseCaseTest {
             .withMembers(members)
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         assertIs<CheckConversationLeaveConditionsUseCase.Result.Allow>(result)
     }
@@ -87,7 +87,7 @@ class CheckConversationLeaveConditionsUseCaseTest {
             .withMembers(members)
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         assertIs<CheckConversationLeaveConditionsUseCase.Result.Allow>(result)
     }
@@ -104,7 +104,7 @@ class CheckConversationLeaveConditionsUseCaseTest {
             .withEligibleMembers(listOf(eligibleMember))
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         assertIs<CheckConversationLeaveConditionsUseCase.Result.DoNotAllow>(result)
         assertEquals(true, result.eligibleUsersAvailable)
@@ -121,7 +121,7 @@ class CheckConversationLeaveConditionsUseCaseTest {
             .withEligibleMembers(emptyList())
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         assertIs<CheckConversationLeaveConditionsUseCase.Result.DoNotAllow>(result)
         assertEquals(false, result.eligibleUsersAvailable)
@@ -133,7 +133,7 @@ class CheckConversationLeaveConditionsUseCaseTest {
             .withMembers(emptyList())
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(MockConversation.ID)
 
         assertIs<CheckConversationLeaveConditionsUseCase.Result.Error>(result)
     }

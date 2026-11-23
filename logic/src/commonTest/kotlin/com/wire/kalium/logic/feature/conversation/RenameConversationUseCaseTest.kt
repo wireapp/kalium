@@ -19,11 +19,11 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser.USER_ID
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
@@ -50,12 +50,12 @@ class RenameConversationUseCaseTest {
             .withRenameConversationIs(Either.Right(CONVERSATION_RENAME_RESPONSE))
             .arrange()
 
-        val result = renameConversation(TestConversation.ID, "new_name")
+        val result = renameConversation(MockConversation.ID, "new_name")
 
         assertIs<RenamingResult.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.changeConversationName(TestConversation.ID, "new_name")
+            arrangement.conversationRepository.changeConversationName(MockConversation.ID, "new_name")
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -69,12 +69,12 @@ class RenameConversationUseCaseTest {
             .withRenameConversationIs(Either.Left(CoreFailure.Unknown(RuntimeException("Error!"))))
             .arrange()
 
-        val result = renameConversation(TestConversation.ID, "new_name")
+        val result = renameConversation(MockConversation.ID, "new_name")
 
         assertIs<RenamingResult.Failure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.changeConversationName(TestConversation.ID, "new_name")
+            arrangement.conversationRepository.changeConversationName(MockConversation.ID, "new_name")
         }
     }
 

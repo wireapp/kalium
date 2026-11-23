@@ -22,8 +22,10 @@ import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -46,6 +48,28 @@ interface MLSMessageCreator {
         message: Message.Sendable
     ): Either<CoreFailure, MLSMessageApi.Message>
 
+    /** Like [prepareMLSGroupAndCreateOutgoingMLSMessage], but the backend doesn't persist the message. */
+    suspend fun prepareMLSGroupAndCreateOutgoingTransientMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        groupId: GroupID,
+        message: Message.Sendable
+    ): Either<CoreFailure, MLSMessageApi.TransientMessage>
+
+    /**
+     * Encrypts a targeted message for every client of the group selected by [target], except the sending client.
+     * The TLS-serialized targeted messages are concatenated into a single batch, which is empty when [target]
+     * selects no group member.
+     *
+     * @param transient true if the backend shouldn't persist the messages
+     */
+    suspend fun prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        groupId: GroupID,
+        message: Message.Sendable,
+        target: MessageTarget,
+        transient: Boolean
+    ): Either<CoreFailure, MLSMessageApi.TargetedMessageBatch>
+
 }
 
 /**
@@ -59,6 +83,10 @@ class MLSMessageCreatorImpl(
     private val commitPendingProposals: suspend (MlsCoreCryptoContext, GroupID) -> Either<CoreFailure, Unit>,
     private val joinConversation: suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>,
     private val encrypt: suspend (MlsCoreCryptoContext, GroupID, ByteArray) -> Either<CoreFailure, ByteArray>,
+    private val encryptTransient: suspend (MlsCoreCryptoContext, GroupID, ByteArray) -> Either<CoreFailure, ByteArray>,
+    /** Encrypts for one recipient client; the last argument is true for a transient message. */
+    private val encryptTargeted:
+    suspend (MlsCoreCryptoContext, GroupID, CryptoQualifiedClientId, ByteArray, Boolean) -> Either<CoreFailure, ByteArray>,
     selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId),
     private val idMapper: IdMapper = IdMapper()
@@ -68,28 +96,68 @@ class MLSMessageCreatorImpl(
         transactionContext: CryptoTransactionContext,
         groupId: GroupID,
         message: Message.Sendable
-    ): Either<CoreFailure, MLSMessageApi.Message> {
+    ): Either<CoreFailure, MLSMessageApi.Message> = prepareMLSGroup(transactionContext, groupId, message) { mlsContext ->
+        kaliumLogger.i("Creating outgoing MLS message (groupID = ${groupId.toLogString()})")
+        encrypt(mlsContext, groupId, encodeContent(message))
+            .map { MLSMessageApi.Message(it) }
+    }
+
+    override suspend fun prepareMLSGroupAndCreateOutgoingTransientMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        groupId: GroupID,
+        message: Message.Sendable
+    ): Either<CoreFailure, MLSMessageApi.TransientMessage> = prepareMLSGroup(transactionContext, groupId, message) { mlsContext ->
+        kaliumLogger.i("Creating outgoing transient MLS message (groupID = ${groupId.toLogString()})")
+        encryptTransient(mlsContext, groupId, encodeContent(message))
+            .map { MLSMessageApi.TransientMessage(it) }
+    }
+
+    override suspend fun prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        groupId: GroupID,
+        message: Message.Sendable,
+        target: MessageTarget,
+        transient: Boolean
+    ): Either<CoreFailure, MLSMessageApi.TargetedMessageBatch> = prepareMLSGroup(transactionContext, groupId, message) { mlsContext ->
+        createTargetedBatch(mlsContext, groupId, message, target, transient)
+            .map { MLSMessageApi.TargetedMessageBatch(it) }
+    }
+
+    private suspend fun createTargetedBatch(
+        mlsContext: MlsCoreCryptoContext,
+        groupId: GroupID,
+        message: Message.Sendable,
+        target: MessageTarget,
+        transient: Boolean
+    ): Either<CoreFailure, ByteArray> {
+        val recipients = mlsContext.members(idMapper.toCryptoModel(groupId))
+            .filter { member -> !member.isSender(message) && target.selects(member) }
+        kaliumLogger.i(
+            "Creating outgoing targeted MLS message (transient = $transient) for ${recipients.size} clients " +
+                "(groupID = ${groupId.toLogString()})"
+        )
+        val content = encodeContent(message)
+        return recipients.foldToEitherWhileRight(ByteArray(0)) { recipient, batch ->
+            encryptTargeted(mlsContext, groupId, recipient, content, transient).map { batch + it }
+        }
+    }
+
+    private suspend fun <T> prepareMLSGroup(
+        transactionContext: CryptoTransactionContext,
+        groupId: GroupID,
+        message: Message.Sendable,
+        create: suspend (MlsCoreCryptoContext) -> Either<CoreFailure, T>
+    ): Either<CoreFailure, T> {
         val mlsContext = transactionContext.mls ?: return Either.Left(MLSFailure.Disabled)
         val doesConversationExist = mlsContext.conversationExists(idMapper.toCryptoModel(groupId))
         return if (doesConversationExist) {
             commitPendingProposals(mlsContext, groupId)
         } else {
             joinConversation(transactionContext, message.conversationId)
-        }.flatMap {
-            createOutgoingMLSMessage(
-                mlsContext = mlsContext,
-                groupId = groupId,
-                message = message
-            )
-        }
+        }.flatMap { create(mlsContext) }
     }
 
-    private suspend fun createOutgoingMLSMessage(
-        mlsContext: MlsCoreCryptoContext,
-        groupId: GroupID,
-        message: Message.Sendable
-    ): Either<CoreFailure, MLSMessageApi.Message> {
-        kaliumLogger.i("Creating outgoing MLS message (groupID = ${groupId.toLogString()})")
+    private suspend fun encodeContent(message: Message.Sendable): ByteArray {
         val expectsReadConfirmation = when (message) {
             is Message.Regular -> message.expectsReadConfirmation
             else -> false
@@ -97,7 +165,7 @@ class MLSMessageCreatorImpl(
 
         val legalHoldStatus = declaredLegalHoldStatus(legalHoldStatus(message.conversationId), message)
 
-        val content = protoContentMapper.encodeToProtobuf(
+        return protoContentMapper.encodeToProtobuf(
             protoContent = ProtoContent.Readable(
                 messageUid = message.id,
                 messageContent = message.content,
@@ -105,8 +173,20 @@ class MLSMessageCreatorImpl(
                 expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds,
                 legalHoldStatus = legalHoldStatus
             )
-        )
-        return encrypt(mlsContext, groupId, content.data)
-            .map { MLSMessageApi.Message(it) }
+        ).data
+    }
+
+    private fun CryptoQualifiedClientId.isSender(message: Message.Sendable): Boolean =
+        isClientOf(message.senderUserId) && value == message.senderClientId.value
+
+    private fun CryptoQualifiedClientId.isClientOf(user: UserId): Boolean =
+        userId.value == user.value && userId.domain == user.domain
+
+    private fun MessageTarget.selects(member: CryptoQualifiedClientId): Boolean = when (this) {
+        is MessageTarget.Client -> recipients.any { recipient ->
+            member.isClientOf(recipient.id) && recipient.clients.any { it.value == member.value }
+        }
+        is MessageTarget.Users -> userId.any { member.isClientOf(it) }
+        is MessageTarget.Conversation -> usersToIgnore.none { member.isClientOf(it) }
     }
 }

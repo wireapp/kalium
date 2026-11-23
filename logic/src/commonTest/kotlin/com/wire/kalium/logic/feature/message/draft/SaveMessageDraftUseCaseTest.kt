@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.feature.message.draft
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.message.draft.MessageDraft
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
@@ -71,7 +71,7 @@ class SaveMessageDraftUseCaseTest {
     }
 
     private companion object {
-        val CONVERSATION_ID = TestConversation.ID
+        val CONVERSATION_ID = MockConversation.ID
         val MESSAGE_DRAFT = MessageDraft(
             conversationId = CONVERSATION_ID,
             text = "hello",

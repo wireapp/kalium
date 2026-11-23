@@ -19,10 +19,10 @@ package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestFolder
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -38,7 +38,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
 
     @Test
     fun givenValidConversation_WhenRemovedSuccessfullyFromFavorite_ThenReturnSuccess() = runTest {
-        val testConversationId = TestConversation.ID
+        val testConversationId = MockConversation.ID
 
         val (arrangement, removeConversationUseCase) = Arrangement()
             .withFavoriteFolder(Either.Right(TestFolder.FAVORITE))
@@ -61,7 +61,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
 
     @Test
     fun givenInvalidConversation_WhenFavoriteFolderNotFound_ThenReturnFailure() = runTest {
-        val testConversationId = TestConversation.ID
+        val testConversationId = MockConversation.ID
 
         val (arrangement, removeConversationUseCase) = Arrangement()
             .withFavoriteFolder(Either.Left(CoreFailure.Unknown(null)))
@@ -79,7 +79,7 @@ class RemoveConversationFromFavoritesUseCaseTest {
 
     @Test
     fun givenValidConversation_WhenRemoveFromFavoritesFails_ThenReturnFailure() = runTest {
-        val testConversationId = TestConversation.ID
+        val testConversationId = MockConversation.ID
 
         val (arrangement, removeConversationUseCase) = Arrangement()
             .withFavoriteFolder(Either.Right(TestFolder.FAVORITE))

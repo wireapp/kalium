@@ -21,12 +21,13 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.answering.returns
@@ -44,7 +45,7 @@ class IsSelfUserViewerOnConversationUseCaseTest {
     @Test
     fun givenNonCellsGroupConversation_whenChecking_thenReturnsTrue() =
         runTest(TestKaliumDispatcher.main) {
-            val conversation = TestConversation.GROUP().copy(teamId = TeamId("some-team"))
+            val conversation = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(teamId = TeamId("some-team"))
             val conversationDetails = ConversationDetails.Group.Regular(
                 conversation = conversation,
                 isSelfUserMember = true,
@@ -58,7 +59,7 @@ class IsSelfUserViewerOnConversationUseCaseTest {
                 .withConversationDetailsReturning(Either.Right(conversationDetails))
                 .arrange()
 
-            val result = useCase(TestConversation.ID)
+            val result = useCase(MockConversation.ID)
 
             assertTrue(result)
         }
@@ -67,7 +68,7 @@ class IsSelfUserViewerOnConversationUseCaseTest {
     fun givenCellsConversationOwnedBySelfTeam_whenChecking_thenReturnsTrue() =
         runTest(TestKaliumDispatcher.main) {
             val selfTeamId = TeamId("self-team")
-            val conversation = TestConversation.GROUP().copy(teamId = selfTeamId)
+            val conversation = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(teamId = selfTeamId)
             val conversationDetails = ConversationDetails.Group.Regular(
                 conversation = conversation,
                 isSelfUserMember = true,
@@ -81,7 +82,7 @@ class IsSelfUserViewerOnConversationUseCaseTest {
                 .withConversationDetailsReturning(Either.Right(conversationDetails))
                 .arrange()
 
-            val result = useCase(TestConversation.ID)
+            val result = useCase(MockConversation.ID)
 
             assertTrue(result)
         }
@@ -91,7 +92,7 @@ class IsSelfUserViewerOnConversationUseCaseTest {
         runTest(TestKaliumDispatcher.main) {
             val selfTeamId = TeamId("self-team")
             val foreignTeamId = TeamId("foreign-team")
-            val conversation = TestConversation.GROUP().copy(teamId = foreignTeamId)
+            val conversation = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(teamId = foreignTeamId)
             val conversationDetails = ConversationDetails.Group.Regular(
                 conversation = conversation,
                 isSelfUserMember = true,
@@ -105,7 +106,7 @@ class IsSelfUserViewerOnConversationUseCaseTest {
                 .withConversationDetailsReturning(Either.Right(conversationDetails))
                 .arrange()
 
-            val result = useCase(TestConversation.ID)
+            val result = useCase(MockConversation.ID)
 
             assertFalse(result)
         }
@@ -114,7 +115,7 @@ class IsSelfUserViewerOnConversationUseCaseTest {
     fun givenNonGroupConversation_whenChecking_thenReturnsTrue() =
         runTest(TestKaliumDispatcher.main) {
             val conversationDetails = ConversationDetails.OneOne(
-                conversation = TestConversation.ONE_ON_ONE(),
+                conversation = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID),
                 otherUser = TestUser.OTHER,
                 userType = TestUser.OTHER.userType,
             )
@@ -124,7 +125,7 @@ class IsSelfUserViewerOnConversationUseCaseTest {
                 .withConversationDetailsReturning(Either.Right(conversationDetails))
                 .arrange()
 
-            val result = useCase(TestConversation.ID)
+            val result = useCase(MockConversation.ID)
 
             assertTrue(result)
         }
@@ -139,7 +140,7 @@ class IsSelfUserViewerOnConversationUseCaseTest {
                 .withConversationDetailsReturning(Either.Left(StorageFailure.DataNotFound))
                 .arrange()
 
-            val result = useCase(TestConversation.ID)
+            val result = useCase(MockConversation.ID)
 
             assertTrue(result)
         }

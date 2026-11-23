@@ -19,10 +19,10 @@ package com.wire.kalium.logic.feature.asset
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.MessageAssetStatus
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.MockMode
@@ -60,7 +60,7 @@ class ObserveAssetStatusesUseCaseTest {
             .withAssetStatuses(Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
-        observeAssetStatuses.invoke(TestConversation.ID).test {
+        observeAssetStatuses.invoke(MockConversation.ID).test {
             val result = awaitItem()
             assertTrue(result.isEmpty())
             awaitComplete()
@@ -73,15 +73,15 @@ class ObserveAssetStatusesUseCaseTest {
             .withAssetStatuses(
                 Either.Right(
                     listOf(
-                        MessageAssetStatus("id1", TestConversation.ID, AssetTransferStatus.UPLOADED),
-                        MessageAssetStatus("id2", TestConversation.ID, AssetTransferStatus.NOT_DOWNLOADED),
-                        MessageAssetStatus("id3", TestConversation.ID, AssetTransferStatus.SAVED_INTERNALLY)
+                        MessageAssetStatus("id1", MockConversation.ID, AssetTransferStatus.UPLOADED),
+                        MessageAssetStatus("id2", MockConversation.ID, AssetTransferStatus.NOT_DOWNLOADED),
+                        MessageAssetStatus("id3", MockConversation.ID, AssetTransferStatus.SAVED_INTERNALLY)
                     )
                 )
             )
             .arrange()
 
-        observeAssetStatuses.invoke(TestConversation.ID).test {
+        observeAssetStatuses.invoke(MockConversation.ID).test {
             val result = awaitItem()
             val assetStatusMap = result.mapValues { it.value.transferStatus }
             assertTrue(assetStatusMap.containsValue(AssetTransferStatus.UPLOADED))

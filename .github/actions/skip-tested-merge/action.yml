@@ -1,0 +1,18 @@
+name: Check whether the merge queue already tested this commit
+description: Skip duplicate develop push tests while retaining the cache build; API failures run all tests
+outputs:
+  skip-tests:
+    description: Whether this workflow already passed merge_group for this exact develop SHA
+    value: ${{ steps.check.outputs.skip-tests }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+      id: check
+      env:
+        GH_TOKEN: ${{ github.token }}
+      with:
+        # github.action_path is the host path inside container jobs; GITHUB_WORKSPACE is translated.
+        script: |
+          const {check} = require(require('path').join(process.env.GITHUB_WORKSPACE, '.github/actions/skip-tested-merge/check.cjs'));
+          core.setOutput('skip-tests', String(await check()));

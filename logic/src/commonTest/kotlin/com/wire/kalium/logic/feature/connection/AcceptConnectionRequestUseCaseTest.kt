@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
@@ -28,7 +29,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -54,7 +54,7 @@ class AcceptConnectionRequestUseCaseTest {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversationSucceeding()
             withUpdateConversationModifiedDate(Either.Right(Unit))
-            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(MockConversation.ID))
         }
 
         // when
@@ -78,7 +78,7 @@ class AcceptConnectionRequestUseCaseTest {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversationSucceeding()
             withUpdateConversationModifiedDate(Either.Right(Unit))
-            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(MockConversation.ID))
         }
 
         // when
@@ -98,7 +98,7 @@ class AcceptConnectionRequestUseCaseTest {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversationSucceeding()
             withUpdateConversationModifiedDate(Either.Right(Unit))
-            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(MockConversation.ID))
         }
 
         // when

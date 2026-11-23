@@ -19,9 +19,9 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.service.ServiceId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -43,12 +43,12 @@ class AddServiceToConversationUseCaseTest {
             .withAddService(Either.Right(Unit))
             .arrange()
 
-        val result = addService(TestConversation.ID, serviceId)
+        val result = addService(MockConversation.ID, serviceId)
 
         assertIs<AddServiceToConversationUseCase.Result.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.addService(serviceId, TestConversation.ID)
+            arrangement.conversationGroupRepository.addService(serviceId, MockConversation.ID)
         }
     }
 
@@ -60,12 +60,12 @@ class AddServiceToConversationUseCaseTest {
             .withAddService(Either.Left(MLSFailure.Generic(UnsupportedOperationException())))
             .arrange()
 
-        val result = addService(TestConversation.ID, serviceId)
+        val result = addService(MockConversation.ID, serviceId)
         assertIs<AddServiceToConversationUseCase.Result.Failure>(result)
         assertIs<MLSFailure.Generic>(result.cause)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.addService(serviceId, TestConversation.ID)
+            arrangement.conversationGroupRepository.addService(serviceId, MockConversation.ID)
         }
     }
 
