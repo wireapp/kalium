@@ -40,7 +40,8 @@ import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -79,9 +80,20 @@ public actual class CoreLogic(
     public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    actual override suspend fun deleteSessionScope(userId: UserId) {
-        userSessionScopeProvider.value.get(userId)?.cancel()
-        userSessionScopeProvider.value.delete(userId)
+    actual override suspend fun deleteSessionScope(userId: UserId): Unit = releaseSessionScope(userId)
+
+    /**
+     * Fully close an account after the host has cancelled and joined its users and collectors: stops its work and
+     * closes its crypto clients, network and database, so another process can use the account. [getSessionScope]
+     * opens it again. The scope is forgotten even if closing fails; the failure is rethrown.
+     */
+    public suspend fun releaseSessionScope(userId: UserId): Unit = withContext(NonCancellable) {
+        val provider = userSessionScopeProvider.value
+        try {
+            provider.get(userId)?.closeAccountResources()
+        } finally {
+            provider.delete(userId)
+        }
     }
 
     public actual override val networkStateObserver: NetworkStateObserver =
