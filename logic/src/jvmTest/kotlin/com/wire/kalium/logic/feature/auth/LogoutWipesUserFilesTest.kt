@@ -257,7 +257,7 @@ class LogoutWipesUserFilesTest {
                 exporterProvider = exporterProvider,
                 dispatchers = TestKaliumDispatcher
             ).invoke("") {}
-            return assertTrue(result is CreateBackupResult.Success, "backup failed: $result").let { result as CreateBackupResult.Success }
+            return assertTrue(result is CreateBackupResult.Success, "backup failed: $result").let { result }
         }
 
         private suspend fun arrangeLogout(): LogoutUseCaseImpl {

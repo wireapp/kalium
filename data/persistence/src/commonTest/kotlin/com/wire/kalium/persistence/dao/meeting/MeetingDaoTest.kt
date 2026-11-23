@@ -451,6 +451,27 @@ class MeetingDaoTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenMeetingId_whenLinkChangesOrMeetingIsDeleted_thenObserverEmitsLatestState() = runTest(dispatcher) {
+        val start = Instant.parse("2026-01-03T10:00:00Z")
+        val meeting = newMeeting(startTime = start).copy(link = "https://wire.example/first")
+        val window = GenerationLimit.Window(start - 1.days, start + GENERATION_DAYS.days)
+        insertMeetingDependencies(meeting)
+        meetingDao.upsertMeetings(listOf(meeting), window)
+
+        meetingDao.observeMeeting(meeting.meetingId).test {
+            assertEquals(meeting.link, awaitItem()?.link)
+            val rerolled = meeting.copy(link = "https://wire.example/rerolled", hasPassword = true, updatedAt = start + 1.minutes)
+            meetingDao.upsertMeetings(listOf(rerolled), window)
+            val updated = awaitItem()
+            assertEquals(rerolled.link, updated?.link)
+            assertEquals(true, updated?.hasPassword)
+            meetingDao.deleteMeeting(meeting.meetingId)
+            assertEquals(null, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun givenNoStoredMeetingForId_whenGettingMeeting_thenReturnsNull() = runTest(dispatcher) {
         val meetingStart = Instant.parse("2026-01-03T10:00:00Z")
         val meeting = newMeeting(startTime = meetingStart)
