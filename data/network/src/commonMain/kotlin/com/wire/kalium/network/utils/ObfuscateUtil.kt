@@ -68,8 +68,9 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
 
                     /**
                      * NOTE:
-                     * IDs are allowed to be logged in clear according to the agreed policy,
-                     * so we do NOT obfuscate them here anymore.
+                     * IDs are currently not obfuscated here. How IDs are logged (in clear,
+                     * omitted or as pseudonyms) is under review in ADR 0018,
+                     * docs/adr/0018-log-data-policy.md.
                      *
                      * If you ever need to change this policy, do it centrally (redactor),
                      * not by sprinkling obfuscation across models.
