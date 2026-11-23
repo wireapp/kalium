@@ -202,6 +202,27 @@ val sensitiveLogKeys by lazy {
     )
 }
 
+/**
+ * Lowercase names of the HTTP headers whose values are safe to log.
+ * Any other header is logged by name only, so a new credential header can't leak by default.
+ */
+val loggableHttpHeaders by lazy {
+    setOf(
+        "accept",
+        "accept-encoding",
+        "accept-language",
+        "cache-control",
+        "connection",
+        "content-encoding",
+        "content-length",
+        "content-type",
+        "date",
+        "etag",
+        "user-agent",
+        "x-request-id"
+    )
+}
+
 @Deprecated("Use sensitiveLogKeys instead")
 val sensitiveJsonKeys: List<String> get() = sensitiveLogKeys
 
