@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.conversation
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -184,6 +185,51 @@ class ConversationListPagingSourceTest : BaseDatabaseTest() {
         assertEquals(legacyPage.data.map { it.conversationViewEntity.id }.toSet(), page.ids().toSet())
         legacy.invalidate()
         assertEquals(listOf(id(1)), source(query.copy(onlyInteractionEnabled = true)).refresh().ids())
+    }
+
+    @Test
+    fun deletedMlsPeerRemainsVisibleAndReadOnlyAfterMembershipRemoval() = runTest(dispatcher) {
+        val conversationId = id(1)
+        val peer = QualifiedIDEntity("peer", "wire.com")
+        db.userDAO.upsertUser(newUserEntity(self))
+        db.conversationDAO.insertConversation(newConversationEntity(conversationId).copy(
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                "mls-group",
+                ConversationEntity.GroupState.ESTABLISHED,
+                1u,
+                time(0),
+                ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+            ),
+        ))
+        db.userDAO.upsertUser(newUserEntity(peer).copy(activeOneOnOneConversationId = conversationId))
+        db.memberDAO.insertMembersWithQualifiedId(
+            listOf(MemberEntity(self, MemberEntity.Role.Member), MemberEntity(peer, MemberEntity.Role.Member)),
+            conversationId,
+        )
+        val message = newRegularMessageEntity(conversationId = conversationId, senderUserId = peer)
+        db.messageDAO.insertOrIgnoreMessage(message)
+        val before = source()
+        assertFalse(assertNotNull(before.refresh().data.single().otherUser).deleted)
+
+        // Apply the same local writes as a member-leave event with reason UserDeleted.
+        db.userDAO.markAsDeleted(listOf(peer))
+        db.memberDAO.deleteMembersByQualifiedID(listOf(peer), conversationId)
+
+        assertEquals(listOf(self), db.memberDAO.getConversationMembers(conversationId))
+        assertTrue(before.invalid)
+        val row = source().refresh().data.single()
+        assertEquals(conversationId, row.position.conversationId)
+        val otherUser = assertNotNull(row.otherUser)
+        assertEquals(peer, otherUser.id)
+        assertTrue(otherUser.deleted)
+        assertEquals(message.id, row.lastMessage?.id)
+        assertTrue(source(ConversationListQueryEntity(onlyInteractionEnabled = true)).refresh().data.isEmpty())
+
+        val details = db.database.conversationDetailsQueries.selectConversationDetailsByQualifiedId(conversationId).awaitAsOne()
+        assertEquals(peer, details.otherUserId)
+        assertEquals(true, details.userDeleted)
+        assertEquals(0L, details.interactionEnabled)
+        assertNotNull(db.messageDAO.getMessageById(message.id, conversationId))
     }
 
     @Test

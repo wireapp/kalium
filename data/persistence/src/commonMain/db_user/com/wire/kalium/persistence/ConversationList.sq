@@ -11,13 +11,18 @@ WITH pageKeys AS MATERIALIZED (
     FROM Conversation C
     LEFT JOIN SelfUser S
     LEFT JOIN User U ON U.qualified_id = CASE C.type
-        WHEN 'ONE_ON_ONE' THEN (
+        WHEN 'ONE_ON_ONE' THEN coalesce((
             SELECT M.user FROM Member M JOIN User Other ON Other.qualified_id = M.user
             WHERE M.conversation = C.qualified_id AND M.user IS NOT S.id
                 AND Other.active_one_on_one_conversation_id = C.qualified_id
                 AND (Other.name IS NOT NULL OR Other.deleted = 1)
             ORDER BY M.user ASC LIMIT 1
-        )
+        ), CASE WHEN C.protocol IN ('MLS', 'MIXED') THEN (
+            SELECT Peer.qualified_id FROM User Peer
+            WHERE Peer.active_one_on_one_conversation_id = C.qualified_id
+                AND Peer.deleted = 1 AND Peer.qualified_id IS NOT S.id
+            ORDER BY Peer.qualified_id LIMIT 1
+        ) END)
         WHEN 'CONNECTION_PENDING' THEN (
             SELECT qualified_to FROM Connection
             WHERE qualified_conversation = C.qualified_id AND status IN ('SENT', 'PENDING', 'NOT_CONNECTED')
@@ -122,13 +127,18 @@ WITH pageKeys AS MATERIALIZED (
     FROM Conversation C
     LEFT JOIN SelfUser S
     LEFT JOIN User U ON U.qualified_id = CASE C.type
-        WHEN 'ONE_ON_ONE' THEN (
+        WHEN 'ONE_ON_ONE' THEN coalesce((
             SELECT M.user FROM Member M JOIN User Other ON Other.qualified_id = M.user
             WHERE M.conversation = C.qualified_id AND M.user IS NOT S.id
                 AND Other.active_one_on_one_conversation_id = C.qualified_id
                 AND (Other.name IS NOT NULL OR Other.deleted = 1)
             ORDER BY M.user ASC LIMIT 1
-        )
+        ), CASE WHEN C.protocol IN ('MLS', 'MIXED') THEN (
+            SELECT Peer.qualified_id FROM User Peer
+            WHERE Peer.active_one_on_one_conversation_id = C.qualified_id
+                AND Peer.deleted = 1 AND Peer.qualified_id IS NOT S.id
+            ORDER BY Peer.qualified_id LIMIT 1
+        ) END)
         WHEN 'CONNECTION_PENDING' THEN (
             SELECT qualified_to FROM Connection
             WHERE qualified_conversation = C.qualified_id AND status IN ('SENT', 'PENDING', 'NOT_CONNECTED')
