@@ -50,6 +50,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Instant
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
 
 @OptIn(ConversationPersistenceApi::class)
@@ -274,7 +275,9 @@ class AppMLSReceiveRecoveryTest {
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val event = TestEvent.newMLSMessageEvent(Instant.DISTANT_PAST)
-        val database = TestUserDatabase(TestUser.SELF.id.toDao(), TestKaliumDispatcher.default)
+        // The SQLite store is named by its user ID. Keep it separate from the mocked account.
+        private val databaseUserId = TestUser.SELF.id.copy(value = Uuid.random().toString()).toDao()
+        val database = TestUserDatabase(databaseUserId, TestKaliumDispatcher.default)
         val api = mock<ConversationApi>()
         val conversations = mock<ConversationRepository>()
         val persistMessage = mock<PersistMessageUseCase>()

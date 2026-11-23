@@ -180,7 +180,7 @@ Each job selects affected tests, links its binaries with one Gradle worker and a
 then stops Gradle before booting its simulator. Tests run sequentially within the job using
 a 1 GB Gradle heap, leaving memory for the simulator and native test process. A failed test
 does not cancel the other groups or prevent independent test tasks from running.
-`Gradle Run Tests` remains the combined check and succeeds only when all groups succeed.
+`iOS Tests` is the combined check and succeeds only when all groups succeed.
 Reports and timing artifacts include the group name.
 
 To inspect a group's selection without building or running tests:
