@@ -2765,6 +2765,7 @@ public class UserSessionScope internal constructor(
                     },
                 )
             },
+            kaliumConfigs.targetedAndTransientMLSMessagesEnabled,
             userScopedLogger,
         )
     }

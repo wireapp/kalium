@@ -193,7 +193,8 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
     private class FakeMessageSender : MessageSender {
         override suspend fun sendMessageWithOutcome(
             message: Message.Sendable,
-            messageTarget: com.wire.kalium.messaging.sending.MessageTarget
+            messageTarget: com.wire.kalium.messaging.sending.MessageTarget,
+            transient: Boolean
         ): Either<CoreFailure, Boolean> = error("Not used by these tests")
 
         override suspend fun cancelPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean> =
@@ -206,7 +207,8 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
 
         override suspend fun sendMessage(
             message: Message.Sendable,
-            messageTarget: com.wire.kalium.messaging.sending.MessageTarget
+            messageTarget: com.wire.kalium.messaging.sending.MessageTarget,
+            transient: Boolean
         ): Either<CoreFailure, Unit> = Either.Right(Unit)
 
         override suspend fun broadcastMessage(
