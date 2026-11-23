@@ -19,8 +19,8 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.answering.returns
@@ -39,7 +39,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
 
     @Test
     fun givenAConversationId_whenInvokingAnArchivedStatusChange_thenShouldDelegateTheCallAndReturnASuccessResult() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val isConversationArchived = true
         val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
         val onlyLocally = false
@@ -73,7 +73,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
     @Test
     fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndUserIsNotMember_thenShouldArchiveOnlyLocally() =
         runTest {
-            val conversationId = TestConversation.ID
+            val conversationId = MockConversation.ID
             val isConversationArchived = true
             val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
             val onlyLocally = true
@@ -102,7 +102,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
 
     @Test
     fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFails_thenShouldDelegateTheCallAndReturnAFailureResult() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val isConversationArchived = true
         val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
         val onlyLocally = false
@@ -135,7 +135,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
 
     @Test
     fun givenRemoteNoConversationError_whenInvokingAnArchivedStatusChange_thenShouldArchiveLocallyAndReturnSuccess() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val isConversationArchived = true
         val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
         val onlyLocally = false
@@ -168,7 +168,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
 
     @Test
     fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFailsOnlyLocally_thenShouldReturnAFailureResult() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val isConversationArchived = true
         val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
         val onlyLocally = false

@@ -21,10 +21,11 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -158,8 +159,8 @@ class CheckOneToOneConversationIsReadyUseCaseTest {
 
     private companion object {
         val OTHER_USER_ID = TestUser.OTHER_USER_ID
-        val PROTEUS_CONVERSATION = TestConversation.ONE_ON_ONE()
-        val MLS_CONVERSATION = TestConversation.ONE_ON_ONE(TestConversation.MLS_PROTOCOL_INFO)
-        val MIXED_CONVERSATION = TestConversation.ONE_ON_ONE(TestConversation.MIXED_PROTOCOL_INFO)
+        val PROTEUS_CONVERSATION = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID)
+        val MLS_CONVERSATION = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID, protocolInfo = MockConversation.MLS_PROTOCOL_INFO)
+        val MIXED_CONVERSATION = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID, protocolInfo = MockConversation.MIXED_PROTOCOL_INFO)
     }
 }

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.framework
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -59,7 +60,7 @@ internal object TestMessage {
     val TEXT_MESSAGE = Message.Regular(
         id = TEST_MESSAGE_ID,
         content = TEXT_CONTENT,
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         date = TEST_DATE,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
@@ -107,7 +108,7 @@ internal object TestMessage {
 
     val ENTITY = MessageEntity.Regular(
         TEST_MESSAGE_ID,
-        TestConversation.ENTITY_ID,
+        MockConversation.ENTITY_ID,
         date = TEST_DATE,
         senderUserId = TestUser.ENTITY_ID,
         status = MessageEntity.Status.SENT,
@@ -134,7 +135,7 @@ internal object TestMessage {
     ) = Message.Signaling(
         id = TEST_MESSAGE_ID,
         content = content,
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         date = Clock.System.now(),
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,

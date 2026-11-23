@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.cryptography.utils.EncryptedData
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
@@ -46,7 +47,7 @@ internal object TestEvent {
 
     fun memberJoin(eventId: String = "eventId", members: List<Member> = listOf()) = Event.Conversation.MemberJoin(
         eventId,
-        TestConversation.ID,
+        MockConversation.ID,
         TestUser.USER_ID,
         members,
         Instant.UNIX_FIRST_DATE,
@@ -54,7 +55,7 @@ internal object TestEvent {
 
     fun memberLeave(eventId: String = "eventId", members: List<UserId> = listOf()) = Event.Conversation.MemberLeave(
         eventId,
-        TestConversation.ID,
+        MockConversation.ID,
         TestUser.USER_ID,
         members,
         Instant.UNIX_FIRST_DATE,
@@ -63,14 +64,14 @@ internal object TestEvent {
 
     fun memberChange(eventId: String = "eventId", member: Member) = Event.Conversation.MemberChanged.MemberChangedRole(
         eventId,
-        TestConversation.ID,
+        MockConversation.ID,
         Instant.parse("2022-03-30T15:36:00.000Z"),
         member
     )
 
     fun memberChangeMutedStatus(eventId: String = "eventId") = Event.Conversation.MemberChanged.MemberMutedStatusChanged(
         eventId,
-        TestConversation.ID,
+        MockConversation.ID,
         MutedConversationStatus.AllAllowed,
         Instant.parse("2022-03-30T15:36:00.000Z")
     )
@@ -78,14 +79,14 @@ internal object TestEvent {
     fun memberChangeArchivedStatus(eventId: String = "eventId", isArchiving: Boolean = true) =
         Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
             eventId,
-            TestConversation.ID,
+            MockConversation.ID,
             Instant.parse("2022-03-31T16:36:00.000Z"),
             isArchiving,
         )
 
     fun memberChangeIgnored(eventId: String = "eventId") = Event.Conversation.MemberChanged.IgnoredMemberChanged(
         eventId,
-        TestConversation.ID,
+        MockConversation.ID,
     )
 
     fun clientRemove(eventId: String = "eventId", clientId: ClientId) = Event.User.ClientRemove(eventId, clientId)
@@ -115,7 +116,7 @@ internal object TestEvent {
             conversationId = "conversationId",
             from = "from",
             lastUpdate = Instant.UNIX_FIRST_DATE,
-            qualifiedConversationId = TestConversation.ID,
+            qualifiedConversationId = MockConversation.ID,
             qualifiedToId = TestUser.USER_ID,
             status = status,
             toId = "told?"
@@ -124,14 +125,14 @@ internal object TestEvent {
 
     fun deletedConversation(eventId: String = "eventId") = Event.Conversation.DeletedConversation(
         eventId,
-        TestConversation.ID,
+        MockConversation.ID,
         TestUser.USER_ID,
         Instant.parse("2022-03-30T15:36:00.000Z")
     )
 
     fun adminlessDeleteReminder(eventId: String = "eventId") = Event.Conversation.AdminlessDeleteReminder(
         id = eventId,
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         senderUserId = TestUser.USER_ID,
         dateTime = Instant.parse("2026-07-16T12:00:00.000Z"),
         deletionScheduledFor = Instant.parse("2026-07-20T12:00:00.000Z"),
@@ -139,7 +140,7 @@ internal object TestEvent {
 
     fun renamedConversation(eventId: String = "eventId") = Event.Conversation.RenamedConversation(
         eventId,
-        TestConversation.ID,
+        MockConversation.ID,
         "newName",
         TestUser.USER_ID,
         Instant.UNIX_FIRST_DATE,
@@ -147,14 +148,14 @@ internal object TestEvent {
 
     fun receiptModeUpdate(eventId: String = "eventId") = Event.Conversation.ConversationReceiptMode(
         eventId,
-        TestConversation.ID,
+        MockConversation.ID,
         receiptMode = Conversation.ReceiptMode.ENABLED,
         senderUserId = TestUser.USER_ID
     )
 
     fun accessUpdate(eventId: String = "eventId") = Event.Conversation.AccessUpdate(
         id = eventId,
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         access = setOf(Conversation.Access.PRIVATE),
         accessRole = setOf(Conversation.AccessRole.TEAM_MEMBER, Conversation.AccessRole.SERVICE),
         qualifiedFrom = TestUser.USER_ID
@@ -176,7 +177,7 @@ internal object TestEvent {
 
     fun timerChanged(eventId: String = "eventId") = Event.Conversation.ConversationMessageTimer(
         id = eventId,
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         messageTimer = 3000,
         senderUserId = TestUser.USER_ID,
         Instant.UNIX_FIRST_DATE,
@@ -194,7 +195,7 @@ internal object TestEvent {
                 id = "folder1",
                 name = "Favorites",
                 type = FolderType.FAVORITE,
-                conversationIdList = listOf(TestConversation.ID)
+                conversationIdList = listOf(MockConversation.ID)
             )
         )
     )
@@ -205,7 +206,7 @@ internal object TestEvent {
         encryptedExternalContent: EncryptedData? = null
     ) = Event.Conversation.NewMessage(
         "eventId",
-        TestConversation.ID,
+        MockConversation.ID,
         senderUserId,
         TestClient.CLIENT_ID,
         Instant.UNIX_FIRST_DATE,
@@ -218,7 +219,7 @@ internal object TestEvent {
         subConversationId: SubconversationId? = null
     ) = Event.Conversation.NewMLSMessage(
         "eventId",
-        TestConversation.ID,
+        MockConversation.ID,
         subConversationId,
         TestUser.USER_ID,
         dateTime,
@@ -227,22 +228,22 @@ internal object TestEvent {
 
     fun newConversationEvent() = Event.Conversation.NewConversation(
         id = "eventId",
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         dateTime = Instant.UNIX_FIRST_DATE,
-        conversation = TestConversation.CONVERSATION_RESPONSE,
+        conversation = MockConversation.CONVERSATION_RESPONSE,
         senderUserId = TestUser.SELF.id
     )
 
     fun newMLSWelcomeEvent() = Event.Conversation.MLSWelcome(
         "eventId",
-        TestConversation.ID,
+        MockConversation.ID,
         TestUser.USER_ID,
         "dummy-message",
     )
 
     fun codeUpdated() = Event.Conversation.CodeUpdated(
         id = "eventId",
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         code = "code",
         key = "key",
         uri = "uri",
@@ -251,26 +252,26 @@ internal object TestEvent {
 
     fun codeDeleted() = Event.Conversation.CodeDeleted(
         id = "eventId",
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
     )
 
     fun typingIndicator(typingIndicatorMode: Conversation.TypingIndicatorMode) = Event.Conversation.TypingIndicator(
         id = "eventId",
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         senderUserId = TestUser.OTHER_USER_ID,
         typingIndicatorMode = typingIndicatorMode
     )
 
     fun newConversationProtocolEvent() = Event.Conversation.ConversationProtocol(
         id = "eventId",
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         protocol = Conversation.Protocol.MIXED,
         senderUserId = TestUser.OTHER_USER_ID
     )
 
     fun newConversationChannelAddPermissionEvent() = Event.Conversation.ConversationChannelAddPermission(
         id = "eventId",
-        conversationId = TestConversation.ID,
+        conversationId = MockConversation.ID,
         channelAddPermission = ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS,
         senderUserId = TestUser.OTHER_USER_ID
     )

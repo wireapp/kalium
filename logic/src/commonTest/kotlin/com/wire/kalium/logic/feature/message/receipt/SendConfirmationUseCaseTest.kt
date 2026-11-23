@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message.receipt
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -29,8 +30,8 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldSucceed
@@ -66,7 +67,7 @@ class SendConfirmationUseCaseTest {
         val after = Instant.DISTANT_PAST
         val until = after + 10.seconds
 
-        val result = sendConfirmation(TestConversation.ID, after, until)
+        val result = sendConfirmation(MockConversation.ID, after, until)
 
         result.toEither().shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
@@ -78,7 +79,7 @@ class SendConfirmationUseCaseTest {
     fun givenMLSOneOnOneConversation_whenSendingReadConfirmation_thenShouldSendConfirmation() = runTest {
         val (arrangement, sendConfirmation) = Arrangement()
             .withCurrentClientIdProvider()
-            .withGetConversationByIdSuccessful(TestConversation.MLS_CONVERSATION)
+            .withGetConversationByIdSuccessful(MockConversation.MLS_CONVERSATION)
             .withToggleReadReceiptsStatus(true)
             .withPendingMessagesResponse()
             .withSendMessageSuccess()
@@ -87,7 +88,7 @@ class SendConfirmationUseCaseTest {
         val after = Instant.DISTANT_PAST
         val until = after + 10.seconds
 
-        val result = sendConfirmation(TestConversation.ID, after, until)
+        val result = sendConfirmation(MockConversation.ID, after, until)
 
         result.toEither().shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
@@ -97,7 +98,7 @@ class SendConfirmationUseCaseTest {
 
     @Test
     fun givenMLSGroupConversation_whenSendingReadConfirmation_thenShouldNotSendConfirmation() = runTest {
-        val mlsGroupConversation = TestConversation.MLS_CONVERSATION.copy(type = Conversation.Type.Group.Regular)
+        val mlsGroupConversation = MockConversation.MLS_CONVERSATION.copy(type = Conversation.Type.Group.Regular)
         val (arrangement, sendConfirmation) = Arrangement()
             .withGetConversationByIdSuccessful(mlsGroupConversation)
             .arrange()
@@ -105,7 +106,7 @@ class SendConfirmationUseCaseTest {
         val after = Instant.DISTANT_PAST
         val until = after + 10.seconds
 
-        val result = sendConfirmation(TestConversation.ID, after, until)
+        val result = sendConfirmation(MockConversation.ID, after, until)
 
         result.toEither().shouldSucceed()
         verifySuspend(VerifyMode.not) {
@@ -125,7 +126,7 @@ class SendConfirmationUseCaseTest {
     fun givenMixedConversation_whenSendingReadConfirmation_thenShouldSendConfirmationUsingProteus() = runTest {
         val (arrangement, sendConfirmation) = Arrangement()
             .withCurrentClientIdProvider()
-            .withGetConversationByIdSuccessful(TestConversation.MIXED_CONVERSATION)
+            .withGetConversationByIdSuccessful(MockConversation.MIXED_CONVERSATION)
             .withToggleReadReceiptsStatus(true)
             .withPendingMessagesResponse()
             .withSendMessageSuccess()
@@ -134,7 +135,7 @@ class SendConfirmationUseCaseTest {
         val after = Instant.DISTANT_PAST
         val until = after + 10.seconds
 
-        val result = sendConfirmation(TestConversation.ID, after, until)
+        val result = sendConfirmation(MockConversation.ID, after, until)
 
         result.toEither().shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
@@ -155,7 +156,7 @@ class SendConfirmationUseCaseTest {
         val after = Instant.DISTANT_PAST
         val until = after + 10.seconds
 
-        val result = sendConfirmation(TestConversation.ID, after, until)
+        val result = sendConfirmation(MockConversation.ID, after, until)
 
         result.toEither().shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
@@ -170,7 +171,9 @@ class SendConfirmationUseCaseTest {
     fun givenMessagesFromMultipleSenders_whenSendingReadConfirmation_thenShouldSendOneConfirmationPerSender() = runTest {
         val (arrangement, sendConfirmation) = Arrangement()
             .withCurrentClientIdProvider()
-            .withGetConversationByIdSuccessful(TestConversation.GROUP().copy(receiptMode = Conversation.ReceiptMode.ENABLED))
+            .withGetConversationByIdSuccessful(
+                MockConversation.group(teamId = TestTeam.TEAM_ID).copy(receiptMode = Conversation.ReceiptMode.ENABLED)
+            )
             .withPendingMessagesResponse(
                 mapOf(
                     TestUser.OTHER_USER_ID to listOf("message-1", "message-3"),
@@ -183,7 +186,7 @@ class SendConfirmationUseCaseTest {
         val after = Instant.DISTANT_PAST
         val until = after + 10.seconds
 
-        val result = sendConfirmation(TestConversation.ID, after, until)
+        val result = sendConfirmation(MockConversation.ID, after, until)
 
         result.toEither().shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
@@ -205,7 +208,9 @@ class SendConfirmationUseCaseTest {
     fun givenSendingToOneSenderFails_whenSendingReadConfirmation_thenShouldStillSendToOtherSendersAndReturnFailure() = runTest {
         val (arrangement, sendConfirmation) = Arrangement()
             .withCurrentClientIdProvider()
-            .withGetConversationByIdSuccessful(TestConversation.GROUP().copy(receiptMode = Conversation.ReceiptMode.ENABLED))
+            .withGetConversationByIdSuccessful(
+                MockConversation.group(teamId = TestTeam.TEAM_ID).copy(receiptMode = Conversation.ReceiptMode.ENABLED)
+            )
             .withPendingMessagesResponse(
                 mapOf(
                     TestUser.OTHER_USER_ID to listOf("message-1"),
@@ -219,7 +224,7 @@ class SendConfirmationUseCaseTest {
         val after = Instant.DISTANT_PAST
         val until = after + 10.seconds
 
-        val result = sendConfirmation(TestConversation.ID, after, until)
+        val result = sendConfirmation(MockConversation.ID, after, until)
 
         assertIs<MessageOperationResult.Failure>(result)
         verifySuspend(VerifyMode.exactly(1)) {
@@ -240,7 +245,7 @@ class SendConfirmationUseCaseTest {
         val after = Instant.DISTANT_PAST
         val until = after + 10.seconds
 
-        val result = sendConfirmation(TestConversation.ID, after, until)
+        val result = sendConfirmation(MockConversation.ID, after, until)
 
         result.toEither().shouldSucceed()
         verifySuspend(VerifyMode.not) {
@@ -278,7 +283,7 @@ class SendConfirmationUseCaseTest {
         }
 
         suspend fun withGetConversationByIdSuccessful(
-            conversation: Conversation = TestConversation.CONVERSATION
+            conversation: Conversation = MockConversation.CONVERSATION
         ) = apply {
             everySuspend {
                 conversationRepository.getConversationById(any())

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.conversation
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
@@ -30,8 +31,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -56,7 +57,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
 
     @Test
     fun givenUserIsAGroupMember_whenInvokingInteractionForConversation_thenInteractionShouldBeEnabled() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
             withIsClientMlsCapable(false.right())
@@ -79,7 +80,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
 
     @Test
     fun givenUserIsNoLongerAGroupMember_whenInvokingInteractionForConversation_thenInteractionShouldBeEnabled() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
             dispatcher = testKaliumDispatcher
@@ -102,7 +103,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
 
     @Test
     fun givenGroupDetailsReturnsError_whenInvokingInteractionForConversation_thenInteractionShouldReturnFailure() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
             withIsClientMlsCapable(false.right())
@@ -125,7 +126,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
 
     @Test
     fun givenOtherUserIsBlocked_whenInvokingInteractionForConversation_thenInteractionShouldBeDisabled() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
             withIsClientMlsCapable(false.right())
@@ -147,7 +148,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
 
     @Test
     fun givenOtherUserIsDeleted_whenInvokingInteractionForConversation_thenInteractionShouldBeDisabled() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
             withIsClientMlsCapable(false.right())
@@ -180,7 +181,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     @Test
     fun givenMLSConversationAndUserSupportsOnlyMLS_whenObserving_thenShouldReturnUnsupportedProtocol() = runTest {
         testProtocolSupport(
-            conversationProtocolInfo = TestConversation.MLS_PROTOCOL_INFO,
+            conversationProtocolInfo = MockConversation.MLS_PROTOCOL_INFO,
             isMlsCapable = false.right(),
             expectedResult = InteractionAvailability.UNSUPPORTED_PROTOCOL
         )
@@ -189,7 +190,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     @Test
     fun givenMixedConversationAndUserSupportsOnlyMLS_whenObserving_thenShouldReturnUnsupportedProtocol() = runTest {
         testProtocolSupport(
-            conversationProtocolInfo = TestConversation.MIXED_PROTOCOL_INFO,
+            conversationProtocolInfo = MockConversation.MIXED_PROTOCOL_INFO,
             isMlsCapable = false.right(),
             expectedResult = InteractionAvailability.ENABLED
         )
@@ -198,7 +199,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     @Test
     fun givenMixedConversationAndUserSupportsProteus_whenObserving_thenShouldReturnEnabled() = runTest {
         testProtocolSupport(
-            conversationProtocolInfo = TestConversation.MIXED_PROTOCOL_INFO,
+            conversationProtocolInfo = MockConversation.MIXED_PROTOCOL_INFO,
             isMlsCapable = false.right(),
             expectedResult = InteractionAvailability.ENABLED
         )
@@ -207,7 +208,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     @Test
     fun givenMLSConversationAndUserSupportsMLS_whenObserving_thenShouldReturnEnabled() = runTest {
         testProtocolSupport(
-            conversationProtocolInfo = TestConversation.MLS_PROTOCOL_INFO,
+            conversationProtocolInfo = MockConversation.MLS_PROTOCOL_INFO,
             expectedResult = InteractionAvailability.ENABLED,
             isMlsCapable = true.right()
         )
@@ -216,7 +217,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     @Test
     fun givenProteusConversationAndUserSupportsProteus_whenObserving_thenShouldReturnEnabled() = runTest {
         testProtocolSupport(
-            conversationProtocolInfo = TestConversation.PROTEUS_PROTOCOL_INFO,
+            conversationProtocolInfo = MockConversation.PROTEUS_PROTOCOL_INFO,
             expectedResult = InteractionAvailability.ENABLED,
             isMlsCapable = false.right()
         )
@@ -249,7 +250,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
 
     @Test
     fun givenConversationLegalHoldIsEnabled_whenInvokingInteractionForConversation_thenInteractionShouldBeEnabled() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val (_, observeConversationInteractionAvailability) = arrange {
             dispatcher = testKaliumDispatcher
             withLegalHoldOneOnOneConversation(Conversation.LegalHoldStatus.ENABLED)
@@ -264,7 +265,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
 
     @Test
     fun givenConversationLegalHoldIsDegraded_whenInvokingInteractionForConversation_thenInteractionShouldBeLegalHold() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val (_, observeConversationInteractionAvailability) = arrange {
             withIsClientMlsCapable(false.right())
             dispatcher = testKaliumDispatcher
@@ -325,7 +326,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             withObserveConversationDetailsByIdReturning(
                 Either.Right(
                     TestConversationDetails.CONVERSATION_ONE_ONE.copy(
-                        conversation = TestConversation.ONE_ON_ONE().copy(legalHoldStatus = legalHoldStatus)
+                        conversation = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID).copy(legalHoldStatus = legalHoldStatus)
                     )
                 )
             )

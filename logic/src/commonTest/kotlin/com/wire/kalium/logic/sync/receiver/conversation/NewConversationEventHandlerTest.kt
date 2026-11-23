@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
@@ -38,7 +39,6 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
@@ -129,8 +129,8 @@ class NewConversationEventHandlerTest {
     fun givenNewGroupConversationEvent_whenHandlingIt_thenPersistTheSystemMessagesForNewConversation() = runTest {
         // given
         val event = testNewConversationEvent(
-            conversation = TestConversation.CONVERSATION_RESPONSE.copy(
-                id = TestConversation.ID.toApi(),
+            conversation = MockConversation.CONVERSATION_RESPONSE.copy(
+                id = MockConversation.ID.toApi(),
                 creator = "creatorId@creatorDomain",
                 receiptMode = ReceiptMode.ENABLED
             ),
@@ -193,7 +193,7 @@ class NewConversationEventHandlerTest {
         // given
         val conversationTeamId = "conversationTeamId"
         val event = testNewConversationEvent(
-            conversation = TestConversation.CONVERSATION_RESPONSE.copy(
+            conversation = MockConversation.CONVERSATION_RESPONSE.copy(
                 teamId = conversationTeamId,
                 cellsState = "ready"
             ),
@@ -231,7 +231,7 @@ class NewConversationEventHandlerTest {
     fun givenNewGroupConversationEventWithCellsDisabled_whenHandlingIt_thenCellAccessStatusIsCalledAsDisabled() = runTest {
         // given
         val event = testNewConversationEvent(
-            conversation = TestConversation.CONVERSATION_RESPONSE.copy(cellsState = null),
+            conversation = MockConversation.CONVERSATION_RESPONSE.copy(cellsState = null),
         )
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
 
@@ -266,7 +266,7 @@ class NewConversationEventHandlerTest {
     fun givenConversationAlreadyPresent_whenHandlingIt_thenShouldSkipPersistingTheCellAccessStatusSystemMessage() = runTest {
         // given
         val event = testNewConversationEvent(
-            conversation = TestConversation.CONVERSATION_RESPONSE.copy(cellsState = "ready"),
+            conversation = MockConversation.CONVERSATION_RESPONSE.copy(cellsState = "ready"),
         )
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
 
@@ -302,7 +302,7 @@ class NewConversationEventHandlerTest {
         runTest {
             // given
             val event = testNewConversationEvent(
-                conversation = TestConversation.CONVERSATION_RESPONSE.copy(
+                conversation = MockConversation.CONVERSATION_RESPONSE.copy(
                     creator = "creatorId@creatorDomain",
                     receiptMode = ReceiptMode.ENABLED
                 ),
@@ -354,7 +354,7 @@ class NewConversationEventHandlerTest {
         runTest {
             // given
             val event = testNewConversationEvent(
-                conversation = TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP),
+                conversation = MockConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP),
             )
             val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
             val teamId = TestTeam.TEAM_ID
@@ -387,7 +387,7 @@ class NewConversationEventHandlerTest {
         runTest {
             // given
             val event = testNewConversationEvent(
-                conversation = TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
+                conversation = MockConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
             )
             val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
             val otherUserId = members.first()
@@ -535,10 +535,10 @@ class NewConversationEventHandlerTest {
 
     companion object {
         private fun testNewConversationEvent(
-            conversation: ConversationResponse = TestConversation.CONVERSATION_RESPONSE,
+            conversation: ConversationResponse = MockConversation.CONVERSATION_RESPONSE,
         ) = Event.Conversation.NewConversation(
             id = "eventId",
-            conversationId = TestConversation.ID,
+            conversationId = MockConversation.ID,
             dateTime = Instant.UNIX_FIRST_DATE,
             conversation = conversation,
             senderUserId = TestUser.SELF.id

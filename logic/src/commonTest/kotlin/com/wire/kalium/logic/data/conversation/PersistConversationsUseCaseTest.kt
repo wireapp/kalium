@@ -3,9 +3,9 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.MockConversation.CONVERSATION_RESPONSE
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity

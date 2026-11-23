@@ -3,6 +3,7 @@ package com.wire.kalium.logic.sync.receiver.handler.legalhold
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
@@ -18,7 +19,6 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.legalhold.LegalHoldState
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
@@ -81,7 +81,7 @@ class LegalHoldUserRecoveryTest {
                     previewAssetId = null, completeAssetId = null))
                 db.clientDAO.insertClientsAndRemoveRedundant(clients(subject, !enabled))
                 for (id in CONVERSATIONS) {
-                    db.conversationDAO.insertConversation(TestConversation.ENTITY.copy(id = id.toDao(), teamId = null,
+                    db.conversationDAO.insertConversation(MockConversation.entity().copy(id = id.toDao(), teamId = null,
                         protocolInfo = ConversationEntity.ProtocolInfo.Proteus))
                     val initialStatus = if (enabled == initialStatusMatches) ConversationEntity.LegalHoldStatus.ENABLED
                         else ConversationEntity.LegalHoldStatus.DISABLED
@@ -120,7 +120,7 @@ class LegalHoldUserRecoveryTest {
         val conversations = mock<ConversationRepository>()
         val status = if (enabled) Conversation.LegalHoldStatus.ENABLED else Conversation.LegalHoldStatus.DISABLED
         everySuspend { conversations.getConversationsByUserId(any()) } returns Either.Right(CONVERSATIONS.map {
-            TestConversation.CONVERSATION.copy(id = it, legalHoldStatus = status)
+            MockConversation.CONVERSATION.copy(id = it, legalHoldStatus = status)
         })
         every { conversations.observeLegalHoldStatus(any()) } calls {
             db.conversationDAO.observeLegalHoldStatus((it.args[0] as QualifiedID).toDao()).map {
@@ -151,7 +151,7 @@ class LegalHoldUserRecoveryTest {
                 checkpoint("after-refresh")
             }
         }
-        everySuspend { conversations.getConversationById(any()) } returns Either.Right(TestConversation.CONVERSATION)
+        everySuspend { conversations.getConversationById(any()) } returns Either.Right(MockConversation.CONVERSATION)
         val config = mock<UserConfigRepository>()
         everySuspend { config.deleteLegalHoldRequest() } returns Either.Right(Unit)
         everySuspend { config.setLegalHoldChangeNotified(any()) } returns Either.Right(Unit)

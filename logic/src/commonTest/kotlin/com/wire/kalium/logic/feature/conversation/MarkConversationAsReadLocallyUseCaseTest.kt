@@ -19,8 +19,8 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.framework.TestConversation
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
@@ -36,7 +36,7 @@ class MarkConversationAsReadLocallyUseCaseTest {
 
     @Test
     fun givenRepositorySuccess_whenMarkingLocally_thenPersistReadDateAndReturnUnreadEventsState() = runTest {
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val newLastRead = Clock.System.now() + 1.seconds
         val conversationRepository = mock<ConversationRepository>()
         val useCase = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository = conversationRepository)
@@ -55,7 +55,7 @@ class MarkConversationAsReadLocallyUseCaseTest {
 
     @Test
     fun givenRepositoryFailure_whenMarkingLocally_thenReturnFailure() = runTest {
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val newLastRead = Clock.System.now()
         val conversationRepository = mock<ConversationRepository>()
         val useCase = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository = conversationRepository)

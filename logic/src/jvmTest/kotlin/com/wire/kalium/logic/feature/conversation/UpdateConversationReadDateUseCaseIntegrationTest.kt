@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -32,7 +33,7 @@ import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.feature.message.receipt.ParallelConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.stubs.ClientApiStub
 import com.wire.kalium.logic.util.stubs.ConversationApiStub
@@ -62,7 +63,7 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
 
     private val selfUserId = TestUser.SELF.id
     private val testUserIdEntity = UserIDEntity(selfUserId.value, selfUserId.domain)
-    private val conversationId = TestConversation.GROUP().id
+    private val conversationId = MockConversation.group(teamId = TestTeam.TEAM_ID).id
 
     private var testDatabase: TestUserDatabase? = null
 
@@ -129,7 +130,7 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
         val database = TestUserDatabase(testUserIdEntity, dispatcher)
         testDatabase = database
         database.builder.conversationDAO.insertConversation(
-            TestConversation.ENTITY_GROUP.copy(lastReadDate = persistedLastRead)
+            MockConversation.ENTITY_GROUP.copy(lastReadDate = persistedLastRead)
         )
 
         val sessionScope = TestScope(dispatcher)
@@ -177,7 +178,7 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
     }
 
     private suspend fun assertPersisted(database: TestUserDatabase, expectedLastRead: Instant) {
-        val persistedConversation = database.builder.conversationDAO.getConversationById(TestConversation.ENTITY_GROUP.id)
+        val persistedConversation = database.builder.conversationDAO.getConversationById(MockConversation.ENTITY_GROUP.id)
         assertNotNull(persistedConversation)
         assertEquals(expectedLastRead, persistedConversation.lastReadDate)
     }

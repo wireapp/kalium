@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
@@ -28,7 +29,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -63,7 +63,7 @@ class SendEditTextMessageUseCaseTest {
             Either.Right(TestMessage.TEXT_MESSAGE.copy(status = Message.Status.Pending)),
             Either.Left(StorageFailure.DataNotFound)
         )
-        assertIs<MessageOperationResult.Failure>(edit(TestConversation.ID, "deleted", "new text"))
+        assertIs<MessageOperationResult.Failure>(edit(MockConversation.ID, "deleted", "new text"))
         verifySuspend(VerifyMode.exactly(0)) {
             arrangement.messageRepository.updateTextMessage(any(), any<String>(), any<MessageContent.Text>())
             arrangement.messageSender.sendMessage(any(), any())
@@ -87,7 +87,7 @@ class SendEditTextMessageUseCaseTest {
         val editedMessageText = "text"
 
         // When
-        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
+        val result = sendEditTextMessage(MockConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
         assertIs<MessageOperationResult.Success>(result)
@@ -121,7 +121,7 @@ class SendEditTextMessageUseCaseTest {
         val editedMessageText = "text"
 
         // When
-        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
+        val result = sendEditTextMessage(MockConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
         assertIs<MessageOperationResult.Failure>(result)
@@ -159,7 +159,7 @@ class SendEditTextMessageUseCaseTest {
         val editedMessageText = "text"
 
         // When
-        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
+        val result = sendEditTextMessage(MockConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
         assertIs<MessageOperationResult.Failure>(result)
@@ -181,7 +181,7 @@ class SendEditTextMessageUseCaseTest {
         val editedMessageText = "text"
 
         // When
-        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
+        val result = sendEditTextMessage(MockConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
         assertIs<MessageOperationResult.Success>(result)
