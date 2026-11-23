@@ -22,7 +22,6 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.http.Url
-import io.ktor.http.encodeURLParameter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -91,66 +90,42 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
     }
 
 /**
- * Request path can be logged in clear, but query parameter values must be obfuscated.
- *
- * Example:
- *   host/path/segment?q=abc... -> host/path/segment?q=abc*** (etc.)
+ * Query keys whose values are plain numbers and safe to log in clear. Any other value is replaced with `***`.
  */
-private const val KEEP_QUERY_PREFIX = 3
+private val numericPagingKeys = setOf("size", "page", "limit", "offset")
+
+private const val DYNAMIC_SEGMENT = "{}"
+private const val MASKED_VALUE = "***"
 
 /**
- * Allowlist for query keys which are safe to log in clear.
- * Everything else will have the VALUE obfuscated.
+ * A path segment is static when it is a lowercase word (letters, `-` or `_`, e.g. `conversations`, `list-ids`)
+ * or an API version (`v7`). Everything else (UUIDs, domains, handles with digits or dots, hashes) is dynamic.
+ * Short, letters-only dynamic values (e.g. a handle such as `alice`) still look static.
  */
-private val safeQueryKeys = setOf(
-    "size",
-    "page",
-    "limit",
-    "offset",
-    "cursor",
-    "sort",
-    "order",
-    "client"
-)
+private val staticSegment = Regex("[a-z][a-z_-]{0,31}|v\\d{1,3}")
 
 /**
- * Obfuscate only the VALUE of query params. Keep the PATH in clear.
+ * Turns a URL into a route template for logging, e.g.
+ * `https://wire.example/v7/conversations/example.com/3f2a...?cursor=abc&size=10`
+ * becomes `/v7/conversations/{}/{}?cursor=***&size=10`.
+ * The host, user info and fragment are dropped, dynamic path segments become `{}`
+ * and query values become `***`, except numeric values of paging keys.
  */
 fun obfuscatePath(url: Url): String {
-    val base = buildString {
-        append(url.host)
-        append(url.encodedPath)
+    val path = url.encodedPath.split('/').joinToString("/") { segment ->
+        if (segment.isEmpty() || staticSegment.matches(segment)) segment else DYNAMIC_SEGMENT
     }
 
     val params = url.parameters.entries().filter { it.value.isNotEmpty() }
-    if (params.isEmpty()) return base
+    if (params.isEmpty()) return path
 
     val query = params.joinToString("&") { (key, values) ->
-        val rawValue = values.first()
-        val lowerKey = key.lowercase()
-
-        val valueToLog = if (lowerKey in safeQueryKeys) {
-            rawValue.encodeURLParameter()
-        } else {
-            rawValue.obfuscateQueryValue().encodeURLParameterKeepingAsterisks()
-        }
-
-        "$key=$valueToLog"
+        val value = values.first()
+        val keepValue = key.lowercase() in numericPagingKeys && value.isNotEmpty() && value.all { it.isDigit() }
+        "$key=${if (keepValue) value else MASKED_VALUE}"
     }
 
-    return "$base?$query"
-}
-
-private fun String.encodeURLParameterKeepingAsterisks(): String =
-    encodeURLParameter()
-        .replace("%2A", "*")
-        .replace("%2a", "*")
-
-private fun String.obfuscateQueryValue(): String = when {
-    this.isBlank() -> "***"
-    this.endsWith("***") -> this
-    (this.length > KEEP_QUERY_PREFIX) -> this.take(KEEP_QUERY_PREFIX) + "***"
-    else -> "***"
+    return "$path?$query"
 }
 
 fun deleteSensitiveItemsFromJson(text: String): String {
