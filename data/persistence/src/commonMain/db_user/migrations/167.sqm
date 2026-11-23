@@ -1,0 +1,15 @@
+-- Restore deleted peers whose 1:1 mapping was removed by an earlier member-leave event.
+INSERT OR IGNORE INTO Member(user, conversation, role)
+SELECT Peer.qualified_id, C.qualified_id, 'wire_member'
+FROM Conversation C
+JOIN SelfUser S
+JOIN User Peer ON Peer.active_one_on_one_conversation_id = C.qualified_id
+    AND Peer.deleted = 1 AND Peer.qualified_id != S.id
+WHERE C.type = 'ONE_ON_ONE' AND C.protocol IN ('MLS', 'MIXED') AND C.deleted_locally = 0
+    AND EXISTS (SELECT 1 FROM Member M WHERE M.conversation = C.qualified_id AND M.user = S.id)
+    AND NOT EXISTS (SELECT 1 FROM Member M WHERE M.conversation = C.qualified_id AND M.user != S.id)
+    AND Peer.qualified_id = (
+        SELECT MIN(Other.qualified_id) FROM User Other
+        WHERE Other.active_one_on_one_conversation_id = C.qualified_id
+            AND Other.deleted = 1 AND Other.qualified_id != S.id
+    );
