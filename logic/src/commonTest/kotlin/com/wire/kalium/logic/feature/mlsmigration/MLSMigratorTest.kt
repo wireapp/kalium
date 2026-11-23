@@ -150,7 +150,7 @@ class MLSMigratorTest {
     @Test
     fun givenTwoTeamConversations_whenMigrating_thenEachIsMigratedInItsOwnTransaction() = runTest {
         val (arrangement, migrator) = Arrangement()
-            .withGetProteusTeamConversationsReturning(listOf(TestConversation.ID, TestConversation.ID.copy(value = "other")))
+            .withGetProteusTeamConversationsReturning(listOf(MockConversation.ID, MockConversation.ID.copy(value = "other")))
             .withUpdateProtocolReturns()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
             .withEstablishGroupSucceeds(Arrangement.SUCCESSFUL_ADDITION_RESULT)
