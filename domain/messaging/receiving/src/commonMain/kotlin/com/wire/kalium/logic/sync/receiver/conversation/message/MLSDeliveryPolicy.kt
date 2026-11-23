@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 
 /**
@@ -36,9 +35,6 @@ internal fun isAcceptedDelivery(content: MessageContent.FromProto, targeted: Boo
         is MessageContent.DeleteMessage -> true
         else -> false
     }
-
-/** @see isAcceptedDelivery */
-fun Message.Sendable.isAcceptedDelivery(): Boolean = isAcceptedDelivery(content, targeted, transient)
 
 /** @see isAcceptedDelivery */
 fun MessageUnpackResult.ApplicationMessage.isAcceptedDelivery(): Boolean =
