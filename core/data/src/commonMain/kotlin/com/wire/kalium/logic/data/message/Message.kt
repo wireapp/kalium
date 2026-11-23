@@ -54,12 +54,6 @@ sealed interface Message {
         val isSelfMessage: Boolean
         val senderClientId: ClientId
 
-        /** True if received as an MLS targeted message, addressed to specific clients rather than the whole conversation. */
-        val targeted: Boolean
-
-        /** True if received as an MLS transient message, which the backend didn't persist. */
-        val transient: Boolean
-
         fun toLogString(): String
         fun toLogMap(): Map<String, Any?>
     }
@@ -96,9 +90,7 @@ sealed interface Message {
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery,
-        val linkPreviews: List<MessageLinkPreview> = emptyList(),
-        override val targeted: Boolean = false,
-        override val transient: Boolean = false
+        val linkPreviews: List<MessageLinkPreview> = emptyList()
     ) : Sendable, Standalone {
 
         override fun toLogString(): String {
@@ -172,9 +164,7 @@ sealed interface Message {
                 "editStatus" to editStatus.toLogMap(),
                 "expectsReadConfirmation" to "$expectsReadConfirmation",
                 "deliveryStatus" to deliveryStatus.toLogMap(),
-                "expirationData" to expirationData?.toLogMap(),
-                "targeted" to "$targeted",
-                "transient" to "$transient"
+                "expirationData" to expirationData?.toLogMap()
             )
 
             properties.putAll(standardProperties)
@@ -194,9 +184,7 @@ sealed interface Message {
         override val senderUserName: String? = null,
         override val isSelfMessage: Boolean,
         override val expirationData: ExpirationData?,
-        override val sender: User? = null,
-        override val targeted: Boolean = false,
-        override val transient: Boolean = false
+        override val sender: User? = null
     ) : Sendable {
         @Suppress("LongMethod")
         override fun toLogString(): String {
@@ -308,8 +296,6 @@ sealed interface Message {
                 "date" to date,
                 "senderUserId" to senderUserId.toLogString(),
                 "senderClientId" to senderClientId.toLogString(),
-                "targeted" to "$targeted",
-                "transient" to "$transient",
             )
 
             properties.putAll(standardProperties)

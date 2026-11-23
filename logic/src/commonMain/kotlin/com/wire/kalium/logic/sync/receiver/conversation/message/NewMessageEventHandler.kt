@@ -327,9 +327,7 @@ internal class NewMessageEventHandlerImpl(
             messageInstant = result.instant,
             senderUserId = result.senderUserId,
             senderClientId = result.senderClientId,
-            content = result.content,
-            targeted = result.targeted,
-            transient = result.transient
+            content = result.content
         )
     }
 

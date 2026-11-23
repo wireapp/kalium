@@ -71,8 +71,6 @@ internal interface ApplicationMessageHandler {
         senderUserId: UserId,
         senderClientId: ClientId,
         content: ProtoContent.Readable,
-        targeted: Boolean = false,
-        transient: Boolean = false,
     )
 
     @Suppress("LongParameterList")
@@ -125,18 +123,14 @@ internal class ApplicationMessageHandlerImpl(
         messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
-        content: ProtoContent.Readable,
-        targeted: Boolean,
-        transient: Boolean
+        content: ProtoContent.Readable
     ) {
         val applicationMessage = MessageUnpackResult.ApplicationMessage(
             conversationId,
             messageInstant,
             senderUserId,
             senderClientId,
-            content,
-            targeted,
-            transient
+            content
         )
         when (content.messageContent) {
             is MessageContent.Regular -> {

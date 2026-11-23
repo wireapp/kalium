@@ -57,17 +57,6 @@ class MLSDeliveryFlagsTest {
     }
 
     @Test
-    fun givenFlaggedApplicationMessage_whenConvertingToMessage_thenRegularAndSignalingKeepDeliveryFlags() {
-        val regular = applicationMessage(MessageContent.Text("text"), targeted = true, transient = false).toRegularMessage(self)
-        val signaling = applicationMessage(MessageContent.Calling("call"), targeted = false, transient = true).toSignalingMessage(self)
-
-        assertTrue(regular.targeted)
-        assertFalse(regular.transient)
-        assertFalse(signaling.targeted)
-        assertTrue(signaling.transient)
-    }
-
-    @Test
     fun givenDeliveryFlags_whenCheckingPolicy_thenOnlyAllowedContentIsAccepted() {
         assertTrue(applicationMessage(MessageContent.Text("text"), targeted = false, transient = false).isAcceptedDelivery())
         assertFalse(applicationMessage(MessageContent.Text("text"), targeted = true, transient = false).isAcceptedDelivery())
@@ -94,10 +83,6 @@ class MLSDeliveryFlagsTest {
             assertTrue(applicationMessage(content, targeted = false, transient = true).isAcceptedDelivery())
             assertTrue(applicationMessage(content, targeted = true, transient = true).isAcceptedDelivery())
         }
-        assertTrue(
-            applicationMessage(MessageContent.Calling("call"), targeted = true, transient = false).toSignalingMessage(self)
-                .isAcceptedDelivery()
-        )
     }
 
     private fun decryptedBundle(content: MessageContent.FromProto, targeted: Boolean, transient: Boolean) =

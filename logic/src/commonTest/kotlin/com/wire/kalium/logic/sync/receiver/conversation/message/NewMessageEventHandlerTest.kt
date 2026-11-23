@@ -493,7 +493,7 @@ class NewMessageEventHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.legalHoldHandler.handleNewMessage(message, true) }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), message.content, true, true)
+            arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), message.content)
         }
     }
 
