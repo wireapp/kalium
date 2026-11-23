@@ -47,6 +47,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlinx.coroutines.test.runTest
@@ -220,7 +221,8 @@ class MLSSubconversationMappingRecoveryTest {
     private class Arrangement(
         failMappingWrites: Boolean,
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
-        val database = TestUserDatabase(TestUser.SELF.id.toDao(), TestKaliumDispatcher.default)
+        private val selfUserId = TestUser.SELF.id.copy(value = Uuid.random().toString())
+        val database = TestUserDatabase(selfUserId.toDao(), TestKaliumDispatcher.default)
         val api = mock<ConversationApi>()
         val conversations = mock<ConversationRepository>()
         val mlsConversations = mock<MLSConversationRepository>()
@@ -254,7 +256,7 @@ class MLSSubconversationMappingRecoveryTest {
             subconversations,
             mlsConversations,
             pendingProposals,
-            TestUser.SELF.id,
+            selfUserId,
             protoContentMapper,
         )
         val handler = NewMessageEventHandlerImpl(
@@ -264,7 +266,7 @@ class MLSSubconversationMappingRecoveryTest {
             legalHoldHandler,
             { _, _ -> },
             { _, _ -> },
-            TestUser.SELF.id,
+            selfUserId,
             staleEpochVerifier,
             resetMLSConversation,
         )

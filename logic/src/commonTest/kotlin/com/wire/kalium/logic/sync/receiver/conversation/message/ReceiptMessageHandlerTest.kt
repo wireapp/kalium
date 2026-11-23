@@ -48,36 +48,47 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 class ReceiptMessageHandlerTest {
 
-    private val testDispatcher = StandardTestDispatcher()
-    private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY, testDispatcher)
-    private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
-
-    private val receiptMessageHandler = ReceiptMessageHandlerImpl(
-        SELF_USER_ID,
-        userDatabase.builder
+    private val selfUserId = TestUser.SELF.id.copy(value = Uuid.random().toString())
+    private val selfUserIdEntity = UserIDEntity(selfUserId.value, selfUserId.domain)
+    private val messageEntity = TestMessage.ENTITY.copy(
+        id = MESSAGE_ID,
+        conversationId = CONVERSATION_ENTITY_ID,
+        senderUserId = selfUserIdEntity,
     )
+    private lateinit var userDatabase: TestUserDatabase
+    private lateinit var receiptRepository: ReceiptRepository
+    private lateinit var receiptMessageHandler: ReceiptMessageHandlerImpl
 
     private suspend fun insertTestData() {
-        userDatabase.builder.userDAO.upsertUser(TestUser.ENTITY.copy(id = SELF_USER_ID_ENTITY))
+        userDatabase.builder.userDAO.upsertUser(TestUser.ENTITY.copy(id = selfUserIdEntity))
         userDatabase.builder.userDAO.upsertUser(TestUser.ENTITY.copy(id = OTHER_USER_ID_ENTITY))
         userDatabase.builder.conversationDAO.insertConversation(CONVERSATION_ENTITY)
-        userDatabase.builder.messageDAO.insertOrIgnoreMessage(MESSAGE_ENTITY)
+        userDatabase.builder.messageDAO.insertOrIgnoreMessage(messageEntity)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @BeforeTest
     fun setup() {
+        val testDispatcher = StandardTestDispatcher()
+        userDatabase = TestUserDatabase(selfUserIdEntity, testDispatcher)
+        receiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
+        receiptMessageHandler = ReceiptMessageHandlerImpl(selfUserId, userDatabase.builder)
         Dispatchers.setMain(testDispatcher)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @AfterTest
     fun tearDown() {
-        userDatabase.delete()
-        Dispatchers.resetMain()
+        try {
+            userDatabase.builder.close()
+            userDatabase.delete()
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
     @Test
     fun givenAReceiptIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldContainTheNewReceipt() = runTest {
@@ -128,7 +139,7 @@ class ReceiptMessageHandlerTest {
 
         val date = DateTimeUtil.currentInstant()
         // Using Self User ID for the receipt
-        val senderUserId = SELF_USER_ID
+        val senderUserId = selfUserId
         val type = ReceiptType.READ
 
         // when
@@ -169,7 +180,7 @@ class ReceiptMessageHandlerTest {
         val messageUuids = listOf("1", "2", "3")
 
         insertTestData()
-        messageUuids.forEach { userDatabase.builder.messageDAO.insertOrIgnoreMessage(MESSAGE_ENTITY.copy(id = it)) }
+        messageUuids.forEach { userDatabase.builder.messageDAO.insertOrIgnoreMessage(messageEntity.copy(id = it)) }
         // when
         handleNewReceipt(type, date, senderUserId, messageUuids)
 
@@ -224,17 +235,9 @@ class ReceiptMessageHandlerTest {
         val CONVERSATION_ENTITY_ID = ConversationIDEntity(CONVERSATION_ID.value, CONVERSATION_ID.domain)
         val CONVERSATION_ENTITY = MockConversation.entity().copy(id = CONVERSATION_ENTITY_ID)
 
-        val SELF_USER_ID = TestUser.SELF.id
-        val SELF_USER_ID_ENTITY = UserIDEntity(SELF_USER_ID.value, SELF_USER_ID.domain)
-
         val OTHER_USER_ID = TestUser.OTHER_USER_ID
         val OTHER_USER_ID_ENTITY = UserIDEntity(OTHER_USER_ID.value, OTHER_USER_ID.domain)
 
         const val MESSAGE_ID = "messageId"
-        val MESSAGE_ENTITY = TestMessage.ENTITY.copy(
-            id = MESSAGE_ID,
-            conversationId = CONVERSATION_ENTITY_ID,
-            senderUserId = SELF_USER_ID_ENTITY,
-        )
     }
 }

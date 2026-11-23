@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
@@ -196,14 +197,16 @@ internal class MLSClientProviderImpl(
         epochObserver: MLSEpochObserver,
     ): Either<CoreFailure, MLSClient> {
         return getOrFetchMLSConfig().flatMap { (_, defaultCipherSuite) ->
-            getCoreCrypto(clientId).map { cc ->
-                cc.mlsClient(
-                    clientId = CryptoQualifiedClientId(clientId.value, userId),
-                    defaultCipherSuite = defaultCipherSuite.toCrypto(),
-                    mlsTransporter = mlsTransporter,
-                    epochObserver = epochObserver,
-                    coroutineScope = processingScope
-                )
+            getCoreCrypto(clientId).flatMap { cc ->
+                wrapMLSRequest {
+                    cc.mlsClient(
+                        clientId = CryptoQualifiedClientId(clientId.value, userId),
+                        defaultCipherSuite = defaultCipherSuite.toCrypto(),
+                        mlsTransporter = mlsTransporter,
+                        epochObserver = epochObserver,
+                        coroutineScope = processingScope
+                    )
+                }
             }
         }
     }

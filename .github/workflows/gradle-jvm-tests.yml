@@ -9,7 +9,7 @@ on:
       - 'develop'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha || format('push-{0}', github.sha) }}
   cancel-in-progress: true
 
 env:
@@ -19,14 +19,12 @@ permissions:
   contents: read # required for actions/checkout and repository metadata reads
 
 jobs:
-  detekt:
-    name: Detekt
-    uses: ./.github/workflows/codestyle.yml
-
   gradle-run-tests:
     name: Gradle Run Tests
-    needs: [ detekt ]
+    outputs:
+      skip-tests: ${{ steps.tested-merge.outputs.skip-tests }}
     permissions:
+      actions: read # required to find successful merge-queue runs
       contents: read # required to read repository metadata in private repositories
       issues: read # required to find related pull requests in private repositories
       checks: write # required to publish unit test check runs
@@ -40,6 +38,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Check merge-queue test result
+        id: tested-merge
+        uses: ./.github/actions/skip-tested-merge
+
       - name: Install build dependencies
         run: |
           apt-get update
@@ -47,6 +49,13 @@ jobs:
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
+
+      - name: Warm develop cache without running tests
+        if: steps.tested-merge.outputs.skip-tests == 'true'
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew jvmTestClasses jsTestClasses
 
       - name: Build the CLI App
         env:
@@ -63,50 +72,56 @@ jobs:
           ./gradlew :sample:samples:compileKotlinJvm
 
       - name: Test JVM with Gradle
+        if: steps.tested-merge.outputs.skip-tests != 'true'
         run: ./gradlew jvmTest koverXmlReportJvmOnly -Djava.library.path=$LD_LIBRARY_PATH
 
       - name: Test JS with Gradle
+        if: steps.tested-merge.outputs.skip-tests != 'true'
         run: |
           ./gradlew --stop
           ./gradlew jsTest --no-daemon -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
 
       - name: Archive Test Reports
-        if: always()
+        if: ${{ always() && steps.tested-merge.outputs.skip-tests != 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: test-reports
           path: ./**/build/reports/tests/**
 
       - name: Archive Test Results
-        if: always()
+        if: ${{ always() && steps.tested-merge.outputs.skip-tests != 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: test-results
           path: ./**/build/test-results/**/*.xml
 
       - name: Install Pip for test result publishing
-        if: always()
+        if: ${{ always() && steps.tested-merge.outputs.skip-tests != 'true' }}
         run: |
           apt-get update
           apt-get install -y -qq --no-install-recommends python3-pip python3-venv
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/linux@c950f6fb443cb5af20a377fd0dfaa78838901040
-        if: ${{ always() }}
+        if: ${{ always() && steps.tested-merge.outputs.skip-tests != 'true' }}
         with:
+          check_name: JVM and JS Test Results
           files: |
             **/build/test-results/**/*.xml
 
       - name: Install Git
+        if: steps.tested-merge.outputs.skip-tests != 'true'
         run: apt-get update && apt-get install -y -qq git
 
       - name: Upload test report to codecov
+        if: steps.tested-merge.outputs.skip-tests != 'true'
         uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: "build/reports/kover/reportJvmOnly.xml"
 
       - name: Archive Kover report
+        if: steps.tested-merge.outputs.skip-tests != 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: kover-report
@@ -120,10 +135,10 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
   upload-test-results-datadadog:
-    name: Upload Test Results Datadadog
+    name: Upload JVM and JS Test Results to Datadog
     runs-on: ubuntu-latest
     needs: gradle-run-tests
-    if: always()
+    if: ${{ always() && needs.gradle-run-tests.outputs.skip-tests != 'true' }}
 
     steps:
       - name: Download tests results
