@@ -148,6 +148,24 @@ class MLSMigratorTest {
     }
 
     @Test
+    fun givenTwoTeamConversations_whenMigrating_thenEachIsMigratedInItsOwnTransaction() = runTest {
+        val (arrangement, migrator) = Arrangement()
+            .withGetProteusTeamConversationsReturning(listOf(MockConversation.ID, MockConversation.ID.copy(value = "other")))
+            .withUpdateProtocolReturns()
+            .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
+            .withEstablishGroupSucceeds(Arrangement.SUCCESSFUL_ADDITION_RESULT)
+            .withGetConversationMembersReturning(Arrangement.MEMBERS.right())
+            .withoutAnyEstablishedCall()
+            .arrange()
+
+        migrator.migrateProteusConversations().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
+        }
+    }
+
+    @Test
     fun givenAnError_whenMigrating_thenStillConsiderItASuccess() = runTest {
         val conversation = MockConversation.CONVERSATION.copy(
             type = Conversation.Type.Group.Regular,
