@@ -5974,6 +5974,53 @@ public final class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccu
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;Landroidx/paging/PagingConfig;JLkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase {
+	public abstract fun invoke (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$DefaultImpls {
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$InvalidPassword : com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$InvalidPassword;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$LinkUnavailable : com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$LinkUnavailable;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$MeetingNotFound : com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$MeetingNotFound;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase {
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -6012,6 +6059,7 @@ public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getEnsureMeetingIsMLSEstablished ()Lcom/wire/kalium/logic/feature/meeting/EnsureMeetingIsMLSEstablishedUseCase;
 	public final fun getGetNextUnfinishedMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
+	public final fun getJoinMeetingViaCode ()Lcom/wire/kalium/logic/feature/meeting/JoinMeetingViaCodeUseCase;
 	public final fun getMaintainMeetingOccurrences ()Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase;
 	public final fun getMeetingReminders ()Lcom/wire/kalium/logic/feature/meeting/MeetingRemindersUseCase;
 	public final fun getObserveMeeting ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingUseCase;
@@ -7632,6 +7680,7 @@ public abstract interface class com/wire/kalium/logic/feature/user/IsMLSEnabledU
 public abstract interface class com/wire/kalium/logic/feature/user/IsMeetingsEnabledUseCase {
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun isGuestLinkSharingEnabled (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun isGuestLinkSharingSupported (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/user/IsPasswordRequiredUseCase {

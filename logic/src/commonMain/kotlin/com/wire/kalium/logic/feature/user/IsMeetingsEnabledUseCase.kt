@@ -26,8 +26,14 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
  * @return `true` if meetings is enabled for the current user and supported by the current API version, `false` otherwise.
  */
 public interface IsMeetingsEnabledUseCase {
+    /** Whether meetings are enabled for this user: requires the user feature flag and API 17 or newer. */
     public suspend operator fun invoke(): Boolean
+
+    /** Whether this user can share guest links: requires meetings enabled and API 19 or newer. */
     public suspend fun isGuestLinkSharingEnabled(): Boolean
+
+    /** Whether API 19 guest links are supported, regardless of the user's meetings feature flag. */
+    public suspend fun isGuestLinkSharingSupported(): Boolean
 }
 
 internal class IsMeetingsEnabledUseCaseImpl(
@@ -37,4 +43,6 @@ internal class IsMeetingsEnabledUseCaseImpl(
     override suspend operator fun invoke(): Boolean = userConfigRepository.isMeetingsEnabled() && featureSupport.isMeetingsSupported
 
     override suspend fun isGuestLinkSharingEnabled(): Boolean = invoke() && featureSupport.isMeetingsGuestLinksSupported
+
+    override suspend fun isGuestLinkSharingSupported(): Boolean = featureSupport.isMeetingsGuestLinksSupported
 }

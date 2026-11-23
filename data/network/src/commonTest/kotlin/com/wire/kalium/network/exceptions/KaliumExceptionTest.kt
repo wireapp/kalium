@@ -52,4 +52,54 @@ class KaliumExceptionTest {
 
         assertFalse(subject.isTooManyRequests())
     }
+
+    @Test
+    fun givenMeetingPasswordError_whenCheckingWrongPassword_thenAcceptForbiddenAndKnownBadRequest() {
+        val errors = listOf(
+            GenericAPIErrorResponse(
+                code = HttpStatusCode.Forbidden.value,
+                message = "Invalid meeting password",
+                label = NetworkErrorLabel.WRONG_MEETING_PASSWORD,
+            ),
+            GenericAPIErrorResponse(
+                code = HttpStatusCode.BadRequest.value,
+                message = "Error parsing query parameter password failed: Invalid password",
+                label = NetworkErrorLabel.BAD_REQUEST,
+            ),
+        )
+
+        for (error in errors) {
+            assertTrue(KaliumException.InvalidRequestError(error).isWrongMeetingPassword())
+        }
+    }
+
+    @Test
+    fun givenUnrelatedError_whenCheckingWrongMeetingPassword_thenReturnFalse() {
+        val errors = listOf(
+            GenericAPIErrorResponse(
+                code = HttpStatusCode.BadRequest.value,
+                message = "Error parsing query parameter code failed: Invalid code",
+                label = NetworkErrorLabel.BAD_REQUEST,
+            ),
+            GenericAPIErrorResponse(
+                code = HttpStatusCode.BadRequest.value,
+                message = "Password query parameter is not allowed",
+                label = NetworkErrorLabel.BAD_REQUEST,
+            ),
+            GenericAPIErrorResponse(
+                code = HttpStatusCode.BadRequest.value,
+                message = "Invalid meeting password",
+                label = NetworkErrorLabel.WRONG_MEETING_PASSWORD,
+            ),
+            GenericAPIErrorResponse(
+                code = HttpStatusCode.Forbidden.value,
+                message = "Error parsing query parameter password failed: Invalid password",
+                label = NetworkErrorLabel.ACCESS_DENIED,
+            ),
+        )
+
+        for (error in errors) {
+            assertFalse(KaliumException.InvalidRequestError(error).isWrongMeetingPassword())
+        }
+    }
 }

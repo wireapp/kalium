@@ -82,6 +82,18 @@ class IsMeetingsEnabledUseCaseTest {
         }
     }
 
+    @Test
+    fun guestLinkJoiningDependsOnlyOnApiVersionEvenWhenMeetingsAreDisabled() = runTest {
+        val repository: UserConfigRepository = mock()
+        everySuspend { repository.isMeetingsEnabled() } returns false
+        for (apiVersion in listOf(17, 18, 19)) {
+            val useCase = IsMeetingsEnabledUseCaseImpl(repository, FeatureSupportImpl(apiVersion))
+            assertEquals(false, useCase())
+            assertEquals(false, useCase.isGuestLinkSharingEnabled())
+            assertEquals(apiVersion >= 19, useCase.isGuestLinkSharingSupported())
+        }
+    }
+
     private class Arrangement {
         val userConfigRepository: UserConfigRepository = mock()
         val featureSupport: FeatureSupport = mock()

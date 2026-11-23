@@ -105,4 +105,7 @@ public class MeetingScope internal constructor(
 
     public val meetingReminders: MeetingRemindersUseCase
         get() = MeetingRemindersUseCaseImpl(meetingRepository)
+
+    public val joinMeetingViaCode: JoinMeetingViaCodeUseCase
+        get() = JoinMeetingViaCodeUseCaseImpl(meetingRepository, transactionProvider)
 }

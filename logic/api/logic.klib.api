@@ -1561,6 +1561,42 @@ abstract interface com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccu
     abstract suspend fun invoke(androidx.paging/PagingConfig, kotlin/Long, kotlin.time/Instant = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.meeting/MeetingOccurrence>> // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase.invoke|invoke(androidx.paging.PagingConfig;kotlin.Long;kotlin.time.Instant){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase { // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase|null[0]
+    abstract suspend fun invoke(kotlin/String, kotlin/String, kotlin/String, kotlin/String? = ...): com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.invoke|invoke(kotlin.String;kotlin.String;kotlin.String;kotlin.String?){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result|null[0]
+        final object Failure : com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result { // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.Failure|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object InvalidPassword : com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result { // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.InvalidPassword|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.InvalidPassword.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.InvalidPassword.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.InvalidPassword.toString|toString(){}[0]
+        }
+
+        final object LinkUnavailable : com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result { // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.LinkUnavailable|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.LinkUnavailable.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.LinkUnavailable.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.LinkUnavailable.toString|toString(){}[0]
+        }
+
+        final object MeetingNotFound : com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result { // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.MeetingNotFound|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.MeetingNotFound.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.MeetingNotFound.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.MeetingNotFound.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result { // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 abstract interface com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase { // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase|null[0]
     abstract suspend fun invoke(): com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.invoke|invoke(){}[0]
 
@@ -2046,6 +2082,7 @@ abstract interface com.wire.kalium.logic.feature.user/IsMLSEnabledUseCase { // c
 abstract interface com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase { // com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase|null[0]
     abstract suspend fun invoke(): kotlin/Boolean // com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase.invoke|invoke(){}[0]
     abstract suspend fun isGuestLinkSharingEnabled(): kotlin/Boolean // com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase.isGuestLinkSharingEnabled|isGuestLinkSharingEnabled(){}[0]
+    abstract suspend fun isGuestLinkSharingSupported(): kotlin/Boolean // com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase.isGuestLinkSharingSupported|isGuestLinkSharingSupported(){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.user/IsPreventAdminlessGroupsEnabledUseCase { // com.wire.kalium.logic.feature.user/IsPreventAdminlessGroupsEnabledUseCase|null[0]
@@ -5384,6 +5421,8 @@ final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kal
         final fun <get-getNextUnfinishedMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextUnfinishedMeetingOccurrence.<get-getNextUnfinishedMeetingOccurrence>|<get-getNextUnfinishedMeetingOccurrence>(){}[0]
     final val getPaginatedMeetingOccurrenceDetails // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails|{}getPaginatedMeetingOccurrenceDetails[0]
         final fun <get-getPaginatedMeetingOccurrenceDetails>(): com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails.<get-getPaginatedMeetingOccurrenceDetails>|<get-getPaginatedMeetingOccurrenceDetails>(){}[0]
+    final val joinMeetingViaCode // com.wire.kalium.logic.feature.meeting/MeetingScope.joinMeetingViaCode|{}joinMeetingViaCode[0]
+        final fun <get-joinMeetingViaCode>(): com.wire.kalium.logic.feature.meeting/JoinMeetingViaCodeUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.joinMeetingViaCode.<get-joinMeetingViaCode>|<get-joinMeetingViaCode>(){}[0]
     final val maintainMeetingOccurrences // com.wire.kalium.logic.feature.meeting/MeetingScope.maintainMeetingOccurrences|{}maintainMeetingOccurrences[0]
         final fun <get-maintainMeetingOccurrences>(): com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.maintainMeetingOccurrences.<get-maintainMeetingOccurrences>|<get-maintainMeetingOccurrences>(){}[0]
     final val meetingReminders // com.wire.kalium.logic.feature.meeting/MeetingScope.meetingReminders|{}meetingReminders[0]

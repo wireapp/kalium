@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.data.meeting
 
+import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -63,8 +64,9 @@ import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceDetailsEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceEntity
-import com.wire.kalium.persistence.dao.meeting.MeetingReminderEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
+import com.wire.kalium.persistence.dao.meeting.MeetingParticipantEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingReminderEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
@@ -75,18 +77,16 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
-import app.cash.turbine.test
-import com.wire.kalium.persistence.dao.meeting.MeetingParticipantEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 import com.wire.kalium.network.api.model.ConversationId as ApiConversationId
 import com.wire.kalium.network.api.model.MeetingId as NetworkMeetingId
 import com.wire.kalium.network.api.model.UserId as ApiUserId
@@ -1288,6 +1288,50 @@ class MeetingRepositoryTest {
             .arrange()
 
         assertEquals(entities.map { arrangement.meetingMapper.fromDaoToModel(it) }, repository.getMeetingRemindersWithin(start, end))
+    }
+
+    @Test
+    fun givenGuestJoinSucceeds_whenJoining_thenPersistConversationAndMeetingWithoutRemovingOtherMeetings() = runTest {
+        val meeting = meetingDTO()
+        val creatorId = meeting.creatorId.toModel()
+        val (arrangement, repository) = Arrangement()
+            .withFetchConversationsSuccess()
+            .withPersistConversationsSuccess()
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
+            .withFetchUsersIfUnknownSuccess(setOf(creatorId))
+            .arrange()
+        everySuspend { arrangement.meetingApi.joinViaCode("domain", "key", "code", "password") } returns
+            NetworkResponse.Success(meeting, mapOf(), HttpStatusCode.OK.value)
+        val entity = requireNotNull(arrangement.meetingMapper.fromApiToDao(meeting))
+
+        val result = repository.joinViaCode("domain", "key", "code", "password", arrangement.transactionContext)
+
+        assertEquals(Either.Right(arrangement.meetingMapper.fromDaoToModel(entity)), result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.fetchConversationListDetails(listOf(meeting.conversationId.toModel()))
+            arrangement.persistConversations(
+                transactionContext = arrangement.transactionContext,
+                conversations = listOf(ConversationRepositoryTest.CONVERSATION_RESPONSE),
+                invalidateMembers = true,
+                reason = any(),
+            )
+            arrangement.meetingDao.upsertMeetings(listOf(entity), any(), false)
+        }
+    }
+
+    @Test
+    fun givenGuestJoinFails_whenJoining_thenDoNotPersistMeetingOrConversation() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        everySuspend { arrangement.meetingApi.joinViaCode("domain", "key", "code", null) } returns
+            NetworkResponse.Error(TestNetworkException.generic)
+
+        val result = repository.joinViaCode("domain", "key", "code", null, arrangement.transactionContext)
+
+        assertIs<Either.Left<CoreFailure>>(result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistConversations(any(), any(), any(), any())
+            arrangement.meetingDao.upsertMeetings(any(), any(), any())
+        }
     }
 
     inner class Arrangement {

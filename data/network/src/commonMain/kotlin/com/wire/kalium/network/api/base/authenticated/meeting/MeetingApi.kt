@@ -19,9 +19,9 @@
 package com.wire.kalium.network.api.base.authenticated.meeting
 
 import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
-import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.utils.NetworkResponse
@@ -33,6 +33,9 @@ interface MeetingApi : BaseApi {
     suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit>
     suspend fun createNewMeeting(request: CreateMeetingRequest): NetworkResponse<UpsertMeetingResponse>
     suspend fun updateMeeting(meetingId: MeetingId, request: UpdateMeetingRequest): NetworkResponse<UpsertMeetingResponse>
+
+    /** Joins through a guest link. Available from API 19; password is sent as a query parameter. */
+    suspend fun joinViaCode(domain: String, key: String, code: String, password: String?): NetworkResponse<MeetingDTO>
 
     companion object {
         const val MIN_API_VERSION_MEETINGS = 17
