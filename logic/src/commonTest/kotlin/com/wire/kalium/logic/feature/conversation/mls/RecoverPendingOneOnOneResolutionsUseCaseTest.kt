@@ -44,7 +44,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
             .withPendingUserIds(pendingUserIds)
-            .withResolveResult(Either.Right(TestConversation.ID))
+            .withResolveResult(Either.Right(MockConversation.ID))
             .arrange()
 
         useCase()
