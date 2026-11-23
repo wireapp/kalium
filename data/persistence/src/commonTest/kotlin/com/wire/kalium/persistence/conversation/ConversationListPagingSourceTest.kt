@@ -188,7 +188,7 @@ class ConversationListPagingSourceTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun deletedMlsPeerRemainsVisibleAndReadOnlyAfterMembershipRemoval() = runTest(dispatcher) {
+    fun deletedMlsPeerRemainsVisibleAndReadOnlyWithRetainedMembership() = runTest(dispatcher) {
         val conversationId = id(1)
         val peer = QualifiedIDEntity("peer", "wire.com")
         db.userDAO.upsertUser(newUserEntity(self))
@@ -211,11 +211,10 @@ class ConversationListPagingSourceTest : BaseDatabaseTest() {
         val before = source()
         assertFalse(assertNotNull(before.refresh().data.single().otherUser).deleted)
 
-        // Apply the same local writes as a member-leave event with reason UserDeleted.
+        // A deleted peer keeps the local 1:1 mapping for the existing history.
         db.userDAO.markAsDeleted(listOf(peer))
-        db.memberDAO.deleteMembersByQualifiedID(listOf(peer), conversationId)
 
-        assertEquals(listOf(self), db.memberDAO.getConversationMembers(conversationId))
+        assertEquals(setOf(self, peer), db.memberDAO.getConversationMembers(conversationId).toSet())
         assertTrue(before.invalid)
         val row = source().refresh().data.single()
         assertEquals(conversationId, row.position.conversationId)

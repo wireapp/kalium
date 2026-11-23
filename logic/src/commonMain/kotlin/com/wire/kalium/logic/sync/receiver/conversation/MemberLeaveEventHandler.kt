@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -79,6 +80,20 @@ internal class MemberLeaveEventHandlerImpl(
         event: Event.Conversation.MemberLeave
     ): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
+        if (event.reason == MemberLeaveReason.UserDeleted && selfUserId !in event.removedList) {
+            when (val result = conversationRepository.getConversationById(event.conversationId)) {
+                is Either.Left -> if (result.value != StorageFailure.DataNotFound) return result
+                is Either.Right -> if (result.value.type == Conversation.Type.OneOnOne &&
+                    result.value.protocol is Conversation.ProtocolInfo.MLSCapable
+                ) {
+                    // Keep the known peer mapping for the deleted chat's history.
+                    return userRepository.markAsDeleted(event.removedList)
+                        .onSuccess { updateConversationClientsForCurrentCall.value(event.conversationId) }
+                        .onSuccess { eventLogger.logSuccess() }
+                        .onFailure { eventLogger.logFailure(it) }
+                }
+            }
+        }
         if (event.reason == MemberLeaveReason.UserDeleted) {
             userRepository.markAsDeleted(event.removedList)
         }

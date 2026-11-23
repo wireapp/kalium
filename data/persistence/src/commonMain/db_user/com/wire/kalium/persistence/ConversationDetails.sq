@@ -120,15 +120,7 @@ LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Member.user IS NOT SelfUser.id
 LEFT JOIN Member AS memberRole ON Conversation.qualified_id = memberRole.conversation
     AND memberRole.user IS SelfUser.id
--- A deleted peer's 1:1 link survives removal from MLS membership.
-LEFT JOIN User ON User.qualified_id = coalesce(Member.user, CASE
-    WHEN Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol IN ('MLS', 'MIXED') THEN (
-        SELECT Peer.qualified_id FROM User Peer
-        WHERE Peer.active_one_on_one_conversation_id = Conversation.qualified_id
-            AND Peer.deleted = 1 AND Peer.qualified_id IS NOT SelfUser.id
-        ORDER BY Peer.qualified_id LIMIT 1
-    )
-END)
+LEFT JOIN User ON User.qualified_id = Member.user
 LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
     AND (Connection.status = 'SENT'
          OR Connection.status = 'PENDING'
