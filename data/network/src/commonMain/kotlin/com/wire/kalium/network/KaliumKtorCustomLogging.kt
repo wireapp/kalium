@@ -183,7 +183,7 @@ class KaliumKtorCustomLogging private constructor(
                 """REQUEST FAILURE: {
                         |"endpoint":"${obfuscatePath(Url(context.url))}",
                         | "method":"${context.method.value}",
-                        |  "cause":"${cause::class.simpleName}"}
+                        |  "cause":"${cause::class.simpleName ?: "Throwable"}"}
                         |  
 """.trimMargin()
             )

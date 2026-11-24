@@ -100,7 +100,7 @@ internal class KaliumHttpLogger(
                 """RESPONSE FAILURE:
                             |{"endpoint":"${obfuscatePath(request.url)}\",
                             | "method":"${request.method.value}",
-                            |  "cause":"${cause::class.simpleName}"}
+                            |  "cause":"${cause::class.simpleName ?: "Throwable"}"}
                             |  
 """.trimMargin()
             )
