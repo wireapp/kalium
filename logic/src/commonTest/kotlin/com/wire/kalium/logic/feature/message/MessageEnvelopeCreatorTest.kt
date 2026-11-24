@@ -83,7 +83,14 @@ class MessageEnvelopeCreatorTest {
             .arrange()
 
 
-        creator.createOutgoingEnvelope(arrangement.proteusContext, recipients, TestMessage.TEXT_MESSAGE)
+        val writtenAt = 1_700_000_000_000L
+        creator.createOutgoingEnvelope(
+            arrangement.proteusContext, recipients, TestMessage.TEXT_MESSAGE.copy(clientCreatedAtMillis = writtenAt)
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable && it.clientCreatedAtMillis == writtenAt })
+        }
 
         verifySuspend {
             arrangement.proteusContext.encryptBatched(

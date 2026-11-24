@@ -139,6 +139,7 @@ public class SendTextMessageUseCase internal constructor(
         generatedMessageUuid: String = Uuid.random().toString(),
         sendLater: Boolean = false,
     ): MessageOperationResult {
+        val writtenAtMillis = Clock.System.now().toEpochMilliseconds()
         // Extension storage keeps its existing preparation boundary. In-app sends must be
         // visible locally even while foreground sync is resuming or waiting for crypto.
         if (sendLater) awaitSlowSync()
@@ -169,6 +170,7 @@ public class SendTextMessageUseCase internal constructor(
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
                 date = Clock.System.now(),
+                clientCreatedAtMillis = writtenAtMillis,
                 senderUserId = selfUserId,
                 senderClientId = clientId,
                 status = Message.Status.Pending,

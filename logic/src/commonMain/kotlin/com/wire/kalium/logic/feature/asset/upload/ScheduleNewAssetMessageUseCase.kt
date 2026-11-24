@@ -59,6 +59,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 import okio.Path
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 public interface ScheduleNewAssetMessageUseCase {
@@ -104,13 +105,14 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         }
 
     internal suspend fun startTracked(asset: AssetUploadParams, messageId: String): StartTrackedAssetUploadResult {
+        val writtenAtMillis = Clock.System.now().toEpochMilliseconds()
         validateAsset(asset).onFailure { return StartTrackedAssetUploadResult.Failure(it) }
         slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
 
         var operation: TrackedAssetUpload? = null
         return try {
             withContext(dispatcher.io) {
-                persistNewAssetMessage(messageId, userId, asset)
+                persistNewAssetMessage(messageId, userId, asset, writtenAtMillis)
                     .onFailure {
                         updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, asset.conversationId, messageId)
                         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(

@@ -108,6 +108,7 @@ public class SendMultipartMessageUseCase internal constructor(
         quotedMessageId: String? = null
     ): MessageOperationResult = scope.async(dispatchers.io) {
 
+        val writtenAtMillis = Clock.System.now().toEpochMilliseconds()
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -149,6 +150,7 @@ public class SendMultipartMessageUseCase internal constructor(
                 attachments,
                 quotedMessageId,
                 isCellEnabled,
+                writtenAtMillis,
             )
 
             persistMessage(message).flatMap {
@@ -175,6 +177,7 @@ public class SendMultipartMessageUseCase internal constructor(
         text: String,
         attachments: List<CellAssetContent>,
     ): Boolean {
+        val writtenAtMillis = Clock.System.now().toEpochMilliseconds()
         if (!conversationRepository.isCellEnabled(conversationId).getOrElse { false }) return false
         return provideClientId().flatMap { clientId ->
             val message = buildMessage(
@@ -186,7 +189,8 @@ public class SendMultipartMessageUseCase internal constructor(
                 emptyList(),
                 attachments,
                 null,
-                isCellEnabled = true
+                isCellEnabled = true,
+                writtenAtMillis = writtenAtMillis
             )
             persistMessage(message).onSuccess {
                 scope.launch(dispatchers.io) {
@@ -213,6 +217,7 @@ public class SendMultipartMessageUseCase internal constructor(
         attachments: List<MessageAttachment>,
         quotedMessageId: String?,
         isCellEnabled: Boolean,
+        writtenAtMillis: Long,
     ): Message.Regular {
 
         val previews = uploadLinkPreviewImages(linkPreviews, conversationId)
@@ -244,6 +249,7 @@ public class SendMultipartMessageUseCase internal constructor(
             expectsReadConfirmation = expectsReadConfirmation,
             conversationId = conversationId,
             date = Clock.System.now(),
+            clientCreatedAtMillis = writtenAtMillis,
             senderUserId = selfUserId,
             senderClientId = clientId,
             status = Message.Status.Pending,

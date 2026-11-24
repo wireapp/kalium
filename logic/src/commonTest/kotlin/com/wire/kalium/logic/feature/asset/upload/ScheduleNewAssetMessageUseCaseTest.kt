@@ -285,7 +285,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         val retry = first.retry()
         assertEquals(first.messageId, retry.messageId)
         assertEquals(AssetUploadCompletion.Success, retry.awaitCompletion())
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistNewAssetMessage(any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistNewAssetMessage(any(), any(), any(), any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(persistedMessage.copy(status = Message.Status.Pending), remoteMetadata) }
     }
 
@@ -325,7 +325,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             val (arrangement, scheduler) = Arrangement(backgroundScope)
                 .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
                 .arrange()
-            everySuspend { arrangement.persistNewAssetMessage(any(), any(), any()) } calls {
+            everySuspend { arrangement.persistNewAssetMessage(any(), any(), any(), any()) } calls {
                 throw CancellationException("Persistence committed before cancellation was observed")
             }
             val caller = launch { scheduler.startTracked(assetUploadParams, "persisted-message") }
@@ -357,7 +357,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             val result = assertIs<AssetUploadCompletion.Failure>(retry.awaitCompletion())
             assertIs<CoreFailure.Unknown>(result.coreFailure)
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.persistNewAssetMessage(any(), any(), any())
+                arrangement.persistNewAssetMessage(any(), any(), any(), any())
                 arrangement.uploadAsset(any(), any())
             }
         }
@@ -458,7 +458,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         assertEquals(AssetUploadCompletion.Success, retry.awaitCompletion())
         assertEquals(operation.messageId, retry.messageId)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(persistedMessage.copy(status = Message.Status.Pending), remoteMetadata) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistNewAssetMessage(any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistNewAssetMessage(any(), any(), any(), any()) }
     }
 
     @Test
@@ -710,7 +710,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         suspend fun withAssetMessagePersistSuccess() = apply {
             everySuspend {
-                persistNewAssetMessage.invoke(any(), any(), any())
+                persistNewAssetMessage.invoke(any(), any(), any(), any())
             } returns Pair(uploadMetadata, TestMessage.assetMessage()).right()
         }
 
@@ -722,7 +722,7 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         suspend fun withAssetMessagePersistFailure() = apply {
             everySuspend {
-                persistNewAssetMessage.invoke(any(), any(), any())
+                persistNewAssetMessage.invoke(any(), any(), any(), any())
             } returns CoreFailure.Unknown(null).left()
         }
 

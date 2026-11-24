@@ -68,6 +68,7 @@ public class SendPollMessageUseCase internal constructor(
         options: List<String>,
         allowMultipleAnswers: Boolean
     ): MessageOperationResult = scope.async(dispatcher.io) {
+        val writtenAtMillis = Clock.System.now().toEpochMilliseconds()
         val trimmedQuestion = question.trim()
         val trimmedOptions = options.map { it.trim() }
         if (!isValid(trimmedQuestion, trimmedOptions)) {
@@ -92,6 +93,7 @@ public class SendPollMessageUseCase internal constructor(
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
                 date = Clock.System.now(),
+                clientCreatedAtMillis = writtenAtMillis,
                 senderUserId = selfUserId,
                 senderClientId = clientId,
                 status = Message.Status.Pending,

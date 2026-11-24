@@ -74,6 +74,7 @@ public class SendLocationUseCase internal constructor(
         name: String?,
         zoom: Int
     ): MessageOperationResult = withContext(dispatcher.io) {
+        val writtenAtMillis = Clock.System.now().toEpochMilliseconds()
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -94,6 +95,7 @@ public class SendLocationUseCase internal constructor(
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now(),
+                clientCreatedAtMillis = writtenAtMillis,
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,

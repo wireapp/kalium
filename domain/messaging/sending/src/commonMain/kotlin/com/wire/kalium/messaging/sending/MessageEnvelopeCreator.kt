@@ -94,6 +94,7 @@ class MessageEnvelopeCreatorImpl(
             messageContent = message.content,
             expectsReadConfirmation = expectsReadConfirmation,
             expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds,
+            clientCreatedAtMillis = (message as? Message.Regular)?.clientCreatedAtMillis,
             legalHoldStatus = legalHoldStatus
         )
 

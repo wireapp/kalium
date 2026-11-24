@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PlainMessageBlob
+import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -44,6 +45,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
@@ -71,8 +73,14 @@ class MLSMessageCreatorTest {
             .withMLSEncryptMessage(encryptedData)
             .arrange {}
 
-        creator.prepareMLSGroupAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
-            .shouldSucceed {}
+        val writtenAt = 1_700_000_000_000L
+        creator.prepareMLSGroupAndCreateOutgoingMLSMessage(
+            arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE.copy(clientCreatedAtMillis = writtenAt)
+        ).shouldSucceed {}
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable && it.clientCreatedAtMillis == writtenAt })
+        }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.encryptMessage(arrangement.mlsContext, GROUP_ID, plainData)

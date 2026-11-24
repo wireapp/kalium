@@ -712,14 +712,16 @@ internal class MessageDAOImpl internal constructor(
         conversationId: ConversationIDEntity,
         messageUuid: String,
         serverDate: Instant?,
-        millis: Long
+        millis: Long,
+        clientCreatedAtMillis: Long?
     ) {
         withContext(writeDispatcher.value) {
             queries.promoteMessageToSentUpdatingServerTime(
                 server_creation_date = serverDate,
                 conversation_id = conversationId,
                 message_id = messageUuid,
-                delivery_duration = Instant.fromEpochMilliseconds(millis)
+                delivery_duration = Instant.fromEpochMilliseconds(millis),
+                client_created_at_millis = clientCreatedAtMillis
             ).await()
         }
     }

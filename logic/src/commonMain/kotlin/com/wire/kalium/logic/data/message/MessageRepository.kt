@@ -612,13 +612,15 @@ internal class MessageDataSource internal constructor(
         conversationId: ConversationId,
         messageUuid: String,
         serverDate: Instant?,
-        millis: Long
+        millis: Long,
+        clientCreatedAtMillis: Long?
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.promoteMessageToSentUpdatingServerTime(
             conversationId.toDao(),
             messageUuid,
             serverDate,
-            millis
+            millis,
+            clientCreatedAtMillis
         )
     }
 

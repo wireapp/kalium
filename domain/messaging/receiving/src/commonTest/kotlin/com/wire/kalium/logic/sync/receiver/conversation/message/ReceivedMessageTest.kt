@@ -58,7 +58,16 @@ class ReceivedMessageTest {
         assertNull(message.expirationData)
     }
 
-    private fun unpacked(sender: UserId, expiresAfterMillis: Long? = 10_000) = MessageUnpackResult.ApplicationMessage(
+    @Test
+    fun delayedMessageRetainsBothWritingTimeAndServerTime() {
+        val writtenAtMillis = (serverTime - 600.seconds).toEpochMilliseconds()
+        val message = unpacked(UserId("other", "example.com"), clientCreatedAtMillis = writtenAtMillis).toRegularMessage(self)
+
+        assertEquals(writtenAtMillis, message.clientCreatedAtMillis)
+        assertEquals(serverTime, message.date)
+    }
+
+    private fun unpacked(sender: UserId, expiresAfterMillis: Long? = 10_000, clientCreatedAtMillis: Long? = null) = MessageUnpackResult.ApplicationMessage(
         conversationId = ConversationId("conversation", "example.com"),
         instant = serverTime,
         senderUserId = sender,
@@ -69,6 +78,7 @@ class ReceivedMessageTest {
             expectsReadConfirmation = false,
             legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN,
             expiresAfterMillis = expiresAfterMillis,
+            clientCreatedAtMillis = clientCreatedAtMillis,
         ),
     )
 }

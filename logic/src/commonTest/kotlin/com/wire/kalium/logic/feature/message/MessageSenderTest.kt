@@ -104,6 +104,7 @@ import kotlin.test.assertFalse
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -114,6 +115,41 @@ import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
 import com.wire.kalium.messaging.sending.MLSMessageCreator
 
 class MessageSenderTest {
+
+    @Test
+    fun givenAnOfflineSend_whenRetriedAfterFiveMinutes_thenSendsAndPersistsTheOriginalWritingTime() {
+        val writtenAt = 1_700_000_000_000L
+        var now = Instant.fromEpochMilliseconds(writtenAt + 300_000)
+        val message = TestMessage.TEXT_MESSAGE.copy(
+            date = Instant.fromEpochMilliseconds(writtenAt),
+            status = Message.Status.Pending,
+            clientCreatedAtMillis = writtenAt
+        )
+        val (arrangement, sender) = arrange {
+            clock = object : Clock {
+                override fun now() = now
+            }
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            everySuspend { messageRepository.getMessageById(any(), any()) } returns Either.Right(message)
+            withSendEnvelope(
+                Either.Left(NetworkFailure.NoNetworkConnection(null)),
+                Either.Right(MessageSent(Instant.fromEpochMilliseconds(writtenAt + 300_001)))
+            )
+        }
+        arrangement.testScope.runTest {
+            sender.sendMessage(message).shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
+            now = Instant.fromEpochMilliseconds(writtenAt + 300_001)
+            sender.sendPendingMessage(message.conversationId, message.id).shouldSucceed()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageEnvelopeCreator.createOutgoingEnvelope(any(), any(), message.copy(clientCreatedAtMillis = null))
+                arrangement.messageEnvelopeCreator.createOutgoingEnvelope(any(), any(), message)
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), message.id, any(), any(), writtenAt)
+            }
+        }
+    }
+
     @Test
     fun givenPendingTextWasEdited_whenSendingOldSnapshot_thenEncryptLatestText() {
         val (arrangement, sender) = arrange { withSendProteusMessage(); withPromoteMessageToSentUpdatingServerTime() }
@@ -461,7 +497,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any(), any())
             }
         }
     }
@@ -493,7 +529,7 @@ class MessageSenderTest {
             messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID).shouldFail()
             verifySuspend(VerifyMode.not) {
                 arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
-                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any(), any())
             }
 
             arrangement.withSendProteusMessage()
@@ -501,7 +537,7 @@ class MessageSenderTest {
             messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID).shouldSucceed()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any(), any())
             }
         }
     }
@@ -1681,7 +1717,7 @@ class MessageSenderTest {
                 arrangement.messageRepository.updateTextMessage(any(), content, editedMessageId, any())
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), editedMessageId, null, any())
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), editedMessageId, null, any(), any())
             }
         }
     }
@@ -1720,7 +1756,7 @@ class MessageSenderTest {
                 arrangement.messageRepository.updateMultipartMessage(any(), content, editedMessageId, any())
             }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), editedMessageId, null, any())
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), editedMessageId, null, any(), any())
             }
         }
     }
@@ -1748,6 +1784,7 @@ class MessageSenderTest {
                     any(),
                     TestMessage.TEXT_MESSAGE.id,
                     matches { it != null },
+                    any(),
                     any()
                 )
             }
@@ -1968,6 +2005,7 @@ class MessageSenderTest {
         val legalHoldHandler = mock<LegalHoldHandler>(mode = MockMode.autoUnit)
         val staleEpochVerifier = mock<StaleEpochVerifier>(mode = MockMode.autoUnit)
 
+        var clock: Clock = Clock.System
         var pendingMessagesEnabled = false
         val testScope = TestScope()
 
@@ -2009,7 +2047,8 @@ class MessageSenderTest {
                 },
                 scope = testScope,
                 pendingMessagesEnabled = pendingMessagesEnabled,
-                targetedAndTransientMLSMessagesEnabled = targetedAndTransientMLSMessagesEnabled
+                targetedAndTransientMLSMessagesEnabled = targetedAndTransientMLSMessagesEnabled,
+                clock = clock
             )
         }
 
@@ -2173,7 +2212,7 @@ class MessageSenderTest {
 
         suspend fun withPromoteMessageToSentUpdatingServerTime() = apply {
             everySuspend {
-                messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+                messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any(), any())
             } returns Either.Right(Unit)
         }
 

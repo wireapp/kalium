@@ -220,7 +220,8 @@ internal open class FakeMessageRepository : MessageRepository {
         conversationId: ConversationId,
         messageUuid: String,
         serverDate: Instant?,
-        millis: Long
+        millis: Long,
+        clientCreatedAtMillis: Long?
     ): Either<CoreFailure, Unit> = Unit.right()
 
     override suspend fun getAllPendingEphemeralMessages(): Either<CoreFailure, List<Message>> = emptyList<Message>().right()

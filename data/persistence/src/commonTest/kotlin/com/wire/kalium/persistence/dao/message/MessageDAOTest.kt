@@ -1676,7 +1676,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             date = Instant.fromEpochMilliseconds(123),
             expectsReadConfirmation = true,
             status = MessageEntity.Status.PENDING
-        )
+        ).copy(isSelfMessage = true)
 
         val pendingMessage = newRegularMessageEntity(
             id = "pendingMessage",
@@ -1685,24 +1685,28 @@ class MessageDAOTest : BaseDatabaseTest() {
             date = Instant.fromEpochMilliseconds(125),
             expectsReadConfirmation = true,
             status = MessageEntity.Status.PENDING
-        )
+        ).copy(isSelfMessage = true)
 
         conversationDAO.insertConversation(conversationEntity1)
         userDAO.upsertUsers(listOf(userEntity1))
         messageDAO.insertOrIgnoreMessages(listOf(messageToSend, pendingMessage))
 
-        messageDAO.promoteMessageToSentUpdatingServerTime(conversationEntity1.id, messageToSend.id, Instant.fromEpochMilliseconds(124), 1)
+        messageDAO.promoteMessageToSentUpdatingServerTime(
+            conversationEntity1.id, messageToSend.id, Instant.fromEpochMilliseconds(124), 1, clientCreatedAtMillis = 123
+        )
 
         messageDAO.getMessageById(messageToSend.id, conversationEntity1.id).also {
-            assertNotNull(it)
+            assertIs<MessageEntity.Regular>(it)
             assertEquals(MessageEntity.Status.SENT, it.status)
             assertEquals(Instant.fromEpochMilliseconds(124), it.date)
+            assertEquals(123L, it.clientCreatedAtMillis)
         }
 
         messageDAO.getMessageById(pendingMessage.id, conversationEntity1.id).also {
-            assertNotNull(it)
+            assertIs<MessageEntity.Regular>(it)
             assertEquals(MessageEntity.Status.PENDING, it.status)
             assertEquals(Instant.fromEpochMilliseconds(125 + 1), it.date)
+            assertEquals(125L, it.clientCreatedAtMillis)
         }
     }
 

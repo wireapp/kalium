@@ -62,7 +62,8 @@ interface OutgoingMessages {
         conversationId: ConversationId,
         messageUuid: String,
         serverDate: Instant?,
-        millis: Long
+        millis: Long,
+        clientCreatedAtMillis: Long? = null
     ): Either<CoreFailure, Unit>
 
     suspend fun persistRecipientsDeliveryFailure(

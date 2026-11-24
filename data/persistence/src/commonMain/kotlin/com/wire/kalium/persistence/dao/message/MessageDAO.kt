@@ -173,7 +173,8 @@ interface MessageDAO {
         conversationId: ConversationIDEntity,
         messageUuid: String,
         serverDate: Instant?,
-        millis: Long
+        millis: Long,
+        clientCreatedAtMillis: Long? = null
     )
 
     suspend fun getAllPendingEphemeralMessages(): List<MessageEntity>

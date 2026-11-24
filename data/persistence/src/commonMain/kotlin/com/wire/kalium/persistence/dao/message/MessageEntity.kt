@@ -72,6 +72,7 @@ sealed interface MessageEntity {
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
+        val clientCreatedAtMillis: Long? = null,
     ) : MessageEntity
 
     data class System(

@@ -348,7 +348,8 @@ class MessageRepositoryTest {
                 conversationID.toDao(),
                 messageID,
                 newServerData,
-                millis
+                millis,
+                null
             )
         }
     }
@@ -826,7 +827,7 @@ class MessageRepositoryTest {
 
         suspend fun withUpdateMessageAfterSend() = apply {
             everySuspend {
-                messageDAO.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+                messageDAO.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any(), any())
             }.returns(Unit)
         }
 

@@ -385,7 +385,8 @@ object MessageMapper {
         readCount: Long,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
-        sender: UserDetailsEntity
+        sender: UserDetailsEntity,
+        clientCreatedAtMillis: Long?
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> {
             MessageEntity.Regular(
@@ -393,6 +394,7 @@ object MessageMapper {
                 id = id,
                 conversationId = conversationId,
                 date = date,
+                clientCreatedAtMillis = clientCreatedAtMillis,
                 senderUserId = senderUserId,
                 // Deleted system messages map to the same empty regular tombstone, without an original client ID.
                 senderClientId = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -578,6 +580,7 @@ object MessageMapper {
         locationZoom: Int?,
         legalHoldMemberList: String?,
         legalHoldType: String?,
+        clientCreatedAtMillis: Long? = null,
     ): MessageEntity = toEntityMessageFromView(
         id = id,
         conversationId = conversationId,
@@ -685,6 +688,7 @@ object MessageMapper {
         locationZoom = locationZoom,
         legalHoldMemberList = legalHoldMemberList,
         legalHoldType = legalHoldType,
+        clientCreatedAtMillis = clientCreatedAtMillis,
     )
 
     @Suppress("LongMethod", "ComplexMethod", "UNUSED_PARAMETER")
@@ -795,6 +799,7 @@ object MessageMapper {
         locationZoom: Int?,
         legalHoldMemberList: String?,
         legalHoldType: String?,
+        clientCreatedAtMillis: Long? = null,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -1057,7 +1062,8 @@ object MessageMapper {
             readCount,
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList,
-            sender
+            sender,
+            clientCreatedAtMillis
         )
     }
 

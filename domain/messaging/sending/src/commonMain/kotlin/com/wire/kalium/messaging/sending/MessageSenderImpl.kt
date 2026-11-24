@@ -41,6 +41,8 @@ import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 /**
@@ -82,7 +84,8 @@ class MessageSenderImpl(
     private val scope: CoroutineScope,
     private val pendingMessagesEnabled: Boolean = false,
     /** When false, targeted and transient MLS messages are sent as persistent application messages to the whole group. */
-    targetedAndTransientMLSMessagesEnabled: Boolean = false
+    targetedAndTransientMLSMessagesEnabled: Boolean = false,
+    private val clock: Clock = Clock.System
 ) : MessageSender {
 
     private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
@@ -176,10 +179,15 @@ class MessageSenderImpl(
                 when {
                     current !is Message.Regular || current.visibility != Message.Visibility.VISIBLE ||
                         current.status != Message.Status.Pending -> Either.Right(null)
-                    // Keep prepared asset metadata and other caller-specific fields, but do not send stale text.
-                    message.content is MessageContent.Text && current.content is MessageContent.Text ->
-                        Either.Right(message.copy(content = current.content))
-                    else -> Either.Right(message)
+                    else -> Either.Right(
+                        message.copy(
+                            // Keep prepared asset metadata, but use the latest persisted text.
+                            content = if (message.content is MessageContent.Text && current.content is MessageContent.Text) {
+                                current.content
+                            } else message.content,
+                            clientCreatedAtMillis = current.clientCreatedAtMillis
+                        )
+                    )
                 }
             }
         )
@@ -223,7 +231,12 @@ class MessageSenderImpl(
         else
             messageToSend(message).flatMap { current ->
                 if (current == null) return@flatMap Either.Right(null)
-                prepareMessage(current).flatMap { processedMessage ->
+                prepareMessage(current).flatMap { prepared ->
+                    val processedMessage = if (prepared is Message.Regular) {
+                        prepared.copy(
+                            clientCreatedAtMillis = delayedWritingTime(prepared.clientCreatedAtMillis, clock.now())
+                        )
+                    } else prepared
                     attemptToSend(processedMessage, messageTarget, transient).map { serverDate ->
                         val localDate = message.date
                         val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
@@ -256,7 +269,8 @@ class MessageSenderImpl(
                             messageUuid = processedMessage.id,
                             // if it's edit then we don't want to change the original message creation time, it's already a server date
                             serverDate = if (!isEditMessage) serverDate else null,
-                            millis = millis
+                            millis = millis,
+                            clientCreatedAtMillis = (processedMessage as? Message.Regular)?.clientCreatedAtMillis
                         )
                         processedMessage
                     }
@@ -328,6 +342,9 @@ internal suspend fun <T> SendingSession.encryptionTransaction(
  * process. Calls, receipts and other signaling don't wait, and neither do deletions: an expiring self-deleting
  * message sends its deletion on its own.
  */
+internal fun delayedWritingTime(clientCreatedAtMillis: Long?, now: Instant): Long? =
+    clientCreatedAtMillis?.takeIf { now - Instant.fromEpochMilliseconds(it) > 5.minutes }
+
 private fun Message.Sendable.isUserContent() = this is Message.Regular || content is MessageContent.TextEdited ||
     content is MessageContent.MultipartEdited || content is MessageContent.Reaction
 

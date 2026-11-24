@@ -72,6 +72,21 @@ class ProtoContentMapperTest {
     }
 
     @Test
+    fun givenDelayedEphemeralText_whenMappingToProtobufAndBack_thenPreservesWritingTime() {
+        val message = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            MessageContent.Text("Hello"),
+            false,
+            Conversation.LegalHoldStatus.UNKNOWN,
+            expiresAfterMillis = 60_000,
+            clientCreatedAtMillis = 1_700_000_000_000
+        )
+        val payload = protoContentMapper.encodeToProtobuf(message)
+        assertEquals(message.clientCreatedAtMillis, GenericMessage.decodeFromByteArray(payload.data).clientCreatedAtMillis)
+        assertEquals(message, protoContentMapper.decodeFromProtobuf(payload))
+    }
+
+    @Test
     fun givenTextContentWithQuoteReference_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val messageContent = MessageContent.Text(
             value = "Hello",

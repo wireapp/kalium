@@ -87,9 +87,10 @@ class StoredOutgoingMessages(
         conversationId: ConversationId,
         messageUuid: String,
         serverDate: Instant?,
-        millis: Long
+        millis: Long,
+        clientCreatedAtMillis: Long?
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.promoteMessageToSentUpdatingServerTime(conversationId.toDao(), messageUuid, serverDate, millis)
+        messageDAO.promoteMessageToSentUpdatingServerTime(conversationId.toDao(), messageUuid, serverDate, millis, clientCreatedAtMillis)
     }
 
     override suspend fun persistRecipientsDeliveryFailure(

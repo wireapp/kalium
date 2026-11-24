@@ -90,7 +90,8 @@ sealed interface Message {
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery,
-        val linkPreviews: List<MessageLinkPreview> = emptyList()
+        val linkPreviews: List<MessageLinkPreview> = emptyList(),
+        val clientCreatedAtMillis: Long? = null
     ) : Sendable, Standalone {
 
         override fun toLogString(): String {

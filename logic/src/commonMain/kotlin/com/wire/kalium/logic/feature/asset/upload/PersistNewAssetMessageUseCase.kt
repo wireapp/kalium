@@ -48,7 +48,8 @@ internal interface PersistNewAssetMessageUseCase {
     suspend operator fun invoke(
         messageId: String,
         userId: UserId,
-        asset: AssetUploadParams
+        asset: AssetUploadParams,
+        writtenAtMillis: Long = Clock.System.now().toEpochMilliseconds()
     ): Either<CoreFailure, Pair<UploadAssetMessageMetadata, Message.Regular>>
 }
 
@@ -65,7 +66,8 @@ internal class PersistNewAssetMessageUseCaseImpl(
     override suspend operator fun invoke(
         messageId: String,
         userId: UserId,
-        asset: AssetUploadParams
+        asset: AssetUploadParams,
+        writtenAtMillis: Long
     ): Either<CoreFailure, Pair<UploadAssetMessageMetadata, Message.Regular>> = currentClientIdProvider().flatMap { currentClientId ->
 
         // Create  temporary asset key and domain
@@ -94,6 +96,7 @@ internal class PersistNewAssetMessageUseCaseImpl(
                         content = MessageContent.Asset(currentAssetMessageContent.toAssetContent()),
                         conversationId = asset.conversationId,
                         date = Clock.System.now(),
+                        clientCreatedAtMillis = writtenAtMillis,
                         senderUserId = userId,
                         senderClientId = currentClientId,
                         status = Message.Status.Pending,

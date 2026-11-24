@@ -66,7 +66,9 @@ fun prepareReceivedAssetMessage(
         null
     } else {
         val acceptedAsset = if (previewFromDifferentClient) content.value.copy(preview = null) else content.value
-        existing.withAssetDecryptionKeys(acceptedAsset)
+        existing.withAssetDecryptionKeys(acceptedAsset)?.copy(
+            clientCreatedAtMillis = existing.clientCreatedAtMillis ?: message.clientCreatedAtMillis
+        )
     }
 }
 

@@ -59,6 +59,7 @@ fun MessageUnpackResult.ApplicationMessage.toRegularMessage(
         content = protoContent,
         conversationId = conversationId,
         date = instant,
+        clientCreatedAtMillis = content.clientCreatedAtMillis,
         senderUserId = senderUserId,
         senderClientId = senderClientId,
         status = Message.Status.Sent,

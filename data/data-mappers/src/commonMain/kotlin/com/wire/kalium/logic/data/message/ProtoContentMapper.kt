@@ -109,6 +109,7 @@ class ProtoContentMapperImpl(
         val message = GenericMessage(
             messageId = protoContent.messageUid,
             content = messageContent,
+            clientCreatedAtMillis = (protoContent as? ProtoContent.Readable)?.clientCreatedAtMillis,
             // Clients without poll support show an "unsupported message" notice instead of silently dropping the poll.
             unknownStrategy = if (messageContent is GenericMessage.Content.Poll) UnknownStrategy.DISCARD_AND_WARN else null
         )
@@ -457,7 +458,8 @@ class ProtoContentMapperImpl(
                 messageContent = getReadableContent(genericMessage, encodedContent),
                 expectsReadConfirmation = expectsReadConfirmation,
                 legalHoldStatus = fromProtoLegalHoldStatus(legalHoldStatus),
-                expiresAfterMillis = expiresAfterMillis
+                expiresAfterMillis = expiresAfterMillis,
+                clientCreatedAtMillis = genericMessage.clientCreatedAtMillis
             )
         }
     }

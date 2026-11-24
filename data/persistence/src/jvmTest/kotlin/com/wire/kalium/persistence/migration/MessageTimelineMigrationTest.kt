@@ -25,6 +25,7 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageMapper
 import com.wire.kalium.persistence.dao.message.MessageTimelineLoadResultEntity
@@ -77,8 +78,18 @@ class MessageTimelineMigrationTest {
                         date = Instant.fromEpochMilliseconds(it.toLong()), status = MessageEntity.Status.SENT,
                     )
                 }
-                builder.messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = false)
-                if (upgrade) UserDatabase.Schema.awaitMigrate(driver, 147, UserDatabase.Schema.version)
+                if (upgrade) {
+                    // Use the old schema to seed history before the current DAO starts reading it.
+                    builder.database.databasePropertiesQueries.insertSelfUserId(self.id)
+                    seedLegacyMessages(driver, messages)
+                    UserDatabase.Schema.awaitMigrate(driver, 147, UserDatabase.Schema.version)
+                    val sent = assertIs<MessageEntity.Regular>(builder.messageDAO.getMessageById("message-58", conversation.id))
+                    val pending = assertIs<MessageEntity.Regular>(builder.messageDAO.getMessageById("message-59", conversation.id))
+                    assertEquals(null, sent.clientCreatedAtMillis)
+                    assertEquals(59L, pending.clientCreatedAtMillis)
+                } else {
+                    builder.messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = false)
+                }
 
                 definitions += driver.strings(
                     "SELECT sql FROM sqlite_master " +
@@ -119,6 +130,34 @@ class MessageTimelineMigrationTest {
             }
         }
         assertEquals(definitions.first(), definitions.last())
+    }
+
+    private fun seedLegacyMessages(driver: SqlDriver, messages: List<MessageEntity.Regular>) {
+        messages.forEachIndexed { index, message ->
+            driver.execute(
+                null,
+                """
+                INSERT INTO Message(id, conversation_id, content_type, creation_date, sender_user_id, sender_client_id, status, visibility)
+                VALUES (?, ?, 'TEXT', ?, ?, ?, ?, 'VISIBLE')
+                """.trimIndent(),
+                6
+            ) {
+                bindString(0, message.id)
+                bindString(1, QualifiedIDAdapter.encode(message.conversationId))
+                bindLong(2, message.date.toEpochMilliseconds())
+                bindString(3, QualifiedIDAdapter.encode(message.senderUserId))
+                bindString(4, message.senderClientId)
+                bindString(5, if (index == messages.lastIndex) "PENDING" else "SENT")
+            }
+            driver.execute(
+                null,
+                "INSERT INTO MessageTextContent(message_id, conversation_id, text_body, is_quoting_self) VALUES (?, ?, 'test', 0)",
+                2
+            ) {
+                bindString(0, message.id)
+                bindString(1, QualifiedIDAdapter.encode(message.conversationId))
+            }
+        }
     }
 
     private fun SqlDriver.strings(sql: String, column: Int = 0): List<String> = executeQuery(

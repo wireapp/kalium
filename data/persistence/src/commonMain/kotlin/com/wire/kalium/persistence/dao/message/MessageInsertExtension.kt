@@ -84,6 +84,7 @@ internal class MessageInsertExtensionImpl(
                     messageId = message.id,
                     conversationId = message.conversationId,
                     visibility = message.visibility,
+                    clientCreatedAtMillis = message.clientCreatedAtMillis,
                     assetId = assetId,
                     assetDomain = assetDomain,
                     assetToken = assetToken,
@@ -148,7 +149,12 @@ internal class MessageInsertExtensionImpl(
             content_type = contentTypeOf(message.content),
             expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
             expire_after_millis = if (message is MessageEntity.Regular) message.expireAfterMs else null,
-            self_deletion_end_date = if (message is MessageEntity.Regular) message.selfDeletionEndDate else null
+            self_deletion_end_date = if (message is MessageEntity.Regular) message.selfDeletionEndDate else null,
+            client_created_at_millis = (message as? MessageEntity.Regular)?.let { regular ->
+                regular.clientCreatedAtMillis ?: regular.date.toEpochMilliseconds().takeIf {
+                    regular.isSelfMessage && regular.status == MessageEntity.Status.PENDING
+                }
+            }
         )
         return messagesQueries.selectChanges().awaitAsOne() > 0
     }

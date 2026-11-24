@@ -202,7 +202,8 @@ ConversationLocationContent.longitude AS longitude,
 ConversationLocationContent.name AS locationName,
 ConversationLocationContent.zoom AS locationZoom,
 CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.list_1 END AS legalHoldMemberList,
-CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.enum_1 END AS legalHoldType
+CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.enum_1 END AS legalHoldType,
+Message.client_created_at_millis AS clientCreatedAtMillis
 
 FROM Message
 JOIN UserDetails ON Message.sender_user_id = UserDetails.qualified_id

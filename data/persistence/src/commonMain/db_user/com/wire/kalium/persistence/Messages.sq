@@ -26,6 +26,7 @@ CREATE TABLE Message (
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
       expire_after_millis INTEGER DEFAULT(NULL),
       self_deletion_end_date INTEGER AS Instant DEFAULT(NULL),
+      client_created_at_millis INTEGER,
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -370,8 +371,8 @@ insertOrIgnoreMessage:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey Message
-INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, last_edit_date, visibility, expects_read_confirmation, expire_after_millis, self_deletion_end_date)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, last_edit_date, visibility, expects_read_confirmation, expire_after_millis, self_deletion_end_date, client_created_at_millis)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 messageExists:
 SELECT EXISTS(SELECT 1 FROM Message WHERE id = ? AND conversation_id = ?);
@@ -588,7 +589,8 @@ updateAssetContent {
 -- @NotifyCustomKey Message
 -- @NotifyCustomKey MessageAssetContent
     UPDATE OR ROLLBACK Message
-    SET visibility = :visibility
+    SET visibility = :visibility,
+        client_created_at_millis = COALESCE(client_created_at_millis, :clientCreatedAtMillis)
     WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
 
     UPDATE OR ROLLBACK MessageAssetContent
@@ -724,6 +726,8 @@ promoteMessageToSentUpdatingServerTime {
 UPDATE Message
 SET
     creation_date = CASE WHEN :server_creation_date IS NULL THEN creation_date ELSE :server_creation_date END,
+    client_created_at_millis = CASE WHEN :server_creation_date IS NULL
+        THEN client_created_at_millis ELSE :client_created_at_millis END,
     status = 'SENT'
 WHERE id = :message_id AND conversation_id = :conversation_id;
 

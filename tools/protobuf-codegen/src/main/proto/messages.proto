@@ -57,6 +57,7 @@ message GenericMessage {
         PollVote pollVote = 32;
     }
     optional UnknownStrategy unknownStrategy = 25 [default = IGNORE];
+    optional int64 client_created_at_millis = 33;
 
     // See internal RFC: "2024-07-18 RFC Improve future-proofing for new OTR message types"
     enum UnknownStrategy {
