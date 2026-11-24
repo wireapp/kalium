@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.PagedData
@@ -35,7 +36,6 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProviderImpl
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProviderImpl
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -91,7 +91,7 @@ class MPBackupRealCompressionIntegrationTest {
         val password = "test_password"
         val exportRepository = BackupRepositoryStub(
             users = listOf(TestUser.OTHER),
-            conversations = listOf(TestConversation.CONVERSATION),
+            conversations = listOf(MockConversation.CONVERSATION),
             messages = listOf(TestMessage.TEXT_MESSAGE),
             reactions = listOf(testReaction),
         )
@@ -126,7 +126,10 @@ class MPBackupRealCompressionIntegrationTest {
 
         assertIs<RestoreBackupResult.Success>(restoreResult)
         assertEquals(listOf(TestUser.OTHER.id.value.lowercase()), restoreRepository.insertedUsers.map { it.id.value })
-        assertEquals(listOf(TestConversation.CONVERSATION.id.value.lowercase()), restoreRepository.insertedConversations.map { it.id.value })
+        assertEquals(
+            listOf(MockConversation.CONVERSATION.id.value.lowercase()),
+            restoreRepository.insertedConversations.map { it.id.value }
+        )
         assertEquals(listOf(TestMessage.TEXT_MESSAGE.id.lowercase()), restoreRepository.insertedMessages.map { it.id.lowercase() })
         assertEquals(listOf(testReaction.messageId.lowercase()), restoreRepository.insertedReactions.map { it.messageId.lowercase() })
     }
@@ -292,7 +295,7 @@ class MPBackupRealCompressionIntegrationTest {
     private companion object {
         private val testReaction = MessageReactions(
             messageId = TestMessage.TEXT_MESSAGE.id,
-            conversationId = TestConversation.ID,
+            conversationId = MockConversation.ID,
             reactions = listOf(
                 MessageReactionWithUsers(
                     emoji = ":)",

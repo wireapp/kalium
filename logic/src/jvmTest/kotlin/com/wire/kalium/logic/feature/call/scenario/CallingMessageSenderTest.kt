@@ -23,12 +23,13 @@ import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
@@ -269,8 +270,8 @@ class CallingMessageSenderTest {
         )
 
         companion object {
-            val conversationId = TestConversation.GROUP().id
-            val selfConversationId = TestConversation.SELF().id
+            val conversationId = MockConversation.group(teamId = TestTeam.TEAM_ID).id
+            val selfConversationId = MockConversation.self(teamId = TestTeam.TEAM_ID).id
             val selfUserId = TestUser.SELF.id
             val selfUserCLientId = ClientId("self_client")
         }

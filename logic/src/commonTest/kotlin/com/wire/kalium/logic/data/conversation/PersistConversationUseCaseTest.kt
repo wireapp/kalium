@@ -21,10 +21,10 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
+import com.wire.kalium.logic.data.MockConversation.MLS_PROTOCOL_INFO
+import com.wire.kalium.logic.data.MockConversation.NETWORK_ID
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversation.MLS_PROTOCOL_INFO
-import com.wire.kalium.logic.framework.TestConversation.NETWORK_ID
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.MockMode
@@ -49,13 +49,13 @@ class PersistConversationUseCaseTest {
             withPersistConversationsSuccess()
         }
 
-        val result = useCase(arrangement.transactionContext, TestConversation.CONVERSATION_RESPONSE)
+        val result = useCase(arrangement.transactionContext, MockConversation.CONVERSATION_RESPONSE)
 
         assertTrue(result.getOrNull() ?: false)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistConversations(
                 any(),
-                listOf(TestConversation.CONVERSATION_RESPONSE),
+                listOf(MockConversation.CONVERSATION_RESPONSE),
                 false,
                 ConversationSyncReason.Other,
             )
@@ -64,14 +64,14 @@ class PersistConversationUseCaseTest {
 
     @Test
     fun whenConversationExistsAndGroupStateIsPending_shouldPersistAndReturnTrue() = runTest {
-        val existing = TestConversation.MLS_CONVERSATION
+        val existing = MockConversation.MLS_CONVERSATION
 
         val (arrangement, useCase) = arrange {
             withGetConversationDetails(existing.right())
             withPersistConversationsSuccess()
         }
 
-        val result = useCase(arrangement.transactionContext, TestConversation.CONVERSATION_RESPONSE)
+        val result = useCase(arrangement.transactionContext, MockConversation.CONVERSATION_RESPONSE)
 
         assertTrue(result.getOrNull() ?: false)
         verifySuspend(VerifyMode.exactly(1)) {
@@ -84,13 +84,13 @@ class PersistConversationUseCaseTest {
         val protocol = MLS_PROTOCOL_INFO.copy(
             groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
         )
-        val existing = TestConversation.MLS_CONVERSATION.copy(id = NETWORK_ID.toModel(), protocol = protocol)
+        val existing = MockConversation.MLS_CONVERSATION.copy(id = NETWORK_ID.toModel(), protocol = protocol)
 
         val (arrangement, useCase) = arrange {
             withGetConversationDetails(existing.right())
         }
 
-        val result = useCase(arrangement.transactionContext, TestConversation.CONVERSATION_RESPONSE)
+        val result = useCase(arrangement.transactionContext, MockConversation.CONVERSATION_RESPONSE)
 
         assertFalse(result.getOrNull() ?: true)
         verifySuspend(VerifyMode.exactly(0)) { arrangement.persistConversations(any(), any(), any(), any()) }
@@ -98,13 +98,13 @@ class PersistConversationUseCaseTest {
 
     @Test
     fun whenConversationExistsAndNotMLS_shouldNotPersistAndReturnFalse() = runTest {
-        val existing = TestConversation.CONVERSATION.copy(id = NETWORK_ID.toModel())
+        val existing = MockConversation.CONVERSATION.copy(id = NETWORK_ID.toModel())
 
         val (arrangement, useCase) = arrange {
             withGetConversationDetails(existing.right())
         }
 
-        val result = useCase(arrangement.transactionContext, TestConversation.CONVERSATION_RESPONSE)
+        val result = useCase(arrangement.transactionContext, MockConversation.CONVERSATION_RESPONSE)
 
         assertFalse(result.getOrNull() ?: true)
         verifySuspend(VerifyMode.exactly(0)) { arrangement.persistConversations(any(), any(), any(), any()) }
@@ -128,7 +128,7 @@ class PersistConversationUseCaseTest {
 
         suspend fun withPersistConversationsSuccess() = apply {
             everySuspend {
-                persistConversations(any(), listOf(TestConversation.CONVERSATION_RESPONSE), false, ConversationSyncReason.Other)
+                persistConversations(any(), listOf(MockConversation.CONVERSATION_RESPONSE), false, ConversationSyncReason.Other)
             } returns Either.Right(Unit)
         }
 

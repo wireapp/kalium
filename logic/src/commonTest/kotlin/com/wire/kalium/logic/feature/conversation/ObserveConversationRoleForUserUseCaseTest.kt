@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAccess
@@ -32,7 +33,7 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.feature.user.ObserveSelfUserUseCase
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.answering.returns
@@ -54,7 +55,7 @@ class ObserveConversationRoleForUserUseCaseTest {
         val self = TestUser.SELF
         val other = TestUser.OTHER
         val conversationDetails = ConversationDetails.Group.Regular(
-            conversation = TestConversation.GROUP(),
+            conversation = MockConversation.group(teamId = TestTeam.TEAM_ID),
             isSelfUserMember = true,
             selfRole = Conversation.Member.Role.Admin,
         )
@@ -67,12 +68,12 @@ class ObserveConversationRoleForUserUseCaseTest {
             ),
         )
 
-        val result = useCase(TestConversation.ID, other.id).first()
+        val result = useCase(MockConversation.ID, other.id).first()
 
-        assertEquals(TestConversation.GROUP().name, result.conversationName)
+        assertEquals(MockConversation.group(teamId = TestTeam.TEAM_ID).name, result.conversationName)
         assertEquals(Conversation.Member.Role.Member, result.userRole)
         assertEquals(Conversation.Member.Role.Admin, result.selfRole)
-        assertEquals(TestConversation.ID, result.conversationId)
+        assertEquals(MockConversation.ID, result.conversationId)
     }
 
     @Test
@@ -90,7 +91,7 @@ class ObserveConversationRoleForUserUseCaseTest {
             ),
         )
 
-        val result = useCase(TestConversation.ID, other.id).first()
+        val result = useCase(MockConversation.ID, other.id).first()
 
         assertEquals(Conversation.Member.Role.Admin, result.selfRole)
     }
@@ -110,7 +111,7 @@ class ObserveConversationRoleForUserUseCaseTest {
             ),
         )
 
-        val result = useCase(TestConversation.ID, other.id).first()
+        val result = useCase(MockConversation.ID, other.id).first()
 
         assertEquals(Conversation.Member.Role.Member, result.selfRole)
     }
@@ -124,7 +125,7 @@ class ObserveConversationRoleForUserUseCaseTest {
             members = listOf(MemberDetails(self, Conversation.Member.Role.Member)),
         )
 
-        val results = useCase(TestConversation.ID, self.id).toList()
+        val results = useCase(MockConversation.ID, self.id).toList()
 
         assertTrue(results.isEmpty())
     }
@@ -158,7 +159,7 @@ class ObserveConversationRoleForUserUseCaseTest {
 
     private fun channelDetails(teamId: TeamId): ConversationDetails.Group.Channel =
         ConversationDetails.Group.Channel(
-            conversation = TestConversation.GROUP().copy(
+            conversation = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(
                 type = Conversation.Type.Group.Channel,
                 teamId = teamId,
             ),

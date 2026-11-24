@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -46,13 +46,13 @@ class PollMessageRepositoryTest {
     fun givenVote_whenRecording_thenTheDaoDecidesWhetherItIsValid() = runTest {
         everySuspend {
             pollMessageDAO.recordVote(
-                TestConversation.ID.toDao(),
+                MockConversation.ID.toDao(),
                 POLL_ID,
                 PollVoteEntity(TestUser.OTHER_USER_ID.toDao(), listOf(OPTION_A), DATE)
             )
         } returns false
 
-        repository.recordVote(TestConversation.ID, POLL_ID, VOTE).shouldSucceed {
+        repository.recordVote(MockConversation.ID, POLL_ID, VOTE).shouldSucceed {
             assertEquals(false, it)
         }
     }
@@ -61,7 +61,7 @@ class PollMessageRepositoryTest {
     fun givenStorageError_whenRecordingVote_thenFailureIsReturned() = runTest {
         everySuspend { pollMessageDAO.recordVote(any(), any(), any()) } throws IllegalStateException("disk")
 
-        repository.recordVote(TestConversation.ID, POLL_ID, VOTE).shouldFail {
+        repository.recordVote(MockConversation.ID, POLL_ID, VOTE).shouldFail {
             assertIs<StorageFailure.Generic>(it)
         }
     }

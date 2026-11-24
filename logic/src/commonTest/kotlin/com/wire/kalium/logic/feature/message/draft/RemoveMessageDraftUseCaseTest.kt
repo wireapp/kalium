@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.feature.message.draft
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
@@ -67,6 +67,6 @@ class RemoveMessageDraftUseCaseTest {
     }
 
     private companion object {
-        val CONVERSATION_ID = TestConversation.ID
+        val CONVERSATION_ID = MockConversation.ID
     }
 }

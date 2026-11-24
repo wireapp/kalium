@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
@@ -36,7 +37,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.ProteusRecipientsDataSource
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -400,7 +400,7 @@ internal class MessageSendFailureHandlerTest {
         val userOneInsertClientParams = clientMapper.toInsertClientParam(userOneDTO.second, userOneDTO.first)
         val userTwoInsertClientParams = clientMapper.toInsertClientParam(userTwoDTO.second, userTwoDTO.first)
         val messageId = TestMessage.TEST_MESSAGE_ID
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
         internal inline fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let {
             this to MessageSendFailureHandlerImpl(

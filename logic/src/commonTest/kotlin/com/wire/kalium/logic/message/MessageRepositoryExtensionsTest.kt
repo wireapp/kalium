@@ -22,11 +22,11 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensionsImpl
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -66,7 +66,7 @@ class MessageRepositoryExtensionsTest {
 
         val visibilities = listOf(Message.Visibility.VISIBLE)
         messageRepositoryExtensions.getPaginatedMessagesByConversationIdAndVisibility(
-            TestConversation.ID,
+            MockConversation.ID,
             visibilities,
             pagingConfig,
             startingOffset
@@ -108,7 +108,7 @@ class MessageRepositoryExtensionsTest {
     }
 
     private companion object {
-        val CONVERSATION_ID_ENTITY = TestConversation.ENTITY_ID
+        val CONVERSATION_ID_ENTITY = MockConversation.ENTITY_ID
         val MESSAGE = TestMessage.TEXT_MESSAGE
     }
 }

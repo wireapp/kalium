@@ -19,10 +19,10 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -104,6 +104,6 @@ class GetNextAudioMessageInConversationUseCaseTest {
     private companion object {
         const val MESSAGE_ID = TestMessage.TEST_MESSAGE_ID
         val MESSAGE = TestMessage.TEXT_MESSAGE
-        val CONVERSATION_ID = TestConversation.ID
+        val CONVERSATION_ID = MockConversation.ID
     }
 }

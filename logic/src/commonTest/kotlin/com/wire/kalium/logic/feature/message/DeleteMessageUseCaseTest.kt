@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -37,8 +38,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -579,8 +580,8 @@ class DeleteMessageUseCaseTest {
     }
 
     companion object {
-        val TEST_CONVERSATION_ID = TestConversation.ID
-        val SELF_CONVERSATION_ID = TestConversation.SELF().id
+        val TEST_CONVERSATION_ID = MockConversation.ID
+        val SELF_CONVERSATION_ID = MockConversation.self(teamId = TestTeam.TEAM_ID).id
         const val TEST_MESSAGE_UUID = "messageUuid"
         val SELF_CLIENT_ID: ClientId = ClientId("client_self")
         val deletedMessageContent = MessageContent.DeleteMessage(TEST_MESSAGE_UUID)

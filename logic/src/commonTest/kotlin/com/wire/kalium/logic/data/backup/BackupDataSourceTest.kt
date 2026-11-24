@@ -1,13 +1,14 @@
 package com.wire.kalium.logic.data.backup
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.TestUserDatabase
@@ -327,7 +328,7 @@ class BackupDataSourceTest {
     private fun createTestUser(id: String) = TestUser.OTHER.copy(id = UserId(id, userId.domain))
 
     private fun createTestConversation(id: String) =
-        TestConversation.GROUP().copy(
+        MockConversation.group(teamId = TestTeam.TEAM_ID).copy(
             id = QualifiedID(id, userId.domain),
             creatorId = userId.value,
             lastModifiedDate = Instant.UNIX_FIRST_DATE,

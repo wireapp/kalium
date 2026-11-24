@@ -4,6 +4,7 @@ package com.wire.kalium.logic.sync.receiver.handler.legalhold
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
@@ -15,7 +16,6 @@ import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -117,7 +117,7 @@ private suspend fun legalHoldProcessHandler(db: UserDatabaseBuilder, barrier: su
     everySuspend { conversations.getConversationById(any()) } calls {
         val entity = db.conversationDAO.getConversationById((it.args[0] as QualifiedID).toDao())
         if (entity == null) Either.Left(StorageFailure.DataNotFound)
-        else Either.Right(TestConversation.CONVERSATION.copy(id = CONVERSATION))
+        else Either.Right(MockConversation.CONVERSATION.copy(id = CONVERSATION))
     }
     everySuspend { conversations.updateLegalHoldStatus(any(), any()) } calls {
         val id = it.args[0] as QualifiedID
@@ -151,7 +151,7 @@ object LegalHoldTransitionProcessProbe {
         val directory = File(args[0])
         val db = legalHoldProcessDatabase(directory)
         db.userDAO.upsertUser(TestUser.ENTITY.copy(id = OWNER.toDao(), team = null, previewAssetId = null, completeAssetId = null))
-        db.conversationDAO.insertConversation(TestConversation.ENTITY.copy(id = CONVERSATION.toDao(), teamId = null,
+        db.conversationDAO.insertConversation(MockConversation.entity().copy(id = CONVERSATION.toDao(), teamId = null,
             protocolInfo = ConversationEntity.ProtocolInfo.Proteus, legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED))
         legalHoldProcessHandler(db) { checkpoint ->
             if (checkpoint == args[1]) {

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -29,7 +30,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
@@ -114,7 +115,7 @@ class ClearConversationContentHandlerTest {
         }) {
             withMessageSentInSelfConversation(true)
             everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns
-                Either.Right(TestConversation.SELF().copy(id = CONVERSATION_ID))
+                Either.Right(MockConversation.self(teamId = TestTeam.TEAM_ID).copy(id = CONVERSATION_ID))
         }
         for (target in listOf(SELF_CONVERSATION_ID, CONVERSATION_ID)) {
             for (removeLocally in listOf(false, true)) {
@@ -263,7 +264,7 @@ class ClearConversationContentHandlerTest {
             withDeletingConversationSucceeding()
             withClearContentSucceeding()
             everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns
-                Either.Right(TestConversation.GROUP().copy(id = CONVERSATION_ID))
+                Either.Right(MockConversation.group(teamId = TestTeam.TEAM_ID).copy(id = CONVERSATION_ID))
             everySuspend { clearConversationAssetsLocally(any()) } returns Either.Right(Unit)
             block()
 
