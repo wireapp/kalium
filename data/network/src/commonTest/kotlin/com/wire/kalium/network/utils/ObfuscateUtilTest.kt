@@ -100,10 +100,19 @@ class ObfuscateUtilTest {
     }
 
     @Test
-    fun givenSignatureLikeQueryValue_whenObfuscatingPath_thenOnlyAThreeCharacterHintIsKept() {
-        val result = obfuscatePath(Url("https://assets.example.test/v9/assets/v4/3-1-9a1d6c0e?sig=abcdef123&token=xyz789"))
+    fun givenCredentialQueryValues_whenObfuscatingPath_thenTheyAreFullyMasked() {
+        val result = obfuscatePath(
+            Url("https://nginz-https.anta.wire.link/v9/conversations/join?code=9275abcd&key=abcdef12&sig=abcdef123&access_token=eyJhbGci")
+        )
 
-        assertEquals("/v9/assets/v4/3-1-9a1***?sig=abc***&token=xyz***", result)
+        assertEquals("/v9/conversations/join?code=***&key=***&sig=***&access_token=***", result)
+    }
+
+    @Test
+    fun givenPushTokenInPath_whenObfuscatingPath_thenItIsFullyMasked() {
+        val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/push/tokens/dGVzdC1wdXNoLXRva2Vu:APA91bHx"))
+
+        assertEquals("/v9/push/tokens/{}", result)
     }
 
     @Test
