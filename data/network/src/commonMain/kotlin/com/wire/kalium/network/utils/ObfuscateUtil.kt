@@ -20,6 +20,8 @@
 
 package com.wire.kalium.network.utils
 
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.http.Url
 import io.ktor.http.encodeURLParameter
@@ -208,16 +210,17 @@ internal val loggablePathSegments = setOf(
 
 /**
  * Returns the URL in a form that is safe to log in every build: the path with each segment that is not a
- * known static segment replaced by `{}`, and every query value masked down to a 3-character hint.
+ * known static segment obfuscated like the logger's IDs (7 characters) and domains (3 characters), and every query
+ * value masked down to a 3-character hint.
  * The scheme, user info, host, port and fragment are dropped, because the host names the customer backend.
  *
- * Example:
- *   https://nginz-https.example.com/v5/users/example.com/<uuid>?client=5f2b9e -> /v5/users/{}/{}?client=5f2***
+ * Example: `https://nginz-https.example.com/v5/users/example.com/9a1d6c0e-...?client=5f2b9e` logs as `/v5/users/`,
+ * then `exa***` for the domain, `9a1d6c0***` for the ID, and `?client=5f2***`.
  */
 fun obfuscatePath(url: Url): String {
     val path = url.segments.joinToString(separator = "/", prefix = "/") { segment ->
         val isStatic = segment.isEmpty() || segment in loggablePathSegments || apiVersionSegment.matches(segment)
-        if (isStatic) segment else MASKED_SEGMENT
+        if (isStatic) segment else segment.obfuscatePathSegment()
     }
 
     val params = url.parameters.entries().filter { it.value.isNotEmpty() }
@@ -226,6 +229,16 @@ fun obfuscatePath(url: Url): String {
     val query = params.joinToString("&") { (key, values) -> "$key=${values.first().maskQueryValue()}" }
 
     return "$path?$query"
+}
+
+/**
+ * Applies the logger's rules for IDs and domains: a segment with a dot is treated as a domain, anything else as an ID.
+ * A segment no longer than its hint is replaced by `{}`, so it is never logged in full.
+ */
+private fun String.obfuscatePathSegment(): String {
+    val encoded = encodeURLParameter()
+    val obfuscated = if ('.' in encoded) encoded.obfuscateDomain() else encoded.obfuscateId()
+    return if (obfuscated.removeSuffix(MASKED_VALUE) == encoded) MASKED_SEGMENT else obfuscated
 }
 
 private fun String.maskQueryValue(): String =

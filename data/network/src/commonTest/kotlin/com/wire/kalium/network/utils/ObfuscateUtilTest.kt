@@ -52,23 +52,37 @@ class ObfuscateUtilTest {
     }
 
     @Test
-    fun givenCustomBackendLookup_whenObfuscatingPath_thenCustomerDomainIsReplaced() {
+    fun givenCustomBackendLookup_whenObfuscatingPath_thenCustomerDomainIsObfuscated() {
         val result = obfuscatePath(Url("https://prod-nginz-https.wire.com/v5/custom-backend/by-domain/acme-corp.example.com"))
 
-        assertEquals("/v5/custom-backend/by-domain/{}", result)
+        assertEquals("/v5/custom-backend/by-domain/acm***", result)
         assertFalse(result.contains("acme-corp"))
     }
 
     @Test
-    fun givenQualifiedIdInPath_whenObfuscatingPath_thenDomainAndIdAreReplaced() {
+    fun givenQualifiedIdInPath_whenObfuscatingPath_thenDomainAndIdAreObfuscated() {
         val domain = "anta.wire.link"
         val id = "9a1d6c0e-3b5f-4c5e-8f2a-1e0f7b6d4c3a"
 
         val result = obfuscatePath(Url("https://nginz-https.$domain/v9/conversations/$domain/$id/members/$domain/$id"))
 
-        assertEquals("/v9/conversations/{}/{}/members/{}/{}", result)
+        assertEquals("/v9/conversations/ant***/9a1d6c0***/members/ant***/9a1d6c0***", result)
         assertFalse(result.contains(domain))
         assertFalse(result.contains(id))
+    }
+
+    @Test
+    fun givenSegmentsNoLongerThanTheirHint_whenObfuscatingPath_thenTheyAreReplaced() {
+        val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/users/a.b/abcdefg"))
+
+        assertEquals("/v9/users/{}/{}", result)
+    }
+
+    @Test
+    fun givenSegmentWithReservedCharacters_whenObfuscatingPath_thenTheHintIsEncoded() {
+        val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/clients/ab%2Fcdefgh"))
+
+        assertEquals("/v9/clients/ab%2Fcd***", result)
     }
 
     @Test
