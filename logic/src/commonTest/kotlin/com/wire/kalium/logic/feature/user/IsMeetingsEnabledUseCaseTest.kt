@@ -88,7 +88,7 @@ class IsMeetingsEnabledUseCaseTest {
         val repository: UserConfigRepository = mock()
         everySuspend { repository.isMeetingsEnabled() } returns false
         for (apiVersion in listOf(17, 18, 19)) {
-            val useCase = IsMeetingsEnabledUseCaseImpl(repository, FeatureSupportImpl(apiVersion))
+            val useCase = IsMeetingsEnabledUseCaseImpl(repository, FeatureSupportImpl(apiVersion, KaliumConfigs()))
             assertEquals(false, useCase())
             assertEquals(false, useCase.isGuestLinkSharingEnabled())
             assertEquals(apiVersion >= 19, useCase.isGuestLinkSharingSupported())
