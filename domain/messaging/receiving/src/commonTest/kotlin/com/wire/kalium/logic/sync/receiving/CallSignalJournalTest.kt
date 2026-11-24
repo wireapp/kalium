@@ -4,7 +4,7 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.coroutines.flow.first
-import kotlin.test.assertFailsWith
+import kotlin.test.assertFails
 import kotlin.test.assertNotNull
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -87,7 +87,7 @@ class CallSignalJournalTest {
         withJournal { journal, database ->
             database.builder.conversationDAO.insertConversation(conversation())
             val source = journal.append(start("failed").copy(senderId = QualifiedIDEntity("unknown", "example.com")))
-            assertFailsWith<Exception> { journal.persistMissedCall(source.missedCallSource(), SELF) }
+            assertFails { journal.persistMissedCall(source.missedCallSource(), SELF) }
             assertEquals(listOf(source), journal.signals())
             assertNull(database.builder.messageDAO.getMessageById("missed-call:failed", CONVERSATION))
             database.builder.userDAO.insertOrIgnoreIncompleteUsers(listOf(QualifiedIDEntity("unknown", "example.com")))
