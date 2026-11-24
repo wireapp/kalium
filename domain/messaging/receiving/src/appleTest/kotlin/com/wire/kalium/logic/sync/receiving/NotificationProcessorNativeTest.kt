@@ -4825,6 +4825,44 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun terminalRejectionOfAResumedRejoinSkipsTheEventWithoutAnotherJoin() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val lost = fixture.event("lost", fixture.encrypt("lost"))
+                var joins = 0
+                var failure: Exception = com.wire.kalium.logic.sync.KaliumSyncException(
+                    "offline", com.wire.kalium.common.error.NetworkFailure.NoNetworkConnection(null))
+                val recoveryFactory: (AppleAccountRuntime) -> MLSReceiveRecovery = { runtime ->
+                    val api = object : ConversationApi by runtime.network.conversationApi {
+                        override suspend fun fetchConversationDetails(conversationId: com.wire.kalium.network.api.model.ConversationId) =
+                            NetworkResponse.Success(fixture.creationResponse().copy(epoch = 1uL), emptyMap(), 200)
+                        override suspend fun fetchGroupInfo(conversationId: com.wire.kalium.network.api.model.QualifiedID) =
+                            NetworkResponse.Success(byteArrayOf(1), emptyMap(), 200)
+                    }
+                    MLSReceiveRecovery(
+                        MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT), api, SELF,
+                    ) { _, _, _ -> joins++; throw failure }
+                }
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    checkNotNull(fixture.openMLS(runtime)).transaction { it.wipeConversation(GROUP_ID) }
+                    runtime.database.conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, GROUP_ID)
+                })
+                val now = Clock.System.now().toEpochMilliseconds()
+                // No network leaves the join pending; resuming it then gets a final rejection.
+                assertIs<Either.Right<*>>(fixture.receive(listOf(lost), lost.id, recoveryFactory = recoveryFactory, nowEpochMillis = { now }))
+                failure = IllegalStateException("External commit rejected")
+                assertIs<Either.Right<*>>(fixture.receive(listOf(lost), lost.id, recoveryFactory = recoveryFactory,
+                    nowEpochMillis = { now + 60_000 }))
+                assertEquals(2, joins)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(lost.id)).isProcessed)
+                })
+            }
+        }
+    }
+
+    @Test
     fun nseRecoveryReplaysCaughtUpBatchAfterMarkerFailureWithoutAnotherJoin() = recoveryBatchReplay(false)
 
     @Test

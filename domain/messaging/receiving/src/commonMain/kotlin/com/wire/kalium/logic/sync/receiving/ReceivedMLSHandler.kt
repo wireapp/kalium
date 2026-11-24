@@ -59,7 +59,11 @@ internal class ReceivedMLSHandler(
         val receiver = recovery ?: return null
         return if (receiver.wasProcessed(context, event)) emptyList() else {
             check(event.conversationId !in removed) { "Account no longer belongs to the MLS group" }
-            receiver.resume(context, event)?.let { recovered(context, event, it) }
+            when (val resumed = receiver.resume(context, event)) {
+                null -> null
+                MLSReceiveResume.Skipped -> emptyList()
+                is MLSReceiveResume.Joined -> recovered(context, event, resumed.result)
+            }
         }
     }
 

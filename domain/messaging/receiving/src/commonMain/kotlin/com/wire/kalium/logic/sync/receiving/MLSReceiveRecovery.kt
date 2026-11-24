@@ -28,6 +28,12 @@ data class MLSReceiveRecoveryResult(
     val warningId: String get() = "mls-recovery:${operation.id}"
 }
 
+/** A resumed recovery either joined or was skipped; a skipped event must not start another join. */
+sealed interface MLSReceiveResume {
+    data class Joined(val result: MLSReceiveRecoveryResult) : MLSReceiveResume
+    data object Skipped : MLSReceiveResume
+}
+
 /**
  * Shared by account owners that hold the receive lease. All native work, including the completion
  * checkpoint, uses the caller's transaction. The join callback must explicitly join by external
@@ -56,10 +62,11 @@ class MLSReceiveRecovery(
     suspend fun wereEffectsProcessed(context: MlsCoreCryptoContext, payload: ReceivedPayloadIdentity): Boolean =
         store.wereEffectsProcessed(context, payload)
 
-    /** Ordinary receives only consult the owner's cached operation index; ciphertext decoding is lazy. */
-    suspend fun resume(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): MLSReceiveRecoveryResult? {
+    /** Ordinary receives only consult the owner's cached operation index; ciphertext decoding is lazy. Null: none pending. */
+    suspend fun resume(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): MLSReceiveResume? {
         val operation = store.find(event.id) { Base64.decode(event.content) } ?: return null
-        return skippingUnrecoverable(context, event, operation.groupId) { resume(context, event, operation) }
+        val result = skippingUnrecoverable(context, event, operation.groupId) { resume(context, event, operation) }
+        return result?.let(MLSReceiveResume::Joined) ?: MLSReceiveResume.Skipped
     }
 
     private suspend fun resume(

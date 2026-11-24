@@ -52,6 +52,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -78,7 +79,7 @@ class MLSReceiveRecoveryTest {
         withFixture { f ->
             val operation = f.store.begin(EVENT.id, GROUP_ID, CIPHERTEXT)
             f.native.epoch = 12uL
-            val result = assertNotNull(f.recovery.resume(f.native, EVENT))
+            val result = assertIs<MLSReceiveResume.Joined>(f.recovery.resume(f.native, EVENT)).result
             assertEquals(operation, result.operation)
             assertEquals(13uL, result.epoch)
             assertEquals("mls-recovery:${operation.id}", result.warningId)
@@ -91,7 +92,7 @@ class MLSReceiveRecoveryTest {
     fun committedCompletionResumesEffectsWithoutAnotherExternalJoin() = runTest {
         withFixture { f ->
             val first = assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
-            val replay = assertNotNull(f.recovery.resume(f.native, EVENT))
+            val replay = assertIs<MLSReceiveResume.Joined>(f.recovery.resume(f.native, EVENT)).result
             assertEquals(first, replay)
             assertEquals(1, f.joins)
             assertEquals(1, f.api.groupInfoReads)
@@ -231,7 +232,7 @@ class MLSReceiveRecoveryTest {
             assertFailsWith<KaliumSyncException> { f.recovery.resume(f.native, EVENT) }
             assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
             f.failure = IllegalStateException("External commit rejected")
-            assertNull(f.recovery.resume(f.native, EVENT))
+            assertEquals(MLSReceiveResume.Skipped, f.recovery.resume(f.native, EVENT))
             assertNull(f.store.find(EVENT.id) { CIPHERTEXT })
             f.store.recordProcessed(f.native, listOf(EVENT)) // The skipped event can still be acknowledged.
         }
