@@ -76,7 +76,7 @@ slf4js = "2.0.13"
 androidx-benchmark = "1.5.0"
 benchmark = "0.4.17"
 jmh = "1.37"
-xerialDriver = "3.53.4.0"
+sqliteMcDriver = "3.53.4.0"
 kotlinx-io = "0.9.1"
 cells-sdk = "0.1.1-alpha17.02"
 difference = "1.1.1"
@@ -223,7 +223,7 @@ sqldelight-r2dbc = { module = "com.wire.sqldelight:r2dbc-driver", version.ref = 
 sqldelight-async = { module = "com.wire.sqldelight:async-extensions", version.ref = "sqldelight" }
 r2dbc-postgres = { module = "org.postgresql:r2dbc-postgresql", version.ref = "postgres" }
 r2dbc-spi = { module = "io.r2dbc:r2dbc-spi", version.ref = "r2dbc" }
-sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerialDriver" }
+sqlite-mcDriver = { module = "io.github.willena:sqlite-jdbc", version.ref = "sqliteMcDriver" }
 
 # mocks and testing
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }

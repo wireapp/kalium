@@ -19,6 +19,7 @@ package com.wire.kalium.persistence.dao.migration
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import org.sqlite.SQLiteConfig
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import java.io.File
@@ -61,7 +62,7 @@ import kotlin.test.AfterTest
  * }
  * ```
  */
-abstract class SchemaMigrationTest {
+abstract class SchemaMigrationTest(private val enableFixtureForeignKeys: Boolean = true) {
 
     protected val dispatcher: TestDispatcher = StandardTestDispatcher()
     private var currentTestDbPath: String? = null
@@ -124,12 +125,9 @@ abstract class SchemaMigrationTest {
         }
 
         // Create a JDBC SQLite driver pointing to the temporary database
-        val driver = JdbcSqliteDriver("jdbc:sqlite:${tempDbFile.absolutePath}")
-
-        // Enable foreign keys for accurate migration testing
-        driver.execute(null, "PRAGMA foreign_keys = ON", 0)
-
-        return driver
+        // The driver opens a separate connection for each operation outside a transaction.
+        val config = SQLiteConfig().apply { enforceForeignKeys(enableFixtureForeignKeys) }
+        return JdbcSqliteDriver("jdbc:sqlite:${tempDbFile.absolutePath}", config.toProperties())
     }
 
     /**

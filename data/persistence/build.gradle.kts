@@ -89,8 +89,10 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation(libs.sqldelight.jvmDriver)
-                implementation(libs.sqlite.xerialDriver)
+                implementation(libs.sqldelight.jvmDriver.get().toString()) {
+                    exclude(group = "org.xerial", module = "sqlite-jdbc")
+                }
+                implementation(libs.sqlite.mcDriver)
                 implementation(libs.jna)
             }
         }
