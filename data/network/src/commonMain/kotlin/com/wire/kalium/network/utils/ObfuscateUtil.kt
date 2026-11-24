@@ -92,12 +92,6 @@ private const val MASKED_SEGMENT = "{}"
 private val apiVersionSegment = Regex("v[0-9]+")
 
 /**
- * Query keys whose value stays readable when it is a plain number. Paging controls carry no user data.
- * Every other value is masked.
- */
-private val numericPagingQueryKeys = setOf("size", "page", "limit", "offset")
-
-/**
  * Static path segments that may appear in logs. Every other segment becomes `{}`, because paths carry
  * IDs, domains, client IDs, asset keys and property names.
  *
@@ -210,7 +204,7 @@ internal val loggablePathSegments = setOf(
 
 /**
  * Returns the URL in a form that is safe to log in every build: the path with each segment that is not a
- * known static segment replaced by `{}`, and every query value masked except numeric paging values.
+ * known static segment replaced by `{}`, and every query value masked.
  * The scheme, user info, host, port and fragment are dropped, because the host names the customer backend.
  *
  * Example:
@@ -225,12 +219,7 @@ fun obfuscatePath(url: Url): String {
     val params = url.parameters.entries().filter { it.value.isNotEmpty() }
     if (params.isEmpty()) return path
 
-    val query = params.joinToString("&") { (key, values) ->
-        val value = values.first()
-        val isNumericPagingValue = key.lowercase() in numericPagingQueryKeys &&
-            value.isNotEmpty() && value.all { it.isDigit() }
-        "$key=${if (isNumericPagingValue) value else MASKED_VALUE}"
-    }
+    val query = params.joinToString("&") { (key, _) -> "$key=$MASKED_VALUE" }
 
     return "$path?$query"
 }

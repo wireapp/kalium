@@ -90,10 +90,10 @@ class ObfuscateUtilTest {
     }
 
     @Test
-    fun givenNumericPagingQueryValues_whenObfuscatingPath_thenOnlyNumericPagingValuesStayReadable() {
+    fun givenNumericPagingQueryValues_whenObfuscatingPath_thenTheyAreMasked() {
         val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/notifications?size=500&limit=abc&offset=20"))
 
-        assertEquals("/v9/notifications?size=500&limit=***&offset=20", result)
+        assertEquals("/v9/notifications?size=***&limit=***&offset=***", result)
     }
 
     @Test
