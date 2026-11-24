@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -50,6 +51,19 @@ interface AuthTokenStorage {
     fun getToken(userId: UserIDEntity): AuthTokenEntity?
     fun deleteToken(userId: UserIDEntity)
     fun proxyCredentials(userId: UserIDEntity): ProxyCredentialsEntity?
+}
+
+/**
+ * Credentials that share a transaction with the account record. A read failure is propagated
+ * to the caller, and a null result represents an absent credential.
+ */
+interface TransactionalAuthTokenStorage : AuthTokenStorage {
+    /**
+     * Runs the session repository's account and credential mutations on one JDBC transaction.
+     * Limit the callback to those mutations. It must complete on the transaction's thread without suspending.
+     */
+    @InternalKaliumApi
+    suspend fun <T> inSessionTransaction(action: suspend () -> T): T
 }
 
 internal class AuthTokenStorageImpl(

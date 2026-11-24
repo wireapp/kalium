@@ -42,10 +42,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.model.ManagedByDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.client.TransactionalAuthTokenStorage
 import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.SsoIdEntity
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -101,23 +103,38 @@ internal class SessionDataSource internal constructor(
 ) : SessionRepository {
 
     override suspend fun storeSession(session: StoreSessionParam): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            accountsDAO.insertOrReplace(
-                userIDEntity = session.accountTokens.userId.toDao(),
-                ssoIdEntity = sessionMapper.toSsoIdEntity(session.ssoId),
-                managedByEntity = session.managedBy?.toDao(),
-                serverConfigId = session.serverConfigId,
-                isPersistentWebSocketEnabled = session.isPersistentWebSocketEnabled,
-                ssoIdentityProviderId = session.ssoIdentityProviderId,
-            )
-        }.flatMap {
-            wrapStorageRequest {
+        writeAccountAndCredentials(
+            account = {
+                accountsDAO.insertOrReplace(
+                    userIDEntity = session.accountTokens.userId.toDao(),
+                    ssoIdEntity = sessionMapper.toSsoIdEntity(session.ssoId),
+                    managedByEntity = session.managedBy?.toDao(),
+                    serverConfigId = session.serverConfigId,
+                    isPersistentWebSocketEnabled = session.isPersistentWebSocketEnabled,
+                    ssoIdentityProviderId = session.ssoIdentityProviderId,
+                )
+            },
+            credentials = {
                 authTokenStorage.addOrReplace(
                     sessionMapper.toAuthTokensEntity(session.accountTokens),
                     session.proxyCredentials?.let { sessionMapper.fromModelToProxyCredentialsEntity(it) }
                 )
+            },
+        )
+
+    @OptIn(InternalKaliumApi::class)
+    private suspend fun writeAccountAndCredentials(
+        account: suspend () -> Unit,
+        credentials: () -> Unit,
+    ): Either<StorageFailure, Unit> = when (authTokenStorage) {
+        is TransactionalAuthTokenStorage -> wrapStorageRequest {
+            authTokenStorage.inSessionTransaction {
+                account()
+                credentials()
             }
         }
+        else -> wrapStorageRequest { account() }.flatMap { wrapStorageRequest { credentials() } }
+    }
 
     override suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>> =
         wrapStorageRequest { accountsDAO.allAccountList() }.map { it.map { sessionMapper.fromAccountInfoEntity(it) } }
@@ -189,10 +206,10 @@ internal class SessionDataSource internal constructor(
 
     override suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit> {
         val idEntity = userId.toDao()
-        return wrapStorageRequest { accountsDAO.deleteAccount(idEntity) }
-            .flatMap {
-                wrapStorageRequest { authTokenStorage.deleteToken(idEntity) }
-            }
+        return writeAccountAndCredentials(
+            account = { accountsDAO.deleteAccount(idEntity) },
+            credentials = { authTokenStorage.deleteToken(idEntity) },
+        )
     }
 
     override suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?> =

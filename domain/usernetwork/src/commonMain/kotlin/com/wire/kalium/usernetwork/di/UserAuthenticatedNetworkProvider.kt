@@ -31,15 +31,18 @@ public data class UserAuthenticatedNetworkApis(public val container: Authenticat
  * - [ProviderCacheScope.GLOBAL]: all [UserAuthenticatedNetworkProvider] instances share one cache map.
  * - [ProviderCacheScope.LOCAL]: each [UserAuthenticatedNetworkProvider] instance owns a private cache map.
  */
-public abstract class UserAuthenticatedNetworkProvider {
+public abstract class UserAuthenticatedNetworkProvider protected constructor(useInstanceCache: Boolean) {
+    public constructor() : this(false)
+
     private companion object {
         val sharedApisCacheByUserId: ConcurrentMutableMap<UserId, UserAuthenticatedNetworkApis> = ConcurrentMutableMap()
     }
 
     private val apisCacheByUserId: ConcurrentMutableMap<UserId, UserAuthenticatedNetworkApis> =
-        when (PROVIDER_CACHE_SCOPE) {
-            ProviderCacheScope.GLOBAL -> sharedApisCacheByUserId
-            ProviderCacheScope.LOCAL -> ConcurrentMutableMap()
+        if (useInstanceCache || PROVIDER_CACHE_SCOPE == ProviderCacheScope.LOCAL) {
+            ConcurrentMutableMap()
+        } else {
+            sharedApisCacheByUserId
         }
 
     public fun get(userId: UserId): UserAuthenticatedNetworkApis? = apisCacheByUserId[userId]

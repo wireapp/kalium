@@ -35,46 +35,93 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
+import com.wire.kalium.persistence.db.protectedGlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.protection.JvmStorageKeyStore
+import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
+import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
+import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
 
 /**
  * @sample samples.logic.CoreLogicSamples.versionedAuthScope
  */
-public actual class CoreLogic(
+public actual class CoreLogic private constructor(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
-    useInMemoryStorage: Boolean = false,
-    private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider = PlatformUserAuthenticatedNetworkProvider(),
+    useInMemoryStorage: Boolean,
+    internal val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
+    storageKeyStore: JvmStorageKeyStore?,
 ) : CoreLogicCommon(
     rootPath = rootPath,
     kaliumConfigs = kaliumConfigs,
     userAgent = userAgent
 ) {
+    public constructor(
+        rootPath: String,
+        kaliumConfigs: KaliumConfigs,
+        userAgent: String,
+        useInMemoryStorage: Boolean = false,
+        userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider = PlatformUserAuthenticatedNetworkProvider(),
+    ) : this(rootPath, kaliumConfigs, userAgent, useInMemoryStorage, userAuthenticatedNetworkProvider, null)
+
+    internal constructor(
+        rootPath: String,
+        kaliumConfigs: KaliumConfigs,
+        userAgent: String,
+        storageKeyStore: JvmStorageKeyStore,
+    ) : this(
+        rootPath,
+        kaliumConfigs,
+        userAgent,
+        false,
+        object : UserAuthenticatedNetworkProvider(useInstanceCache = true) {},
+        storageKeyStore,
+    )
+
+    init {
+        if (storageKeyStore != null) {
+            check(Files.notExists(File(rootPath, FileNameUtil.appPrefFile()).toPath(), NOFOLLOW_LINKS)) {
+                "Existing plaintext settings require a separate migration"
+            }
+        }
+    }
+
+    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder =
+        if (storageKeyStore == null) {
+            globalDatabaseProvider(
+                platformDatabaseData = PlatformDatabaseData(
+                    storageData = if (useInMemoryStorage) {
+                        StorageData.InMemory
+                    } else {
+                        StorageData.FileBacked(File("$rootPath/global-storage"))
+                    }
+                ),
+                passphrase = null,
+                queriesContext = KaliumDispatcherImpl.io
+            )
+        } else {
+            protectedGlobalDatabaseProvider(File("$rootPath/global-storage"), storageKeyStore, KaliumDispatcherImpl.io)
+        }
 
     actual override val globalPreferences: GlobalPrefProvider =
-        GlobalPrefProvider(
-            rootPath = rootPath,
-            shouldEncryptData = kaliumConfigs.shouldEncryptData()
-        )
+        if (storageKeyStore == null) {
+            GlobalPrefProvider(rootPath = rootPath, shouldEncryptData = kaliumConfigs.shouldEncryptData())
+        } else {
+            GlobalPrefProvider.protectedStorage(globalDatabaseBuilder)
+        }
 
-    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
-        platformDatabaseData = PlatformDatabaseData(
-            storageData = if (useInMemoryStorage) {
-                StorageData.InMemory
-            } else {
-                StorageData.FileBacked(File("$rootPath/global-storage"))
-            }
-        ),
-        passphrase = null,
-        queriesContext = KaliumDispatcherImpl.io
-    )
+    internal override val userStorageProvider: UserStorageProvider = storageKeyStore
+        ?.let { PlatformUserStorageProvider.protectedStorage(it) }
+        ?: super.userStorageProvider
 
     public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
@@ -112,6 +159,15 @@ public actual class CoreLogic(
         )
     }
     public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
+
+    public companion object {
+        /**
+         * Opens system-key-protected global settings and SQLite databases in a dedicated profile.
+         * The built-in provider requires macOS. Existing plaintext profiles require migration.
+         */
+        public fun withProtectedPersistence(rootPath: String, kaliumConfigs: KaliumConfigs, userAgent: String): CoreLogic =
+            CoreLogic(rootPath, kaliumConfigs, userAgent, JvmStorageKeyStore.system())
+    }
 }
 
 @Suppress("MayBeConst")
