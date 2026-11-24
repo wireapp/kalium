@@ -480,6 +480,13 @@ internal class AssetDataSource(
         assetSHA256: SHA256Key?,
         maxDecodedSize: Long? = null,
     ): Either<CoreFailure, FetchedAssetData> {
+        val encryptionFailure = when {
+            encryptionKey == null -> null
+            encryptionKey.data.size != AES256_KEY_SIZE_BYTES -> EncryptionFailure.GenericDecryptionError
+            assetSHA256?.data?.size != SHA256_HASH_SIZE_BYTES -> EncryptionFailure.WrongAssetHash
+            else -> null
+        }
+        if (encryptionFailure != null) return Either.Left(encryptionFailure)
         val tempFile = kaliumFileSystem.tempFilePath("temp_${assetId}_${Uuid.random()}")
         var decodedAssetPath: Path? = null
         var persisted = false
@@ -674,6 +681,8 @@ private class BoundedAssetSink(private val delegate: Sink, private val maxBytes:
 }
 
 private const val AES_BLOCK_SIZE = 16L
+private const val AES256_KEY_SIZE_BYTES = 32
+private const val SHA256_HASH_SIZE_BYTES = 32
 
 private fun Sink.withSizeLimit(maxBytes: Long?): Sink = if (maxBytes == null) this else BoundedAssetSink(this, maxBytes)
 

@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.isBackendOneOnOne
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
@@ -132,7 +133,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             !needsRefresh ->
                 Either.Right(RefreshedConversation(conversation, currentPublicKeys))
 
-            conversation.type == Conversation.Type.OneOnOne -> {
+            conversation.isBackendOneOnOne() -> {
                 logger.d("Refreshing oneOnOne conversation metadata before rejoining ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
                     fetchMLSOneToOneConversation(transactionContext, members.otherThanSelf()).map { refreshedConversation ->
@@ -186,7 +187,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             jsonStringKeyValues = conversation.logData()
                         )
                         // Re-fetch the current epoch and try again
-                        if (conversation.type == Conversation.Type.OneOnOne) {
+                        if (conversation.isBackendOneOnOne()) {
                             conversationRepository.getConversationMembers(conversation.id).flatMap {
                                 fetchMLSOneToOneConversation(transactionContext, it.otherThanSelf()).map {
                                     it.mlsPublicKeys

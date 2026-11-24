@@ -69,21 +69,34 @@ interface MessageSender {
      * Suitable for fire-and-forget messages, like real-time calling signaling,
      * or messages where retrying later is useless or would lead to unwanted behaviour.
      *
+     * User content (regular messages, edits and reactions) waits until sync is live, and fails as offline
+     * instead of sending while sync has failed, stopped or not started.
+     *
      * @param message that will be sent
+     * @param messageTarget recipients of the message. In MLS conversations, targeting specific users or clients, or
+     * ignoring some users, sends targeted messages, which have weaker security guarantees than messages to the whole
+     * conversation.
+     * @param transient in MLS conversations, true if the backend shouldn't persist the message, so only clients
+     * that are online receive it. Ignored in Proteus conversations, as Proteus has no transient messages.
+     *
+     * Targeted and transient MLS messages are only sent when enabled in the Kalium configs; otherwise the message is
+     * sent as a persistent application message to the whole conversation.
      * @see [sendPendingMessage]
      */
     suspend fun sendMessage(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation()
+        messageTarget: MessageTarget = MessageTarget.Conversation(),
+        transient: Boolean = false
     ): Either<CoreFailure, Unit>
 
     /**
      * Returns true only when this attempt sent the message; false when the persisted message is no longer eligible.
-     * Like [sendMessage], propagates failures without scheduling retries. Uses the same transaction and storage check.
+     * Like [sendMessage], propagates failures without scheduling retries. Uses the same storage check.
      */
     suspend fun sendMessageWithOutcome(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation()
+        messageTarget: MessageTarget = MessageTarget.Conversation(),
+        transient: Boolean = false
     ): Either<CoreFailure, Boolean>
 
     /**

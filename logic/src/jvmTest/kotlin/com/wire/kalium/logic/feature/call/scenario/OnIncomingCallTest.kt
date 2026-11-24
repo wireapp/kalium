@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.ConversationTypeForCall
@@ -26,7 +27,6 @@ import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -50,7 +50,7 @@ class OnIncomingCallTest {
             .arrange()
 
         callback.onIncomingCall(
-            conversationId = TestConversation.CONVERSATION.id.toString(),
+            conversationId = MockConversation.CONVERSATION.id.toString(),
             messageTime = Uint32_t(value = 1),
             userId = TestUser.USER_ID.toString(),
             clientId = TestClient.CLIENT_ID.value,
@@ -63,7 +63,7 @@ class OnIncomingCallTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.createCall(
-                TestConversation.CONVERSATION.id,
+                MockConversation.CONVERSATION.id,
                 ConversationTypeForCall.Conference,
                 CallStatus.INCOMING,
                 TestUser.USER_ID,
@@ -80,7 +80,7 @@ class OnIncomingCallTest {
             .arrange()
 
         callback.onIncomingCall(
-            conversationId = TestConversation.CONVERSATION.id.toString(),
+            conversationId = MockConversation.CONVERSATION.id.toString(),
             messageTime = Uint32_t(value = 1),
             userId = TestUser.USER_ID.toString(),
             clientId = TestClient.CLIENT_ID.value,
@@ -93,7 +93,7 @@ class OnIncomingCallTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.createCall(
-                TestConversation.CONVERSATION.id,
+                MockConversation.CONVERSATION.id,
                 ConversationTypeForCall.Conference,
                 CallStatus.STILL_ONGOING,
                 TestUser.USER_ID,

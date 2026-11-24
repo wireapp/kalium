@@ -40,6 +40,7 @@ internal class RecoverMLSConversationsForUserUseCaseImpl(
     private val recoverEstablishedMLSConversations: RecoverMLSConversationsUseCase,
     private val joinPendingMLSConversations: JoinExistingMLSConversationsUseCase,
     private val transactionProvider: CryptoTransactionProvider,
+    private val includePendingWelcome: Boolean = false,
 ) : RecoverMLSConversationsForUserUseCase {
 
     override suspend fun invoke(): RecoverMLSConversationsForUserResult {
@@ -56,6 +57,7 @@ internal class RecoverMLSConversationsForUserUseCaseImpl(
                 joinPendingMLSConversations(
                     keepRetryingOnFailure = true,
                     allowJoinByExternalCommit = true,
+                    includePendingWelcome = includePendingWelcome,
                 ).fold(
                     { RecoverMLSConversationsForUserResult.Failure(it) },
                     { RecoverMLSConversationsForUserResult.Success },

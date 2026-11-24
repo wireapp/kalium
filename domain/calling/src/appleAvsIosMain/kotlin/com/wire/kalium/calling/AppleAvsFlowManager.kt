@@ -19,58 +19,50 @@
 package com.wire.kalium.calling
 
 import avs.AVSFlowManager
-import avs.AVSMediaManager
 import avs.AVSVideoView
 import platform.UIKit.UIView
 
+/** Uses the runtime's AVSFlowManager. A second AVSFlowManager would start a second AVS loop. */
 actual class AppleAvsFlowManager actual constructor() {
-    private val mediaManager by lazy {
-        AVSMediaManager.defaultMediaManager() ?: AVSMediaManager()
+    private val flowManager get() = AppleAvsPlatformRuntime.flowManager()
+
+    actual fun attachLocalVideoPreview(view: Any?): Boolean = withFlowManager(view as? UIView) { preview ->
+        attachVideoPreview(preview)
     }
 
-    private val flowManager by lazy {
-        AVSFlowManager(delegate = null, mediaManager = mediaManager).also {
-            it.setEnableLogging(true)
-        }
-    }
-
-    actual fun attachLocalVideoPreview(view: Any?): Boolean {
-        val preview = view as? UIView ?: return false
-        flowManager.attachVideoPreview(preview)
-        return true
-    }
-
-    actual fun detachLocalVideoPreview(view: Any?): Boolean {
-        val preview = view as? UIView ?: return false
-        flowManager.detachVideoPreview(preview)
-        return true
+    actual fun detachLocalVideoPreview(view: Any?): Boolean = withFlowManager(view as? UIView) { preview ->
+        detachVideoPreview(preview)
     }
 
     actual fun startLocalVideoCapture() {
-        flowManager.startVideoCapture()
+        flowManager?.startVideoCapture()
     }
 
     actual fun stopLocalVideoCapture() {
-        flowManager.stopVideoCapture()
+        flowManager?.stopVideoCapture()
     }
 
-    actual fun attachRemoteVideoView(view: Any?, userId: String, clientId: String): Boolean {
-        val remoteView = view as? AVSVideoView ?: return false
-        remoteView.userid = userId
-        remoteView.clientid = clientId
-        flowManager.attachVideoView(remoteView)
-        return true
-    }
+    actual fun attachRemoteVideoView(view: Any?, userId: String, clientId: String): Boolean =
+        withFlowManager(view as? AVSVideoView) { remoteView ->
+            remoteView.userid = userId
+            remoteView.clientid = clientId
+            attachVideoView(remoteView)
+        }
 
-    actual fun detachRemoteVideoView(view: Any?): Boolean {
-        val remoteView = view as? AVSVideoView ?: return false
-        flowManager.detachVideoView(remoteView)
-        return true
+    actual fun detachRemoteVideoView(view: Any?): Boolean = withFlowManager(view as? AVSVideoView) { remoteView ->
+        detachVideoView(remoteView)
     }
 
     actual fun setVideoCaptureDevice(deviceId: String, forConversation: String) {
-        flowManager.setVideoCaptureDevice(deviceId = deviceId, forConversation = forConversation)
+        flowManager?.setVideoCaptureDevice(deviceId = deviceId, forConversation = forConversation)
     }
 
     actual fun startIfAvailable(): Boolean = AppleAvs.bridge.startIfAvailable()
+
+    private inline fun <T : Any> withFlowManager(view: T?, action: AVSFlowManager.(T) -> Unit): Boolean {
+        val flowManager = flowManager
+        if (view == null || flowManager == null) return false
+        flowManager.action(view)
+        return true
+    }
 }

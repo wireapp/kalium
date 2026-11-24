@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.answering.returns
@@ -48,7 +48,7 @@ class UpdateConversationMemberRoleUseCaseTest {
 
     @Test
     fun givenAConversationIdAndUserId_whenInvokingRoleChangeSucceeds_thenShouldDelegateTheCallAndReturnASuccessResult() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val userId = TestUser.USER_ID
         val newRole = Member.Role.Admin
         everySuspend {
@@ -66,7 +66,7 @@ class UpdateConversationMemberRoleUseCaseTest {
 
     @Test
     fun givenAConversationIdAndUserId_whenInvokingRoleChangeFails_thenShouldDelegateTheCallAndReturnAFailureResult() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val userId = TestUser.USER_ID
         val newRole = Member.Role.Admin
         everySuspend {

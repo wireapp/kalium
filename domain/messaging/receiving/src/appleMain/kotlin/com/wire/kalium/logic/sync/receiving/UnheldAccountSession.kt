@@ -39,9 +39,9 @@ import kotlin.time.Duration
 
 /**
  * Authenticated networking for a prepared account this process does not hold, for work that touches neither the account's
- * database nor CoreCrypto, such as uploading a shared file. Each request reads the stored token, so it follows a refresh
- * by the account's owner. Refreshing replaces the stored token, which the app and the extensions do only while they hold
- * the account, so a refresh here holds it for that moment.
+ * database nor CoreCrypto, such as uploading a shared file. The HTTP client keeps the token it loaded until the backend
+ * rejects it; it then takes the stored one if the account's owner refreshed it meanwhile. Refreshing replaces the stored
+ * token, which the app and the extensions do only while they hold the account, so a refresh here holds it for that moment.
  */
 @InternalKaliumApi
 public class UnheldAccountSession internal constructor(
@@ -50,6 +50,8 @@ public class UnheldAccountSession internal constructor(
     tokens: AuthTokenStorage,
     /** How long a refresh waits while another process holds the account. */
     private val refreshWait: Duration,
+    /** And while that process is an app extension, which gives the account up within its own budget. */
+    private val refreshWaitForExtension: Duration = refreshWait,
 ) : SessionManager {
     private val stored = ExistingAccountSessionManager(prepared.userId, ClientId(prepared.clientId), prepared.serverConfig, tokens)
     private val refreshMutex = Mutex()
@@ -69,7 +71,8 @@ public class UnheldAccountSession internal constructor(
     }
 
     private suspend fun refreshHoldingAccount(accessTokenApi: AccessTokenApi, oldRefreshToken: String?): SessionDTO {
-        val lease = when (val acquired = AppleAccountRuntimeOwner(rootPath).tryAcquire(prepared.userId, refreshWait)) {
+        val owner = AppleAccountRuntimeOwner(rootPath)
+        val lease = when (val acquired = owner.tryAcquire(prepared.userId, refreshWait, refreshWaitForExtension)) {
             is Either.Left -> return refreshedElsewhere() ?: run {
                 if (acquired.value == AccountRuntimeFailure.BUSY) blocked.store(true)
                 throw FailureToRefreshTokenException("Account ${acquired.value.name} while refreshing")

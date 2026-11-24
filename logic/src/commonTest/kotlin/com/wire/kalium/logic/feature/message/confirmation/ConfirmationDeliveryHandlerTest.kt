@@ -23,11 +23,11 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.message.MessageOperationResult
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.sync.SyncManager
 import dev.mokkery.MockMode
@@ -39,7 +39,6 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
@@ -58,9 +57,9 @@ class ConfirmationDeliveryHandlerTest {
         val (arrangement, sut) = Arrangement()
             .arrange()
 
-        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        sut.enqueueConfirmationDelivery(MockConversation.ID, TestMessage.TEST_MESSAGE_ID)
 
-        assertTrue(arrangement.pendingConfirmationMessages.containsKey(TestConversation.ID))
+        assertTrue(arrangement.pendingConfirmationMessages.containsKey(MockConversation.ID))
         assertTrue(arrangement.pendingConfirmationMessages.values.flatten().contains(TestMessage.TEST_MESSAGE_ID))
     }
 
@@ -69,25 +68,24 @@ class ConfirmationDeliveryHandlerTest {
         val (arrangement, sut) = Arrangement()
             .arrange()
 
-        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
-        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        sut.enqueueConfirmationDelivery(MockConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        sut.enqueueConfirmationDelivery(MockConversation.ID, TestMessage.TEST_MESSAGE_ID)
 
-        assertTrue(arrangement.pendingConfirmationMessages.containsKey(TestConversation.ID))
+        assertTrue(arrangement.pendingConfirmationMessages.containsKey(MockConversation.ID))
         assertEquals(1, arrangement.pendingConfirmationMessages.values.flatten().filter { it == TestMessage.TEST_MESSAGE_ID }.size)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMessagesEnqueued_whenCollectingThem_thenShouldSendOnlyForOneToOneConversations() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withConversationResult(TestConversation.CONVERSATION.right())
+            .withConversationResult(MockConversation.CONVERSATION.right())
             .withSendDeliverSignalResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
         advanceUntilIdle()
 
-        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        sut.enqueueConfirmationDelivery(MockConversation.ID, TestMessage.TEST_MESSAGE_ID)
         advanceUntilIdle()
         job.cancel()
 
@@ -96,18 +94,17 @@ class ConfirmationDeliveryHandlerTest {
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMLSOneOnOneConversation_whenCollectingDeliveryConfirmations_thenShouldSendAndClearQueue() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withConversationResult(TestConversation.MLS_CONVERSATION.right())
+            .withConversationResult(MockConversation.MLS_CONVERSATION.right())
             .withSendDeliverSignalResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
         advanceUntilIdle()
 
-        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        sut.enqueueConfirmationDelivery(MockConversation.ID, TestMessage.TEST_MESSAGE_ID)
         advanceUntilIdle()
         job.cancel()
 
@@ -115,18 +112,17 @@ class ConfirmationDeliveryHandlerTest {
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMixedConversation_whenCollectingDeliveryConfirmations_thenShouldSendUsingProteus() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withConversationResult(TestConversation.MIXED_CONVERSATION.right())
+            .withConversationResult(MockConversation.MIXED_CONVERSATION.right())
             .withSendDeliverSignalResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
         advanceUntilIdle()
 
-        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        sut.enqueueConfirmationDelivery(MockConversation.ID, TestMessage.TEST_MESSAGE_ID)
         advanceUntilIdle()
         job.cancel()
 
@@ -134,11 +130,10 @@ class ConfirmationDeliveryHandlerTest {
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMessagesEnqueued_whenCollectingThemAndNoSession_thenShouldStopCollecting() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withConversationResult(TestConversation.CONVERSATION.right())
+            .withConversationResult(MockConversation.CONVERSATION.right())
             .withSendDeliverSignalResult()
             .arrange()
 
@@ -147,18 +142,17 @@ class ConfirmationDeliveryHandlerTest {
 
         job.cancel()
 
-        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        sut.enqueueConfirmationDelivery(MockConversation.ID, TestMessage.TEST_MESSAGE_ID)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.not) { arrangement.conversationRepository.getConversationById(any()) }
         verifySuspend(VerifyMode.not) { arrangement.sendDeliverSignal(any(), any()) }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMessagesEnqueued_whenSendingConfirmationsAndError_thenMessagesShouldPersist() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withConversationResult(TestConversation.CONVERSATION.right())
+            .withConversationResult(MockConversation.CONVERSATION.right())
             .withSendDeliverSignalResult(
                 MessageOperationResult.Failure(
                     CoreFailure.Unknown(
@@ -171,7 +165,7 @@ class ConfirmationDeliveryHandlerTest {
         val job = launch { sut.sendPendingConfirmations() }
         advanceUntilIdle()
 
-        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        sut.enqueueConfirmationDelivery(MockConversation.ID, TestMessage.TEST_MESSAGE_ID)
         advanceUntilIdle()
 
         job.cancel()
@@ -181,11 +175,10 @@ class ConfirmationDeliveryHandlerTest {
         assertTrue(arrangement.pendingConfirmationMessages.isNotEmpty())
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenABigLoadOfMessagesEnqueued_whenSendingConfirmations_thenShouldAddAndRemoveSecurely() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withConversationResult(TestConversation.CONVERSATION.right())
+            .withConversationResult(MockConversation.CONVERSATION.right())
             .withSendDeliverSignalResult()
             .arrange()
 
@@ -194,12 +187,12 @@ class ConfirmationDeliveryHandlerTest {
 
         val messagesCount = 500
         launch {
-            repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, Uuid.random().toString()) }
+            repeat(messagesCount) { sut.enqueueConfirmationDelivery(MockConversation.ID, Uuid.random().toString()) }
             delay(2000)
         }
         advanceTimeBy(1000L)
         launch {
-            repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, Uuid.random().toString()) }
+            repeat(messagesCount) { sut.enqueueConfirmationDelivery(MockConversation.ID, Uuid.random().toString()) }
             delay(2000)
         }
         advanceTimeBy(2000L)
@@ -211,11 +204,10 @@ class ConfirmationDeliveryHandlerTest {
     }
 
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMultipleEnqueues_whenSendingConfirmations_thenShouldOnlySendOnce() = runTest {
         val (arrangement, sut) = Arrangement()
-            .withConversationResult(TestConversation.CONVERSATION.right())
+            .withConversationResult(MockConversation.CONVERSATION.right())
             .withSendDeliverSignalResult()
             .arrange()
 
@@ -223,7 +215,7 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
 
         repeat(100) {
-            sut.enqueueConfirmationDelivery(TestConversation.ID, Uuid.random().toString())
+            sut.enqueueConfirmationDelivery(MockConversation.ID, Uuid.random().toString())
         }
         advanceUntilIdle()
         job.cancel()
@@ -236,7 +228,7 @@ class ConfirmationDeliveryHandlerTest {
     @Test
     fun givenSyncIsOngoing_whenItTakesLongTimeToExecute_thenShouldReturnAnyway() = runTest {
         val (arrangement, handler) = Arrangement()
-            .withConversationResult(TestConversation.CONVERSATION.right())
+            .withConversationResult(MockConversation.CONVERSATION.right())
             .withSendDeliverSignalResult()
             .arrange()
 
@@ -251,7 +243,7 @@ class ConfirmationDeliveryHandlerTest {
 
         val enqueueJob = launch {
             handler.enqueueConfirmationDelivery(
-                TestConversation.ID,
+                MockConversation.ID,
                 TestMessage.TEST_MESSAGE_ID
             )
         }
@@ -264,20 +256,20 @@ class ConfirmationDeliveryHandlerTest {
     @Test
     fun givenMessagesSent_whenCleared_thenShouldRemoveMessagesFromPendingConfirmation() = runTest {
         val (arrangement, handler) = Arrangement()
-            .withConversationResult(TestConversation.CONVERSATION.right())
+            .withConversationResult(MockConversation.CONVERSATION.right())
             .withSendDeliverSignalResult()
             .arrange()
 
         val job = launch { handler.sendPendingConfirmations() }
         advanceUntilIdle()
 
-        handler.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        handler.enqueueConfirmationDelivery(MockConversation.ID, TestMessage.TEST_MESSAGE_ID)
         advanceUntilIdle()
         job.cancel()
 
         verifySuspend(VerifyMode.atLeast(1)) { arrangement.conversationRepository.getConversationById(any()) }
         verifySuspend(VerifyMode.atLeast(1)) { arrangement.sendDeliverSignal(any(), any()) }
-        assertTrue(arrangement.pendingConfirmationMessages[TestConversation.ID]?.isEmpty() ?: true)
+        assertTrue(arrangement.pendingConfirmationMessages[MockConversation.ID]?.isEmpty() ?: true)
     }
 
     private class Arrangement {

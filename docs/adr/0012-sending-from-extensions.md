@@ -4,7 +4,7 @@ Date: 2026-10-13
 
 ## Status
 
-Accepted. Amended 2026-10-25: uploads have a budget and give the account up when the app needs it.
+Accepted. Amended 2026-10-25 and 2026-11-12: uploads run without holding the account and stop when the app needs it.
 
 ## Context
 
@@ -56,16 +56,23 @@ app's conversation list components.
 
 Files follow in the same extension. Uploads can outlive a dismissed extension, so the share sheet
 stays open while they run: the extension encrypts and uploads every file before it holds the account
-live, reports progress, and stops when the user cancels. Uploading needs the account's tokens, so the
-extension holds the account meanwhile, but not its socket, and the live hold's budget starts after the
-uploads. Holding the account keeps it from the app and the NSE, so uploads have a budget of their own,
-enough at about 1 Mbit/s and at most five minutes, and they stop when the app needs the account: the app
-posts a Darwin notification when it enters the foreground or a call arrives, and the extension stops when
-its host leaves the foreground, because iOS then suspends it with the account held. The extension then
-releases the account and hands the share to the app (ADR 13), which uploads the files again. The same
-applies once the hold's socket is live, while it catches up; the connection itself is not interrupted.
-Once the extension stored a message, the send finishes within its budget: stopping it then could send the
-message twice.
+live, reports progress, and stops when the user cancels. Uploading needs the account's token, and
+neither its database nor CoreCrypto, so the extension does not hold the account while it uploads. It
+holds it for a moment to read the conversation, the file rules and where the files go, uploads with the
+stored token, then holds it again to send. The app and the NSE can take the account meanwhile, so a push
+during a long upload is read and a call rings. A token refresh takes the account for that moment.
+
+Whenever the extension takes the account, it waits for another app extension that holds it, in practice
+the NSE, which gives the account up within its own budget: up to 20 seconds, and never longer than the
+send's budget. The lock file's holder record says whether the holder is an app extension. The app may
+keep the account, so after 3 seconds the extension hands the share to the app instead (ADR 13). It does
+the same when the app asks for the account before anything is stored: the app posts a Darwin notification
+when it enters the foreground or a call arrives, and the extension treats its host leaving the foreground
+the same way, because iOS then suspends it. An upload in flight stops, and the app uploads the files
+again. The same applies once the hold's socket is live, while it catches up; the connection itself is not
+interrupted. Once the extension stored a message, the send finishes within its budget: stopping it then
+could send the message twice.
+
 Nothing is stored until every upload succeeded; each file then becomes an uploaded asset
 message, so a message that fails to send is retried in the app without uploading again. The extension
 follows the app's file rules: file sharing, allowed types and size limits. Cells files use the app's

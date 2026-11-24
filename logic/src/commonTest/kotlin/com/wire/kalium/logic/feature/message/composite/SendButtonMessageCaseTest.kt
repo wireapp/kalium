@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.message.composite
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageContent
@@ -28,7 +29,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -63,7 +63,7 @@ class SendButtonMessageCaseTest {
             .arrange()
         val buttons = listOf("OK", "Cancel")
 
-        val result = sendTextMessage.invoke(TestConversation.ID, "some-text", listOf(), null, buttons)
+        val result = sendTextMessage.invoke(MockConversation.ID, "some-text", listOf(), null, buttons)
 
         result.toEither().shouldSucceed()
 

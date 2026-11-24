@@ -27,8 +27,6 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
@@ -50,7 +48,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlin.io.encoding.Base64
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -61,13 +58,12 @@ import kotlin.test.assertIs
 internal class KeyPackageRepositoryTest {
 
     @Test
-    fun givenExistingClient_whenUploadingKeyPackages_thenKeyPackagesShouldBeGeneratedAndPassedToApi() = runTest {
+    fun givenExistingClient_whenUploadingKeyPackages_thenKeyPackagesShouldBeEncodedAndPassedToApi() = runTest {
         val (arrangement, keyPackageRepository) = Arrangement()
-            .withGeneratingKeyPackagesSuccessful()
             .withUploadingKeyPackagesSuccessful()
             .arrange()
 
-        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 1)
+        keyPackageRepository.uploadKeyPackages(Arrangement.SELF_CLIENT_ID, Arrangement.KEY_PACKAGES).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageApi.uploadKeyPackages(Arrangement.SELF_CLIENT_ID.value, Arrangement.KEY_PACKAGES_BASE64)
@@ -125,7 +121,6 @@ internal class KeyPackageRepositoryTest {
             }
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMoreUsersThanConcurrencyLimit_whenClaimingKeyPackages_thenSemaphoreKeepsClaimsWithinLimit() = runTest {
         val users = List(3) { index -> Arrangement.USER_ID.copy(value = "user$index") }
@@ -410,7 +405,7 @@ internal class KeyPackageRepositoryTest {
         }
     }
 
-    class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+    class Arrangement {
         val keyPackageApi = mock<KeyPackageApi>()
         val currentClientIdProvider = mock<CurrentClientIdProvider>()
 
@@ -418,12 +413,6 @@ internal class KeyPackageRepositoryTest {
             everySuspend {
                 currentClientIdProvider.invoke()
             }.returns(Either.Right(SELF_CLIENT_ID))
-        }
-
-        suspend fun withGeneratingKeyPackagesSuccessful() = apply {
-            everySuspend {
-                mlsContext.generateKeyPackages(1)
-            }.returns(KEY_PACKAGES)
         }
 
         suspend fun withUploadingKeyPackagesSuccessful() = apply {

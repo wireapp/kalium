@@ -592,19 +592,35 @@ public final class com/wire/kalium/logic/data/giphy/DownloadedGif {
 }
 
 public final class com/wire/kalium/logic/data/giphy/Gif {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifCreator;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifCreator;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
 	public final fun component4 ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;)Lcom/wire/kalium/logic/data/giphy/Gif;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/Gif;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/Gif;
+	public final fun component5 ()Lcom/wire/kalium/logic/data/giphy/GifCreator;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifCreator;)Lcom/wire/kalium/logic/data/giphy/Gif;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/Gif;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifRendition;Lcom/wire/kalium/logic/data/giphy/GifCreator;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/Gif;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCreator ()Lcom/wire/kalium/logic/data/giphy/GifCreator;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getOriginal ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
 	public final fun getPreview ()Lcom/wire/kalium/logic/data/giphy/GifRendition;
 	public final fun getTitle ()Ljava/lang/String;
 	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/data/giphy/GifCreator {
+	public fun <init> (Ljava/lang/String;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun copy (Ljava/lang/String;Z)Lcom/wire/kalium/logic/data/giphy/GifCreator;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/giphy/GifCreator;Ljava/lang/String;ZILjava/lang/Object;)Lcom/wire/kalium/logic/data/giphy/GifCreator;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getUsername ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isVerified ()Z
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -1214,7 +1230,8 @@ public final class com/wire/kalium/logic/data/mlspublickeys/MLSPublicKeyType$Unk
 }
 
 public final class com/wire/kalium/logic/data/publicuser/model/UserSearchDetails {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;Lcom/wire/kalium/logic/data/user/ContactStatus;)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;Lcom/wire/kalium/logic/data/user/ContactStatus;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
@@ -1222,11 +1239,13 @@ public final class com/wire/kalium/logic/data/publicuser/model/UserSearchDetails
 	public final fun component5 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component6 ()Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;
 	public final fun component7 ()Lcom/wire/kalium/logic/data/user/ConnectionState;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;)Lcom/wire/kalium/logic/data/publicuser/model/UserSearchDetails;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/publicuser/model/UserSearchDetails;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/publicuser/model/UserSearchDetails;
+	public final fun component8 ()Lcom/wire/kalium/logic/data/user/ContactStatus;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;Lcom/wire/kalium/logic/data/user/ContactStatus;)Lcom/wire/kalium/logic/data/publicuser/model/UserSearchDetails;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/publicuser/model/UserSearchDetails;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;Lcom/wire/kalium/logic/data/user/ContactStatus;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/publicuser/model/UserSearchDetails;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCompleteAssetId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getConnectionStatus ()Lcom/wire/kalium/logic/data/user/ConnectionState;
+	public final fun getContactStatus ()Lcom/wire/kalium/logic/data/user/ContactStatus;
 	public final fun getHandle ()Ljava/lang/String;
 	public final fun getId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getName ()Ljava/lang/String;
@@ -5650,6 +5669,24 @@ public final class com/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountUs
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountUseCase;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
+public final class com/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Failure : com/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Success : com/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/keypackage/ResetMLSKeyPackagesResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/legalhold/ApproveLegalHoldRequestUseCase {
 	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -5853,12 +5890,14 @@ public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase
 }
 
 public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
+	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getMeetingId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -5975,12 +6014,17 @@ public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
 	public final fun getMaintainMeetingOccurrences ()Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase;
 	public final fun getMeetingReminders ()Lcom/wire/kalium/logic/feature/meeting/MeetingRemindersUseCase;
+	public final fun getObserveMeeting ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
 	public final fun getUpdateMeeting ()Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase {
 	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveMeetingUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase {
@@ -6967,8 +7011,13 @@ public abstract interface class com/wire/kalium/logic/feature/search/IsFederatio
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/search/RefreshContactStatusesUseCase {
+	public abstract fun invoke (Ljava/util/Set;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class com/wire/kalium/logic/feature/search/SearchScope {
 	public final fun getFederatedSearchParser ()Lcom/wire/kalium/logic/feature/search/FederatedSearchParser;
+	public final fun getRefreshContactStatuses ()Lcom/wire/kalium/logic/feature/search/RefreshContactStatusesUseCase;
 	public final fun getSearchUsersByHandle ()Lcom/wire/kalium/logic/feature/search/SearchUsersByHandleUseCase;
 	public final fun getSearchUsersByName ()Lcom/wire/kalium/logic/feature/search/SearchUsersByNameUseCase;
 	public final fun isFederationSearchAllowedUseCase ()Lcom/wire/kalium/logic/feature/search/IsFederationSearchAllowedUseCase;
@@ -8261,8 +8310,8 @@ public abstract interface class com/wire/kalium/logic/feature/user/webSocketStat
 
 public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
 	public fun <init> ()V
-	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZZLcom/wire/kalium/network/HttpTrafficObserver;ZIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZZLcom/wire/kalium/network/HttpTrafficObserver;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Z
 	public final fun component10 ()Z
 	public final fun component11 ()Z
@@ -8288,15 +8337,17 @@ public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
 	public final fun component3 ()Lkotlin/jvm/functions/Function0;
 	public final fun component30 ()Lkotlin/jvm/functions/Function1;
 	public final fun component31 ()Z
-	public final fun component32 ()Lcom/wire/kalium/network/HttpTrafficObserver;
+	public final fun component32 ()Z
+	public final fun component33 ()Lcom/wire/kalium/network/HttpTrafficObserver;
+	public final fun component34 ()Z
 	public final fun component4 ()Z
 	public final fun component5 ()Z
 	public final fun component6 ()Z
 	public final fun component7 ()Z
 	public final fun component8 ()Z
 	public final fun component9 ()Z
-	public final fun copy-XTMmhTg (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
-	public static synthetic fun copy-XTMmhTg$default (Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLcom/wire/kalium/network/HttpTrafficObserver;ILjava/lang/Object;)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
+	public final fun copy-qZ-i6gg (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZZLcom/wire/kalium/network/HttpTrafficObserver;Z)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
+	public static synthetic fun copy-qZ-i6gg$default (Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZZLcom/wire/kalium/network/HttpTrafficObserver;ZIILjava/lang/Object;)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBlockCrossBackendLogin ()Z
 	public final fun getCallConfigTransformer ()Lkotlin/jvm/functions/Function1;
@@ -8321,10 +8372,12 @@ public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
 	public final fun getMockNetworkStateObserver ()Lcom/wire/kalium/network/NetworkStateObserver;
 	public final fun getMockedRequests ()Ljava/util/List;
 	public final fun getMockedWebSocket ()Lcom/wire/kalium/logic/util/KaliumMockWebsocket;
+	public final fun getPendingConnections ()Z
 	public final fun getPendingMessages ()Z
 	public final fun getSecurePublicLinkSettings ()Z
 	public final fun getSelfDeletingMessages ()Z
 	public final fun getShouldEncryptData ()Lkotlin/jvm/functions/Function0;
+	public final fun getTargetedAndTransientMLSMessagesEnabled ()Z
 	public final fun getWipeOnCookieInvalid ()Z
 	public final fun getWipeOnDeviceRemoval ()Z
 	public final fun getWipeOnRootedDevice ()Z
@@ -8486,5 +8539,7 @@ public final class com/wire/kalium/logic/util/PlatformView {
 public final class com/wire/kalium/logic/util/RandomPassword {
 	public fun <init> ()V
 	public final fun invoke ()Ljava/lang/String;
+	public final fun invoke (II)Ljava/lang/String;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/util/RandomPassword;IIILjava/lang/Object;)Ljava/lang/String;
 }
 

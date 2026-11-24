@@ -59,8 +59,8 @@ import com.wire.kalium.network.api.v18.authenticated.KeyPackageApiV18
 import com.wire.kalium.network.api.v18.authenticated.LogoutApiV18
 import com.wire.kalium.network.api.v18.authenticated.MLSMessageApiV18
 import com.wire.kalium.network.api.v18.authenticated.MLSPublicKeyApiV18
-import com.wire.kalium.network.api.v18.authenticated.MessageApiV18
 import com.wire.kalium.network.api.v18.authenticated.MeetingApiV18
+import com.wire.kalium.network.api.v18.authenticated.MessageApiV18
 import com.wire.kalium.network.api.v18.authenticated.NotificationApiV18
 import com.wire.kalium.network.api.v18.authenticated.PreKeyApiV18
 import com.wire.kalium.network.api.v18.authenticated.PropertiesApiV18
@@ -93,7 +93,8 @@ internal open class AuthenticatedNetworkContainerV18 internal constructor(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
         proxyCredentials = sessionManager.proxyCredentials(),
         certificatePinning = certificatePinning
-    )
+    ),
+    private val pendingConnectionsEnabled: Boolean = false,
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager = sessionManager,
@@ -145,7 +146,7 @@ internal open class AuthenticatedNetworkContainerV18 internal constructor(
 
     override val selfApi: SelfApi get() = SelfApiV18(networkClient, sessionManager)
 
-    override val userDetailsApi: UserDetailsApi get() = UserDetailsApiV18(networkClient)
+    override val userDetailsApi: UserDetailsApi get() = UserDetailsApiV18(networkClient, pendingConnectionsEnabled)
 
     override val userSearchApi: UserSearchApi get() = UserSearchApiV18(networkClient)
 

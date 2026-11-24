@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DelicateKaliumApi
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -42,6 +43,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(DelicateKaliumApi::class)
 class DeleteConversationUseCaseTest {
 
     @Test

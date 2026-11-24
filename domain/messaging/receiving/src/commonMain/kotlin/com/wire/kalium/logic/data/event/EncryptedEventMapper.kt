@@ -52,6 +52,58 @@ fun newMLSMessage(
     content = eventContentDTO.message
 )
 
+/** Targeted messages decrypt like other MLS messages; they are never sent in subconversations. */
+fun newMLSMessage(
+    id: String,
+    eventContentDTO: EventContentDTO.Conversation.NewMLSTargetedMessageDTO,
+) = Event.Conversation.NewMLSMessage(
+    id = id,
+    conversationId = eventContentDTO.qualifiedConversation.toModel(),
+    subconversationId = null,
+    senderUserId = eventContentDTO.qualifiedFrom.toModel(),
+    messageInstant = eventContentDTO.time,
+    content = eventContentDTO.message,
+    targeted = true
+)
+
+/** Transient messages decrypt like other MLS messages; they are never sent in subconversations. */
+fun newMLSMessage(
+    id: String,
+    eventContentDTO: EventContentDTO.Conversation.NewMLSTransientMessageDTO,
+) = Event.Conversation.NewMLSMessage(
+    id = id,
+    conversationId = eventContentDTO.qualifiedConversation.toModel(),
+    subconversationId = null,
+    senderUserId = eventContentDTO.qualifiedFrom.toModel(),
+    messageInstant = eventContentDTO.time,
+    content = eventContentDTO.message,
+    transient = true
+)
+
+/** Transient targeted messages decrypt like other MLS messages; they are never sent in subconversations. */
+fun newMLSMessage(
+    id: String,
+    eventContentDTO: EventContentDTO.Conversation.NewMLSTransientTargetedMessageDTO,
+) = Event.Conversation.NewMLSMessage(
+    id = id,
+    conversationId = eventContentDTO.qualifiedConversation.toModel(),
+    subconversationId = null,
+    senderUserId = eventContentDTO.qualifiedFrom.toModel(),
+    messageInstant = eventContentDTO.time,
+    content = eventContentDTO.message,
+    targeted = true,
+    transient = true
+)
+
+/** The MLS message carried by this event, or null if the event is not an MLS message. */
+fun EventContentDTO.newMLSMessageOrNull(id: String): Event.Conversation.NewMLSMessage? = when (this) {
+    is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, this)
+    is EventContentDTO.Conversation.NewMLSTargetedMessageDTO -> newMLSMessage(id, this)
+    is EventContentDTO.Conversation.NewMLSTransientMessageDTO -> newMLSMessage(id, this)
+    is EventContentDTO.Conversation.NewMLSTransientTargetedMessageDTO -> newMLSMessage(id, this)
+    else -> null
+}
+
 fun newConversation(
     id: String,
     content: EventContentDTO.Conversation.NewConversationDTO,

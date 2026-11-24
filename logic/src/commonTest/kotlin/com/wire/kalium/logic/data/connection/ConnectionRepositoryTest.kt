@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -32,7 +33,6 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
@@ -313,7 +313,7 @@ class ConnectionRepositoryTest {
     @Test
     fun givenConversationId_WhenDeletingConnection_thenDeleteConnectionDataAndConversationShouldBeTriggered() = runTest {
         // given
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement.withDeleteConnectionDataAndConversation(conversationId.toDao())
         val connection = TestConnection.CONNECTION.copy(
@@ -624,7 +624,7 @@ class ConnectionRepositoryTest {
         suspend fun withFetchConversationSucceed(): Arrangement {
             everySuspend {
                 conversationRepository.fetchConversation(any())
-            }.returns(Either.Right(TestConversation.CONVERSATION_RESPONSE))
+            }.returns(Either.Right(MockConversation.CONVERSATION_RESPONSE))
             return this
         }
 
@@ -649,7 +649,7 @@ class ConnectionRepositoryTest {
         suspend fun withSuccessfulGetConversationById(conversationId: QualifiedIDEntity): Arrangement {
             everySuspend {
                 conversationDAO.observeConversationDetailsById(conversationId)
-            }.returns(flowOf(TestConversation.VIEW_ENTITY))
+            }.returns(flowOf(MockConversation.VIEW_ENTITY))
 
             return this
         }

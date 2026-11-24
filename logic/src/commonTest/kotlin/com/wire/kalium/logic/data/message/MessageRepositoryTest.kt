@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -35,7 +36,6 @@ import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID
@@ -60,6 +60,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
+import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -153,6 +154,7 @@ class MessageRepositoryTest {
     }
 
     @Test
+    @OptIn(DelicateKaliumApi::class)
     fun givenAMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
         val message = TEST_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY
@@ -447,7 +449,7 @@ class MessageRepositoryTest {
         result.shouldSucceed()
 
         assertTrue {
-            (result as Either.Right).value.failedToConfirmClients.isNotEmpty()
+            result.value.failedToConfirmClients.isNotEmpty()
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -981,7 +983,7 @@ class MessageRepositoryTest {
         )
 
         val NOTIFICATION_CONVERSATION = LocalNotification.Conversation(
-            TestConversation.ID, "", listOf(NOTIFICATION_MESSAGE), true, true
+            MockConversation.ID, "", listOf(NOTIFICATION_MESSAGE), true, true
         )
 
         val NOTIFICATION_ENTITY = NotificationMessageEntity(
@@ -995,7 +997,7 @@ class MessageRepositoryTest {
             text = "Some text in message",
             assetMimeType = null,
             isQuotingSelf = false,
-            conversationId = TestConversation.ENTITY_ID,
+            conversationId = MockConversation.ENTITY_ID,
             conversationName = null,
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             conversationType = ConversationEntity.Type.ONE_ON_ONE,

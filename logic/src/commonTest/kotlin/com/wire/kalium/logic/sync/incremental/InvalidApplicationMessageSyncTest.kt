@@ -3,6 +3,7 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ApplicationMessage
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -15,7 +16,6 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.framework.TestUser
@@ -79,10 +79,10 @@ class InvalidApplicationMessageSyncTest {
         val calling = CallingMessageHandlerImpl(
             TestUser.SELF.id, mock(), lazy { mock(MockMode.autoUnit) }, conversationRepository, mock(), mock(),
         )
-        everySuspend { conversationRepository.getConversationProtocolInfo(any()) } returns Either.Right(TestConversation.MLS_PROTOCOL_INFO)
+        everySuspend { conversationRepository.getConversationProtocolInfo(any()) } returns Either.Right(MockConversation.MLS_PROTOCOL_INFO)
         everySuspend { mlsRepository.decryptMessage(any(), any(), any()) } calls { call ->
             Either.Right(listOf(DecryptedMessageBundle.Text(
-                TestConversation.GROUP_ID,
+                MockConversation.GROUP_ID,
                 ApplicationMessage(call.args[1] as ByteArray, TestUser.USER_ID, ClientId("sender")),
                 identity = null,
             )))
@@ -97,7 +97,7 @@ class InvalidApplicationMessageSyncTest {
             val value = content.messageContent
             if (value is MessageContent.Calling) {
                 val message = MessageUnpackResult.ApplicationMessage(
-                    TestConversation.ID, Instant.DISTANT_PAST, TestUser.USER_ID, ClientId("sender"), content,
+                    MockConversation.ID, Instant.DISTANT_PAST, TestUser.USER_ID, ClientId("sender"), content,
                 )
                 calling.handle(message.toSignalingMessage(TestUser.SELF.id), value)
             } else processed += content.messageUid

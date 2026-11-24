@@ -25,6 +25,7 @@ import com.wire.backup.dump.BackupExportResult
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.PagedData
@@ -49,7 +50,6 @@ import com.wire.kalium.logic.feature.backup.mapper.toBackupReaction
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
 import com.wire.kalium.logic.feature.backup.provider.BackupExporter
 import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProvider
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.MockMode
@@ -112,7 +112,7 @@ class CreateMPBackupUseCaseTest {
 
         assertTrue(result is CreateBackupResult.Success)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(testUser.toBackupUser()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(TestConversation.CONVERSATION.toBackupConversation()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(MockConversation.CONVERSATION.toBackupConversation()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(TEXT_MESSAGE.toBackupMessage()!!) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(testReaction.toBackupReaction()) }
     }
@@ -278,7 +278,7 @@ class CreateMPBackupUseCaseTest {
         val backupRepository = object : BackupRepository {
             override suspend fun getUsers(): List<OtherUser> = listOf(testUser)
 
-            override suspend fun getConversations(): List<Conversation> = listOf(TestConversation.CONVERSATION)
+            override suspend fun getConversations(): List<Conversation> = listOf(MockConversation.CONVERSATION)
 
             override suspend fun getMessages(pageSize: Int): Flow<PagedData<Message.Standalone>> = flowOf(
                 PagedData(
@@ -401,7 +401,7 @@ class CreateMPBackupUseCaseTest {
 
         private val testReaction = MessageReactions(
             messageId = "messageId",
-            conversationId = TestConversation.ID,
+            conversationId = MockConversation.ID,
             reactions = listOf(
                 MessageReactionWithUsers(
                     emoji = ":)",

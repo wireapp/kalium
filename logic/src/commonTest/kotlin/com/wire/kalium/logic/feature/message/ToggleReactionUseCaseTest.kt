@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageContent
@@ -29,7 +30,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.stub.ReactionRepositoryStub
 import com.wire.kalium.common.functional.Either
@@ -219,6 +219,6 @@ class ToggleReactionUseCaseTest {
         val TEST_CURRENT_CLIENT = TestClient.CLIENT_ID
         val TEST_SELF_USER = TestUser.USER_ID
         const val TEST_MESSAGE_ID = "messageId"
-        val TEST_CONVERSATION_ID = TestConversation.ID
+        val TEST_CONVERSATION_ID = MockConversation.ID
     }
 }

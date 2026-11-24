@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
+import platform.Foundation.NSBundle
 import platform.Foundation.NSProcessInfo
 import platform.posix.EACCES
 import platform.posix.EAGAIN
@@ -80,21 +81,27 @@ import platform.posix.pwrite
 @InternalKaliumApi
 public class AppleAccountRuntimeOwner internal constructor(
     private val rootPath: String,
+    /** Recorded with the holder: an app extension holds an account only within its execution budget. */
+    private val inAppExtension: Boolean = NSBundle.mainBundle.bundlePath.endsWith(".appex"),
     private val onLockAcquired: () -> Unit,
 ) {
     private val paths = AccountRuntimeLockPaths(rootPath)
 
-    public constructor(rootPath: String) : this(rootPath, {})
+    public constructor(rootPath: String) : this(rootPath, onLockAcquired = {})
 
     /**
      * For an extension with a limited execution budget: one attempt, or attempts until [retryFor] passes
-     * while another owner holds the account. A retrying attempt also waits for another attempt of this process,
+     * while another owner holds the account. While that owner is an app extension, attempts go on until
+     * [retryForExtension] passes: it gives the account up within its own budget, and the app may keep it.
+     * A retrying attempt also waits for another attempt of this process,
      * which holds the account only within its own budget and presents only what it received.
      */
     public suspend fun tryAcquire(
         accountId: UserId,
         retryFor: Duration = Duration.ZERO,
-    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, retryFor, waitForThisProcess = true) { true }
+        retryForExtension: Duration = retryFor,
+    ): Either<AccountRuntimeFailure, AccountRuntimeLease> =
+        acquire(accountId, retryFor, retryForExtension, waitForThisProcess = true) { true }
 
     /**
      * Wait cancellably, at most [timeout] and while [keepWaiting] holds, for app ownership; BUSY then means another
@@ -104,11 +111,14 @@ public class AppleAccountRuntimeOwner internal constructor(
         accountId: UserId,
         timeout: Duration = Duration.INFINITE,
         keepWaiting: () -> Boolean = { true },
-    ): Either<AccountRuntimeFailure, AccountRuntimeLease> = acquire(accountId, timeout, waitForThisProcess = false, keepWaiting)
+    ): Either<AccountRuntimeFailure, AccountRuntimeLease> =
+        acquire(accountId, timeout, waitForExtension = timeout, waitForThisProcess = false, keepWaiting)
 
+    @Suppress("LongParameterList")
     private suspend fun acquire(
         accountId: UserId,
         waitFor: Duration,
+        waitForExtension: Duration,
         waitForThisProcess: Boolean,
         keepWaiting: () -> Boolean,
     ): Either<AccountRuntimeFailure, AccountRuntimeLease> {
@@ -122,7 +132,7 @@ public class AppleAccountRuntimeOwner internal constructor(
         val result = try {
             coroutineContext.ensureActive()
             val lockFile = paths.filePath(accountId)
-            val failure = lock(descriptor, lockFile, waitFor, waitForThisProcess, keepWaiting, trace)
+            val failure = lock(descriptor, lockFile, waitFor, waitForExtension, waitForThisProcess, keepWaiting, trace)
             if (failure == null) {
                 recordHolder(descriptor)
                 onLockAcquired()
@@ -143,10 +153,12 @@ public class AppleAccountRuntimeOwner internal constructor(
         }
     }
 
+    @Suppress("LongParameterList")
     private suspend fun lock(
         descriptor: Int,
         lockFile: String,
         waitFor: Duration,
+        waitForExtension: Duration,
         waitForThisProcess: Boolean,
         keepWaiting: () -> Boolean,
         trace: Long,
@@ -155,6 +167,12 @@ public class AppleAccountRuntimeOwner internal constructor(
         // Elapsed time bounds the window, so slow wake-ups do not stretch it.
         withTimeoutOrNull(waitFor) {
             while (failure == AccountRuntimeFailure.BUSY && keepWaiting()) failure = retryLock(descriptor, trace)
+        }
+        // The holder is read on each attempt: the app may take the account as soon as the extension gives it up.
+        if (waitForExtension > waitFor) withTimeoutOrNull(waitForExtension - waitFor) {
+            while (failure == AccountRuntimeFailure.BUSY && readHolder(descriptor)?.endsWith(APP_EXTENSION) == true) {
+                failure = retryLock(descriptor, trace)
+            }
         }
         // flock refuses this process's other descriptors too. Unlike another owner, an attempt of this process ends.
         val waitsForThisProcess = waitForThisProcess && waitFor > Duration.ZERO
@@ -169,9 +187,14 @@ public class AppleAccountRuntimeOwner internal constructor(
         return tryLock(descriptor, trace)
     }
 
-    /** Diagnostics only: which process took the account, and when. Locking never reads the file body. */
+    /**
+     * Which process took the account, when, and whether it is an app extension: for logs, and for how long another
+     * extension waits for it. Taking the lock never reads the file body, and a record from before its holder took the
+     * account can be read for a moment, so the record only informs waiting.
+     */
     private fun recordHolder(descriptor: Int) {
-        val holder = "${NSProcessInfo.processInfo.processName} pid=${getpid()} since=${Clock.System.now()}".encodeToByteArray()
+        val role = if (inAppExtension) APP_EXTENSION else ""
+        val holder = "${NSProcessInfo.processInfo.processName} pid=${getpid()} since=${Clock.System.now()}$role".encodeToByteArray()
         holder.usePinned { pwrite(descriptor, it.addressOf(0), holder.size.convert(), 0) }
         ftruncate(descriptor, holder.size.convert())
     }
@@ -181,13 +204,17 @@ public class AppleAccountRuntimeOwner internal constructor(
         val descriptor = open(paths.filePath(accountId), O_RDONLY or O_CLOEXEC)
         if (descriptor < 0) return null
         return try {
-            val buffer = ByteArray(HOLDER_MAX_BYTES)
-            val length = buffer.usePinned { pread(descriptor, it.addressOf(0), buffer.size.convert(), 0) }
-            if (length > 0) buffer.decodeToString(0, length.toInt()) else null
+            readHolder(descriptor)
         } finally {
             // Closing another descriptor of the file keeps this process's flock: it belongs to the lease's descriptor.
             close(descriptor)
         }
+    }
+
+    private fun readHolder(descriptor: Int): String? {
+        val buffer = ByteArray(HOLDER_MAX_BYTES)
+        val length = buffer.usePinned { pread(descriptor, it.addressOf(0), buffer.size.convert(), 0) }
+        return if (length > 0) buffer.decodeToString(0, length.toInt()) else null
     }
 
     private fun tryLock(descriptor: Int, trace: Long): AccountRuntimeFailure? {
@@ -213,6 +240,9 @@ public class AppleAccountRuntimeOwner internal constructor(
     private companion object {
         private val LOCK_RETRY_DELAY = 20.milliseconds
         private const val HOLDER_MAX_BYTES = 256
+
+        /** Ends the record of a holder that is an app extension. A record without it, as older builds wrote, is the app's. */
+        private const val APP_EXTENSION = " app-extension"
     }
 }
 

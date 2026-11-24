@@ -37,12 +37,13 @@ internal class ReceivedMembershipHandler(
     private val drivePermissionsEnabled: Boolean,
     private val meetingAlerts: MutableList<LocalNotification.Meeting>,
 ) {
-    suspend fun previousPromotion(event: Event.Conversation.MemberChanged.MemberChangedRole): MessageEntity? =
-        data.messages.getMessageById(event.id, event.conversationId.toDao())?.also { existing ->
+    suspend fun previousPromotion(event: Event.Conversation.MemberChanged.MemberChangedRole): MessageEntity? {
+        val expected = event.memberPromotedMessage(selfUserId)?.toEntity() ?: return null
+        return data.messages.getMessageById(event.id, event.conversationId.toDao())?.also { existing ->
             check(event.member?.role == Conversation.Member.Role.Admin) { "Promotion conflicts with the incoming role" }
-            val expected = checkNotNull(event.memberPromotedMessage(selfUserId)).toEntity()
             check(existing.matchesSystemMessage(expected.senderUserId, expected.content)) { "Promotion message identity conflicts" }
         }
+    }
 
     suspend fun changeRole(received: ReceivedPayload.MemberRole, previous: MessageEntity?) {
         val event = received.event
@@ -57,7 +58,7 @@ internal class ReceivedMembershipHandler(
             newRole = ConversationRoleMapperImpl().toDAO(member.role),
         )
         if (previous != null || isPromotionToAdmin(oldRole?.let(ConversationRoleMapperImpl()::fromDAO), member.role)) {
-            persistMessage(checkNotNull(event.memberPromotedMessage(selfUserId))).orThrow()
+            event.memberPromotedMessage(selfUserId)?.let { persistMessage(it).orThrow() }
         }
     }
 
@@ -123,6 +124,7 @@ internal class ReceivedMembershipHandler(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     suspend fun leave(event: Event.Conversation.MemberLeave, profiles: UserProfiles) {
         val conversationId = event.conversationId.toDao()
         val conversation = checkNotNull(data.conversations.getConversationById(conversationId)) {
@@ -146,11 +148,26 @@ internal class ReceivedMembershipHandler(
                 "Member leave identity conflicts with stored state"
             }
         }
-        if (event.reason == MemberLeaveReason.UserDeleted) data.users.markAsDeleted(event.removedList.map { it.toDao() })
-        val deleted = data.members.deleteMembersByQualifiedID(event.removedList.map { it.toDao() }, conversationId)
+        val retainPeer = event.reason == MemberLeaveReason.UserDeleted &&
+            conversation.type == ConversationEntity.Type.ONE_ON_ONE &&
+            conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable &&
+            selfUserId !in event.removedList
+        if (event.reason == MemberLeaveReason.UserDeleted && !retainPeer) {
+            data.users.markAsDeleted(event.removedList.map { it.toDao() })
+        }
+        val deleted = if (retainPeer) {
+            0L
+        } else {
+            data.members.deleteMembersByQualifiedID(
+                event.removedList.map { it.toDao() },
+                conversationId
+            )
+        }
         // App leave handling counts removed rows before fetching profiles, whose deleted flag
         // can itself remove memberships. Preserve that ordering for the required system message.
         profiles.persist(data.users, data.apps)
+        // The deletion event takes precedence over profiles fetched before the account was deleted.
+        if (retainPeer) data.users.markAsDeleted(event.removedList.map { it.toDao() })
         if (selfUserId in event.removedList) {
             (conversation.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.let {
                 data.conversations.clearProposalTimer(it.groupId)

@@ -22,13 +22,14 @@ import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationWithOtherUserName
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.util.DebugKaliumApi
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
@@ -44,11 +45,12 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@OptIn(DebugKaliumApi::class)
 class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenOnlyProteusConversations_whenInvoked_thenReturnProteusOnlyStats() = runTest {
-        val proteusConv = TestConversation.CONVERSATION
+        val proteusConv = MockConversation.CONVERSATION
         val (_, useCase) = Arrangement()
             .withConversations(listOf(proteusConv))
             .arrange()
@@ -77,10 +79,10 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenMLSConversationEstablishedInCrypto_whenInvoked_thenReturnCorrectStats() = runTest {
-        val mlsConv = TestConversation.MLS_CONVERSATION
+        val mlsConv = MockConversation.MLS_CONVERSATION
         val (arrangement, useCase) = Arrangement()
             .withConversations(listOf(mlsConv))
-            .withCCEpoch(TestConversation.GROUP_ID.value, CC_EPOCH)
+            .withCCEpoch(MockConversation.GROUP_ID.value, CC_EPOCH)
             .arrange()
 
         val result = useCase()
@@ -93,7 +95,7 @@ class GetConversationCryptoStatsUseCaseTest {
         assertEquals(0, result.stats.mlsDriftCount)
         assertEquals(1, result.stats.conversationDetails.size)
         assertEquals(ConversationCryptoProtocolType.MLS, result.stats.conversationDetails.first().protocolType)
-        assertEquals(TestConversation.GROUP_ID.value, result.stats.conversationDetails.first().groupId)
+        assertEquals(MockConversation.GROUP_ID.value, result.stats.conversationDetails.first().groupId)
         assertEquals(DetailGroupState.PENDING_JOIN, result.stats.conversationDetails.first().dbGroupState)
         assertEquals(0UL, result.stats.conversationDetails.first().dbEpoch)
         assertEquals(CC_EPOCH, result.stats.conversationDetails.first().ccEpoch)
@@ -101,18 +103,18 @@ class GetConversationCryptoStatsUseCaseTest {
         assertEquals(true, result.stats.conversationDetails.first().selfIsMember)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.conversationEpoch(TestConversation.GROUP_ID.value)
+            arrangement.mlsContext.conversationEpoch(MockConversation.GROUP_ID.value)
         }
     }
 
     @Test
     fun givenEstablishedMLSConversationMissingInCrypto_whenInvoked_thenReturnDriftCount() = runTest {
-        val mlsConv = TestConversation.MLS_CONVERSATION.copy(
-            protocol = TestConversation.MLS_CONVERSATION.protocol.establishedCopy()
+        val mlsConv = MockConversation.MLS_CONVERSATION.copy(
+            protocol = MockConversation.MLS_CONVERSATION.protocol.establishedCopy()
         )
         val (_, useCase) = Arrangement()
             .withConversations(listOf(mlsConv))
-            .withCCEpochConversationNotFound(TestConversation.GROUP_ID.value)
+            .withCCEpochConversationNotFound(MockConversation.GROUP_ID.value)
             .arrange()
 
         val result = useCase()
@@ -126,12 +128,12 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenEstablishedMLSConversationLookupFails_whenInvoked_thenReturnLookupFailureCount() = runTest {
-        val mlsConv = TestConversation.MLS_CONVERSATION.copy(
-            protocol = TestConversation.MLS_CONVERSATION.protocol.establishedCopy()
+        val mlsConv = MockConversation.MLS_CONVERSATION.copy(
+            protocol = MockConversation.MLS_CONVERSATION.protocol.establishedCopy()
         )
         val (_, useCase) = Arrangement()
             .withConversations(listOf(mlsConv))
-            .withCCEpochThrowing(TestConversation.GROUP_ID.value)
+            .withCCEpochThrowing(MockConversation.GROUP_ID.value)
             .arrange()
 
         val result = useCase()
@@ -145,10 +147,10 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenMixedConversation_whenInvoked_thenReturnMixedStats() = runTest {
-        val mixedConv = TestConversation.MIXED_CONVERSATION
+        val mixedConv = MockConversation.MIXED_CONVERSATION
         val (_, useCase) = Arrangement()
             .withConversations(listOf(mixedConv))
-            .withCCEpoch(TestConversation.GROUP_ID.value, CC_EPOCH)
+            .withCCEpoch(MockConversation.GROUP_ID.value, CC_EPOCH)
             .arrange()
 
         val result = useCase()
@@ -163,12 +165,12 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenMixedConversationLookupFails_whenInvoked_thenReturnLookupFailureCount() = runTest {
-        val mixedConv = TestConversation.MIXED_CONVERSATION.copy(
-            protocol = TestConversation.MIXED_CONVERSATION.protocol.establishedCopy()
+        val mixedConv = MockConversation.MIXED_CONVERSATION.copy(
+            protocol = MockConversation.MIXED_CONVERSATION.protocol.establishedCopy()
         )
         val (_, useCase) = Arrangement()
             .withConversations(listOf(mixedConv))
-            .withCCEpochThrowing(TestConversation.GROUP_ID.value)
+            .withCCEpochThrowing(MockConversation.GROUP_ID.value)
             .arrange()
 
         val result = useCase()
@@ -180,9 +182,9 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenMixedProtocols_whenInvoked_thenReturnCorrectAggregatedStats() = runTest {
-        val proteusConv = TestConversation.CONVERSATION
-        val mlsConv = TestConversation.MLS_CONVERSATION
-        val mixedConv = TestConversation.MIXED_CONVERSATION.copy(
+        val proteusConv = MockConversation.CONVERSATION
+        val mlsConv = MockConversation.MLS_CONVERSATION
+        val mixedConv = MockConversation.MIXED_CONVERSATION.copy(
             id = ConversationId("mixed_conv_id", "domain")
         )
         val (_, useCase) = Arrangement()
@@ -204,8 +206,8 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenAllEstablished_whenInvoked_thenReturnZeroNotEstablished() = runTest {
-        val mlsConv = TestConversation.MLS_CONVERSATION
-        val mixedConv = TestConversation.MIXED_CONVERSATION.copy(
+        val mlsConv = MockConversation.MLS_CONVERSATION
+        val mixedConv = MockConversation.MIXED_CONVERSATION.copy(
             id = ConversationId("mixed_conv_id", "domain")
         )
         val (_, useCase) = Arrangement()
@@ -235,8 +237,8 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenEstablishedMLSConversationWhereSelfIsNotMember_whenInvoked_thenReturnLeftCountNotDrift() = runTest {
-        val mlsConv = TestConversation.MLS_CONVERSATION.copy(
-            protocol = TestConversation.MLS_CONVERSATION.protocol.establishedCopy()
+        val mlsConv = MockConversation.MLS_CONVERSATION.copy(
+            protocol = MockConversation.MLS_CONVERSATION.protocol.establishedCopy()
         )
         val (_, useCase) = Arrangement()
             .withConversations(listOf(mlsConv), selfIsMember = false)
@@ -253,7 +255,7 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenOneOnOneConversationWithNullNameAndOtherUserName_whenInvoked_thenUseOtherUserName() = runTest {
-        val oneOnOneConv = TestConversation.CONVERSATION.copy(name = null)
+        val oneOnOneConv = MockConversation.CONVERSATION.copy(name = null)
         val (_, useCase) = Arrangement()
             .withConversations(
                 listOf(
@@ -274,7 +276,7 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenSelfConversationWithNullName_whenInvoked_thenUseSelfName() = runTest {
-        val selfConv = TestConversation.CONVERSATION.copy(
+        val selfConv = MockConversation.CONVERSATION.copy(
             name = null,
             type = Conversation.Type.Self,
         )
@@ -290,7 +292,7 @@ class GetConversationCryptoStatsUseCaseTest {
 
     @Test
     fun givenConversationWithNoNameAndNoOtherUserName_whenInvoked_thenNameIsNull() = runTest {
-        val conv = TestConversation.CONVERSATION.copy(name = null)
+        val conv = MockConversation.CONVERSATION.copy(name = null)
         val (_, useCase) = Arrangement()
             .withConversations(listOf(conv))
             .arrange()

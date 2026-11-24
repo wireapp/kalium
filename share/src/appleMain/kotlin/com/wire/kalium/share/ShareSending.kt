@@ -146,6 +146,12 @@ internal class ShareSending(
             },
             joinConversation = { _, _ -> Either.Left(AppRequired("MLS_JOIN")) },
             encrypt = { mls, groupId, content -> wrapMLSRequest { mls.encryptMessage(groupId.toCrypto(), content) } },
+            encryptTransient = { mls, groupId, content ->
+                wrapMLSRequest { mls.encryptTransientMessage(groupId.toCrypto(), content) }
+            },
+            encryptTargeted = { mls, groupId, recipient, content, transient ->
+                wrapMLSRequest { mls.encryptTargetedMessage(groupId.toCrypto(), recipient, content, transient) }
+            },
             selfUserId = selfUserId,
         ),
         prepareMessage = { Either.Right(it) },
@@ -369,6 +375,10 @@ internal class ShareSending(
 
         // Reached only after verifyEpoch, which declines.
         override suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = Either.Right(Unit)
+
+        override fun isLive(): Boolean = true
+
+        override suspend fun waitUntilLiveOrStopped(): Either<CoreFailure, Unit> = Either.Right(Unit)
 
         override suspend fun <R> transaction(
             name: String,

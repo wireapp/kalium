@@ -47,9 +47,9 @@ public class KaliumShareOutbox(private val rootPath: String) {
 
     /**
      * Hands [request] to the app, which owns the account (ADR 13), and returns the handoff's ID. The host then rings the
-     * app and follows the handoff with [handOffStatus]. The app sends with its own budget and alerts, so
-     * [KaliumShareRequest.budgetMilliseconds] and [KaliumShareRequest.showMessageContent] do not apply. Null when the
-     * request is invalid or a file cannot be copied.
+     * app. From here the share is the app's: it sends it, or tells the user why not, and nothing comes back to the host.
+     * The app sends with its own budget and alerts, so [KaliumShareRequest.budgetMilliseconds] and
+     * [KaliumShareRequest.showMessageContent] do not apply. Null when the request is invalid or a file cannot be copied.
      */
     @OptIn(ExperimentalUuidApi::class)
     @Throws(CancellationException::class)
@@ -70,26 +70,12 @@ public class KaliumShareOutbox(private val rootPath: String) {
         }
     }
 
-    /** Where a handoff is. Once the app finished it, the result is reported once. Unreadable files read as waiting. */
-    public fun handOffStatus(userValue: String, userDomain: String, handOffId: String): KaliumShareHandOff =
-        when (val state = readingFiles(HandOffState.Waiting) { outbox(userValue, userDomain).state(handOffId) }) {
-            HandOffState.Waiting -> KaliumShareHandOff(KaliumShareHandOffStatus.WAITING)
-            HandOffState.Claimed -> KaliumShareHandOff(KaliumShareHandOffStatus.CLAIMED)
-            is HandOffState.Finished -> state.toKalium()
-        }
-
     /**
-     * Stops following a handoff before the app finished it: from then on, the app tells the user itself if it does not
-     * store the share. Returns the app's result if it arrived meanwhile, once; otherwise null.
+     * Whether the app took the handoff, which a running app does as it is rung: it sends the share now. Otherwise the
+     * app sends it once Wire is opened.
      */
-    public fun stopWaiting(userValue: String, userDomain: String, handOffId: String): KaliumShareHandOff? =
-        readingFiles(null) { outbox(userValue, userDomain).stopWaiting(handOffId) }?.toKalium()
-
-    private fun HandOffState.Finished.toKalium() = if (result == ShareOutbox.STORED) {
-        KaliumShareHandOff(KaliumShareHandOffStatus.STORED)
-    } else {
-        KaliumShareHandOff(KaliumShareHandOffStatus.NOT_STORED, result)
-    }
+    public fun appTookHandOff(userValue: String, userDomain: String, handOffId: String): Boolean =
+        readingFiles(false) { !outbox(userValue, userDomain).isWaiting(handOffId) }
 
     private fun outbox(userValue: String, userDomain: String) = ShareOutbox(rootPath, UserId(userValue, userDomain))
 
@@ -101,23 +87,3 @@ public class KaliumShareOutbox(private val rootPath: String) {
         fallback
     }
 }
-
-public enum class KaliumShareHandOffStatus {
-    /** The app has not claimed the share yet. */
-    WAITING,
-
-    /** The app is storing the share. */
-    CLAIMED,
-
-    /** The app stored every message, and sends them as it sends the composer's. */
-    STORED,
-
-    /** The app stored nothing more; [KaliumShareHandOff.failureReason] says why. */
-    NOT_STORED,
-}
-
-public data class KaliumShareHandOff(
-    public val status: KaliumShareHandOffStatus,
-    /** A share rule (as `send` reports them), `FAILED`, `UNREADABLE`, or `MISSING` once the result was taken. */
-    public val failureReason: String? = null,
-)

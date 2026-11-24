@@ -53,8 +53,7 @@ private val turns = ConcurrentMutableMap<UserId, Mutex>()
  * Answers the share extension while the app owns this account, live or not (ADR 13). It lists the account's
  * conversations when the extension asks, and stores handed-off shares as the composer would: now, and whenever
  * [doorbell] rings. Runs until cancelled, which must happen before the app releases the account. Servers of one
- * account take turns. A share it refuses after the extension stopped waiting goes to [refused], for the app to tell
- * the user.
+ * account take turns. A share it does not store goes to [refused], for the app to tell the user.
  */
 public suspend fun UserSessionScope.serveShareExtension(
     doorbell: Flow<Unit>,

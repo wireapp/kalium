@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -34,8 +35,8 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.sync.SlowSyncProgress
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -707,54 +708,59 @@ class JoinExistingMLSConversationsUseCaseTest {
             val GROUP_ID1 = GroupID("group1")
             val GROUP_ID2 = GroupID("group2")
 
-            val MLS_CONVERSATION1 = TestConversation.GROUP(
-                Conversation.ProtocolInfo.MLS(
+            val MLS_CONVERSATION1 = MockConversation.group(
+                teamId = TestTeam.TEAM_ID,
+                protocolInfo = Conversation.ProtocolInfo.MLS(
                     GROUP_ID1,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-                )
+                ),
             ).copy(id = ConversationId("id1", "domain"))
 
-            val MLS_CONVERSATION2 = TestConversation.GROUP(
-                Conversation.ProtocolInfo.MLS(
+            val MLS_CONVERSATION2 = MockConversation.group(
+                teamId = TestTeam.TEAM_ID,
+                protocolInfo = Conversation.ProtocolInfo.MLS(
                     GROUP_ID2,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-                )
+                ),
             ).copy(id = ConversationId("id2", "domain"))
 
-            val MLS_PENDING_AFTER_RESET_CONVERSATION = TestConversation.GROUP(
-                Conversation.ProtocolInfo.MLS(
+            val MLS_PENDING_AFTER_RESET_CONVERSATION = MockConversation.group(
+                teamId = TestTeam.TEAM_ID,
+                protocolInfo = Conversation.ProtocolInfo.MLS(
                     GroupID("group-after-reset"),
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-                )
+                ),
             ).copy(id = ConversationId("id-after-reset", "domain"))
 
-            val MLS_PENDING_CREATION_CONVERSATION = TestConversation.GROUP(
-                Conversation.ProtocolInfo.MLS(
+            val MLS_PENDING_CREATION_CONVERSATION = MockConversation.group(
+                teamId = TestTeam.TEAM_ID,
+                protocolInfo = Conversation.ProtocolInfo.MLS(
                     GroupID("group-pending-creation"),
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION,
                     epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-                )
+                ),
             ).copy(id = ConversationId("id-pending-creation", "domain"))
 
-            val MLS_PENDING_WELCOME_CONVERSATION = TestConversation.GROUP(
-                Conversation.ProtocolInfo.MLS(
+            val MLS_PENDING_WELCOME_CONVERSATION = MockConversation.group(
+                teamId = TestTeam.TEAM_ID,
+                protocolInfo = Conversation.ProtocolInfo.MLS(
                     GroupID("group-pending-welcome"),
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE,
                     epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-                )
+                ),
             ).copy(id = ConversationId("id-pending-welcome", "domain"))
         }
     }

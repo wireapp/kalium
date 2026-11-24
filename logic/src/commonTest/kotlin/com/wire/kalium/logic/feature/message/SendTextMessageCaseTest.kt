@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.utils.SHA256Key
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -38,7 +39,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
@@ -93,7 +93,7 @@ class SendTextMessageCaseTest {
             }
             Either.Right(Unit)
         }
-        val sending = launch { sendTextMessage(TestConversation.ID, "timer refresh") }
+        val sending = launch { sendTextMessage(MockConversation.ID, "timer refresh") }
         runCurrent()
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches { it.expirationData == null })
@@ -105,7 +105,7 @@ class SendTextMessageCaseTest {
         kotlin.test.assertEquals(kotlin.time.Duration.parse("60s"), prepared?.expirationData?.expireAfter)
         kotlin.test.assertTrue((prepared as com.wire.kalium.logic.data.message.Message.Regular).expectsReadConfirmation)
         verifySuspend(VerifyMode.exactly(1)) {
-            messages.updatePendingTextPolicy(TestConversation.ID, any(), 60_000L, true)
+            messages.updatePendingTextPolicy(MockConversation.ID, any(), 60_000L, true)
         }
         // Refresh never inserts the text a second time.
         verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
@@ -122,14 +122,14 @@ class SendTextMessageCaseTest {
             .arrange()
         val sync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
         every { arrangement.slowSyncRepository.slowSyncStatus } returns sync.asStateFlow()
-        val sending = launch { sendTextMessage(TestConversation.ID, "pending during crypto", draftRevision = 42L) }
+        val sending = launch { sendTextMessage(MockConversation.ID, "pending during crypto", draftRevision = 42L) }
         runCurrent()
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 it is com.wire.kalium.logic.data.message.Message.Regular &&
                     it.status == com.wire.kalium.logic.data.message.Message.Status.Pending
             })
-            arrangement.messageDraftRepository.consumePlainText(TestConversation.ID, 42L)
+            arrangement.messageDraftRepository.consumePlainText(MockConversation.ID, 42L)
         }
         verifySuspend(VerifyMode.not) { arrangement.messageSender.sendMessage(any(), any()) }
         kotlin.test.assertFalse(sending.isCompleted)
@@ -153,7 +153,7 @@ class SendTextMessageCaseTest {
             .arrange()
 
         // When
-        val result = sendTextMessage(TestConversation.ID, "some-text")
+        val result = sendTextMessage(MockConversation.ID, "some-text")
 
         // Then
         result.toEither().shouldSucceed()
@@ -188,7 +188,7 @@ class SendTextMessageCaseTest {
             .arrange()
 
         // When
-        val result = sendTextMessage(TestConversation.ID, "some-text")
+        val result = sendTextMessage(MockConversation.ID, "some-text")
 
         // Then
         result.toEither().shouldFail()
@@ -223,7 +223,7 @@ class SendTextMessageCaseTest {
             .arrange()
 
         // When
-        val result = sendTextMessage(TestConversation.ID, "some-text")
+        val result = sendTextMessage(MockConversation.ID, "some-text")
 
         // Then
         result.toEither().shouldFail()
@@ -255,7 +255,7 @@ class SendTextMessageCaseTest {
         )
 
         // When
-        val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
+        val result = sendTextMessage(MockConversation.ID, "some-text", linkPreviews)
 
         // Then
         result.toEither().shouldSucceed()
@@ -294,7 +294,7 @@ class SendTextMessageCaseTest {
         )
 
         // When
-        val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
+        val result = sendTextMessage(MockConversation.ID, "some-text", linkPreviews)
 
         // Then
         result.toEither().shouldSucceed()
@@ -337,7 +337,7 @@ class SendTextMessageCaseTest {
         )
 
         // When
-        val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
+        val result = sendTextMessage(MockConversation.ID, "some-text", linkPreviews)
 
         // Then
         result.toEither().shouldSucceed()
@@ -376,7 +376,7 @@ class SendTextMessageCaseTest {
         )
 
         // When
-        val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
+        val result = sendTextMessage(MockConversation.ID, "some-text", linkPreviews)
 
         // Then
         result.toEither().shouldSucceed()
@@ -396,7 +396,7 @@ class SendTextMessageCaseTest {
     fun givenAMessageWithLinkPreview_whenUploadingLinkPreviewImage_thenShouldPassCorrectMetadata() = runTest {
         // Given
         val testUrl = "https://example.com"
-        val testConversationId = TestConversation.ID
+        val testConversationId = MockConversation.ID
         val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
             .withCurrentClientProviderSuccess()
@@ -445,7 +445,7 @@ class SendTextMessageCaseTest {
         everySuspend { arrangement.persistMessage.invoke(any()) } returns
             Either.Left(com.wire.kalium.common.error.StorageFailure.DataNotFound)
 
-        val result = sendTextMessage(TestConversation.ID, "not persisted", draftRevision = 12L)
+        val result = sendTextMessage(MockConversation.ID, "not persisted", draftRevision = 12L)
 
         verifySuspend(VerifyMode.not) { arrangement.messageDraftRepository.consumePlainText(any(), any()) }
         kotlin.test.assertNull(kotlin.test.assertIs<MessageOperationResult.Failure>(result).messageId)
@@ -468,10 +468,10 @@ class SendTextMessageCaseTest {
             delivered.complete(Unit)
             Either.Right(Unit)
         }
-        val screenCaller = launch { sendTextMessage(TestConversation.ID, "durable", draftRevision = 12L) }
+        val screenCaller = launch { sendTextMessage(MockConversation.ID, "durable", draftRevision = 12L) }
         runCurrent()
         verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage.invoke(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageDraftRepository.consumePlainText(TestConversation.ID, 12L) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageDraftRepository.consumePlainText(MockConversation.ID, 12L) }
         screenCaller.cancelAndJoin()
         deliveryGate.complete(Unit)
         runCurrent()
@@ -493,10 +493,10 @@ class SendTextMessageCaseTest {
             syncGate.await()
             Either.Right(TestClient.CLIENT_ID)
         }
-        val firstScreen = launch { sendTextMessage(TestConversation.ID, "A", draftRevision = 4L) }
+        val firstScreen = launch { sendTextMessage(MockConversation.ID, "A", draftRevision = 4L) }
         runCurrent()
         firstScreen.cancelAndJoin()
-        val reopenedScreen = launch { sendTextMessage(TestConversation.ID, "A", draftRevision = 4L) }
+        val reopenedScreen = launch { sendTextMessage(MockConversation.ID, "A", draftRevision = 4L) }
         runCurrent()
         verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
         syncGate.complete(Unit)
@@ -518,9 +518,9 @@ class SendTextMessageCaseTest {
         var consumed = false
         everySuspend { arrangement.messageDraftRepository.isPlainTextConsumed(any(), any()) } calls { consumed }
         everySuspend { arrangement.messageDraftRepository.consumePlainText(any(), any()) } calls { consumed = true }
-        sendTextMessage(TestConversation.ID, "A", draftRevision = 4L)
+        sendTextMessage(MockConversation.ID, "A", draftRevision = 4L)
         runCurrent()
-        sendTextMessage(TestConversation.ID, "A", draftRevision = 4L)
+        sendTextMessage(MockConversation.ID, "A", draftRevision = 4L)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage.invoke(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.sendMessage(any(), any()) }
     }
@@ -540,7 +540,7 @@ class SendTextMessageCaseTest {
             Either.Right(Unit)
         }
 
-        kotlin.test.assertTrue(sendTextMessage.store("shared-id", TestConversation.ID, "some-text"))
+        kotlin.test.assertTrue(sendTextMessage.store("shared-id", MockConversation.ID, "some-text"))
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches { it.id == "shared-id" })
@@ -565,7 +565,7 @@ class SendTextMessageCaseTest {
         every { arrangement.slowSyncRepository.slowSyncStatus } returns slowSync.asStateFlow()
 
         // The importer is cancelled, for example by going to the background, while the account catches up.
-        val storing = launch { sendTextMessage.store("shared-id", TestConversation.ID, "some-text") }
+        val storing = launch { sendTextMessage.store("shared-id", MockConversation.ID, "some-text") }
         runCurrent()
         storing.cancelAndJoin()
         slowSync.value = SlowSyncStatus.Complete
@@ -585,7 +585,7 @@ class SendTextMessageCaseTest {
             .arrange()
         everySuspend { arrangement.persistMessage.invoke(any()) } returns Either.Left(StorageFailure.DataNotFound)
 
-        kotlin.test.assertFalse(sendTextMessage.store("shared-id", TestConversation.ID, "some-text"))
+        kotlin.test.assertFalse(sendTextMessage.store("shared-id", MockConversation.ID, "some-text"))
 
         verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(any(), any())

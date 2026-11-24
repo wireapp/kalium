@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.data.MockConversation
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -28,43 +28,43 @@ class ConversationTest {
 
     @Test
     fun givenConversationWithGuestAccessRole_thenIsGuestAllowedIsTrue() {
-        val conversation = TestConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.GUEST))
+        val conversation = MockConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.GUEST))
         assertTrue(conversation.isGuestAllowed())
     }
 
     @Test
     fun givenConversationWithNoGuestAccessRole_thenIsGuestAllowedIsFalse() {
-        val conversation = TestConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER))
+        val conversation = MockConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER))
         assertFalse(conversation.isGuestAllowed())
     }
 
     @Test
     fun givenConversationWithinTeamMemberAccessRole_thenIsNonTeamMemberAllowedIsTrue() {
-        val conversation = TestConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER))
+        val conversation = MockConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER))
         assertTrue(conversation.isNonTeamMemberAllowed())
     }
 
     @Test
     fun givenConversationWithNoTeamMemberAccessRole_thenIsNonTeamMemberAllowedIsFalse() {
-        val conversation = TestConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.TEAM_MEMBER))
+        val conversation = MockConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.TEAM_MEMBER))
         assertFalse(conversation.isNonTeamMemberAllowed())
     }
 
     @Test
     fun givenConversationWithServiceAccessRole_thenIsNonTeamMemberAllowedIsTrue() {
-        val conversation = TestConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.SERVICE))
+        val conversation = MockConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.SERVICE))
         assertTrue(conversation.isServicesAllowed())
     }
 
     @Test
     fun givenConversationWithNoServiceAccessRole_thenIsNonTeamMemberAllowedIsFalse() {
-        val conversation = TestConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.TEAM_MEMBER))
+        val conversation = MockConversation.CONVERSATION.copy(accessRole = listOf(Conversation.AccessRole.TEAM_MEMBER))
         assertFalse(conversation.isServicesAllowed())
     }
 
     @Test
     fun givenChannelWithBothGuestRolesButOnlyInviteAccess_thenGuestAccessIsDisabled() {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             type = Conversation.Type.Group.Channel,
             accessRole = listOf(Conversation.AccessRole.GUEST, Conversation.AccessRole.NON_TEAM_MEMBER),
             access = listOf(Conversation.Access.INVITE)
@@ -74,7 +74,7 @@ class ConversationTest {
 
     @Test
     fun givenConversationWithCodeAccessButNoGuestRole_thenGuestAccessIsDisabled() {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER),
             access = listOf(Conversation.Access.CODE)
         )
@@ -83,7 +83,7 @@ class ConversationTest {
 
     @Test
     fun givenConversationWithCodeAccessButNoNonTeamMemberRole_thenGuestAccessIsDisabled() {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             accessRole = listOf(Conversation.AccessRole.GUEST),
             access = listOf(Conversation.Access.CODE)
         )
@@ -92,7 +92,7 @@ class ConversationTest {
 
     @Test
     fun givenConversationWithBothGuestRolesAndCodeAccess_thenGuestAccessIsEnabled() {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             accessRole = listOf(
                 Conversation.AccessRole.TEAM_MEMBER,
                 Conversation.AccessRole.GUEST,
@@ -106,7 +106,7 @@ class ConversationTest {
 
     @Test
     fun givenConversationWithBothGuestRolesAndLinkAccess_thenGuestAccessIsDisabled() {
-        val conversation = TestConversation.CONVERSATION.copy(
+        val conversation = MockConversation.CONVERSATION.copy(
             accessRole = listOf(Conversation.AccessRole.GUEST, Conversation.AccessRole.NON_TEAM_MEMBER),
             access = listOf(Conversation.Access.LINK)
         )
@@ -115,7 +115,7 @@ class ConversationTest {
 
     @Test
     fun givenConversationWithEmptyAccessAndRoles_thenGuestAccessIsDisabled() {
-        val conversation = TestConversation.CONVERSATION.copy(accessRole = emptyList(), access = emptyList())
+        val conversation = MockConversation.CONVERSATION.copy(accessRole = emptyList(), access = emptyList())
         assertFalse(conversation.isGuestAccessEnabled())
     }
 

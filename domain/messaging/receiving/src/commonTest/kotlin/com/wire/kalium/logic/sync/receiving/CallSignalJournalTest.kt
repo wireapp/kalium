@@ -194,6 +194,35 @@ class CallSignalJournalTest {
     }
 
     @Test
+    fun expiredSignalsAreNeitherReplayedNorKept() = runTest {
+        withJournal { journal, database ->
+            val metadata = database.builder.metadataDAO
+            val stored = Clock.System.now().toEpochMilliseconds() - CallSignalJournal.SIGNAL_RETENTION_MS
+            val expired = record("expired", stored).copy(ready = true)
+            metadata.putSerializable(CallSignalJournal.KEY, CallSignalJournalState(listOf(expired)), CallSignalJournalState.serializer())
+            assertTrue(journal.signals().isEmpty())
+
+            val fresh = journal.append(start("fresh"))
+            val kept = checkNotNull(metadata.getSerializable(CallSignalJournal.KEY, CallSignalJournalState.serializer())).signals
+            assertEquals(listOf(fresh.id), kept.map { it.id })
+        }
+    }
+
+    @Test
+    fun closingAnEndedCallForgetsOnlyTheSignalsItsEngineHandled() = runTest {
+        withJournal { journal, _ ->
+            val handled = journal.append(start("handled"))
+            journal.submitted(handled.id, "engine")
+            val pending = journal.append(start("pending").copy(time = CALL_TIME + 1.seconds))
+
+            journal.closed(CONVERSATION.value, CONVERSATION.domain, 5)
+            assertEquals(2, journal.signals().size)
+            journal.closed(CONVERSATION.value, CONVERSATION.domain, 5, handledBy = "engine")
+            assertEquals(listOf(pending.id), journal.signals().map { it.id })
+        }
+    }
+
+    @Test
     fun acceptedCancellationBeforeIncomingCallbackPersistsTerminalPresentation() = runTest {
         withJournal { journal, database ->
             val source = journal.append(start("fast"))

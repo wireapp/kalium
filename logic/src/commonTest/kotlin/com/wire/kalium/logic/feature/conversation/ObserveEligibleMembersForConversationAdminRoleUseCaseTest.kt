@@ -18,11 +18,11 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -46,7 +46,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(selfMember))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertTrue(result.isEmpty())
     }
@@ -59,7 +59,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(member))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertTrue(result.isEmpty())
     }
@@ -72,7 +72,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(member))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertTrue(result.isEmpty())
     }
@@ -85,7 +85,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(member))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertTrue(result.isEmpty())
     }
@@ -98,7 +98,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(member))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertTrue(result.isEmpty())
     }
@@ -111,7 +111,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(member))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertTrue(result.isEmpty())
     }
@@ -124,7 +124,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(member))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertTrue(result.isEmpty())
     }
@@ -137,7 +137,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(member))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertTrue(result.isEmpty())
     }
@@ -155,7 +155,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(member))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertEquals(1, result.size)
         assertEquals(member, result.first())
@@ -180,7 +180,7 @@ class ObserveEligibleMembersForConversationAdminRoleUseCaseTest {
             .withMembers(listOf(selfMember, eligibleMember, ineligibleMember))
             .arrange()
 
-        val result = useCase(TestConversation.ID).first()
+        val result = useCase(MockConversation.ID).first()
 
         assertEquals(1, result.size)
         assertEquals(eligibleMember, result.first())

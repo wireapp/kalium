@@ -48,6 +48,7 @@ import platform.Security.errSecSuccess
 import platform.Security.kSecRandomDefault
 
 actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData {
+    key.requireValidSize()
     val outputBuffer = Buffer()
     val inputBuffer = Buffer()
 
@@ -61,6 +62,7 @@ actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData
 }
 
 actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData {
+    secretKey.requireValidSize()
     val outputBuffer = Buffer()
     val inputBuffer = Buffer()
 
@@ -75,6 +77,7 @@ actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
 
 @Suppress("LongMethod", "ThrowsCount")
 actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long {
+    key.requireValidSize()
     val iv = generateRandomData(kCCBlockSizeAES128.toInt())
     val encryptedBuffer = ByteArray(BUFFER_SIZE + kCCBlockSizeAES128.toInt())
 
@@ -165,6 +168,7 @@ actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Lo
 
 @Suppress("LongMethod", "ThrowsCount")
 actual fun decryptFileWithAES256(source: Source, sink: Sink, secretKey: AES256Key): Long {
+    secretKey.requireValidSize()
     val decryptedBuffer = ByteArray(BUFFER_SIZE + kCCBlockSizeAES128.toInt())
 
     return memScoped {

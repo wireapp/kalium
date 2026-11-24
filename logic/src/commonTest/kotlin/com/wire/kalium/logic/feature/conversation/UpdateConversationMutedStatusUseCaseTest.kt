@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -47,7 +47,7 @@ class UpdateConversationMutedStatusUseCaseTest {
 
     @Test
     fun givenAConversationId_whenInvokingAMutedStatusChange_thenShouldDelegateTheCallAndReturnASuccessResult() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         everySuspend {
             conversationRepository.updateMutedStatusRemotely(any(), MutedConversationStatus.AllMuted, any())
         } returns Either.Right(Unit)
@@ -70,7 +70,7 @@ class UpdateConversationMutedStatusUseCaseTest {
 
     @Test
     fun givenAConversationId_whenInvokingAMutedStatusChangeAndFails_thenShouldDelegateTheCallAndReturnAFailureResult() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
         everySuspend {
             conversationRepository.updateMutedStatusRemotely(any(), MutedConversationStatus.AllMuted, any())
