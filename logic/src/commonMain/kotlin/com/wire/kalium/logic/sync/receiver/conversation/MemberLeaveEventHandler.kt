@@ -75,6 +75,7 @@ internal class MemberLeaveEventHandlerImpl(
     private val selfUserId: UserId,
 ) : MemberLeaveEventHandler {
 
+    @Suppress("ReturnCount")
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.MemberLeave

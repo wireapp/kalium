@@ -124,6 +124,7 @@ internal class ReceivedMembershipHandler(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     suspend fun leave(event: Event.Conversation.MemberLeave, profiles: UserProfiles) {
         val conversationId = event.conversationId.toDao()
         val conversation = checkNotNull(data.conversations.getConversationById(conversationId)) {
@@ -154,9 +155,14 @@ internal class ReceivedMembershipHandler(
         if (event.reason == MemberLeaveReason.UserDeleted && !retainPeer) {
             data.users.markAsDeleted(event.removedList.map { it.toDao() })
         }
-        val deleted = if (retainPeer) 0L else data.members.deleteMembersByQualifiedID(
-            event.removedList.map { it.toDao() }, conversationId
-        )
+        val deleted = if (retainPeer) {
+            0L
+        } else {
+            data.members.deleteMembersByQualifiedID(
+                event.removedList.map { it.toDao() },
+                conversationId
+            )
+        }
         // App leave handling counts removed rows before fetching profiles, whose deleted flag
         // can itself remove memberships. Preserve that ordering for the required system message.
         profiles.persist(data.users, data.apps)
