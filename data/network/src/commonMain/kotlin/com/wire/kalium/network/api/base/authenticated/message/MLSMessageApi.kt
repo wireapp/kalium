@@ -96,4 +96,8 @@ interface MLSMessageApi {
      */
     suspend fun sendTransientTargetedMessage(batch: TargetedMessageBatch): NetworkResponse<SendMLSMessageResponse>
 
+    companion object {
+        const val MIN_API_VERSION_TARGETED_TRANSIENT_MESSAGES = 19
+    }
+
 }
