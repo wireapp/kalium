@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
@@ -32,7 +33,6 @@ import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.BATCH_SIZE
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -530,7 +530,7 @@ class UserRepositoryTest {
             .arrange()
 
         // When
-        userRepository.observeAllKnownUsersNotInConversation(TestConversation.ID).test {
+        userRepository.observeAllKnownUsersNotInConversation(MockConversation.ID).test {
             // Then
             awaitItem().also {
                 val users = it.getOrNull()
@@ -627,7 +627,7 @@ class UserRepositoryTest {
     @Test
     fun givenUserIdAndConversationId_whenUpdatingOneOnOneConversation_thenShouldCallDAOWithCorrectArguments() = runTest {
         val userId = TestUser.USER_ID
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
 
         val (arrangement, userRepository) = Arrangement()
             .withUpdateOneOnOneConversationSuccess()
@@ -650,7 +650,7 @@ class UserRepositoryTest {
             .withUpdateOneOnOneConversationFailing(exception)
             .arrange()
         val userId = TestUser.USER_ID
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
 
         connectionRepository.updateActiveOneOnOneConversation(
             userId,

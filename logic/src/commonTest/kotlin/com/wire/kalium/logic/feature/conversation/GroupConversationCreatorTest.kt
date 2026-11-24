@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -37,7 +38,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
@@ -76,7 +77,7 @@ class GroupConversationCreatorTest {
             .withWaitingForSyncFailing()
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
-            .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withCreateGroupConversationReturning(MockConversation.group(teamId = TestTeam.TEAM_ID))
             .arrange()
 
         val result = createGroupConversation(name, members, conversationOptions)
@@ -95,7 +96,7 @@ class GroupConversationCreatorTest {
             .withForbiddenFailure()
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
-            .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withCreateGroupConversationReturning(MockConversation.group(teamId = TestTeam.TEAM_ID))
             .arrange()
 
         val result = createGroupConversation(name, members, conversationOptions)
@@ -110,7 +111,7 @@ class GroupConversationCreatorTest {
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
         val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)
 
-        val createdConversation = TestConversation.GROUP()
+        val createdConversation = MockConversation.group(teamId = TestTeam.TEAM_ID)
         val (_, createGroupConversation) = Arrangement()
             .withWaitingForSyncSucceeding()
             .withUpdateConversationModifiedDateSucceeding()
@@ -136,7 +137,7 @@ class GroupConversationCreatorTest {
             .withWaitingForSyncSucceeding()
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
-            .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withCreateGroupConversationReturning(MockConversation.group(teamId = TestTeam.TEAM_ID))
             .withPersistingReadReceiptsSystemMessage()
             .arrange()
 
@@ -185,7 +186,7 @@ class GroupConversationCreatorTest {
             .withMarkingConversationDeletedLocallySucceeding()
             .withCreateGroupConversationFailingWith(
                 MLSFailure.FederatedBackendConflict(domains),
-                TestConversation.ID,
+                MockConversation.ID,
             )
             .arrange()
 
@@ -199,8 +200,8 @@ class GroupConversationCreatorTest {
         assertEquals(domains, conflict.domains)
         assertNull(conflict.conversationId)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(TestConversation.ID))
+            arrangement.conversationRepository.setConversationDeletedLocally(MockConversation.ID, true)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(MockConversation.ID))
         }
     }
 
@@ -213,7 +214,7 @@ class GroupConversationCreatorTest {
             .withMarkingConversationDeletedLocallyFailing()
             .withCreateGroupConversationFailingWith(
                 MLSFailure.FederatedBackendConflict(domains),
-                TestConversation.ID,
+                MockConversation.ID,
             )
             .arrange()
 
@@ -225,10 +226,10 @@ class GroupConversationCreatorTest {
 
         val conflict = assertIs<ConversationCreationResult.BackendConflictFailure>(result)
         assertEquals(domains, conflict.domains)
-        assertEquals(TestConversation.ID, conflict.conversationId)
+        assertEquals(MockConversation.ID, conflict.conversationId)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(TestConversation.ID))
+            arrangement.conversationRepository.setConversationDeletedLocally(MockConversation.ID, true)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(MockConversation.ID))
         }
     }
 
@@ -243,7 +244,7 @@ class GroupConversationCreatorTest {
             .withWaitingForSyncSucceeding()
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
-            .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withCreateGroupConversationReturning(MockConversation.group(teamId = TestTeam.TEAM_ID))
             .withPersistingReadReceiptsSystemMessage()
             .arrange()
 
@@ -269,7 +270,7 @@ class GroupConversationCreatorTest {
             .withWaitingForSyncSucceeding()
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
-            .withCreateGroupConversationReturning(TestConversation.GROUP())
+            .withCreateGroupConversationReturning(MockConversation.group(teamId = TestTeam.TEAM_ID))
             .withPersistingReadReceiptsSystemMessage()
             .arrange()
 
@@ -282,7 +283,7 @@ class GroupConversationCreatorTest {
 
     @Test
     fun givenMLSGroupEstablishFails_whenCreatingGroupConversation_thenPendingConversationIsReturned() = runTest {
-        val conversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
+        val conversation = MockConversation.group(teamId = TestTeam.TEAM_ID, protocolInfo = MockConversation.MLS_PROTOCOL_INFO)
         val rootCause = StorageFailure.DataNotFound
         val (arrangement, createGroupConversation) = Arrangement()
             .withWaitingForSyncSucceeding()
@@ -309,10 +310,11 @@ class GroupConversationCreatorTest {
 
     @Test
     fun givenPendingMLSGroup_whenRetryingCreation_thenExistingConversationIsEstablished() = runTest {
-        val conversation = TestConversation.GROUP(
-            TestConversation.MLS_PROTOCOL_INFO.copy(
+        val conversation = MockConversation.group(
+            teamId = TestTeam.TEAM_ID,
+            protocolInfo = MockConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
-            )
+            ),
         )
         val establishedConversation = conversation.copy(
             protocol = (conversation.protocol as Conversation.ProtocolInfo.MLS).copy(
@@ -340,10 +342,11 @@ class GroupConversationCreatorTest {
 
     @Test
     fun givenJoinReturnsSuccessButConversationIsStillPending_whenRetryingCreation_thenRecoveryRemainsQueued() = runTest {
-        val conversation = TestConversation.GROUP(
-            TestConversation.MLS_PROTOCOL_INFO.copy(
+        val conversation = MockConversation.group(
+            teamId = TestTeam.TEAM_ID,
+            protocolInfo = MockConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
-            )
+            ),
         )
         val (arrangement, createGroupConversation) = Arrangement()
             .withWaitingForSyncSucceeding()
@@ -362,10 +365,11 @@ class GroupConversationCreatorTest {
 
     @Test
     fun givenJoinFailsWithBackendConflict_whenRetryingCreation_thenReturnsConflictAndAcknowledgesPendingAction() = runTest {
-        val conversation = TestConversation.GROUP(
-            TestConversation.MLS_PROTOCOL_INFO.copy(
+        val conversation = MockConversation.group(
+            teamId = TestTeam.TEAM_ID,
+            protocolInfo = MockConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
-            )
+            ),
         )
         val domains = listOf("backend-a.example", "backend-b.example")
         val (arrangement, createGroupConversation) = Arrangement()
@@ -389,10 +393,11 @@ class GroupConversationCreatorTest {
 
     @Test
     fun givenRetryConflictAndCleanupFails_whenRetryingCreation_thenReturnsCleanupFallbackId() = runTest {
-        val conversation = TestConversation.GROUP(
-            TestConversation.MLS_PROTOCOL_INFO.copy(
+        val conversation = MockConversation.group(
+            teamId = TestTeam.TEAM_ID,
+            protocolInfo = MockConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
-            )
+            ),
         )
         val domains = listOf("backend-a.example", "backend-b.example")
         val (arrangement, createGroupConversation) = Arrangement()
@@ -422,7 +427,7 @@ class GroupConversationCreatorTest {
             .withCurrentClientIdReturning(ClientId("client-id"))
             .withMarkingConversationDeletedLocallySucceeding()
             .withAcknowledgementThrowing(IllegalStateException("Database write failed"))
-            .withCreateGroupConversationFailingWith(MLSFailure.FederatedBackendConflict(domains), TestConversation.ID)
+            .withCreateGroupConversationFailingWith(MLSFailure.FederatedBackendConflict(domains), MockConversation.ID)
             .arrange()
 
         val result = createGroupConversation(
@@ -433,13 +438,16 @@ class GroupConversationCreatorTest {
 
         val conflict = assertIs<ConversationCreationResult.BackendConflictFailure>(result)
         assertEquals(domains, conflict.domains)
-        assertEquals(TestConversation.ID, conflict.conversationId)
+        assertEquals(MockConversation.ID, conflict.conversationId)
     }
 
     @Test
     fun givenRetryConflictAndAcknowledgementFails_whenRetrying_thenReturnsCleanupFallbackId() = runTest {
-        val conversation = TestConversation.GROUP(
-            TestConversation.MLS_PROTOCOL_INFO.copy(groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION)
+        val conversation = MockConversation.group(
+            teamId = TestTeam.TEAM_ID,
+            protocolInfo = MockConversation.MLS_PROTOCOL_INFO.copy(
+                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
+            ),
         )
         val domains = listOf("backend-a.example", "backend-b.example")
         val (_, createGroupConversation) = Arrangement()
@@ -465,11 +473,11 @@ class GroupConversationCreatorTest {
             .withAcknowledgementThrowing(IllegalStateException("Database write failed"))
             .arrange()
 
-        assertEquals(false, createGroupConversation.discardPendingMLSGroupCreation(TestConversation.ID))
+        assertEquals(false, createGroupConversation.discardPendingMLSGroupCreation(MockConversation.ID))
         everySuspend {
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(TestConversation.ID))
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(MockConversation.ID))
         } returns Unit
-        assertEquals(true, createGroupConversation.discardPendingMLSGroupCreation(TestConversation.ID))
+        assertEquals(true, createGroupConversation.discardPendingMLSGroupCreation(MockConversation.ID))
     }
 
     @Test
@@ -480,13 +488,13 @@ class GroupConversationCreatorTest {
             .arrange()
 
         assertFailsWith<CancellationException> {
-            createGroupConversation.discardPendingMLSGroupCreation(TestConversation.ID)
+            createGroupConversation.discardPendingMLSGroupCreation(MockConversation.ID)
         }
     }
 
     @Test
     fun givenTerminallyFailedMLSGroup_whenDiscardingCreation_thenConversationIsHiddenAndPendingActionIsAcknowledged() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val (arrangement, createGroupConversation) = Arrangement()
             .withMarkingConversationDeletedLocallySucceeding()
             .arrange()
@@ -501,10 +509,11 @@ class GroupConversationCreatorTest {
 
     @Test
     fun givenMLSGroupWasAlreadyRecovered_whenRetryingCreation_thenEstablishIsNotRepeated() = runTest {
-        val conversation = TestConversation.GROUP(
-            TestConversation.MLS_PROTOCOL_INFO.copy(
+        val conversation = MockConversation.group(
+            teamId = TestTeam.TEAM_ID,
+            protocolInfo = MockConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
-            )
+            ),
         )
         val (arrangement, createGroupConversation) = Arrangement()
             .withWaitingForSyncSucceeding()

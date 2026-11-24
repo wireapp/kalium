@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.message.linkpreview
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -28,7 +29,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import dev.mokkery.answering.returns
@@ -63,7 +63,7 @@ class ResolveLinkPreviewImagesUseCaseTest {
             .withResolvedAsset(resolvedPath)
             .arrange()
 
-        useCase(TestConversation.ID, message.id)
+        useCase(MockConversation.ID, message.id)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -71,7 +71,7 @@ class ResolveLinkPreviewImagesUseCaseTest {
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.updateLinkPreviewImageLocalPath(
-                conversationId = TestConversation.ID,
+                conversationId = MockConversation.ID,
                 messageId = message.id,
                 urlOffset = TEST_PREVIEW.urlOffset,
                 localPath = resolvedPath.toString()
@@ -87,7 +87,7 @@ class ResolveLinkPreviewImagesUseCaseTest {
             .withResolvedAsset(resolvedPath)
             .arrange()
 
-        useCase(TestConversation.ID, TEST_MESSAGE.id)
+        useCase(MockConversation.ID, TEST_MESSAGE.id)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -104,7 +104,7 @@ class ResolveLinkPreviewImagesUseCaseTest {
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.updateLinkPreviewImageLocalPath(
-                conversationId = TestConversation.ID,
+                conversationId = MockConversation.ID,
                 messageId = TEST_MESSAGE.id,
                 urlOffset = 6,
                 localPath = resolvedPath.toString()
@@ -125,7 +125,7 @@ class ResolveLinkPreviewImagesUseCaseTest {
             .withMessage(message)
             .arrange()
 
-        useCase(TestConversation.ID, TEST_MESSAGE.id)
+        useCase(MockConversation.ID, TEST_MESSAGE.id)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.not) {
@@ -143,7 +143,7 @@ class ResolveLinkPreviewImagesUseCaseTest {
             .withAssetFailure()
             .arrange()
 
-        useCase(TestConversation.ID, TEST_MESSAGE.id)
+        useCase(MockConversation.ID, TEST_MESSAGE.id)
         advanceUntilIdle()
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -167,7 +167,7 @@ class ResolveLinkPreviewImagesUseCaseTest {
         }
 
         fun withMessage(message: Message) = apply {
-            everySuspend { messageRepository.getMessageById(TestConversation.ID, TEST_MESSAGE.id) } returns Either.Right(message)
+            everySuspend { messageRepository.getMessageById(MockConversation.ID, TEST_MESSAGE.id) } returns Either.Right(message)
         }
 
         fun withResolvedAsset(path: okio.Path) = apply {
@@ -218,7 +218,7 @@ private val TEST_PREVIEW = MessageLinkPreview(
 private val TEST_MESSAGE = Message.Regular(
     id = "message-id",
     content = MessageContent.Text(value = "Hello https://example.com", linkPreviews = listOf(TEST_PREVIEW)),
-    conversationId = TestConversation.ID,
+    conversationId = MockConversation.ID,
     date = Instant.fromEpochMilliseconds(0),
     senderUserId = TestUser.OTHER.id,
     status = Message.Status.Sent,

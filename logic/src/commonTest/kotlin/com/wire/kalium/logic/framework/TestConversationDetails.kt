@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.framework
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationDetails
@@ -28,7 +29,7 @@ import kotlin.time.Instant
 object TestConversationDetails {
 
     val CONNECTION = ConversationDetails.Connection(
-        TestConversation.ID,
+        MockConversation.ID,
         TestUser.OTHER,
         UserTypeInfo.Regular(UserType.EXTERNAL),
         Instant.parse("2022-03-30T15:36:00.000Z"),
@@ -39,13 +40,13 @@ object TestConversationDetails {
     )
 
     val CONVERSATION_ONE_ONE = ConversationDetails.OneOne(
-        TestConversation.ONE_ON_ONE(),
+        MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID),
         TestUser.OTHER,
         UserTypeInfo.Regular(UserType.EXTERNAL),
     )
 
     val CONVERSATION_GROUP = ConversationDetails.Group.Regular(
-        conversation = TestConversation.GROUP(),
+        conversation = MockConversation.group(teamId = TestTeam.TEAM_ID),
         isSelfUserMember = true,
         selfRole = Conversation.Member.Role.Member
     )

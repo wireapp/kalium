@@ -6,6 +6,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
@@ -13,7 +14,6 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -50,7 +50,7 @@ class RefreshPendingTextPolicyIntegrationTest {
 
     private suspend fun TestScope.checkPolicy(type: ConversationEntity.Type, personal: Boolean, expected: Boolean) {
         withTestUserDatabase(TestUser.ENTITY_ID) { database ->
-            database.builder.conversationDAO.insertConversation(TestConversation.ENTITY.copy(type = type))
+            database.builder.conversationDAO.insertConversation(MockConversation.entity().copy(type = type))
             database.builder.userDAO.upsertUser(TestUser.ENTITY)
             // The receipt query, nullable result mapping and policy UPDATE all use the real SQLite DAO and repository.
             val messages = MessageDataSource(
@@ -70,7 +70,7 @@ class RefreshPendingTextPolicyIntegrationTest {
             )
             val persist = PersistMessageUseCaseImpl(messages, TestUser.USER_ID, mock<NotificationEventsManager>())
             assertIs<Either.Right<Unit>>(persist(pending))
-            val beforeRefresh = database.builder.messageDAO.getMessageById(pending.id, TestConversation.ENTITY_ID)
+            val beforeRefresh = database.builder.messageDAO.getMessageById(pending.id, MockConversation.ENTITY_ID)
             assertEquals(
                 if (type == ConversationEntity.Type.ONE_ON_ONE) !expected else false,
                 assertIs<MessageEntity.Regular>(beforeRefresh).expectsReadConfirmation
@@ -78,7 +78,7 @@ class RefreshPendingTextPolicyIntegrationTest {
 
             val result = assertIs<Either.Right<Message.Sendable>>(RefreshPendingTextPolicy(messages, properties, timer)(pending))
             assertEquals(expected, assertIs<Message.Regular>(result.value).expectsReadConfirmation)
-            val persisted = database.builder.messageDAO.getMessageById(pending.id, TestConversation.ENTITY_ID)
+            val persisted = database.builder.messageDAO.getMessageById(pending.id, MockConversation.ENTITY_ID)
             assertEquals(expected, assertIs<MessageEntity.Regular>(persisted).expectsReadConfirmation)
         }
     }

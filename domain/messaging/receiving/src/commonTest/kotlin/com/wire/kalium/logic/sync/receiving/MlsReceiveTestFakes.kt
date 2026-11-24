@@ -78,6 +78,14 @@ internal open class UnexpectedMlsContext : MlsCoreCryptoContext {
     override suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId = error("Unexpected native call")
     override suspend fun commitPendingProposals(groupId: MLSGroupId): Unit = error("Unexpected native call")
     override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage = error("Unexpected native call")
+    override suspend fun encryptTransientMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage =
+        error("Unexpected native call")
+    override suspend fun encryptTargetedMessage(
+        groupId: MLSGroupId,
+        recipient: CryptoQualifiedClientId,
+        message: PlainMessage,
+        transient: Boolean
+    ): ApplicationMessage = error("Unexpected native call")
     override suspend fun decryptMessage(groupId: String, message: ByteArray): MLSDecryptResult = error("Unexpected native call")
     override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> = error("Unexpected native call")
     override suspend fun addMember(groupId: MLSGroupId, membersKeyPackages: List<MLSKeyPackage>): Unit = error("Unexpected native call")

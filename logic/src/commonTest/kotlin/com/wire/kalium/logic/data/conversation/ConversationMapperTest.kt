@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.Companion.MESSAGE_PREVIEW_ENTITY
 import com.wire.kalium.logic.data.id.IdMapper
@@ -33,7 +34,7 @@ import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
@@ -100,7 +101,7 @@ internal class ConversationMapperTest {
         listOf<Instant?>(null, deletionTimestamp).forEach { timestamp ->
             val details = assertIs<ConversationDetails.Group.Regular>(
                 conversationMapper.fromDaoModelToDetails(
-                    TestConversation.GROUP_VIEW_ENTITY().copy(adminlessGroupDeletionTimestamp = timestamp)
+                    MockConversation.groupViewEntity(teamId = TestTeam.TEAM_ID).copy(adminlessGroupDeletionTimestamp = timestamp)
                 )
             )
 
@@ -110,7 +111,7 @@ internal class ConversationMapperTest {
 
     @Test
     fun givenOneOnOneDaoModelWithoutOtherUserId_whenMappingToDetails_thenFallbackDeletedUserIsReturned() {
-        val conversation = TestConversation.VIEW_ONE_ON_ONE.copy(
+        val conversation = MockConversation.VIEW_ONE_ON_ONE.copy(
             name = null,
             otherUserId = null,
             userDeleted = null,
@@ -544,7 +545,7 @@ internal class ConversationMapperTest {
 
     private fun mockPreviewMessage(content: MessagePreviewContent) = MessagePreview(
         id = MESSAGE_PREVIEW_ENTITY.id,
-        conversationId = TestConversation.CONVERSATION.id,
+        conversationId = MockConversation.CONVERSATION.id,
         content = content,
         visibility = Message.Visibility.VISIBLE,
         isSelfMessage = false,
@@ -570,10 +571,10 @@ internal class ConversationMapperTest {
             messageMapper.fromDraftToMessagePreview(any())
         }.returns(mockPreviewMessage(MessagePreviewContent.Draft("draft")))
         val conversation = ConversationDetailsWithEventsEntity(
-            conversationViewEntity = TestConversation.VIEW_ENTITY.copy(archived = archived),
+            conversationViewEntity = MockConversation.VIEW_ENTITY.copy(archived = archived),
             lastMessage = lastMessage,
             messageDraft = messageDraft,
-            unreadEvents = ConversationUnreadEventEntity(TestConversation.VIEW_ENTITY.id, mapOf()),
+            unreadEvents = ConversationUnreadEventEntity(MockConversation.VIEW_ENTITY.id, mapOf()),
         )
         assertion(conversationMapper.fromDaoModelToDetailsWithEvents(conversation).lastMessage)
     }
@@ -581,14 +582,14 @@ internal class ConversationMapperTest {
     @Test
     fun givenConversationWithDraftAndLastMessage_whenMappingFromDAODetailsWithEventsToModel_thenReturnProperLastMessage() =
         testConversationLastMessage(
-            lastMessage = MESSAGE_PREVIEW_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
-            messageDraft = MESSAGE_DRAFT_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
+            lastMessage = MESSAGE_PREVIEW_ENTITY.copy(conversationId = MockConversation.VIEW_ENTITY.id),
+            messageDraft = MESSAGE_DRAFT_ENTITY.copy(conversationId = MockConversation.VIEW_ENTITY.id),
         ) { lastMessage -> assertIs<MessagePreviewContent.Draft>(lastMessage?.content) } // draft is always newer than last message
 
     @Test
     fun givenConversationWithLastMessage_whenMappingFromDAODetailsWithEventsToModel_thenReturnProperLastMessage() =
         testConversationLastMessage(
-            lastMessage = MESSAGE_PREVIEW_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
+            lastMessage = MESSAGE_PREVIEW_ENTITY.copy(conversationId = MockConversation.VIEW_ENTITY.id),
         ) { lastMessage -> assertIs<MessagePreviewContent.WithUser.Text>(lastMessage?.content) }
 
     @Test
@@ -598,8 +599,8 @@ internal class ConversationMapperTest {
     @Test
     fun givenArchivedConversationWithDraftAndLastMessage_whenMappingFromDAODetailsWithEventsToModel_thenReturnProperLastMessage() =
         testConversationLastMessage(
-            lastMessage = MESSAGE_PREVIEW_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
-            messageDraft = MESSAGE_DRAFT_ENTITY.copy(conversationId = TestConversation.VIEW_ENTITY.id),
+            lastMessage = MESSAGE_PREVIEW_ENTITY.copy(conversationId = MockConversation.VIEW_ENTITY.id),
+            messageDraft = MESSAGE_DRAFT_ENTITY.copy(conversationId = MockConversation.VIEW_ENTITY.id),
             archived = true,
         ) { lastMessage -> assertEquals(null, lastMessage) } // do not return last message if conversation is archived
 
@@ -616,7 +617,7 @@ internal class ConversationMapperTest {
         val OTHER_MEMBERS =
             listOf(ConversationMemberDTO.Other(service = null, id = UserId("other1", "domain1"), conversationRole = "wire_admin"))
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, OTHER_MEMBERS)
-        val MESSAGE_DRAFT_ENTITY = MessageDraftEntity(TestConversation.VIEW_ENTITY.id, "text", null, null, listOf())
+        val MESSAGE_DRAFT_ENTITY = MessageDraftEntity(MockConversation.VIEW_ENTITY.id, "text", null, null, listOf())
 
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
