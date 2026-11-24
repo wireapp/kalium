@@ -49,6 +49,7 @@ internal fun CoreFailure.canDeferNotification(): Boolean = isTransientNetworkFai
     else -> false
 }
 
+// CoreCrypto reports a conflicting-backends commit rejection as an MLS failure; it is the same retryable federation failure.
 internal fun CoreFailure.isTransientNetworkFailure(): Boolean = when (val failure = normalizeFederatedBackendConflict()) {
     is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
     is NetworkFailure.ServerMiscommunication -> failure.kaliumException.isRetryableServerResponse()

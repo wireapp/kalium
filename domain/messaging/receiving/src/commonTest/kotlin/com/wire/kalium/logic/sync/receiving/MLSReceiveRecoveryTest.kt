@@ -227,6 +227,9 @@ class MLSReceiveRecoveryTest {
             assertFailsWith<KaliumSyncException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
             assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
             f.api.groupInfoFailure = null
+            f.failure = KaliumSyncException("conflict", MLSFailure.FederatedBackendConflict(listOf("b.example.com")))
+            assertFailsWith<KaliumSyncException> { f.recovery.resume(f.native, EVENT) }
+            assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
             f.failure = IllegalStateException("External commit rejected")
             assertNull(f.recovery.resume(f.native, EVENT))
             assertNull(f.store.find(EVENT.id) { CIPHERTEXT })
