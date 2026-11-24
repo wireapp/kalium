@@ -69,7 +69,10 @@ fun protectedGlobalDatabaseProvider(
     val file = directory.resolve(FileNameUtil.globalDBName())
     val driver = protectedDatabaseDriver(file.toPath(), GlobalDatabase.Schema.synchronous(), keyStore, enableWAL)
     return GlobalDatabaseBuilder(
-        driver, PlatformDatabaseData(StorageData.FileBacked(directory)), queriesContext, isProtectedJvm = true
+        driver,
+        PlatformDatabaseData(StorageData.FileBacked(directory)),
+        queriesContext,
+        isProtectedJvm = true,
     )
 }
 

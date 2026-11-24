@@ -41,7 +41,9 @@ actual class GlobalPrefProvider private constructor(
     )
 
     private constructor(preferences: KaliumPreferences) : this(
-        AuthTokenStorageImpl(preferences), TokenStorageImpl(preferences), PassphraseStorageImpl(preferences)
+        AuthTokenStorageImpl(preferences),
+        TokenStorageImpl(preferences),
+        PassphraseStorageImpl(preferences),
     )
 
     companion object {
@@ -50,7 +52,9 @@ actual class GlobalPrefProvider private constructor(
             check(database.isProtectedJvm) { "Global settings require a protected JVM database" }
             val preferences = ProtectedJvmPreferences(database)
             return GlobalPrefProvider(
-                ProtectedAuthTokenStorage(preferences), ProtectedTokenStorage(preferences), ProtectedPassphraseStorage(preferences)
+                ProtectedAuthTokenStorage(preferences),
+                ProtectedTokenStorage(preferences),
+                ProtectedPassphraseStorage(preferences),
             )
         }
     }
