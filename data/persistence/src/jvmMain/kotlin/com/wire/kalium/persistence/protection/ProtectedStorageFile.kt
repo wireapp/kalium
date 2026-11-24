@@ -10,6 +10,7 @@ import java.nio.file.StandardOpenOption.WRITE
 import java.security.MessageDigest
 import java.util.HexFormat
 
+private const val STORAGE_KEY_BYTES = 32
 private val processLock = Any()
 
 internal fun <T> withProtectedFileLock(file: Path, action: () -> T): T = synchronized(processLock) {
@@ -24,7 +25,7 @@ internal fun loadProtectedFileKey(store: JvmStorageKeyStore, file: Path, allowCr
     val identity = "Kalium JVM file v1/${file.toFile().canonicalPath}".encodeToByteArray()
     val keyId = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(identity))
     val key = store.load(keyId, allowCreation)
-    if (key.size != 32) {
+    if (key.size != STORAGE_KEY_BYTES) {
         key.fill(0)
         error("Invalid protected storage key length")
     }

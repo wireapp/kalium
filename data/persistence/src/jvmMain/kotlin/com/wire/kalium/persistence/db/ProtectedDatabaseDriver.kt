@@ -9,6 +9,7 @@ import com.wire.kalium.persistence.protection.JvmStorageKeyStore
 import com.wire.kalium.persistence.protection.loadProtectedFileKey
 import com.wire.kalium.persistence.protection.withProtectedFileLock
 import org.sqlite.SQLiteConfig
+import org.sqlite.SQLiteDataSource
 import org.sqlite.mc.SQLiteMCSqlCipherConfig
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
@@ -20,7 +21,7 @@ private val sqliteHeader = "SQLite format 3\u0000".encodeToByteArray()
 
 // SQLite ignores unrecognized PRAGMAs. Verify the selected native engine before allowing disk writes.
 private val hasNativeCipher by lazy {
-    DriverManager.getConnection("jdbc:sqlite::memory:").use { connection ->
+    SQLiteDataSource().connection.use { connection ->
         connection.createStatement().use { statement ->
             statement.executeQuery("SELECT sqlite3mc_config('sqlcipher', 'hmac_use')").use { it.next() && it.getInt(1) == 1 }
         }
@@ -38,9 +39,9 @@ internal fun protectedDatabaseDriver(
     return withProtectedFileLock(path) {
         val missing = Files.notExists(path, NOFOLLOW_LINKS)
         if (missing) {
-            check(listOf("-wal", "-shm", "-journal").all { suffix ->
-                Files.notExists(path.resolveSibling("${path.fileName}$suffix"), NOFOLLOW_LINKS)
-            }) { "Missing protected database with surviving recovery files" }
+            val recoveryFiles = listOf("-wal", "-shm", "-journal").map { path.resolveSibling("${path.fileName}$it") }
+            val hasNoRecoveryFiles = recoveryFiles.all { Files.notExists(it, NOFOLLOW_LINKS) }
+            check(hasNoRecoveryFiles) { "Missing protected database with surviving recovery files" }
         } else {
             check(Files.isRegularFile(path, NOFOLLOW_LINKS)) { "Protected database must be a regular file" }
             check(Files.newInputStream(path).use { !it.readNBytes(sqliteHeader.size).contentEquals(sqliteHeader) }) {
@@ -74,7 +75,7 @@ private fun verifyExistingDatabase(url: String, key: ByteArray) {
         DriverManager.getConnection(url, readOnly.toProperties()).use { connection ->
             connection.createStatement().use { statement ->
                 // Preparing this query reads an authenticated page before SQLDelight can run migrations.
-                statement.executeQuery("SELECT count(*) FROM sqlite_schema").use { check(it.next()) }
+                statement.executeQuery("SELECT count(*) FROM sqlite_schema").close()
             }
         }
     } catch (_: SQLException) {
