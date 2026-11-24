@@ -29,7 +29,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.retry
@@ -63,6 +62,8 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : RefreshCellAssetStateUseCase {
+
+    private val localCleanup = CellAssetLocalCleanup(attachmentsRepository, fileSystem, dispatchers)
 
     private companion object {
         private const val MAX_PREVIEW_FETCH_RETRIES = 20
@@ -114,12 +115,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
             }
 
     private suspend fun removeLocalAssetData(assetId: String) {
-        attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
-        attachmentsRepository.getAttachment(assetId).map { attachment ->
-            (attachment as? CellAssetContent)?.localPath?.takeIf { it.isNotBlank() }?.let { localPath ->
-                deleteLocalFile(localPath.toPath())
-            }
-        }
+        localCleanup(assetId, localPath = null)
     }
 
     private suspend fun refreshLocalData(node: CellNode) {

@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -58,19 +59,45 @@ internal class CellAssetLocalCleanup(
         localPath: String?,
         folderPath: String? = null,
     ): Either<StorageFailure, Unit> {
+        val attachment = cellAttachmentsRepository.getAttachment(assetId).getOrNull() as? CellAssetContent
+        val isAvailableOffline = cellAttachmentsRepository.isAssetAvailableOffline(assetId).getOrNull() == true
+
         // Read before the record is deleted below, which forgets it.
         val storedLocalPath = cellAttachmentsRepository.getStandaloneAssetPathsByIds(listOf(assetId))
             .getOrNull()
             ?.firstOrNull()
             ?.localPath
-        // Keep asset data but set transfer status to NOT_FOUND to show attachment as not available
-        return cellAttachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
+        val localPathToKeep = setOfNotNull(attachment?.localPath, storedLocalPath, localPath)
+            .firstOrNull { fileSystem.exists(it.toPath()) }
+        val status = if (isAvailableOffline && localPathToKeep != null) {
+            AssetTransferStatus.SAVED_INTERNALLY
+        } else {
+            AssetTransferStatus.NOT_FOUND
+        }
+
+        return cellAttachmentsRepository.setAssetTransferStatus(assetId, status)
+            .flatMap {
+                if (attachment != null && localPathToKeep != null && attachment.localPath == null) {
+                    cellAttachmentsRepository.saveLocalPath(assetId, localPathToKeep)
+                } else {
+                    Unit.right()
+                }
+            }
             .flatMap {
                 // Delete asset from the database if it was not received as message attachment
-                cellAttachmentsRepository.deleteStandaloneAsset(assetId)
+                if (attachment != null && isAvailableOffline && localPathToKeep != null) {
+                    Unit.right()
+                } else {
+                    cellAttachmentsRepository.deleteStandaloneAsset(assetId)
+                }
             }
             .onSuccess {
-                setOfNotNull(storedLocalPath, localPath).forEach { deleteLocalFile(it) }
+                if (status == AssetTransferStatus.NOT_FOUND) {
+                    setOfNotNull(storedLocalPath, localPath, attachment?.localPath).forEach { deleteLocalFile(it) }
+                    if (attachment?.localPath != null) {
+                        cellAttachmentsRepository.saveLocalPath(assetId, null)
+                    }
+                }
             }
             .flatMap {
                 folderPath?.let { cleanUpFolderContents(it) } ?: Unit.right()

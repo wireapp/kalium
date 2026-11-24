@@ -44,6 +44,7 @@ internal interface CellAttachmentsRepository {
 
     suspend fun getAttachments(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
     suspend fun getAttachmentsByIds(assetIds: List<String>): Either<StorageFailure, List<MessageAttachment>>
+    suspend fun isAssetAvailableOffline(assetId: String): Either<StorageFailure, Boolean>
 
     @Suppress("LongParameterList")
     suspend fun saveStandaloneAssetPath(
