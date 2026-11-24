@@ -45,6 +45,7 @@ import com.wire.kalium.network.exceptions.isUnknownClient
 import com.wire.kalium.network.session.FailureToRefreshTokenException
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.client.TransactionalAuthTokenStorage
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CancellationException
@@ -69,6 +70,11 @@ internal class SessionManagerImpl internal constructor(
     private var serverConfig: ServerConfigDTO? = null
 
     override suspend fun session(): SessionDTO? = withContext(coroutineContext) {
+        if (tokenStorage is TransactionalAuthTokenStorage) {
+            val token = tokenStorage.getToken(userId.toDao())
+            if (token == null) logout(LogoutReason.SESSION_EXPIRED)
+            return@withContext token?.let(sessionMapper::fromEntityToSessionDTO)
+        }
         wrapStorageRequest { tokenStorage.getToken(userId.toDao()) }
             .map { sessionMapper.fromEntityToSessionDTO(it) }
             .nullableFold(
@@ -150,12 +156,16 @@ internal class SessionManagerImpl internal constructor(
         logout(LogoutReason.REMOVED_CLIENT)
     }
 
-    override fun proxyCredentials(): ProxyCredentialsDTO? =
-        wrapStorageRequest { tokenStorage.proxyCredentials(userId.toDao()) }.nullableFold({
+    override fun proxyCredentials(): ProxyCredentialsDTO? {
+        if (tokenStorage is TransactionalAuthTokenStorage) {
+            return tokenStorage.proxyCredentials(userId.toDao())?.let(sessionMapper::fromEntityToProxyCredentialsDTO)
+        }
+        return wrapStorageRequest { tokenStorage.proxyCredentials(userId.toDao()) }.nullableFold({
             null
         }, {
             sessionMapper.fromEntityToProxyCredentialsDTO(it)
         })
+    }
 
     private fun account(): Account = account ?: runBlocking {
         sessionRepository.fullAccountInfo(userId)

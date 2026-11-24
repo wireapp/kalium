@@ -5,12 +5,11 @@ import app.cash.sqldelight.db.QueryResult
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.protection.JvmStorageKeyStore
 import com.wire.kalium.persistence.protection.MacStorageKeyStore
+import com.wire.kalium.persistence.protection.runStorageProcessProbe
 import com.wire.kalium.persistence.util.FileNameUtil
 import java.io.File
-import java.net.URLClassLoader
 import java.nio.file.Path
 import java.security.SecureRandom
-import java.util.concurrent.TimeUnit
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -113,24 +112,10 @@ class ProtectedJvmDatabaseTest {
         assumeTrue(System.getProperty("os.name") == "Mac OS X" && !keychain.isNullOrBlank())
         val root = createTempDirectory("kalium-db-restart").toFile()
         try {
-            val classpath = generateSequence(javaClass.classLoader) { it.parent }
-                .filterIsInstance<URLClassLoader>()
-                .flatMap { it.urLs.asSequence() }
-                .map { File(it.toURI()).path }
-                .toList() + System.getProperty("java.class.path").split(File.pathSeparator)
-            val java = File(System.getProperty("java.home"), "bin/java").path
             for (action in listOf("write", "read")) {
-                val log = root.resolve("$action.log")
-                val process = ProcessBuilder(
-                    java, "-cp", classpath.distinct().joinToString(File.pathSeparator),
-                    ProtectedDatabaseRestartProbe::class.java.name, root.path, checkNotNull(keychain), action
-                ).redirectErrorStream(true).redirectOutput(log).start()
-                try {
-                    assertTrue(process.waitFor(30, TimeUnit.SECONDS), "Database process timed out")
-                    assertEquals(0, process.exitValue(), log.readText().takeLast(3000))
-                } finally {
-                    if (process.isAlive) process.destroyForcibly().waitFor()
-                }
+                runStorageProcessProbe(
+                    ProtectedDatabaseRestartProbe::class.java, root, root.path, checkNotNull(keychain), action
+                )
             }
         } finally {
             root.deleteRecursively()

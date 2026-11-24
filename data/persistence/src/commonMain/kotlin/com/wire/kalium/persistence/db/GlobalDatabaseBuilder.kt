@@ -33,6 +33,7 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmInline
 
@@ -40,9 +41,10 @@ import kotlin.jvm.JvmInline
 value class GlobalDatabaseSecret(val value: ByteArray)
 
 class GlobalDatabaseBuilder internal constructor(
-    private val sqlDriver: SqlDriver,
+    internal val sqlDriver: SqlDriver,
     private val platformDatabaseData: PlatformDatabaseData,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io,
+    internal val isProtectedJvm: Boolean = false,
 ) {
     private var closeFailure: Throwable? = null
     private var closed = false
@@ -76,6 +78,9 @@ class GlobalDatabaseBuilder internal constructor(
 
     val accountsDAO: AccountsDAO
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries, queriesContext)
+
+    internal suspend fun <T> inTransaction(action: suspend () -> T): T =
+        withContext(queriesContext) { database.transactionWithResult { action() } }
 
     fun nuke(): Boolean {
         close()

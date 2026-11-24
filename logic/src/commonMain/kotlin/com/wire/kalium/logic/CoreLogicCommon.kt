@@ -70,7 +70,7 @@ public abstract class CoreLogicCommon internal constructor(
     protected abstract val globalPreferences: GlobalPrefProvider
     protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
     internal abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
-    internal val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
+    internal open val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     internal val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
     internal val authenticationScopeProvider: AuthenticationScopeProvider =

@@ -40,6 +40,7 @@ import com.wire.kalium.network.session.FailureToRefreshTokenException
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.client.TransactionalAuthTokenStorage
 import com.wire.kalium.persistence.dao.UserIDEntity
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -58,6 +59,15 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
 class SessionManagerTest {
+
+    @Test
+    fun protectedCredentialReadFailureSurfacesWithoutLogoutOrProxyFallback() = runTest {
+        val (arrangement, sessionManager) = arrange { withProtectedCredentialFailure() }
+
+        assertFailsWith<IllegalStateException> { sessionManager.session() }
+        assertFailsWith<IllegalStateException> { sessionManager.proxyCredentials() }
+        assertEquals(emptyList(), arrangement.logoutReasons)
+    }
 
     @Test
     fun givenFailureOnRefresh_whenRefreshingToken_thenShouldThrowException() = runTest {
@@ -204,7 +214,7 @@ class SessionManagerTest {
             }
         }
         private val userId = TestUser.USER_ID
-        private val tokenStorage = mock<AuthTokenStorage>()
+        private var tokenStorage = mock<AuthTokenStorage>()
 
         val logoutReasons = mutableListOf<LogoutReason>()
         private val logout = { reason: LogoutReason -> logoutReasons += reason }
@@ -237,6 +247,13 @@ class SessionManagerTest {
 
         fun withCurrentTokenResult(result: AuthTokenEntity) = apply {
             withCurrentTokenReturning { result }
+        }
+
+        fun withProtectedCredentialFailure() = apply {
+            val protected = mock<TransactionalAuthTokenStorage>()
+            every { protected.getToken(any()) } calls { error("Injected protected token read failure") }
+            every { protected.proxyCredentials(any()) } calls { error("Injected protected proxy read failure") }
+            tokenStorage = protected
         }
 
         fun withCurrentTokenReturning(block: (args: Array<Any?>) -> AuthTokenEntity) = apply {

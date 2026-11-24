@@ -24,23 +24,34 @@ import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 
-actual class GlobalPrefProvider(
-    rootPath: String,
-    shouldEncryptData: Boolean = true
+actual class GlobalPrefProvider private constructor(
+    actual val authTokenStorage: AuthTokenStorage,
+    actual val tokenStorage: TokenStorage,
+    actual val passphraseStorage: PassphraseStorage,
 ) {
-    private val kaliumPref =
+    constructor(rootPath: String, shouldEncryptData: Boolean = true) : this(
         KaliumPreferencesSettings(
             buildSettings(
                 SettingOptions.AppSettings(shouldEncryptData),
                 EncryptedSettingsPlatformParam(rootPath)
             )
         )
+    )
 
-    actual val authTokenStorage: AuthTokenStorage
-        get() = AuthTokenStorageImpl(kaliumPref)
-    actual val passphraseStorage: PassphraseStorage
-        get() = PassphraseStorageImpl(kaliumPref)
-    actual val tokenStorage: TokenStorage
-        get() = TokenStorageImpl(kaliumPref)
+    private constructor(preferences: KaliumPreferences) : this(
+        AuthTokenStorageImpl(preferences), TokenStorageImpl(preferences), PassphraseStorageImpl(preferences)
+    )
+
+    companion object {
+        /** Stores global settings in the authenticated, encrypted JVM global database. */
+        fun protectedStorage(database: GlobalDatabaseBuilder): GlobalPrefProvider {
+            check(database.isProtectedJvm) { "Global settings require a protected JVM database" }
+            val preferences = ProtectedJvmPreferences(database)
+            return GlobalPrefProvider(
+                ProtectedAuthTokenStorage(preferences), ProtectedTokenStorage(preferences), ProtectedPassphraseStorage(preferences)
+            )
+        }
+    }
 }

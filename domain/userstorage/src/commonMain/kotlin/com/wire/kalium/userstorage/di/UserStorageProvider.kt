@@ -31,15 +31,18 @@ public data class UserStorage(public val database: UserDatabaseBuilder)
  * - [ProviderCacheScope.GLOBAL]: all [UserStorageProvider] instances share one cache map.
  * - [ProviderCacheScope.LOCAL]: each [UserStorageProvider] instance owns a private cache map.
  */
-public abstract class UserStorageProvider {
+public abstract class UserStorageProvider protected constructor(useInstanceCache: Boolean) {
+    public constructor() : this(false)
+
     private companion object {
         val sharedUserStorageCache: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
     }
 
     private val providerUserStorageCache: ConcurrentMutableMap<UserId, UserStorage> =
-        when (PROVIDER_CACHE_SCOPE) {
-            ProviderCacheScope.GLOBAL -> sharedUserStorageCache
-            ProviderCacheScope.LOCAL -> ConcurrentMutableMap()
+        if (useInstanceCache || PROVIDER_CACHE_SCOPE == ProviderCacheScope.LOCAL) {
+            ConcurrentMutableMap()
+        } else {
+            sharedUserStorageCache
         }
 
     public fun get(userId: UserId): UserStorage? = providerUserStorageCache[userId]

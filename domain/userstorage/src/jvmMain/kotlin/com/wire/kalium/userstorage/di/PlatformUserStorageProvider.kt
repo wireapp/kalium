@@ -23,10 +23,22 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.inMemoryDatabase
+import com.wire.kalium.persistence.db.protectedUserDatabaseBuilder
 import com.wire.kalium.persistence.db.userDatabaseBuilder
+import com.wire.kalium.persistence.protection.JvmStorageKeyStore
 import com.wire.kalium.util.KaliumDispatcherImpl
 
-public actual class PlatformUserStorageProvider : UserStorageProvider() {
+public actual class PlatformUserStorageProvider private constructor(
+    private val keyStore: JvmStorageKeyStore?,
+) : UserStorageProvider(useInstanceCache = keyStore != null) {
+    public actual constructor() : this(null)
+
+    public companion object {
+        /** Isolates protected profiles from the shared cache for ordinary JVM clients. */
+        public fun protectedStorage(keyStore: JvmStorageKeyStore): PlatformUserStorageProvider =
+            PlatformUserStorageProvider(keyStore)
+    }
+
     actual override fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
@@ -38,18 +50,28 @@ public actual class PlatformUserStorageProvider : UserStorageProvider() {
         val databaseInfo = platformProperties.databaseInfo
         val database = when (databaseInfo) {
             is DatabaseStorageType.FiledBacked -> {
-                val storageData = StorageData.FileBacked(databaseInfo.filePath)
-                userDatabaseBuilder(
-                    platformDatabaseData = PlatformDatabaseData(storageData),
-                    userId = userIdEntity,
-                    passphrase = null,
-                    dispatcher = KaliumDispatcherImpl.io,
-                    enableWAL = true,
-                    dbInvalidationControlEnabled = dbInvalidationControlEnabled
-                )
+                if (keyStore != null) {
+                    protectedUserDatabaseBuilder(
+                        directory = databaseInfo.filePath,
+                        userId = userIdEntity,
+                        keyStore = keyStore,
+                        dispatcher = KaliumDispatcherImpl.io,
+                        dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+                    )
+                } else {
+                    userDatabaseBuilder(
+                        platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(databaseInfo.filePath)),
+                        userId = userIdEntity,
+                        passphrase = null,
+                        dispatcher = KaliumDispatcherImpl.io,
+                        enableWAL = true,
+                        dbInvalidationControlEnabled = dbInvalidationControlEnabled
+                    )
+                }
             }
 
             is DatabaseStorageType.InMemory -> {
+                check(keyStore == null) { "Protected user storage requires a persistent account directory" }
                 inMemoryDatabase(userIdEntity, KaliumDispatcherImpl.io)
             }
         }
