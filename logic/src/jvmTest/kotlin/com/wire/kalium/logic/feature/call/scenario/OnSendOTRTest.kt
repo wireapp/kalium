@@ -23,12 +23,13 @@ import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallManagerImpl
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.network.tools.KtxSerializer
@@ -140,8 +141,8 @@ class OnSendOTRTest {
         )
 
         companion object {
-            val conversationId = TestConversation.GROUP().id
-            val selfConversationId = TestConversation.SELF().id
+            val conversationId = MockConversation.group(teamId = TestTeam.TEAM_ID).id
+            val selfConversationId = MockConversation.self(teamId = TestTeam.TEAM_ID).id
             val selfUserId = TestUser.SELF.id
             val selfUserClientId = ClientId("self_client")
         }

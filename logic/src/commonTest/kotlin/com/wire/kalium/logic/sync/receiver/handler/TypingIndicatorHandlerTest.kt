@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
@@ -46,7 +46,7 @@ class TypingIndicatorHandlerTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.not) {
-            arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(TestConversation.ID, TestUser.SELF.id)
+            arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(MockConversation.ID, TestUser.SELF.id)
         }
     }
 
@@ -60,7 +60,7 @@ class TypingIndicatorHandlerTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(TestConversation.ID, TestUser.OTHER_USER_ID)
+            arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(MockConversation.ID, TestUser.OTHER_USER_ID)
         }
     }
 
@@ -74,7 +74,7 @@ class TypingIndicatorHandlerTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(TestConversation.ID, TestUser.OTHER_USER_ID)
+            arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(MockConversation.ID, TestUser.OTHER_USER_ID)
         }
     }
 
@@ -88,7 +88,7 @@ class TypingIndicatorHandlerTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.not) {
-            arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(TestConversation.ID, TestUser.SELF.id)
+            arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(MockConversation.ID, TestUser.SELF.id)
         }
     }
 
@@ -97,7 +97,7 @@ class TypingIndicatorHandlerTest {
 
         suspend fun withTypingIndicatorObserve(usersId: Set<UserId>) = apply {
             everySuspend {
-                typingIndicatorIncomingRepository.observeUsersTyping(TestConversation.ID)
+                typingIndicatorIncomingRepository.observeUsersTyping(MockConversation.ID)
             } returns flowOf(usersId)
         }
 

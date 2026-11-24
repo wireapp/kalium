@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -35,7 +36,6 @@ import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID
@@ -983,7 +983,7 @@ class MessageRepositoryTest {
         )
 
         val NOTIFICATION_CONVERSATION = LocalNotification.Conversation(
-            TestConversation.ID, "", listOf(NOTIFICATION_MESSAGE), true, true
+            MockConversation.ID, "", listOf(NOTIFICATION_MESSAGE), true, true
         )
 
         val NOTIFICATION_ENTITY = NotificationMessageEntity(
@@ -997,7 +997,7 @@ class MessageRepositoryTest {
             text = "Some text in message",
             assetMimeType = null,
             isQuotingSelf = false,
-            conversationId = TestConversation.ENTITY_ID,
+            conversationId = MockConversation.ENTITY_ID,
             conversationName = null,
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             conversationType = ConversationEntity.Type.ONE_ON_ONE,

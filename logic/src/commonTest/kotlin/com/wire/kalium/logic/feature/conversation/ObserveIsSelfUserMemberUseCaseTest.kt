@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
@@ -41,7 +41,7 @@ class ObserveIsSelfUserMemberUseCaseTest {
 
     @Test
     fun givenAConversationId_whenUserIsMember_thenTheConversationRepositoryShouldReturnProperValue() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val selfUser = TestUser.SELF
 
         val (arrangement, observeIsSelfUserMember) = Arrangement()
@@ -63,7 +63,7 @@ class ObserveIsSelfUserMemberUseCaseTest {
 
     @Test
     fun givenAConversationId_whenUserIsNotAMember_thenTheConversationRepositoryShouldReturnProperValue() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val selfUser = TestUser.SELF
 
         val (arrangement, observeIsSelfUserMember) = Arrangement()
@@ -85,7 +85,7 @@ class ObserveIsSelfUserMemberUseCaseTest {
 
     @Test
     fun givenAConversationId_whenIsMemberReturnsError_thenTheConversationRepositoryShouldReturnProperValue() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val selfUser = TestUser.SELF
 
         val (arrangement, observeIsSelfUserMember) = Arrangement()

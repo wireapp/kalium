@@ -19,11 +19,11 @@
 package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -60,7 +60,7 @@ class ObserveConversationMembersUseCaseTest {
 
     @Test
     fun givenAConversationID_whenObservingMembers_thenConversationRepositoryIsCalledWithCorrectID() = runTest {
-        val conversationID = TestConversation.ID
+        val conversationID = MockConversation.ID
 
         everySuspend {
             userRepository.observeSelfUser()
@@ -83,7 +83,7 @@ class ObserveConversationMembersUseCaseTest {
 
     @Test
     fun givenSelfUserUpdates_whenObservingMembers_thenTheUpdateIsPropagatedInTheFlow() = runTest {
-        val conversationID = TestConversation.ID
+        val conversationID = MockConversation.ID
         val firstSelfUser = TestUser.SELF
         val secondSelfUser = firstSelfUser.copy(name = "Updated name")
         val selfUserUpdates = listOf(firstSelfUser, secondSelfUser)
@@ -108,7 +108,7 @@ class ObserveConversationMembersUseCaseTest {
 
     @Test
     fun givenOtherUserUpdates_whenObservingMembers_thenTheUpdateIsPropagatedInTheFlow() = runTest {
-        val conversationID = TestConversation.ID
+        val conversationID = MockConversation.ID
         val firstOtherUser = TestUser.OTHER
         val secondOtherUser = firstOtherUser.copy(name = "Updated name")
         val members = listOf(
@@ -136,7 +136,7 @@ class ObserveConversationMembersUseCaseTest {
 
     @Test
     fun givenANewMemberIsAdded_whenObservingMembers_thenTheUpdateIsPropagatedInTheFlow() = runTest {
-        val conversationID = TestConversation.ID
+        val conversationID = MockConversation.ID
         val otherUser = TestUser.OTHER
         val selfUser = TestUser.SELF
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
@@ -172,7 +172,7 @@ class ObserveConversationMembersUseCaseTest {
 
     @Test
     fun givenAConversationID_whenObservingMembersAnDataDidNotChange_thenDoNotEmitTheSameValuesAgain() = runTest {
-        val conversationID = TestConversation.ID
+        val conversationID = MockConversation.ID
         val otherUser = TestUser.OTHER
         val selfUser = TestUser.SELF
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)

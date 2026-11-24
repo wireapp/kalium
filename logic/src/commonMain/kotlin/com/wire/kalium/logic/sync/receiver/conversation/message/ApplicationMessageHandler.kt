@@ -62,6 +62,7 @@ import kotlin.time.Instant
 
 internal interface ApplicationMessageHandler {
 
+    /** Processes decrypted [content] after the delivery policy has been checked by [NewMessageEventHandler]. */
     @Suppress("LongParameterList")
     suspend fun handleContent(
         transactionContext: CryptoTransactionContext,
@@ -124,26 +125,21 @@ internal class ApplicationMessageHandlerImpl(
         senderClientId: ClientId,
         content: ProtoContent.Readable
     ) {
+        val applicationMessage = MessageUnpackResult.ApplicationMessage(
+            conversationId,
+            messageInstant,
+            senderUserId,
+            senderClientId,
+            content
+        )
         when (content.messageContent) {
             is MessageContent.Regular -> {
-                val message = MessageUnpackResult.ApplicationMessage(
-                    conversationId,
-                    messageInstant,
-                    senderUserId,
-                    senderClientId,
-                    content
-                ).toRegularMessage(selfUserId)
+                val message = applicationMessage.toRegularMessage(selfUserId)
                 processMessage(message)
             }
 
             is MessageContent.Signaling -> {
-                val signalingMessage = MessageUnpackResult.ApplicationMessage(
-                    conversationId,
-                    messageInstant,
-                    senderUserId,
-                    senderClientId,
-                    content
-                ).toSignalingMessage(selfUserId)
+                val signalingMessage = applicationMessage.toSignalingMessage(selfUserId)
                 processSignaling(transactionContext, signalingMessage)
             }
         }

@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
@@ -41,7 +41,7 @@ class IsOneToOneConversationCreatedUseCaseTest {
     fun givenConversationExist_whenCallingTheUseCase_ThenReturnTrue() = runTest {
         // given
         val (_, useCase) = arrange {
-            withOneOnOnConversationId(TestConversation.ID.right())
+            withOneOnOnConversationId(MockConversation.ID.right())
         }
 
         // when

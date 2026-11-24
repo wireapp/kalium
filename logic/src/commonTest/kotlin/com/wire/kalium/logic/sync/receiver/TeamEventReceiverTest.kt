@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
@@ -71,7 +71,7 @@ class TeamEventReceiverTest {
         val (arrangement, eventReceiver) = Arrangement()
             .arrange {
                 withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
-                    listOf(TestConversation.ID)
+                    listOf(MockConversation.ID)
                 )
                 withPersistMessageSuccess()
             }

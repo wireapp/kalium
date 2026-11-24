@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
@@ -44,7 +44,7 @@ class NewConversationMembersRepositoryTest {
 
     @Test
     fun givenASuccessConversationResponse_whenPersistingMembers_ThenShouldSucceedAndCreateASystemMessage() = runTest {
-        val conversationId = TestConversation.ENTITY_ID
+        val conversationId = MockConversation.ENTITY_ID
         val (arrangement, handler) = Arrangement()
             .withPersistResolvedMembersSystemMessageSuccess()
             .arrange()
@@ -64,7 +64,7 @@ class NewConversationMembersRepositoryTest {
 
     @Test
     fun givenASuccessConversationResponse_whenMembersItsEmpty_ThenShouldNotCreateTheSystemMessage() = runTest {
-        val conversationId = TestConversation.ENTITY_ID
+        val conversationId = MockConversation.ENTITY_ID
         val (arrangement, handler) = Arrangement()
             .withPersistResolvedMembersSystemMessageSuccess()
             .arrange()
@@ -105,7 +105,7 @@ class NewConversationMembersRepositoryTest {
                 listOf(ConversationMemberDTO.Other(TestUser.OTHER.id.toApi(), "wire_member"))
             ),
             GROUP_NAME,
-            TestConversation.NETWORK_ID,
+            MockConversation.NETWORK_ID,
             null,
             0UL,
             ConversationResponse.Type.GROUP,

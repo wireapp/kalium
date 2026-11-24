@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.callerId
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.participant
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
@@ -57,7 +58,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestCall.CALL_QUALITY_DATA
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -2635,8 +2635,8 @@ class CallRepositoryTest {
             val subconversationGroupId = GroupID("subconversation_groupid")
             val subconversationGroupWithEpoch = GroupWithEpoch(subconversationGroupId, 1UL)
             val conversationId = ConversationId(value = "convId", domain = "domainId")
-            val groupConversation = TestConversation.GROUP().copy(id = conversationId)
-            val oneOnOneConversation = TestConversation.one_on_one(conversationId)
+            val groupConversation = MockConversation.group(teamId = TestTeam.TEAM_ID).copy(id = conversationId)
+            val oneOnOneConversation = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID, id = conversationId)
             val callerId = UserId(value = "callerId", domain = "domain")
             const val callerIdString = "callerId@domain"
 

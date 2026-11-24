@@ -21,10 +21,10 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.messaging.sending.MessageSender
 import dev.mokkery.MockMode
@@ -47,7 +47,7 @@ class SendDeliverSignalUseCaseTest {
             .withMessageSenderResult()
             .arrange()
 
-        val conversation = TestConversation.CONVERSATION
+        val conversation = MockConversation.CONVERSATION
         val messageIdList = listOf(TestMessage.TEST_MESSAGE_ID)
 
         val result = usecase.invoke(conversation, messageIdList)
@@ -65,7 +65,7 @@ class SendDeliverSignalUseCaseTest {
             .withMessageSenderResult(Either.Left(CoreFailure.Unknown(RuntimeException("Sending failed"))))
             .arrange()
 
-        val conversation = TestConversation.CONVERSATION
+        val conversation = MockConversation.CONVERSATION
         val messageIdList = listOf(TestMessage.TEST_MESSAGE_ID)
 
         val result = usecase.invoke(conversation, messageIdList)
@@ -82,7 +82,7 @@ class SendDeliverSignalUseCaseTest {
             .withCurrentClientIdProviderError()
             .arrange()
 
-        val conversation = TestConversation.CONVERSATION
+        val conversation = MockConversation.CONVERSATION
         val messageIdList = listOf(TestMessage.TEST_MESSAGE_ID)
 
         val result = usecase.invoke(conversation, messageIdList)
