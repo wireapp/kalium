@@ -133,6 +133,8 @@ class CallManagerIncomingLifecycleTest {
                             incomingReferences.send(it.arg(0))
                             null
                         }
+                        everySuspend { journal.presentations() } returns emptyList()
+                        everySuspend { journal.persistMissedCall(any(), any()) } returns true
                         everySuspend { journal.closed(any(), any(), any(), any()) } returns null
                         manager.attachSignalJournal(journal)
                         try {

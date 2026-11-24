@@ -93,7 +93,7 @@ class AppleMissedCallNotificationPolicyTest {
         senderValue = CALLER.value,
         senderDomain = CALLER.domain,
         senderClientId = "client-$id",
-        payload = "{}",
+        payload = """{"type":"SETUP","resp":false}""",
         timeMillis = CALL_TIME.toEpochMilliseconds(),
         isGroup = false,
         isMLS = false,

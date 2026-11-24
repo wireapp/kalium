@@ -247,6 +247,8 @@ class CallSignalReplayTest {
         }
         override suspend fun incoming(reference: IncomingCallReference, ring: Boolean, video: Boolean, generation: String) =
             null
+        override suspend fun persistMissedCall(source: com.wire.kalium.logic.sync.receiving.MissedCallSource, self: com.wire.kalium.persistence.dao.QualifiedIDEntity) = true
+
         override suspend fun closed(conversationValue: String, conversationDomain: String, reason: Int, handledBy: String?): String? = null
     }
 }

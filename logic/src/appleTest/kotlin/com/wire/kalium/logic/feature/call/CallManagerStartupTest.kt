@@ -17,6 +17,10 @@
  */
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.sync.receiving.missedCallSource
+import com.wire.kalium.logic.sync.receiving.CallSignalStore
+import com.wire.kalium.logic.sync.receiving.CallSignalRecord
+import com.wire.kalium.logic.sync.receiving.CallPresentationRecord
 import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import com.wire.kalium.logger.AppleCallTrace
@@ -223,6 +227,64 @@ class CallManagerStartupTest {
             }
         }
     }
+
+    @Test
+    fun missedCallbackPersistsTheStartWithoutAnIncomingCallOrPresentation() = runTest {
+        val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val journal = mock<CallSignalStore>()
+        val source = missedSource()
+        everySuspend { journal.signals() } returns listOf(source)
+        everySuspend { journal.persistMissedCall(any(), any()) } returns true
+        val manager = fixture.manager()
+        manager.attachSignalJournal(journal)
+        try {
+            manager.waitUntilInitialized()
+            fixture.callbacks.onMissedCall("call@example.com", 1u, "caller@example.com", false)
+            runCurrent()
+            verifySuspend(VerifyMode.exactly(1)) { journal.persistMissedCall(source.missedCallSource(), any()) }
+            verifySuspend(VerifyMode.not) { fixture.repository.persistMissedCall(any()) }
+        } finally {
+            manager.cancelJobs()
+        }
+    }
+
+    @Test
+    fun failedMissedWriteDoesNotClearSignalsAndSuccessfulRetryUsesTheSameStart() = runTest {
+        val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        fixture.metadata = TestCall.oneOnOneCallMetadata().copy(callStatus = CallStatus.INCOMING, establishedTime = null)
+        val journal = mock<CallSignalStore>()
+        val source = missedSource()
+        everySuspend { journal.signals() } returns listOf(source)
+        everySuspend { journal.presentations() } returns listOf(CallPresentationRecord(source.id, "call", "example.com", 1000, true, false))
+        var fail = true
+        everySuspend { journal.persistMissedCall(any(), any()) } calls {
+            check(!fail) { "database unavailable" }
+            true
+        }
+        everySuspend { journal.closed(any(), any(), any(), any()) } returns source.id
+        val manager = fixture.manager()
+        manager.attachSignalJournal(journal)
+        try {
+            manager.waitUntilInitialized()
+            fixture.callbacks.onClosedCall(CallClosedReason.CANCELLED.avsValue, "call@example.com", 1u, "caller@example.com", "client")
+            runCurrent()
+            verifySuspend(VerifyMode.exactly(1)) { journal.closed("call", "example.com", CallClosedReason.CANCELLED.avsValue, null) }
+            fail = false
+            fixture.callbacks.onClosedCall(CallClosedReason.CANCELLED.avsValue, "call@example.com", 1u, "caller@example.com", "client")
+            runCurrent()
+            verifySuspend(VerifyMode.exactly(2)) { journal.persistMissedCall(source.missedCallSource(), any()) }
+            verifySuspend(VerifyMode.exactly(1)) { journal.closed(any(), any(), any(), any()) }
+            verifySuspend(VerifyMode.not) { fixture.repository.persistMissedCall(any()) }
+        } finally {
+            manager.cancelJobs()
+        }
+    }
+
+    // The mapper fixture maps both native IDs to CONVERSATION.
+    private fun missedSource() = CallSignalRecord(
+        "journal-id", "start-message", "call", "example.com", "call", "example.com", "client",
+        """{"type":"SETUP","resp":false,"sessid":"call"}""", 1000, false, false, 1000, ready = true,
+    )
 
     private fun verifyClose(reason: CallClosedReason, expectedStatus: CallStatus) = runTest {
         val cases = listOf(
