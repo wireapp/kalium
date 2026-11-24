@@ -138,7 +138,7 @@ class KaliumKtorCustomLoggingTest {
             )
 
             logs.forEach { log ->
-                assertEquals("/v9/users/{}/{}?client=***", Json.parseToJsonElement(log).jsonObject["endpoint"]?.jsonPrimitive?.content)
+                assertEquals("/v9/users/{}/{}?client=5f2***", Json.parseToJsonElement(log).jsonObject["endpoint"]?.jsonPrimitive?.content)
                 assertFalse(log.contains(domain))
                 assertFalse(log.contains(userId))
                 assertFalse(log.contains("5f2b9e7c4d1a"))

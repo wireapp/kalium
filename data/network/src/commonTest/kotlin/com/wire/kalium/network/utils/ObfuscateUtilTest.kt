@@ -72,28 +72,31 @@ class ObfuscateUtilTest {
     }
 
     @Test
-    fun givenCursorAndClientQueryValues_whenObfuscatingPath_thenValuesAreFullyMasked() {
+    fun givenCursorAndClientQueryValues_whenObfuscatingPath_thenOnlyAThreeCharacterHintIsKept() {
         val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/notifications?since=abc123&client=5f2b9e7c4d1a&cursor=eyJwYWdl"))
 
-        assertEquals("/v9/notifications?since=***&client=***&cursor=***", result)
-        assertFalse(result.contains("5f2"))
-        assertFalse(result.contains("eyJ"))
+        assertEquals("/v9/notifications?since=abc***&client=5f2***&cursor=eyJ***", result)
     }
 
     @Test
-    fun givenSignatureLikeQueryValue_whenObfuscatingPath_thenValueIsMaskedWithoutPrefix() {
+    fun givenSignatureLikeQueryValue_whenObfuscatingPath_thenOnlyAThreeCharacterHintIsKept() {
         val result = obfuscatePath(Url("https://assets.example.test/v9/assets/v4/key?sig=abcdef123&token=xyz789"))
 
-        assertEquals("/v9/assets/v4/{}?sig=***&token=***", result)
-        assertFalse(result.contains("abc"))
-        assertFalse(result.contains("xyz"))
+        assertEquals("/v9/assets/v4/{}?sig=abc***&token=xyz***", result)
     }
 
     @Test
-    fun givenNumericPagingQueryValues_whenObfuscatingPath_thenTheyAreMasked() {
+    fun givenQueryValuesOfThreeCharactersOrLess_whenObfuscatingPath_thenTheyAreFullyMasked() {
         val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/notifications?size=500&limit=abc&offset=20"))
 
         assertEquals("/v9/notifications?size=***&limit=***&offset=***", result)
+    }
+
+    @Test
+    fun givenQueryValueWithReservedCharactersInItsHint_whenObfuscatingPath_thenTheHintIsEncoded() {
+        val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/notifications?since=a%26b%3Dcdef"))
+
+        assertEquals("/v9/notifications?since=a%26b***", result)
     }
 
     @Test

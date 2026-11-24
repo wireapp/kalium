@@ -22,6 +22,7 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.http.Url
+import io.ktor.http.encodeURLParameter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -89,6 +90,9 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
 
 private const val MASKED_VALUE = "***"
 private const val MASKED_SEGMENT = "{}"
+
+/** Characters of each query value kept as a debugging hint. Shorter values are fully masked. */
+private const val QUERY_VALUE_HINT_LENGTH = 3
 private val apiVersionSegment = Regex("v[0-9]+")
 
 /**
@@ -204,11 +208,11 @@ internal val loggablePathSegments = setOf(
 
 /**
  * Returns the URL in a form that is safe to log in every build: the path with each segment that is not a
- * known static segment replaced by `{}`, and every query value masked.
+ * known static segment replaced by `{}`, and every query value masked down to a 3-character hint.
  * The scheme, user info, host, port and fragment are dropped, because the host names the customer backend.
  *
  * Example:
- *   https://nginz-https.example.com/v5/users/example.com/<uuid>?client=abc -> /v5/users/{}/{}?client=***
+ *   https://nginz-https.example.com/v5/users/example.com/<uuid>?client=5f2b9e -> /v5/users/{}/{}?client=5f2***
  */
 fun obfuscatePath(url: Url): String {
     val path = url.segments.joinToString(separator = "/", prefix = "/") { segment ->
@@ -219,10 +223,13 @@ fun obfuscatePath(url: Url): String {
     val params = url.parameters.entries().filter { it.value.isNotEmpty() }
     if (params.isEmpty()) return path
 
-    val query = params.joinToString("&") { (key, _) -> "$key=$MASKED_VALUE" }
+    val query = params.joinToString("&") { (key, values) -> "$key=${values.first().maskQueryValue()}" }
 
     return "$path?$query"
 }
+
+private fun String.maskQueryValue(): String =
+    if (length > QUERY_VALUE_HINT_LENGTH) take(QUERY_VALUE_HINT_LENGTH).encodeURLParameter() + MASKED_VALUE else MASKED_VALUE
 
 fun deleteSensitiveItemsFromJson(text: String): String {
     var logMessage = ""
