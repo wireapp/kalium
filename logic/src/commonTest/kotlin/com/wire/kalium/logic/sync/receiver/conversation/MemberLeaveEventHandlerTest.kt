@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -68,6 +69,80 @@ import kotlin.time.Instant
 import kotlin.test.Test
 
 internal class MemberLeaveEventHandlerTest {
+
+    @Test
+    fun deletedMlsPeerMappingIsRetainedOnReplay() = runTest {
+        val event = memberLeaveEvent(MemberLeaveReason.UserDeleted).copy(removedList = listOf(userId))
+        for (protocol in listOf(MockConversation.MLS_CONVERSATION.protocol, MockConversation.MIXED_CONVERSATION.protocol)) {
+            val (arrangement, handler) = Arrangement().arrange {
+                withMarkAsDeleted(Either.Right(Unit))
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+                everySuspend { conversationRepository.getConversationById(event.conversationId) } returns Either.Right(
+                    MockConversation.MLS_CONVERSATION.copy(type = Conversation.Type.OneOnOne, protocol = protocol)
+                )
+            }
+
+            repeat(2) { handler.handle(arrangement.transactionContext, event).shouldSucceed() }
+
+            verifySuspend(VerifyMode.not) { arrangement.memberDAO.deleteMembersByQualifiedID(any(), any()) }
+            verifySuspend(VerifyMode.not) { arrangement.persistMessageUseCase.invoke(any()) }
+            verifySuspend(VerifyMode.not) { arrangement.legalHoldHandler.handleConversationMembersChanged(any()) }
+            verifySuspend(VerifyMode.exactly(2)) { arrangement.userRepository.markAsDeleted(listOf(userId)) }
+        }
+    }
+
+    @Test
+    fun ordinaryMlsLeaveAndDeletedSelfStillRemoveMembership() = runTest {
+        val events = listOf(
+            memberLeaveEvent(MemberLeaveReason.Removed).copy(removedList = listOf(userId)),
+            memberLeaveEvent(MemberLeaveReason.Left).copy(removedList = listOf(userId)),
+            memberLeaveEvent(MemberLeaveReason.UserDeleted),
+        )
+        for (event in events) {
+            val (arrangement, handler) = Arrangement().arrange {
+                withMarkAsDeleted(Either.Right(Unit))
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+                withDeleteMembersByQualifiedID(1)
+                withPersistingMessage(Either.Right(Unit))
+                withTeamId(Either.Right(null))
+                withGetConversationProtocolInfo(Either.Right(MLS_DOMAIN_PROTOCOL_INFO))
+                withSuccessfulLeaveGroup(MLS_GROUP_ID)
+            }
+
+            handler.handle(arrangement.transactionContext, event).shouldSucceed()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.memberDAO.deleteMembersByQualifiedID(event.removedList.map { it.toDao() }, event.conversationId.toDao())
+            }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessageUseCase.invoke(any()) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.legalHoldHandler.handleConversationMembersChanged(any()) }
+            if (selfUserId in event.removedList) {
+                verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), MLS_GROUP_ID) }
+            }
+        }
+    }
+
+    @Test
+    fun deletingGroupPeerStillRemovesMembership() = runTest {
+        val event = memberLeaveEvent(MemberLeaveReason.UserDeleted).copy(removedList = listOf(userId))
+        val (arrangement, handler) = Arrangement().arrange {
+            withMarkAsDeleted(Either.Right(Unit))
+            withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            withDeleteMembersByQualifiedID(1)
+            withPersistingMessage(Either.Right(Unit))
+            withTeamId(Either.Right(null))
+            everySuspend { conversationRepository.getConversationById(event.conversationId) } returns Either.Right(
+                MockConversation.MLS_CONVERSATION.copy(type = Conversation.Type.Group.Regular)
+            )
+        }
+
+        handler.handle(arrangement.transactionContext, event).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.memberDAO.deleteMembersByQualifiedID(listOf(userId.toDao()), event.conversationId.toDao())
+        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.legalHoldHandler.handleConversationMembersChanged(any()) }
+    }
 
     @Test
     fun givenDaoReturnsSuccess_whenDeletingMember_thenPersistSystemMessage() = runTest {
