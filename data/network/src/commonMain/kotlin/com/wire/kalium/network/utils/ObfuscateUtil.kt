@@ -22,7 +22,6 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.http.Url
-import io.ktor.http.encodeURLParameter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -68,11 +67,9 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
 
                     /**
                      * NOTE:
-                     * IDs are allowed to be logged in clear according to the agreed policy,
-                     * so we do NOT obfuscate them here anymore.
-                     *
-                     * If you ever need to change this policy, do it centrally (redactor),
-                     * not by sprinkling obfuscation across models.
+                     * Production logs must not contain IDs or domains in clear. This JSON redactor does not
+                     * mask ID fields; [obfuscatePath] removes them from logged URLs. Mask IDs centrally
+                     * (redactor), not by sprinkling obfuscation across models.
                      */
 
                     /**
@@ -90,67 +87,152 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
         }
     }
 
-/**
- * Request path can be logged in clear, but query parameter values must be obfuscated.
- *
- * Example:
- *   host/path/segment?q=abc... -> host/path/segment?q=abc*** (etc.)
- */
-private const val KEEP_QUERY_PREFIX = 3
+private const val MASKED_VALUE = "***"
+private const val MASKED_SEGMENT = "{}"
+private val apiVersionSegment = Regex("v[0-9]+")
 
 /**
- * Allowlist for query keys which are safe to log in clear.
- * Everything else will have the VALUE obfuscated.
+ * Query keys whose value stays readable when it is a plain number. Paging controls carry no user data.
+ * Every other value is masked.
  */
-private val safeQueryKeys = setOf(
-    "size",
-    "page",
-    "limit",
-    "offset",
-    "cursor",
-    "sort",
-    "order",
-    "client"
+private val numericPagingQueryKeys = setOf("size", "page", "limit", "offset")
+
+/**
+ * Static path segments that may appear in logs. Every other segment becomes `{}`, because paths carry
+ * IDs, domains, client IDs, asset keys and property names.
+ *
+ * The set lists the segments of the path constants in the network API classes (`PATH_*`, `*_PATH`,
+ * `PUSH_TOKEN`, `FEATURE_CONFIG`) and of literal paths such as `system/settings`. `LoggablePathSegmentsTest`
+ * fails when a path constant has a segment that is missing here. API version segments such as `v5` stay
+ * readable through [apiVersionSegment].
+ */
+internal val loggablePathSegments = setOf(
+    "access",
+    "access-token",
+    "activate",
+    "add-permission",
+    "api-version",
+    "approve",
+    "apps",
+    "assets",
+    "await",
+    "bot",
+    "bots",
+    "broadcast",
+    "by-domain",
+    "calls",
+    "claim",
+    "clients",
+    "code",
+    "collaborators",
+    "commit-bundles",
+    "config",
+    "connections",
+    "contacts",
+    "conversations",
+    "cookies",
+    "count",
+    "custom-backend",
+    "email",
+    "events",
+    "feature-configs",
+    "federation",
+    "finalize-login",
+    "get-by-email",
+    "get-domain-registration",
+    "get-members-by-ids-using-post",
+    "gifs",
+    "giphy",
+    "groupinfo",
+    "handle",
+    "history",
+    "initiate-login",
+    "join",
+    "key-packages",
+    "labels",
+    "last",
+    "legalhold",
+    "list",
+    "list-clients",
+    "list-connections",
+    "list-ids",
+    "list-prekeys",
+    "list-users",
+    "login",
+    "logout",
+    "meetings",
+    "members",
+    "message-timer",
+    "messages",
+    "metadata",
+    "mls",
+    "name",
+    "nonce",
+    "notifications",
+    "one2one",
+    "one2one-conversations",
+    "prekeys",
+    "properties",
+    "properties-values",
+    "proteus",
+    "protocol",
+    "proxy",
+    "public-keys",
+    "push",
+    "receipt-mode",
+    "register",
+    "remove",
+    "reset-conversation",
+    "roots.pem",
+    "search",
+    "self",
+    "send",
+    "services",
+    "settings",
+    "sso",
+    "subconversations",
+    "supported-protocols",
+    "system",
+    "tags",
+    "targeted",
+    "teams",
+    "time",
+    "tokens",
+    "transient",
+    "transient-targeted",
+    "trending",
+    "typing",
+    "upgrade-personal-to-team",
+    "users",
+    "verification-code",
+    "whitelisted",
 )
 
 /**
- * Obfuscate only the VALUE of query params. Keep the PATH in clear.
+ * Returns the URL in a form that is safe to log in every build: the path with each segment that is not a
+ * known static segment replaced by `{}`, and every query value masked except numeric paging values.
+ * The scheme, user info, host, port and fragment are dropped, because the host names the customer backend.
+ *
+ * Example:
+ *   https://nginz-https.example.com/v5/users/example.com/<uuid>?client=abc -> /v5/users/{}/{}?client=***
  */
 fun obfuscatePath(url: Url): String {
-    val base = buildString {
-        append(url.host)
-        append(url.encodedPath)
+    val path = url.segments.joinToString(separator = "/", prefix = "/") { segment ->
+        val isStatic = segment.isEmpty() || segment in loggablePathSegments || apiVersionSegment.matches(segment)
+        if (isStatic) segment else MASKED_SEGMENT
     }
 
     val params = url.parameters.entries().filter { it.value.isNotEmpty() }
-    if (params.isEmpty()) return base
+    if (params.isEmpty()) return path
 
     val query = params.joinToString("&") { (key, values) ->
-        val rawValue = values.first()
-        val lowerKey = key.lowercase()
-
-        val valueToLog = if (lowerKey in safeQueryKeys) {
-            rawValue.encodeURLParameter()
-        } else {
-            rawValue.obfuscateQueryValue().encodeURLParameterKeepingAsterisks()
-        }
-
-        "$key=$valueToLog"
+        val value = values.first()
+        val isNumericPagingValue = key.lowercase() in numericPagingQueryKeys &&
+            value.isNotEmpty() && value.all { it.isDigit() }
+        "$key=${if (isNumericPagingValue) value else MASKED_VALUE}"
     }
 
-    return "$base?$query"
-}
-
-private fun String.encodeURLParameterKeepingAsterisks(): String =
-    encodeURLParameter()
-        .replace("%2A", "*")
-        .replace("%2a", "*")
-
-private fun String.obfuscateQueryValue(): String = when {
-    this.isBlank() -> "***"
-    this.endsWith("***") -> this
-    (this.length > KEEP_QUERY_PREFIX) -> this.take(KEEP_QUERY_PREFIX) + "***"
-    else -> "***"
+    return "$path?$query"
 }
 
 fun deleteSensitiveItemsFromJson(text: String): String {

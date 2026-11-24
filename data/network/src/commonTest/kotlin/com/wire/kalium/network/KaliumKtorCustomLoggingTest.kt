@@ -115,6 +115,39 @@ class KaliumKtorCustomLoggingTest {
         }
     }
 
+    @Test
+    fun givenFederatedRequest_whenLogging_thenEndpointHasNoHostIdsOrQueryValues() = runTest {
+        val writer = RecordingLogWriter()
+        val domain = "anta.wire.link"
+        val userId = "9a1d6c0e-3b5f-4c5e-8f2a-1e0f7b6d4c3a"
+        val client = HttpClient(MockEngine { respond(content = "", status = HttpStatusCode.OK) }) {
+            install(KaliumKtorCustomLogging) {
+                level = LogLevel.HEADERS
+                kaliumLogger = KaliumLogger(
+                    config = KaliumLogger.Config(KaliumLogLevel.VERBOSE, listOf(writer)),
+                    tag = "NetworkTest"
+                )
+            }
+        }
+
+        try {
+            client.get("https://nginz-https.$domain/v9/users/$domain/$userId?client=5f2b9e7c4d1a")
+            val logs = listOf(
+                writer.messages.single { it.startsWith("REQUEST: ") }.removePrefix("REQUEST: "),
+                writer.messages.single { it.startsWith("RESPONSE: ") }.removePrefix("RESPONSE: ")
+            )
+
+            logs.forEach { log ->
+                assertEquals("/v9/users/{}/{}?client=***", Json.parseToJsonElement(log).jsonObject["endpoint"]?.jsonPrimitive?.content)
+                assertFalse(log.contains(domain))
+                assertFalse(log.contains(userId))
+                assertFalse(log.contains("5f2b9e7c4d1a"))
+            }
+        } finally {
+            client.close()
+        }
+    }
+
     private class RecordingLogWriter : LogWriter() {
         val messages = mutableListOf<String>()
 
