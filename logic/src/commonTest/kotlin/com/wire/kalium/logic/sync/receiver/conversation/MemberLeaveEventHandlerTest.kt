@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -46,7 +47,6 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.shouldSucceed
@@ -73,12 +73,12 @@ internal class MemberLeaveEventHandlerTest {
     @Test
     fun deletedMlsPeerMappingIsRetainedOnReplay() = runTest {
         val event = memberLeaveEvent(MemberLeaveReason.UserDeleted).copy(removedList = listOf(userId))
-        for (protocol in listOf(TestConversation.MLS_CONVERSATION.protocol, TestConversation.MIXED_CONVERSATION.protocol)) {
+        for (protocol in listOf(MockConversation.MLS_CONVERSATION.protocol, MockConversation.MIXED_CONVERSATION.protocol)) {
             val (arrangement, handler) = Arrangement().arrange {
                 withMarkAsDeleted(Either.Right(Unit))
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
                 everySuspend { conversationRepository.getConversationById(event.conversationId) } returns Either.Right(
-                    TestConversation.MLS_CONVERSATION.copy(type = Conversation.Type.OneOnOne, protocol = protocol)
+                    MockConversation.MLS_CONVERSATION.copy(type = Conversation.Type.OneOnOne, protocol = protocol)
                 )
             }
 
@@ -132,7 +132,7 @@ internal class MemberLeaveEventHandlerTest {
             withPersistingMessage(Either.Right(Unit))
             withTeamId(Either.Right(null))
             everySuspend { conversationRepository.getConversationById(event.conversationId) } returns Either.Right(
-                TestConversation.MLS_CONVERSATION.copy(type = Conversation.Type.Group.Regular)
+                MockConversation.MLS_CONVERSATION.copy(type = Conversation.Type.Group.Regular)
             )
         }
 
