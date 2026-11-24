@@ -80,9 +80,11 @@ internal class ReceivedOneOnOneHandler(
             SupportedProtocol.PROTEUS -> checkNotNull(proteus.firstOrNull()) {
                 "One-to-one resolution requires conversation creation"
             }
+            // Only the backend's MLS 1:1 has no team. A team-backed 1:1 is a separate group and must not replace it.
             SupportedProtocol.MLS -> candidates.firstOrNull { candidate ->
                 val info = candidate.protocolInfo
-                info is ConversationEntity.ProtocolInfo.MLS && info.groupState == ConversationEntity.GroupState.ESTABLISHED &&
+                candidate.teamId == null && info is ConversationEntity.ProtocolInfo.MLS &&
+                    info.groupState == ConversationEntity.GroupState.ESTABLISHED &&
                     checkNotNull(context) { "MLS was not prepared" }.conversationExists(info.groupId)
             }?.id
         }
