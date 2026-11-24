@@ -28,6 +28,7 @@ import io.ktor.client.engine.mock.MockRequestHandler
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.get
+import io.ktor.client.statement.HttpReceivePipeline
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
@@ -165,6 +166,45 @@ class KaliumKtorCustomLoggingTest {
             assertEquals("***", headers["X-Wire-Test"]?.jsonPrimitive?.content)
             assertEquals("application/json", headers["Content-Type"]?.jsonPrimitive?.content)
             assertFalse(responseLog.contains("distinct-"))
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun requestFailureLogDoesNotIncludeTheExceptionMessage() = runTest {
+        val writer = RecordingLogWriter()
+        val client = loggingClient(writer) {
+            throw IllegalStateException("Failed to connect to https://staging.example.com/conversations/abc-123?client=deadbeef")
+        }
+
+        try {
+            runCatching { client.get("https://api.example.test/assets/file") }
+            val failureLog = writer.messages.single { it.startsWith("REQUEST FAILURE:") }
+
+            assertFalse(failureLog.contains("staging.example.com"))
+            assertFalse(failureLog.contains("abc-123"))
+            assertFalse(failureLog.contains("deadbeef"))
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun responseFailureLogDoesNotIncludeTheExceptionMessage() = runTest {
+        val writer = RecordingLogWriter()
+        val client = loggingClient(writer) { respond(content = "", status = HttpStatusCode.OK) }
+        client.receivePipeline.intercept(HttpReceivePipeline.State) {
+            throw IllegalStateException("Failed to read https://staging.example.com/conversations/abc-123?client=deadbeef")
+        }
+
+        try {
+            runCatching { client.get("https://api.example.test/assets/file") }
+            val failureLog = writer.messages.single { it.startsWith("RESPONSE FAILURE:") }
+
+            assertFalse(failureLog.contains("staging.example.com"))
+            assertFalse(failureLog.contains("abc-123"))
+            assertFalse(failureLog.contains("deadbeef"))
         } finally {
             client.close()
         }
