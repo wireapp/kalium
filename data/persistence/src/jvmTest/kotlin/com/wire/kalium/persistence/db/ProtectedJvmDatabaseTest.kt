@@ -122,7 +122,8 @@ class ProtectedJvmDatabaseTest {
             for (action in listOf("write", "read")) {
                 val log = root.resolve("$action.log")
                 val process = ProcessBuilder(
-                    java, "-cp", classpath.distinct().joinToString(File.pathSeparator),
+                    java, "-Dorg.sqlite.lib.path=${System.getProperty("org.sqlite.lib.path")}",
+                    "-cp", classpath.distinct().joinToString(File.pathSeparator),
                     ProtectedDatabaseRestartProbe::class.java.name, root.path, checkNotNull(keychain), action
                 ).redirectErrorStream(true).redirectOutput(log).start()
                 try {

@@ -10,12 +10,12 @@ import com.wire.kalium.persistence.protection.loadProtectedFileKey
 import com.wire.kalium.persistence.protection.withProtectedFileLock
 import org.sqlite.SQLiteConfig
 import org.sqlite.SQLiteDataSource
-import org.sqlite.mc.SQLiteMCSqlCipherConfig
 import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
 import java.sql.DriverManager
 import java.sql.SQLException
+import java.util.HexFormat
 
 private val sqliteHeader = "SQLite format 3\u0000".encodeToByteArray()
 
@@ -23,7 +23,7 @@ private val sqliteHeader = "SQLite format 3\u0000".encodeToByteArray()
 private val hasNativeCipher by lazy {
     SQLiteDataSource().connection.use { connection ->
         connection.createStatement().use { statement ->
-            statement.executeQuery("SELECT sqlite3mc_config('sqlcipher', 'hmac_use')").use { it.next() && it.getInt(1) == 1 }
+            statement.execute("PRAGMA cipher_version") && statement.resultSet.use { it.next() && !it.getString(1).isNullOrBlank() }
         }
     }
 }
@@ -34,7 +34,7 @@ internal fun protectedDatabaseDriver(
     keyStore: JvmStorageKeyStore,
     enableWAL: Boolean,
 ): SqlDriver {
-    check(hasNativeCipher) { "Protected JVM databases require SQLite3MC with SQLCipher page authentication" }
+    check(hasNativeCipher) { "Protected JVM databases require a SQLCipher-enabled Xerial native library" }
     val path = file.toAbsolutePath().normalize()
     return withProtectedFileLock(path) {
         val missing = Files.notExists(path, NOFOLLOW_LINKS)
@@ -65,7 +65,9 @@ internal fun protectedDatabaseDriver(
 }
 
 private fun cipherConfig(key: ByteArray): SQLiteConfig =
-    SQLiteMCSqlCipherConfig.getV4Defaults().withRawUnsaltedKey(key).build().apply {
+    SQLiteConfig().apply {
+        setHexKeyMode(SQLiteConfig.HexKeyMode.SQLCIPHER)
+        setPragma(SQLiteConfig.Pragma.PASSWORD, HexFormat.of().formatHex(key))
         setTempStore(SQLiteConfig.TempStore.MEMORY)
     }
 
