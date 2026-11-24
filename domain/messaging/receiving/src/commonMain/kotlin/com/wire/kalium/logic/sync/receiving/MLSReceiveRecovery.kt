@@ -75,7 +75,7 @@ class MLSReceiveRecovery(
         operation: PendingMLSReceiveRecovery,
     ): MLSReceiveRecoveryResult {
         check(event.subconversationId == null) { "Subconversation recovery is not supported" }
-        val completed = store.isCompleted(context, operation)
+        val completed = localState { store.isCompleted(context, operation) }
         val response = fetchDetails(event).validated(event, operation.groupId)
         return if (completed) {
             MLSReceiveRecoveryResult(response, operation, context.conversationEpoch(operation.groupId))
@@ -99,7 +99,7 @@ class MLSReceiveRecovery(
         event: Event.Conversation.NewMLSMessage,
         expectedGroupId: String,
     ): MLSReceiveRecoveryResult? {
-        store.find(event.id) { Base64.decode(event.content) }?.let { operation ->
+        localState { store.find(event.id) { Base64.decode(event.content) } }?.let { operation ->
             check(operation.groupId == expectedGroupId) { "Pending recovery belongs to another MLS group" }
             return resume(context, event, operation)
         }
@@ -111,9 +111,9 @@ class MLSReceiveRecovery(
         val remoteEpoch = checkNotNull(response.epoch) { "MLS recovery requires a remote epoch" }
         if (context.conversationExists(expectedGroupId) && context.conversationEpoch(expectedGroupId) >= remoteEpoch) return null
 
-        val operation = store.begin(event.id, expectedGroupId, Base64.decode(event.content))
+        val operation = localState { store.begin(event.id, expectedGroupId, Base64.decode(event.content)) }
         // This also validates the native checkpoint format before a new remote mutation.
-        if (store.isCompleted(context, operation)) {
+        if (localState { store.isCompleted(context, operation) }) {
             return MLSReceiveRecoveryResult(response, operation, context.conversationEpoch(expectedGroupId))
         }
         return rejoin(context, response, operation)
@@ -141,6 +141,8 @@ class MLSReceiveRecovery(
         recovery()
     } catch (failure: CancellationException) {
         throw failure
+    } catch (failure: UnreadableRecoveryState) {
+        throw failure.cause
     } catch (failure: Exception) {
         val cause = failure.coreFailure()
         if (cause.isTransientNetworkFailure() || context.conversationExists(groupId)) throw failure
@@ -148,6 +150,18 @@ class MLSReceiveRecovery(
         kaliumLogger.w("Skipping an MLS message whose missing group failed to rejoin: ${cause::class.simpleName}")
         null
     }
+
+    /** Local recovery state that can't be read isn't a failed join: keep the event and its intent pending. */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun <T> localState(read: suspend () -> T): T = try {
+        read()
+    } catch (failure: CancellationException) {
+        throw failure
+    } catch (failure: Exception) {
+        throw UnreadableRecoveryState(failure)
+    }
+
+    private class UnreadableRecoveryState(override val cause: Exception) : Exception(cause)
 
     private fun Exception.coreFailure(): CoreFailure =
         (this as? KaliumSyncException)?.coreFailureCause ?: commonizeMLSException(this).failure

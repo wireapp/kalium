@@ -51,6 +51,7 @@ import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -235,6 +236,18 @@ class MLSReceiveRecoveryTest {
             assertEquals(MLSReceiveResume.Skipped, f.recovery.resume(f.native, EVENT))
             assertNull(f.store.find(EVENT.id) { CIPHERTEXT })
             f.store.recordProcessed(f.native, listOf(EVENT)) // The skipped event can still be acknowledged.
+        }
+    }
+
+    @Test
+    fun unreadableCheckpointKeepsTheRecoveryPendingWithoutJoining() = runTest {
+        withFixture { f ->
+            val operation = f.store.begin(EVENT.id, GROUP_ID, CIPHERTEXT)
+            f.native.exists = false
+            f.native.checkpoint = "not a checkpoint".encodeToByteArray()
+            assertFails { f.recovery.resume(f.native, EVENT) }
+            assertEquals(operation, f.store.find(EVENT.id) { CIPHERTEXT })
+            assertEquals(0, f.joins)
         }
     }
 
