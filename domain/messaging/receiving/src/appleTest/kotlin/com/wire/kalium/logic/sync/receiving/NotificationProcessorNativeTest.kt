@@ -5098,10 +5098,11 @@ class NotificationProcessorNativeTest {
                 fixture.commit()
                 val future = fixture.event("future", fixture.encrypt("future"))
                 val groupInfo = checkNotNull(fixture.transport.bundle).groupInfoBundle.payload.drop(4).toByteArray()
-                var online = false
+                var offline: KaliumException? = com.wire.kalium.network.exceptions.FederationError(
+                    com.wire.kalium.network.api.model.FederationErrorResponse.Conflict(listOf("b.example.com")))
                 val commits = object : com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi by CommitApi() {
                     override suspend fun sendCommitBundle(bundle: com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi.CommitBundle) =
-                        if (online) CommitApi().sendCommitBundle(bundle) else NetworkResponse.Error(KaliumException.NoNetwork())
+                        offline?.let { NetworkResponse.Error(it) } ?: CommitApi().sendCommitBundle(bundle)
                 }
                 var rejoin: ReceivedMLSRejoin? = null
                 val transport = object : MLSTransporter {
@@ -5121,13 +5122,18 @@ class NotificationProcessorNativeTest {
                     )
                 }
                 fixture.releasePrepared()
-                assertIs<Either.Right<*>>(fixture.receive(listOf(future), future.id, recoveryFactory = recoveryFactory, mlsTransport = transport))
-                assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(future.id)).isProcessed)
-                    assertEquals(1uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
-                })
-                online = true
-                val later = Clock.System.now().toEpochMilliseconds() + 60_000
+                val now = Clock.System.now().toEpochMilliseconds()
+                // A federation conflict, then no network: each pass defers the same event without joining.
+                for ((at, next) in listOf(now to KaliumException.NoNetwork(), now + 60_000 to null)) {
+                    assertIs<Either.Right<*>>(fixture.receive(listOf(future), future.id, recoveryFactory = recoveryFactory,
+                        mlsTransport = transport, nowEpochMillis = { at }))
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(future.id)).isProcessed)
+                        assertEquals(1uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                    })
+                    offline = next
+                }
+                val later = now + 120_000
                 assertIs<Either.Right<*>>(fixture.receive(listOf(future), future.id, recoveryFactory = recoveryFactory,
                     mlsTransport = transport, nowEpochMillis = { later }))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
