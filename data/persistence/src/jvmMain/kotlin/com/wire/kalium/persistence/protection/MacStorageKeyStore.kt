@@ -21,7 +21,14 @@ internal class MacStorageKeyStore(private val keychainFile: Path? = null) : JvmS
             val candidate = ByteArray(KEY_BYTES).also(random::nextBytes)
             try {
                 val status = security.SecKeychainAddGenericPassword(
-                    keychain, service.size, service, account.size, account, candidate.size, candidate, null
+                    keychain,
+                    service.size,
+                    service,
+                    account.size,
+                    account,
+                    candidate.size,
+                    candidate,
+                    null,
                 )
                 check(status == SUCCESS || status == DUPLICATE_ITEM) { "Keychain add failed (OSStatus $status)" }
             } finally {
@@ -50,7 +57,14 @@ internal class MacStorageKeyStore(private val keychainFile: Path? = null) : JvmS
         val length = IntByReference()
         val data = PointerByReference()
         val status = security.SecKeychainFindGenericPassword(
-            keychain, service.size, service, account.size, account, length, data, null
+            keychain,
+            service.size,
+            service,
+            account.size,
+            account,
+            length,
+            data,
+            null,
         )
         if (status == ITEM_NOT_FOUND) return null
         check(status == SUCCESS) { "Keychain read failed (OSStatus $status)" }
@@ -77,6 +91,8 @@ internal class MacStorageKeyStore(private val keychainFile: Path? = null) : JvmS
         val coreFoundation = Native.load("CoreFoundation", CoreFoundation::class.java)
     }
 
+    // These JNA signatures match the exported Security framework functions.
+    @Suppress("FunctionNaming", "LongParameterList")
     private interface KeychainServices : Library {
         fun SecKeychainCopyDefault(result: PointerByReference): Int
         fun SecKeychainOpen(path: String, result: PointerByReference): Int
@@ -105,6 +121,7 @@ internal class MacStorageKeyStore(private val keychainFile: Path? = null) : JvmS
         fun SecKeychainItemFreeContent(attributes: Pointer?, password: Pointer): Int
     }
 
+    @Suppress("FunctionNaming")
     private interface CoreFoundation : Library {
         fun CFRelease(value: Pointer)
     }
