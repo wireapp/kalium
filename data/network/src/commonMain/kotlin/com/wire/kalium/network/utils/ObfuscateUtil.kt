@@ -95,122 +95,17 @@ private const val MASKED_SEGMENT = "{}"
 
 /** Characters of each query value kept as a debugging hint. Shorter values are fully masked. */
 private const val QUERY_VALUE_HINT_LENGTH = 3
-private val apiVersionSegment = Regex("v[0-9]+")
 
 /**
- * Static path segments that may appear in logs. Every other segment becomes `{}`, because paths carry
- * IDs, domains, client IDs, asset keys and property names.
- *
- * The set lists the segments of the path constants in the network API classes (`PATH_*`, `*_PATH`,
- * `PUSH_TOKEN`, `FEATURE_CONFIG`) and of literal paths such as `system/settings`. `LoggablePathSegmentsTest`
- * fails when a path constant has a segment that is missing here. API version segments such as `v5` stay
- * readable through [apiVersionSegment].
+ * Path segments that stay readable: API words made of lowercase letters and hyphens (`conversations`,
+ * `by-domain`) and version segments (`v9`). IDs, client IDs and asset keys contain digits, and domains contain dots,
+ * so they never match. No Kalium path carries a handle or another user-chosen word.
  */
-internal val loggablePathSegments = setOf(
-    "access",
-    "access-token",
-    "activate",
-    "add-permission",
-    "api-version",
-    "approve",
-    "apps",
-    "assets",
-    "await",
-    "bot",
-    "bots",
-    "broadcast",
-    "by-domain",
-    "calls",
-    "claim",
-    "clients",
-    "code",
-    "collaborators",
-    "commit-bundles",
-    "config",
-    "connections",
-    "contacts",
-    "conversations",
-    "cookies",
-    "count",
-    "custom-backend",
-    "email",
-    "events",
-    "feature-configs",
-    "federation",
-    "finalize-login",
-    "get-by-email",
-    "get-domain-registration",
-    "get-members-by-ids-using-post",
-    "gifs",
-    "giphy",
-    "groupinfo",
-    "handle",
-    "history",
-    "initiate-login",
-    "join",
-    "key-packages",
-    "labels",
-    "last",
-    "legalhold",
-    "list",
-    "list-clients",
-    "list-connections",
-    "list-ids",
-    "list-prekeys",
-    "list-users",
-    "login",
-    "logout",
-    "meetings",
-    "members",
-    "message-timer",
-    "messages",
-    "metadata",
-    "mls",
-    "name",
-    "nonce",
-    "notifications",
-    "one2one",
-    "one2one-conversations",
-    "prekeys",
-    "properties",
-    "properties-values",
-    "proteus",
-    "protocol",
-    "proxy",
-    "public-keys",
-    "push",
-    "receipt-mode",
-    "register",
-    "remove",
-    "reset-conversation",
-    "roots.pem",
-    "search",
-    "self",
-    "send",
-    "services",
-    "settings",
-    "sso",
-    "subconversations",
-    "supported-protocols",
-    "system",
-    "tags",
-    "targeted",
-    "teams",
-    "time",
-    "tokens",
-    "transient",
-    "transient-targeted",
-    "trending",
-    "typing",
-    "upgrade-personal-to-team",
-    "users",
-    "verification-code",
-    "whitelisted",
-)
+private val readablePathSegment = Regex("[a-z-]+|v[0-9]+")
 
 /**
- * Returns the URL in a form that is safe to log in every build: the path with each segment that is not a
- * known static segment obfuscated like the logger's IDs (7 characters) and domains (3 characters), and every query
+ * Returns the URL in a form that is safe to log in every build: the path with each segment that is not an
+ * API word obfuscated like the logger's IDs (7 characters) and domains (3 characters), and every query
  * value masked down to a 3-character hint.
  * The scheme, user info, host, port and fragment are dropped, because the host names the customer backend.
  *
@@ -219,7 +114,7 @@ internal val loggablePathSegments = setOf(
  */
 fun obfuscatePath(url: Url): String {
     val path = url.segments.joinToString(separator = "/", prefix = "/") { segment ->
-        val isStatic = segment.isEmpty() || segment in loggablePathSegments || apiVersionSegment.matches(segment)
+        val isStatic = segment.isEmpty() || readablePathSegment.matches(segment)
         if (isStatic) segment else segment.obfuscatePathSegment()
     }
 

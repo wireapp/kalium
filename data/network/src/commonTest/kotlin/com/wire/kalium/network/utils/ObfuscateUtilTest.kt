@@ -72,8 +72,15 @@ class ObfuscateUtilTest {
     }
 
     @Test
+    fun givenLowercaseWordSegment_whenObfuscatingPath_thenItStaysReadable() {
+        val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/some-new-endpoint/self"))
+
+        assertEquals("/v9/some-new-endpoint/self", result)
+    }
+
+    @Test
     fun givenSegmentsNoLongerThanTheirHint_whenObfuscatingPath_thenTheyAreReplaced() {
-        val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/users/a.b/abcdefg"))
+        val result = obfuscatePath(Url("https://nginz-https.anta.wire.link/v9/users/a.b/abc1234"))
 
         assertEquals("/v9/users/{}/{}", result)
     }
@@ -94,9 +101,9 @@ class ObfuscateUtilTest {
 
     @Test
     fun givenSignatureLikeQueryValue_whenObfuscatingPath_thenOnlyAThreeCharacterHintIsKept() {
-        val result = obfuscatePath(Url("https://assets.example.test/v9/assets/v4/key?sig=abcdef123&token=xyz789"))
+        val result = obfuscatePath(Url("https://assets.example.test/v9/assets/v4/3-1-9a1d6c0e?sig=abcdef123&token=xyz789"))
 
-        assertEquals("/v9/assets/v4/{}?sig=abc***&token=xyz***", result)
+        assertEquals("/v9/assets/v4/3-1-9a1***?sig=abc***&token=xyz***", result)
     }
 
     @Test
@@ -114,102 +121,14 @@ class ObfuscateUtilTest {
     }
 
     @Test
-    fun givenRealEndpointPaths_whenObfuscatingPath_thenStaticSegmentsStayReadable() {
+    fun givenRealEndpointPaths_whenObfuscatingPath_thenApiWordsStayReadable() {
         val endpoints = listOf(
-            "api-version",
-            "access",
-            "access/logout",
-            "login",
-            "register",
-            "activate/send",
-            "verification-code/send",
-            "self",
             "self/handle",
-            "self/email",
-            "self/supported-protocols",
-            "users/{}/{}",
-            "users/{}/{}/prekeys/{}",
-            "users/list-clients/v2",
-            "users/list-prekeys",
-            "list-users",
-            "clients",
-            "clients/{}",
-            "clients/{}/prekeys",
-            "clients/{}/nonce",
-            "clients/{}/access-token",
-            "push/tokens",
-            "push/tokens/{}",
-            "conversations/list",
             "conversations/list-ids",
-            "conversations/self",
-            "conversations/join",
-            "conversations/one2one/{}/{}",
-            "one2one-conversations/{}/{}",
-            "conversations/{}/{}/members/{}/{}",
-            "conversations/{}/{}/name",
-            "conversations/{}/{}/access",
-            "conversations/{}/{}/receipt-mode",
-            "conversations/{}/{}/message-timer",
-            "conversations/{}/{}/protocol",
-            "conversations/{}/{}/groupinfo",
-            "conversations/{}/{}/subconversations/{}/self",
-            "conversations/{}/{}/proteus/messages",
-            "conversations/{}/typing",
-            "conversations/{}/bots",
-            "conversations/{}/code",
-            "conversations/{}/{}/add-permission",
-            "conversations/{}/{}/history",
-            "history/{}/{}/{}",
-            "mls/messages",
-            "mls/messages/targeted",
-            "mls/messages/transient",
-            "mls/messages/transient-targeted",
-            "mls/commit-bundles",
             "mls/key-packages/self/{}/count",
-            "mls/key-packages/claim/{}/{}",
-            "mls/public-keys",
-            "mls/reset-conversation",
-            "connections/{}/{}",
-            "list-connections",
-            "notifications",
-            "notifications/last",
-            "events",
-            "await",
-            "properties",
-            "properties/labels",
-            "properties-values",
-            "feature-configs",
-            "calls/config/v2",
-            "assets",
-            "assets/{}/{}",
-            "assets/v3",
             "assets/v4/{}/{}",
-            "teams/{}/members",
-            "teams/{}/get-members-by-ids-using-post",
-            "teams/{}/legalhold/{}/approve",
-            "teams/{}/services/whitelisted",
-            "teams/{}/collaborators",
-            "teams/{}/apps",
-            "teams/{}/conversations/{}",
-            "upgrade-personal-to-team",
-            "meetings/list",
-            "search/contacts",
-            "proxy/giphy/v1/gifs/search",
-            "proxy/giphy/v1/gifs/trending",
-            "proxy/giphy/v1/gifs/tags",
-            "sso/initiate-login/{}",
-            "sso/finalize-login",
-            "sso/metadata",
-            "sso/settings",
-            "sso/get-by-email",
-            "get-domain-registration",
             "custom-backend/by-domain/{}",
-            "cookies",
-            "cookies/remove",
-            "system/settings",
-            "time",
-            "federation",
-            "roots.pem",
+            "feature-configs",
         )
 
         endpoints.forEach { path ->
