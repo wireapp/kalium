@@ -17,6 +17,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.isBackendOneOnOne
 import com.wire.kalium.logic.data.user.selectOneOnOneProtocol
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -80,10 +81,9 @@ internal class ReceivedOneOnOneHandler(
             SupportedProtocol.PROTEUS -> checkNotNull(proteus.firstOrNull()) {
                 "One-to-one resolution requires conversation creation"
             }
-            // Only the backend's MLS 1:1 has no team. A team-backed 1:1 is a separate group and must not replace it.
             SupportedProtocol.MLS -> candidates.firstOrNull { candidate ->
                 val info = candidate.protocolInfo
-                candidate.teamId == null && info is ConversationEntity.ProtocolInfo.MLS &&
+                candidate.isBackendOneOnOne() && info is ConversationEntity.ProtocolInfo.MLS &&
                     info.groupState == ConversationEntity.GroupState.ESTABLISHED &&
                     checkNotNull(context) { "MLS was not prepared" }.conversationExists(info.groupId)
             }?.id

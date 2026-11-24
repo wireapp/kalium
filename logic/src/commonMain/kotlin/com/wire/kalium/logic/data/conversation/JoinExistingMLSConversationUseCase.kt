@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.isBackendOneOnOne
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
@@ -132,7 +133,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             !needsRefresh ->
                 Either.Right(RefreshedConversation(conversation, currentPublicKeys))
 
-            conversation.isTeamlessOneOnOne() -> {
+            conversation.isBackendOneOnOne() -> {
                 logger.d("Refreshing oneOnOne conversation metadata before rejoining ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
                     fetchMLSOneToOneConversation(transactionContext, members.otherThanSelf()).map { refreshedConversation ->
@@ -186,7 +187,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             jsonStringKeyValues = conversation.logData()
                         )
                         // Re-fetch the current epoch and try again
-                        if (conversation.isTeamlessOneOnOne()) {
+                        if (conversation.isBackendOneOnOne()) {
                             conversationRepository.getConversationMembers(conversation.id).flatMap {
                                 fetchMLSOneToOneConversation(transactionContext, it.otherThanSelf()).map {
                                     it.mlsPublicKeys
@@ -327,10 +328,6 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
         }
     }
-
-    // Only the backend's MLS 1:1 has no team. A team-backed 1:1 is its own group, so it must not be swapped
-    // for the peer's 1:1: that would re-join the real 1:1 and never establish this one.
-    private fun Conversation.isTeamlessOneOnOne(): Boolean = type == Conversation.Type.OneOnOne && teamId == null
 
     // One-on-one members include the self user, but the conversation must be fetched with the other user.
     private fun List<UserId>.otherThanSelf(): UserId = firstOrNull { it != selfUserId } ?: first()
