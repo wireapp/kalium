@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
@@ -151,7 +152,12 @@ internal class ResetMLSConversationUseCaseImpl(
                     mlsContext = mlsContext,
                     groupID = updatedProtocolInfo.groupId,
                     members = members,
-                )
+                    // Left unestablished, the group would wait for any member to establish it. Members without key
+                    // packages or on unreachable backends join later by external commit, like after creation.
+                    allowSkippingUsersWithoutKeyPackages = true,
+                ).onFailure {
+                    logger.e("Failed to establish ${updatedProtocolInfo.groupId.toLogString()} after reset: $it")
+                }
             }.map {}
     }
 

@@ -180,6 +180,23 @@ class JoinExistingMLSConversationUseCaseTest {
         }
 
     @Test
+    fun givenGroupHostedOnAnotherBackendWithZeroEpoch_whenInvokingUseCase_ThenDoNotEstablishMlsGroup() =
+        runTest {
+            val remoteGroup = Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.copy(id = ConversationId("id3", "other.domain"))
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
+                .withGetConversationsByIdSuccessful(remoteGroup)
+                .arrange()
+
+            joinExistingMLSConversationsUseCase(arrangement.transactionContext, remoteGroup.id).shouldSucceed()
+
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+            }
+        }
+
+    @Test
     fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() = runTest {
         val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)

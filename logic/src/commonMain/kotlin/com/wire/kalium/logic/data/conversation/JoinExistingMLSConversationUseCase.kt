@@ -194,13 +194,14 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 }
                             }
                         } else {
-                            fetchConversation(transactionContext, conversation.id)
-                        }.flatMap {
+                            fetchConversation(transactionContext, conversation.id).map { null }
+                        }.flatMap { refreshedPublicKeys ->
                             conversationRepository.getNonDeletedConversationById(conversation.id).flatMap { conversation ->
                                 joinOrEstablishMLSGroup(
                                     transactionContext = transactionContext,
                                     conversation = conversation,
-                                    publicKeys = null,
+                                    // A 1:1 must keep the hosting backend's keys, not fall back to the self backend's.
+                                    publicKeys = refreshedPublicKeys,
                                     allowJoinByExternalCommit = allowJoinByExternalCommit
                                 )
                             }
@@ -298,6 +299,13 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             jsonStringKeyValues = conversation.logData()
                         )
                     }.map {}
+            }
+
+            type is Conversation.Type.Group && conversation.id.domain != selfUserId.domain -> {
+                // Establishing would use the self backend's removal key as external sender, and the hosting backend's
+                // proposals would then fail for every member. A client of the hosting domain establishes it and welcomes us.
+                logger.i("Skipping establishing group ${conversation.id.toLogString()} hosted on another backend")
+                Either.Right(Unit)
             }
 
             type == Conversation.Type.OneOnOne || type is Conversation.Type.Group -> {
