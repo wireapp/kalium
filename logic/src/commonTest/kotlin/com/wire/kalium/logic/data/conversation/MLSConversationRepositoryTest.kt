@@ -63,7 +63,6 @@ import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -138,7 +137,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.establishMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_1),
+            listOf(MockConversation.USER_1),
             publicKeys = null
         )
         result.shouldSucceed()
@@ -167,7 +166,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.establishMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_1, userMissingKeyPackage)
+            listOf(MockConversation.USER_1, userMissingKeyPackage)
         )
         result.shouldFail {
             assertIs<CoreFailure.MissingKeyPackages>(it)
@@ -212,7 +211,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenPartialKeyClaimingResponsesAndAllowPartial_whenCallingEstablishMLSGroup_thenPartialGroupCreatedAndSuccessReturned() = runTest {
         val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
-        val userWithKeyPackage = TestConversation.USER_1
+        val userWithKeyPackage = MockConversation.USER_1
         val usersMissingKeyPackages = setOf(userMissingKeyPackage)
         val usersWithKeyPackages = setOf(userWithKeyPackage)
         val keyPackageSuccess = KEY_PACKAGE.copy(userId = userWithKeyPackage.value, domain = userWithKeyPackage.domain)
@@ -265,7 +264,7 @@ class MLSConversationRepositoryTest {
             mlsConversationRepository.establishMLSGroup(
                 arrangement.mlsContext,
                 Arrangement.GROUP_ID,
-                listOf(TestConversation.USER_1),
+                listOf(MockConversation.USER_1),
                 publicKeys = MLS_PUBLIC_KEY
             )
         result.shouldSucceed()
@@ -303,7 +302,7 @@ class MLSConversationRepositoryTest {
             mlsConversationRepository.establishMLSGroup(
                 arrangement.mlsContext,
                 Arrangement.GROUP_ID,
-                listOf(TestConversation.USER_1),
+                listOf(MockConversation.USER_1),
                 publicKeys = null
             )
         result.shouldSucceed()
@@ -334,7 +333,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.establishMLSGroup(
             mlsContext = arrangement.mlsContext,
             groupID = Arrangement.GROUP_ID,
-            members = listOf(TestConversation.USER_1),
+            members = listOf(MockConversation.USER_1),
             publicKeys = null
         )
         result.shouldSucceed()
@@ -357,7 +356,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.establishMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_1),
+            listOf(MockConversation.USER_1),
             publicKeys = null
         )
         result.shouldFail()
@@ -384,7 +383,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.establishMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_1),
+            listOf(MockConversation.USER_1),
             publicKeys = null
         )
         result.shouldSucceed()
@@ -392,7 +391,7 @@ class MLSConversationRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageRepository.claimKeyPackages(
                 matches {
-                    it.containsAll(listOf(TestConversation.USER_1))
+                    it.containsAll(listOf(MockConversation.USER_1))
                 },
                 CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
@@ -429,7 +428,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.addMemberToMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_ID1),
+            listOf(MockConversation.USER_ID1),
             CIPHER_SUITE
         )
         result.shouldSucceed()
@@ -450,7 +449,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.addMemberToMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_ID1),
+            listOf(MockConversation.USER_ID1),
             CIPHER_SUITE
         )
         result.shouldSucceed()
@@ -471,7 +470,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.addMemberToMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_ID1),
+            listOf(MockConversation.USER_ID1),
             CIPHER_SUITE
         )
         result.shouldSucceed()
@@ -501,7 +500,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.addMemberToMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_ID1),
+            listOf(MockConversation.USER_ID1),
             CIPHER_SUITE
         )
         result.shouldSucceed()
@@ -558,7 +557,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.addMemberToMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_ID1),
+            listOf(MockConversation.USER_ID1),
             CIPHER_SUITE
         )
         result.shouldFail()
@@ -576,7 +575,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.addMemberToMLSGroup(
             arrangement.mlsContext,
             Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_ID1),
+            listOf(MockConversation.USER_ID1),
             CIPHER_SUITE
         )
         result.shouldFail()
@@ -1155,7 +1154,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSelfUserId_whenGetMLSGroupIdByUserIdSucceed_thenReturnsIdentities() = runTest {
-        val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
+        val groupId = MockConversation.MLS_PROTOCOL_INFO.groupId.value
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetEstablishedSelfMLSGroupIdReturns(groupId)
             .withGetUserIdentitiesReturn(
@@ -1186,7 +1185,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenOtherUserId_whenGetMLSGroupIdByUserIdSucceed_thenReturnsIdentities() = runTest {
-        val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
+        val groupId = MockConversation.MLS_PROTOCOL_INFO.groupId.value
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetUserIdentitiesReturn(
                 mapOf(
@@ -1233,7 +1232,7 @@ class MLSConversationRepositoryTest {
                     member2 to listOf(WIRE_IDENTITY.copy(clientId = CRYPTO_CLIENT_ID.copy("member_2_client_id")))
                 )
             ),
-            mlsConversationRepository.getMembersIdentities(arrangement.mlsClient, TestConversation.ID, listOf(member1, member2, member3))
+            mlsConversationRepository.getMembersIdentities(arrangement.mlsClient, MockConversation.ID, listOf(member1, member2, member3))
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -1263,7 +1262,7 @@ class MLSConversationRepositoryTest {
             val result = mlsConversationRepository.establishMLSSubConversationGroup(
                 arrangement.mlsContext,
                 Arrangement.GROUP_ID,
-                TestConversation.ID
+                MockConversation.ID
             )
             result.shouldSucceed()
 
@@ -1323,7 +1322,7 @@ class MLSConversationRepositoryTest {
             .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
             .arrange()
         // when
-        val result = mlsConversationRepository.getMembersIdentities(arrangement.mlsClient, TestConversation.ID, listOf(TestUser.USER_ID))
+        val result = mlsConversationRepository.getMembersIdentities(arrangement.mlsClient, MockConversation.ID, listOf(TestUser.USER_ID))
         // then
         result.shouldSucceed() {
             it.values.forEach {
@@ -1349,7 +1348,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         val result =
-            mlsConversationRepository.establishMLSSubConversationGroup(arrangement.mlsContext, Arrangement.GROUP_ID, TestConversation.ID)
+            mlsConversationRepository.establishMLSSubConversationGroup(arrangement.mlsContext, Arrangement.GROUP_ID, MockConversation.ID)
 
         result.shouldSucceed()
 
@@ -1389,7 +1388,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         val result =
-            mlsConversationRepository.establishMLSSubConversationGroup(arrangement.mlsContext, Arrangement.GROUP_ID, TestConversation.ID)
+            mlsConversationRepository.establishMLSSubConversationGroup(arrangement.mlsContext, Arrangement.GROUP_ID, MockConversation.ID)
 
         result.shouldFail()
 
@@ -1759,7 +1758,7 @@ class MLSConversationRepositoryTest {
                 RatchetTreeType.FULL,
                 PUBLIC_GROUP_STATE
             )
-            val CRYPTO_CLIENT_ID = CryptoQualifiedClientId("clientId", TestConversation.USER_1.toCrypto())
+            val CRYPTO_CLIENT_ID = CryptoQualifiedClientId("clientId", MockConversation.USER_1.toCrypto())
             val WIRE_IDENTITY =
                 WireIdentity(
                     CRYPTO_CLIENT_ID,
@@ -1787,15 +1786,15 @@ class MLSConversationRepositoryTest {
                 identity = null
             )
             val MEMBER_LEAVE_EVENT = EventContentDTO.Conversation.MemberLeaveDTO(
-                TestConversation.NETWORK_ID,
-                TestConversation.NETWORK_USER_ID1,
+                MockConversation.NETWORK_ID,
+                MockConversation.NETWORK_USER_ID1,
                 Instant.UNIX_FIRST_DATE,
                 ConversationMemberRemovedDTO(emptyList(), MemberLeaveReasonDTO.LEFT),
-                TestConversation.NETWORK_USER_ID1.value
+                MockConversation.NETWORK_USER_ID1.value
             )
             val WELCOME_EVENT = Event.Conversation.MLSWelcome(
                 "eventId",
-                TestConversation.ID,
+                MockConversation.ID,
                 TestUser.USER_ID,
                 Base64.encode(WELCOME),
             )
@@ -1807,7 +1806,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenValidConversationAndGroupId_whenUpdateGroupIdAndState_thenShouldSucceed() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val newGroupId = GroupID("new_group_id")
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withUpdateMLSGroupIdAndStateSuccessful()
@@ -1828,7 +1827,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenValidConversationAndGroupIdWithCustomState_whenUpdateGroupIdAndState_thenShouldSucceedWithCustomState() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val newGroupId = GroupID("new_group_id")
         val customState = ConversationEntity.GroupState.ESTABLISHED
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -1850,7 +1849,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenDAOFailure_whenUpdateGroupIdAndState_thenShouldPropagateError() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val newGroupId = GroupID("new_group_id")
         val storageFailure = StorageFailure.Generic(Exception("database error"))
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -1866,7 +1865,7 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenDifferentGroupStates_whenUpdateGroupIdAndState_thenShouldUpdateCorrectly() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val newGroupId = GroupID("new_group_id")
         val states = listOf(
             ConversationEntity.GroupState.PENDING_CREATION,

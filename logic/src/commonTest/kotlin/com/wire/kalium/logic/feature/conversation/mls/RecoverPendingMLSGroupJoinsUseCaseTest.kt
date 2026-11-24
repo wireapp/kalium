@@ -22,12 +22,13 @@ import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -56,7 +57,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
     @Test
     fun givenRecoverySucceeds_whenInvoked_thenAcknowledgesRecoveredConversations() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID, TestConversation.id(2))
+        val pendingConversationIds = listOf(MockConversation.ID, MockConversation.id(2))
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Right(Unit))
             .withPendingConversationIds(pendingConversationIds)
@@ -73,7 +74,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
     @Test
     fun givenRecoveryFails_whenInvoked_thenDoesNotAcknowledgePendingConversations() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID)
+        val pendingConversationIds = listOf(MockConversation.ID)
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Right(Unit))
             .withPendingConversationIds(pendingConversationIds)
@@ -90,7 +91,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
     @Test
     fun givenLegacyRecoveryFailsWithBackendConflict_whenInvoked_thenAcknowledgesPendingConversation() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID)
+        val pendingConversationIds = listOf(MockConversation.ID)
         val failure = MLSFailure.FederatedBackendConflict(listOf("backend-a.example", "backend-b.example"))
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Right(Unit))
@@ -102,14 +103,14 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
+            arrangement.conversationRepository.setConversationDeletedLocally(MockConversation.ID, true)
             arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(pendingConversationIds)
         }
     }
 
     @Test
     fun givenDirectConflictAndDeletionFails_whenInvoked_thenStopsPendingRecovery() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID)
+        val pendingConversationIds = listOf(MockConversation.ID)
         val failure = NetworkFailure.FederatedBackendFailure.ConflictingBackends(listOf("backend-a.example", "backend-b.example"))
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Right(Unit))
@@ -121,15 +122,15 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
+            arrangement.conversationRepository.setConversationDeletedLocally(MockConversation.ID, true)
             arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(pendingConversationIds)
         }
     }
 
     @Test
     fun givenSomeRecoveriesFail_whenInvoked_thenAcknowledgesOnlySuccessfulConversations() = runTest {
-        val failedConversationId = TestConversation.ID
-        val successfulConversationId = TestConversation.id(2)
+        val failedConversationId = MockConversation.ID
+        val successfulConversationId = MockConversation.id(2)
         val pendingConversationIds = listOf(failedConversationId, successfulConversationId)
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Right(Unit))
@@ -148,7 +149,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
     @Test
     fun givenJoinSucceedsButConversationIsStillPending_whenInvoked_thenDoesNotAcknowledgeRecovery() = runTest {
-        val pendingConversationIds = listOf(TestConversation.ID)
+        val pendingConversationIds = listOf(MockConversation.ID)
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Right(Unit))
             .withPendingConversationIds(pendingConversationIds)
@@ -222,7 +223,10 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         }
 
         private suspend fun withConversationGroupState(groupState: Conversation.ProtocolInfo.MLSCapable.GroupState) = apply {
-            val conversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO.copy(groupState = groupState))
+            val conversation = MockConversation.group(
+                teamId = TestTeam.TEAM_ID,
+                protocolInfo = MockConversation.MLS_PROTOCOL_INFO.copy(groupState = groupState)
+            )
             everySuspend { conversationRepository.getConversationById(any()) } returns Either.Right(conversation)
         }
 

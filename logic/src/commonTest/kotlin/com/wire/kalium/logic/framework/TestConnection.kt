@@ -18,16 +18,17 @@
 
 package com.wire.kalium.logic.framework
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import kotlin.time.Instant
 
 object TestConnection {
     val CONNECTION = Connection(
-        TestConversation.ID.value,
+        MockConversation.ID.value,
         "FROM",
         Instant.DISTANT_PAST,
-        TestConversation.ID,
+        MockConversation.ID,
         TestUser.USER_ID,
         ConnectionState.SENT,
         TestUser.OTHER.id.value,

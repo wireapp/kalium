@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.e2ei.E2EIAuthenticationRequest
@@ -31,7 +32,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
-import com.wire.kalium.logic.framework.TestConversation
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -54,11 +54,11 @@ internal class EnrollE2EICertificateUseCaseTest {
     fun givenAuthenticationCallback_whenEnrolling_thenCompletesAcquisitionAndRotationInOneInvocation() = runTest {
         val mixedGroup = GroupID("mixed-group")
         val conversations = listOf(
-            TestConversation.MLS_CONVERSATION,
-            TestConversation.MIXED_CONVERSATION.copy(
-                protocol = TestConversation.MIXED_PROTOCOL_INFO.copy(groupId = mixedGroup)
+            MockConversation.MLS_CONVERSATION,
+            MockConversation.MIXED_CONVERSATION.copy(
+                protocol = MockConversation.MIXED_PROTOCOL_INFO.copy(groupId = mixedGroup)
             ),
-            TestConversation.CONVERSATION
+            MockConversation.CONVERSATION
         )
         val (arrangement, useCase) = Arrangement(this).arrange {
             every { conversationRepository.observeConversationList() } returns flowOf(conversations)
@@ -73,7 +73,7 @@ internal class EnrollE2EICertificateUseCaseTest {
         assertEquals(EnrollE2EIResult.Success(LEAF_CERTIFICATE), result)
         assertEquals(AUTHENTICATION_REQUEST, authenticationRequest)
         assertEquals(ID_TOKEN, arrangement.returnedIdToken)
-        assertEquals(listOf(TestConversation.GROUP_ID, mixedGroup), arrangement.providedGroupIds)
+        assertEquals(listOf(MockConversation.GROUP_ID, mixedGroup), arrangement.providedGroupIds)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2eiRepository.rotateKeysAndMigrateConversations(
                 arrangement.transactionProvider,

@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.conversation.mls.PersistentPendingActionsRepository
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
@@ -107,12 +107,12 @@ class PendingActionsRepositoryTest {
     fun givenConversationId_whenEnqueuePendingMLSGroupJoin_thenUpsertIsCalledWithGroupJoinActionData() = runTest {
         val (arrangement, repository) = Arrangement().arrange()
 
-        repository.enqueuePendingMLSGroupJoin(TestConversation.ID)
+        repository.enqueuePendingMLSGroupJoin(MockConversation.ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.upsert(
                 actionType = PendingActionType.JOIN_MLS_GROUP_CONVERSATION,
-                qualifiedId = TestConversation.ID.toDao(),
+                qualifiedId = MockConversation.ID.toDao(),
                 createdAt = any()
             )
         }
@@ -120,8 +120,8 @@ class PendingActionsRepositoryTest {
 
     @Test
     fun givenPendingRows_whenGettingPendingMLSGroupJoins_thenReturnsConversationsFromQualifiedIds() = runTest {
-        val conversation1 = TestConversation.ID
-        val conversation2 = TestConversation.id(2)
+        val conversation1 = MockConversation.ID
+        val conversation2 = MockConversation.id(2)
         val (arrangement, repository) = Arrangement()
             .withPendingGroupRows(
                 PendingActionEntity(conversation1.toDao(), 1L),
@@ -141,8 +141,8 @@ class PendingActionsRepositoryTest {
     @Test
     fun givenPendingConversationIds_whenAcknowledgingGroupJoins_thenDeletesByActionTypeAndMappedDistinctIds() = runTest {
         val (arrangement, repository) = Arrangement().arrange()
-        val conversation1 = TestConversation.ID
-        val conversation2 = TestConversation.id(2)
+        val conversation1 = MockConversation.ID
+        val conversation2 = MockConversation.id(2)
 
         repository.acknowledgePendingMLSGroupJoins(listOf(conversation1, conversation1, conversation2))
 

@@ -19,12 +19,12 @@ package com.wire.kalium.logic.feature.message.poll
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PollMessageRepository
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -51,12 +51,12 @@ class SendPollVoteUseCaseTest {
     fun givenValidVote_whenSending_thenVoteIsRecordedAndSent() = runTest {
         val arrangement = arrangement().withRecordVoteReturning(true).withSendReturning(Either.Right(Unit))
 
-        val result = arrangement.useCase(TestConversation.ID, POLL_ID, listOf(OPTION_A, OPTION_A))
+        val result = arrangement.useCase(MockConversation.ID, POLL_ID, listOf(OPTION_A, OPTION_A))
 
         assertIs<SendPollVoteUseCase.Result.Success>(result)
         verifySuspend {
             arrangement.pollMessageRepository.recordVote(
-                TestConversation.ID,
+                MockConversation.ID,
                 POLL_ID,
                 matches { it.voterId == TestUser.SELF.id && it.selectedOptionIds == listOf(OPTION_A) }
             )
@@ -74,7 +74,7 @@ class SendPollVoteUseCaseTest {
     fun givenInvalidVote_whenSending_thenNothingIsSent() = runTest {
         val arrangement = arrangement().withRecordVoteReturning(false)
 
-        val result = arrangement.useCase(TestConversation.ID, POLL_ID, listOf("unknown"))
+        val result = arrangement.useCase(MockConversation.ID, POLL_ID, listOf("unknown"))
 
         assertIs<SendPollVoteUseCase.Result.Failure>(result)
         verifySuspend(VerifyMode.not) { arrangement.messageSender.sendMessage(any(), any()) }
@@ -87,12 +87,12 @@ class SendPollVoteUseCaseTest {
             .withRecordVoteReturning(true)
             .withSendReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
 
-        val result = arrangement.useCase(TestConversation.ID, POLL_ID, listOf(OPTION_B))
+        val result = arrangement.useCase(MockConversation.ID, POLL_ID, listOf(OPTION_B))
 
         assertIs<SendPollVoteUseCase.Result.Failure>(result)
         verifySuspend {
             arrangement.pollMessageRepository.revertVote(
-                TestConversation.ID,
+                MockConversation.ID,
                 POLL_ID,
                 matches { it.selectedOptionIds == listOf(OPTION_B) },
                 PREVIOUS_VOTE

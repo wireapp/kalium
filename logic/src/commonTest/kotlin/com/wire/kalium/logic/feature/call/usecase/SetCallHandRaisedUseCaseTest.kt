@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.CallHandIdentity
 import com.wire.kalium.logic.data.call.CallHandState
 import com.wire.kalium.logic.data.call.CallMetadata
@@ -29,7 +30,6 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.messaging.sending.MessageSender
 import dev.mokkery.MockMode
@@ -67,7 +67,7 @@ class SetCallHandRaisedUseCaseTest {
             completed.await()
             Either.Right(Unit)
         }
-        val result = async { arrangement.useCase(TestConversation.ID, true, "first") }
+        val result = async { arrangement.useCase(MockConversation.ID, true, "first") }
         runCurrent()
         verify(VerifyMode.not) { arrangement.calls.updateHand(any(), any(), any(), any(), any(), any()) }
         completed.complete(Unit)
@@ -80,10 +80,10 @@ class SetCallHandRaisedUseCaseTest {
         val arrangement = Arrangement(this)
         everySuspend { arrangement.sender.sendMessage(any(), any()) } returns
             Either.Left(NetworkFailure.NoNetworkConnection(null))
-        assertIs<SetCallHandRaisedUseCase.Result.Failure>(arrangement.useCase(TestConversation.ID, true, "first"))
+        assertIs<SetCallHandRaisedUseCase.Result.Failure>(arrangement.useCase(MockConversation.ID, true, "first"))
         verify(VerifyMode.not) { arrangement.calls.updateHand(any(), any(), any(), any(), any(), any()) }
         everySuspend { arrangement.sender.sendMessage(any(), any()) } returns Either.Right(Unit)
-        assertIs<SetCallHandRaisedUseCase.Result.Success>(arrangement.useCase(TestConversation.ID, true, "first"))
+        assertIs<SetCallHandRaisedUseCase.Result.Success>(arrangement.useCase(MockConversation.ID, true, "first"))
     }
 
     @Test
@@ -95,7 +95,7 @@ class SetCallHandRaisedUseCaseTest {
             )
             Either.Right(Unit)
         }
-        assertIs<SetCallHandRaisedUseCase.Result.NotJoined>(arrangement.useCase(TestConversation.ID, true, "first"))
+        assertIs<SetCallHandRaisedUseCase.Result.NotJoined>(arrangement.useCase(MockConversation.ID, true, "first"))
         verify { arrangement.calls.updateHand(any(), any(), any(), any(), any(), "first") }
         assertTrue(arrangement.metadata.handState!!.raised.isEmpty())
     }
@@ -105,15 +105,15 @@ class SetCallHandRaisedUseCaseTest {
         val arrangement = Arrangement(this)
         everySuspend { arrangement.sender.sendMessage(any(), any()) } returns Either.Right(Unit)
         every { arrangement.calls.updateHand(any(), any(), any(), any(), any(), any()) } returns false
-        assertIs<SetCallHandRaisedUseCase.Result.NotJoined>(arrangement.useCase(TestConversation.ID, true, "first"))
+        assertIs<SetCallHandRaisedUseCase.Result.NotJoined>(arrangement.useCase(MockConversation.ID, true, "first"))
     }
 
     @Test
     fun duplicateLowerDoesNotSendAndMissingParticipationIsRejected() = runTest {
         val arrangement = Arrangement(this)
-        assertIs<SetCallHandRaisedUseCase.Result.Success>(arrangement.useCase(TestConversation.ID, false, "first"))
+        assertIs<SetCallHandRaisedUseCase.Result.Success>(arrangement.useCase(MockConversation.ID, false, "first"))
         arrangement.metadata = arrangement.metadata.copy(callStatus = CallStatus.STILL_ONGOING, handState = null)
-        assertIs<SetCallHandRaisedUseCase.Result.NotJoined>(arrangement.useCase(TestConversation.ID, true, "first"))
+        assertIs<SetCallHandRaisedUseCase.Result.NotJoined>(arrangement.useCase(MockConversation.ID, true, "first"))
         verifySuspend(VerifyMode.not) { arrangement.sender.sendMessage(any(), any()) }
     }
 
@@ -125,9 +125,9 @@ class SetCallHandRaisedUseCaseTest {
             completed.await()
             Either.Right(Unit)
         }
-        val first = async { arrangement.useCase(TestConversation.ID, true, "first") }
+        val first = async { arrangement.useCase(MockConversation.ID, true, "first") }
         runCurrent()
-        assertIs<SetCallHandRaisedUseCase.Result.Busy>(arrangement.useCase(TestConversation.ID, false, "first"))
+        assertIs<SetCallHandRaisedUseCase.Result.Busy>(arrangement.useCase(MockConversation.ID, false, "first"))
         completed.complete(Unit)
         assertIs<SetCallHandRaisedUseCase.Result.Success>(first.await())
     }
@@ -140,7 +140,7 @@ class SetCallHandRaisedUseCaseTest {
             completed.await()
             Either.Right(Unit)
         }
-        val caller = async { arrangement.useCase(TestConversation.ID, true, "first") }
+        val caller = async { arrangement.useCase(MockConversation.ID, true, "first") }
         runCurrent()
         caller.cancelAndJoin()
         completed.complete(Unit)
@@ -156,7 +156,7 @@ class SetCallHandRaisedUseCaseTest {
             lookup.await()
             Either.Right(TestClient.CLIENT_ID)
         }
-        val result = async { arrangement.useCase(TestConversation.ID, true, "first") }
+        val result = async { arrangement.useCase(MockConversation.ID, true, "first") }
         runCurrent()
         arrangement.metadata = arrangement.metadata.copy(
             handState = CallHandState.start("replacement", Instant.fromEpochSeconds(2), setOf(arrangement.self))

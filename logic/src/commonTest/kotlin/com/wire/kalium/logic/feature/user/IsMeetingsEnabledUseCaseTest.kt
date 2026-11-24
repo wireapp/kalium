@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
@@ -76,7 +77,7 @@ class IsMeetingsEnabledUseCaseTest {
         val repository: UserConfigRepository = mock()
         everySuspend { repository.isMeetingsEnabled() } returns true
         for (apiVersion in listOf(17, 18, 19)) {
-            val useCase = IsMeetingsEnabledUseCaseImpl(repository, FeatureSupportImpl(apiVersion))
+            val useCase = IsMeetingsEnabledUseCaseImpl(repository, FeatureSupportImpl(apiVersion, KaliumConfigs()))
             assertEquals(true, useCase.invoke())
             assertEquals(apiVersion >= 19, useCase.isGuestLinkSharingEnabled())
         }

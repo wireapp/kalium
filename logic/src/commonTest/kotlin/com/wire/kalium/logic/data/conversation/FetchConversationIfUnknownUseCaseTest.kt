@@ -19,7 +19,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.answering.returns
@@ -41,12 +41,12 @@ class FetchConversationIfUnknownUseCaseTest {
             withFetchConversationSuccess()
         }
 
-        useCase(arrangement.transactionContext, TestConversation.ID)
+        useCase(arrangement.transactionContext, MockConversation.ID)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversation(
                 any(),
-                TestConversation.ID,
+                MockConversation.ID,
                 ConversationSyncReason.Other
             )
         }
@@ -58,7 +58,7 @@ class FetchConversationIfUnknownUseCaseTest {
             withGetConversationRight()
         }
 
-        useCase(arrangement.transactionContext, TestConversation.ID)
+        useCase(arrangement.transactionContext, MockConversation.ID)
 
         verifySuspend(VerifyMode.not) { arrangement.fetchConversation(any(), any(), any()) }
     }
@@ -75,21 +75,21 @@ class FetchConversationIfUnknownUseCaseTest {
 
         suspend fun withGetConversationLeft() = apply {
             everySuspend {
-                conversationRepository.getConversationById(TestConversation.ID)
+                conversationRepository.getConversationById(MockConversation.ID)
             } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withGetConversationRight() = apply {
             everySuspend {
-                conversationRepository.getConversationById(TestConversation.ID)
-            } returns Either.Right(TestConversation.CONVERSATION)
+                conversationRepository.getConversationById(MockConversation.ID)
+            } returns Either.Right(MockConversation.CONVERSATION)
         }
 
         suspend fun withFetchConversationSuccess() = apply {
             everySuspend {
                 fetchConversation(
                     any(),
-                    TestConversation.ID,
+                    MockConversation.ID,
                     ConversationSyncReason.Other
                 )
             } returns Either.Right(Unit)

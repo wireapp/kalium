@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
@@ -30,7 +31,6 @@ import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -66,16 +66,16 @@ class JoinConversationViaCodeUseCaseTest {
                 key,
                 null,
                 password,
-                Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
+                Either.Right(MockConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
             )
             .withMemberJoinHandler()
-            .withProtocolInfo(Either.Right(TestConversation.PROTEUS_PROTOCOL_INFO))
+            .withProtocolInfo(Either.Right(MockConversation.PROTEUS_PROTOCOL_INFO))
             .arrange()
 
         useCase(code, key, domain, password).also {
             assertIs<JoinConversationViaCodeUseCase.Result.Success.Changed>(it)
             assertEquals(
-                TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel(),
+                MockConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel(),
                 it.conversationId
             )
         }
@@ -106,10 +106,10 @@ class JoinConversationViaCodeUseCaseTest {
                 key,
                 null,
                 password,
-                Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
+                Either.Right(MockConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
             )
             .withMemberJoinHandler()
-            .withProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
+            .withProtocolInfo(Either.Right(MockConversation.MLS_PROTOCOL_INFO))
             .withJoinExistingMLSConversationSucceeds()
             .withAddMemberToMLSGroupSucceeds()
             .arrange()
@@ -251,7 +251,7 @@ class JoinConversationViaCodeUseCaseTest {
                 key,
                 null,
                 password,
-                Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
+                Either.Right(MockConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
             )
             .withMemberJoinHandler(Either.Left(storageFailure))
             .arrange()
@@ -284,10 +284,10 @@ class JoinConversationViaCodeUseCaseTest {
                 key,
                 null,
                 password,
-                Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
+                Either.Right(MockConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
             )
             .withMemberJoinHandler()
-            .withProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
+            .withProtocolInfo(Either.Right(MockConversation.MLS_PROTOCOL_INFO))
             .also { arr ->
                 everySuspend {
                     arr.joinExistingMLSConversation.invoke(any(), any(), any(), any())

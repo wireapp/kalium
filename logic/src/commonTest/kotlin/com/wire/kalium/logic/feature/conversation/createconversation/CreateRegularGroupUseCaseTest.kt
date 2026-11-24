@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.feature.conversation.createconversation
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -58,7 +59,8 @@ class CreateRegularGroupUseCaseTest {
         private val createRegularGroup = CreateRegularGroupUseCaseImpl(groupConversationCreator)
 
         suspend fun withGroupConversationCreator() = apply {
-            everySuspend { groupConversationCreator(any(), any(), any()) } returns ConversationCreationResult.Success(TestConversation.GROUP())
+            everySuspend { groupConversationCreator(any(), any(), any()) } returns
+                ConversationCreationResult.Success(MockConversation.group(teamId = TestTeam.TEAM_ID))
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to createRegularGroup }

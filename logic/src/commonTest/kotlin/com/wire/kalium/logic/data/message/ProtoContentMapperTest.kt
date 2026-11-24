@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
@@ -27,7 +28,6 @@ import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Composite
@@ -698,7 +698,7 @@ class ProtoContentMapperTest {
 
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"
-        val TEST_CONVERSATION_ID = TestConversation.ID
+        val TEST_CONVERSATION_ID = MockConversation.ID
         const val TEST_CALLING_UUID = "callingUuid"
     }
 }

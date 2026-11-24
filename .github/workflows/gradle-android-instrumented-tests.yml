@@ -9,7 +9,7 @@ on:
       - develop
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha || format('push-{0}', github.sha) }}
   cancel-in-progress: true
 
 permissions:
@@ -18,7 +18,10 @@ permissions:
 jobs:
   gradle-run-tests:
     name: Gradle Run Tests
+    outputs:
+      skip-tests: ${{ steps.tested-merge.outputs.skip-tests }}
     permissions:
+      actions: read # required to find successful merge-queue runs
       contents: read # required to read repository metadata in private repositories
       issues: read # required to find related pull requests in private repositories
       checks: write # required to publish unit test check runs
@@ -33,8 +36,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Check merge-queue test result
+        id: tested-merge
+        uses: ./.github/actions/skip-tested-merge
+
       - name: Fetch develop for affected module detection
-        run: git fetch --no-tags --depth=1 origin develop:refs/remotes/origin/develop
+        run: git fetch --no-tags --depth=1 origin +develop:refs/remotes/origin/develop
 
       # trying https://github.com/actions/runner-images/issues/10386#issuecomment-2271613335
       - name: Free Disk Space Before Build
@@ -84,12 +91,14 @@ jobs:
 
         # API 30+ emulators only have x86_64 system images.
       - name: Get AVD info
+        if: steps.tested-merge.outputs.skip-tests != 'true'
         uses: ./.github/actions/get-avd-info
         id: avd-info
         with:
           api-level: ${{ matrix.api-level }}
 
       - name: Enable KVM group perms
+        if: steps.tested-merge.outputs.skip-tests != 'true'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
@@ -101,11 +110,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Build/dex/package test APKs before starting the emulator, so QEMU does not compete with the heaviest Android build work.
-          ./gradlew packageAndroidDeviceTest
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            # Develop runs the complete suite, so it needs every APK.
+            ./gradlew packageAndroidDeviceTest
+          else
+            # Same selection as the emulator step below, so only the APKs that will run are built.
+            # In "run all" mode the selection file lists every module, so no special case is needed.
+            ./gradlew connectedAndroidOnlyAffectedTest --list-only
+            package_tasks=()
+            while IFS= read -r task; do
+              [[ -z "$task" ]] || package_tasks+=("${task%connectedAndroidDeviceTest}packageAndroidDeviceTest")
+            done < build/affected-tests/connectedAndroidOnlyAffectedTest.txt
+            if (( ${#package_tasks[@]} > 0 )); then
+              ./gradlew "${package_tasks[@]}"
+            else
+              echo "No affected modules, no test APK to build."
+            fi
+          fi
           # Stop prebuild daemons before booting the emulator to free memory/CPU for the connected test phase.
           ./gradlew --stop
 
       - name: Android Instrumentation Tests
+        if: steps.tested-merge.outputs.skip-tests != 'true'
         uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a
         env:
           GITHUB_USER: ${{ github.actor }}
@@ -123,7 +149,7 @@ jobs:
           script: ./gradlew ${{ github.event_name == 'push' && 'connectedAndroidDeviceTest' || 'connectedAndroidOnlyAffectedTest' }}
 
       - name: Archive Test Reports
-        if: always()
+        if: ${{ always() && steps.tested-merge.outputs.skip-tests != 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: test-reports
@@ -132,7 +158,7 @@ jobs:
             ./**/build/reports/androidTests/**
 
       - name: Archive Test Results
-        if: always()
+        if: ${{ always() && steps.tested-merge.outputs.skip-tests != 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: test-results
@@ -142,7 +168,7 @@ jobs:
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/linux@c950f6fb443cb5af20a377fd0dfaa78838901040
-        if: ${{ always() }}
+        if: ${{ always() && steps.tested-merge.outputs.skip-tests != 'true' }}
         with:
           check_name: Android Instrumented Test Results
           files: |
@@ -160,7 +186,7 @@ jobs:
     name: Upload Android Instrumented Test Results to Datadog
     runs-on: ubuntu-latest
     needs: gradle-run-tests
-    if: always()
+    if: ${{ always() && needs.gradle-run-tests.outputs.skip-tests != 'true' }}
 
     steps:
       - name: Download tests results

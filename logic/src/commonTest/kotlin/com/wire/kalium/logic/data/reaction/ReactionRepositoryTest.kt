@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.data.reaction
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.IgnoreIOS
@@ -110,9 +110,9 @@ class ReactionRepositoryTest {
                 SELF_USER_ID.domain
             )
         )
-        private val TEST_CONVERSATION_ID = TestConversation.ID
+        private val TEST_CONVERSATION_ID = MockConversation.ID
         private val TEST_CONVERSATION_ENTITY =
-            TestConversation.ENTITY.copy(
+            MockConversation.entity().copy(
                 id = QualifiedIDEntity(
                     TEST_CONVERSATION_ID.value,
                     TEST_CONVERSATION_ID.domain

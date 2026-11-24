@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
@@ -38,7 +39,6 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.feature.conversation.ObserveUnreadConversationBadgeCountUseCaseImpl
@@ -130,13 +130,13 @@ class ConversationRepositoryTest {
     @Test
     fun givenConversationDaoReturnsAGroupConversation_whenGettingConversationDetailsById_thenReturnAGroupConversationDetails() =
         runTest {
-            val conversationEntity = TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.GROUP)
+            val conversationEntity = MockConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.GROUP)
 
             val (_, conversationRepository) = Arrangement()
                 .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
-            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+            conversationRepository.observeConversationDetailsById(MockConversation.ID).test {
                 assertIs<Either.Right<ConversationDetails.Group>>(awaitItem())
                 awaitComplete()
             }
@@ -145,13 +145,13 @@ class ConversationRepositoryTest {
     @Test
     fun givenConversationDaoReturnsASelfConversation_whenGettingConversationDetailsById_thenReturnASelfConversationDetails() =
         runTest {
-            val conversationEntity = TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.SELF)
+            val conversationEntity = MockConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.SELF)
 
             val (_, conversationRepository) = Arrangement()
                 .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
-            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+            conversationRepository.observeConversationDetailsById(MockConversation.ID).test {
                 assertIs<Either.Right<ConversationDetails.Self>>(awaitItem())
                 awaitComplete()
             }
@@ -160,8 +160,8 @@ class ConversationRepositoryTest {
     @Test
     fun givenConversationDaoReturnsAOneOneConversation_whenGettingConversationDetailsById_thenReturnAOneOneConversationDetails() =
         runTest {
-            val conversationId = TestConversation.ENTITY_ID
-            val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+            val conversationId = MockConversation.ENTITY_ID
+            val conversationEntity = MockConversation.VIEW_ENTITY.copy(
                 id = conversationId,
                 type = ConversationEntity.Type.ONE_ON_ONE,
                 otherUserId = QualifiedIDEntity("otherUser", "domain")
@@ -171,7 +171,7 @@ class ConversationRepositoryTest {
                 .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
-            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+            conversationRepository.observeConversationDetailsById(MockConversation.ID).test {
                 assertIs<Either.Right<ConversationDetails.OneOne>>(awaitItem())
                 awaitComplete()
             }
@@ -183,7 +183,7 @@ class ConversationRepositoryTest {
             // given
             val (_, conversationRepository) = Arrangement()
                 .withSelfUserFlow(flowOf(TestUser.SELF))
-                .withExpectedConversationWithOtherUser(TestConversation.ENTITY)
+                .withExpectedConversationWithOtherUser(MockConversation.entity())
                 .withExpectedOtherKnownUser(TestUser.OTHER)
                 .arrange()
 
@@ -202,7 +202,7 @@ class ConversationRepositoryTest {
             // given
             val (_, conversationRepository) = Arrangement()
                 .withSelfUserFlow(flowOf(TestUser.SELF))
-                .withExpectedConversationDetailsWithOtherUser(TestConversation.VIEW_ONE_ON_ONE.copy(otherUserId = OTHER_USER_ID.toDao()))
+                .withExpectedConversationDetailsWithOtherUser(MockConversation.VIEW_ONE_ON_ONE.copy(otherUserId = OTHER_USER_ID.toDao()))
                 .withExpectedOtherKnownUser(TestUser.OTHER)
                 .arrange()
 
@@ -222,7 +222,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         conversationRepository.updateMutedStatusRemotely(
-            TestConversation.ID,
+            MockConversation.ID,
             MutedConversationStatus.AllMuted,
             DateTimeUtil.currentInstant()
         )
@@ -244,7 +244,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         conversationRepository.updateArchivedStatusRemotely(
-            TestConversation.ID,
+            MockConversation.ID,
             isArchived,
             DateTimeUtil.currentInstant()
         )
@@ -265,7 +265,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         conversationRepository.updateMutedStatusLocally(
-            TestConversation.ID,
+            MockConversation.ID,
             MutedConversationStatus.AllMuted,
             DateTimeUtil.currentInstant()
         )
@@ -472,7 +472,7 @@ class ConversationRepositoryTest {
         val shouldFetchFromArchivedConversations = false
         val messagePreviewEntity = MESSAGE_PREVIEW_ENTITY.copy(conversationId = conversationIdEntity)
 
-        val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+        val conversationEntity = MockConversation.VIEW_ENTITY.copy(
             id = conversationIdEntity,
             type = ConversationEntity.Type.GROUP,
         )
@@ -515,7 +515,7 @@ class ConversationRepositoryTest {
             val conversationId = QualifiedID("some_value", "some_domain")
             val shouldFetchFromArchivedConversations = true
 
-            val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+            val conversationEntity = MockConversation.VIEW_ENTITY.copy(
                 id = conversationIdEntity,
                 type = ConversationEntity.Type.GROUP,
             )
@@ -552,7 +552,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenAGroupConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() = runTest {
         // given
-        val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+        val conversationEntity = MockConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.GROUP,
         )
         val (_, conversationRepository) = Arrangement()
@@ -579,7 +579,7 @@ class ConversationRepositoryTest {
 //             val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
 //             val conversationId = QualifiedID("some_value", "some_domain")
 //             val shouldFetchFromArchivedConversations = false
-//             val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+//             val conversationEntity = MockConversation.VIEW_ENTITY.copy(
 //                 id = conversationIdEntity,
 //                 type = ConversationEntity.Type.ONE_ON_ONE,
 //                 otherUserId = QualifiedIDEntity("otherUser", "domain"),
@@ -609,7 +609,7 @@ class ConversationRepositoryTest {
         val conversationId = QualifiedID("some_value", "some_domain")
         val shouldFetchFromArchivedConversations = false
 
-        val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+        val conversationEntity = MockConversation.VIEW_ENTITY.copy(
             id = conversationIdEntity, type = ConversationEntity.Type.ONE_ON_ONE,
             otherUserId = QualifiedIDEntity("otherUser", "domain")
         )
@@ -649,7 +649,7 @@ class ConversationRepositoryTest {
 
         // when
         val result = conversationRepository.updateConversationReadDate(
-            TestConversation.ID,
+            MockConversation.ID,
             Instant.fromEpochMilliseconds(1648654560000)
         )
 
@@ -744,7 +744,7 @@ class ConversationRepositoryTest {
     fun givenAConversationId_WhenTheConversationExists_ShouldReturnAConversationInstance() = runTest {
         val conversationId = ConversationId("conv_id", "conv_domain")
         val (_, conversationRepository) = Arrangement()
-            .withExpectedObservableConversation(TestConversation.ENTITY)
+            .withExpectedObservableConversation(MockConversation.entity())
             .arrange()
 
         val result = conversationRepository.getConversationById(conversationId)
@@ -755,7 +755,7 @@ class ConversationRepositoryTest {
     fun givenAnUserId_WhenGettingConversationIds_ShouldReturnSuccess() = runTest {
         val userId = UserId("user_id", "user_domain")
         val (arrange, conversationRepository) = Arrangement()
-            .withConversationsByUserId(listOf(TestConversation.ENTITY))
+            .withConversationsByUserId(listOf(MockConversation.entity()))
             .arrange()
 
         val result = conversationRepository.getConversationsByUserId(userId)
@@ -953,7 +953,7 @@ class ConversationRepositoryTest {
         // given
         val protocol = Conversation.Protocol.MLS
         val conversationResponse = NetworkResponse.Success(
-            TestConversation.CONVERSATION_RESPONSE,
+            MockConversation.CONVERSATION_RESPONSE,
             emptyMap(),
             HttpStatusCode.OK.value
         )
@@ -985,7 +985,7 @@ class ConversationRepositoryTest {
         // given
         val protocol = Conversation.Protocol.MIXED
         val conversationResponse = NetworkResponse.Success(
-            TestConversation.CONVERSATION_RESPONSE,
+            MockConversation.CONVERSATION_RESPONSE,
             emptyMap(),
             HttpStatusCode.OK.value
         )
@@ -1013,7 +1013,7 @@ class ConversationRepositoryTest {
         // given
         val protocol = Conversation.Protocol.MLS
         val conversationResponse = NetworkResponse.Success(
-            TestConversation.CONVERSATION_RESPONSE,
+            MockConversation.CONVERSATION_RESPONSE,
             emptyMap(),
             HttpStatusCode.OK.value
         )
@@ -1046,7 +1046,7 @@ class ConversationRepositoryTest {
         // given
         val protocol = Conversation.Protocol.MLS
         val conversationResponse = NetworkResponse.Success(
-            TestConversation.CONVERSATION_RESPONSE,
+            MockConversation.CONVERSATION_RESPONSE,
             emptyMap(),
             HttpStatusCode.OK.value
         )
@@ -1592,7 +1592,7 @@ class ConversationRepositoryTest {
         val GROUP_ID = GroupID(RAW_GROUP_ID)
         const val GROUP_NAME = "Group Name"
 
-        val CONVERSATION_ID = TestConversation.ID
+        val CONVERSATION_ID = MockConversation.ID
         val USER_ID = TestUser.USER_ID
 
         val CONVERSATION_ENTITY_ID = QualifiedIDEntity(CONVERSATION_ID.value, CONVERSATION_ID.domain)
@@ -1611,7 +1611,7 @@ class ConversationRepositoryTest {
                 emptyList()
             ),
             GROUP_NAME,
-            TestConversation.NETWORK_ID,
+            MockConversation.NETWORK_ID,
             null,
             0UL,
             ConversationResponse.Type.GROUP,
@@ -1668,7 +1668,7 @@ class ConversationRepositoryTest {
         val UPDATE_PROTOCOL_SUCCESS = NetworkResponse.Success(
             UpdateConversationProtocolResponse.ProtocolUpdated(
                 EventContentDTO.Conversation.ProtocolUpdate(
-                    TestConversation.NETWORK_ID,
+                    MockConversation.NETWORK_ID,
                     ConversationProtocolDTO(ConvProtocol.MIXED),
                     TestUser.NETWORK_ID
                 )

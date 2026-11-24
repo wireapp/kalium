@@ -9,10 +9,11 @@ on:
       - develop
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha || format('push-{0}', github.sha) }}
   cancel-in-progress: true
 
 permissions:
+  actions: read # required to find successful merge-queue runs
   contents: read # required for actions/checkout and repository metadata reads
 
 jobs:
@@ -27,16 +28,28 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Check merge-queue test result
+        id: tested-merge
+        uses: ./.github/actions/skip-tested-merge
+
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
+      - name: Warm develop cache without running tests
+        if: steps.tested-merge.outputs.skip-tests == 'true'
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :data:persistence:jvmTestClasses
+
       # Probably redundant since this is part of the test suite, leaving as a separate step for clarity and artifacting purposes.
       - name: Verify DB Migrations
+        if: steps.tested-merge.outputs.skip-tests != 'true'
         run: |
           ./gradlew :data:persistence:jvmTest --tests com.wire.kalium.persistence.migrations.VerifyDatabaseMigrationsTest
 
       - name: Archive DB test artifacts
-        if: always()
+        if: ${{ always() && steps.tested-merge.outputs.skip-tests != 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: db-test-artifacts

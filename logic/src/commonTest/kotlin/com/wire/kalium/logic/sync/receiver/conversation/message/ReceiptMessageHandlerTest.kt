@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
@@ -26,7 +27,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
@@ -231,9 +231,9 @@ class ReceiptMessageHandlerTest {
     }
 
     private companion object {
-        val CONVERSATION_ID = TestConversation.CONVERSATION.id
+        val CONVERSATION_ID = MockConversation.CONVERSATION.id
         val CONVERSATION_ENTITY_ID = ConversationIDEntity(CONVERSATION_ID.value, CONVERSATION_ID.domain)
-        val CONVERSATION_ENTITY = TestConversation.ENTITY.copy(id = CONVERSATION_ENTITY_ID)
+        val CONVERSATION_ENTITY = MockConversation.entity().copy(id = CONVERSATION_ENTITY_ID)
 
         val OTHER_USER_ID = TestUser.OTHER_USER_ID
         val OTHER_USER_ID_ENTITY = UserIDEntity(OTHER_USER_ID.value, OTHER_USER_ID.domain)

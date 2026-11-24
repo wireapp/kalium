@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.feature.conversation.RemoveMemberFromConversationUseCase.Result.Failure
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -42,7 +42,7 @@ class PromoteAdminAndLeaveConversationUseCaseTest {
             .withLeaveResult(RemoveMemberFromConversationUseCase.Result.Success)
             .arrange()
 
-        val result = useCase(TestConversation.ID, TestUser.OTHER_USER_ID)
+        val result = useCase(MockConversation.ID, TestUser.OTHER_USER_ID)
 
         assertIs<PromoteAdminAndLeaveConversationUseCase.Result.Success>(result)
     }
@@ -53,7 +53,7 @@ class PromoteAdminAndLeaveConversationUseCaseTest {
             .withPromoteResult(UpdateConversationMemberRoleResult.Failure)
             .arrange()
 
-        val result = useCase(TestConversation.ID, TestUser.OTHER_USER_ID)
+        val result = useCase(MockConversation.ID, TestUser.OTHER_USER_ID)
 
         assertIs<PromoteAdminAndLeaveConversationUseCase.Result.FailedToPromoteUser>(result)
         verifySuspend(VerifyMode.not) { arrangement.leaveConversation(any()) }
@@ -66,7 +66,7 @@ class PromoteAdminAndLeaveConversationUseCaseTest {
             .withLeaveResult(Failure(StorageFailure.DataNotFound))
             .arrange()
 
-        val result = useCase(TestConversation.ID, TestUser.OTHER_USER_ID)
+        val result = useCase(MockConversation.ID, TestUser.OTHER_USER_ID)
 
         assertIs<PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation>(result)
     }
@@ -78,7 +78,7 @@ class PromoteAdminAndLeaveConversationUseCaseTest {
             .withLeaveResult(Failure(AdminlessConversationFailure(listOf(TestUser.OTHER_USER_ID))))
             .arrange()
 
-        val result = useCase(TestConversation.ID, TestUser.OTHER_USER_ID)
+        val result = useCase(MockConversation.ID, TestUser.OTHER_USER_ID)
 
         assertIs<PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation>(result)
         assertEquals(TestUser.OTHER_USER_ID, result.eligibleMembers.first())
@@ -91,7 +91,7 @@ class PromoteAdminAndLeaveConversationUseCaseTest {
             .withLeaveResult(Failure(AdminlessConversationFailure(emptyList())))
             .arrange()
 
-        val result = useCase(TestConversation.ID, TestUser.OTHER_USER_ID)
+        val result = useCase(MockConversation.ID, TestUser.OTHER_USER_ID)
 
         assertIs<PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation>(result)
     }

@@ -58,9 +58,10 @@ class CachePolicyTest(unittest.TestCase):
     def test_develop_push_can_restore_and_save(self):
         self.assert_policy(enabled=True, EVENT_NAME="push", REF="refs/heads/develop")
 
-    def test_same_repository_pr_to_develop_can_restore_and_save(self):
+    def test_same_repository_pr_to_develop_is_read_only(self):
         self.assert_policy(
             enabled=True,
+            read_only=True,
             EVENT_NAME="pull_request",
             PR_BASE_REF="develop",
             PR_HEAD_REPOSITORY="wireapp/kalium",
@@ -107,6 +108,7 @@ class CachePolicyTest(unittest.TestCase):
     def test_dedicated_cache_disables_upstream_caching_without_bypassing_policy(self):
         self.assert_policy(
             enabled=True,
+            read_only=True,
             USE_EXTERNAL_CACHE="true",
             EVENT_NAME="pull_request",
             PR_BASE_REF="develop",
