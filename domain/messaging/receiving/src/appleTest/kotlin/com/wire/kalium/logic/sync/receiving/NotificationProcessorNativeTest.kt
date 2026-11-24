@@ -4825,6 +4825,27 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun messageForAnotherNativeGroupStaysPendingInsteadOfRejoiningTheStoredGroup() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val message = fixture.event("newer-group", fixture.encrypt("newer group"))
+                fixture.releasePrepared()
+                // A Welcome established GROUP_ID while the stored conversation still names an older, absent group.
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    runtime.database.conversationDAO.updateMLSGroupIdAndState(
+                        CONVERSATION_ID, RESET_GROUP_ID, 0L, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+                    )
+                })
+                assertIs<Either.Right<*>>(fixture.receive(listOf(message), message.id))
+                assertEquals(NotificationAppWork.MLS_GROUP_MISMATCH, fixture.receivedAppWork)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(message.id)).isProcessed)
+                })
+            }
+        }
+    }
+
+    @Test
     fun terminalRejectionOfAResumedRejoinSkipsTheEventWithoutAnotherJoin() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->

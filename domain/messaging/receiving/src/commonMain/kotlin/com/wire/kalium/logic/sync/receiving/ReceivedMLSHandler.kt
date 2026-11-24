@@ -106,8 +106,15 @@ internal class ReceivedMLSHandler(
             removed += event.conversationId
             return emptyList()
         }
+        val message = Base64.decode(event.content)
+        val lostGroup = event.conversationId !in welcomed && !context.conversationExists(protocol.groupId)
+        // A Welcome can establish a newer group before the stored metadata names it.
+        // That payload is not lost, so it stays pending for the app instead of triggering a rejoin.
+        if (lostGroup && mlsMessageHeader(message)?.groupId?.contentEquals(Base64.decode(protocol.groupId)) == false) {
+            throw NotificationAppHandoff(NotificationAppWork.MLS_GROUP_MISMATCH)
+        }
         // A group CoreCrypto lacks here was lost locally, so rejoin it.
-        if (recovery != null && event.conversationId !in welcomed && !context.conversationExists(protocol.groupId)) {
+        if (recovery != null && lostGroup) {
             return recovery.recover(context, event, protocol.groupId)?.let { recovered(context, event, it) } ?: emptyList()
         }
         // A conversation still waiting for a Welcome while CoreCrypto has the group only lost its SQL update.
@@ -122,7 +129,6 @@ internal class ReceivedMLSHandler(
         // Team removal changes SQL membership without removing the native client.
         // MLS decryption and the lifecycle state above determine whether receiving can continue.
         val epoch = context.conversationEpoch(protocol.groupId)
-        val message = Base64.decode(event.content)
         val result = decryptMLSMessage(context, message, GroupID(protocol.groupId))
         if (result is Either.Left && result.value == MLSFailure.WrongEpoch) {
             recovery?.recover(context, event, protocol.groupId)?.let { return recovered(context, event, it) }
@@ -131,7 +137,7 @@ internal class ReceivedMLSHandler(
         // After an external join, CoreCrypto reports a past-epoch message as this generic failure.
         // Storage errors are Other too, so only this exact failure is matched.
         val pastEpoch = result is Either.Left && result.value == MLSFailure.Other(CORE_CRYPTO_DECRYPT_FAILURE) &&
-            mlsMessageEpoch(message)?.let { it < epoch } == true
+            mlsMessageHeader(message)?.let { it.epoch < epoch } == true
         val noBundles = pastEpoch || result is Either.Left && result.value in listOf(
             MLSFailure.StaleCommit, MLSFailure.StaleProposal, MLSFailure.DuplicateMessage,
             MLSFailure.BufferedFutureMessage, MLSFailure.BufferedCommit,
@@ -370,7 +376,9 @@ internal data class MLSVerification(
     val active: Boolean = true,
 )
 
-internal fun mlsMessageEpoch(message: ByteArray): ULong? = runCatching {
+internal class MLSMessageHeader(val groupId: ByteArray, val epoch: ULong)
+
+internal fun mlsMessageHeader(message: ByteArray): MLSMessageHeader? = runCatching {
     val buffer = Buffer().write(message)
     // MLSMessage: version (mls10) and wire format (public or private), then group_id<V> and the epoch.
     check(buffer.readShort().toInt() == MLS_10 && buffer.readShort().toInt() in PUBLIC_MESSAGE..PRIVATE_MESSAGE)
@@ -382,8 +390,8 @@ internal fun mlsMessageEpoch(message: ByteArray): ULong? = runCatching {
     repeat(lengthBytes - 1) {
         groupIdLength = (groupIdLength shl Byte.SIZE_BITS) or (buffer.readByte().toLong() and BYTE_MASK.toLong())
     }
-    buffer.skip(groupIdLength)
-    buffer.readLong().toULong()
+    val groupId = buffer.readByteArray(groupIdLength)
+    MLSMessageHeader(groupId, buffer.readLong().toULong())
 }.getOrNull()
 
 private const val CORE_CRYPTO_DECRYPT_FAILURE = "An application message failed to decrypt"
