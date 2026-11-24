@@ -1642,6 +1642,7 @@ public class UserSessionScope internal constructor(
             kaliumConfigs = kaliumConfigs,
             userConfigRepository = userConfigRepository,
             repairFaultyRemovalKeys = debug.repairFaultyRemovalKeysUseCase,
+            mlsPublicKeysRepository = mlsPublicKeysRepository,
             kaliumLogger = userScopedLogger
         )
     }

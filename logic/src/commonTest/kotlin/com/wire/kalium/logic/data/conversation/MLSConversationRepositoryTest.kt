@@ -52,6 +52,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.toCrypto
@@ -102,7 +103,9 @@ import kotlinx.coroutines.yield
 import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 class MLSConversationRepositoryTest {
@@ -1395,6 +1398,54 @@ class MLSConversationRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsContext.updateKeyingMaterial(any()) } // No retry should happen
     }
 
+    @Test
+    fun givenSelfDomainGroupWithSelfBackendKey_whenCheckingExternalSender_thenItIsNotWrong() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withKeyForCipherSuite()
+            .withExternalSender(Arrangement.CRYPTO_MLS_PUBLIC_KEY)
+            .arrange()
+
+        mlsConversationRepository.hasWrongExternalSender(
+            arrangement.mlsContext, SELF_DOMAIN_CONVERSATION_ID, Arrangement.GROUP_ID, Arrangement.CIPHER_SUITE
+        ).shouldSucceed { assertFalse(it) }
+    }
+
+    @Test
+    fun givenSelfDomainGroupWithOtherBackendKey_whenCheckingExternalSender_thenItIsWrong() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withKeyForCipherSuite()
+            .withExternalSender(OTHER_BACKEND_KEY)
+            .arrange()
+
+        mlsConversationRepository.hasWrongExternalSender(
+            arrangement.mlsContext, SELF_DOMAIN_CONVERSATION_ID, Arrangement.GROUP_ID, Arrangement.CIPHER_SUITE
+        ).shouldSucceed { assertTrue(it) }
+    }
+
+    @Test
+    fun givenRemoteGroupWithSelfBackendKey_whenCheckingExternalSender_thenItIsWrong() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withKeyForCipherSuite()
+            .withExternalSender(Arrangement.CRYPTO_MLS_PUBLIC_KEY)
+            .arrange()
+
+        mlsConversationRepository.hasWrongExternalSender(
+            arrangement.mlsContext, REMOTE_CONVERSATION_ID, Arrangement.GROUP_ID, Arrangement.CIPHER_SUITE
+        ).shouldSucceed { assertTrue(it) }
+    }
+
+    @Test
+    fun givenRemoteGroupWithOtherBackendKey_whenCheckingExternalSender_thenItIsNotWrong() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withKeyForCipherSuite()
+            .withExternalSender(OTHER_BACKEND_KEY)
+            .arrange()
+
+        mlsConversationRepository.hasWrongExternalSender(
+            arrangement.mlsContext, REMOTE_CONVERSATION_ID, Arrangement.GROUP_ID, Arrangement.CIPHER_SUITE
+        ).shouldSucceed { assertFalse(it) }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val keyPackageRepository: KeyPackageRepository = mock(mode = MockMode.autoUnit)
@@ -1467,6 +1518,10 @@ class MLSConversationRepositoryTest {
             every {
                 mlsContext.getDefaultCipherSuite()
             } returns CIPHER_SUITE.toCrypto()
+        }
+
+        fun withExternalSender(key: ByteArray) = apply {
+            everySuspend { mlsContext.getExternalSenders(any()) } returns ExternalSenderKey(key)
         }
 
         fun withGetExternalSenderKeySuccessful() = apply {
@@ -1891,5 +1946,11 @@ class MLSConversationRepositoryTest {
                 )
             }
         }
+    }
+
+    private companion object {
+        val SELF_DOMAIN_CONVERSATION_ID = ConversationId("conversation", TestUser.SELF.id.domain)
+        val REMOTE_CONVERSATION_ID = ConversationId("conversation", "other.domain")
+        val OTHER_BACKEND_KEY = "otherBackendKey".encodeToByteArray()
     }
 }

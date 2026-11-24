@@ -18,8 +18,11 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
@@ -31,6 +34,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -41,8 +45,9 @@ import com.wire.kalium.util.string.toHexString
 import kotlinx.coroutines.withContext
 
 /**
- * Use case to recover from an invalid removal key state on all MLS conversations.
- * This is an experimental feature to be trigger manually via debug options for now.
+ * Use case to recover from an invalid removal key state on all MLS conversations of the self domain.
+ * A conversation is reset when its external sender is one of the [TargetedRepairParam.faultyKeys], or is not the self
+ * backend's current removal key (for example, when a client of another backend established the group).
  */
 @DebugKaliumApi("Debug-only API for targeted repair of faulty MLS removal keys.")
 public interface RepairFaultyRemovalKeysUseCase {
@@ -52,6 +57,7 @@ public interface RepairFaultyRemovalKeysUseCase {
 internal class RepairFaultyRemovalKeysUseCaseImpl(
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val resetMLSConversation: ResetMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -73,7 +79,7 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
             val conversationsWithFaultyKeys = mutableListOf<Conversation>()
             var hasInspectionFailures = false
             conversations.forEach { conversation ->
-                when (val result = checkConversationHasFaultyKey(conversation.protocol, param.faultyKeys, transactionContext)) {
+                when (val result = checkConversationHasFaultyKey(conversation, param.faultyKeys, transactionContext)) {
                     is Either.Left -> hasInspectionFailures = true
                     is Either.Right -> if (result.value) conversationsWithFaultyKeys += conversation
                 }
@@ -121,11 +127,11 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
     }
 
     private suspend fun checkConversationHasFaultyKey(
-        protocolInfo: Conversation.ProtocolInfo,
+        conversation: Conversation,
         faultyKeys: List<String>,
         transactionContext: CryptoTransactionContext
     ): Either<CoreFailure, Boolean> =
-        when (protocolInfo) {
+        when (val protocolInfo = conversation.protocol) {
             Conversation.ProtocolInfo.Proteus -> false.right()
             is Conversation.ProtocolInfo.MLS,
             is Conversation.ProtocolInfo.Mixed -> {
@@ -133,7 +139,21 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
                     wrapMLSRequest {
                         val externalHex = context.getExternalSenders(protocolInfo.groupId.value).value.toHexString()
                         faultyKeys.any { it.trim().equals(externalHex, ignoreCase = true) }
+                    }.flatMap { hasFaultyKey ->
+                        if (hasFaultyKey) {
+                            true.right()
+                        } else {
+                            mlsConversationRepository.hasWrongExternalSender(
+                                mlsContext = context,
+                                conversationId = conversation.id,
+                                groupID = protocolInfo.groupId,
+                                cipherSuite = protocolInfo.cipherSuite
+                            )
+                        }
                     }
+                }.flatMapLeft {
+                    // Not established on this client, so there is nothing to repair.
+                    if (it is MLSFailure.ConversationNotFound) false.right() else it.left()
                 }.onFailure {
                     logger.w("Failed faulty key check for conversation ${protocolInfo.groupId.toLogString()}")
                 }
@@ -141,11 +161,6 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
         }
 }
 
-/**
- * Parameters for targeted repair of faulty removal keys in MLS conversations.
- * @property faultyKeys The faulty removal key to be repaired in hex string format.
- * @property domain The target domain in which the repair should be performed for the user and conversations.
- */
 @DebugKaliumApi("Debug-only parameters for targeted faulty removal-key repair.")
 public data class TargetedRepairParam(
     val domain: String,

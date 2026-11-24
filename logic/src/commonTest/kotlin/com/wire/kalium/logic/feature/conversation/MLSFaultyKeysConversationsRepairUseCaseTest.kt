@@ -17,12 +17,17 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.mls.MLSPublicKeys
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCase
 import com.wire.kalium.logic.feature.debug.RepairResult
 import com.wire.kalium.logic.feature.debug.TargetedRepairParam
@@ -45,7 +50,7 @@ import kotlin.test.Test
 class MLSFaultyKeysConversationsRepairUseCaseTest {
 
     @Test
-    fun givenNoKeysForCurrentDomain_whenInvoking_thenClearFingerprintAndSkipRepair() = runTest {
+    fun givenNoFaultyKeysForCurrentDomain_whenInvoking_thenStillRepairWrongExternalSenders() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withDomainWithFaultyKeysMap(emptyMap())
             .withStoredFingerprint("previous-fingerprint")
@@ -54,10 +59,36 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(null)
+            arrangement.repairFaultyRemovalKeysUseCase(TargetedRepairParam(TestUser.USER_ID.domain, emptyList()))
         }
-        verifySuspend(VerifyMode.not) { arrangement.syncStateObserver.waitUntilLive() }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(repairFingerprint(emptyList()))
+        }
+    }
+
+    @Test
+    fun givenRemovalKeysChanged_whenInvoking_thenRunRepairAgain() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDomainWithFaultyKeysMap(mapOf(TestUser.USER_ID.domain to FAULTY_KEYS))
+            .withStoredFingerprint(repairFingerprint(FAULTY_KEYS, MLSPublicKeys(mapOf("ecdsa_secp256r1_sha256" to "old-key"))))
+            .arrange()
+
+        useCase()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.repairFaultyRemovalKeysUseCase(any()) }
+    }
+
+    @Test
+    fun givenRemovalKeysCannotBeFetched_whenInvoking_thenSkipRepair() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withDomainWithFaultyKeysMap(mapOf(TestUser.USER_ID.domain to FAULTY_KEYS))
+            .withRemovalKeys(NetworkFailure.NoNetworkConnection(null).left())
+            .arrange()
+
+        useCase()
+
         verifySuspend(VerifyMode.not) { arrangement.repairFaultyRemovalKeysUseCase(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(any()) }
     }
 
     @Test
@@ -69,7 +100,6 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        verifySuspend(VerifyMode.not) { arrangement.syncStateObserver.waitUntilLive() }
         verifySuspend(VerifyMode.not) { arrangement.repairFaultyRemovalKeysUseCase(any()) }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setMLSFaultyKeysRepairFingerprint(any()) }
     }
@@ -174,6 +204,8 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
         val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
         val syncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
         val repairFaultyRemovalKeysUseCase = mock<RepairFaultyRemovalKeysUseCase>(mode = MockMode.autoUnit)
+        val mlsPublicKeysRepository = mock<MLSPublicKeysRepository>()
+        private var removalKeys: Either<CoreFailure, MLSPublicKeys> = REMOVAL_KEYS.right()
         private var kaliumConfigs = KaliumConfigs()
         private var storedFingerprint: String? = null
         private var repairResult: RepairResult = RepairResult.NoConversationsToRepair
@@ -187,6 +219,10 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
             kaliumConfigs = kaliumConfigs.copy(domainWithFaultyKeysMap = map)
         }
 
+        fun withRemovalKeys(result: Either<CoreFailure, MLSPublicKeys>) = apply {
+            removalKeys = result
+        }
+
         fun withRepairResult(result: RepairResult) = apply {
             repairResult = result
         }
@@ -196,6 +232,7 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
             everySuspend { userConfigRepository.setMLSFaultyKeysRepairFingerprint(any()) } returns setFingerprintResult
             everySuspend { syncStateObserver.waitUntilLive() } returns Unit
             everySuspend { repairFaultyRemovalKeysUseCase(any()) } returns repairResult
+            everySuspend { mlsPublicKeysRepository.getKeys() } returns removalKeys
 
             return this to MLSFaultyKeysConversationsRepairUseCaseImpl(
                 selfUserId = TestUser.USER_ID,
@@ -203,6 +240,7 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
                 kaliumConfigs = kaliumConfigs,
                 userConfigRepository = userConfigRepository,
                 repairFaultyRemovalKeys = repairFaultyRemovalKeysUseCase,
+                mlsPublicKeysRepository = mlsPublicKeysRepository,
                 kaliumLogger = kaliumLogger
             )
         }
@@ -214,9 +252,12 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
             "26665373b6bf396f75914a0bed297d55"
         )
 
-        fun repairFingerprint(faultyKeys: List<String>): String {
+        val REMOVAL_KEYS = MLSPublicKeys(mapOf("ecdsa_secp256r1_sha256" to "current-key", "ed25519" to "other-key"))
+
+        fun repairFingerprint(faultyKeys: List<String>, removalKeys: MLSPublicKeys = REMOVAL_KEYS): String {
             val normalizedKeys = faultyKeys.map { it.lowercase() }.sorted().joinToString(",")
-            return calcSHA256("${TestUser.USER_ID.domain}:$normalizedKeys".encodeToByteArray()).toHexString()
+            val normalizedRemovalKeys = removalKeys.removal.orEmpty().entries.sortedBy { it.key }.joinToString(",")
+            return calcSHA256("${TestUser.USER_ID.domain}:$normalizedKeys:$normalizedRemovalKeys".encodeToByteArray()).toHexString()
         }
     }
 }

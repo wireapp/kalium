@@ -317,6 +317,7 @@ public class DebugScope internal constructor(
         RepairFaultyRemovalKeysUseCaseImpl(
             selfUserId = userId,
             conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
             resetMLSConversation = resetMLSConversationUseCase,
             transactionProvider = transactionProvider
         )

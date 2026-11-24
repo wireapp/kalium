@@ -159,6 +159,20 @@ internal interface MLSConversationRepository : MLSMemberAdder {
 
     suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<MLSFailure, Boolean>
 
+    /**
+     * Whether the external sender of [groupID] is not the removal key of the backend hosting [conversationId],
+     * so every proposal that backend sends to the group fails its signature check.
+     *
+     * The hosting backend's key is only known when it is the self backend. For a conversation hosted elsewhere, the
+     * external sender is only known to be wrong when it is the self backend's key: a self domain client established it.
+     */
+    suspend fun hasWrongExternalSender(
+        mlsContext: MlsCoreCryptoContext,
+        conversationId: ConversationId,
+        groupID: GroupID,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Boolean>
+
     suspend fun getLocalGroupEpoch(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID
@@ -387,6 +401,23 @@ internal class MLSConversationDataSource(
         groupID: GroupID
     ): Either<MLSFailure, Boolean> = wrapMLSRequest {
         mlsContext.conversationExists(idMapper.toCryptoModel(groupID))
+    }
+
+    override suspend fun hasWrongExternalSender(
+        mlsContext: MlsCoreCryptoContext,
+        conversationId: ConversationId,
+        groupID: GroupID,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Boolean> = if (cipherSuite is CipherSuite.UNKNOWN) {
+        // Without the group's cipher suite, the backend key to compare with is unknown.
+        Either.Right(false)
+    } else wrapMLSRequest {
+        mlsContext.getExternalSenders(idMapper.toCryptoModel(groupID)).value
+    }.flatMap { externalSender ->
+        mlsPublicKeysRepository.getKeyForCipherSuite(cipherSuite).map { selfBackendKey ->
+            val isSelfBackendKey = externalSender.contentEquals(selfBackendKey)
+            if (conversationId.domain == selfUserId.domain) !isSelfBackendKey else isSelfBackendKey
+        }
     }
 
     override suspend fun getLocalGroupEpoch(

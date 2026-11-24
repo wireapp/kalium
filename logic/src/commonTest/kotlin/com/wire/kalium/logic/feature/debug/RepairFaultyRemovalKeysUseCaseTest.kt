@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
@@ -25,11 +26,13 @@ import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCaseTest.Arrangement.Companion.FAULTY_KEY
+import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCaseTest.Arrangement.Companion.OTHER_BACKEND_KEY
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -153,10 +156,41 @@ class RepairFaultyRemovalKeysUseCaseTest {
         assertEquals(1, result.failedRepairs.size)
     }
 
+    @Test
+    fun givenExternalSenderIsNotTheBackendRemovalKey_whenInvoked_thenPerformRepair() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withMlsConversations(listOf(MockConversation.MLS_CONVERSATION).right())
+            .withGetExternalKeyForConversation(OTHER_BACKEND_KEY)
+            .withWrongExternalSender(true.right())
+            .withResetMLSConversationResult(ResetMLSConversationResult.Success)
+            .arrange()
+
+        val result = useCase.invoke(TargetedRepairParam("domain", emptyList()))
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.resetMLSConversationUseCase(MockConversation.MLS_CONVERSATION.id, any()) }
+        assertIs<RepairResult.RepairPerformed>(result)
+        assertEquals(1, result.successfullyRepairedConversations)
+    }
+
+    @Test
+    fun givenGroupNotEstablishedOnThisClient_whenInvoked_thenSkipItWithoutError() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withMlsConversations(listOf(MockConversation.MLS_CONVERSATION).right())
+            .withGetExternalKeyForConversation(OTHER_BACKEND_KEY)
+            .withWrongExternalSender(MLSFailure.ConversationNotFound.left())
+            .arrange()
+
+        val result = useCase.invoke(TargetedRepairParam("domain", emptyList()))
+
+        verifySuspend(VerifyMode.not) { arrangement.resetMLSConversationUseCase(any(), any()) }
+        assertEquals(RepairResult.NoConversationsToRepair, result)
+    }
+
     @OptIn(ExperimentalStdlibApi::class)
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationRepository: ConversationRepository = mock()
         val resetMLSConversationUseCase: ResetMLSConversationUseCase = mock()
+        val mlsConversationRepository: MLSConversationRepository = mock()
 
         suspend fun withMlsConversations(result: Either<CoreFailure, List<Conversation>>) = apply {
             everySuspend { conversationRepository.getMLSConversationsByDomain(any()) } returns result
@@ -177,15 +211,24 @@ class RepairFaultyRemovalKeysUseCaseTest {
                     IllegalStateException("Conversation not found")
         }
 
+        private var wrongExternalSenderStubbed = false
+
+        suspend fun withWrongExternalSender(result: Either<CoreFailure, Boolean>) = apply {
+            wrongExternalSenderStubbed = true
+            everySuspend { mlsConversationRepository.hasWrongExternalSender(any(), any(), any(), any()) } returns result
+        }
+
         suspend fun withResetMLSConversationResult(result: ResetMLSConversationResult) = apply {
             everySuspend { resetMLSConversationUseCase.invoke(any(), any()) } returns result
         }
 
         suspend fun arrange(): Pair<Arrangement, RepairFaultyRemovalKeysUseCaseImpl> {
             withTransactionReturning(Unit.right())
+            if (!wrongExternalSenderStubbed) withWrongExternalSender(false.right())
             return this to RepairFaultyRemovalKeysUseCaseImpl(
                 selfUserId = TestUser.USER_ID,
                 conversationRepository = conversationRepository,
+                mlsConversationRepository = mlsConversationRepository,
                 resetMLSConversation = resetMLSConversationUseCase,
                 transactionProvider = cryptoTransactionProvider,
             )
@@ -193,6 +236,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
 
         companion object {
             val FAULTY_KEY = listOf("16665373b6bf396f75914a0bed297d44")
+            const val OTHER_BACKEND_KEY = "0a0b0c0d"
         }
     }
 }
