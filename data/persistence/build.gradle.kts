@@ -91,6 +91,7 @@ kotlin {
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
                 implementation(libs.sqlite.xerialDriver)
+                implementation(libs.jna)
             }
         }
         val jvmTest by getting {
