@@ -330,6 +330,29 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
+    fun givenPendingWelcomeTeamOneOnOne_whenJoiningByExternalCommit_thenJoinItsOwnGroupNotThePeersOneOnOne() = runTest {
+        val teamOneOnOne = Arrangement.MLS_PENDING_WELCOME_GROUP_CONVERSATION.copy(type = Conversation.Type.OneOnOne)
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSequentially(
+                teamOneOnOne,
+                Arrangement.MLS_PENDING_WELCOME_REFRESHED_GROUP_CONVERSATION.copy(type = Conversation.Type.OneOnOne)
+            )
+            .withFetchConversationSuccessful()
+            .withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase(arrangement.transactionContext, teamOneOnOne.id).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.fetchMLSOneToOneConversation(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), Arrangement.GROUP_ID3, any())
+        }
+    }
+
+    @Test
     fun givenPendingWelcomeConversation_whenExternalCommitIsNotAllowed_thenMetadataIsNotRefreshed() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)
