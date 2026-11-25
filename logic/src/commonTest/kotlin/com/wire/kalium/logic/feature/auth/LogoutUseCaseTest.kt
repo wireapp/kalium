@@ -160,6 +160,11 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
+        verifySuspend(VerifyMode.order) {
+            arrangement.sessionRepository.logout(any(), reason)
+            arrangement.deregisterTokenUseCase.invoke()
+            arrangement.logoutRepository.logout()
+        }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
         }
