@@ -102,6 +102,12 @@ private const val QUERY_VALUE_HINT_LENGTH = 3
  */
 private val hintedQueryKeys = setOf("client", "cursor", "since")
 
+/** Paging keys whose value stays in clear when it is only ASCII digits. */
+private val pagingQueryKeys = setOf("size", "page", "limit", "offset")
+
+/** Hosts that equal or end with one of these (on a dot boundary) are Wire-owned and stay in clear. */
+private val wireHostSuffixes = listOf("wire.com", "wire.link", "zinfra.io")
+
 /** The segment after `push/tokens` is the device push token, a credential, so it is fully masked. */
 private const val PUSH_TOKENS_SEGMENT = "tokens"
 
@@ -113,13 +119,18 @@ private const val PUSH_TOKENS_SEGMENT = "tokens"
 private val readablePathSegment = Regex("[a-z-]+|v[0-9]+")
 
 /**
- * Returns the URL in a form that is safe to log in every build: the path with each segment that is not an
- * API word obfuscated like the logger's IDs (7 characters) and domains (3 characters). Query values are masked,
- * and only `client`, `cursor` and `since` keep a 3-character hint.
- * The scheme, user info, host, port and fragment are dropped, because the host names the customer backend.
+ * Returns the URL in a form that is safe to log in every build: `host/path?query`.
+ * The host stays in clear when it is Wire-owned (`wire.com`, `wire.link`, `zinfra.io` and their subdomains).
+ * Any other host is a customer backend and keeps a 3-character hint (`ngi`, then asterisks), or `{}` when it is
+ * no longer than its hint. A URL without a host (Ktor reports `localhost` for it) starts at the path.
+ * Each path segment that is not an API word is obfuscated like the logger's IDs (7 characters) and domains
+ * (3 characters). Query values are masked, except paging numbers (`size`, `page`, `limit`, `offset`) made only of
+ * ASCII digits, which stay in clear, and `client`, `cursor` and `since`, which keep a 3-character hint.
+ * The scheme, user info, port and fragment are dropped.
  *
- * Example: `https://nginz-https.example.com/v5/users/example.com/9a1d6c0e-...?client=5f2b9e` logs as `/v5/users/`,
- * then `exa***` for the domain, `9a1d6c0***` for the ID, and `?client=5f2***`.
+ * Example: `https://nginz-https.acme-corp.com/v5/users/example.com/9a1d6c0e-...?client=5f2b9e&size=20` logs as the
+ * host hint `ngi***`, then `/v5/users/`, the domain hint `exa***`, `/`, the ID hint `9a1d6c0***`, and
+ * `?client=5f2***&size=20`.
  */
 fun obfuscatePath(url: Url): String {
     val segments = url.segments
@@ -131,16 +142,30 @@ fun obfuscatePath(url: Url): String {
             else -> segment.obfuscatePathSegment()
         }
     }.joinToString(separator = "/", prefix = "/")
+    val hostAndPath = url.host.obfuscateHost() + path
 
     val params = url.parameters.entries().filter { it.value.isNotEmpty() }
-    if (params.isEmpty()) return path
+    if (params.isEmpty()) return hostAndPath
 
     val query = params.joinToString("&") { (key, values) ->
         val value = values.first()
-        "$key=${if (key.lowercase() in hintedQueryKeys) value.queryValueHint() else MASKED_VALUE}"
+        val lowerKey = key.lowercase()
+        val loggedValue = when {
+            lowerKey in hintedQueryKeys -> value.queryValueHint()
+            lowerKey in pagingQueryKeys && value.isNotEmpty() && value.all { it in '0'..'9' } -> value
+            else -> MASKED_VALUE
+        }
+        "$key=$loggedValue"
     }
 
-    return "$path?$query"
+    return "$hostAndPath?$query"
+}
+
+private fun String.obfuscateHost(): String {
+    // Ktor parses a relative URL as http://localhost/..., so "localhost" means there was no host to log.
+    if (isEmpty() || equals("localhost", ignoreCase = true)) return ""
+    val isWireOwned = wireHostSuffixes.any { equals(it, ignoreCase = true) || endsWith(".$it", ignoreCase = true) }
+    return if (isWireOwned) this else obfuscatePathSegment()
 }
 
 /**

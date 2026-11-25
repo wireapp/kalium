@@ -116,7 +116,7 @@ class KaliumKtorCustomLoggingTest {
     }
 
     @Test
-    fun givenFederatedRequest_whenLogging_thenEndpointHasNoHostAndObfuscatedIdsAndQueryValues() = runTest {
+    fun givenFederatedRequest_whenLogging_thenEndpointKeepsWireHostAndObfuscatesIdsAndQueryValues() = runTest {
         val writer = RecordingLogWriter()
         val domain = "anta.wire.link"
         val userId = "9a1d6c0e-3b5f-4c5e-8f2a-1e0f7b6d4c3a"
@@ -138,8 +138,8 @@ class KaliumKtorCustomLoggingTest {
             )
 
             logs.forEach { log ->
-                assertEquals("/v9/users/ant***/9a1d6c0***?client=5f2***", Json.parseToJsonElement(log).jsonObject["endpoint"]?.jsonPrimitive?.content)
-                assertFalse(log.contains(domain))
+                assertEquals("nginz-https.$domain/v9/users/ant***/9a1d6c0***?client=5f2***", Json.parseToJsonElement(log).jsonObject["endpoint"]?.jsonPrimitive?.content)
+                assertFalse(log.contains("/$domain/"))
                 assertFalse(log.contains(userId))
                 assertFalse(log.contains("5f2b9e7c4d1a"))
             }
