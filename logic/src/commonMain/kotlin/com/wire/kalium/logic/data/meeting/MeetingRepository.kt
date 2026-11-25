@@ -55,6 +55,8 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
+import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
+import com.wire.kalium.network.api.authenticated.meeting.RotateMeetingLinkRequest
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.toMeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
@@ -62,13 +64,13 @@ import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import com.wire.kalium.util.DateTimeUtil.asStartOfDay
 import com.wire.kalium.util.DateTimeUtil.currentInstant
+import kotlin.time.Instant
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlin.time.Instant
 
 @Suppress("TooManyFunctions")
 internal interface MeetingRepository {
@@ -131,6 +133,7 @@ internal interface MeetingRepository {
     fun observeMeetingReminderChanges(): Flow<Unit>
     suspend fun getNextMeetingReminder(from: Instant): MeetingReminder?
     suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminder>
+    suspend fun rotateMeetingLink(meetingId: MeetingId, password: String?): Either<CoreFailure, Meeting>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -189,21 +192,26 @@ internal class MeetingDataSource(
     ): Either<CoreFailure, Meeting> =
         wrapApiRequest {
             meetingApi.fetchMeeting(meetingId.toApi())
-        }.flatMap { meetingDTO ->
-            meetingMapper.fromApiToDao(meetingDTO)?.let { meetingEntity ->
-                // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
-                // foreign key constraint violation and try to fetch the user details from the server if possible
-                userRepository.insertOrIgnoreIncompleteUsers(listOf(meetingEntity.creatorId.toModel()))
-                userRepository.fetchUsersIfUnknownByIds(setOf(meetingEntity.creatorId.toModel()))
-                wrapStorageRequest {
-                    meetingDAO.upsertMeetings(
-                        meetings = listOf(meetingEntity),
-                        generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
-                    )
-                    meetingMapper.fromDaoToModel(meetingEntity)
-                }
-            } ?: Either.Left(MeetingNotSupportedFailure)
-        }
+        }.flatMap { persistMeeting(it, generateOccurrencesFrom, generateOccurrencesUntil) }
+
+    private suspend fun persistMeeting(
+        meetingDTO: MeetingDTO,
+        generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
+        generateOccurrencesUntil: Instant = occurrenceGenerationUntil(),
+    ): Either<CoreFailure, Meeting> =
+        meetingMapper.fromApiToDao(meetingDTO)?.let { meetingEntity ->
+            // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+            // foreign key constraint violation and try to fetch the user details from the server if possible
+            userRepository.insertOrIgnoreIncompleteUsers(listOf(meetingEntity.creatorId.toModel()))
+            userRepository.fetchUsersIfUnknownByIds(setOf(meetingEntity.creatorId.toModel()))
+            wrapStorageRequest {
+                meetingDAO.upsertMeetings(
+                    meetings = listOf(meetingEntity),
+                    generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+                )
+                meetingMapper.fromDaoToModel(meetingEntity)
+            }
+        } ?: Either.Left(MeetingNotSupportedFailure)
 
     override suspend fun syncMeetingOccurrences(
         removeOlderThan: Instant,
@@ -465,6 +473,11 @@ internal class MeetingDataSource(
 
     override suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminder> =
         meetingDAO.getMeetingRemindersWithin(startInclusive, endExclusive).map { meetingMapper.fromDaoToModel(it) }
+
+    override suspend fun rotateMeetingLink(meetingId: MeetingId, password: String?): Either<CoreFailure, Meeting> =
+        wrapApiRequest {
+            meetingApi.rotateMeetingLink(meetingId.toApi(), RotateMeetingLinkRequest(password))
+        }.flatMap { persistMeeting(it.toMeetingDTO()) }
 
     private fun CoreFailure.isMLSRetryableError() = when (this) {
         is NetworkFailure.FederatedBackendFailure.RetryableFailure,

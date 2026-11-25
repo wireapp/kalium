@@ -6,6 +6,7 @@
 package com.wire.kalium.network.api.v19.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.meeting.RotateMeetingLinkRequest
 import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
@@ -28,4 +29,11 @@ internal class MeetingApiV19 internal constructor(
         wrapRequest {
             httpClient.put("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}") { setBody(request) }
         }
+
+    override suspend fun rotateMeetingLink(
+        meetingId: MeetingId,
+        request: RotateMeetingLinkRequest
+    ): NetworkResponse<UpsertMeetingResponse> = wrapRequest {
+        httpClient.post("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}/link/refresh") { setBody(request) }
+    }
 }
