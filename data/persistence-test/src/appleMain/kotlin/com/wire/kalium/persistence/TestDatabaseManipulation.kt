@@ -24,22 +24,32 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import com.wire.kalium.persistence.db.clearInMemoryDatabase
 import com.wire.kalium.persistence.db.globalDatabaseProvider
-import com.wire.kalium.persistence.db.inMemoryDatabase
+import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
+import kotlin.uuid.Uuid
+
+// Each test user database gets its own directory, so a database left open by a failed close can't leak into the next test.
+private val testDatabases = mutableMapOf<UserIDEntity, UserDatabaseBuilder>()
 
 internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder {
-    return inMemoryDatabase(userId, dispatcher)
+    val directory = "${getTempDatabaseDirectory()}/test-user-db-${Uuid.random()}"
+    return userDatabaseBuilder(
+        platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(directory)),
+        userId = userId,
+        passphrase = null,
+        dispatcher = dispatcher,
+        enableWAL = false
+    ).also { testDatabases[userId] = it }
 }
 
 internal actual fun deleteTestDatabase(userId: UserIDEntity) {
-    clearInMemoryDatabase(userId)
+    testDatabases.remove(userId)?.nuke()
 }
 
 internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -31,14 +32,16 @@ import com.wire.kalium.logic.feature.message.receipt.InstantConversationWorkQueu
 import com.wire.kalium.logic.feature.message.receipt.ParallelConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.matches
@@ -63,7 +66,7 @@ class UpdateConversationReadDateUseCaseTest {
     @Test
     fun givenCurrentStoredLastReadDateIsNewerThanEnqueued_whenWorking_thenShouldNotTryToDoAnyWork() = runTest {
         val persistedLastRead = Clock.System.now()
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withLastReadDateReturning(conversationId, persistedLastRead)
         }
@@ -84,7 +87,7 @@ class UpdateConversationReadDateUseCaseTest {
     @Test
     fun givenLastReadWasAlreadyPersistedLocally_whenQueuedWorkRuns_thenShouldSyncOtherSelfClients() = runTest {
         val lastRead = Clock.System.now()
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withLastReadDateReturning(conversationId, lastRead)
         }
@@ -115,7 +118,7 @@ class UpdateConversationReadDateUseCaseTest {
     fun givenProvidedTimeIsNewerThanPersistedLastReadForConversation_whenWorking_thenShouldTryToSendReceipts() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withLastReadDateReturning(conversationId, persistedLastRead)
         }
@@ -131,7 +134,7 @@ class UpdateConversationReadDateUseCaseTest {
     fun givenProvidedTimeIsNewerThanPersistedLastReadForConversation_whenWorking_thenShouldUpdateLastReadLocally() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withLastReadDateReturning(conversationId, persistedLastRead)
         }
@@ -147,7 +150,7 @@ class UpdateConversationReadDateUseCaseTest {
     fun givenProvidedTimeIsNewerThanPersistedLastReadForConversation_whenWorking_thenShouldUpdateLastReadForOtherSelfClients() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withLastReadDateReturning(conversationId, persistedLastRead)
         }
@@ -173,15 +176,16 @@ class UpdateConversationReadDateUseCaseTest {
     }
 
     @Test
-    fun givenMLSGroupConversation_whenUpdatingLastRead_thenShouldPersistAndSyncWithoutSendingReceipt() = runTest {
+    fun givenMLSGroupConversationAndTargetedMLSMessagesDisabled_whenUpdatingLastRead_thenShouldPersistAndSyncWithoutSendingReceipt() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
-        val conversation = TestConversation.MLS_CONVERSATION.copy(
+        val conversation = MockConversation.MLS_CONVERSATION.copy(
             type = Conversation.Type.Group.Regular,
             lastReadDate = persistedLastRead
         )
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withLastReadDateReturning(conversation.id, persistedLastRead)
+            every { featureSupport.isTargetedAndTransientMessagesSupported } returns false
             withRealSendConfirmation(conversation)
         }
 
@@ -216,7 +220,7 @@ class UpdateConversationReadDateUseCaseTest {
     fun givenProvidedTimeIsNewer_whenInvokedImmediately_thenSendConfirmationIsCalled() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withLastReadDateReturning(conversationId, persistedLastRead)
         }
@@ -231,7 +235,7 @@ class UpdateConversationReadDateUseCaseTest {
     @Test
     fun givenStoredLastReadDateIsNewer_whenInvokedImmediately_thenSendConfirmationIsNotCalled() = runTest {
         val persistedLastRead = Clock.System.now()
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withLastReadDateReturning(conversationId, persistedLastRead)
         }
@@ -248,7 +252,7 @@ class UpdateConversationReadDateUseCaseTest {
 
     @Test
     fun givenAnyCall_whenInvoking_thenShouldEnqueueWork() = runTest {
-        val expectedId = TestConversation.CONVERSATION.id.copy(value = "potato")
+        val expectedId = MockConversation.CONVERSATION.id.copy(value = "potato")
         val expectedTime = Clock.System.now()
         lateinit var enqueuedId: ConversationId
         lateinit var enqueuedInstant: Instant
@@ -271,7 +275,7 @@ class UpdateConversationReadDateUseCaseTest {
     fun givenCallerCancelledAfterEnqueue_whenQueued_thenWorkStillExecutes() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
-        val conversationId = TestConversation.CONVERSATION.id
+        val conversationId = MockConversation.CONVERSATION.id
         val workQueue = ParallelConversationWorkQueue(backgroundScope, kaliumLogger, StandardTestDispatcher(testScheduler))
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withLastReadDateReturning(conversationId, persistedLastRead)
@@ -298,7 +302,7 @@ class UpdateConversationReadDateUseCaseTest {
 
         var currentClientId = TestClient.CLIENT_ID
         var selfUserID = TestUser.SELF.id
-        var selfConversationId = TestConversation.SELF().id.copy("SELF")
+        var selfConversationId = MockConversation.self(teamId = TestTeam.TEAM_ID).id.copy("SELF")
         val selfConversationIdProvider = mock<SelfConversationIdProvider>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
@@ -306,6 +310,7 @@ class UpdateConversationReadDateUseCaseTest {
         private val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
         private val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
         var sendConfirmation: SendConfirmationUseCase = mock<SendConfirmationUseCase>(mode = MockMode.autoUnit)
+        val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
 
         var workQueue: ConversationWorkQueue = InstantConversationWorkQueue()
 
@@ -350,7 +355,8 @@ class UpdateConversationReadDateUseCaseTest {
                 selfUserId = selfUserID,
                 conversationRepository = conversationRepository,
                 messageRepository = receiptMessageRepository,
-                userPropertyRepository = userPropertyRepository
+                userPropertyRepository = userPropertyRepository,
+                featureSupport = featureSupport
             )
         }
 

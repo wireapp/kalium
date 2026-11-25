@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.data.message.receipt
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.sync.receiver.handler.toReceiptEntity
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.TestUserDatabase
@@ -153,9 +153,9 @@ class ReceiptRepositoryTest {
                 TestUser.OTHER_USER_ID_2.domain
             )
         )
-        private val TEST_CONVERSATION_ID = TestConversation.ID
+        private val TEST_CONVERSATION_ID = MockConversation.ID
         private val TEST_CONVERSATION_ENTITY =
-            TestConversation.ENTITY.copy(
+            MockConversation.entity().copy(
                 id = QualifiedIDEntity(
                     TEST_CONVERSATION_ID.value,
                     TEST_CONVERSATION_ID.domain

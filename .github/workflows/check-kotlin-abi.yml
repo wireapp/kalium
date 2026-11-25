@@ -18,7 +18,8 @@ permissions:
 jobs:
   check-kotlin-abi:
     name: Check Kotlin ABI
-    runs-on: macos-15
+    # Pull requests run on Linux, where the Apple klib dumps cannot be built. Merge queue and develop run the full check on macOS.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'macos-15' }}
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -28,5 +29,18 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
+      - name: Check Kotlin ABI (JVM and Android dumps)
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "::notice::Apple klib ABI dump is not validated on pull requests (needs macOS). The merge queue runs the full check."
+          # On Linux the Apple targets are unsupported, and checkKotlinAbi would fail on the inferred klib dump.
+          # Regenerate the dumps and compare only the JVM and Android ones with the checked-in files.
+          ./gradlew :logic:updateKotlinAbi -Pkotlin.native.enableKlibsCrossCompilation=false
+          if ! git diff --exit-code -- logic/api/jvm logic/api/android; then
+            echo "::error::The public JVM or Android API of logic changed. Run ./gradlew :logic:updateKotlinAbi on macOS and commit the dumps."
+            exit 1
+          fi
+
       - name: Check Kotlin ABI
+        if: github.event_name != 'pull_request'
         run: ./gradlew :logic:checkKotlinAbi

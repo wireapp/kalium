@@ -18,12 +18,12 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
@@ -54,7 +54,7 @@ class UpdateConversationReceiptModeUseCaseTest {
 
         // when
         val result = updateConversationReceiptMode(
-            TestConversation.ID,
+            MockConversation.ID,
             receiptMode
         )
 
@@ -62,7 +62,7 @@ class UpdateConversationReceiptModeUseCaseTest {
         assertIs<ConversationUpdateReceiptModeResult.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateReceiptMode(TestConversation.ID, receiptMode)
+            arrangement.conversationRepository.updateReceiptMode(MockConversation.ID, receiptMode)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -89,7 +89,7 @@ class UpdateConversationReceiptModeUseCaseTest {
 
         // when
         val result = updateConversationReceiptMode(
-            TestConversation.ID,
+            MockConversation.ID,
             receiptMode
         )
 
@@ -97,7 +97,7 @@ class UpdateConversationReceiptModeUseCaseTest {
         assertIs<ConversationUpdateReceiptModeResult.Failure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateReceiptMode(TestConversation.ID, receiptMode)
+            arrangement.conversationRepository.updateReceiptMode(MockConversation.ID, receiptMode)
         }
     }
 

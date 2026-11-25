@@ -24,6 +24,7 @@ import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isRight
@@ -287,6 +288,8 @@ import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassi
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCase
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserResult
+import com.wire.kalium.logic.feature.keypackage.ResetMLSKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
@@ -630,6 +633,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -816,7 +820,8 @@ public class UserSessionScope internal constructor(
         }.container
 
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
-        sessionManager.serverConfig().metaData.commonApiVersion.version
+        sessionManager.serverConfig().metaData.commonApiVersion.version,
+        kaliumConfigs
     )
 
     internal val cellsClient: HttpClient
@@ -1507,7 +1512,6 @@ public class UserSessionScope internal constructor(
             userRepository,
             oneOnOneProtocolSelector,
             oneOnOneMigrator,
-            incrementalSyncRepository,
             pendingActionsRepository,
             conversationRepository,
             mlsConversationRepository,
@@ -2361,7 +2365,13 @@ public class UserSessionScope internal constructor(
             connectionRepository,
             userRepository,
             logout,
-            oneOnOneResolver,
+            pendingActionsRepository,
+            resolvePendingOneOnOnes = { after ->
+                launch {
+                    delay(after)
+                    pendingOneOnOneResolutionRequests.trySend(Unit)
+                }
+            },
             userId,
             clientIdProvider,
             legalHoldRequestHandler,
@@ -2735,6 +2745,28 @@ public class UserSessionScope internal constructor(
             cryptoTransactionProvider,
             client.refillKeyPackages,
             certificateRevocationListRepository,
+            ResetMLSKeyPackagesUseCaseImpl(
+                keyPackageRepository,
+                keyPackageLimitsProvider,
+                clientIdProvider,
+                userConfigRepository,
+                cryptoTransactionProvider,
+                client.refillKeyPackages,
+            ),
+            RecoverMLSConversationsForUserUseCase {
+                syncStateObserver.value.waitUntilLiveOrFailure().fold(
+                    { RecoverMLSConversationsForUserResult.Failure(it) },
+                    {
+                        RecoverMLSConversationsForUserUseCaseImpl(
+                            recoverMLSConversationsUseCase,
+                            joinExistingMLSConversations,
+                            cryptoTransactionProvider,
+                            includePendingWelcome = true,
+                        )()
+                    },
+                )
+            },
+            kaliumConfigs.targetedAndTransientMLSMessagesEnabled,
             userScopedLogger,
         )
     }
@@ -2788,6 +2820,7 @@ public class UserSessionScope internal constructor(
             userScopedLogger,
             KaliumDispatcherImpl,
             userStorage.database.messageTimelineDAO,
+            featureSupport,
         )
     }
 

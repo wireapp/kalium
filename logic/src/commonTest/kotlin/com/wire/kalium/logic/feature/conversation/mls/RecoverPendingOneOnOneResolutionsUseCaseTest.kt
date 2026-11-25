@@ -19,10 +19,10 @@ package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -39,24 +39,27 @@ import kotlin.test.Test
 
 class RecoverPendingOneOnOneResolutionsUseCaseTest {
     @Test
-    fun givenSyncDoesNotReachLive_whenInvoked_thenSkipsRecovery() = runTest {
+    fun givenSyncFailsBeforeGoingLive_whenInvoked_thenStillRecoversOnceLive() = runTest {
+        val pendingUserIds = listOf(TestUser.OTHER_USER_ID)
         val (arrangement, useCase) = Arrangement()
             .withSyncWaitResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
+            .withPendingUserIds(pendingUserIds)
+            .withResolveResult(Either.Right(MockConversation.ID))
             .arrange()
 
         useCase()
 
-        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.getPendingOneOnOneResolutions() }
-        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(pendingUserIds)
+        }
     }
 
     @Test
     fun givenRecoverySucceeds_whenInvoked_thenAcknowledgesRecoveredUsers() = runTest {
         val pendingUserIds = listOf(TestUser.OTHER_USER_ID, TestUser.OTHER_USER_ID_2)
         val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
-            .withResolveResult(Either.Right(TestConversation.ID))
+            .withResolveResult(Either.Right(MockConversation.ID))
             .arrange()
 
         useCase()
@@ -70,7 +73,6 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
     fun givenRecoveryFails_whenInvoked_thenDoesNotAcknowledgePendingUsers() = runTest {
         val pendingUserIds = listOf(TestUser.OTHER_USER_ID)
         val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
             .withResolveResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
             .arrange()
@@ -86,9 +88,8 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         val successfulUserId = TestUser.OTHER_USER_ID_2
         val pendingUserIds = listOf(failedUserId, successfulUserId)
         val (arrangement, useCase) = Arrangement()
-            .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
-            .withResolveResult(Either.Right(TestConversation.ID))
+            .withResolveResult(Either.Right(MockConversation.ID))
             .withResolveResultForUser(failedUserId, Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
             .arrange()
 

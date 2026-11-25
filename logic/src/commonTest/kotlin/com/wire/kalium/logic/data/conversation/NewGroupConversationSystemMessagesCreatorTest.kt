@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorTest.Arrangement.Companion.otherMembersIds
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -28,7 +29,6 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
@@ -70,9 +70,9 @@ class NewGroupConversationSystemMessagesCreatorTest {
         )
         val event = Event.Conversation.NewConversation(
             id = "creation",
-            conversationId = TestConversation.ID,
+            conversationId = MockConversation.ID,
             dateTime = Instant.UNIX_FIRST_DATE,
-            conversation = TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP),
+            conversation = MockConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP),
             senderUserId = TestUser.SELF.id,
         )
 
@@ -89,7 +89,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .arrange()
 
         val result = sysMessageCreator.conversationStarted(
-            TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP)
+            MockConversation.entity().copy(type = ConversationEntity.Type.GROUP)
         )
 
         result.shouldSucceed()
@@ -112,7 +112,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         val result = sysMessageCreator.conversationStarted(
             TestUser.USER_ID,
-            TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP),
+            MockConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP),
             currentTime
         )
 
@@ -134,7 +134,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .arrange()
 
         val result = newGroupConversationCreatedHandler.conversationStarted(
-            TestConversation.ENTITY.copy(type = ConversationEntity.Type.ONE_ON_ONE)
+            MockConversation.entity().copy(type = ConversationEntity.Type.ONE_ON_ONE)
         )
 
         result.shouldSucceed()
@@ -154,7 +154,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .arrange()
         val timestampIso = Instant.UNIX_FIRST_DATE
 
-        val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE, timestampIso)
+        val result = sysMessageCreator.conversationReadReceiptStatus(MockConversation.CONVERSATION_RESPONSE, timestampIso)
 
         result.shouldSucceed()
 
@@ -175,7 +175,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         val result =
             sysMessageCreator.conversationReadReceiptStatus(
-                TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
+                MockConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
                 timestampIso
             )
 
@@ -196,7 +196,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .arrange()
 
         val result = sysMessageCreator.conversationReadReceiptStatus(
-            TestConversation.CONVERSATION.copy(type = Conversation.Type.Group.Regular)
+            MockConversation.CONVERSATION.copy(type = Conversation.Type.Group.Regular)
         )
 
         result.shouldSucceed()
@@ -215,7 +215,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .withIsASelfTeamMember()
             .arrange()
 
-        val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION)
+        val result = sysMessageCreator.conversationReadReceiptStatus(MockConversation.CONVERSATION)
 
         result.shouldSucceed()
 
@@ -235,7 +235,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
             val timestampIso = Instant.UNIX_FIRST_DATE
 
             val result = sysMessageCreator.conversationReadReceiptStatus(
-                TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
+                MockConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
                 timestampIso
             )
 
@@ -259,7 +259,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .arrange()
             val timestampIso = Clock.System.now()
 
-            val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE, timestampIso)
+            val result = sysMessageCreator.conversationReadReceiptStatus(MockConversation.CONVERSATION_RESPONSE, timestampIso)
 
             result.shouldSucceed()
 
@@ -281,7 +281,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .arrange()
 
             val result = sysMessageCreator.conversationResolvedMembersAdded(
-                TestConversation.CONVERSATION_RESPONSE.id.toDao(),
+                MockConversation.CONVERSATION_RESPONSE.id.toDao(),
                 otherMembersIds
             )
 
@@ -309,8 +309,8 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .arrange()
 
             val result = sysMessageCreator.conversationResolvedMembersAdded(
-                TestConversation.CONVERSATION_RESPONSE.id.toDao(),
-                TestConversation.CONVERSATION_RESPONSE.copy(
+                MockConversation.CONVERSATION_RESPONSE.id.toDao(),
+                MockConversation.CONVERSATION_RESPONSE.copy(
                     members = ConversationMembersResponse(
                         ConversationMemberDTO.Self(
                             TestUser.SELF.id.toApi(),
@@ -343,7 +343,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .arrange()
 
             val result = sysMessageCreator.conversationFailedToAddMembers(
-                TestConversation.ID, listOf(TestUser.OTHER.id), MessageContent.MemberChange.FailedToAdd.Type.Unknown
+                MockConversation.ID, listOf(TestUser.OTHER.id), MessageContent.MemberChange.FailedToAdd.Type.Unknown
             )
 
             result.shouldSucceed()
@@ -386,7 +386,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
         )
 
         companion object {
-            val otherMembersIds = TestConversation.CONVERSATION_RESPONSE.members.otherMembers.map { it.id.toModel() }
+            val otherMembersIds = MockConversation.CONVERSATION_RESPONSE.members.otherMembers.map { it.id.toModel() }
         }
     }
 

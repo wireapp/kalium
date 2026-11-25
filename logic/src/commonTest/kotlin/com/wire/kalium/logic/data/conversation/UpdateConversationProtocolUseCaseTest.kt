@@ -18,11 +18,11 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation.CONVERSATION_RESPONSE
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol

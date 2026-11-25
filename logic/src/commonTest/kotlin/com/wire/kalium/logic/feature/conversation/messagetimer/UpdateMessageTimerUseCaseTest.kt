@@ -19,8 +19,8 @@ package com.wire.kalium.logic.feature.conversation.messagetimer
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -43,12 +43,12 @@ class UpdateMessageTimerUseCaseTest {
 
         val messageTimer = 5000L
 
-        val result = updateMessageTimerUseCase(TestConversation.ID, messageTimer)
+        val result = updateMessageTimerUseCase(MockConversation.ID, messageTimer)
 
         assertIs<UpdateMessageTimerUseCase.Result.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.updateMessageTimer(TestConversation.ID, messageTimer)
+            arrangement.conversationGroupRepository.updateMessageTimer(MockConversation.ID, messageTimer)
         }
     }
 
@@ -60,11 +60,11 @@ class UpdateMessageTimerUseCaseTest {
 
         val messageTimer = 5000L
 
-        val result = updateMessageTimerUseCase(TestConversation.ID, messageTimer)
+        val result = updateMessageTimerUseCase(MockConversation.ID, messageTimer)
         assertIs<UpdateMessageTimerUseCase.Result.Failure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.updateMessageTimer(TestConversation.ID, messageTimer)
+            arrangement.conversationGroupRepository.updateMessageTimer(MockConversation.ID, messageTimer)
         }
     }
 

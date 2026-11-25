@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.isBackendOneOnOne
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -68,9 +69,7 @@ internal class MLSOneOnOneConversationResolverImpl(
     ): Either<CoreFailure, ConversationId> =
         conversationRepository.getConversationsByUserId(userId).flatMap { conversations ->
             val establishedMLSOneOnOnes = conversations.filter {
-                // The backend's MLS 1:1 has no team. A team group with one other member is also
-                // typed OneOnOne locally, and once migrated to MLS it must not take the 1:1's place.
-                val isOneOnOne = it.type == Conversation.Type.OneOnOne && it.teamId == null
+                val isOneOnOne = it.isBackendOneOnOne()
                 val protocol = it.protocol
                 val isMLSInitialized = protocol is Conversation.ProtocolInfo.MLS &&
                         protocol.groupState == GroupState.ESTABLISHED

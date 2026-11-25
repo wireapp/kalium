@@ -20,12 +20,12 @@ package com.wire.kalium.logic.sync.deferred
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.persistence.dao.message.PendingDeliveryConfirmationDAO
 import com.wire.kalium.persistence.dao.message.PendingDeliveryConfirmationEntity
@@ -109,7 +109,10 @@ class MainAppPendingDeliveryWorkerTest {
             }
             everySuspend { conversations.getConversationById(any()) } calls { (id: com.wire.kalium.logic.data.id.ConversationId) ->
                 if (id.value == blockedConversation) Either.Left(StorageFailure.DataNotFound) else Either.Right(
-                    TestConversation.CONVERSATION.copy(id = id, type = if (isGroup) Conversation.Type.Group.Regular else Conversation.Type.OneOnOne)
+                    MockConversation.CONVERSATION.copy(
+                        id = id,
+                        type = if (isGroup) Conversation.Type.Group.Regular else Conversation.Type.OneOnOne
+                    )
                 )
             }
             everySuspend { send(any(), any()) } calls { (_: Conversation, messages: List<String>) ->
@@ -120,7 +123,7 @@ class MainAppPendingDeliveryWorkerTest {
         }
 
         fun item(id: Long, conversation: String = "conversation") = PendingDeliveryConfirmationEntity(
-            id, TestConversation.ID.copy(value = conversation).toDao(), "message-$id"
+            id, MockConversation.ID.copy(value = conversation).toDao(), "message-$id"
         )
     }
 }
