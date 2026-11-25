@@ -521,7 +521,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         private const val QUEUE_END = "QUEUE_END"
         private const val BUDGET = "BUDGET"
         private val QUEUE_STOPPING_WORK = setOf(
-            NotificationAppWork.LEGAL_HOLD, NotificationAppWork.MLS_SUBCONVERSATION, NotificationAppWork.MLS_GROUP_MISMATCH
+            NotificationAppWork.LEGAL_HOLD,
+            NotificationAppWork.MLS_SUBCONVERSATION,
+            NotificationAppWork.MLS_GROUP_MISMATCH,
         )
         private val caughtUpAccounts = CaughtUpAccounts()
     }
