@@ -82,6 +82,11 @@ data class UpsertMeetingResponse(
     @SerialName("has_password") val hasPassword: Boolean = false,
 )
 
+@Serializable
+data class RotateMeetingLinkRequest(
+    @SerialName("password") val password: String? = null,
+)
+
 fun UpsertMeetingResponse.toMeetingDTO(): MeetingDTO = MeetingDTO(
     meetingId = meetingId,
     conversationId = conversationId,
