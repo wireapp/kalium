@@ -38,7 +38,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">ea1b89d
+        <div class="library-version" id="library-version">75ecb88
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
@@ -93,7 +93,7 @@
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.feature.message.receipt</a><span class="delimiter">/</span><span class="current">SendConfirmationUseCase</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Send</span><wbr><span>Confirmation</span><wbr><span>Use</span><wbr><span><span>Case</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="index.html">SendConfirmationUseCase</a></div><p class="paragraph">This use case allows to send a confirmation type <a href="../../../logic/com.wire.kalium.logic.data.message.receipt/-receipt-type/-r-e-a-d/index.html">ReceiptType.READ</a></p><ul><li><p class="paragraph">For 1:1 we take into consideration <a href="../../com.wire.kalium.logic.data.properties/-read-receipts-property-repository/get-read-receipts-status.html">UserPropertyRepository.getReadReceiptsStatus</a></p></li><li><p class="paragraph">For group conversations we have to look for each group conversation configuration.</p></li></ul></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="index.html">SendConfirmationUseCase</a></div><p class="paragraph">This use case allows to send a confirmation type <a href="../../../logic/com.wire.kalium.logic.data.message.receipt/-receipt-type/-r-e-a-d/index.html">ReceiptType.READ</a></p><ul><li><p class="paragraph">For 1:1 we take into consideration <a href="../../com.wire.kalium.logic.data.properties/-read-receipts-property-repository/get-read-receipts-status.html">UserPropertyRepository.getReadReceiptsStatus</a></p></li><li><p class="paragraph">For group conversations we have to look for each group conversation configuration.</p></li><li><p class="paragraph">For MLS group conversations, receipts are only sent when <a href="../../com.wire.kalium.logic.featureFlags/-feature-support/is-targeted-and-transient-messages-supported.html">FeatureSupport.isTargetedAndTransientMessagesSupported</a> is true. Receipts are targeted to the original sender, and without targeted MLS messages they would be sent to the whole group.</p></li></ul></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
