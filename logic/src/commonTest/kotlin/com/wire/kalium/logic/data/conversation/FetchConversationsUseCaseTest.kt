@@ -20,8 +20,8 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -47,7 +47,7 @@ class FetchConversationsUseCaseTest {
         val batch = batch(
             hasMore = false,
             lastPagingState = "state1",
-            found = listOf(TestConversation.CONVERSATION_RESPONSE)
+            found = listOf(MockConversation.CONVERSATION_RESPONSE)
         )
 
         val (arrangement, useCase) = arrange {
@@ -104,11 +104,11 @@ class FetchConversationsUseCaseTest {
     @Test
     fun whenHasFailedAndNotFoundConversations_shouldCallRepoHelpers() = runTest {
         val failed = listOf(
-            TestConversation.NETWORK_ID.copy(value = "c1"),
-            TestConversation.NETWORK_ID.copy(value = "c2")
+            MockConversation.NETWORK_ID.copy(value = "c1"),
+            MockConversation.NETWORK_ID.copy(value = "c2")
         )
-        val notFound = listOf(TestConversation.NETWORK_ID.copy(value = "c3"))
-        val found = listOf(TestConversation.CONVERSATION_RESPONSE)
+        val notFound = listOf(MockConversation.NETWORK_ID.copy(value = "c3"))
+        val found = listOf(MockConversation.CONVERSATION_RESPONSE)
         val batch = batch(
             hasMore = false,
             found = found,
@@ -147,7 +147,7 @@ class FetchConversationsUseCaseTest {
     @Test
     fun whenFetchReturnsEmptyListMultipleTimes_shouldEventuallyStop() = runTest {
         val batch1 = batch(hasMore = true, lastPagingState = "s1", found = emptyList())
-        val batch2 = batch(hasMore = false, lastPagingState = null, found = listOf(TestConversation.CONVERSATION_RESPONSE))
+        val batch2 = batch(hasMore = false, lastPagingState = null, found = listOf(MockConversation.CONVERSATION_RESPONSE))
 
         val (arrangement, useCase) = arrange {
             withFetchConversationsSequence(listOf(batch1, batch2))

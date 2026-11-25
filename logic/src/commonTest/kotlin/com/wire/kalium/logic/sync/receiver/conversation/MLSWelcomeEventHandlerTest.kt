@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MLSGroupId
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -33,7 +34,6 @@ import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -235,7 +235,7 @@ class MLSWelcomeEventHandlerTest {
             withMLSClientProcessingOfWelcomeMessageFailsWith(orphanWelcomeException)
             withConversationProtocolInfo(
                 Either.Right(
-                    TestConversation.MLS_PROTOCOL_INFO.copy(
+                    MockConversation.MLS_PROTOCOL_INFO.copy(
                         groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
                     )
                 )
@@ -265,7 +265,7 @@ class MLSWelcomeEventHandlerTest {
             withMLSClientProcessingOfWelcomeMessageFailsWith(orphanWelcomeException)
             withConversationProtocolInfo(
                 Either.Right(
-                    TestConversation.MLS_PROTOCOL_INFO.copy(
+                    MockConversation.MLS_PROTOCOL_INFO.copy(
                         groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
                     )
                 )
@@ -354,7 +354,7 @@ class MLSWelcomeEventHandlerTest {
         const val MLS_GROUP_ID: MLSGroupId = "test-mlsGroupId"
         val CONVERSATION_ONE_ONE = TestConversationDetails.CONVERSATION_ONE_ONE
         val CONVERSATION_GROUP = TestConversationDetails.CONVERSATION_GROUP
-        val CONVERSATION_ID = TestConversation.ID
+        val CONVERSATION_ID = MockConversation.ID
         val WELCOME = "welcome".encodeToByteArray()
         val WELCOME_EVENT = Event.Conversation.MLSWelcome(
             "eventId",

@@ -35,7 +35,6 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -68,7 +67,7 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.not) {
-                deleteConversation(any(), TestConversation.ID)
+                deleteConversation(any(), MockConversation.ID)
             }
         }
     }
@@ -76,7 +75,7 @@ class DeletedConversationEventHandlerTest {
     @Test
     fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
         val event = TestEvent.deletedConversation()
-        val conversation = TestConversation.CONVERSATION
+        val conversation = MockConversation.CONVERSATION
         val otherUser = TestUser.OTHER
         val (arrangement, eventHandler) = arrange {
             withGetConversationByIdReturning(conversation)
@@ -88,7 +87,7 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                deleteConversation(any(), TestConversation.ID)
+                deleteConversation(any(), MockConversation.ID)
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -107,7 +106,7 @@ class DeletedConversationEventHandlerTest {
     @Test
     fun givenDeletedConversationWithoutSender_whenHandlingIt_thenSchedulesAnonymousNotification() = runTest {
         val event = TestEvent.deletedConversation().copy(senderUserId = null)
-        val conversation = TestConversation.CONVERSATION
+        val conversation = MockConversation.CONVERSATION
         val (arrangement, eventHandler) = arrange {
             withGetConversationByIdReturning(conversation)
             withDeletingConversationSucceeding()
@@ -117,7 +116,7 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                deleteConversation(any(), TestConversation.ID)
+                deleteConversation(any(), MockConversation.ID)
             }
             verifySuspend(VerifyMode.not) {
                 userRepository.observeUser(any())
@@ -133,7 +132,7 @@ class DeletedConversationEventHandlerTest {
     @Test
     fun givenADeletedConversationEvent_whenHandlingItWithError_thenNoSchedulingTheNotification() = runTest {
         val event = TestEvent.deletedConversation()
-        val conversation = TestConversation.CONVERSATION
+        val conversation = MockConversation.CONVERSATION
         val otherUser = TestUser.OTHER
         val (arrangement, eventHandler) = arrange {
             withGetConversationByIdReturning(conversation)
@@ -196,7 +195,7 @@ class DeletedConversationEventHandlerTest {
     @Test
     fun givenDeletedConversationBySelfUser_whenHandlingIt_thenDeletesWithoutNotification() = runTest {
         val event = TestEvent.deletedConversation()
-        val conversation = TestConversation.CONVERSATION
+        val conversation = MockConversation.CONVERSATION
         val (arrangement, eventHandler) = arrange {
             selfUserId = requireNotNull(event.senderUserId)
             withGetConversationByIdReturning(conversation)
@@ -207,7 +206,7 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
-                deleteConversation(any(), TestConversation.ID)
+                deleteConversation(any(), MockConversation.ID)
             }
             verifySuspend(VerifyMode.not) {
                 userRepository.observeUser(any())

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -29,7 +30,7 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.framework.TestCall
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
@@ -74,7 +75,7 @@ class GetIncomingCallsUseCaseTest {
         getIncomingCalls().test {
             val firstItem = awaitItem()
             assertEquals(2, firstItem.size)
-            assertEquals(TestConversation.id(0), firstItem.first().conversationId)
+            assertEquals(MockConversation.id(0), firstItem.first().conversationId)
         }
     }
 
@@ -91,14 +92,14 @@ class GetIncomingCallsUseCaseTest {
             // initially there is only one incoming call
             awaitItem().let {
                 assertEquals(1, it.size)
-                assertEquals(TestConversation.id(0), it[0].conversationId)
+                assertEquals(MockConversation.id(0), it[0].conversationId)
             }
             // then new incoming call appears
             incomingCallsFlow.value = listOf(incomingCall(0), incomingCall(1))
             awaitItem().let {
                 assertEquals(2, it.size)
-                assertEquals(TestConversation.id(0), it[0].conversationId)
-                assertEquals(TestConversation.id(1), it[1].conversationId)
+                assertEquals(MockConversation.id(0), it[0].conversationId)
+                assertEquals(MockConversation.id(1), it[1].conversationId)
             }
         }
     }
@@ -133,8 +134,8 @@ class GetIncomingCallsUseCaseTest {
         getIncomingCalls().test {
             val firstItem = awaitItem()
             assertEquals(2, firstItem.size)
-            assertEquals(TestConversation.id(0), firstItem[0].conversationId)
-            assertEquals(TestConversation.id(1), firstItem[1].conversationId)
+            assertEquals(MockConversation.id(0), firstItem[0].conversationId)
+            assertEquals(MockConversation.id(1), firstItem[1].conversationId)
         }
     }
 
@@ -143,7 +144,7 @@ class GetIncomingCallsUseCaseTest {
         val (_, getIncomingCalls) = Arrangement()
             .withSelfUserStatus(UserAvailabilityStatus.AVAILABLE)
             .withConversationDetails { id ->
-                if (id == TestConversation.id(0))
+                if (id == MockConversation.id(0))
                     Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllMuted))
                 else
                     Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))
@@ -156,7 +157,7 @@ class GetIncomingCallsUseCaseTest {
         getIncomingCalls().test {
             val firstItem = awaitItem()
             assertEquals(1, firstItem.size)
-            assertEquals(TestConversation.id(1), firstItem[0].conversationId)
+            assertEquals(MockConversation.id(1), firstItem[0].conversationId)
         }
     }
 
@@ -175,8 +176,8 @@ class GetIncomingCallsUseCaseTest {
         getIncomingCalls().test {
             val firstItem = awaitItem()
             assertEquals(2, firstItem.size)
-            assertEquals(TestConversation.id(0), firstItem[0].conversationId)
-            assertEquals(TestConversation.id(1), firstItem[1].conversationId)
+            assertEquals(MockConversation.id(0), firstItem[0].conversationId)
+            assertEquals(MockConversation.id(1), firstItem[1].conversationId)
         }
     }
 
@@ -185,7 +186,7 @@ class GetIncomingCallsUseCaseTest {
         val (_, getIncomingCalls) = Arrangement()
             .withSelfUserStatus(UserAvailabilityStatus.AVAILABLE)
             .withConversationDetails { id ->
-                if (id == TestConversation.id(0))
+                if (id == MockConversation.id(0))
                     Either.Left(StorageFailure.DataNotFound)
                 else
                     Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))
@@ -198,7 +199,7 @@ class GetIncomingCallsUseCaseTest {
         getIncomingCalls().test {
             val firstItem = awaitItem()
             assertEquals(1, firstItem.size)
-            assertEquals(TestConversation.id(1), firstItem[0].conversationId)
+            assertEquals(MockConversation.id(1), firstItem[0].conversationId)
         }
     }
 
@@ -250,9 +251,9 @@ class GetIncomingCallsUseCaseTest {
             TestUser.SELF.copy(availabilityStatus = status)
 
         private fun conversationWithMuteStatus(id: ConversationId, status: MutedConversationStatus) =
-            TestConversation.one_on_one(id).copy(mutedStatus = status)
+            MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID, id = id).copy(mutedStatus = status)
 
         private fun incomingCall(conversationIdSuffix: Int = 0) =
-            TestCall.oneOnOneIncomingCall(TestConversation.id(conversationIdSuffix))
+            TestCall.oneOnOneIncomingCall(MockConversation.id(conversationIdSuffix))
     }
 }

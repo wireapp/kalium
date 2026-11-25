@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -27,7 +28,6 @@ import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -255,7 +255,7 @@ class LastReadContentHandlerTest {
     private companion object {
         val SELF_USER_ID = TestUser.SELF.id
         val OTHER_USER_ID = TestUser.OTHER_USER_ID
-        val CONVERSATION_ID = TestConversation.CONVERSATION.id
+        val CONVERSATION_ID = MockConversation.CONVERSATION.id
         val OTHER_CONVERSATION_ID = ConversationId("other-conversation", "wire.com")
     }
 }

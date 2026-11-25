@@ -247,9 +247,11 @@ sealed interface MLSFailure : CoreFailure {
     data object OrphanWelcome : MLSFailure
     data object BufferedCommit : MLSFailure
     data object InvalidGroupId : MLSFailure
-
+    data object InvalidCredentials : MLSFailure
     data class MessageRejected(val cause: NetworkFailure.MlsMessageRejectedFailure) : MLSFailure
     data class FederatedBackendConflict(val domains: List<String>) : MLSFailure
+
+    data object TransportUnavailable : MLSFailure
 
     data class Other(val message: String) : MLSFailure
     data class Generic(val rootCause: Throwable) : MLSFailure

@@ -2,6 +2,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.cryptography.E2EIConversationState
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.message.Message
@@ -18,7 +19,6 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -50,6 +50,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Instant
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
 
 @OptIn(ConversationPersistenceApi::class)
@@ -89,7 +90,7 @@ class AppMLSReceiveRecoveryTest {
     fun appLeavesPresentConversationWipeToOrdinaryDeletionHandler() = withArrangement { arrangement ->
         val envelope = arrangement.deletionEnvelope()
         arrangement.store.prepareDeletion(checkNotNull(envelope.payloadIdentity), GROUP_ID)
-        everySuspend { arrangement.conversations.getConversationById(any()) } returns Either.Right(TestConversation.CONVERSATION)
+        everySuspend { arrangement.conversations.getConversationById(any()) } returns Either.Right(MockConversation.CONVERSATION)
 
         assertFalse(arrangement.adapter.wereEffectsProcessed(arrangement.transactionContext, envelope))
 
@@ -155,7 +156,7 @@ class AppMLSReceiveRecoveryTest {
     fun completedOperationWithoutReceiptRepairsEffectsAndPropagatesRequiredWriteFailure() = withArrangement { arrangement ->
         arrangement.completeRecovery()
         everySuspend { arrangement.api.fetchConversationDetails(any()) } returns NetworkResponse.Success(
-            TestConversation.CONVERSATION_RESPONSE.copy(
+            MockConversation.CONVERSATION_RESPONSE.copy(
                 id = arrangement.event.conversationId.toApi(),
                 protocol = ConvProtocol.MLS,
                 groupId = GROUP_ID,
@@ -181,10 +182,10 @@ class AppMLSReceiveRecoveryTest {
     @Test
     fun currentNativeEpochHandlesWrongEpochWithoutJoiningOrCreatingAReceipt() = withArrangement { arrangement ->
         everySuspend { arrangement.conversations.getConversationProtocolInfo(any()) } returns Either.Right(
-            TestConversation.MLS_PROTOCOL_INFO.copy(groupId = GroupID(GROUP_ID))
+            MockConversation.MLS_PROTOCOL_INFO.copy(groupId = GroupID(GROUP_ID))
         )
         everySuspend { arrangement.api.fetchConversationDetails(any()) } returns NetworkResponse.Success(
-            TestConversation.CONVERSATION_RESPONSE.copy(
+            MockConversation.CONVERSATION_RESPONSE.copy(
                 id = arrangement.event.conversationId.toApi(),
                 protocol = ConvProtocol.MLS,
                 groupId = GROUP_ID,
@@ -214,7 +215,7 @@ class AppMLSReceiveRecoveryTest {
     private fun verificationRetry(failFlag: Boolean) = withArrangement { arrangement ->
         arrangement.completeRecovery()
         everySuspend { arrangement.api.fetchConversationDetails(any()) } returns NetworkResponse.Success(
-            TestConversation.CONVERSATION_RESPONSE.copy(
+            MockConversation.CONVERSATION_RESPONSE.copy(
                 id = arrangement.event.conversationId.toApi(), protocol = ConvProtocol.MLS,
                 groupId = GROUP_ID, epoch = 1uL, mlsCipherSuiteTag = 1,
             ), emptyMap(), 200,
@@ -274,7 +275,9 @@ class AppMLSReceiveRecoveryTest {
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val event = TestEvent.newMLSMessageEvent(Instant.DISTANT_PAST)
-        val database = TestUserDatabase(TestUser.SELF.id.toDao(), TestKaliumDispatcher.default)
+        // The SQLite store is named by its user ID. Keep it separate from the mocked account.
+        private val databaseUserId = TestUser.SELF.id.copy(value = Uuid.random().toString()).toDao()
+        val database = TestUserDatabase(databaseUserId, TestKaliumDispatcher.default)
         val api = mock<ConversationApi>()
         val conversations = mock<ConversationRepository>()
         val persistMessage = mock<PersistMessageUseCase>()

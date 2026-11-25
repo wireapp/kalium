@@ -4,11 +4,12 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.normalizeFederatedBackendConflict
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.model.QualifiedID
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isRetryableServerResponse
 
 /** Only known, independent message work may cross a gap. Everything else is an ordering barrier. */
 internal sealed interface NotificationDependency {
@@ -28,6 +29,9 @@ internal fun notificationDependencies(payload: List<EventContentDTO>): Set<Notif
                 content.qualifiedConversation
             }
             is EventContentDTO.Conversation.NewMLSMessageDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.NewMLSTargetedMessageDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.NewMLSTransientMessageDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.NewMLSTransientTargetedMessageDTO -> content.qualifiedConversation
             else -> return null
         }
         dependencies += NotificationDependency.Conversation(conversation)
@@ -39,11 +43,16 @@ internal fun notificationDependencies(payload: List<EventContentDTO>): Set<Notif
 internal class DeferredNotification(val failure: KaliumSyncException) : Exception("Notification dependency deferred", failure)
 internal class NotificationOrderingBarrier : Exception("Notification requires the complete event prefix")
 
-internal fun CoreFailure.canDeferNotification(): Boolean = when (this) {
-    is NetworkFailure.NoNetworkConnection, is NetworkFailure.FederatedBackendFailure -> true
-    is NetworkFailure.ServerMiscommunication -> kaliumException is KaliumException.ServerError
+internal fun CoreFailure.canDeferNotification(): Boolean = isTransientNetworkFailure() || when (this) {
     MLSFailure.WrongEpoch, MLSFailure.UnmergedPendingGroup, MLSFailure.CommitForMissingProposal,
     MLSFailure.ConversationNotFound, MLSFailure.OrphanWelcome -> true
+    else -> false
+}
+
+// CoreCrypto reports a conflicting-backends commit rejection as an MLS failure; it is the same retryable federation failure.
+internal fun CoreFailure.isTransientNetworkFailure(): Boolean = when (val failure = normalizeFederatedBackendConflict()) {
+    is NetworkFailure.NoNetworkConnection, MLSFailure.TransportUnavailable, is NetworkFailure.FederatedBackendFailure -> true
+    is NetworkFailure.ServerMiscommunication -> failure.kaliumException.isRetryableServerResponse()
     else -> false
 }
 
@@ -56,6 +65,7 @@ internal fun ReceivedPayload.canCrossNotificationGap(): Boolean = when (this) {
         else -> false
     }
     is ReceivedPayload.Creation, is ReceivedPayload.System, is ReceivedPayload.Profiles,
-    is ReceivedPayload.DecryptionFailure, is ReceivedPayload.Proposal, is ReceivedPayload.ClearProposalTimer -> true
+    is ReceivedPayload.DecryptionFailure, is ReceivedPayload.Proposal, is ReceivedPayload.ClearProposalTimer,
+    is ReceivedPayload.MLSEstablished -> true
     else -> false
 }

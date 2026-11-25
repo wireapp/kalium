@@ -73,6 +73,7 @@ internal object MLSMessageFailureHandler {
             MLSFailure.CommitForMissingProposal,
             MLSFailure.ConversationNotFound,
             MLSFailure.OrphanWelcome,
+            MLSFailure.InvalidCredentials,
             is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
 
             MLSFailure.ConversationAlreadyExists,
@@ -92,6 +93,7 @@ internal object MLSMessageFailureHandler {
             is NetworkFailure.FederatedBackendFailure.FederationNotImplemented,
             is NetworkFailure.FederatedBackendFailure.General,
             is NetworkFailure.NoNetworkConnection,
+            MLSFailure.TransportUnavailable,
             is NetworkFailure.ProxyError,
             is NetworkFailure.ServerMiscommunication,
             is ProteusFailure,

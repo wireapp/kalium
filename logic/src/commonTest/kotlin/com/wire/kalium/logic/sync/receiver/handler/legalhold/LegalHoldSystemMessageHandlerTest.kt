@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver.handler.legalhold
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -25,7 +26,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
@@ -56,12 +56,12 @@ class LegalHoldSystemMessagesHandlerTest {
                 else MessageContent.LegalHold.ForMembers.Disabled(oldMembers)
             val previous = testLegalHoldSystemMessage(content)
             val (arrangement, handler) = Arrangement()
-                .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to previous))
+                .withGetLastMessagesForConversationIdsSuccess(mapOf(MockConversation.CONVERSATION.id to previous))
                 .arrange()
-            val plan = handler.prepareUserTransition(TestUser.OTHER_USER_ID, enabled, listOf(TestConversation.CONVERSATION.id), "new-id")
+            val plan = handler.prepareUserTransition(TestUser.OTHER_USER_ID, enabled, listOf(MockConversation.CONVERSATION.id), "new-id")
             kotlin.test.assertEquals(previous.id, plan.single().messageId)
             kotlin.test.assertTrue(plan.single().update)
-            arrangement.withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
+            arrangement.withGetLastMessagesForConversationIdsSuccess(mapOf(MockConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
             repeat(2) { handler.handleUserTransition(TestUser.OTHER_USER_ID, enabled, plan, Instant.UNIX_FIRST_DATE, "new-id") }
             verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
             verifySuspend(VerifyMode.exactly(2)) {
@@ -83,8 +83,8 @@ class LegalHoldSystemMessagesHandlerTest {
     fun givenNoLastLegalHoldEnabledMessageForConversation_whenHandlingEnableForUser_thenCreateNewSystemMessage() = runTest {
         // given
         val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
-            .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
+            .withGetConversationsByUserIdSuccess(listOf(MockConversation.CONVERSATION))
+            .withGetLastMessagesForConversationIdsSuccess(mapOf(MockConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
             .arrange()
         // when
         handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
@@ -105,8 +105,8 @@ class LegalHoldSystemMessagesHandlerTest {
         // given
         val legalHoldMessage = testLegalHoldSystemMessage(MessageContent.LegalHold.ForMembers.Enabled(listOf(TestUser.OTHER_USER_ID_2)))
         val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
-            .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to legalHoldMessage))
+            .withGetConversationsByUserIdSuccess(listOf(MockConversation.CONVERSATION))
+            .withGetLastMessagesForConversationIdsSuccess(mapOf(MockConversation.CONVERSATION.id to legalHoldMessage))
             .arrange()
         // when
         handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
@@ -127,8 +127,8 @@ class LegalHoldSystemMessagesHandlerTest {
     fun givenNoLastLegalHoldDisabledMessageForConversation_whenHandlingDisableForUser_thenCreateNewSystemMessage() = runTest {
         // given
         val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
-            .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
+            .withGetConversationsByUserIdSuccess(listOf(MockConversation.CONVERSATION))
+            .withGetLastMessagesForConversationIdsSuccess(mapOf(MockConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
             .arrange()
         // when
         handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
@@ -151,8 +151,8 @@ class LegalHoldSystemMessagesHandlerTest {
         // given
         val legalHoldMessage = testLegalHoldSystemMessage(MessageContent.LegalHold.ForMembers.Disabled(listOf(TestUser.OTHER_USER_ID_2)))
         val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
-            .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to legalHoldMessage))
+            .withGetConversationsByUserIdSuccess(listOf(MockConversation.CONVERSATION))
+            .withGetLastMessagesForConversationIdsSuccess(mapOf(MockConversation.CONVERSATION.id to legalHoldMessage))
             .arrange()
         // when
         handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
@@ -173,7 +173,7 @@ class LegalHoldSystemMessagesHandlerTest {
         // given
         val (arrangement, handler) = Arrangement().arrange()
         // when
-        handler.handleEnabledForConversation(conversationId = TestConversation.CONVERSATION.id, Instant.UNIX_FIRST_DATE)
+        handler.handleEnabledForConversation(conversationId = MockConversation.CONVERSATION.id, Instant.UNIX_FIRST_DATE)
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Enabled && it.date == Instant.UNIX_FIRST_DATE })
@@ -185,7 +185,7 @@ class LegalHoldSystemMessagesHandlerTest {
         // given
         val (arrangement, handler) = Arrangement().arrange()
         // when
-        handler.handleDisabledForConversation(conversationId = TestConversation.CONVERSATION.id, Instant.UNIX_FIRST_DATE)
+        handler.handleDisabledForConversation(conversationId = MockConversation.CONVERSATION.id, Instant.UNIX_FIRST_DATE)
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Disabled && it.date == Instant.UNIX_FIRST_DATE })

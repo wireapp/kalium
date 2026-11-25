@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.data.event
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.network.api.authenticated.notification.AdminlessDeleteReminderData
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
@@ -56,7 +56,7 @@ class EventMapperTest {
 
     @Test
     fun meetingConversationUsesTheExistingCreationEventAndKeepsItsGroupType() {
-        val response = com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE.copy(
+        val response = com.wire.kalium.logic.data.MockConversation.CONVERSATION_RESPONSE.copy(
             conversationGroupType = com.wire.kalium.network.api.authenticated.conversation.ConversationResponse.GroupType.Meeting)
         val timestamp = Instant.parse("2026-07-24T12:00:00.000Z")
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
@@ -82,6 +82,75 @@ class EventMapperTest {
         assertEquals(listOf("notification", "notification"), events.map { it.id })
         assertEquals(listOf("notification", "notification:1"), events.map { it.systemMessageId })
         assertEquals(events, mapper.fromStoredDTO("notification", listOf(dto, dto), false).map { it.event })
+    }
+
+    @Test
+    fun givenTargetedMLSMessageDTO_whenMapping_thenNewMLSMessageWithoutSubconversationIsReturned() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val timestamp = Instant.parse("2026-03-31T13:05:08.280Z")
+        val dto = EventContentDTO.Conversation.NewMLSTargetedMessageDTO(
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = timestamp,
+            message = "payload"
+        )
+
+        val event = assertIs<Event.Conversation.NewMLSMessage>(mapper.fromEventContentDTO("event-id", dto))
+
+        assertEquals("event-id", event.id)
+        assertEquals(ModelQualifiedID("conversation-id", "domain"), event.conversationId)
+        assertEquals(null, event.subconversationId)
+        assertEquals(ModelQualifiedID(TestUser.NETWORK_ID.value, TestUser.NETWORK_ID.domain), event.senderUserId)
+        assertEquals(timestamp, event.messageInstant)
+        assertEquals("payload", event.content)
+        assertEquals(true, event.targeted)
+        assertEquals(false, event.transient)
+    }
+
+    @Test
+    fun givenTransientMLSMessageDTO_whenMapping_thenTransientNewMLSMessageWithoutSubconversationIsReturned() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val timestamp = Instant.parse("2026-03-31T13:05:08.280Z")
+        val dto = EventContentDTO.Conversation.NewMLSTransientMessageDTO(
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = timestamp,
+            message = "payload"
+        )
+
+        val event = assertIs<Event.Conversation.NewMLSMessage>(mapper.fromEventContentDTO("event-id", dto))
+
+        assertEquals("event-id", event.id)
+        assertEquals(ModelQualifiedID("conversation-id", "domain"), event.conversationId)
+        assertEquals(null, event.subconversationId)
+        assertEquals(ModelQualifiedID(TestUser.NETWORK_ID.value, TestUser.NETWORK_ID.domain), event.senderUserId)
+        assertEquals(timestamp, event.messageInstant)
+        assertEquals("payload", event.content)
+        assertEquals(false, event.targeted)
+        assertEquals(true, event.transient)
+    }
+
+    @Test
+    fun givenTransientTargetedMLSMessageDTO_whenMapping_thenTransientTargetedNewMLSMessageIsReturned() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val timestamp = Instant.parse("2026-03-31T13:05:08.280Z")
+        val dto = EventContentDTO.Conversation.NewMLSTransientTargetedMessageDTO(
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = timestamp,
+            message = "payload"
+        )
+
+        val event = assertIs<Event.Conversation.NewMLSMessage>(mapper.fromEventContentDTO("event-id", dto))
+
+        assertEquals("event-id", event.id)
+        assertEquals(ModelQualifiedID("conversation-id", "domain"), event.conversationId)
+        assertEquals(null, event.subconversationId)
+        assertEquals(ModelQualifiedID(TestUser.NETWORK_ID.value, TestUser.NETWORK_ID.domain), event.senderUserId)
+        assertEquals(timestamp, event.messageInstant)
+        assertEquals("payload", event.content)
+        assertEquals(true, event.targeted)
+        assertEquals(true, event.transient)
     }
 
     @Test
@@ -234,23 +303,23 @@ class EventMapperTest {
     @Test
     fun systemMemberUpdateMapsTheAdminRoleWithoutASender() {
         val dto = EventContentDTO.Conversation.SystemMemberUpdateDTO(
-            qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = null, time = TIMESTAMP,
+            qualifiedConversation = MockConversation.NETWORK_ID, qualifiedFrom = null, time = TIMESTAMP,
             roleChange = ConversationRoleChange(
-                user = TestConversation.NETWORK_USER_ID1.value, qualifiedUserId = TestConversation.NETWORK_USER_ID1,
+                user = MockConversation.NETWORK_USER_ID1.value, qualifiedUserId = MockConversation.NETWORK_USER_ID1,
                 role = "wire_admin", mutedRef = null, mutedStatus = null, isArchiving = null, archivedRef = null,
             ),
         )
         val result = assertIs<Event.Conversation.MemberChanged.MemberChangedRole>(
             MapperProvider.eventMapper(TestUser.SELF.id).fromEventContentDTO("event-id", dto)
         )
-        assertEquals(TestConversation.MEMBER_TEST1, result.member)
+        assertEquals(MockConversation.MEMBER_TEST1, result.member)
         assertEquals(ModelQualifiedID("valueConversation", "domainConversation"), result.conversationId)
         assertEquals(Instant.parse(TIMESTAMP), result.dateTime)
     }
 
     @Test
     fun systemDeletionMapsWithoutASender() {
-        val dto = EventContentDTO.Conversation.SystemDeletedConversationDTO(TestConversation.NETWORK_ID, null, TIMESTAMP)
+        val dto = EventContentDTO.Conversation.SystemDeletedConversationDTO(MockConversation.NETWORK_ID, null, TIMESTAMP)
         assertEquals(
             Event.Conversation.DeletedConversation(
                 "event-id", ModelQualifiedID("valueConversation", "domainConversation"), null, Instant.parse(TIMESTAMP),
@@ -264,13 +333,13 @@ class EventMapperTest {
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
         val data = AdminlessDeleteReminderData(DELETION_TIME)
         val regular = EventContentDTO.Conversation.AdminlessDeleteReminderDTO(
-            conversation = TestConversation.NETWORK_ID.value, data = data, from = TestUser.NETWORK_ID.value,
-            qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = TestUser.NETWORK_ID,
+            conversation = MockConversation.NETWORK_ID.value, data = data, from = TestUser.NETWORK_ID.value,
+            qualifiedConversation = MockConversation.NETWORK_ID, qualifiedFrom = TestUser.NETWORK_ID,
             time = EVENT_TIME, via = "user",
         )
         val system = EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO(
-            conversation = TestConversation.NETWORK_ID.value, data = data,
-            qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = null,
+            conversation = MockConversation.NETWORK_ID.value, data = data,
+            qualifiedConversation = MockConversation.NETWORK_ID, qualifiedFrom = null,
             time = EVENT_TIME, via = "system",
         )
         val expected = Event.Conversation.AdminlessDeleteReminder(

@@ -26,6 +26,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.incremental.EventBatchRecovery
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecovery
+import com.wire.kalium.logic.sync.receiving.MLSReceiveResume
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.ConversationPersistenceApi
 
@@ -45,18 +46,21 @@ internal class AppMLSReceiveRecovery(
     private val selfUserId: UserId,
     private val selfTeamId: SelfTeamIdProvider,
 ) : EventBatchRecovery {
-    @Suppress("ReturnCount") // Receipt, resume, and WrongEpoch have intentionally distinct preflight paths.
+    @Suppress("ReturnCount") // Receipt, resume, and rejoin have intentionally distinct preflight paths.
     @OptIn(ConversationPersistenceApi::class)
-    suspend fun handle(context: CryptoTransactionContext, event: Event.Conversation.NewMLSMessage, wrongEpoch: Boolean): Boolean {
+    suspend fun handle(context: CryptoTransactionContext, event: Event.Conversation.NewMLSMessage, needsRejoin: Boolean): Boolean {
         val mls = context.mls ?: return false
         // Receipts precede even canonical metadata reads: a later recovery may have removed this group.
         if (recovery.wasProcessed(mls, event)) return true
-        val resumed = recovery.resume(mls, event)
-        val result = resumed ?: if (wrongEpoch && event.subconversationId == null) {
-            val protocol = conversations.getConversationProtocolInfo(event.conversationId).recoveryOrThrow()
-            check(protocol is Conversation.ProtocolInfo.MLSCapable) { "Recovery requires an existing MLS group" }
-            recovery.recover(mls, event, protocol.groupId.value) ?: return true
-        } else return false
+        val result = when (val resumed = recovery.resume(mls, event)) {
+            is MLSReceiveResume.Joined -> resumed.result
+            MLSReceiveResume.Skipped -> return true
+            null -> if (needsRejoin && event.subconversationId == null) {
+                val protocol = conversations.getConversationProtocolInfo(event.conversationId).recoveryOrThrow()
+                check(protocol is Conversation.ProtocolInfo.MLSCapable) { "Recovery requires an existing MLS group" }
+                recovery.recover(mls, event, protocol.groupId.value) ?: return true
+            } else return false
+        }
 
         val teamId = selfTeamId().recoveryOrThrow()
         val entity = MapperProvider.conversationMapper(selfUserId).fromApiModelToDaoModel(
