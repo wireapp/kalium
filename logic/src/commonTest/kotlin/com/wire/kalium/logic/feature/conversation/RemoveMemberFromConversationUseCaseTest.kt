@@ -21,8 +21,8 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.model.AdminlessConversationErrorResponse
@@ -48,12 +48,12 @@ class RemoveMemberFromConversationUseCaseTest {
             .withRemoveMemberGroupIs(Either.Right(Unit))
             .arrange()
 
-        val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
+        val result = removeMemberUseCase(MockConversation.ID, MockConversation.USER_1)
 
         assertIs<RemoveMemberFromConversationUseCase.Result.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+            arrangement.conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID)
         }
     }
 
@@ -63,11 +63,11 @@ class RemoveMemberFromConversationUseCaseTest {
             .withRemoveMemberGroupIs(Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
-        val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
+        val result = removeMemberUseCase(MockConversation.ID, MockConversation.USER_1)
         assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+            arrangement.conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID)
         }
     }
 
@@ -77,7 +77,7 @@ class RemoveMemberFromConversationUseCaseTest {
             .withRemoveMemberGroupIs(Either.Left(adminlessConversationFailure(listOf(TestUser.OTHER_USER_ID))))
             .arrange()
 
-        val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
+        val result = removeMemberUseCase(MockConversation.ID, MockConversation.USER_1)
 
         assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
 
@@ -85,7 +85,7 @@ class RemoveMemberFromConversationUseCaseTest {
 
         assertEquals(listOf(TestUser.OTHER_USER_ID), eligibleMembers)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+            arrangement.conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID)
         }
     }
 
@@ -95,11 +95,11 @@ class RemoveMemberFromConversationUseCaseTest {
             .withRemoveMemberGroupIs(Either.Left(adminlessConversationFailure(emptyList())))
             .arrange()
 
-        val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
+        val result = removeMemberUseCase(MockConversation.ID, MockConversation.USER_1)
 
         assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+            arrangement.conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID)
         }
     }
 

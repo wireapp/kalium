@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.call
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.framework.TestUser
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -32,13 +32,13 @@ class InCallReactionsRepositoryTest {
         // given
         val repository: InCallReactionsRepository = InCallReactionsDataSource()
 
-        repository.observeInCallReactions(TestConversation.id()).test {
+        repository.observeInCallReactions(MockConversation.id()).test {
 
             // when
-            repository.addInCallReaction(TestConversation.id(), TestUser.USER_ID, setOf("1"))
+            repository.addInCallReaction(MockConversation.id(), TestUser.USER_ID, setOf("1"))
 
             // then
-            assertEquals(InCallReactionMessage(TestConversation.id(), TestUser.USER_ID, setOf("1")), awaitItem())
+            assertEquals(InCallReactionMessage(MockConversation.id(), TestUser.USER_ID, setOf("1")), awaitItem())
         }
     }
 }

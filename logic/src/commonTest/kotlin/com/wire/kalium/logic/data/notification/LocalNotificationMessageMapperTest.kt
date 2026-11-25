@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.notification
 
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -143,7 +143,7 @@ class LocalNotificationMessageMapperTest {
             text = "Some text in message",
             assetMimeType = null,
             isQuotingSelf = false,
-            conversationId = TestConversation.ENTITY_ID,
+            conversationId = MockConversation.ENTITY_ID,
             conversationName = null,
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             conversationType = ConversationEntity.Type.ONE_ON_ONE,

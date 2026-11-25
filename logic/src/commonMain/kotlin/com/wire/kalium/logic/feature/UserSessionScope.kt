@@ -820,7 +820,8 @@ public class UserSessionScope internal constructor(
         }.container
 
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
-        sessionManager.serverConfig().metaData.commonApiVersion.version
+        sessionManager.serverConfig().metaData.commonApiVersion.version,
+        kaliumConfigs
     )
 
     internal val cellsClient: HttpClient
@@ -2132,7 +2133,7 @@ public class UserSessionScope internal constructor(
             staleEpochVerifier,
             resetMlsConversation,
             receiveRecovery = if (enableDurableMLSReceiveRecovery) {
-                { context, event, wrongEpoch -> receiveRecovery()?.handle(context, event, wrongEpoch) == true }
+                { context, event, needsRejoin -> receiveRecovery()?.handle(context, event, needsRejoin) == true }
             } else null,
         )
 
@@ -2765,6 +2766,7 @@ public class UserSessionScope internal constructor(
                     },
                 )
             },
+            kaliumConfigs.targetedAndTransientMLSMessagesEnabled,
             userScopedLogger,
         )
     }
@@ -2818,6 +2820,7 @@ public class UserSessionScope internal constructor(
             userScopedLogger,
             KaliumDispatcherImpl,
             userStorage.database.messageTimelineDAO,
+            featureSupport,
         )
     }
 

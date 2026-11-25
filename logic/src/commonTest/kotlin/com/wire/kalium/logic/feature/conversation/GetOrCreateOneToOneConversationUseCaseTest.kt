@@ -20,9 +20,10 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
@@ -181,6 +182,6 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     private companion object {
         val OTHER_USER = TestUser.OTHER
         val OTHER_USER_ID = OTHER_USER.id
-        val CONVERSATION = TestConversation.ONE_ON_ONE()
+        val CONVERSATION = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID)
     }
 }

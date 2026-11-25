@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.cryptography.utils.SHA256Key
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
@@ -44,7 +45,6 @@ import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.ASSET_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
@@ -178,7 +178,9 @@ class RetryFailedMessageUseCaseTest {
                 val dao = database.builder.messageDAO
                 val mapper = MessageMapperImpl(TEXT_MESSAGE.senderUserId)
                 database.builder.userDAO.upsertUser(TestUser.ENTITY.copy(id = TEXT_MESSAGE.senderUserId.toDao()))
-                database.builder.conversationDAO.insertConversation(TestConversation.ENTITY.copy(id = TEXT_MESSAGE.conversationId.toDao()))
+                database.builder.conversationDAO.insertConversation(
+                    MockConversation.entity().copy(id = TEXT_MESSAGE.conversationId.toDao())
+                )
                 val repository = MessageDataSource(TEXT_MESSAGE.senderUserId, mock(), mock(), dao)
                 val (arrangement, useCase) = Arrangement(repository)
                     .withSendMessage(Either.Right(Unit))

@@ -43,12 +43,18 @@ sealed interface MessageUnpackResult {
      * The processed [Event] was successfully processed and resulted in a [ApplicationMessage].
      * This message should be handled according to its content by the caller.
      */
+    /**
+     * @param targeted true if received as an MLS targeted message, addressed to specific clients
+     * @param transient true if received as an MLS transient message, which the backend didn't persist
+     */
     data class ApplicationMessage(
         val conversationId: ConversationId,
         val instant: Instant,
         val senderUserId: UserId,
         val senderClientId: ClientId,
-        val content: ProtoContent.Readable
+        val content: ProtoContent.Readable,
+        val targeted: Boolean = false,
+        val transient: Boolean = false
     ) : MessageUnpackResult
 
 }

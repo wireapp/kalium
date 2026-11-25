@@ -240,7 +240,7 @@ class CallSignalReplayTest {
         override suspend fun signals() = records.filter { it.ready }
         override suspend fun presentations() = emptyList<CallPresentationRecord>()
         override suspend fun append(event: ReceivedCallEvent): CallSignalRecord = error("unused")
-        override suspend fun submitted(id: String, generation: String) {
+        override suspend fun submitted(id: String, generation: String, atMillis: Long) {
             beforeAcknowledgement()
             check(!failAcknowledgement) { "database unavailable" }
             records = records.map { if (it.id == id) it.copy(submittedGeneration = generation) else it }
@@ -249,6 +249,12 @@ class CallSignalReplayTest {
             null
         override suspend fun persistMissedCall(source: com.wire.kalium.logic.sync.receiving.MissedCallSource, self: com.wire.kalium.persistence.dao.QualifiedIDEntity) = true
 
-        override suspend fun closed(conversationValue: String, conversationDomain: String, reason: Int, handledBy: String?): String? = null
+        override suspend fun closed(
+            conversationValue: String,
+            conversationDomain: String,
+            reason: Int,
+            handledBy: String?,
+            handledBeforeMillis: Long,
+        ): String? = null
     }
 }

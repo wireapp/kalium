@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -56,7 +56,7 @@ class SyncConversationsUseCaseTest {
 
     @Test
     fun givenProtocolChanges_whenInvoked_thenInsertHistoryLostSystemMessage() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val (arrangement, useCase) = Arrangement()
             .withGetConversationsIdsReturning(listOf(conversationId), protocol = Conversation.Protocol.PROTEUS)
             .withFetchConversationsSuccessful()
@@ -73,7 +73,7 @@ class SyncConversationsUseCaseTest {
 
     @Test
     fun givenProtocolIsUnchanged_whenInvoked_thenDoNotInsertHistoryLostSystemMessage() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
         val (arrangement, useCase) = Arrangement()
             .withGetConversationsIdsReturning(listOf(conversationId), protocol = Conversation.Protocol.PROTEUS)
             .withFetchConversationsSuccessful()

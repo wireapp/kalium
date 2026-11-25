@@ -261,19 +261,19 @@ class CallManagerStartupTest {
             check(!fail) { "database unavailable" }
             true
         }
-        everySuspend { journal.closed(any(), any(), any(), any()) } returns source.id
+        everySuspend { journal.closed(any(), any(), any(), any(), any()) } returns source.id
         val manager = fixture.manager()
         manager.attachSignalJournal(journal)
         try {
             manager.waitUntilInitialized()
             fixture.callbacks.onClosedCall(CallClosedReason.CANCELLED.avsValue, "call@example.com", 1u, "caller@example.com", "client")
             runCurrent()
-            verifySuspend(VerifyMode.exactly(1)) { journal.closed("call", "example.com", CallClosedReason.CANCELLED.avsValue, null) }
+            verifySuspend(VerifyMode.exactly(1)) { journal.closed("call", "example.com", CallClosedReason.CANCELLED.avsValue, null, any()) }
             fail = false
             fixture.callbacks.onClosedCall(CallClosedReason.CANCELLED.avsValue, "call@example.com", 1u, "caller@example.com", "client")
             runCurrent()
             verifySuspend(VerifyMode.exactly(2)) { journal.persistMissedCall(source.missedCallSource(), any()) }
-            verifySuspend(VerifyMode.exactly(1)) { journal.closed(any(), any(), any(), any()) }
+            verifySuspend(VerifyMode.exactly(1)) { journal.closed(any(), any(), any(), any(), any()) }
             verifySuspend(VerifyMode.not) { fixture.repository.persistMissedCall(any()) }
         } finally {
             manager.cancelJobs()

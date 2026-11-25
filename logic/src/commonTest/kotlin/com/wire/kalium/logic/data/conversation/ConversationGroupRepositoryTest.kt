@@ -24,6 +24,9 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
+import com.wire.kalium.logic.data.MockConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
+import com.wire.kalium.logic.data.MockConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -39,9 +42,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
-import com.wire.kalium.logic.framework.TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
@@ -104,7 +105,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -136,7 +137,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -168,7 +169,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -194,7 +195,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -231,7 +232,7 @@ class ConversationGroupRepositoryTest {
             )
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -286,7 +287,7 @@ class ConversationGroupRepositoryTest {
             )
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationDetailsById(MockConversation.groupViewEntity(teamId = TestTeam.TEAM_ID, protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .arrange()
@@ -325,7 +326,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(FEDERATION_ERROR_CONFLICTING_BACKENDS, FEDERATION_ERROR_CONFLICTING_BACKENDS))
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationDetailsById(MockConversation.groupViewEntity(teamId = TestTeam.TEAM_ID, protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .arrange()
@@ -374,7 +375,7 @@ class ConversationGroupRepositoryTest {
             )
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withInsertFailedToAddSystemMessageSuccess()
@@ -432,7 +433,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, ERROR_MISSING_LEGALHOLD_CONSENT))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withConversationDetailsById(MockConversation.groupViewEntity(teamId = TestTeam.TEAM_ID, protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
@@ -473,7 +474,7 @@ class ConversationGroupRepositoryTest {
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), emptySet(), emptySet()))
-            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -588,7 +589,7 @@ class ConversationGroupRepositoryTest {
                         usersWithUnreachableBackend = emptySet()
                     )
                 )
-                .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+                .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
                 .withSuccessfulNewConversationGroupStartedHandled()
                 .withSuccessfulNewConversationMemberHandled()
                 .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -644,7 +645,7 @@ class ConversationGroupRepositoryTest {
                         usersWithUnreachableBackend = usersOnUnreachableBackend
                     )
                 )
-                .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+                .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
                 .withSuccessfulNewConversationGroupStartedHandled()
                 .withSuccessfulNewConversationMemberHandled()
                 .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -682,18 +683,18 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenProteusConversation_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withFetchUsersIfUnknownByIdsSuccessful()
             .withAddMemberAPISucceedChanged()
             .withEmitLocalEvent()
             .arrange()
 
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+        conversationGroupRepository.addMembers(listOf(MockConversation.USER_1), MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.addMember(any(), TestConversation.ID.toApi())
+            arrangement.conversationApi.addMember(any(), MockConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -707,18 +708,18 @@ class ConversationGroupRepositoryTest {
         val addServiceRequest = AddServiceRequest(id = serviceID.id, provider = serviceID.provider)
 
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withFetchUsersIfUnknownByIdsSuccessful()
             .withAddServiceAPISucceedChanged()
             .withEmitLocalEvent()
             .arrange()
 
-        conversationGroupRepository.addService(serviceID, TestConversation.ID)
+        conversationGroupRepository.addService(serviceID, MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.addService(addServiceRequest, TestConversation.ID.toApi())
+            arrangement.conversationApi.addService(addServiceRequest, MockConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -729,13 +730,13 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenProteusConversationAndUserIsAlreadyAMember_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withFetchUsersIfUnknownByIdsSuccessful()
             .withAddMemberAPISucceedUnchanged()
             .arrange()
 
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+        conversationGroupRepository.addMembers(listOf(MockConversation.USER_1), MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(0)) {
@@ -746,13 +747,13 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenProteusConversationAndAPICallFails_whenAddingMembersToConversation_thenShouldFail() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withAddMemberAPIFailed()
             .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
 
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+        conversationGroupRepository.addMembers(listOf(MockConversation.USER_1), MockConversation.ID)
             .shouldFail()
 
         verifySuspend(VerifyMode.exactly(0)) {
@@ -765,11 +766,11 @@ class ConversationGroupRepositoryTest {
         val serviceID = ServiceId("service-id", "service-provider")
 
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .arrange()
 
-        conversationGroupRepository.addService(serviceID, TestConversation.ID)
+        conversationGroupRepository.addService(serviceID, MockConversation.ID)
             .shouldFail {
                 assertIs<MLSFailure.Generic>(it)
                 assertIs<UnsupportedOperationException>(it.rootCause)
@@ -787,13 +788,13 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenAConversationAndAPISucceedsWithoutChange_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withFetchUsersIfUnknownByIdsSuccessful()
             .withAddMemberAPISucceedUnchanged()
             .arrange()
 
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+        conversationGroupRepository.addMembers(listOf(MockConversation.USER_1), MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(0)) {
@@ -804,14 +805,14 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenAConversationAndAPIFailed_whenAddingMembersToConversation_thenShouldNotSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withInsertFailedToAddSystemMessageSuccess()
             .withAddMemberAPIFailed()
             .arrange()
 
-        val expectedInitialUsers = listOf(TestConversation.USER_1, TestConversation.USER_2)
-        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID)
+        val expectedInitialUsers = listOf(MockConversation.USER_1, MockConversation.USER_2)
+        conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID)
             .shouldFail()
 
         verifySuspend(VerifyMode.exactly(0)) {
@@ -830,14 +831,14 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenAnMLSConversationAndAPISucceeds_whenAddMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withConversationDetailsById(MockConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
             .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
 
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+        conversationGroupRepository.addMembers(listOf(MockConversation.USER_1), MockConversation.ID)
             .shouldSucceed()
 
         // this is called in the mlsRepo
@@ -849,7 +850,7 @@ class ConversationGroupRepositoryTest {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 GROUP_ID,
-                listOf(TestConversation.USER_1),
+                listOf(MockConversation.USER_1),
                 CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
@@ -858,18 +859,18 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenMixedConversation_whenAddMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MIXED_CONVERSATION)
+            .withConversationDetailsById(MockConversation.MIXED_CONVERSATION)
             .withProtocolInfoById(MIXED_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
             .withEmitLocalEvent()
             .arrange()
 
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+        conversationGroupRepository.addMembers(listOf(MockConversation.USER_1), MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.addMember(any(), TestConversation.ID.toApi())
+            arrangement.conversationApi.addMember(any(), MockConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -880,7 +881,7 @@ class ConversationGroupRepositoryTest {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 GROUP_ID,
-                listOf(TestConversation.USER_1),
+                listOf(MockConversation.USER_1),
                 CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
         }
@@ -889,17 +890,17 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenProteusConversation_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
             .withEmitLocalEvent()
             .arrange()
 
-        conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+        conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.removeMember(TestConversation.USER_1.toApi(), TestConversation.ID.toApi())
+            arrangement.conversationApi.removeMember(MockConversation.USER_1.toApi(), MockConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -910,12 +911,12 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenProteusConversationAndUserIsNotAMember_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedUnchanged()
             .arrange()
 
-        conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+        conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(0)) {
@@ -926,12 +927,12 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenProteusConversationAndAPICallFails_whenRemovingMemberFromConversation_thenShouldFail() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(MockConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withDeleteMemberAPIFailed()
             .arrange()
 
-        conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+        conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID)
             .shouldFail()
 
         verifySuspend(VerifyMode.exactly(0)) {
@@ -942,14 +943,14 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenMLSConversation_whenRemovingLeavingConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withConversationDetailsById(MockConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
             .withSuccessfulLeaveMLSGroup()
             .withEmitLocalEvent()
             .arrange()
 
-        conversationGroupRepository.deleteMember(TestUser.SELF.id, TestConversation.ID)
+        conversationGroupRepository.deleteMember(TestUser.SELF.id, MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -966,17 +967,17 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenMLSConversation_whenRemoveMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withConversationDetailsById(MockConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
             .withSuccessfulRemoveMemberFromMLSGroup()
             .arrange()
 
-        conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+        conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), GROUP_ID, listOf(TestConversation.USER_1))
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), GROUP_ID, listOf(MockConversation.USER_1))
         }
         verifySuspend(VerifyMode.exactly(0)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
@@ -986,18 +987,18 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenMixedConversation_whenRemoveMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MIXED_CONVERSATION)
+            .withConversationDetailsById(MockConversation.MIXED_CONVERSATION)
             .withProtocolInfoById(MIXED_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
             .withSuccessfulRemoveMemberFromMLSGroup()
             .withEmitLocalEvent()
             .arrange()
 
-        conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+        conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID)
             .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationApi.removeMember(TestConversation.USER_1.toApi(), TestConversation.ID.toApi())
+            arrangement.conversationApi.removeMember(MockConversation.USER_1.toApi(), MockConversation.ID.toApi())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -1005,7 +1006,7 @@ class ConversationGroupRepositoryTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), GROUP_ID, listOf(TestConversation.USER_1))
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), GROUP_ID, listOf(MockConversation.USER_1))
         }
     }
 
@@ -1065,7 +1066,7 @@ class ConversationGroupRepositoryTest {
             .withFetchLimitedConversationInfo(
                 code,
                 key,
-                NetworkResponse.Success(TestConversation.CONVERSATION_CODE_INFO, emptyMap(), 200)
+                NetworkResponse.Success(MockConversation.CONVERSATION_CODE_INFO, emptyMap(), 200)
             )
             .arrange()
 
@@ -1233,9 +1234,9 @@ class ConversationGroupRepositoryTest {
         // given
         val messageTimer = 5000L
         val messageTimerUpdateEvent = EventContentDTO.Conversation.MessageTimerUpdate(
-            TestConversation.NETWORK_ID,
+            MockConversation.NETWORK_ID,
             ConversationMessageTimerDTO(messageTimer),
-            TestConversation.NETWORK_USER_ID1,
+            MockConversation.NETWORK_USER_ID1,
             Instant.UNIX_FIRST_DATE,
         )
 
@@ -1246,7 +1247,7 @@ class ConversationGroupRepositoryTest {
 
         // when
         val result = conversationGroupRepository.updateMessageTimer(
-            TestConversation.ID,
+            MockConversation.ID,
             messageTimer
         )
 
@@ -1270,7 +1271,7 @@ class ConversationGroupRepositoryTest {
 
         // when
         val result = conversationGroupRepository.updateMessageTimer(
-            TestConversation.ID,
+            MockConversation.ID,
             messageTimer
         )
 
@@ -1288,7 +1289,7 @@ class ConversationGroupRepositoryTest {
             val failedDomain = "unstableDomain1.com"
             // given
             val (arrangement, conversationGroupRepository) = Arrangement()
-                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withConversationDetailsById(MockConversation.CONVERSATION)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
@@ -1300,9 +1301,9 @@ class ConversationGroupRepositoryTest {
 
             // when
             val expectedInitialUsers = listOf(
-                TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID
+                MockConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID
             )
-            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+            conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID).shouldSucceed()
 
             // then
             val expectedFullUserIdsForRequestCount = 2
@@ -1340,7 +1341,7 @@ class ConversationGroupRepositoryTest {
             val failedDomain = "unstableDomain1.com"
             // given
             val (arrangement, conversationGroupRepository) = Arrangement()
-                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withConversationDetailsById(MockConversation.CONVERSATION)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
@@ -1351,8 +1352,8 @@ class ConversationGroupRepositoryTest {
                 .arrange()
 
             // when
-            val expectedInitialUsers = listOf(TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID)
-            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+            val expectedInitialUsers = listOf(MockConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID)
+            conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID).shouldFail()
 
             // then
             verifySuspend(VerifyMode.exactly(2)) {
@@ -1378,7 +1379,7 @@ class ConversationGroupRepositoryTest {
     fun givenAConversationFailsWithUnreachableAndNoValidExtractedUsers_whenAddingMembers_thenRetryIsNotExecutedAndCreateSysMessage() =
         runTest {
             val failedDomain = "unstableDomain1.com"
-            val conversation = TestConversation.CONVERSATION.copy(id = ConversationId("valueConvo", "domainConvo"))
+            val conversation = MockConversation.CONVERSATION.copy(id = ConversationId("valueConvo", "domainConvo"))
             // given
             val (arrangement, conversationGroupRepository) = Arrangement()
                 .withConversationDetailsById(conversation)
@@ -1393,9 +1394,9 @@ class ConversationGroupRepositoryTest {
 
             // when
             val expectedInitialUsers = listOf(
-                TestConversation.USER_1.copy(domain = failedDomain) // only failed domain user so after extracting there are no valid ones
+                MockConversation.USER_1.copy(domain = failedDomain) // only failed domain user so after extracting there are no valid ones
             )
-            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+            conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID).shouldFail()
 
             // then
             verifySuspend(VerifyMode.exactly(1)) {
@@ -1418,7 +1419,7 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenAConversationFailsWithUnreachableAndNotFromUsersInRequest_whenAddingMembers_thenRetryIsNotExecutedAndCreateSysMessage() =
         runTest {
-            val conversation = TestConversation.CONVERSATION.copy(id = ConversationId("valueConvo", "domainConvo"))
+            val conversation = MockConversation.CONVERSATION.copy(id = ConversationId("valueConvo", "domainConvo"))
             // given
             val (arrangement, conversationGroupRepository) = Arrangement()
                 .withConversationDetailsById(conversation)
@@ -1432,8 +1433,8 @@ class ConversationGroupRepositoryTest {
                 .arrange()
 
             // when
-            val expectedInitialUsersNotFromUnreachableInformed = listOf(TestConversation.USER_1)
-            conversationGroupRepository.addMembers(expectedInitialUsersNotFromUnreachableInformed, TestConversation.ID).shouldFail()
+            val expectedInitialUsersNotFromUnreachableInformed = listOf(MockConversation.USER_1)
+            conversationGroupRepository.addMembers(expectedInitialUsersNotFromUnreachableInformed, MockConversation.ID).shouldFail()
 
             // then
             verifySuspend(VerifyMode.exactly(1)) {
@@ -1458,7 +1459,7 @@ class ConversationGroupRepositoryTest {
         runTest {
             // given
             val (arrangement, conversationGroupRepository) = Arrangement()
-                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withConversationDetailsById(MockConversation.CONVERSATION)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(arrayOf(FEDERATION_ERROR_GENERAL, FEDERATION_ERROR_GENERAL))
@@ -1467,8 +1468,8 @@ class ConversationGroupRepositoryTest {
                 .arrange()
 
             // when
-            val expectedInitialUsersNotFromUnreachableInformed = listOf(TestConversation.USER_1)
-            conversationGroupRepository.addMembers(expectedInitialUsersNotFromUnreachableInformed, TestConversation.ID).shouldFail()
+            val expectedInitialUsersNotFromUnreachableInformed = listOf(MockConversation.USER_1)
+            conversationGroupRepository.addMembers(expectedInitialUsersNotFromUnreachableInformed, MockConversation.ID).shouldFail()
 
             // then
             verifySuspend(VerifyMode.exactly(1)) {
@@ -1493,9 +1494,9 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenNoPackagesAvailable_whenAddingMembers_thenRetryOnceWithValidUsersAndPersistSystemMessage() = runTest {
         // given
-        val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
+        val expectedInitialUsers = listOf(MockConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withConversationDetailsById(MockConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
@@ -1507,7 +1508,7 @@ class ConversationGroupRepositoryTest {
             .arrange()
 
         // when
-        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+        conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID).shouldSucceed()
 
         // then
         val expectedFullUserIdsForRequestCount = 2
@@ -1528,7 +1529,7 @@ class ConversationGroupRepositoryTest {
                 any(),
                 any(),
                 matches {
-                    it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
+                    it.size == expectedValidUsersWithKeyPackagesCount && it.first() == MockConversation.USER_1
                 },
                 CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
@@ -1546,9 +1547,9 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenSendCommitFederatedFailure_whenAddingMembers_thenRetryOnceWithValidUsersAndPersistSystemMessage() = runTest {
         // given
-        val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
+        val expectedInitialUsers = listOf(MockConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withConversationDetailsById(MockConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
@@ -1560,7 +1561,7 @@ class ConversationGroupRepositoryTest {
             .arrange()
 
         // when
-        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+        conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID).shouldSucceed()
 
         // then
         val expectedFullUserIdsForRequestCount = 2
@@ -1581,7 +1582,7 @@ class ConversationGroupRepositoryTest {
                 any(),
                 any(),
                 matches {
-                    it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
+                    it.size == expectedValidUsersWithKeyPackagesCount && it.first() == MockConversation.USER_1
                 },
                 CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag)
             )
@@ -1599,9 +1600,9 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenMoreThan2Retries_whenAddingMembers_thenTheOperationsShouldFailAndPersistFailedToAddAllMembers() = runTest {
         // given
-        val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID_2, TestUser.OTHER_FEDERATED_USER_ID)
+        val expectedInitialUsers = listOf(MockConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID_2, TestUser.OTHER_FEDERATED_USER_ID)
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withConversationDetailsById(MockConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddingMemberToMlsGroupResults(
                 KEY_PACKAGES_NOT_AVAILABLE_FAILURE,
@@ -1612,7 +1613,7 @@ class ConversationGroupRepositoryTest {
             .arrange()
 
         // when
-        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+        conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID).shouldFail()
 
         // then
         val initialCountUsers = expectedInitialUsers.size
@@ -1661,9 +1662,9 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenNoNetworkConnection_whenAddingMembers_thenUnknownSystemMessageIsPersistedAndOperationFails() = runTest {
         // given
-        val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
+        val expectedInitialUsers = listOf(MockConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withConversationDetailsById(MockConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddingMemberToMlsGroupResults(
                 Either.Left(NetworkFailure.NoNetworkConnection(null))
@@ -1672,7 +1673,7 @@ class ConversationGroupRepositoryTest {
             .arrange()
 
         // when
-        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+        conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID).shouldFail()
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
@@ -1707,7 +1708,7 @@ class ConversationGroupRepositoryTest {
             val expectedInitialUsers = usersWithConsent.ids() + usersWithoutConsent + usersFailed
             val (arrangement, conversationGroupRepository) = Arrangement()
                 .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
-                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withConversationDetailsById(MockConversation.CONVERSATION)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, API_SUCCESS_MEMBER_ADDED))
@@ -1716,7 +1717,7 @@ class ConversationGroupRepositoryTest {
                 .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
                 .arrange()
             // when
-            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+            conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID).shouldSucceed()
             // then
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.addMember(
@@ -1754,7 +1755,7 @@ class ConversationGroupRepositoryTest {
             val expectedInitialUsers = usersWithConsent.ids() + usersWithoutConsent + usersFailed
             val (arrangement, conversationGroupRepository) = Arrangement()
                 .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
-                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withConversationDetailsById(MockConversation.CONVERSATION)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
@@ -1765,7 +1766,7 @@ class ConversationGroupRepositoryTest {
                 .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
                 .arrange()
             // when
-            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+            conversationGroupRepository.addMembers(expectedInitialUsers, MockConversation.ID).shouldFail()
             // then
             verifySuspend(VerifyMode.exactly(2)) {
                 arrangement.conversationApi.addMember(any(), any())
@@ -1821,7 +1822,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
-            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withConversationById(MockConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
@@ -2007,7 +2008,7 @@ class ConversationGroupRepositoryTest {
                 conversationApi.removeMember(any(), any())
             }.returns(
                 NetworkResponse.Success(
-                    TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    MockConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
                     mapOf(),
                     HttpStatusCode.OK.value
                 )
@@ -2268,7 +2269,7 @@ class ConversationGroupRepositoryTest {
                 emptyList()
             ),
             GROUP_NAME,
-            TestConversation.NETWORK_ID,
+            MockConversation.NETWORK_ID,
             null,
             0UL,
             ConversationResponse.Type.GROUP,

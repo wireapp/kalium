@@ -100,6 +100,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
@@ -851,6 +852,8 @@ internal class CallManagerImpl internal constructor(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         val closeContext = traceContext(conversationIdWithDomain, Uuid.random().toString())
+        // Cleanup below can wait (e.g. MLS leave) while a newer call's signals are submitted to this engine.
+        val closedAt = Clock.System.now().toEpochMilliseconds()
         AppleCallTrace.record(CallTraceEvent.AVS_CLOSED, closeContext, code = reason)
         callEffects.trySend {
             var callContinues = false
@@ -899,6 +902,7 @@ internal class CallManagerImpl internal constructor(
                     conversationIdWithDomain.domain,
                     reason,
                     handledBy = signalGeneration.takeIf { effectsCompleted && !callContinues },
+                    handledBeforeMillis = closedAt,
                 )
                 if (endedId != null) AppleCallTrace.record(
                     CallTraceEvent.JOURNAL_CLOSED,

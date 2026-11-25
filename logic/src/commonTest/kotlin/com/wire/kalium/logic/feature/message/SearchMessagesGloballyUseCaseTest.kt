@@ -20,11 +20,11 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestClient
@@ -205,9 +205,9 @@ class SearchMessagesGloballyUseCaseTest {
     }
 
     private companion object {
-        val CONVERSATION_ID_1 = TestConversation.ID
-        val CONVERSATION_ID_2 = TestConversation.ID.copy(value = "conv-2")
-        val CONVERSATION_ID_3 = TestConversation.ID.copy(value = "conv-3")
+        val CONVERSATION_ID_1 = MockConversation.ID
+        val CONVERSATION_ID_2 = MockConversation.ID.copy(value = "conv-2")
+        val CONVERSATION_ID_3 = MockConversation.ID.copy(value = "conv-3")
         const val SEARCH_QUERY = "hello"
         const val DEFAULT_LIMIT = 100
         const val DEFAULT_OFFSET = 0

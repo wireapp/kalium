@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -120,6 +120,6 @@ class TypingIndicatorOutgoingRepositoryTest {
     }
 
     private companion object {
-        val conversationOne = TestConversation.ID
+        val conversationOne = MockConversation.ID
     }
 }

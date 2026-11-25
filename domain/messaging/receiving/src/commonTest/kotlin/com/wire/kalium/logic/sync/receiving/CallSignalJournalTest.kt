@@ -312,6 +312,19 @@ class CallSignalJournalTest {
     }
 
     @Test
+    fun delayedCloseKeepsSignalsSubmittedAfterTheCloseCallback() = runTest {
+        withJournal { journal, _ ->
+            val old = journal.append(start("old"))
+            val next = journal.append(start("next").copy(time = CALL_TIME + 1.seconds))
+            journal.submitted(old.id, "engine", atMillis = 1_000)
+            journal.submitted(next.id, "engine", atMillis = 3_000)
+
+            journal.closed(CONVERSATION.value, CONVERSATION.domain, 5, handledBy = "engine", handledBeforeMillis = 2_000)
+            assertEquals(listOf(next.id), journal.signals().map { it.id })
+        }
+    }
+
+    @Test
     fun acceptedCancellationBeforeIncomingCallbackPersistsTerminalPresentation() = runTest {
         withJournal { journal, database ->
             val source = journal.append(start("fast"))
