@@ -247,16 +247,21 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenMLSWelcomeHandlerFailsWithNoNetwork_whenStandardReceive_thenFailureIsPropagated() = runTest {
+    fun givenMLSWelcomeHandlerFailsRetryably_whenStandardReceive_thenFailureIsPropagated() = runTest {
         val event = TestEvent.newMLSWelcomeEvent()
-        val networkFailure = NetworkFailure.NoNetworkConnection(null)
-        val (arrangement, receiver) = Arrangement().arrange {
-            everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(networkFailure)
-        }
+        val unavailable = com.wire.kalium.network.api.model.GenericAPIErrorResponse(503, "unavailable", "unavailable")
+        for (networkFailure in listOf(
+            NetworkFailure.NoNetworkConnection(null),
+            NetworkFailure.ServerMiscommunication(com.wire.kalium.network.exceptions.KaliumException.ServerError(unavailable)),
+        )) {
+            val (arrangement, receiver) = Arrangement().arrange {
+                everySuspend { mlsWelcomeEventHandler.handle(any(), event) } returns Either.Left(networkFailure)
+            }
 
-        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-            .shouldFail { assertEquals(networkFailure, it) }
-        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
+            receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+                .shouldFail { assertEquals(networkFailure, it) }
+            verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
+        }
     }
 
     @Test

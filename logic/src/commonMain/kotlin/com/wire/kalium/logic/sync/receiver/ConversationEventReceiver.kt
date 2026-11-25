@@ -47,6 +47,7 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.network.exceptions.isRetryableServerResponse
 
 internal interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
     suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> = Either.Right(Unit)
@@ -120,8 +121,10 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.MLSWelcome -> {
                 val result = mlsWelcomeHandler.handle(transactionContext, event)
                 val failure = (result as? Either.Left)?.value
-                // Network failures must be retried, otherwise the welcome is lost and the conversation never appears.
-                val propagate = transactionContext is DurableMLSReceiveContext || failure is NetworkFailure.NoNetworkConnection
+                // Retryable failures keep the Welcome pending, otherwise it is lost and the conversation never appears.
+                val retryable = failure is NetworkFailure.NoNetworkConnection || failure is NetworkFailure.FederatedBackendFailure ||
+                    (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException.isRetryableServerResponse())
+                val propagate = transactionContext is DurableMLSReceiveContext || retryable
                 if (failure == null || propagate) result else Either.Right(Unit).also { rejoinQueue.request(event.conversationId) }
             }
 
