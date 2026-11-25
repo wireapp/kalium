@@ -726,7 +726,7 @@ class NewMessageEventHandlerTest {
         listOf(firstTimestamp, firstTimestamp + 61.seconds, firstTimestamp + 62.seconds).forEach { timestamp ->
             newMessageEventHandler.handleNewMLSMessage(
                 arrangement.transactionContext,
-                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.newMLSMessageEvent(timestamp, SubconversationId("subconversation-id")),
                 TestEvent.liveDeliveryInfo
             )
         }
@@ -747,7 +747,7 @@ class NewMessageEventHandlerTest {
         listOf(firstTimestamp, firstTimestamp + 61.seconds, firstTimestamp + 62.seconds).forEach { timestamp ->
             newMessageEventHandler.handleNewMLSMessage(
                 arrangement.transactionContext,
-                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.newMLSMessageEvent(timestamp, SubconversationId("subconversation-id")),
                 TestEvent.liveDeliveryInfo
             )
         }
@@ -755,6 +755,25 @@ class NewMessageEventHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
         }
+    }
+
+    @Test
+    fun givenMainConversationBufferedPastThreshold_whenHandling_thenQueuesTheRejoinWithoutJoiningInline() = runTest {
+        val firstTimestamp = Instant.parse("2026-07-21T10:00:00Z")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.BufferedFutureMessage))
+            .arrange()
+
+        listOf(firstTimestamp, firstTimestamp + 61.seconds).forEach { timestamp ->
+            newMessageEventHandler.handleNewMLSMessage(
+                arrangement.transactionContext,
+                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.liveDeliveryInfo
+            )
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
     }
 
     @Test

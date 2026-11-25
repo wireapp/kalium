@@ -279,7 +279,12 @@ internal class NewMessageEventHandlerImpl(
             event.subconversationId,
             event.messageInstant
         )
-        if (shouldRecover) {
+        if (shouldRecover && event.subconversationId == null && transactionContext !is DurableMLSReceiveContext) {
+            // Like WrongEpoch: a main conversation rejoins after the batch, never inside its transaction.
+            bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
+            rejoinQueue.request(event.conversationId)
+            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED_REJOIN_QUEUED")
+        } else if (shouldRecover) {
             eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED_RECOVERY")
             staleEpochVerifier.verifyEpoch(
                 transactionContext,
