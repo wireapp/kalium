@@ -694,8 +694,9 @@ class NotificationProcessorNativeTest {
                     assertEquals(RESET_GROUP_ID, (checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
                         .protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
                 })
-                repeat(2) { assertIs<Either.Left<*>>(fixture.receive(emptyList(), event.id, fetchConversation = metadata,
+                repeat(2) { assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id, fetchConversation = metadata,
                     fetchConnectionPeer = fixture::connectionProfile, recoveryFactory = { fixture.unavailableRecovery(it) })) }
+                assertEquals(NotificationAppWork.MLS_GROUP_MISMATCH, fixture.receivedAppWork)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
@@ -7165,8 +7166,9 @@ class NotificationProcessorNativeTest {
                     assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(RESET_GROUP_ID) })
                 })
                 // Current metadata now names the replacement group; the queued old ciphertext
-                // has no retained authenticated conversation-to-old-group mapping.
-                assertIs<Either.Left<*>>(fixture.receive(emptyList(), event.id, fetchConversation = metadata))
+                // has no retained authenticated conversation-to-old-group mapping, so it stays pending for the app.
+                assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id, fetchConversation = metadata))
+                assertEquals(NotificationAppWork.MLS_GROUP_MISMATCH, fixture.receivedAppWork)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
                     assertEquals(1uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
