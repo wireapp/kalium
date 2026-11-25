@@ -7,6 +7,13 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+
+// The backend's MLS 1:1 has no team. A team group with one other member is also typed OneOnOne locally,
+// but it is a separate group and must never stand in for the peer's 1:1.
+fun Conversation.isBackendOneOnOne(): Boolean = type == Conversation.Type.OneOnOne && teamId == null
+fun ConversationEntity.isBackendOneOnOne(): Boolean = type == ConversationEntity.Type.ONE_ON_ONE && teamId == null
 
 /** The team default does not override protocols supported by both participants. */
 fun selectOneOnOneProtocol(

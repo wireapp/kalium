@@ -31,7 +31,7 @@ internal class FakeMetadata(private val failInsert: Boolean = false) : MetadataD
     override suspend fun valueByKey(key: String): String? = values[key]
     override suspend fun valuesByKeyRange(fromInclusive: String, untilExclusive: String): Map<String, String> =
         values.filterKeys { it >= fromInclusive && it < untilExclusive }.also { rangeReads++ }
-    override suspend fun deleteValue(key: String) = error("Unexpected delete")
+    override suspend fun deleteValue(key: String) { values.remove(key) }
     override fun valueByKeyFlow(key: String): Flow<String?> = error("Unexpected observe")
     override suspend fun clear(keysToKeep: List<String>?) = error("Unexpected clear")
     override suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) = error("Unexpected put")

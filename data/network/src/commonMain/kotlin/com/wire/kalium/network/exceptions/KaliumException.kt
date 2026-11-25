@@ -166,6 +166,10 @@ fun KaliumException.InvalidRequestError.isTooManyRequests(): Boolean {
     return errorResponse.code == HttpStatusCode.TooManyRequests.value || errorResponse.code == HTTP_STATUS_NGINZ_TOO_MANY_REQUESTS
 }
 
+/** The server did not apply the request and a later retry can succeed: a 5xx, or rate limiting. */
+fun KaliumException.isRetryableServerResponse(): Boolean =
+    this is KaliumException.ServerError || (this is KaliumException.InvalidRequestError && isTooManyRequests())
+
 fun KaliumException.InvalidRequestError.isHandleExists(): Boolean {
     return errorResponse.label == HANDLE_EXISTS
 }

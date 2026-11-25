@@ -51,6 +51,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.authenticated.meeting.RotateMeetingLinkRequest
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO
@@ -92,6 +93,45 @@ import com.wire.kalium.network.api.model.MeetingId as NetworkMeetingId
 import com.wire.kalium.network.api.model.UserId as ApiUserId
 
 class MeetingRepositoryTest {
+
+    @Test
+    fun givenLinkRotationSucceeds_whenRotating_thenPersistsUpdatedLinkAndPasswordStatus() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val creatorId = UserId("user1", "domain")
+        val response = upsertMeetingResponse().copy(link = "https://wire.test/new-link", hasPassword = true)
+        val updatedMeeting = response.toMeetingDTO()
+        val (arrangement, repository) = Arrangement()
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
+            .withFetchUsersIfUnknownSuccess(setOf(creatorId))
+            .arrange()
+        everySuspend {
+            arrangement.meetingApi.rotateMeetingLink(meetingId.toApi(), RotateMeetingLinkRequest("Secret123!"))
+        } returns NetworkResponse.Success(response, emptyMap(), HttpStatusCode.OK.value)
+
+        val result = repository.rotateMeetingLink(meetingId, "Secret123!")
+
+        val entity = requireNotNull(arrangement.meetingMapper.fromApiToDao(updatedMeeting))
+        assertEquals(Either.Right(arrangement.meetingMapper.fromDaoToModel(entity)), result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.upsertMeetings(listOf(entity), any())
+        }
+        verifySuspend(VerifyMode.not) { arrangement.meetingApi.fetchMeeting(any()) }
+    }
+
+    @Test
+    fun givenLinkRotationFails_whenRotating_thenDoesNotFetchOrPersistMeeting() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val (arrangement, repository) = Arrangement().arrange()
+        everySuspend {
+            arrangement.meetingApi.rotateMeetingLink(meetingId.toApi(), RotateMeetingLinkRequest())
+        } returns NetworkResponse.Error(TestNetworkException.generic)
+
+        assertIs<Either.Left<CoreFailure>>(repository.rotateMeetingLink(meetingId, null))
+        verifySuspend(VerifyMode.not) {
+            arrangement.meetingApi.fetchMeeting(any())
+            arrangement.meetingDao.upsertMeetings(any(), any())
+        }
+    }
 
     @Test
     fun whenFetchAndPersistMeetings_thenMeetingsAreFetchedAndPersistedWithNowDateTime() = runTest {

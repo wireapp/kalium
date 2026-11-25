@@ -1,0 +1,1 @@
+On Apple, when a message arrives for an MLS group that CoreCrypto lost locally, the app and the Notification Service Extension now rejoin the group by external commit instead of dropping every message (app) or failing every notification (NSE). If the rejoin can't succeed for reasons other than the network, the message is skipped as before, so receiving is never blocked.

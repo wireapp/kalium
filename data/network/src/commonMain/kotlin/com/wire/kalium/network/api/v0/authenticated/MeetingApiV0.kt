@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.v0.authenticated
 
+import com.wire.kalium.network.api.authenticated.meeting.RotateMeetingLinkRequest
 import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
@@ -43,6 +44,12 @@ internal open class MeetingApiV0 internal constructor() : MeetingApi {
 
     override suspend fun updateMeeting(meetingId: MeetingId, request: UpdateMeetingRequest): NetworkResponse<UpsertMeetingResponse> =
         getApiNotSupportedError("updateMeeting", MIN_API_VERSION_MEETINGS)
+
+    override suspend fun rotateMeetingLink(
+        meetingId: MeetingId,
+        request: RotateMeetingLinkRequest
+    ): NetworkResponse<UpsertMeetingResponse> =
+        getApiNotSupportedError("rotateMeetingLink", MeetingApi.MIN_API_VERSION_MEETINGS_GUESTS_LINKS)
 
     override suspend fun joinViaCode(domain: String, key: String, code: String, password: String?): NetworkResponse<MeetingDTO> =
         getApiNotSupportedError("joinViaCode", MeetingApi.MIN_API_VERSION_MEETINGS_GUESTS_LINKS)

@@ -124,7 +124,7 @@ class CallManagerIncomingLifecycleTest {
                                 ready = true,
                             ).also { signals.add(it) }
                         }
-                        everySuspend { journal.submitted(any(), any()) } calls {
+                        everySuspend { journal.submitted(any(), any(), any()) } calls {
                             val index = signals.indexOfFirst { record -> record.id == it.arg<String>(0) }
                             signals[index] = signals[index].copy(submittedGeneration = it.arg(1))
                         }
@@ -133,7 +133,7 @@ class CallManagerIncomingLifecycleTest {
                             incomingReferences.send(it.arg(0))
                             null
                         }
-                        everySuspend { journal.closed(any(), any(), any(), any()) } returns null
+                        everySuspend { journal.closed(any(), any(), any(), any(), any()) } returns null
                         manager.attachSignalJournal(journal)
                         try {
                             manager.waitUntilInitialized()

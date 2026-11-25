@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.meeting
 
+import com.wire.kalium.network.api.authenticated.meeting.RotateMeetingLinkRequest
 import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
@@ -33,6 +34,7 @@ interface MeetingApi : BaseApi {
     suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit>
     suspend fun createNewMeeting(request: CreateMeetingRequest): NetworkResponse<UpsertMeetingResponse>
     suspend fun updateMeeting(meetingId: MeetingId, request: UpdateMeetingRequest): NetworkResponse<UpsertMeetingResponse>
+    suspend fun rotateMeetingLink(meetingId: MeetingId, request: RotateMeetingLinkRequest): NetworkResponse<UpsertMeetingResponse>
 
     /** Joins through a guest link. Available from API 19; password is sent as a query parameter. */
     suspend fun joinViaCode(domain: String, key: String, code: String, password: String?): NetworkResponse<MeetingDTO>
