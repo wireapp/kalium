@@ -180,6 +180,12 @@ internal class NotificationEffects(
                             )
                         }
                     }
+                    is ReceivedPayload.MLSEstablished -> conversations.updateMLSGroupIdAndState(
+                        received.conversationId.toDao(),
+                        received.groupId,
+                        received.epoch.toLong(),
+                        ConversationEntity.GroupState.ESTABLISHED
+                    )
                     is ReceivedPayload.MLSReset -> {
                         conversations.clearProposalTimer(received.oldGroupId)
                         conversations.updateMLSGroupIdAndState(
@@ -424,6 +430,7 @@ internal class NotificationEffects(
                 is ReceivedPayload.System -> listOf(effect.message.conversationId.toDao())
                 is ReceivedPayload.ProtocolUpdate -> listOf(effect.conversationId.toDao())
                 is ReceivedPayload.MLSReset -> listOf(effect.conversationId.toDao())
+                is ReceivedPayload.MLSEstablished -> listOf(effect.conversationId.toDao())
                 is ReceivedPayload.Creation -> listOf(effect.creation.conversation.id)
                 is ReceivedPayload.MeetingUpsert -> listOf(effect.meeting.conversationId)
                 is ReceivedPayload.Connection -> if (effect.connection.status ==
@@ -510,6 +517,13 @@ internal sealed interface ReceivedPayload {
         val epoch: ULong,
         val groupState: ConversationEntity.GroupState?,
     ) : ReceivedPayload
+
+    data class MLSEstablished(
+        val conversationId: com.wire.kalium.logic.data.id.ConversationId,
+        val groupId: String,
+        val epoch: ULong,
+    ) : ReceivedPayload
+
     data class MLSReset(
         val conversationId: com.wire.kalium.logic.data.id.ConversationId,
         val oldGroupId: String,
