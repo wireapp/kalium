@@ -327,8 +327,9 @@ replay through the full app engine, which owns ringing and termination. They are
 kept for three minutes, because a new full engine ignores anything older: AVS drops
 conference starts older than 120 s and only reports a 1:1 start older than 60 s as
 missed. When the full engine closes a call that does not continue for others, the
-signals it handled in that conversation are dropped, so a restart cannot replay an
-ended call. Besides
+signals it handled in that conversation before the close callback are dropped, so a
+restart cannot replay an ended call. Signals submitted after the callback belong to a
+newer call and survive the old call's delayed cleanup. Besides
 storing committed signals, the NSE writes only a once-per-signal missed-call claim.
 AVS exposes no message or session identity, so identical callback references cannot
 distinguish separate real calls. As with ordinary alerts, interruption after

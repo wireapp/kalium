@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.UserSummary
@@ -27,7 +28,6 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.stub.ReactionRepositoryStub
 import kotlinx.coroutines.flow.Flow
@@ -77,7 +77,7 @@ class ObserveMessageReactionsUseCaseTest {
 
     private companion object {
         const val MESSAGE_ID = TestMessage.TEST_MESSAGE_ID
-        val CONVERSATION_ID = TestConversation.ID
+        val CONVERSATION_ID = MockConversation.ID
         val USER_ID = QualifiedID(
             value = "userValue",
             domain = "userDomain"

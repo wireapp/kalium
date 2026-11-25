@@ -167,7 +167,9 @@ class ReopenableCoreCryptoCentral(
         override suspend fun <R> transaction(name: String, block: suspend (ProteusCoreCryptoContext) -> R): R = useClient {
             val context = currentCoroutineContext()
             // UniFFI invokes callbacks in a new coroutine; preserve admission for nested storage work.
-            it.transaction(name) { transaction -> withContext(context + NonCancellable) { block(transaction) } }
+            nonCancellableTransaction {
+                it.transaction(name) { transaction -> withContext(context + NonCancellable) { block(transaction) } }
+            }
         }
     }
 
@@ -195,7 +197,16 @@ class ReopenableCoreCryptoCentral(
             useClient { it.getUserIdentities(groupId, users) }
         override suspend fun <R> transaction(name: String, block: suspend (MlsCoreCryptoContext) -> R): R = useClient {
             val context = currentCoroutineContext()
-            it.transaction(name) { transaction -> withContext(context + NonCancellable) { block(transaction) } }
+            nonCancellableTransaction {
+                it.transaction(name) { transaction -> withContext(context + NonCancellable) { block(transaction) } }
+            }
         }
     }
+
+    /**
+     * CoreCrypto 11 cancels a transaction with its caller and returns before the callback ends. Account release drains
+     * workers before closing crypto, so a transaction keeps running, and its caller waiting, until it completes.
+     */
+    private suspend fun <R> nonCancellableTransaction(transaction: suspend () -> R): R =
+        withContext(NonCancellable) { transaction() }
 }

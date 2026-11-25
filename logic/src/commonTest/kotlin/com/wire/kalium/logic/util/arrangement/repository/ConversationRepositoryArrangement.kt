@@ -20,6 +20,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationProtocolUpdateStatus
@@ -30,7 +31,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.ConversationPersistenceApi
 import com.wire.kalium.util.DelicateKaliumApi
@@ -66,7 +66,7 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withSetConversationDeletedLocallyFailing(conversationId: (ConversationId) -> Boolean = { true })
     suspend fun withDeletingConversationLocallySucceeding(conversationId: (ConversationId) -> Boolean = { true })
     suspend fun withDeletingConversationLocallyFailing(conversationId: (ConversationId) -> Boolean = { true })
-    suspend fun withGetConversationByIdReturning(conversation: Conversation? = TestConversation.CONVERSATION)
+    suspend fun withGetConversationByIdReturning(conversation: Conversation? = MockConversation.CONVERSATION)
     suspend fun withIsCellEnabledReturning(result: Either<StorageFailure, Boolean> = Either.Right(false))
     suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
     suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangement

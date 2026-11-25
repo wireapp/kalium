@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.logic.feature.call.usecase.video
 
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.framework.TestConversation
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
@@ -36,7 +36,7 @@ class SetVideoSendStateUseCaseTest {
         val (arrangement, setVideoSendState) = Arrangement()
             .arrange()
 
-        setVideoSendState.invoke(TestConversation.ID, VideoState.STARTED)
+        setVideoSendState.invoke(MockConversation.ID, VideoState.STARTED)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callManager.setVideoSendState(any(), VideoState.STARTED)

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ApplicationMessage
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -36,7 +37,6 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
@@ -69,7 +69,7 @@ internal class MLSMessageUnpackerTest {
         val eventTimestamp = DateTimeUtil.currentInstant()
 
         val (arrangement, mlsUnpacker) = Arrangement()
-            .withGetConversationProtocolInfoSuccessful(TestConversation.PROTEUS_PROTOCOL_INFO)
+            .withGetConversationProtocolInfoSuccessful(MockConversation.PROTEUS_PROTOCOL_INFO)
             .arrange()
 
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
@@ -85,7 +85,7 @@ internal class MLSMessageUnpackerTest {
         val commitDelay: Long = 10
 
         val (arrangement, mlsUnpacker) = Arrangement()
-            .withGetConversationProtocolInfoSuccessful(TestConversation.MIXED_PROTOCOL_INFO)
+            .withGetConversationProtocolInfoSuccessful(MockConversation.MIXED_PROTOCOL_INFO)
             .withDecryptMessageReturning(Either.Right(listOf(decryptedProposal(commitDelay))))
             .arrange()
 
@@ -102,7 +102,7 @@ internal class MLSMessageUnpackerTest {
         val commitDelay: Long = 10
 
         val (arrangement, mlsUnpacker) = Arrangement()
-            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
+            .withGetConversationProtocolInfoSuccessful(MockConversation.MLS_PROTOCOL_INFO)
             .withDecryptMessageReturning(Either.Right(listOf(decryptedProposal(commitDelay))))
             .arrange()
 
@@ -119,7 +119,7 @@ internal class MLSMessageUnpackerTest {
         val commitDelay: Long = 10
 
         val (arrangement, mlsUnpacker) = Arrangement()
-            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
+            .withGetConversationProtocolInfoSuccessful(MockConversation.MLS_CONVERSATION.protocol)
             .withDecryptMessageReturning(Either.Right(listOf(decryptedProposal(commitDelay))))
             .withScheduleCommitSucceeding()
             .arrange()
@@ -128,7 +128,7 @@ internal class MLSMessageUnpackerTest {
         mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, messageEvent)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingProposalScheduler.scheduleCommit(TestConversation.GROUP_ID, eventTimestamp.plus(commitDelay.seconds))
+            arrangement.pendingProposalScheduler.scheduleCommit(MockConversation.GROUP_ID, eventTimestamp.plus(commitDelay.seconds))
         }
     }
 
@@ -136,7 +136,7 @@ internal class MLSMessageUnpackerTest {
     fun givenNewMLSMessageEvent_whenUnpacking_thenDecryptMessage() = runTest {
         val eventTimestamp = DateTimeUtil.currentInstant()
         val (arrangement, mlsUnpacker) = Arrangement()
-            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
+            .withGetConversationProtocolInfoSuccessful(MockConversation.MLS_CONVERSATION.protocol)
             .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_COMMIT_BUNDLE)))
             .arrange()
 
@@ -147,7 +147,7 @@ internal class MLSMessageUnpackerTest {
             arrangement.mlsConversationRepository.decryptMessage(
                 any(),
                 matches { it.contentEquals(Base64.decode(messageEvent.content)) },
-                TestConversation.GROUP_ID
+                MockConversation.GROUP_ID
             )
         }
     }
@@ -155,7 +155,7 @@ internal class MLSMessageUnpackerTest {
     @Test
     fun givenEmptyDecryptedBundleList_whenUnpacking_thenReturnHandshakeMessage() = runTest {
         val (arrangement, mlsUnpacker) = Arrangement()
-            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
+            .withGetConversationProtocolInfoSuccessful(MockConversation.MLS_PROTOCOL_INFO)
             .withDecryptMessageReturning(Either.Right(emptyList()))
             .arrange()
 
@@ -192,7 +192,7 @@ internal class MLSMessageUnpackerTest {
         val subConversationId = SubconversationId("conference")
         val remoteSubconversation = SubConversation(
             id = subConversationId,
-            parentId = TestConversation.ID,
+            parentId = MockConversation.ID,
             groupId = GroupID("missing-native-group"),
             epoch = 1UL,
             epochTimestamp = null,
@@ -223,7 +223,7 @@ internal class MLSMessageUnpackerTest {
     fun givenBufferedMlsFailure_whenUnpacking_thenReadEpochAndPropagateFailure() = runTest {
         listOf(MLSFailure.BufferedFutureMessage, MLSFailure.BufferedCommit).forEach { failure ->
             val (arrangement, mlsUnpacker) = Arrangement()
-                .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
+                .withGetConversationProtocolInfoSuccessful(MockConversation.MLS_PROTOCOL_INFO)
                 .withDecryptMessageReturning(Either.Left(failure))
                 .withLocalGroupEpoch(Either.Right(42UL))
                 .arrange()
@@ -235,7 +235,7 @@ internal class MLSMessageUnpackerTest {
 
             result.shouldFail { assertEquals(failure, it) }
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsConversationRepository.getLocalGroupEpoch(any(), TestConversation.GROUP_ID)
+                arrangement.mlsConversationRepository.getLocalGroupEpoch(any(), MockConversation.GROUP_ID)
             }
         }
     }
@@ -259,7 +259,7 @@ internal class MLSMessageUnpackerTest {
 
         val result = mlsUnpacker.unpackMlsBundle(
             decryptedText(applicationMessage),
-            TestConversation.ID,
+            MockConversation.ID,
             DateTimeUtil.currentInstant(),
         )
 
@@ -285,7 +285,7 @@ internal class MLSMessageUnpackerTest {
             MessageUnpackResult.InvalidMessage,
             mlsUnpacker.unpackMlsBundle(
                 decryptedText(ApplicationMessage(byteArrayOf(1), SELF_USER_ID, ClientId("client-id"))),
-                TestConversation.ID,
+                MockConversation.ID,
                 DateTimeUtil.currentInstant(),
             )
         )
@@ -353,19 +353,19 @@ internal class MLSMessageUnpackerTest {
     companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
         val DECRYPTED_COMMIT_BUNDLE = DecryptedMessageBundle.Commit(
-            groupID = TestConversation.GROUP_ID,
+            groupID = MockConversation.GROUP_ID,
             isActive = true,
             identity = null
         )
 
         fun decryptedProposal(commitDelay: Long?) = DecryptedMessageBundle.Proposal(
-            groupID = TestConversation.GROUP_ID,
+            groupID = MockConversation.GROUP_ID,
             commitDelay = commitDelay,
             identity = null
         )
 
         fun decryptedText(applicationMessage: ApplicationMessage) = DecryptedMessageBundle.Text(
-            groupID = TestConversation.GROUP_ID,
+            groupID = MockConversation.GROUP_ID,
             applicationMessage = applicationMessage,
             identity = null
         )

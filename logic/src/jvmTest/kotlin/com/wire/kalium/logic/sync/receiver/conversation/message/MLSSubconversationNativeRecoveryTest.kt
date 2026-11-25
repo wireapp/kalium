@@ -16,6 +16,7 @@ import com.wire.kalium.cryptography.MLSTransporter
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.cryptography.coreCryptoCentral
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -40,7 +41,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -346,7 +346,7 @@ class MLSSubconversationNativeRecoveryTest {
 
         init {
             everySuspend { conversations.getConversationProtocolInfo(PARENT_ID) } returns
-                Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(groupId = PARENT_GROUP_ID))
+                Either.Right(MockConversation.MLS_PROTOCOL_INFO.copy(groupId = PARENT_GROUP_ID))
             everySuspend { api.fetchSubconversationDetails(PARENT_ID.toApi(), SUBCONVERSATION_ID.toApi()) } returns
                 NetworkResponse.Success(
                     SubconversationResponse(
@@ -374,7 +374,7 @@ class MLSSubconversationNativeRecoveryTest {
     }
 
     private companion object {
-        val PARENT_ID = TestConversation.ID
+        val PARENT_ID = MockConversation.ID
         val SUBCONVERSATION_ID = SubconversationId("conference")
         val PARENT_GROUP_ID = GroupID(Base64.encode(ByteArray(32) { 1 }))
         val SUBGROUP_ID = GroupID(Base64.encode(ByteArray(32) { 2 }))

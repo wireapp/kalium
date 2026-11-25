@@ -19,13 +19,13 @@ package com.wire.kalium.logic.feature.search
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
+import com.wire.kalium.logic.data.MockConversation.PROTEUS_PROTOCOL_INFO
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUseCase
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
-import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversation.PROTEUS_PROTOCOL_INFO
 import com.wire.kalium.util.KaliumDispatcherImpl
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -91,7 +91,7 @@ class IsFederationSearchAllowedUseCaseTest {
             .withConversationProtocolInfo(GetConversationProtocolInfoUseCase.Result.Success(PROTEUS_PROTOCOL_INFO))
             .arrange()
 
-        val isAllowed = isFederationSearchAllowedUseCase(conversationId = TestConversation.ID)
+        val isAllowed = isFederationSearchAllowedUseCase(conversationId = MockConversation.ID)
 
         assertEquals(false, isAllowed)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsPublicKeysRepository.getKeys() }
@@ -107,7 +107,7 @@ class IsFederationSearchAllowedUseCaseTest {
             .withConversationProtocolInfo(GetConversationProtocolInfoUseCase.Result.Success(PROTEUS_PROTOCOL_INFO))
             .arrange()
 
-        val isAllowed = isFederationSearchAllowedUseCase(conversationId = TestConversation.ID)
+        val isAllowed = isFederationSearchAllowedUseCase(conversationId = MockConversation.ID)
 
         assertEquals(false, isAllowed)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsPublicKeysRepository.getKeys() }

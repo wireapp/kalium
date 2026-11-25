@@ -21,14 +21,15 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangement
 import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangementImpl
@@ -155,7 +156,7 @@ class MemberJoinEventHandlerTest {
 
     @Test
     fun givenMemberJoinEventInSelfConversation_whenHandling_thenNoSystemMessageIsPersisted() = runTest {
-        val conversation = TestConversation.SELF()
+        val conversation = MockConversation.self(teamId = TestTeam.TEAM_ID)
         val event = TestEvent.memberJoin(members = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member)))
             .copy(conversationId = conversation.id)
         val (arrangement, eventHandler) = arrange {
@@ -213,7 +214,7 @@ class MemberJoinEventHandlerTest {
 
         val (arrangement, eventHandler) = arrange {
             withFetchConversationSucceeding()
-            withConversationDetailsByIdReturning(TestConversation.GROUP().right())
+            withConversationDetailsByIdReturning(MockConversation.group(teamId = TestTeam.TEAM_ID).right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
@@ -332,7 +333,7 @@ class MemberJoinEventHandlerTest {
         val (arrangement, eventHandler) = arrange {
             withPersistingMessage(Either.Right(Unit))
             withFetchConversationSucceeding()
-            withConversationDetailsByIdReturning(TestConversation.GROUP().right())
+            withConversationDetailsByIdReturning(MockConversation.group(teamId = TestTeam.TEAM_ID).right())
             withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             withPersistMembers(Unit.right())
         }
@@ -395,8 +396,8 @@ class MemberJoinEventHandlerTest {
     private companion object {
         suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
-        val TEST_GROUP_CONVERSATION = TestConversation.GROUP()
-        val TEST_ONE_ON_ONE_CONVERSATION = TestConversation.ONE_ON_ONE()
+        val TEST_GROUP_CONVERSATION = MockConversation.group(teamId = TestTeam.TEAM_ID)
+        val TEST_ONE_ON_ONE_CONVERSATION = MockConversation.oneOnOne(teamId = TestTeam.TEAM_ID)
         val TEST_SELF_USER_ID = TestUser.SELF.id
     }
 }

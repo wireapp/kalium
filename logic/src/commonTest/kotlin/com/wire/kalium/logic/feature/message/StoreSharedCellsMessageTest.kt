@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -32,7 +33,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSender
@@ -63,7 +63,7 @@ class StoreSharedCellsMessageTest {
     fun publicationFailureKeepsStoredAttachmentsAndDoesNotSend() = verifyStoredShare(true)
 
     private fun verifyStoredShare(publicationFails: Boolean) = runTest {
-        val conversation = TestConversation.ID
+        val conversation = MockConversation.ID
         val conversations = mock<ConversationRepository>()
         val properties = mock<UserPropertyRepository>()
         val timer = mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>()

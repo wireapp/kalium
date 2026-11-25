@@ -31,7 +31,7 @@ internal class FakeMetadata(private val failInsert: Boolean = false) : MetadataD
     override suspend fun valueByKey(key: String): String? = values[key]
     override suspend fun valuesByKeyRange(fromInclusive: String, untilExclusive: String): Map<String, String> =
         values.filterKeys { it >= fromInclusive && it < untilExclusive }.also { rangeReads++ }
-    override suspend fun deleteValue(key: String) = error("Unexpected delete")
+    override suspend fun deleteValue(key: String) { values.remove(key) }
     override fun valueByKeyFlow(key: String): Flow<String?> = error("Unexpected observe")
     override suspend fun clear(keysToKeep: List<String>?) = error("Unexpected clear")
     override suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) = error("Unexpected put")
@@ -78,6 +78,14 @@ internal open class UnexpectedMlsContext : MlsCoreCryptoContext {
     override suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId = error("Unexpected native call")
     override suspend fun commitPendingProposals(groupId: MLSGroupId): Unit = error("Unexpected native call")
     override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage = error("Unexpected native call")
+    override suspend fun encryptTransientMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage =
+        error("Unexpected native call")
+    override suspend fun encryptTargetedMessage(
+        groupId: MLSGroupId,
+        recipient: CryptoQualifiedClientId,
+        message: PlainMessage,
+        transient: Boolean
+    ): ApplicationMessage = error("Unexpected native call")
     override suspend fun decryptMessage(groupId: String, message: ByteArray): MLSDecryptResult = error("Unexpected native call")
     override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> = error("Unexpected native call")
     override suspend fun addMember(groupId: MLSGroupId, membersKeyPackages: List<MLSKeyPackage>): Unit = error("Unexpected native call")

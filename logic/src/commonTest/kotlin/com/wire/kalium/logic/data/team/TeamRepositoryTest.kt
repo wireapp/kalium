@@ -21,10 +21,10 @@ package com.wire.kalium.logic.data.team
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -231,7 +231,7 @@ class TeamRepositoryTest {
             arrangement.teamsApi.deleteConversation(any(), any())
         }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
 
-        val result = teamRepository.deleteConversation(TestConversation.ID, TeamId("aTeamId"))
+        val result = teamRepository.deleteConversation(MockConversation.ID, TeamId("aTeamId"))
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
@@ -247,7 +247,7 @@ class TeamRepositoryTest {
             arrangement.teamsApi.deleteConversation(any(), any())
         }.returns(NetworkResponse.Error(KaliumException.GenericError(RuntimeException("Some error happened"))))
 
-        val result = teamRepository.deleteConversation(TestConversation.ID, TeamId("aTeamId"))
+        val result = teamRepository.deleteConversation(MockConversation.ID, TeamId("aTeamId"))
 
         result.shouldFail()
         verifySuspend(VerifyMode.exactly(1)) {

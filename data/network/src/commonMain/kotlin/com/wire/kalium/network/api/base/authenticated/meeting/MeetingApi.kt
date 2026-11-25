@@ -19,6 +19,7 @@
 package com.wire.kalium.network.api.base.authenticated.meeting
 
 import com.wire.kalium.network.api.authenticated.meeting.MeetingInvitationsRequest
+import com.wire.kalium.network.api.authenticated.meeting.RotateMeetingLinkRequest
 import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
@@ -34,6 +35,7 @@ interface MeetingApi : BaseApi {
     suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit>
     suspend fun createNewMeeting(request: CreateMeetingRequest): NetworkResponse<UpsertMeetingResponse>
     suspend fun updateMeeting(meetingId: MeetingId, request: UpdateMeetingRequest): NetworkResponse<UpsertMeetingResponse>
+    suspend fun rotateMeetingLink(meetingId: MeetingId, request: RotateMeetingLinkRequest): NetworkResponse<UpsertMeetingResponse>
     suspend fun addInvitations(meetingId: MeetingId, request: MeetingInvitationsRequest): NetworkResponse<Unit>
     suspend fun deleteInvitations(meetingId: MeetingId, request: MeetingInvitationsRequest): NetworkResponse<Unit>
 

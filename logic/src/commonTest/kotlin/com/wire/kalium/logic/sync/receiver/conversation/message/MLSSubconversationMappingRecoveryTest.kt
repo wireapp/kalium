@@ -4,6 +4,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -17,7 +18,6 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -47,6 +47,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlinx.coroutines.test.runTest
@@ -220,7 +221,8 @@ class MLSSubconversationMappingRecoveryTest {
     private class Arrangement(
         failMappingWrites: Boolean,
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
-        val database = TestUserDatabase(TestUser.SELF.id.toDao(), TestKaliumDispatcher.default)
+        private val selfUserId = TestUser.SELF.id.copy(value = Uuid.random().toString())
+        val database = TestUserDatabase(selfUserId.toDao(), TestKaliumDispatcher.default)
         val api = mock<ConversationApi>()
         val conversations = mock<ConversationRepository>()
         val mlsConversations = mock<MLSConversationRepository>()
@@ -254,7 +256,7 @@ class MLSSubconversationMappingRecoveryTest {
             subconversations,
             mlsConversations,
             pendingProposals,
-            TestUser.SELF.id,
+            selfUserId,
             protoContentMapper,
         )
         val handler = NewMessageEventHandlerImpl(
@@ -264,14 +266,14 @@ class MLSSubconversationMappingRecoveryTest {
             legalHoldHandler,
             { _, _ -> },
             { _, _ -> },
-            TestUser.SELF.id,
+            selfUserId,
             staleEpochVerifier,
             resetMLSConversation,
         )
 
         init {
             everySuspend { conversations.getConversationProtocolInfo(PARENT_ID) } returns
-                Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(groupId = PARENT_GROUP_ID))
+                Either.Right(MockConversation.MLS_PROTOCOL_INFO.copy(groupId = PARENT_GROUP_ID))
             everySuspend { mlsConversations.decryptMessage(any(), any(), any()) } calls {
                 val groupId = it.args[2] as GroupID
                 decryptionGroups += groupId
@@ -334,7 +336,7 @@ class MLSSubconversationMappingRecoveryTest {
     }
 
     private companion object {
-        val PARENT_ID = TestConversation.ID
+        val PARENT_ID = MockConversation.ID
         val SUBCONVERSATION_ID = SubconversationId("conference")
         val PARENT_GROUP_ID = GroupID("parent-group")
         val SUBGROUP_ID = GroupID("subgroup")
