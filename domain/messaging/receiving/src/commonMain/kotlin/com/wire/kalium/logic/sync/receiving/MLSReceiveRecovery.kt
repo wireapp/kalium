@@ -1,17 +1,23 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.commonizeMLSException
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import kotlin.io.encoding.Base64
+import kotlinx.coroutines.CancellationException
 
 /** Validated recovery output; callers persist canonical metadata and warning effects before acknowledgement. */
 data class MLSReceiveRecoveryResult(
@@ -22,6 +28,12 @@ data class MLSReceiveRecoveryResult(
     val warningId: String get() = "mls-recovery:${operation.id}"
 }
 
+/** A resumed recovery either joined or was skipped; a skipped event must not start another join. */
+sealed interface MLSReceiveResume {
+    data class Joined(val result: MLSReceiveRecoveryResult) : MLSReceiveResume
+    data object Skipped : MLSReceiveResume
+}
+
 /**
  * Shared by account owners that hold the receive lease. All native work, including the completion
  * checkpoint, uses the caller's transaction. The join callback must explicitly join by external
@@ -29,6 +41,7 @@ data class MLSReceiveRecoveryResult(
  * Completion covers this recovery operation only. The caller must separately preserve replay of
  * earlier successful MLS payloads when a pending join replaces an already caught-up group.
  */
+@Suppress("TooManyFunctions") // One coordinator owns the whole receive-recovery contract.
 class MLSReceiveRecovery(
     private val store: MLSReceiveRecoveryStore,
     private val conversationApi: ConversationApi,
@@ -49,10 +62,11 @@ class MLSReceiveRecovery(
     suspend fun wereEffectsProcessed(context: MlsCoreCryptoContext, payload: ReceivedPayloadIdentity): Boolean =
         store.wereEffectsProcessed(context, payload)
 
-    /** Ordinary receives only consult the owner's cached operation index; ciphertext decoding is lazy. */
-    suspend fun resume(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): MLSReceiveRecoveryResult? {
+    /** Ordinary receives only consult the owner's cached operation index; ciphertext decoding is lazy. Null: none pending. */
+    suspend fun resume(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): MLSReceiveResume? {
         val operation = store.find(event.id) { Base64.decode(event.content) } ?: return null
-        return resume(context, event, operation)
+        val result = skippingUnrecoverable(context, event, operation.groupId) { resume(context, event, operation) }
+        return result?.let(MLSReceiveResume::Joined) ?: MLSReceiveResume.Skipped
     }
 
     private suspend fun resume(
@@ -61,7 +75,7 @@ class MLSReceiveRecovery(
         operation: PendingMLSReceiveRecovery,
     ): MLSReceiveRecoveryResult {
         check(event.subconversationId == null) { "Subconversation recovery is not supported" }
-        val completed = store.isCompleted(context, operation)
+        val completed = localState { store.isCompleted(context, operation) }
         val response = fetchDetails(event).validated(event, operation.groupId)
         return if (completed) {
             MLSReceiveRecoveryResult(response, operation, context.conversationEpoch(operation.groupId))
@@ -71,14 +85,21 @@ class MLSReceiveRecovery(
         }
     }
 
-    /** Called only after WrongEpoch; current native groups keep the caller's existing no-rejoin policy. */
-    @Suppress("ReturnCount") // Pending, current, and completed operations each bypass a new join.
     suspend fun recover(
         context: MlsCoreCryptoContext,
         event: Event.Conversation.NewMLSMessage,
         expectedGroupId: String,
+    ): MLSReceiveRecoveryResult? = skippingUnrecoverable(context, event, expectedGroupId) {
+        rejoinIfBehind(context, event, expectedGroupId)
+    }
+
+    @Suppress("ReturnCount") // Pending, current, and completed operations each bypass a new join.
+    private suspend fun rejoinIfBehind(
+        context: MlsCoreCryptoContext,
+        event: Event.Conversation.NewMLSMessage,
+        expectedGroupId: String,
     ): MLSReceiveRecoveryResult? {
-        store.find(event.id) { Base64.decode(event.content) }?.let { operation ->
+        localState { store.find(event.id) { Base64.decode(event.content) } }?.let { operation ->
             check(operation.groupId == expectedGroupId) { "Pending recovery belongs to another MLS group" }
             return resume(context, event, operation)
         }
@@ -90,9 +111,9 @@ class MLSReceiveRecovery(
         val remoteEpoch = checkNotNull(response.epoch) { "MLS recovery requires a remote epoch" }
         if (context.conversationExists(expectedGroupId) && context.conversationEpoch(expectedGroupId) >= remoteEpoch) return null
 
-        val operation = store.begin(event.id, expectedGroupId, Base64.decode(event.content))
+        val operation = localState { store.begin(event.id, expectedGroupId, Base64.decode(event.content)) }
         // This also validates the native checkpoint format before a new remote mutation.
-        if (store.isCompleted(context, operation)) {
+        if (localState { store.isCompleted(context, operation) }) {
             return MLSReceiveRecoveryResult(response, operation, context.conversationEpoch(expectedGroupId))
         }
         return rejoin(context, response, operation)
@@ -110,6 +131,41 @@ class MLSReceiveRecovery(
 
     suspend fun acknowledge(eventIds: List<String>) = store.acknowledge(eventIds)
 
+    @Suppress("TooGenericExceptionCaught") // Any failure but cancellation or the network is final for this event.
+    private suspend fun skippingUnrecoverable(
+        context: MlsCoreCryptoContext,
+        event: Event.Conversation.NewMLSMessage,
+        groupId: String,
+        recovery: suspend () -> MLSReceiveRecoveryResult?,
+    ): MLSReceiveRecoveryResult? = try {
+        recovery()
+    } catch (failure: CancellationException) {
+        throw failure
+    } catch (failure: UnreadableRecoveryState) {
+        throw failure.cause
+    } catch (failure: Exception) {
+        val cause = failure.coreFailure()
+        if (cause.isTransientNetworkFailure() || context.conversationExists(groupId)) throw failure
+        store.find(event.id) { Base64.decode(event.content) }?.let { store.abandon(it) }
+        kaliumLogger.w("Skipping an MLS message whose missing group failed to rejoin: ${cause::class.simpleName}")
+        null
+    }
+
+    /** Local recovery state that can't be read isn't a failed join: keep the event and its intent pending. */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun <T> localState(read: suspend () -> T): T = try {
+        read()
+    } catch (failure: CancellationException) {
+        throw failure
+    } catch (failure: Exception) {
+        throw UnreadableRecoveryState(failure)
+    }
+
+    private class UnreadableRecoveryState(override val cause: Exception) : Exception(cause)
+
+    private fun Exception.coreFailure(): CoreFailure =
+        (this as? KaliumSyncException)?.coreFailureCause ?: commonizeMLSException(this).failure
+
     private suspend fun fetchDetails(event: Event.Conversation.NewMLSMessage) =
         wrapApiRequest { conversationApi.fetchConversationDetails(event.conversationId.toApi()) }
 
@@ -125,18 +181,39 @@ class MLSReceiveRecovery(
         return response
     }
 
+    @Suppress("TooGenericExceptionCaught") // Both join callbacks throw untyped exceptions; only a stale commit is retried.
     private suspend fun rejoin(
         context: MlsCoreCryptoContext,
         response: ConversationResponse,
         operation: PendingMLSReceiveRecovery,
     ): MLSReceiveRecoveryResult {
-        val groupInfo = wrapApiRequest { conversationApi.fetchGroupInfo(response.id) }.orThrow()
-        check(groupInfo.isNotEmpty()) { "MLS recovery requires group info" }
-        val joinedEpoch = join(context, operation.groupId, groupInfo)
+        val joinedEpoch = try {
+            joinCurrentGroupInfo(context, response, operation)
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (failure: Exception) {
+            // Another commit moved the group between reading its group info and our POST. Join the newer one, once.
+            if (failure.coreFailure() != STALE_COMMIT) throw failure
+            joinCurrentGroupInfo(context, response, operation)
+        }
         check(context.conversationExists(operation.groupId)) { "External join did not establish the MLS group" }
         val epoch = context.conversationEpoch(operation.groupId)
         check(epoch > 0uL && epoch == joinedEpoch) { "External join did not return the current native epoch" }
         store.complete(context, operation)
         return MLSReceiveRecoveryResult(response, operation, epoch)
+    }
+
+    private suspend fun joinCurrentGroupInfo(
+        context: MlsCoreCryptoContext,
+        response: ConversationResponse,
+        operation: PendingMLSReceiveRecovery,
+    ): ULong {
+        val groupInfo = wrapApiRequest { conversationApi.fetchGroupInfo(response.id) }.orThrow()
+        check(groupInfo.isNotEmpty()) { "MLS recovery requires group info" }
+        return join(context, operation.groupId, groupInfo)
+    }
+
+    private companion object {
+        val STALE_COMMIT = MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.StaleMessage)
     }
 }
