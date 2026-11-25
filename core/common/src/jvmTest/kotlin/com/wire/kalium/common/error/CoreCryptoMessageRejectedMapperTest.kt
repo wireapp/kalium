@@ -75,7 +75,10 @@ class CoreCryptoMessageRejectedMapperTest {
             NetworkFailure.NoNetworkConnection(null),
             NetworkFailure.ServerMiscommunication(KaliumException.ServerError(GenericAPIErrorResponse(503, "unavailable", "unavailable"))),
             NetworkFailure.FederatedBackendFailure.General("remote backend unavailable"),
-        )
+        ) + listOf(420, 429).map { code ->
+            val rateLimited = GenericAPIErrorResponse(code, "slow down", "too-many-requests")
+            NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(rateLimited))
+        }
         for (failure in retryable) {
             val serializedReason = MLSTransportFailureSerialization.serialize(failure)
 

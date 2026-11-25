@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.common.error
 
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isRetryableServerResponse
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -64,7 +64,7 @@ object MLSTransportFailureSerialization {
             }
 
             is NetworkFailure.NoNetworkConnection, is NetworkFailure.FederatedBackendFailure -> MLSTransportFailure.Unavailable
-            is NetworkFailure.ServerMiscommunication -> if (failure.kaliumException is KaliumException.ServerError) {
+            is NetworkFailure.ServerMiscommunication -> if (failure.kaliumException.isRetryableServerResponse()) {
                 MLSTransportFailure.Unavailable
             } else {
                 MLSTransportFailure.Other(failure.toString())
