@@ -163,6 +163,16 @@ class ObfuscateUtilTest {
     }
 
     @Test
+    fun givenCustomerHostWithoutDot_whenObfuscatingPath_thenItGetsTheDomainHint() {
+        assertEquals("acm***/v9/self", obfuscatePath(Url("https://acmecorpbackend/v9/self")))
+    }
+
+    @Test
+    fun givenWireHostWithReservedCharacter_whenObfuscatingPath_thenHostIsEncoded() {
+        assertEquals("a%22b.wire.com/v9/self", obfuscatePath(Url("https://a\"b.wire.com/v9/self")))
+    }
+
+    @Test
     fun givenHostNoLongerThanItsHint_whenObfuscatingPath_thenHostIsReplaced() {
         assertEquals("{}/v9/self", obfuscatePath(Url("https://a.b/v9/self")))
     }

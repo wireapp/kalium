@@ -165,7 +165,8 @@ private fun String.obfuscateHost(): String {
     // Ktor parses a relative URL as http://localhost/..., so "localhost" means there was no host to log.
     if (isEmpty() || equals("localhost", ignoreCase = true)) return ""
     val isWireOwned = wireHostSuffixes.any { equals(it, ignoreCase = true) || endsWith(".$it", ignoreCase = true) }
-    return if (isWireOwned) this else obfuscatePathSegment()
+    val encoded = encodeURLParameter()
+    return if (isWireOwned) encoded else encoded.hintOrMask(String::obfuscateDomain)
 }
 
 /**
@@ -174,8 +175,13 @@ private fun String.obfuscateHost(): String {
  */
 private fun String.obfuscatePathSegment(): String {
     val encoded = encodeURLParameter()
-    val obfuscated = if ('.' in encoded) encoded.obfuscateDomain() else encoded.obfuscateId()
-    return if (obfuscated.removeSuffix(MASKED_VALUE) == encoded) MASKED_SEGMENT else obfuscated
+    return encoded.hintOrMask(if ('.' in encoded) String::obfuscateDomain else String::obfuscateId)
+}
+
+/** Applies [hint], or returns `{}` when the hint would show the whole value. */
+private fun String.hintOrMask(hint: String.() -> String): String {
+    val obfuscated = hint()
+    return if (obfuscated.removeSuffix(MASKED_VALUE) == this) MASKED_SEGMENT else obfuscated
 }
 
 private fun String.queryValueHint(): String =
