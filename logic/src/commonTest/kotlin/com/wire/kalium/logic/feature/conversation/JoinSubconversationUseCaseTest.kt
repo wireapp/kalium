@@ -191,7 +191,6 @@ class JoinSubconversationUseCaseTest {
 
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
 
-        // Requests run before the transaction, which cannot be cancelled on Apple.
         verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>(any(), any())
         }
@@ -207,7 +206,6 @@ class JoinSubconversationUseCaseTest {
 
         val join = launch { joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID) }
         groupInfoRequested.await()
-        // Ending a call cancels its join; the request is still outside the transaction, which Apple can't cancel.
         join.cancelAndJoin()
 
         assertTrue(join.isCancelled)

@@ -67,10 +67,7 @@ internal class JoinSubconversationUseCaseImpl(
             }
         }
 
-    /**
-     * Every request runs before the MLS transaction. That transaction cannot be cancelled on Apple, so a request
-     * waiting in it on a slow network kept a call that had already ended holding its account.
-     */
+    /** Requests run before the MLS transaction, which can't be cancelled on Apple. */
     private suspend fun joinSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId
@@ -92,7 +89,6 @@ internal class JoinSubconversationUseCaseImpl(
         conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
     }.map { it.toModel() }
 
-    /** Decides how to enter the subconversation and runs the request that decision needs. */
     private suspend fun prepareJoin(subconversation: SubConversation): Either<CoreFailure, JoinPlan> = when {
         subconversation.epoch <= INITIAL_EPOCH -> Either.Right(JoinPlan.Establish)
         subconversation.hasStaleEpoch() -> deleteSubconversation(subconversation).map { JoinPlan.Establish }
@@ -141,9 +137,7 @@ internal class JoinSubconversationUseCaseImpl(
     }
 }
 
-/** How to enter a subconversation once the requests it needs have completed. */
 private sealed interface JoinPlan {
-    /** The subconversation has no group yet, or its stale one was just deleted. */
     data object Establish : JoinPlan
     class JoinByExternalCommit(val groupInfo: ByteArray) : JoinPlan
 }
