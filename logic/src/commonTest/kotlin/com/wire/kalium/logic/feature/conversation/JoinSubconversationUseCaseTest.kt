@@ -176,6 +176,21 @@ class JoinSubconversationUseCaseTest {
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
     }
 
+    @Test
+    fun givenGroupInfoRequestFails_whenInvokingUseCase_ThenNoTransactionIsOpened() = runTest {
+        val (arrangement, joinSubconversationUseCase) = Arrangement()
+            .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH)
+            .withFetchingSubconversationGroupInfoFailing()
+            .arrange()
+
+        joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
+
+        // Requests run before the transaction, which cannot be cancelled on Apple.
+        verifySuspend(VerifyMode.not) {
+            arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>(any(), any())
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationApi = mock<ConversationApi>(mode = MockMode.autoUnit)
         val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
@@ -212,6 +227,12 @@ class JoinSubconversationUseCaseTest {
             everySuspend {
                 conversationApi.fetchSubconversationGroupInfo(any(), any())
             } returns NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200)
+        }
+
+        suspend fun withFetchingSubconversationGroupInfoFailing() = apply {
+            everySuspend {
+                conversationApi.fetchSubconversationGroupInfo(any(), any())
+            } returns NetworkResponse.Error(KaliumException.NoNetwork())
         }
 
         suspend fun withFetchingSubconversationDetails(response: SubconversationResponse) = apply {

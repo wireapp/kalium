@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
@@ -58,74 +59,67 @@ internal class JoinSubconversationUseCaseImpl(
         subconversationId: SubconversationId
     ): Either<CoreFailure, Unit> = joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
 
+    /**
+     * Runs the requests the join needs before its native transaction. That transaction cannot be cancelled on Apple, so
+     * a request waiting in it on a slow network kept a call that had already ended holding its account.
+     */
     private suspend fun joinOrEstablishSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId
-    ): Either<CoreFailure, Unit> = transactionProvider.mlsTransaction("JoinSubconversation") { mlsContext ->
-        wrapApiRequest {
-            conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
-        }.flatMap { response ->
-            val subconversationDetails = response.toModel()
-            joinOrEstablishWithSubconversationDetails(mlsContext, subconversationDetails).onSuccess {
-                subconversationRepository.insertSubconversation(
-                    conversationId,
-                    subconversationId,
-                    subconversationDetails.groupId
-                )
+    ): Either<CoreFailure, Unit> = wrapApiRequest {
+        conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
+    }.flatMap { response ->
+        val subconversationDetails = response.toModel()
+        fetchGroupInfoToJoin(subconversationDetails).flatMap { groupInfo ->
+            transactionProvider.mlsTransaction("JoinSubconversation") { mlsContext ->
+                joinOrEstablish(mlsContext, subconversationDetails, groupInfo).onSuccess {
+                    subconversationRepository.insertSubconversation(
+                        conversationId,
+                        subconversationId,
+                        subconversationDetails.groupId
+                    )
+                }
             }
         }
     }
 
-    private suspend fun joinOrEstablishWithSubconversationDetails(
-        mlsContext: MlsCoreCryptoContext,
-        subconversationDetails: SubConversation
-    ): Either<CoreFailure, Unit> =
-        if (subconversationDetails.epoch > INITIAL_EPOCH) {
-            if (subconversationDetails.timeElapsedSinceLastEpochChange().inWholeHours > STALE_EPOCH_DURATION_IN_HOURS) {
-                wrapApiRequest {
-                    conversationApi.deleteSubconversation(
-                        subconversationDetails.parentId.toApi(),
-                        subconversationDetails.id.toApi(),
-                        SubconversationDeleteRequest(
-                            subconversationDetails.epoch,
-                            subconversationDetails.groupId.value
-                        )
-                    )
-                }.flatMap {
-                    mlsConversationRepository.establishMLSSubConversationGroup(
-                        mlsContext,
-                        subconversationDetails.groupId,
-                        subconversationDetails.parentId
-                    )
-                }
-            } else {
-                wrapApiRequest {
-                    conversationApi.fetchSubconversationGroupInfo(
-                        subconversationDetails.parentId.toApi(),
-                        subconversationDetails.id.toApi()
-                    )
-                }.flatMap { groupInfo ->
-                    mlsConversationRepository.joinGroupByExternalCommit(
-                        mlsContext,
-                        subconversationDetails.groupId,
-                        groupInfo
+    /** The group info of a subconversation to join, or null to establish it anew after deleting a stale one. */
+    private suspend fun fetchGroupInfoToJoin(subconversationDetails: SubConversation): Either<CoreFailure, ByteArray?> = when {
+        subconversationDetails.epoch <= INITIAL_EPOCH -> Either.Right(null)
+        subconversationDetails.timeElapsedSinceLastEpochChange().inWholeHours > STALE_EPOCH_DURATION_IN_HOURS ->
+            wrapApiRequest {
+                conversationApi.deleteSubconversation(
+                    subconversationDetails.parentId.toApi(),
+                    subconversationDetails.id.toApi(),
+                    SubconversationDeleteRequest(subconversationDetails.epoch, subconversationDetails.groupId.value)
+                )
+            }.map { null }
 
-                    ).flatMapLeft {
-                        if (MLSMessageFailureHandler.handleFailure(it) is MLSMessageFailureResolution.Ignore) {
-                            Either.Right(Unit)
-                        } else {
-                            Either.Left(it)
-                        }
-                    }
+        else -> wrapApiRequest {
+            conversationApi.fetchSubconversationGroupInfo(subconversationDetails.parentId.toApi(), subconversationDetails.id.toApi())
+        }
+    }
+
+    private suspend fun joinOrEstablish(
+        mlsContext: MlsCoreCryptoContext,
+        subconversationDetails: SubConversation,
+        groupInfo: ByteArray?
+    ): Either<CoreFailure, Unit> = if (groupInfo != null) {
+        mlsConversationRepository.joinGroupByExternalCommit(mlsContext, subconversationDetails.groupId, groupInfo)
+            .flatMapLeft {
+                if (MLSMessageFailureHandler.handleFailure(it) is MLSMessageFailureResolution.Ignore) {
+                    Either.Right(Unit)
+                } else {
+                    Either.Left(it)
                 }
             }
-        } else {
-            mlsConversationRepository.establishMLSSubConversationGroup(
-                mlsContext,
-                subconversationDetails.groupId,
-                subconversationDetails.parentId
-            )
-        }
+    } else {
+        mlsConversationRepository.establishMLSSubConversationGroup(
+            mlsContext,
+            subconversationDetails.groupId,
+            subconversationDetails.parentId
+        )
+    }
 
     private suspend fun joinOrEstablishSubconversationAndRetry(
         conversationId: ConversationId,
