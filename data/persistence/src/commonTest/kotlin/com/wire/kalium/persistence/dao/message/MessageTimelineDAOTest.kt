@@ -25,7 +25,6 @@ import app.cash.sqldelight.db.SqlCursor
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlPreparedStatement
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
@@ -281,7 +280,6 @@ class MessageTimelineDAOTest : BaseDatabaseTest() {
             { db.database.reactionsQueries.insertReaction("0040", conversation.id, self.id, "😀", "date") },
             { db.receiptDAO.insertReceipts(other.id, conversation.id, Instant.fromEpochMilliseconds(5_000), ReceiptTypeEntity.READ, listOf("0040")) },
             { db.database.usersQueries.updateUserDisplayName("renamed", other.id) },
-            { db.database.usersQueries.upsertUserConnectionStatus(other.id, ConnectionEntity.State.BLOCKED) },
             { db.database.messagesQueries.updateMessageTextContent("edited", "0040", conversation.id) },
         )
         for (mutate in mutations) {

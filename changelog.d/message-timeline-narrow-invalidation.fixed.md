@@ -2,4 +2,4 @@ Message timelines no longer invalidate when messages, reactions, receipts, or us
 
   - ABI: unchanged
   - Source: compatible
-  - Behavior: user changes other than name, picture, accent, connection status, deletion, or defederation reach an open timeline on its next refresh
+  - Behavior: user changes other than name, picture, accent, deletion, or defederation reach an open timeline on its next refresh

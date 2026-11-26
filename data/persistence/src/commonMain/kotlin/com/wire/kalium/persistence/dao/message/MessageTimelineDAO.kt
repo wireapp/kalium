@@ -89,7 +89,12 @@ class MessageTimelineSession internal constructor(
     // Keep these for the whole generation, including pages retained before the last load.
     // Table keys like Message or User fire for every conversation, so sync writes elsewhere would keep cancelling loads.
     private val dependencies = arrayOf(
-        "message_list_$conversationId", "message_list", "message_sender_profile", "CellFile", "Client", "SelfUser",
+        "message_list_$conversationId",
+        "message_list",
+        "message_sender_profile",
+        "CellFile",
+        "Client",
+        "SelfUser",
     )
 
     init {

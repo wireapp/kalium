@@ -191,7 +191,6 @@ upsertUserConnectionStatus:
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
--- @NotifyCustomKey message_sender_profile
 INSERT INTO User(qualified_id, connection_status)
 VALUES(?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
