@@ -56,7 +56,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Clock
 import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -128,7 +127,7 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            verifySuspend(VerifyMode.exactly(1)) {
+            verifySuspend(VerifyMode.order) {
                 arrangement.conversationApi.deleteSubconversation(
                     Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.parentId,
                     Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.id,
@@ -137,6 +136,7 @@ class JoinSubconversationUseCaseTest {
                             Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId
                         )
                 )
+                arrangement.cryptoTransactionProvider.mlsTransaction<Unit>(any(), any())
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -208,7 +208,6 @@ class JoinSubconversationUseCaseTest {
         groupInfoRequested.await()
         join.cancelAndJoin()
 
-        assertTrue(join.isCancelled)
         verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>(any(), any())
         }

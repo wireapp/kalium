@@ -92,7 +92,7 @@ internal class JoinSubconversationUseCaseImpl(
     private suspend fun prepareJoin(subconversation: SubConversation): Either<CoreFailure, JoinPlan> = when {
         subconversation.epoch <= INITIAL_EPOCH -> Either.Right(JoinPlan.Establish)
         subconversation.hasStaleEpoch() -> deleteSubconversation(subconversation).map { JoinPlan.Establish }
-        else -> fetchGroupInfo(subconversation).map { JoinPlan.JoinByExternalCommit(it) }
+        else -> fetchGroupInfo(subconversation).map { JoinPlan.ExternalCommit(it) }
     }
 
     private suspend fun deleteSubconversation(subconversation: SubConversation): Either<CoreFailure, Unit> =
@@ -120,7 +120,7 @@ internal class JoinSubconversationUseCaseImpl(
             subconversation.parentId
         )
 
-        is JoinPlan.JoinByExternalCommit ->
+        is JoinPlan.ExternalCommit ->
             mlsConversationRepository.joinGroupByExternalCommit(mlsContext, subconversation.groupId, joinPlan.groupInfo)
                 .flatMapLeft { failure ->
                     if (MLSMessageFailureHandler.handleFailure(failure) is MLSMessageFailureResolution.Ignore) {
@@ -139,7 +139,7 @@ internal class JoinSubconversationUseCaseImpl(
 
 private sealed interface JoinPlan {
     data object Establish : JoinPlan
-    class JoinByExternalCommit(val groupInfo: ByteArray) : JoinPlan
+    class ExternalCommit(val groupInfo: ByteArray) : JoinPlan
 }
 
 private fun CoreFailure.isStaleMessage(): Boolean =
