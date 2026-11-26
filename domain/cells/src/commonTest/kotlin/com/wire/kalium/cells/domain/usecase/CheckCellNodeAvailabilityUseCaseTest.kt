@@ -22,6 +22,7 @@ import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.Node
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
@@ -156,6 +157,8 @@ class CheckCellNodeAvailabilityUseCaseTest {
             everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) } returns Unit.right()
             everySuspend { attachmentsRepository.deleteStandaloneAsset(any()) } returns Unit.right()
             everySuspend { attachmentsRepository.deleteFolderContents(any()) } returns emptyList<String>().right()
+            everySuspend { attachmentsRepository.getAttachment(any()) } returns StorageFailure.DataNotFound.left()
+            everySuspend { attachmentsRepository.isAssetAvailableOffline(any()) } returns false.right()
 
             return this to CheckCellNodeAvailabilityUseCaseImpl(
                 cellsRepository = cellsRepository,
