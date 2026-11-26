@@ -145,7 +145,7 @@ internal class NewMessageEventHandlerImpl(
         )
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     override suspend fun handleNewMLSMessage(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMLSMessage,
