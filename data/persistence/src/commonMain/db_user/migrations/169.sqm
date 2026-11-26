@@ -1,0 +1,10 @@
+-- A team migration killed mid-way left groups that only this device created waiting for a Welcome that never comes.
+-- Queue those groups so the pending MLS group join drain rejoins them once sync is live.
+INSERT OR IGNORE INTO PendingActions(action_type, qualified_id, created_at)
+SELECT 'join_mls_group_conversation', qualified_id, last_modified_date
+FROM Conversation
+WHERE type = 'GROUP'
+  AND protocol IN ('MLS', 'MIXED')
+  AND mls_group_state = 'PENDING_WELCOME_MESSAGE'
+  AND mls_epoch > 0
+  AND deleted_locally = 0;

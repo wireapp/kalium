@@ -26,10 +26,12 @@ import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.sync.SyncStateObserver
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import dev.mokkery.MockMode
@@ -68,7 +70,8 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         useCase()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(pendingConversationIds)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(MockConversation.ID))
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(MockConversation.id(2)))
         }
     }
 
@@ -162,6 +165,33 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) }
     }
 
+    @Test
+    fun givenCryptoHasGroupOrBackendDeniesAccess_whenInvoked_thenAcknowledgesEachWithoutExternalCommit() = runTest {
+        val groupInCrypto = MockConversation.ID
+        val accessDenied = MockConversation.id(2)
+        val (arrangement, useCase) = Arrangement()
+            .withSyncWaitResult(Either.Right(Unit))
+            .withPendingConversationIds(listOf(groupInCrypto, accessDenied))
+            .withJoinResult(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied)))
+            .withCryptoGroup(groupInCrypto, epoch = 7UL)
+            .arrange()
+
+        useCase()
+
+        verifySuspend(VerifyMode.not) { arrangement.joinExistingMLSConversation.invoke(any(), groupInCrypto, any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.updateMLSGroupIdAndState(
+                groupInCrypto,
+                MockConversation.GROUP_ID,
+                7UL,
+                Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+            )
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(groupInCrypto))
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(accessDenied))
+        }
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.cryptoTransactionProvider.transaction<Any>(any(), any()) }
+    }
+
     private class Arrangement :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
@@ -169,6 +199,11 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         val syncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
         val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+
+        init {
+            everySuspend { conversationRepository.getNonDeletedConversationById(any()) } returns Either.Left(StorageFailure.DataNotFound)
+        }
 
         suspend fun withSyncWaitResult(result: Either<CoreFailure, Unit>) = apply {
             everySuspend { syncStateObserver.waitUntilLiveOrFailure() } returns result
@@ -200,6 +235,14 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
                     allowJoinByExternalCommit = true
                 )
             } returns result
+        }
+
+        suspend fun withCryptoGroup(conversationId: ConversationId, epoch: ULong) = apply {
+            everySuspend { conversationRepository.getNonDeletedConversationById(conversationId) } returns
+                Either.Right(MockConversation.group(protocolInfo = MockConversation.MLS_PROTOCOL_INFO))
+            everySuspend { mlsConversationRepository.hasEstablishedMLSGroup(any(), any()) } returns Either.Right(true)
+            everySuspend { mlsConversationRepository.getLocalGroupEpoch(any(), any()) } returns Either.Right(epoch)
+            everySuspend { conversationRepository.updateMLSGroupIdAndState(any(), any(), any(), any()) } returns Either.Right(Unit)
         }
 
         suspend fun withConversationEstablished() = withConversationGroupState(
@@ -237,6 +280,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
                 transactionProvider = cryptoTransactionProvider,
                 joinExistingMLSConversation = joinExistingMLSConversation,
                 conversationRepository = conversationRepository,
+                mlsConversationRepository = mlsConversationRepository,
             )
     }
 }

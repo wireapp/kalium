@@ -17,22 +17,28 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.normalizeFederatedBackendConflict
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isAccessDenied
 import com.wire.kalium.network.exceptions.isNotFound
 
 internal interface RecoverPendingMLSGroupJoinsUseCase {
@@ -45,6 +51,7 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
     private val transactionProvider: CryptoTransactionProvider,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
 ) : RecoverPendingMLSGroupJoinsUseCase {
 
     override suspend fun invoke() {
@@ -52,49 +59,73 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
             return
         }
 
-        val pendingConversationIds = pendingActionsRepository.getPendingMLSGroupJoins()
-        if (pendingConversationIds.isEmpty()) return
-
-        val successfulRecoveries = transactionProvider.transaction("recoverPendingMLSGroupJoins") { transactionContext ->
-            Either.Right(recoverPendingConversations(transactionContext, pendingConversationIds))
+        // One transaction per conversation, acknowledged right away, so a kill keeps the joins already done.
+        pendingActionsRepository.getPendingMLSGroupJoins().forEach { conversationId ->
+            val recovered = transactionProvider.transaction("recoverPendingMLSGroupJoin") { transactionContext ->
+                recoverPendingConversation(transactionContext, conversationId)
+            }
+            if (recovered is Either.Right && recovered.value) {
+                pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(conversationId))
+            }
         }
+    }
 
-        when (successfulRecoveries) {
-            is Either.Left -> Unit
-            is Either.Right -> {
-                if (successfulRecoveries.value.isNotEmpty()) {
-                    pendingActionsRepository.acknowledgePendingMLSGroupJoins(successfulRecoveries.value)
+    private suspend fun recoverPendingConversation(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Boolean> = markEstablishedIfGroupExists(transactionContext, conversationId).map { groupExists ->
+        groupExists || joinPendingConversation(transactionContext, conversationId)
+    }
+
+    // CoreCrypto may already have the group while the conversation still waits; don't send an external commit for it.
+    // A group behind the recorded epoch is stale: join it instead, and keep the newer epoch as evidence until then.
+    private suspend fun markEstablishedIfGroupExists(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Boolean> {
+        val protocol = conversationRepository.getNonDeletedConversationById(conversationId).getOrNull()
+            ?.protocol as? Conversation.ProtocolInfo.MLSCapable
+            ?: return Either.Right(false)
+        val groupId = protocol.groupId
+        return transactionContext.wrapInMLSContext { mlsContext ->
+            mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, groupId).flatMap { groupExists ->
+                if (!groupExists) return@flatMap Either.Right(false)
+                mlsConversationRepository.getLocalGroupEpoch(mlsContext, groupId).flatMap { epoch ->
+                    if (epoch < protocol.epoch) return@flatMap Either.Right(false)
+                    conversationRepository.updateMLSGroupIdAndState(
+                        conversationId,
+                        groupId,
+                        epoch,
+                        Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+                    ).map { true }
                 }
             }
         }
     }
 
-    private suspend fun recoverPendingConversations(
+    private suspend fun joinPendingConversation(
         transactionContext: CryptoTransactionContext,
-        pendingConversationIds: List<ConversationId>
-    ): List<ConversationId> {
-        val successfulConversationIds = mutableListOf<ConversationId>()
-        pendingConversationIds.forEach { conversationId ->
-            val recoveryResult = joinExistingMLSConversation(
-                transactionContext = transactionContext,
-                conversationId = conversationId,
-                allowJoinByExternalCommit = true
-            )
-                .flatMap { conversationRepository.getConversationById(conversationId) }
+        conversationId: ConversationId
+    ): Boolean {
+        val recoveryResult = joinExistingMLSConversation(
+            transactionContext = transactionContext,
+            conversationId = conversationId,
+            allowJoinByExternalCommit = true
+        )
+            .flatMap { conversationRepository.getConversationById(conversationId) }
 
-            when (recoveryResult) {
-                is Either.Left -> {
-                    val transportFailure = recoveryResult.value
-                    val failure = transportFailure.normalizeFederatedBackendConflict()
-                    kaliumLogger.w("Failed to recover pending MLS group join for ${conversationId.toLogString()}: $failure")
-                    if (failure is NetworkFailure.ServerMiscommunication &&
-                        failure.kaliumException is KaliumException.InvalidRequestError &&
-                        (failure.kaliumException as KaliumException.InvalidRequestError).isNotFound()
-                    ) {
-                        successfulConversationIds.add(conversationId)
-                    } else if (failure is StorageFailure.DataNotFound) {
-                        successfulConversationIds.add(conversationId)
-                    } else if (failure is NetworkFailure.FederatedBackendFailure.ConflictingBackends) {
+        return when (recoveryResult) {
+            is Either.Left -> {
+                val transportFailure = recoveryResult.value
+                val failure = transportFailure.normalizeFederatedBackendConflict()
+                kaliumLogger.w("Failed to recover pending MLS group join for ${conversationId.toLogString()}: $failure")
+                val requestError = (failure as? NetworkFailure.ServerMiscommunication)?.kaliumException
+                    as? KaliumException.InvalidRequestError
+                when {
+                    // Gone or no longer ours (e.g. we left): retrying on every foreground can't succeed.
+                    requestError != null && (requestError.isNotFound() || requestError.isAccessDenied()) -> true
+                    failure is StorageFailure.DataNotFound -> true
+                    failure is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
                         conversationRepository.setConversationDeletedLocally(conversationId, true)
                             .onFailure { deletionFailure ->
                                 kaliumLogger.w(
@@ -102,23 +133,22 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
                                             "${conversationId.toLogString()}: $deletionFailure"
                                 )
                             }
-                        successfulConversationIds.add(conversationId)
+                        true
                     }
-                }
-
-                is Either.Right -> {
-                    val conversation = recoveryResult.value
-                    if (conversation.isMLSEstablished()) {
-                        successfulConversationIds.add(conversationId)
-                    } else {
-                        kaliumLogger.w(
-                            "Pending MLS group join for ${conversationId.toLogString()} completed without establishing the group"
-                        )
-                    }
+                    else -> false
                 }
             }
+
+            is Either.Right -> {
+                val established = recoveryResult.value.isMLSEstablished()
+                if (!established) {
+                    kaliumLogger.w(
+                        "Pending MLS group join for ${conversationId.toLogString()} completed without establishing the group"
+                    )
+                }
+                established
+            }
         }
-        return successfulConversationIds
     }
 
     private fun Conversation.isMLSEstablished(): Boolean {
