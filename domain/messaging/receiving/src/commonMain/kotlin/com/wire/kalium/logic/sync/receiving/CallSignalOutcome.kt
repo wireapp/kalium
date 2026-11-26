@@ -27,10 +27,10 @@ internal fun reconcileCallSignals(
     return starts.distinctBy { (signal, payload) ->
         listOf(signal.conversationValue, signal.conversationDomain, signal.senderValue, signal.senderDomain, payload.session)
     }.mapNotNull { (source, start) ->
-        if (source.messageId !in pendingMessageIds) return@mapNotNull null
         val nextStart = starts.nextStartTime(source, start.session)
         if (nextStart == source.timeMillis) return@mapNotNull null // Tied calls have ambiguous response ownership.
         val related = parsed.inCallWindow(source, nextStart)
+        if (related.none { it.first.messageId in pendingMessageIds }) return@mapNotNull null
         val handled = related.any { (other, payload) ->
             other.from(self) && payload.handles(start)
         }
@@ -67,6 +67,18 @@ private fun CallSignalPayload.ends(source: CallSignalRecord, start: CallSignalPa
         type == "CANCEL" && other.senderValue == source.senderValue &&
             other.senderDomain == source.senderDomain && other.senderClientId == source.senderClientId
     }
+}
+
+internal fun CallSignalRecord.conferenceHistoryEvidence(): CallSignalRecord? {
+    val parsed = parseCallSignal()
+    if (!isGroup || parsed == null || parsed.type !in setOf("GROUPSTART", "CONFSTART", "CONFEND", "REJECT")) return null
+    val compact = kotlinx.serialization.json.buildJsonObject {
+        put("version", kotlinx.serialization.json.JsonPrimitive("3.0"))
+        put("type", kotlinx.serialization.json.JsonPrimitive(parsed.type))
+        put("sessid", kotlinx.serialization.json.JsonPrimitive(parsed.session))
+        put("resp", kotlinx.serialization.json.JsonPrimitive(parsed.response))
+    }
+    return copy(payload = compact.toString())
 }
 
 private data class CallSignalPayload(val type: String, val session: String, val response: Boolean) {

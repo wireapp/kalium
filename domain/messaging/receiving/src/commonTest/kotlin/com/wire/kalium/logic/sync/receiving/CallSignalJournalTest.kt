@@ -96,6 +96,42 @@ class CallSignalJournalTest {
     }
 
     @Test
+    fun deferredMissedCallSurvivesRestartAndWaitsForLaterOwnDeviceResponse() = runTest {
+        withJournal { journal, database ->
+            database.builder.conversationDAO.insertConversation(conversation())
+            val source = journal.append(start("deferred", payload = """{"version":"3.0","type":"SETUP","resp":false,"sessid":"deferred","sdp":"v=0"}"""))
+            journal.deferMissedCall(source.missedCallSource())
+            val reopened = CallSignalJournal(database.builder)
+            reopened.submitted(source.id, "engine")
+            reopened.closed(CONVERSATION.value, CONVERSATION.domain, 4, "engine")
+            assertEquals(listOf(source.id), reopened.signals().map { it.id })
+            reopened.append(start("answer").copy(
+                senderId = SELF, senderClientId = "laptop", time = CALL_TIME + 1.seconds,
+                payload = """{"version":"3.0","type":"SETUP","resp":true,"sessid":"laptop","sdp":"v=0"}""",
+            ))
+            reopened.flushMissedCalls(SELF)
+            assertNull(database.builder.messageDAO.getMessageById("missed-call:deferred", CONVERSATION))
+        }
+    }
+
+    @Test
+    fun failedDeferredWriteRetainsOutcomeForRetryAfterReopening() = runTest {
+        withJournal { journal, database ->
+            database.builder.conversationDAO.insertConversation(conversation())
+            val unknown = QualifiedIDEntity("unknown", "example.com")
+            val source = journal.append(start("retry-deferred").copy(senderId = unknown))
+            journal.deferMissedCall(source.missedCallSource())
+            assertFails { journal.flushMissedCalls(SELF) }
+            assertNull(database.builder.messageDAO.getMessageById("missed-call:retry-deferred", CONVERSATION))
+            database.builder.userDAO.insertOrIgnoreIncompleteUsers(listOf(unknown))
+            CallSignalJournal(database.builder).flushMissedCalls(SELF)
+            val stored = assertNotNull(database.builder.messageDAO.getMessageById("missed-call:retry-deferred", CONVERSATION))
+            CallSignalJournal(database.builder).flushMissedCalls(SELF)
+            assertEquals(stored, database.builder.messageDAO.getMessageById("missed-call:retry-deferred", CONVERSATION))
+        }
+    }
+
+    @Test
     fun extensionCleanupOnlyRemovesEvaluatedSignalsOfTheCompletedSession() = runTest {
         withJournal { journal, _ ->
             val source = journal.append(start("old"))

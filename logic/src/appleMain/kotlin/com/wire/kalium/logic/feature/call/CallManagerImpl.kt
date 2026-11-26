@@ -196,6 +196,10 @@ internal class CallManagerImpl internal constructor(
     private var signalJournal: com.wire.kalium.logic.sync.receiving.CallSignalStore? = null
     private val signalGeneration = Uuid.random().toString()
     private var signalReplay: CallSignalReplay? = null
+
+    @kotlin.concurrent.Volatile
+    private var callHistorySyncLive = false
+
     private val callEffects = kotlinx.coroutines.channels.Channel<suspend () -> Unit>(kotlinx.coroutines.channels.Channel.UNLIMITED)
     init {
         scope.launch {
@@ -255,6 +259,13 @@ internal class CallManagerImpl internal constructor(
             throw cancelled
         } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
             callingLogger.e("$tagWithUserId: Unable to replay pending call signals", failure)
+        }
+    }
+
+    override suspend fun reportCallHistorySyncState(isLive: Boolean) {
+        callHistorySyncLive = isLive
+        if (isLive) callEffects.send {
+            if (callHistorySyncLive) signalJournal?.flushMissedCalls(selfUserId.toDao())
         }
     }
 
@@ -677,7 +688,7 @@ internal class CallManagerImpl internal constructor(
                 val source = journal.signals().incomingCallSource(
                     IncomingCallReference(conversation.toDao(), caller.toDao(), null, messageTime.toLong())
                 ) ?: return@trySend
-                journal.persistMissedCall(source.missedCallSource(), selfUserId.toDao())
+                journal.deferMissedCall(source.missedCallSource(), selfUserId.toDao()) { callHistorySyncLive }
             }
         }
 
@@ -901,7 +912,7 @@ internal class CallManagerImpl internal constructor(
                     conversationIdWithDomain.value,
                     conversationIdWithDomain.domain,
                     reason,
-                    handledBy = signalGeneration.takeIf { effectsCompleted && !callContinues },
+                    handledBy = signalGeneration.takeIf { effectsCompleted && !callContinues && callHistorySyncLive },
                     handledBeforeMillis = closedAt,
                 )
                 if (endedId != null) AppleCallTrace.record(
@@ -924,7 +935,7 @@ internal class CallManagerImpl internal constructor(
         }
         val source = presentation?.missedCallSource ?: journal.signals()
             .firstOrNull { it.id == presentation?.id }?.missedCallSource()
-        if (source != null) journal.persistMissedCall(source, selfUserId.toDao())
+        if (source != null) journal.deferMissedCall(source, selfUserId.toDao()) { callHistorySyncLive }
     }
 
     private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean = when {
@@ -1011,4 +1022,13 @@ internal class CallManagerImpl internal constructor(
         private const val TAG = "CallManager"
         private val DEFAULT_WAIT_UNTIL_CONNECTED_TIMEOUT = 15.seconds
     }
+}
+
+private suspend fun com.wire.kalium.logic.sync.receiving.CallSignalStore.deferMissedCall(
+    source: com.wire.kalium.logic.sync.receiving.MissedCallSource,
+    self: com.wire.kalium.persistence.dao.QualifiedIDEntity,
+    syncLive: () -> Boolean,
+) {
+    deferMissedCall(source)
+    if (syncLive()) flushMissedCalls(self)
 }

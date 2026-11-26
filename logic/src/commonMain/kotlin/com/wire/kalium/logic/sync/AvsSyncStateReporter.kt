@@ -43,6 +43,7 @@ internal class AvsSyncStateReporterImpl(
     override suspend fun execute() {
         logger.d("Starting to monitor")
         incrementalSyncRepository.incrementalSyncState.collectLatest {
+            if (it !is IncrementalSyncStatus.Live) callManager.value.reportCallHistorySyncState(false)
             when (it) {
                 is IncrementalSyncStatus.FetchingPendingEvents -> {
                     logger.d("Incremental sync started - Reporting to AVS that the app is processing notifications")
@@ -56,6 +57,7 @@ internal class AvsSyncStateReporterImpl(
                     callManager.value.reportProcessNotifications(false)
                 }
             }
+            if (it is IncrementalSyncStatus.Live) callManager.value.reportCallHistorySyncState(true)
         }
     }
 }

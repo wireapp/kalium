@@ -38,7 +38,7 @@ internal suspend fun evaluateCallingEvents(
     if (events.isEmpty()) return emptyList()
     currentCoroutineContext().ensureActive()
     val signalJournal = CallSignalJournal(database)
-    val journal = signalJournal.signals()
+    val journal = signalJournal.historySignals()
     val messageIds = events.map { it.messageId }.toSet()
     journal.filter { it.messageId in messageIds }.forEach {
         AppleCallTrace.record(CallTraceEvent.DURABLE_READY, CallTraceContext(signal = it.id))
@@ -207,7 +207,7 @@ internal suspend fun evaluateCallingEvents(
         )
     }
     // Finish the complete batch first: a close and missed callback may refer to the same start.
-    val evaluatedIds = journal.filter { it.messageId in messageIds }.map { it.id }.toSet()
+    val evaluatedIds = journal.map { it.id }.toSet()
     completed.forEach { source -> signalJournal.completeNotification(source, evaluatedIds) }
     return mappedResults
 }
