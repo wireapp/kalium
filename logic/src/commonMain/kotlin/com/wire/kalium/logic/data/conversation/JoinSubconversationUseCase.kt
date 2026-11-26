@@ -57,90 +57,102 @@ internal class JoinSubconversationUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: ConversationId,
         subconversationId: SubconversationId
-    ): Either<CoreFailure, Unit> = joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
+    ): Either<CoreFailure, Unit> =
+        joinSubconversation(conversationId, subconversationId).flatMapLeft { failure ->
+            if (failure.isStaleMessage()) {
+                kaliumLogger.w("Epoch out of date for conversation $conversationId, re-fetching and re-trying")
+                joinSubconversation(conversationId, subconversationId)
+            } else {
+                Either.Left(failure)
+            }
+        }
 
     /**
-     * Runs the requests the join needs before its native transaction. That transaction cannot be cancelled on Apple, so
-     * a request waiting in it on a slow network kept a call that had already ended holding its account.
+     * Every request runs before the MLS transaction. That transaction cannot be cancelled on Apple, so a request
+     * waiting in it on a slow network kept a call that had already ended holding its account.
      */
-    private suspend fun joinOrEstablishSubconversation(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ): Either<CoreFailure, Unit> = wrapApiRequest {
-        conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
-    }.flatMap { response ->
-        val subconversationDetails = response.toModel()
-        fetchGroupInfoToJoin(subconversationDetails).flatMap { groupInfo ->
-            transactionProvider.mlsTransaction("JoinSubconversation") { mlsContext ->
-                joinOrEstablish(mlsContext, subconversationDetails, groupInfo).onSuccess {
-                    subconversationRepository.insertSubconversation(
-                        conversationId,
-                        subconversationId,
-                        subconversationDetails.groupId
-                    )
-                }
-            }
-        }
-    }
-
-    /** The group info of a subconversation to join, or null to establish it anew after deleting a stale one. */
-    private suspend fun fetchGroupInfoToJoin(subconversationDetails: SubConversation): Either<CoreFailure, ByteArray?> = when {
-        subconversationDetails.epoch <= INITIAL_EPOCH -> Either.Right(null)
-        subconversationDetails.timeElapsedSinceLastEpochChange().inWholeHours > STALE_EPOCH_DURATION_IN_HOURS ->
-            wrapApiRequest {
-                conversationApi.deleteSubconversation(
-                    subconversationDetails.parentId.toApi(),
-                    subconversationDetails.id.toApi(),
-                    SubconversationDeleteRequest(subconversationDetails.epoch, subconversationDetails.groupId.value)
-                )
-            }.map { null }
-
-        else -> wrapApiRequest {
-            conversationApi.fetchSubconversationGroupInfo(subconversationDetails.parentId.toApi(), subconversationDetails.id.toApi())
-        }
-    }
-
-    private suspend fun joinOrEstablish(
-        mlsContext: MlsCoreCryptoContext,
-        subconversationDetails: SubConversation,
-        groupInfo: ByteArray?
-    ): Either<CoreFailure, Unit> = if (groupInfo != null) {
-        mlsConversationRepository.joinGroupByExternalCommit(mlsContext, subconversationDetails.groupId, groupInfo)
-            .flatMapLeft {
-                if (MLSMessageFailureHandler.handleFailure(it) is MLSMessageFailureResolution.Ignore) {
-                    Either.Right(Unit)
-                } else {
-                    Either.Left(it)
-                }
-            }
-    } else {
-        mlsConversationRepository.establishMLSSubConversationGroup(
-            mlsContext,
-            subconversationDetails.groupId,
-            subconversationDetails.parentId
-        )
-    }
-
-    private suspend fun joinOrEstablishSubconversationAndRetry(
+    private suspend fun joinSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): Either<CoreFailure, Unit> =
-        joinOrEstablishSubconversation(conversationId, subconversationId)
-            .flatMapLeft { failure ->
-                if (failure is MLSFailure.MessageRejected && failure.cause is NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
-                    kaliumLogger.w("Epoch out of date for conversation $conversationId, re-fetching and re-trying")
-                    joinOrEstablishSubconversation(conversationId, subconversationId)
-                } else {
-                    Either.Left(failure)
+        fetchSubconversation(conversationId, subconversationId).flatMap { subconversation ->
+            prepareJoin(subconversation).flatMap { joinPlan ->
+                transactionProvider.mlsTransaction("JoinSubconversation") { mlsContext ->
+                    executeJoin(mlsContext, subconversation, joinPlan).onSuccess {
+                        subconversationRepository.insertSubconversation(conversationId, subconversationId, subconversation.groupId)
+                    }
                 }
             }
+        }
+
+    private suspend fun fetchSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): Either<CoreFailure, SubConversation> = wrapApiRequest {
+        conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
+    }.map { it.toModel() }
+
+    /** Decides how to enter the subconversation and runs the request that decision needs. */
+    private suspend fun prepareJoin(subconversation: SubConversation): Either<CoreFailure, JoinPlan> = when {
+        subconversation.epoch <= INITIAL_EPOCH -> Either.Right(JoinPlan.Establish)
+        subconversation.hasStaleEpoch() -> deleteSubconversation(subconversation).map { JoinPlan.Establish }
+        else -> fetchGroupInfo(subconversation).map { JoinPlan.JoinByExternalCommit(it) }
+    }
+
+    private suspend fun deleteSubconversation(subconversation: SubConversation): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.deleteSubconversation(
+                subconversation.parentId.toApi(),
+                subconversation.id.toApi(),
+                SubconversationDeleteRequest(subconversation.epoch, subconversation.groupId.value)
+            )
+        }
+
+    private suspend fun fetchGroupInfo(subconversation: SubConversation): Either<CoreFailure, ByteArray> =
+        wrapApiRequest {
+            conversationApi.fetchSubconversationGroupInfo(subconversation.parentId.toApi(), subconversation.id.toApi())
+        }
+
+    private suspend fun executeJoin(
+        mlsContext: MlsCoreCryptoContext,
+        subconversation: SubConversation,
+        joinPlan: JoinPlan
+    ): Either<CoreFailure, Unit> = when (joinPlan) {
+        JoinPlan.Establish -> mlsConversationRepository.establishMLSSubConversationGroup(
+            mlsContext,
+            subconversation.groupId,
+            subconversation.parentId
+        )
+
+        is JoinPlan.JoinByExternalCommit ->
+            mlsConversationRepository.joinGroupByExternalCommit(mlsContext, subconversation.groupId, joinPlan.groupInfo)
+                .flatMapLeft { failure ->
+                    if (MLSMessageFailureHandler.handleFailure(failure) is MLSMessageFailureResolution.Ignore) {
+                        Either.Right(Unit)
+                    } else {
+                        Either.Left(failure)
+                    }
+                }
+    }
 
     companion object {
         const val INITIAL_EPOCH = 0UL
         const val STALE_EPOCH_DURATION_IN_HOURS = 24
     }
-
 }
+
+/** How to enter a subconversation once the requests it needs have completed. */
+private sealed interface JoinPlan {
+    /** The subconversation has no group yet, or its stale one was just deleted. */
+    data object Establish : JoinPlan
+    class JoinByExternalCommit(val groupInfo: ByteArray) : JoinPlan
+}
+
+private fun CoreFailure.isStaleMessage(): Boolean =
+    this is MLSFailure.MessageRejected && cause is NetworkFailure.MlsMessageRejectedFailure.StaleMessage
+
+private fun SubConversation.hasStaleEpoch(): Boolean =
+    timeElapsedSinceLastEpochChange().inWholeHours > JoinSubconversationUseCaseImpl.STALE_EPOCH_DURATION_IN_HOURS
 
 private fun Instant.timeElapsedUntilNow(): Duration =
     Clock.System.now().minus(this)
