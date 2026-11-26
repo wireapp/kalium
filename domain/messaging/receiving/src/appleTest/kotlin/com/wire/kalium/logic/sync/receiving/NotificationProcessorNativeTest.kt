@@ -3424,8 +3424,12 @@ class NotificationProcessorNativeTest {
                 val missedId = fixture.receivedCalls.single().handoffId
                 assertNotNull(missedId)
                 assertIs<Either.Right<*>>(fixture.receive(listOf(start, end), end.id))
-                assertEquals(missedId, fixture.receivedCalls.single().handoffId)
-                assertFalse(fixture.receivedCalls.single().shouldNotify)
+                assertTrue(fixture.receivedCalls.isEmpty()) // Terminal signals were consumed after persisting history.
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(CallSignalJournal(runtime.database).signals().isEmpty())
+                    val missed = assertNotNull(runtime.database.messageDAO.getMessageById("missed-call:start", CONVERSATION_ID))
+                    assertEquals(MessageEntityContent.MissedCall, missed.content)
+                })
                 fixture.verifyStoredAndNext(next, "first", listOf("first"))
             }
         }

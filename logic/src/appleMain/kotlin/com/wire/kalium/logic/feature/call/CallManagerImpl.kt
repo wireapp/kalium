@@ -72,6 +72,8 @@ import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedC
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.sync.receiving.missedCallSource
+import com.wire.kalium.logic.sync.receiving.incomingCallSource
 import com.wire.kalium.logic.sync.receiving.IncomingCallReference
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.ServerTimeHandlerImpl
@@ -194,6 +196,10 @@ internal class CallManagerImpl internal constructor(
     private var signalJournal: com.wire.kalium.logic.sync.receiving.CallSignalStore? = null
     private val signalGeneration = Uuid.random().toString()
     private var signalReplay: CallSignalReplay? = null
+
+    @kotlin.concurrent.Volatile
+    private var callHistorySyncLive = false
+
     private val callEffects = kotlinx.coroutines.channels.Channel<suspend () -> Unit>(kotlinx.coroutines.channels.Channel.UNLIMITED)
     init {
         scope.launch {
@@ -253,6 +259,13 @@ internal class CallManagerImpl internal constructor(
             throw cancelled
         } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
             callingLogger.e("$tagWithUserId: Unable to replay pending call signals", failure)
+        }
+    }
+
+    override suspend fun reportCallHistorySyncState(isLive: Boolean) {
+        callHistorySyncLive = isLive
+        if (isLive) callEffects.send {
+            if (callHistorySyncLive) signalJournal?.flushMissedCalls(selfUserId.toDao())
         }
     }
 
@@ -667,7 +680,16 @@ internal class CallManagerImpl internal constructor(
         }
 
         override fun onMissedCall(conversationId: String?, messageTime: UInt, userId: String?, video: Boolean) {
-            callingLogger.i("[OnMissedCall/iOS] - conversationId: ${conversationId?.obfuscateId()} | userId: ${userId?.obfuscateId()}")
+            if (conversationId == null || userId == null) return
+            callEffects.trySend {
+                val journal = signalJournal ?: return@trySend
+                val conversation = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+                val caller = qualifiedIdMapper.fromStringToQualifiedID(userId)
+                val source = journal.signals().incomingCallSource(
+                    IncomingCallReference(conversation.toDao(), caller.toDao(), null, messageTime.toLong())
+                ) ?: return@trySend
+                journal.deferMissedCall(source.missedCallSource(), selfUserId.toDao()) { callHistorySyncLive }
+            }
         }
 
         override fun onAnsweredCall(conversationId: String?) {
@@ -846,6 +868,7 @@ internal class CallManagerImpl internal constructor(
         AppleCallTrace.record(CallTraceEvent.AVS_CLOSED, closeContext, code = reason)
         callEffects.trySend {
             var callContinues = false
+            var effectsCompleted = false
             try {
                 val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
                 val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
@@ -860,7 +883,7 @@ internal class CallManagerImpl internal constructor(
                     avsReason != CallClosedReason.ANSWERED_ELSEWHERE &&
                     shouldPersistMissedCall(callMetadata, callStatus)
                 ) {
-                    callRepository.persistMissedCall(conversationIdWithDomain)
+                    persistMissedCall(conversationIdWithDomain)
                 }
 
                 val shouldUpdateCallStatus = if (callMetadata?.conversationType == Conversation.Type.OneOnOne) {
@@ -881,14 +904,15 @@ internal class CallManagerImpl internal constructor(
                     callRepository.leaveMlsConference(conversationIdWithDomain)
                 }
                 createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
+                effectsCompleted = true
             } finally {
                 // A group call that continues keeps its signals, so Join comes back after a restart.
-                // An ended call forgets them, so a restart cannot replay it and record it again.
+                // Stop presentation even on failure, but keep signals until all effects have succeeded.
                 val endedId = signalJournal?.closed(
                     conversationIdWithDomain.value,
                     conversationIdWithDomain.domain,
                     reason,
-                    handledBy = signalGeneration.takeUnless { callContinues },
+                    handledBy = signalGeneration.takeIf { effectsCompleted && !callContinues && callHistorySyncLive },
                     handledBeforeMillis = closedAt,
                 )
                 if (endedId != null) AppleCallTrace.record(
@@ -898,6 +922,20 @@ internal class CallManagerImpl internal constructor(
                 )
             }
         }
+    }
+
+    private suspend fun persistMissedCall(conversation: ConversationId) {
+        val journal = signalJournal
+        if (journal == null) {
+            callRepository.persistMissedCall(conversation)
+            return
+        }
+        val presentation = journal.presentations().lastOrNull {
+            it.conversationValue == conversation.value && it.conversationDomain == conversation.domain
+        }
+        val source = presentation?.missedCallSource ?: journal.signals()
+            .firstOrNull { it.id == presentation?.id }?.missedCallSource()
+        if (source != null) journal.deferMissedCall(source, selfUserId.toDao()) { callHistorySyncLive }
     }
 
     private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean = when {
@@ -984,4 +1022,13 @@ internal class CallManagerImpl internal constructor(
         private const val TAG = "CallManager"
         private val DEFAULT_WAIT_UNTIL_CONNECTED_TIMEOUT = 15.seconds
     }
+}
+
+private suspend fun com.wire.kalium.logic.sync.receiving.CallSignalStore.deferMissedCall(
+    source: com.wire.kalium.logic.sync.receiving.MissedCallSource,
+    self: com.wire.kalium.persistence.dao.QualifiedIDEntity,
+    syncLive: () -> Boolean,
+) {
+    deferMissedCall(source)
+    if (syncLive()) flushMissedCalls(self)
 }

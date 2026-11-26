@@ -33,6 +33,9 @@ import com.wire.kalium.logic.data.message.MessageContent
 internal interface CallManager {
     fun attachSignalJournal(journal: com.wire.kalium.logic.sync.receiving.CallSignalStore) = Unit
     suspend fun replayPendingSignals() = Unit
+
+    /** Apple history waits for Live; Pending/Failed are not a completed catch-up. */
+    suspend fun reportCallHistorySyncState(isLive: Boolean) = Unit
     suspend fun replayIncomingCallSignals(callId: String) = Unit
 
     suspend fun onCallingMessageReceived(
