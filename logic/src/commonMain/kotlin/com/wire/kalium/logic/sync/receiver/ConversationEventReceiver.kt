@@ -48,6 +48,7 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.network.exceptions.isRetryableServerResponse
+import kotlin.time.Clock
 
 internal interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
     suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> = Either.Right(Unit)
@@ -125,7 +126,10 @@ internal class ConversationEventReceiverImpl(
                 val retryable = failure is NetworkFailure.NoNetworkConnection || failure is NetworkFailure.FederatedBackendFailure ||
                     (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException.isRetryableServerResponse())
                 val propagate = transactionContext is DurableMLSReceiveContext || retryable
-                if (failure == null || propagate) result else Either.Right(Unit).also { rejoinQueue.request(event.conversationId) }
+                // A Welcome carries no message time.
+                if (failure == null || propagate) result else Either.Right(Unit).also {
+                    rejoinQueue.request(event.conversationId, Clock.System.now())
+                }
             }
 
             is Event.Conversation.RenamedConversation -> {

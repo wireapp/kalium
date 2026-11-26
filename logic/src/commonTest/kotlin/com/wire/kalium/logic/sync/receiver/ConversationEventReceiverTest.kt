@@ -260,7 +260,7 @@ class ConversationEventReceiverTest {
 
             receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
                 .shouldFail { assertEquals(networkFailure, it) }
-            verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
+            verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any(), any()) }
         }
     }
 
@@ -273,7 +273,7 @@ class ConversationEventReceiverTest {
 
         receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId, any()) }
     }
 
     @Test
