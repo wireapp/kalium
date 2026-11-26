@@ -87,13 +87,9 @@ class MessageTimelineSession internal constructor(
     }
 
     // Keep these for the whole generation, including pages retained before the last load.
-    // Custom keys respect DbInvalidationController batching; table keys also cover child-only writes.
+    // Table keys like Message or User fire for every conversation, so sync writes elsewhere would keep cancelling loads.
     private val dependencies = arrayOf(
-        "message_list_$conversationId", "message_list", "Message", "MessageTextContent", "MessageAssetContent",
-        "MessageRestrictedAssetContent", "MessageUnknownContent", "MessageSystemContent", "MessageConversationLocationContent",
-        "MessageMention", "MessageLinkPreview", "MessageRecipientFailure", "ButtonContent", "PollContent", "PollVoteContent",
-        "Reaction", "Receipt",
-        "MessageAttachments", "CellFile", "User", "Client", "SelfUser",
+        "message_list_$conversationId", "message_list", "message_sender_profile", "CellFile", "Client", "SelfUser",
     )
 
     init {

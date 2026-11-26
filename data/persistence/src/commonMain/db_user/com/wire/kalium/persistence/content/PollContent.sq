@@ -29,11 +29,15 @@ CREATE TABLE PollVoteContent (
 );
 
 insertPoll:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey PollContent
 INSERT OR IGNORE INTO PollContent(message_id, conversation_id, question, options_json, allow_multiple_answers)
 VALUES(:message_id, :conversation_id, :question, :options_json, :allow_multiple_answers);
 
 -- Votes can arrive out of order, so an older vote never replaces a newer one.
 upsertVote:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey PollVoteContent
 INSERT INTO PollVoteContent(poll_message_id, conversation_id, voter_user_id, selected_option_ids_json, creation_date)
 VALUES(:poll_message_id, :conversation_id, :voter_user_id, :selected_option_ids_json, :creation_date)
 ON CONFLICT(conversation_id, poll_message_id, voter_user_id) DO UPDATE SET
@@ -51,12 +55,16 @@ WHERE poll_message_id = :poll_message_id AND conversation_id = :conversation_id 
 
 -- Rolls back a vote that failed to send, unless a newer vote already replaced it.
 restoreVote:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey PollVoteContent
 UPDATE PollVoteContent
 SET selected_option_ids_json = :selected_option_ids_json, creation_date = :creation_date
 WHERE poll_message_id = :poll_message_id AND conversation_id = :conversation_id AND voter_user_id = :voter_user_id
     AND creation_date = :failed_vote_date;
 
 deleteVote:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey PollVoteContent
 DELETE FROM PollVoteContent
 WHERE poll_message_id = :poll_message_id AND conversation_id = :conversation_id AND voter_user_id = :voter_user_id
     AND creation_date = :failed_vote_date;
