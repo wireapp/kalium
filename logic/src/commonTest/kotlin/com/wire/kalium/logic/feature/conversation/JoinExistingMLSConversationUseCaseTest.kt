@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestTeam
@@ -193,6 +194,58 @@ class JoinExistingMLSConversationUseCaseTest {
 
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+            }
+        }
+
+    @Test
+    fun givenOneOnOneHostedOnAnotherBackendWithZeroEpochAndNoKeys_whenInvokingUseCase_ThenDoNotEstablishMlsGroup() =
+        runTest {
+            val remoteOneOnOne = Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION.copy(
+                id = ConversationId("one-on-one", "other.domain")
+            )
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
+                .withGetConversationsByIdSuccessful(remoteOneOnOne)
+                .arrange()
+
+            joinExistingMLSConversationsUseCase(arrangement.transactionContext, remoteOneOnOne.id).shouldSucceed()
+
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+            }
+        }
+
+    @Test
+    fun givenOneOnOneHostedOnAnotherBackendWithZeroEpochAndKeys_whenInvokingUseCase_ThenEstablishWithTheseKeys() =
+        runTest {
+            val members = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID)
+            val remoteOneOnOne = Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION.copy(
+                id = ConversationId("one-on-one", "other.domain")
+            )
+            val hostingBackendKeys = MLSPublicKeys(removal = mapOf("ed25519" to "hosting-key"))
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
+                .withGetConversationsByIdSuccessful(remoteOneOnOne)
+                .withGetConversationMembersSuccessful(members)
+                .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
+                .arrange()
+
+            joinExistingMLSConversationsUseCase(
+                arrangement.transactionContext,
+                remoteOneOnOne.id,
+                hostingBackendKeys
+            ).shouldSucceed()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.mlsConversationRepository.establishMLSGroup(
+                    mlsContext = any(),
+                    groupID = Arrangement.GROUP_ID_ONE_ON_ONE,
+                    members = members,
+                    publicKeys = hostingBackendKeys,
+                    allowSkippingUsersWithoutKeyPackages = false
+                )
             }
         }
 
