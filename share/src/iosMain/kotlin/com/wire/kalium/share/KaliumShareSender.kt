@@ -93,6 +93,14 @@ public data class KaliumShareConversation(
     public val isGroup: Boolean,
     /** Whether the current destination supports files. */
     public val acceptsFiles: Boolean,
+    /** The other participant's profile photo for a one-on-one conversation. */
+    public val avatar: KaliumShareAvatar? = null,
+)
+
+public data class KaliumShareAvatar(
+    public val assetValue: String,
+    public val assetDomain: String,
+    public val cachedPath: String?,
 )
 
 /** [failureReason] is set, and the list empty, when the account could not be opened or its team enforces App Lock. */
@@ -592,7 +600,11 @@ internal fun SharePicker.toKalium() = if (appLock) {
 } else {
     KaliumShareConversations(
         conversations = conversations.map {
-            KaliumShareConversation(it.value, it.domain, it.name, it.isGroup, acceptsFiles = it.acceptsFiles)
+            KaliumShareConversation(
+                it.value, it.domain, it.name, it.isGroup,
+                acceptsFiles = it.acceptsFiles,
+                avatar = it.avatar?.let { avatar -> KaliumShareAvatar(avatar.value, avatar.domain, avatar.cachedPath) },
+            )
         },
         selfName = selfName,
         files = files?.let { KaliumShareFiles(it.allowedExtensions, it.fileSizeLimitBytes, it.imageSizeLimitBytes) },
