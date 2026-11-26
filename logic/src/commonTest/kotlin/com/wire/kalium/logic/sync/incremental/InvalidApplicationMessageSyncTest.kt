@@ -105,7 +105,7 @@ class InvalidApplicationMessageSyncTest {
         val handler = NewMessageEventHandlerImpl(
             ProteusMessageUnpackerImpl(TestUser.SELF.id, mapper),
             MLSMessageUnpackerImpl(conversationRepository, mock(), mlsRepository, mock(), TestUser.SELF.id, mapper),
-            applications, mock(), { _, _ -> }, { _, _ -> }, TestUser.SELF.id, mock(), mock(),
+            applications, mock(), { _, _ -> }, { _, _ -> }, TestUser.SELF.id, mock(), mock(), mock(),
         )
         val eventProcessor = mock<EventProcessor>()
         every { eventProcessor.disableEventProcessing } returns false

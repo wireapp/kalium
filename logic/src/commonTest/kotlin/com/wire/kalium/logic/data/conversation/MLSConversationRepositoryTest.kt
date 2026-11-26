@@ -102,7 +102,9 @@ import kotlinx.coroutines.yield
 import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 class MLSConversationRepositoryTest {
@@ -1395,6 +1397,39 @@ class MLSConversationRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsContext.updateKeyingMaterial(any()) } // No retry should happen
     }
 
+    @Test
+    fun givenGroupWithSelfBackendKey_whenCheckingExternalSender_thenItIsNotWrong() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withKeyForCipherSuite()
+            .withExternalSender(Arrangement.CRYPTO_MLS_PUBLIC_KEY)
+            .arrange()
+
+        mlsConversationRepository.hasWrongExternalSender(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.CIPHER_SUITE)
+            .shouldSucceed { assertFalse(it) }
+    }
+
+    @Test
+    fun givenGroupWithOtherBackendKey_whenCheckingExternalSender_thenItIsWrong() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withKeyForCipherSuite()
+            .withExternalSender(OTHER_BACKEND_KEY)
+            .arrange()
+
+        mlsConversationRepository.hasWrongExternalSender(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.CIPHER_SUITE)
+            .shouldSucceed { assertTrue(it) }
+    }
+
+    @Test
+    fun givenGroupWithOtherBackendKeyAndUnknownCipherSuite_whenCheckingExternalSender_thenItIsWrong() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetPublicKeysSuccessful()
+            .withExternalSender(OTHER_BACKEND_KEY)
+            .arrange()
+
+        mlsConversationRepository.hasWrongExternalSender(arrangement.mlsContext, Arrangement.GROUP_ID, CipherSuite.UNKNOWN(0))
+            .shouldSucceed { assertTrue(it) }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val keyPackageRepository: KeyPackageRepository = mock(mode = MockMode.autoUnit)
@@ -1467,6 +1502,10 @@ class MLSConversationRepositoryTest {
             every {
                 mlsContext.getDefaultCipherSuite()
             } returns CIPHER_SUITE.toCrypto()
+        }
+
+        fun withExternalSender(key: ByteArray) = apply {
+            everySuspend { mlsContext.getExternalSenders(any()) } returns ExternalSenderKey(key)
         }
 
         fun withGetExternalSenderKeySuccessful() = apply {
@@ -1891,5 +1930,9 @@ class MLSConversationRepositoryTest {
                 )
             }
         }
+    }
+
+    private companion object {
+        val OTHER_BACKEND_KEY = "otherBackendKey".encodeToByteArray()
     }
 }

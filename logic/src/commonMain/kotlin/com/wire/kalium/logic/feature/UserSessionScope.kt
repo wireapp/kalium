@@ -104,6 +104,7 @@ import com.wire.kalium.logic.data.conversation.FetchConversationsUseCaseImpl
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.HandleWrongExternalSenderUseCaseImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCaseImpl
@@ -2132,6 +2133,14 @@ public class UserSessionScope internal constructor(
             userId,
             staleEpochVerifier,
             resetMlsConversation,
+            HandleWrongExternalSenderUseCaseImpl(
+                selfUserId = userId,
+                userConfig = userConfigRepository,
+                kaliumConfigs = kaliumConfigs,
+                conversationRepository = conversationRepository,
+                mlsConversationRepository = mlsConversationRepository,
+                resetMLSConversation = resetMlsConversation,
+            ),
             receiveRecovery = if (enableDurableMLSReceiveRecovery) {
                 { context, event, wrongEpoch -> receiveRecovery()?.handle(context, event, wrongEpoch) == true }
             } else null,
