@@ -38,6 +38,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.HandleWrongExternalSenderUseCase
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -79,6 +80,7 @@ internal class NewMessageEventHandlerImpl(
     private val selfUserId: UserId,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val resetMLSConversation: ResetMLSConversationUseCase,
+    private val handleWrongExternalSender: HandleWrongExternalSenderUseCase,
     private val receiveRecovery: MLSReceiveRecoveryHandler? = null,
     private val bufferedMLSMessageRecoveryTracker: BufferedMLSMessageRecoveryTracker = BufferedMLSMessageRecoveryTracker(),
 ) : NewMessageEventHandler {
@@ -182,8 +184,15 @@ internal class NewMessageEventHandlerImpl(
                     }
 
                     is MLSMessageFailureResolution.InformUser -> {
-                        eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
-                        persistMLSDecryptionFailure(event)
+                        if (failure.isInvalidSignature() && event.subconversationId == null &&
+                            handleWrongExternalSender(transactionContext, event.conversationId)
+                        ) {
+                            // A proposal of the hosting backend, not a message the user missed.
+                            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "WRONG_EXTERNAL_SENDER")
+                        } else {
+                            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
+                            persistMLSDecryptionFailure(event)
+                        }
                         Either.Right(Unit)
                     }
 
@@ -226,6 +235,8 @@ internal class NewMessageEventHandlerImpl(
         // Legacy callers performed recovery attempts without propagating their Either failures.
         return if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
     }
+
+    private fun CoreFailure.isInvalidSignature() = this is MLSFailure.Other && message.startsWith(INVALID_SIGNATURE)
 
     private suspend fun persistMLSDecryptionFailure(event: Event.Conversation.NewMLSMessage) {
         // Messages from subconversations should not send a system message.
@@ -336,3 +347,8 @@ internal class NewMessageEventHandlerImpl(
         applicationMessageHandler.flushPendingSideEffects()
     }
 }
+
+// openmls' message for a message whose signature doesn't verify against its sender's key.
+// TODO(WPB-30385): match a typed core-crypto error once available. If this text changes, we fall back to the
+//  FailedDecryption row without repair.
+private const val INVALID_SIGNATURE = "The message's signature is invalid"

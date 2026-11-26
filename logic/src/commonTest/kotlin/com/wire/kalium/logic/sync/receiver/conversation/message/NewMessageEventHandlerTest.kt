@@ -40,6 +40,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.HandleWrongExternalSenderUseCase
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -1013,6 +1014,66 @@ class NewMessageEventHandlerTest {
         }
     }
 
+    @Test
+    fun givenInvalidSignatureFromWrongExternalSender_whenHandling_thenShouldNotPersistDecryptionError() = runTest {
+        val event = TestEvent.newMLSMessageEvent(dateTime = DateTimeUtil.currentInstant())
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other(INVALID_SIGNATURE_MESSAGE)))
+            .withHandleWrongExternalSenderReturning(true)
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.handleWrongExternalSender(arrangement.transactionContext, event.conversationId)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenInvalidSignatureWithRightExternalSender_whenHandling_thenShouldPersistDecryptionError() = runTest {
+        val event = TestEvent.newMLSMessageEvent(dateTime = DateTimeUtil.currentInstant())
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other(INVALID_SIGNATURE_MESSAGE)))
+            .withHandleWrongExternalSenderReturning(false)
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenOtherFailure_whenHandling_thenShouldNotCheckExternalSender() = runTest {
+        val event = TestEvent.newMLSMessageEvent(dateTime = DateTimeUtil.currentInstant())
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other("Some other failure")))
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.handleWrongExternalSender(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenInvalidSignatureInSubconversation_whenHandling_thenShouldNotCheckExternalSender() = runTest {
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), SubconversationId("subconversation-id"))
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other(INVALID_SIGNATURE_MESSAGE)))
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.handleWrongExternalSender(any(), any()) }
+    }
+
     private class Arrangement(private val recovery: MLSReceiveRecoveryHandler? = null): CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val proteusMessageUnpacker = mock<ProteusMessageUnpacker>()
         val mlsMessageUnpacker = mock<MLSMessageUnpacker>()
@@ -1022,6 +1083,7 @@ class NewMessageEventHandlerTest {
         val confirmationDeliveryHandler = mock<ConfirmationDeliveryHandler>(mode = MockMode.autoUnit)
         val legalHoldHandler = mock<LegalHoldHandler>()
         val resetMlsConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val handleWrongExternalSender = mock<HandleWrongExternalSenderUseCase>()
 
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
             proteusMessageUnpacker,
@@ -1040,6 +1102,7 @@ class NewMessageEventHandlerTest {
             SELF_USER_ID,
             staleEpochVerifier,
             resetMlsConversation,
+            handleWrongExternalSender,
             recovery,
         )
 
@@ -1086,6 +1149,10 @@ class NewMessageEventHandlerTest {
             }.returns(result)
         }
 
+        suspend fun withHandleWrongExternalSenderReturning(result: Boolean) = apply {
+            everySuspend { handleWrongExternalSender(any(), any()) } returns result
+        }
+
         suspend fun withResetConversationReturning(result: ResetMLSConversationResult) = apply {
             everySuspend {
                 resetMlsConversation(any(), any())
@@ -1100,6 +1167,7 @@ class NewMessageEventHandlerTest {
 
     private companion object {
         val SELF_USER_ID = UserId("selfUserId", "selfDomain")
+        const val INVALID_SIGNATURE_MESSAGE = "The message's signature is invalid."
         val signalingMessage = MessageUnpackResult.ApplicationMessage(
             conversationId = ConversationId("conversationID", "domain"),
             instant = Instant.DISTANT_PAST,

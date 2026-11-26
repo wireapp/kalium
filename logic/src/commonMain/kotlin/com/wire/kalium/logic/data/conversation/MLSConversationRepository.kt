@@ -159,6 +159,16 @@ internal interface MLSConversationRepository : MLSMemberAdder {
 
     suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<MLSFailure, Boolean>
 
+    /**
+     * Whether the external sender of [groupID], a group hosted on the self backend, is not the self backend's removal
+     * key, so every proposal the backend sends to the group fails its signature check.
+     */
+    suspend fun hasWrongExternalSender(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Boolean>
+
     suspend fun getLocalGroupEpoch(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID
@@ -388,6 +398,25 @@ internal class MLSConversationDataSource(
     ): Either<MLSFailure, Boolean> = wrapMLSRequest {
         mlsContext.conversationExists(idMapper.toCryptoModel(groupID))
     }
+
+    override suspend fun hasWrongExternalSender(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Boolean> = wrapMLSRequest {
+        mlsContext.getExternalSenders(idMapper.toCryptoModel(groupID)).value
+    }.flatMap { externalSender ->
+        selfBackendRemovalKeys(cipherSuite).map { selfBackendKeys -> selfBackendKeys.none { it.contentEquals(externalSender) } }
+    }
+
+    // The stored cipher suite stays unknown when another client established the group (e.g. after a reset) until the
+    // conversation is fetched again, so it is compared with all the self backend's removal keys.
+    private suspend fun selfBackendRemovalKeys(cipherSuite: CipherSuite): Either<CoreFailure, List<ByteArray>> =
+        if (cipherSuite is CipherSuite.UNKNOWN) {
+            mlsPublicKeysRepository.getKeys().map { keys -> keys.removal.orEmpty().values.map { Base64.decode(it) } }
+        } else {
+            mlsPublicKeysRepository.getKeyForCipherSuite(cipherSuite).map { listOf(it) }
+        }
 
     override suspend fun getLocalGroupEpoch(
         mlsContext: MlsCoreCryptoContext,
