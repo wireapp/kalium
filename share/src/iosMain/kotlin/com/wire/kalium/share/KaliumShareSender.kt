@@ -601,7 +601,10 @@ internal fun SharePicker.toKalium() = if (appLock) {
     KaliumShareConversations(
         conversations = conversations.map {
             KaliumShareConversation(
-                it.value, it.domain, it.name, it.isGroup,
+                it.value,
+                it.domain,
+                it.name,
+                it.isGroup,
                 acceptsFiles = it.acceptsFiles,
                 avatar = it.avatar?.let { avatar -> KaliumShareAvatar(avatar.value, avatar.domain, avatar.cachedPath) },
             )
