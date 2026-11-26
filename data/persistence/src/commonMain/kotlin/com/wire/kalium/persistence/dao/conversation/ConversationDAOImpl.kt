@@ -482,10 +482,6 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.setDeletedLocally(deletedLocally = deletedLocally, qualifiedId = qualifiedID)
         }
 
-    override suspend fun getLocallyDeletedConversationIds(): List<QualifiedIDEntity> = withContext(readDispatcher.value) {
-        conversationQueries.selectLocallyDeletedConversationIds().awaitAsList()
-    }
-
     override suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,

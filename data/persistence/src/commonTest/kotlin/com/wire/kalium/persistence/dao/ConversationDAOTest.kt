@@ -112,16 +112,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLocallyDeletedConversations_whenFetchingTheirIds_thenOnlyDeletedIdsAreReturned() = runTest(dispatcher) {
-        conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
-        conversationDAO.setConversationDeletedLocally(conversationEntity2.id, true)
-
-        val result = conversationDAO.getLocallyDeletedConversationIds()
-
-        assertEquals(listOf(conversationEntity2.id), result)
-    }
-
-    @Test
     fun givenConversationFlowPreviouslyObservedMissingValue_whenConversationInserted_thenGetConversationByIdShouldReadFreshValue() =
         runTest(dispatcher) {
             assertNull(conversationDAO.observeConversationById(conversationEntity1.id).first())
