@@ -163,7 +163,7 @@ class NewMessageEventHandlerTest {
         handler.handleNewMLSMessage(arrangement.transactionContext, event, EventDeliveryInfo(EventSource.PENDING)).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), event) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId, event.messageInstant) }
     }
 
     @Test
@@ -772,7 +772,7 @@ class NewMessageEventHandlerTest {
             )
         }
 
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(any(), any()) }
         verifySuspend(VerifyMode.not) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
     }
 
@@ -841,7 +841,7 @@ class NewMessageEventHandlerTest {
 
             handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
-            verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId, event.messageInstant) }
             verifySuspend(VerifyMode.not) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
             verifySuspend(VerifyMode.not) {
                 arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
@@ -862,7 +862,7 @@ class NewMessageEventHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.staleEpochVerifier.verifyEpoch(any(), event.conversationId, event.subconversationId, event.messageInstant)
         }
-        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any(), any()) }
     }
 
     @Test
@@ -876,7 +876,7 @@ class NewMessageEventHandlerTest {
 
         handler.handleNewMLSMessage(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
             .shouldFail { assertEquals(failure, it) }
-        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any(), any()) }
     }
 
     @Test
@@ -914,7 +914,7 @@ class NewMessageEventHandlerTest {
             )
         }
 
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(any(), any()) }
         verifySuspend(VerifyMode.not) {
             arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
         }
@@ -988,7 +988,7 @@ class NewMessageEventHandlerTest {
 
         handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             .shouldSucceed()
-        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any(), any()) }
     }
 
     @Test

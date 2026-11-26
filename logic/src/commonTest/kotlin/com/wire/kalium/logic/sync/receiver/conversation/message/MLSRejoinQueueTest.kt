@@ -32,6 +32,8 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Instant
 
 class MLSRejoinQueueTest {
 
@@ -39,27 +41,27 @@ class MLSRejoinQueueTest {
     fun givenQueuedGroups_whenRejoining_thenEachIsRejoinedOnceInItsOwnTransaction() = runTest {
         val arrangement = Arrangement().withVerifyEpoch(Either.Right(Unit))
 
-        arrangement.queue.request(FIRST)
-        arrangement.queue.request(FIRST)
-        arrangement.queue.request(SECOND)
+        arrangement.queue.request(FIRST, MONDAY)
+        arrangement.queue.request(FIRST, MONDAY + 1.days)
+        arrangement.queue.request(SECOND, MONDAY)
         arrangement.queue.rejoinQueued()
         arrangement.queue.rejoinQueued()
 
         verifySuspend(VerifyMode.exactly(2)) { arrangement.cryptoTransactionProvider.transaction<Unit>("rejoinStaleMLSGroup", any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.staleEpochVerifier.verifyEpoch(any(), FIRST, null, any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.staleEpochVerifier.verifyEpoch(any(), SECOND, null, any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.staleEpochVerifier.verifyEpoch(any(), FIRST, null, MONDAY) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.staleEpochVerifier.verifyEpoch(any(), SECOND, null, MONDAY) }
     }
 
     @Test
     fun givenRejoinFails_whenRejoining_thenItIsForgottenUntilRequestedAgain() = runTest {
         val arrangement = Arrangement().withVerifyEpoch(Either.Left(NetworkFailure.NoNetworkConnection(null)))
 
-        arrangement.queue.request(FIRST)
+        arrangement.queue.request(FIRST, MONDAY)
         arrangement.queue.rejoinQueued()
         arrangement.queue.rejoinQueued()
         verifySuspend(VerifyMode.exactly(1)) { arrangement.staleEpochVerifier.verifyEpoch(any(), FIRST, null, any()) }
 
-        arrangement.queue.request(FIRST)
+        arrangement.queue.request(FIRST, MONDAY)
         arrangement.queue.rejoinQueued()
         verifySuspend(VerifyMode.exactly(1)) { arrangement.staleEpochVerifier.verifyEpoch(any(), FIRST, null, any()) }
     }
@@ -77,5 +79,6 @@ class MLSRejoinQueueTest {
     private companion object {
         val FIRST = ConversationId("first", "domain")
         val SECOND = ConversationId("second", "domain")
+        val MONDAY = Instant.parse("2026-11-23T09:00:00Z")
     }
 }

@@ -246,7 +246,7 @@ internal class NewMessageEventHandlerImpl(
         eventLogger: EventProcessingLogger
     ): Either<CoreFailure, Unit> {
         bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
-        rejoinQueue.request(event.conversationId)
+        rejoinQueue.request(event.conversationId, event.messageInstant)
         eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "REJOIN_QUEUED")
         return Either.Right(Unit)
     }
@@ -282,7 +282,7 @@ internal class NewMessageEventHandlerImpl(
         if (shouldRecover && event.subconversationId == null && transactionContext !is DurableMLSReceiveContext) {
             // Like WrongEpoch: a main conversation rejoins after the batch, never inside its transaction.
             bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
-            rejoinQueue.request(event.conversationId)
+            rejoinQueue.request(event.conversationId, event.messageInstant)
             eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED_REJOIN_QUEUED")
         } else if (shouldRecover) {
             eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED_RECOVERY")

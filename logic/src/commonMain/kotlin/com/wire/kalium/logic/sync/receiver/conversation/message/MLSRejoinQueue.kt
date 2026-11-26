@@ -25,12 +25,11 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
-import kotlin.time.Clock
 import kotlin.time.Instant
 
 /** Rejoins stale or lost groups after the event batch. A failed rejoin is forgotten until the group's next message. */
 internal interface MLSRejoinQueue {
-    suspend fun request(conversationId: ConversationId)
+    suspend fun request(conversationId: ConversationId, messageInstant: Instant)
 
     suspend fun rejoinQueued()
 }
@@ -43,17 +42,17 @@ internal class MLSRejoinQueueImpl(
 
     private val queued = mutableMapOf<ConversationId, Instant>()
 
-    override suspend fun request(conversationId: ConversationId) {
-        queued.getOrPut(conversationId) { Clock.System.now() }
+    override suspend fun request(conversationId: ConversationId, messageInstant: Instant) {
+        queued.getOrPut(conversationId) { messageInstant }
     }
 
     override suspend fun rejoinQueued() {
         val requests = queued.toMap()
         queued.clear()
-        requests.forEach { (conversationId, requestedAt) ->
+        requests.forEach { (conversationId, messageInstant) ->
             withContext(NonCancellable) {
                 transactionProvider.transaction("rejoinStaleMLSGroup") { context ->
-                    staleEpochVerifier.verifyEpoch(context, conversationId, timestamp = requestedAt)
+                    staleEpochVerifier.verifyEpoch(context, conversationId, timestamp = messageInstant)
                 }
             }.onFailure { logger.w("Rejoin of ${conversationId.toLogString()} failed: $it") }
         }
