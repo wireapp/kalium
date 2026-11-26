@@ -228,7 +228,15 @@ class KaliumNSEPresentationTest {
             val received = ReceivedNotificationResult(
                 null, appWorkPending = work, stoppedReason = if (work == null) "QUEUE_END" else "${work}_REQUIRES_APP"
             )
-            val stopsQueue = work == NotificationAppWork.LEGAL_HOLD || work == NotificationAppWork.MLS_SUBCONVERSATION
+            val stopsQueue = when (work) {
+                NotificationAppWork.LEGAL_HOLD,
+                NotificationAppWork.MLS_SUBCONVERSATION,
+                NotificationAppWork.MLS_GROUP_MISMATCH -> true
+
+                NotificationAppWork.CALL_MODERATION,
+                NotificationAppWork.ACCOUNT_INVALIDATION,
+                null -> false
+            }
             val expected = stopsQueue && !targetProcessed
             assertEquals(
                 expected,

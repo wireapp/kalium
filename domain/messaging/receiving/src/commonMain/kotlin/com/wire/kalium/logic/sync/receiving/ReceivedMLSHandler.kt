@@ -35,6 +35,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlin.io.encoding.Base64
+import okio.Buffer
 import kotlin.time.Instant
 
 /** Per-notification native work. No timers, scopes or async epoch observers are created here. */
@@ -58,7 +59,11 @@ internal class ReceivedMLSHandler(
         val receiver = recovery ?: return null
         return if (receiver.wasProcessed(context, event)) emptyList() else {
             check(event.conversationId !in removed) { "Account no longer belongs to the MLS group" }
-            receiver.resume(context, event)?.let { recovered(context, event, it) }
+            when (val resumed = receiver.resume(context, event)) {
+                null -> null
+                MLSReceiveResume.Skipped -> emptyList()
+                is MLSReceiveResume.Joined -> recovered(context, event, resumed.result)
+            }
         }
     }
 
@@ -101,20 +106,39 @@ internal class ReceivedMLSHandler(
             removed += event.conversationId
             return emptyList()
         }
+        val message = Base64.decode(event.content)
+        val lostGroup = event.conversationId !in welcomed && !context.conversationExists(protocol.groupId)
+        // A Welcome can establish a newer group before the stored metadata names it.
+        // That payload is not lost, so it stays pending for the app instead of triggering a rejoin.
+        if (lostGroup && mlsMessageHeader(message)?.groupId?.contentEquals(Base64.decode(protocol.groupId)) == false) {
+            throw NotificationAppHandoff(NotificationAppWork.MLS_GROUP_MISMATCH)
+        }
+        // A group CoreCrypto lacks here was lost locally, so rejoin it.
+        if (recovery != null && lostGroup) {
+            return recovery.recover(context, event, protocol.groupId)?.let { recovered(context, event, it) } ?: emptyList()
+        }
+        // A conversation still waiting for a Welcome while CoreCrypto has the group only lost its SQL update.
+        val adoptGroup = protocol.groupState == ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE &&
+            event.conversationId !in welcomed && context.conversationExists(protocol.groupId)
         check(
-            protocol.groupState == ConversationEntity.GroupState.ESTABLISHED || event.conversationId in welcomed || previousRemoval != null
+            protocol.groupState == ConversationEntity.GroupState.ESTABLISHED || event.conversationId in welcomed ||
+                previousRemoval != null || adoptGroup
         ) {
             "MLS conversation requires recovery"
         }
         // Team removal changes SQL membership without removing the native client.
         // MLS decryption and the lifecycle state above determine whether receiving can continue.
         val epoch = context.conversationEpoch(protocol.groupId)
-        val result = decryptMLSMessage(context, Base64.decode(event.content), GroupID(protocol.groupId))
+        val result = decryptMLSMessage(context, message, GroupID(protocol.groupId))
         if (result is Either.Left && result.value == MLSFailure.WrongEpoch) {
             recovery?.recover(context, event, protocol.groupId)?.let { return recovered(context, event, it) }
         }
         val staleCommit = result is Either.Left && result.value == MLSFailure.StaleCommit
-        val noBundles = result is Either.Left && result.value in listOf(
+        // After an external join, CoreCrypto reports a past-epoch message as this generic failure.
+        // Storage errors are Other too, so only this exact failure is matched.
+        val pastEpoch = result is Either.Left && result.value == MLSFailure.Other(CORE_CRYPTO_DECRYPT_FAILURE) &&
+            mlsMessageHeader(message)?.let { it.epoch < epoch } == true
+        val noBundles = pastEpoch || result is Either.Left && result.value in listOf(
             MLSFailure.StaleCommit, MLSFailure.StaleProposal, MLSFailure.DuplicateMessage,
             MLSFailure.BufferedFutureMessage, MLSFailure.BufferedCommit,
             MLSFailure.SelfCommitIgnored, MLSFailure.MessageEpochTooOld,
@@ -155,6 +179,11 @@ internal class ReceivedMLSHandler(
         }
         if (event.conversationId !in removed && (staleCommit || context.conversationEpoch(protocol.groupId) != epoch)) {
             snapshotVerification(context, event.conversationId, protocol.groupId, payloadId, event.messageInstant)
+        }
+        if (adoptGroup && event.conversationId !in removed) {
+            val epoch = context.conversationEpoch(protocol.groupId)
+            conversations.established(event.conversationId, protocol.groupId, epoch)
+            effects += ReceivedPayload.MLSEstablished(event.conversationId, protocol.groupId, epoch)
         }
         decryptedConversations += event.conversationId
         touchedGroups += protocol.groupId
@@ -346,3 +375,30 @@ internal data class MLSVerification(
     val identities: Map<UserId, List<WireIdentity>>,
     val active: Boolean = true,
 )
+
+internal class MLSMessageHeader(val groupId: ByteArray, val epoch: ULong)
+
+internal fun mlsMessageHeader(message: ByteArray): MLSMessageHeader? = runCatching {
+    val buffer = Buffer().write(message)
+    // MLSMessage: version (mls10) and wire format (public or private), then group_id<V> and the epoch.
+    check(buffer.readShort().toInt() == MLS_10 && buffer.readShort().toInt() in PUBLIC_MESSAGE..PRIVATE_MESSAGE)
+    val first = buffer.readByte().toInt() and BYTE_MASK
+    // A <V> length is 1, 2 or 4 bytes; the top two bits of its first byte give the size.
+    val lengthBytes = 1 shl (first ushr VARINT_SIZE_SHIFT)
+    check(lengthBytes <= MAX_VARINT_BYTES)
+    var groupIdLength = (first and VARINT_VALUE_MASK).toLong()
+    repeat(lengthBytes - 1) {
+        groupIdLength = (groupIdLength shl Byte.SIZE_BITS) or (buffer.readByte().toLong() and BYTE_MASK.toLong())
+    }
+    val groupId = buffer.readByteArray(groupIdLength)
+    MLSMessageHeader(groupId, buffer.readLong().toULong())
+}.getOrNull()
+
+private const val CORE_CRYPTO_DECRYPT_FAILURE = "An application message failed to decrypt"
+private const val MLS_10 = 1
+private const val PUBLIC_MESSAGE = 1
+private const val PRIVATE_MESSAGE = 2
+private const val BYTE_MASK = 0xFF
+private const val VARINT_SIZE_SHIFT = 6
+private const val VARINT_VALUE_MASK = 0x3F
+private const val MAX_VARINT_BYTES = 4
