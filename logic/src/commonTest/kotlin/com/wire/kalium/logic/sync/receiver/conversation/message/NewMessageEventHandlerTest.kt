@@ -1047,6 +1047,33 @@ class NewMessageEventHandlerTest {
         }
     }
 
+    @Test
+    fun givenOtherFailure_whenHandling_thenShouldNotCheckExternalSender() = runTest {
+        val event = TestEvent.newMLSMessageEvent(dateTime = DateTimeUtil.currentInstant())
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other("Some other failure")))
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.handleWrongExternalSender(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenInvalidSignatureInSubconversation_whenHandling_thenShouldNotCheckExternalSender() = runTest {
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), SubconversationId("subconversation-id"))
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other(INVALID_SIGNATURE_MESSAGE)))
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.handleWrongExternalSender(any(), any()) }
+    }
+
     private class Arrangement(private val recovery: MLSReceiveRecoveryHandler? = null): CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val proteusMessageUnpacker = mock<ProteusMessageUnpacker>()
         val mlsMessageUnpacker = mock<MLSMessageUnpacker>()
