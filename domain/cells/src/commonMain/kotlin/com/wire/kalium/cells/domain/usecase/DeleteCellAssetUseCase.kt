@@ -33,8 +33,8 @@ import okio.SYSTEM
  * Delete asset with given asset id from server and local storage.
  *
  * This use case is used for deleting assets from global/conversation lists.
- * Attachment data is not removed from the database to keep showing the attachment, but the
- * transfer status is set to NOT_FOUND.
+ * Attachment data is not removed from the database to keep showing the attachment. Offline
+ * attachments keep their local copy and remain openable; other attachments are marked NOT_FOUND.
  */
 public interface DeleteCellAssetUseCase {
     /**

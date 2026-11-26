@@ -21,6 +21,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.isRight
@@ -172,6 +173,8 @@ class DeleteNodeAssetUseCaseTest {
             everySuspend { attachmentsRepository.deleteFolderContents(any()) }.returns(emptyList<String>().right())
 
             everySuspend { attachmentsRepository.getStandaloneAssetPathsByIds(any()) }.returns(emptyList<CellFileLocalPath>().right())
+            everySuspend { attachmentsRepository.getAttachment(any()) }.returns(StorageFailure.DataNotFound.left())
+            everySuspend { attachmentsRepository.isAssetAvailableOffline(any()) }.returns(false.right())
 
             return this to DeleteCellAssetUseCaseImpl(
                 cellsRepository = cellsRepository,

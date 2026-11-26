@@ -46,6 +46,7 @@ class AvsSyncStateReporterTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 avsSyncStateReporter.callManager.value.reportProcessNotifications(true)
+                avsSyncStateReporter.callManager.value.reportCallHistorySyncState(false)
             }
         }
 
@@ -60,6 +61,7 @@ class AvsSyncStateReporterTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 avsSyncStateReporter.callManager.value.reportProcessNotifications(false)
+                avsSyncStateReporter.callManager.value.reportCallHistorySyncState(true)
             }
         }
 
@@ -74,6 +76,7 @@ class AvsSyncStateReporterTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 avsSyncStateReporter.callManager.value.reportProcessNotifications(false)
+                avsSyncStateReporter.callManager.value.reportCallHistorySyncState(false)
             }
         }
 
@@ -87,6 +90,7 @@ class AvsSyncStateReporterTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             avsSyncStateReporter.callManager.value.reportProcessNotifications(false)
+                avsSyncStateReporter.callManager.value.reportCallHistorySyncState(false)
         }
     }
 

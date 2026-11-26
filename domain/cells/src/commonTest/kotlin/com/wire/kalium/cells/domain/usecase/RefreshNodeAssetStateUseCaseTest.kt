@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.persistence.dao.cellfile.CellFileLocalPath
 import io.ktor.http.HttpStatusCode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
@@ -268,6 +269,26 @@ class RefreshNodeAssetStateUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
+        }
+    }
+
+    @Test
+    fun given_OfflineAsset_when_NodeNotFound_then_LocalFileIsKept() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withNodeResponseNotFound()
+            .withLocalAttachment()
+            .withLocalFileAvailable()
+            .withOfflineAsset()
+            .arrange()
+
+        useCase.invoke(assetId)
+
+        assertTrue { arrangement.fileSystem.exists(localPath.toPath()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.attachmentsRepository.deleteStandaloneAsset(assetId)
         }
     }
 
@@ -569,6 +590,8 @@ class RefreshNodeAssetStateUseCaseTest {
         val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
 
         val fileSystem = FakeFileSystem()
+        private var localAttachment: CellAssetContent? = null
+        private var isOffline = false
 
         suspend fun withNodeResponseSuccess(node: CellNode = testNode) = apply {
             everySuspend { cellsRepository.getNode(any()) }.returns(node.right())
@@ -601,7 +624,7 @@ class RefreshNodeAssetStateUseCaseTest {
         }
 
         suspend fun withLocalAttachment(attachment: CellAssetContent = testAttachment) = apply {
-            everySuspend { attachmentsRepository.getAttachment(any()) }.returns(attachment.right())
+            localAttachment = attachment
         }
 
         fun withLocalFileAvailable() = apply {
@@ -610,6 +633,10 @@ class RefreshNodeAssetStateUseCaseTest {
 
         fun withLocalFileMissing() = apply {
             fileSystem.delete(localPath.toPath())
+        }
+
+        fun withOfflineAsset() = apply {
+            isOffline = true
         }
 
         suspend fun withPreviewsNotReady() = apply {
@@ -640,6 +667,12 @@ class RefreshNodeAssetStateUseCaseTest {
             everySuspend { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.savePreviewUrl(any(), any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.updateAttachment(any(), any(), any(), any(), any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.deleteStandaloneAsset(any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.getStandaloneAssetPathsByIds(any()) }.returns(emptyList<CellFileLocalPath>().right())
+            everySuspend {
+                attachmentsRepository.getAttachment(any())
+            }.returns(localAttachment?.right() ?: StorageFailure.DataNotFound.left())
+            everySuspend { attachmentsRepository.isAssetAvailableOffline(any()) }.returns(isOffline.right())
 
             return this to RefreshCellAssetStateUseCaseImpl(
                 cellsRepository = cellsRepository,

@@ -241,6 +241,8 @@ class DeleteCellAssetsUseCaseTest {
             everySuspend { attachmentsRepository.deleteStandaloneAsset(any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.deleteFolderContents(any()) }.returns(emptyList<String>().right())
             everySuspend { attachmentsRepository.getStandaloneAssetPathsByIds(any()) }.returns(emptyList<CellFileLocalPath>().right())
+            everySuspend { attachmentsRepository.getAttachment(any()) }.returns(StorageFailure.DataNotFound.left())
+            everySuspend { attachmentsRepository.isAssetAvailableOffline(any()) }.returns(false.right())
 
             return this to DeleteCellAssetsUseCaseImpl(
                 cellsRepository = cellsRepository,

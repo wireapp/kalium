@@ -2,6 +2,13 @@
 package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.matchesSystemMessage
+import com.wire.kalium.logic.data.message.toEntity
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -38,6 +45,20 @@ data class CallSignalRecord(
     @SerialName("missedNotificationClaimed") val missedNotificationClaimed: Boolean = false,
 )
 
+/** The small durable identity needed after the signaling payload expires. */
+@Serializable
+data class MissedCallSource(
+    @SerialName("messageId") val messageId: String,
+    @SerialName("conversation") val conversation: QualifiedIDEntity,
+    @SerialName("caller") val caller: QualifiedIDEntity,
+)
+
+fun CallSignalRecord.missedCallSource() = MissedCallSource(
+    messageId,
+    QualifiedIDEntity(conversationValue, conversationDomain),
+    QualifiedIDEntity(senderValue, senderDomain),
+)
+
 @Serializable
 data class CallPresentationRecord(
     @SerialName("id") val id: String,
@@ -47,12 +68,14 @@ data class CallPresentationRecord(
     @SerialName("ringing") val ringing: Boolean,
     @SerialName("hasVideo") val hasVideo: Boolean,
     @SerialName("endReason") val endReason: Int? = null,
+    @SerialName("missedCallSource") val missedCallSource: MissedCallSource? = null,
 )
 
 @Serializable
 internal data class CallSignalJournalState(
     @SerialName("signals") val signals: List<CallSignalRecord> = emptyList(),
     @SerialName("presentations") val presentations: List<CallPresentationRecord> = emptyList(),
+    @SerialName("pendingMissedCalls") val pendingMissedCalls: List<MissedCallSource> = emptyList(),
 )
 
 /** Native callback evidence; equal references can describe more than one stored start request. */
@@ -68,6 +91,9 @@ interface CallSignalStore {
     suspend fun signals(): List<CallSignalRecord>
     suspend fun presentations(): List<CallPresentationRecord>
     suspend fun append(event: ReceivedCallEvent): CallSignalRecord
+    suspend fun persistMissedCall(source: MissedCallSource, self: QualifiedIDEntity): Boolean
+    suspend fun deferMissedCall(source: MissedCallSource)
+    suspend fun flushMissedCalls(self: QualifiedIDEntity)
 
     /** [atMillis] is taken before native enqueue, so a close callback raised by that enqueue covers the signal. */
     suspend fun submitted(id: String, generation: String, atMillis: Long = Clock.System.now().toEpochMilliseconds())
@@ -99,15 +125,33 @@ interface CallSignalStore {
  * still sees every signal AVS accepts by age; older ones would only be discarded by AVS.
  * A live handle uses one generation token to suppress re-enqueue after duplicate pushes.
  */
+@Suppress("TooManyFunctions") // Signal, presentation and deferred-history updates share the same transactional journal.
 class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalStore {
-    override suspend fun signals(): List<CallSignalRecord> = read(database.metadataDAO).signals.filter { it.ready }
+    override suspend fun signals(): List<CallSignalRecord> = historySignals().filter {
+        Clock.System.now().toEpochMilliseconds() - it.storedAtMillis < SIGNAL_RETENTION_MS
+    }
+
+    /** History evidence can outlive the payloads that AVS is willing to replay. */
+    suspend fun historySignals(): List<CallSignalRecord> = read(database.metadataDAO).signals.filter { it.ready }
+
+    override suspend fun deferMissedCall(source: MissedCallSource) = database.writeMessageEffects {
+        val state = read(metadata)
+        write(metadata, state.copy(pendingMissedCalls = (state.pendingMissedCalls + source).distinct().takeLast(MAX_SIGNALS)))
+    }
+
+    /** Called only after successful catch-up, never after a failed or interrupted prefix. */
+    override suspend fun flushMissedCalls(self: QualifiedIDEntity) = database.writeMessageEffects {
+        val state = read(metadata)
+        state.pendingMissedCalls.forEach { persistMissedCall(it, self) }
+        write(metadata, read(metadata).copy(pendingMissedCalls = emptyList()))
+    }
     override suspend fun presentations(): List<CallPresentationRecord> = read(database.metadataDAO).presentations
     fun observePresentations() = database.metadataDAO.observeSerializable(KEY, CallSignalJournalState.serializer())
         .map { it?.presentations.orEmpty() }.distinctUntilChanged()
 
-    /** Read-only NSE lookup. The full engine alone changes ringing and termination state. */
+    /** Read-only lookup; the full engine owns ringing and termination state. */
     suspend fun incomingSource(reference: IncomingCallReference): CallSignalRecord? =
-        read(database.metadataDAO).incomingSource(reference)
+        historySignals().incomingCallSource(reference)
 
     override suspend fun append(event: ReceivedCallEvent): CallSignalRecord = database.writeMessageEffects {
         val record = append(metadata, event)
@@ -133,6 +177,53 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
             },
         )
         write(metadata, acknowledged.reconcilingSuppressedCancellation(id, generation))
+    }
+
+    /** Both processes use the start message identity, even after journal cleanup or a restart. */
+    override suspend fun persistMissedCall(source: MissedCallSource, self: QualifiedIDEntity): Boolean = database.writeMessageEffects {
+        val conversationId = source.conversation
+        val caller = source.caller
+        val conversation = conversations.getConversationById(conversationId) ?: return@writeMessageEffects false
+        if (caller == self || conversation.type == ConversationEntity.Type.MEETING) return@writeMessageEffects false
+        val handled = reconcileCallSignals(read(metadata).signals, setOf(source.messageId), self, Clock.System.now().toEpochMilliseconds())
+            .any { !it.missed && it.source.missedCallSource() == source }
+        if (handled) return@writeMessageEffects false
+        val message = Message.System(
+            id = "missed-call:${source.messageId}",
+            content = MessageContent.MissedCall,
+            conversationId = ConversationId(conversationId.value, conversationId.domain),
+            date = Clock.System.now(),
+            senderUserId = UserId(caller.value, caller.domain),
+            status = Message.Status.Sent,
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null,
+        ).toEntity()
+        val existing = messages.getMessageById(message.id, conversationId)
+        if (existing == null) {
+            messages.insertOrIgnoreMessages(listOf(message))
+            conversations.updateConversationModifiedDate(conversationId, message.date)
+        } else {
+            check(existing.matchesSystemMessage(caller, message.content)) { "Missed call identity conflicts with stored message" }
+        }
+        true
+    }
+
+    /** Forget only signals evaluated by the extension for this session, never a newer call. */
+    suspend fun completeNotification(source: CallSignalRecord, evaluatedIds: Set<String>) = database.writeMessageEffects {
+        val state = read(metadata)
+        val session = source.sessionId()
+        val completed = state.signals.filter {
+            it.id in evaluatedIds && it.conversationValue == source.conversationValue &&
+                it.conversationDomain == source.conversationDomain &&
+                (it.id == source.id || session != null && it.sessionId() == session)
+        }.map { it.id }.toSet()
+        write(
+            metadata,
+            state.copy(
+                signals = state.signals.filterNot { it.id in completed },
+                pendingMissedCalls = state.pendingMissedCalls.filterNot { it == source.missedCallSource() },
+            )
+        )
     }
 
     /**
@@ -162,7 +253,7 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         generation: String,
     ): CallPresentationRecord? = database.writeMessageEffects {
         val state = read(metadata)
-        val source = state.incomingSource(reference) ?: return@writeMessageEffects null
+        val source = state.signals.incomingCallSource(reference) ?: return@writeMessageEffects null
         val existing = state.presentations.find { it.id == source.id }
         val presentation = when {
             !ring && existing != null -> existing.copy(ringing = false)
@@ -174,6 +265,7 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
                 source.timeMillis,
                 ring,
                 video,
+                missedCallSource = source.missedCallSource(),
             )
         }
         // Native close callbacks carry only the conversation. Keep incoming callback order,
@@ -188,19 +280,6 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         presentation
     }
 
-    /**
-     * Both AVS adapters use the first ready start matching the callback evidence. Generations
-     * acknowledge native work, not a cursor through tied starts. AVS exposes neither message ID
-     * nor sessid, so identical references cannot distinguish separate real calls.
-     */
-    private fun CallSignalJournalState.incomingSource(reference: IncomingCallReference): CallSignalRecord? =
-        signals.firstOrNull {
-            it.ready && it.conversationValue == reference.conversation.value && it.conversationDomain == reference.conversation.domain &&
-                it.senderValue == reference.caller.value && it.senderDomain == reference.caller.domain &&
-                (reference.callerClientId == null || it.senderClientId == reference.callerClientId) &&
-                it.timeMillis / MILLISECONDS_PER_SECOND == reference.messageTimeSeconds && it.isStartRequest()
-        }
-
     override suspend fun closed(
         conversationValue: String,
         conversationDomain: String,
@@ -213,7 +292,9 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
             it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
         }
         val signals = state.signals.filterNot {
-            handledBy != null && it.submittedGeneration == handledBy && it.submittedAtMillis <= handledBeforeMillis &&
+            state.pendingMissedCalls.none { pending ->
+                pending.conversation.value == it.conversationValue && pending.conversation.domain == it.conversationDomain
+            } && handledBy != null && it.submittedGeneration == handledBy && it.submittedAtMillis <= handledBeforeMillis &&
                 it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
         }
         if (current == null && signals.size == state.signals.size) return@writeMessageEffects null
@@ -229,16 +310,9 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         current?.id
     }
 
-    private fun CallSignalRecord.isStartRequest(): Boolean = runCatching {
-        val json = Json.parseToJsonElement(payload).jsonObject
-        json["type"]?.jsonPrimitive?.content?.uppercase() in setOf("SETUP", "GROUPSTART", "CONFSTART") &&
-            json["resp"]?.jsonPrimitive?.booleanOrNull == false
-    }.getOrDefault(false)
-
     companion object {
         internal const val MAX_SIGNALS = 4096
         internal const val KEY = "apple_call_signal_journal_v1"
-        private const val MILLISECONDS_PER_SECOND = 1000L
 
         /** AVS ignores conference starts older than 120 s and only reports a 1:1 start older than 60 s as missed. */
         internal const val SIGNAL_RETENTION_MS = 3 * 60 * MILLISECONDS_PER_SECOND
@@ -253,7 +327,11 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
                     it.conversationDomain == event.conversationId.domain && it.senderValue == event.senderId.value &&
                     it.senderDomain == event.senderId.domain && it.senderClientId == event.senderClientId
             }?.let {
-                check(it.payload == event.payload) { "Call signal identity conflict" }
+                val sameExpiredConference = Clock.System.now().toEpochMilliseconds() - it.storedAtMillis >= SIGNAL_RETENTION_MS &&
+                    it.conferenceHistoryEvidence()?.payload?.let { compact ->
+                        compact == it.copy(payload = event.payload).conferenceHistoryEvidence()?.payload
+                    } == true
+                check(it.payload == event.payload || sameExpiredConference) { "Call signal identity conflict" }
                 return it
             }
             val now = Clock.System.now().toEpochMilliseconds()
@@ -275,11 +353,23 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
             return record
         }
 
-        /** Leaves out expired signals, so no read replays them and the next write drops them. */
+        /** Expired conference evidence is compacted, not replayed. Terminal processing removes it.
+         * The existing journal capacity still bounds storage if a conference end never arrives.
+         */
         private suspend fun read(metadata: MetadataDAO): CallSignalJournalState {
             val state = metadata.getSerializable(KEY, CallSignalJournalState.serializer()) ?: return CallSignalJournalState()
             val now = Clock.System.now().toEpochMilliseconds()
-            return state.copy(signals = state.signals.filter { now - it.storedAtMillis < SIGNAL_RETENTION_MS })
+            return state.copy(
+                signals = state.signals.mapNotNull { signal ->
+                    when {
+                        now - signal.storedAtMillis < SIGNAL_RETENTION_MS -> signal
+                        state.pendingMissedCalls.any {
+                            it.conversation.value == signal.conversationValue && it.conversation.domain == signal.conversationDomain
+                        } -> signal
+                        else -> signal.conferenceHistoryEvidence()
+                    }
+                }
+            )
         }
 
         private suspend fun write(metadata: MetadataDAO, state: CallSignalJournalState) =
@@ -331,4 +421,25 @@ private fun CallSignalRecord.requestSession(type: String): String? = runCatching
     json["sessid"]?.jsonPrimitive?.takeIf { it.isString }?.content?.takeIf { it.isNotBlank() }
 }.getOrNull()
 
+private const val MILLISECONDS_PER_SECOND = 1000L
 private const val CANCELLED_REASON = 4 // AVS WCALL_REASON_CANCELED
+
+/** Session identity is used only to associate a terminal notification with its stored start. */
+internal fun CallSignalRecord.sessionId(): String? = runCatching {
+    Json.parseToJsonElement(payload).jsonObject["sessid"]?.jsonPrimitive
+        ?.takeIf { it.isString }?.content?.takeIf { it.isNotBlank() }
+}.getOrNull()
+
+/** Same start selection for the lightweight notification engine and the application's engine. */
+fun List<CallSignalRecord>.incomingCallSource(reference: IncomingCallReference): CallSignalRecord? = firstOrNull {
+    it.ready && it.conversationValue == reference.conversation.value && it.conversationDomain == reference.conversation.domain &&
+        it.senderValue == reference.caller.value && it.senderDomain == reference.caller.domain &&
+        (reference.callerClientId == null || it.senderClientId == reference.callerClientId) &&
+        it.timeMillis / MILLISECONDS_PER_SECOND == reference.messageTimeSeconds && it.isStartRequest()
+}
+
+private fun CallSignalRecord.isStartRequest(): Boolean = runCatching {
+    val json = Json.parseToJsonElement(payload).jsonObject
+    json["type"]?.jsonPrimitive?.content?.uppercase() in setOf("SETUP", "GROUPSTART", "CONFSTART") &&
+        json["resp"]?.jsonPrimitive?.booleanOrNull == false
+}.getOrDefault(false)
