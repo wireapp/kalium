@@ -168,39 +168,43 @@ class AppleMissedCallPersistenceTest {
 
     @Test
     fun conferenceEndAfterRetentionUsesStoredIdentityAndOtherDeviceAnswer() = runTest {
-        for (answered in listOf(false, true)) {
-            withTestUserDatabase(SELF) { database ->
-                val db = database.builder
-                db.userDAO.insertOrIgnoreIncompleteUsers(listOf(SELF, SENDER))
-                db.conversationDAO.insertConversation(conversation().copy(
-                    type = ConversationEntity.Type.GROUP, mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
-                ))
-                val start = event("long-conference", "GROUPSTART")
-                val answer = start.copy(
-                    messageId = "laptop-answer", senderId = SELF, senderClientId = "laptop", time = start.time + 1.seconds,
-                    payload = """{"version":"3.0","type":"GROUPSTART","sessid":"call","resp":true}""",
-                )
-                val firstBatch = if (answered) listOf(start, answer) else listOf(start)
-                val journal = CallSignalJournal(db)
-                firstBatch.forEach { journal.append(it) }
-                evaluateCallingEvents(firstBatch, UserId(SELF.value, SELF.domain), "abc123", db)
-                assertNull(db.messageDAO.getMessageById("missed-call:long-conference", CONVERSATION))
-                val state = assertNotNull(db.metadataDAO.getSerializable(CallSignalJournal.KEY, CallSignalJournalState.serializer()))
-                db.metadataDAO.putSerializable(CallSignalJournal.KEY, state.copy(signals = state.signals.map {
-                    it.copy(storedAtMillis = Clock.System.now().toEpochMilliseconds() - 300_000, timeMillis = it.timeMillis - 300_000)
-                }), CallSignalJournalState.serializer())
-                val reopened = CallSignalJournal(db)
-                assertTrue(reopened.signals().isEmpty()) // Expired payloads must not be replayed to AVS.
-                val end = event("long-end", "CONFEND")
-                reopened.append(end)
-                val result = evaluateCallingEvents(listOf(end), UserId(SELF.value, SELF.domain), "abc123", db)
-                assertEquals(if (answered) 0 else 1, result.count { it.type == ReceivedCallType.MISSED })
-                val message = db.messageDAO.getMessageById("missed-call:long-conference", CONVERSATION)
-                assertEquals(!answered, message != null)
-                assertTrue(reopened.historySignals().isEmpty())
-                reopened.append(end)
-                evaluateCallingEvents(listOf(end), UserId(SELF.value, SELF.domain), "abc123", db)
-                assertEquals(message, db.messageDAO.getMessageById("missed-call:long-conference", CONVERSATION))
+        for ((startType, isGroup) in listOf("GROUPSTART" to true, "CONFSTART" to false)) {
+            for (answered in listOf(false, true)) {
+                withTestUserDatabase(SELF) { database ->
+                    val db = database.builder
+                    db.userDAO.insertOrIgnoreIncompleteUsers(listOf(SELF, SENDER))
+                    db.conversationDAO.insertConversation(conversation().copy(
+                        type = if (isGroup) ConversationEntity.Type.GROUP else ConversationEntity.Type.ONE_ON_ONE,
+                        mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
+                    ))
+                    val start = event("long-conference", startType).copy(isGroup = isGroup)
+                    val answer = start.copy(
+                        messageId = "laptop-answer", senderId = SELF, senderClientId = "laptop", time = start.time + 1.seconds,
+                        payload = """{"version":"3.0","type":"$startType","sessid":"call","resp":true}""",
+                    )
+                    val firstBatch = if (answered) listOf(start, answer) else listOf(start)
+                    val journal = CallSignalJournal(db)
+                    firstBatch.forEach { journal.append(it) }
+                    evaluateCallingEvents(firstBatch, UserId(SELF.value, SELF.domain), "abc123", db)
+                    assertNull(db.messageDAO.getMessageById("missed-call:long-conference", CONVERSATION))
+                    assertEquals(firstBatch.size, journal.historySignals().size) // Keep own-device participation until CONFEND.
+                    val state = assertNotNull(db.metadataDAO.getSerializable(CallSignalJournal.KEY, CallSignalJournalState.serializer()))
+                    db.metadataDAO.putSerializable(CallSignalJournal.KEY, state.copy(signals = state.signals.map {
+                        it.copy(storedAtMillis = Clock.System.now().toEpochMilliseconds() - 300_000, timeMillis = it.timeMillis - 300_000)
+                    }), CallSignalJournalState.serializer())
+                    val reopened = CallSignalJournal(db)
+                    assertTrue(reopened.signals().isEmpty()) // Expired payloads must not be replayed to AVS.
+                    val end = event("long-end", "CONFEND").copy(isGroup = isGroup)
+                    reopened.append(end)
+                    val result = evaluateCallingEvents(listOf(end), UserId(SELF.value, SELF.domain), "abc123", db)
+                    assertEquals(if (answered) 0 else 1, result.count { it.type == ReceivedCallType.MISSED })
+                    val message = db.messageDAO.getMessageById("missed-call:long-conference", CONVERSATION)
+                    assertEquals(!answered, message != null)
+                    assertTrue(reopened.historySignals().isEmpty())
+                    reopened.append(end)
+                    evaluateCallingEvents(listOf(end), UserId(SELF.value, SELF.domain), "abc123", db)
+                    assertEquals(message, db.messageDAO.getMessageById("missed-call:long-conference", CONVERSATION))
+                }
             }
         }
     }

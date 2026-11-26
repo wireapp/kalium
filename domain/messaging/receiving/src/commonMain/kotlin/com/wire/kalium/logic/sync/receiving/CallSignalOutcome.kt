@@ -37,7 +37,7 @@ internal fun reconcileCallSignals(
         val ended = related.any { (other, payload) -> payload.ends(source, start, other) }
         val expired = !source.isGroup && start.type == "SETUP" && nowMillis - source.timeMillis > SETUP_TIMEOUT_MILLIS
         if (handled || ended || expired) {
-            CallSignalOutcome(source, missed = !handled, complete = !source.isGroup || ended)
+            CallSignalOutcome(source, missed = !handled, complete = start.type == "SETUP" || ended)
         } else null
     }
 }
@@ -71,7 +71,7 @@ private fun CallSignalPayload.ends(source: CallSignalRecord, start: CallSignalPa
 
 internal fun CallSignalRecord.conferenceHistoryEvidence(): CallSignalRecord? {
     val parsed = parseCallSignal()
-    if (!isGroup || parsed == null || parsed.type !in setOf("GROUPSTART", "CONFSTART", "CONFEND", "REJECT")) return null
+    if (parsed == null || parsed.type !in setOf("GROUPSTART", "CONFSTART", "CONFEND", "REJECT")) return null
     val compact = kotlinx.serialization.json.buildJsonObject {
         put("version", kotlinx.serialization.json.JsonPrimitive("3.0"))
         put("type", kotlinx.serialization.json.JsonPrimitive(parsed.type))

@@ -37,6 +37,7 @@ class CallSignalOutcomeTest {
         val join = signal("join", "CONFSTART", time = 10_000, self = true)
         assertEquals(listOf(CallSignalOutcome(start, false)), resolve(start, join, end))
         assertEquals(listOf(CallSignalOutcome(start, false, complete = false)), resolve(start, join))
+        assertEquals(listOf(CallSignalOutcome(oneToOneConference, false, complete = false)), resolve(oneToOneConference, join))
     }
 
     @Test
