@@ -76,6 +76,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -937,6 +938,59 @@ class ConversationGroupRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(0)) {
             arrangement.localEventRepository.emitLocalEvent(any())
+        }
+    }
+
+    @Test
+    fun givenConversationNotFound_whenLeaving_thenRemoveOnlyLocalSelfMembership() = runTest {
+        val error = KaliumException.InvalidRequestError(GenericAPIErrorResponse(404, "Missing", "no-conversation"))
+        for (protocol in listOf(PROTEUS_PROTOCOL_INFO, MLS_PROTOCOL_INFO, MIXED_PROTOCOL_INFO)) {
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withProtocolInfoById(protocol)
+                .withDeleteMemberAPIError(error)
+                .arrange()
+
+            conversationGroupRepository.deleteMember(TestUser.SELF.id, MockConversation.ID).shouldSucceed()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.memberDAO.deleteMemberByQualifiedID(TestUser.SELF.id.toDao(), MockConversation.ID.toDao())
+            }
+            verifySuspend(VerifyMode.not) { arrangement.localEventRepository.emitLocalEvent(any()) }
+            verifySuspend(VerifyMode.not) { arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun givenConversationNotFound_whenRemovingAnotherMember_thenKeepTheFailure() = runTest {
+        val error = KaliumException.InvalidRequestError(GenericAPIErrorResponse(404, "Missing", "no-conversation"))
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+            .withDeleteMemberAPIError(error)
+            .arrange()
+
+        conversationGroupRepository.deleteMember(MockConversation.USER_1, MockConversation.ID).shouldFail {
+            assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).kaliumException)
+        }
+        verifySuspend(VerifyMode.not) { arrangement.memberDAO.deleteMemberByQualifiedID(any(), any()) }
+    }
+
+    @Test
+    fun givenUnrelatedClientError_whenLeaving_thenKeepTheFailure() = runTest {
+        val errors = listOf(
+            GenericAPIErrorResponse(404, "Missing member", "no-conversation-member"),
+            GenericAPIErrorResponse(403, "Forbidden", "no-conversation"),
+        )
+        for (response in errors) {
+            val error = KaliumException.InvalidRequestError(response)
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withDeleteMemberAPIError(error)
+                .arrange()
+
+            conversationGroupRepository.deleteMember(TestUser.SELF.id, MockConversation.ID).shouldFail {
+                assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).kaliumException)
+            }
+            verifySuspend(VerifyMode.not) { arrangement.memberDAO.deleteMemberByQualifiedID(any(), any()) }
         }
     }
 
@@ -1855,6 +1909,7 @@ class ConversationGroupRepositoryTest {
         val conversationRepository: ConversationRepository = mock(mode = MockMode.autoUnit)
         val mlsConversationRepository: MLSConversationRepository = mock(mode = MockMode.autoUnit)
         val conversationDAO: ConversationDAO = mock(mode = MockMode.autoUnit)
+        val memberDAO: MemberDAO = mock(mode = MockMode.autoUnit)
         val conversationApi: ConversationApi = mock(mode = MockMode.autoUnit)
         val selfTeamIdProvider: SelfTeamIdProvider = mock(mode = MockMode.autoUnit)
         val newConversationMembersRepository: NewConversationMembersRepository = mock(mode = MockMode.autoUnit)
@@ -1869,6 +1924,7 @@ class ConversationGroupRepositoryTest {
                 localEventRepository,
                 conversationMessageTimerEventHandler,
                 conversationDAO,
+                memberDAO,
                 conversationApi,
                 newConversationMembersRepository,
                 userRepository,
@@ -2027,14 +2083,13 @@ class ConversationGroupRepositoryTest {
             )
         }
 
-        suspend fun withDeleteMemberAPIFailed() = apply {
+        suspend fun withDeleteMemberAPIFailed() =
+            withDeleteMemberAPIError(KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label")))
+
+        suspend fun withDeleteMemberAPIError(error: KaliumException) = apply {
             everySuspend {
                 conversationApi.removeMember(any(), any())
-            }.returns(
-                NetworkResponse.Error(
-                    KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))
-                )
-            )
+            }.returns(NetworkResponse.Error(error))
         }
 
         suspend fun withFetchUsersIfUnknownByIdsSuccessful() = apply {

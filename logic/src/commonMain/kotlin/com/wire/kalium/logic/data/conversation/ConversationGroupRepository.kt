@@ -27,6 +27,7 @@ import com.wire.kalium.common.error.wrapNullableFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
@@ -63,9 +64,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.model.ServiceAddedResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationHasNoCode
+import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.LocalId
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -128,6 +132,7 @@ internal class ConversationGroupRepositoryImpl(
     private val localEventRepository: LocalEventRepository,
     private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler,
     private val conversationDAO: ConversationDAO,
+    private val memberDAO: MemberDAO,
     private val conversationApi: ConversationApi,
     private val newConversationMembersRepository: NewConversationMembersRepository,
     private val userRepository: UserRepository,
@@ -621,6 +626,14 @@ internal class ConversationGroupRepositoryImpl(
                         transactionProvider.transaction("deleteMember") { transactionContext ->
                             deleteMemberFromMlsGroup(transactionContext, userId, conversationId, protocol)
                         }
+                }
+            }.flatMapLeft { failure ->
+                val error = (failure as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError
+                if (userId == selfUserId && error?.errorResponse?.code == HttpStatusCode.NotFound.value && error.isConversationNotFound()) {
+                    // The backend cannot send a member-leave event for a conversation unavailable to self.
+                    wrapStorageRequest { memberDAO.deleteMemberByQualifiedID(userId.toDao(), conversationId.toDao()) }
+                } else {
+                    Either.Left(failure)
                 }
             }
 

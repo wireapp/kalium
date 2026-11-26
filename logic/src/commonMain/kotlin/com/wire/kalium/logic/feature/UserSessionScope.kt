@@ -1035,6 +1035,7 @@ public class UserSessionScope internal constructor(
             localEventRepository,
             conversationMessageTimerEventHandler,
             userStorage.database.conversationDAO,
+            userStorage.database.memberDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
             userRepository,
