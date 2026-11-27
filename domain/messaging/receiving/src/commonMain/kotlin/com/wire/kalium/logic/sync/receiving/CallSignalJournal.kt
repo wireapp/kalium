@@ -75,6 +75,7 @@ data class CallPresentationRecord(
 internal data class CallSignalJournalState(
     @SerialName("signals") val signals: List<CallSignalRecord> = emptyList(),
     @SerialName("presentations") val presentations: List<CallPresentationRecord> = emptyList(),
+    @SerialName("handledCalls") val handledCalls: List<MissedCallSource> = emptyList(),
     @SerialName("pendingMissedCalls") val pendingMissedCalls: List<MissedCallSource> = emptyList(),
 )
 
@@ -185,7 +186,9 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         val caller = source.caller
         val conversation = conversations.getConversationById(conversationId) ?: return@writeMessageEffects false
         if (caller == self || conversation.type == ConversationEntity.Type.MEETING) return@writeMessageEffects false
-        val handled = reconcileCallSignals(read(metadata).signals, setOf(source.messageId), self, Clock.System.now().toEpochMilliseconds())
+        val state = read(metadata)
+        if (source in state.handledCalls) return@writeMessageEffects false
+        val handled = reconcileCallSignals(state.signals, setOf(source.messageId), self, Clock.System.now().toEpochMilliseconds())
             .any { !it.missed && it.source.missedCallSource() == source }
         if (handled) return@writeMessageEffects false
         val message = Message.System(
@@ -209,7 +212,11 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
     }
 
     /** Forget only signals evaluated by the extension for this session, never a newer call. */
-    suspend fun completeNotification(source: CallSignalRecord, evaluatedIds: Set<String>) = database.writeMessageEffects {
+    suspend fun completeNotification(
+        source: CallSignalRecord,
+        evaluatedIds: Set<String>,
+        handled: Boolean = false,
+    ) = database.writeMessageEffects {
         val state = read(metadata)
         val session = source.sessionId()
         val completed = state.signals.filter {
@@ -221,6 +228,10 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
             metadata,
             state.copy(
                 signals = state.signals.filterNot { it.id in completed },
+                // Native callbacks can arrive after NSE cleanup, even after the app resumes hours later.
+                handledCalls = if (handled) {
+                    (state.handledCalls + source.missedCallSource()).distinct().takeLast(MAX_SIGNALS)
+                } else state.handledCalls,
                 pendingMissedCalls = state.pendingMissedCalls.filterNot { it == source.missedCallSource() },
             )
         )
