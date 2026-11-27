@@ -5,6 +5,7 @@ public final class com/wire/kalium/logic/CoreLogic : com/wire/kalium/logic/CoreL
 	public synthetic fun getAudioNormalizedLoudnessBuilder$com_wire_kalium_logic ()Lcom/wire/kalium/logic/feature/asset/AudioNormalizedLoudnessBuilder;
 	public fun getNetworkStateObserver ()Lcom/wire/kalium/network/NetworkStateObserver;
 	public fun getSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/UserSessionScope;
+	public final fun releaseSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/CoreLogicCommon {

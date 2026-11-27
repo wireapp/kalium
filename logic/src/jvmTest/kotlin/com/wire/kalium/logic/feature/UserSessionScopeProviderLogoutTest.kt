@@ -20,12 +20,6 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import com.wire.kalium.persistence.db.PlatformDatabaseData
-import com.wire.kalium.persistence.db.StorageData
-import com.wire.kalium.persistence.db.globalDatabaseProvider
-import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +29,6 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -48,7 +41,7 @@ class UserSessionScopeProviderLogoutTest {
     fun givenAccountWorkDoesNotStop_whenLoggingOut_thenLocalDataIsStillCleared() = runTest {
         val root = Files.createTempDirectory("logout-drain").toFile()
         val userId = UserId("user", "example.com")
-        storeAccount(root, userId)
+        storeTestAccount(root, userId)
         val logic = CoreLogic(
             rootPath = root.absolutePath,
             kaliumConfigs = KaliumConfigs(enableCalling = false, mockedRequests = emptyList()),
@@ -75,7 +68,7 @@ class UserSessionScopeProviderLogoutTest {
     fun givenInitializedCells_whenLoggingOut_thenCellsWorkDrainsBeforeLocalDataIsCleared() = runTest {
         val root = Files.createTempDirectory("logout-cells").toFile()
         val userId = UserId("user", "example.com")
-        storeAccount(root, userId)
+        storeTestAccount(root, userId)
         val logic = CoreLogic(
             rootPath = root.absolutePath,
             kaliumConfigs = KaliumConfigs(enableCalling = false, mockedRequests = emptyList()),
@@ -99,31 +92,5 @@ class UserSessionScopeProviderLogoutTest {
             logic.getGlobalScope().coroutineContext.job.cancel()
             root.deleteRecursively()
         }
-    }
-
-    private suspend fun storeAccount(root: File, userId: UserId) {
-        val database = globalDatabaseProvider(
-            platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(File(root, "global-storage"))),
-            queriesContext = KaliumDispatcherImpl.io,
-            passphrase = null,
-        )
-        try {
-            database.serverConfigurationDAO.insert(
-                ServerConfigurationDAO.InsertData(
-                    id = SERVER_CONFIG_ID, apiBaseUrl = URL, accountBaseUrl = URL, webSocketBaseUrl = "wss://example.invalid",
-                    blackListUrl = URL, teamsUrl = URL, websiteUrl = URL, title = "Test", isOnPremises = false,
-                    federation = false, domain = userId.domain, commonApiVersion = 8,
-                    apiProxyHost = null, apiProxyNeedsAuthentication = null, apiProxyPort = null,
-                )
-            )
-            database.accountsDAO.insertOrReplace(UserIDEntity(userId.value, userId.domain), null, null, SERVER_CONFIG_ID, false)
-        } finally {
-            database.close()
-        }
-    }
-
-    private companion object {
-        const val SERVER_CONFIG_ID = "test-server"
-        const val URL = "https://example.invalid"
     }
 }
