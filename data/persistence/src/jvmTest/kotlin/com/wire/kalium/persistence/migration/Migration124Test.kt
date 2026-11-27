@@ -33,7 +33,8 @@ import kotlin.test.assertTrue
  * This migration consolidates 10 separate system message content tables into a single table
  * with generic typed columns.
  */
-class Migration124Test : SchemaMigrationTest() {
+// The legacy fixtures contain isolated content rows without their parent messages.
+class Migration124Test : SchemaMigrationTest(enableFixtureForeignKeys = false) {
 
     companion object Companion {
         // Test data constants

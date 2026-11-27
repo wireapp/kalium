@@ -90,7 +90,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
-                implementation(libs.sqlite.xerialDriver)
+                implementation(libs.sqlite.jdbc)
                 implementation(libs.jna)
             }
         }
@@ -130,4 +130,22 @@ kotlin {
             }
         }
     }
+}
+
+// The desktop application supplies its signed native library. JVM tests build their own copy.
+val sqlCipherTestDirectory = layout.buildDirectory.dir("sqlcipher-jni")
+val buildSqlCipherForTests by tasks.registering(Exec::class) {
+    val script = rootProject.file("scripts/build-sqlcipher-jni.sh")
+    inputs.file(script)
+    inputs.property("architecture", System.getProperty("os.arch"))
+    inputs.property("os", System.getProperty("os.name"))
+    outputs.dir(sqlCipherTestDirectory)
+    environment("JAVA_HOME", System.getProperty("java.home"))
+    commandLine(script.absolutePath, sqlCipherTestDirectory.get().asFile.absolutePath)
+}
+
+tasks.named<Test>("jvmTest") {
+    val suppliedLibrary = providers.systemProperty("org.sqlite.lib.path").orNull
+    if (suppliedLibrary == null) dependsOn(buildSqlCipherForTests)
+    systemProperty("org.sqlite.lib.path", suppliedLibrary ?: sqlCipherTestDirectory.get().asFile.absolutePath)
 }

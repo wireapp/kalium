@@ -7,6 +7,7 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import kotlinx.coroutines.test.runTest
+import org.sqlite.SQLiteConfig
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,7 +17,9 @@ class Migration166Test {
     fun storedEncryptionNoticesAndTheirMarkersAreDeleted() = runTest {
         val file = File.createTempFile("encryption-notice-migration-", ".db")
         File("src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db").copyTo(file, overwrite = true)
-        val driver = JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}")
+        // The notice fixture omits user rows, as it only exercises deletion of messages and markers.
+        val config = SQLiteConfig().apply { enforceForeignKeys(false) }
+        val driver = JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", config.toProperties())
         try {
             object : SuspendingTransacterImpl(driver) {}.transaction { UserDatabase.Schema.awaitMigrate(driver, 124, 166) }
             driver.execute(

@@ -25,6 +25,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.protection.JvmStorageKeyStore
 import kotlinx.coroutines.CoroutineDispatcher
 import java.io.File
 
@@ -60,7 +61,33 @@ actual fun userDatabaseBuilder(
         isWALEnabled = enableWAL
         areForeignKeyConstraintsEnforced = true
     }
+    return buildUserDatabase(userId, dispatcher, platformDatabaseData, rawDriver, dbInvalidationControlEnabled, isEncrypted = false)
+}
 
+/** Opens a protected JVM account database in a dedicated account directory. */
+fun protectedUserDatabaseBuilder(
+    directory: File,
+    userId: UserIDEntity,
+    keyStore: JvmStorageKeyStore,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean = true,
+    dbInvalidationControlEnabled: Boolean = false,
+): UserDatabaseBuilder {
+    val databaseData = PlatformDatabaseData(StorageData.FileBacked(directory))
+    val file = directory.resolve(DATABASE_NAME)
+    val driver = protectedDatabaseDriver(file.toPath(), UserDatabase.Schema.synchronous(), keyStore, enableWAL)
+    return buildUserDatabase(userId, dispatcher, databaseData, driver, dbInvalidationControlEnabled, isEncrypted = true)
+}
+
+@Suppress("LongParameterList")
+private fun buildUserDatabase(
+    userId: UserIDEntity,
+    dispatcher: CoroutineDispatcher,
+    platformDatabaseData: PlatformDatabaseData,
+    rawDriver: SqlDriver,
+    dbInvalidationControlEnabled: Boolean,
+    isEncrypted: Boolean,
+): UserDatabaseBuilder {
     val invalidationController = DbInvalidationController(
         enabled = dbInvalidationControlEnabled,
         notifyKey = { key -> rawDriver.notifyListeners(key) }
@@ -76,7 +103,7 @@ actual fun userDatabaseBuilder(
         sqlDriver = driver,
         dispatcher = dispatcher,
         platformDatabaseData = platformDatabaseData,
-        isEncrypted = !passphrase.isNullOrBlank(),
+        isEncrypted = isEncrypted,
         dbInvalidationController = invalidationController
     )
 }

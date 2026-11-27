@@ -21,8 +21,10 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
+import com.wire.kalium.persistence.protection.JvmStorageKeyStore
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
+import java.io.File
 
 actual fun globalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
@@ -55,6 +57,18 @@ actual fun globalDatabaseProvider(
     }
 
     return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
+}
+
+/** Opens a protected JVM global database in a dedicated profile directory. */
+fun protectedGlobalDatabaseProvider(
+    directory: File,
+    keyStore: JvmStorageKeyStore,
+    queriesContext: CoroutineDispatcher,
+    enableWAL: Boolean = true,
+): GlobalDatabaseBuilder {
+    val file = directory.resolve(FileNameUtil.globalDBName())
+    val driver = protectedDatabaseDriver(file.toPath(), GlobalDatabase.Schema.synchronous(), keyStore, enableWAL)
+    return GlobalDatabaseBuilder(driver, PlatformDatabaseData(StorageData.FileBacked(directory)), queriesContext)
 }
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
