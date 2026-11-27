@@ -195,8 +195,7 @@ class NotificationProcessor(
             CallSignalJournal(database).committed(effects.calls)
             queueEnd.meetings += effects.meetings
             cleanupConversations()
-            if (recovery == null) events.markProcessed(listOf(next.eventId), emptyMap())
-            else recovery.acknowledge(listOf(next.eventId))
+            events.markProcessed(listOf(next.eventId))
             if (next.eventId == targetId) {
                 queueEnd.reached(effects.message, "DEFERRED_PRESENTATION_POLICY".takeIf { deferred.isNotEmpty() })
             } else if (effects.message?.let { it.shouldNotify && it.type != ReceivedNotificationType.MESSAGE } == true) {
@@ -263,7 +262,7 @@ class NotificationProcessor(
     private suspend fun cleanupConversations() {
         val cleanup = PendingConversationCleanup(database, deleteFile)
         cleanup.discardLegacyRequests()
-        recovery?.drainDeletions { cleanup.queueWipe(it) }
+        cleanup.discardLegacyReceiveRecovery()
         if (database.pendingActionDAO.getByActionType(
                 PendingActionType.WIPE_MLS_GROUP
             ).isEmpty()
@@ -369,15 +368,7 @@ class NotificationProcessor(
                 deleteFile = deleteFile,
                 previewImages = previewImages,
                 serverConfigLinks = serverConfigLinks,
-            ).persist(decoded, verifications).also {
-                if (mlsContext != null && recovery != null) {
-                    recovery.recordProcessed(
-                        mlsContext,
-                        payload.mapNotNull { it.newMLSMessageOrNull(eventId) },
-                        payload.map { ReceivedPayloadIdentity(eventId, it) },
-                    )
-                }
-            }
+            ).persist(decoded, verifications)
         } finally {
             // SQL may have committed even when withContext reports cancellation. Preserve all
             // canonical references before deleting files from a failed or interrupted attempt.
@@ -400,11 +391,6 @@ class NotificationProcessor(
     ): List<ReceivedPayload> = payload.flatMapIndexed { index, content ->
         currentCoroutineContext().ensureActive()
         diagnostics?.decoding(content)
-        val effectsProcessed = mlsContext != null && recovery?.wereEffectsProcessed(
-            mlsContext, ReceivedPayloadIdentity(eventId, content)
-        ) == true
-        // The outer Proteus transaction can roll back after MLS commits. Advance it even on effects replay.
-        if (effectsProcessed && content !is EventContentDTO.Conversation.NewMessageDTO) return@flatMapIndexed emptyList()
         val memberUpdateEvent = when (content) {
             is EventContentDTO.Conversation.MemberUpdateDTO ->
                 conversationMemberUpdate(metadataSystemMessageId(eventId, index), content)
@@ -453,7 +439,6 @@ class NotificationProcessor(
                 check(content.data.recipient == clientId) { "Notification belongs to another client" }
                 val event = newMessage(eventId, content)
                 val result = unpacker.unpackProteusMessage(checkNotNull(proteusContext), event) { it }
-                if (effectsProcessed) return@flatMapIndexed emptyList()
                 when (result) {
                     is Either.Right -> listOf(ReceivedPayload.Application(result.value))
                     is Either.Left -> if (
@@ -470,7 +455,6 @@ class NotificationProcessor(
                 diagnostics?.stage = "MLS_FETCH_CONVERSATION"
                 val context = checkNotNull(mlsContext)
                 val event = checkNotNull(content.newMLSMessageOrNull(eventId))
-                mlsHandler.resume(context, event)?.let { return@flatMapIndexed it }
                 val metadata = conversations.fetchMissingConversation(event.conversationId, context)
                     ?: return@flatMapIndexed emptyList()
                 metadata + mlsHandler.decrypt(context, event, metadataSystemMessageId(eventId, index))

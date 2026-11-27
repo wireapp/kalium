@@ -44,66 +44,42 @@ import com.wire.kalium.network.api.model.SubconversationId
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.TestUserDatabase
-import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.withTestUserDatabase
 import kotlin.io.encoding.Base64
 import okio.ByteString.Companion.encodeUtf8
+import okio.ByteString.Companion.toByteString
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlin.time.Instant
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 
 class MLSReceiveRecoveryTest {
     @Test
-    fun healthyResumeDoesNotDecodeCiphertextOrReadNativeOrNetworkAndCachesTheIndex() = runTest {
-        withFixture { f ->
-            repeat(2) { assertNull(f.recovery.resume(f.native, EVENT.copy(content = "not base64!"))) }
-            assertEquals(1, f.metadata.rangeReads)
-            assertEquals(0, f.native.reads)
-            assertEquals(0, f.api.detailReads)
-            assertEquals(0, f.api.groupInfoReads)
-            assertEquals(0, f.joins)
-        }
+    fun behindGroupRejoinsWithAWarningIdStableAcrossVersions() = runTest {
+        val f = Fixture()
+        val result = assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+        assertEquals(GROUP_ID, result.groupId)
+        assertEquals(3uL, result.epoch)
+        assertEquals(1, f.joins)
+        val operation = """{"eventId":"event","groupId":"$GROUP_ID","ciphertextHash":"${CIPHERTEXT.toByteString().sha256().hex()}"}"""
+        assertEquals("mls-recovery:" + operation.encodeUtf8().sha256().hex(), result.warningId)
     }
 
     @Test
-    fun pendingIntentForcesExplicitJoinEvenWhenNativeEpochIsAlreadyCurrent() = runTest {
-        withFixture { f ->
-            val operation = f.store.begin(EVENT.id, GROUP_ID, CIPHERTEXT)
-            f.native.epoch = 12uL
-            val result = assertIs<MLSReceiveResume.Joined>(f.recovery.resume(f.native, EVENT)).result
-            assertEquals(operation, result.operation)
-            assertEquals(13uL, result.epoch)
-            assertEquals("mls-recovery:${operation.id}", result.warningId)
-            assertEquals(1, f.joins)
-            assertEquals(1, f.native.checkpointWrites)
-        }
+    fun currentGroupDoesNotRejoinAgain() = runTest {
+        val f = Fixture()
+        f.native.epoch = 10uL
+        assertNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+        assertEquals(0, f.joins)
+        assertEquals(0, f.api.groupInfoReads)
     }
 
     @Test
-    fun committedCompletionResumesEffectsWithoutAnotherExternalJoin() = runTest {
-        withFixture { f ->
-            val first = assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
-            val replay = assertIs<MLSReceiveResume.Joined>(f.recovery.resume(f.native, EVENT)).result
-            assertEquals(first, replay)
-            assertEquals(1, f.joins)
-            assertEquals(1, f.api.groupInfoReads)
-            assertEquals(1, f.native.checkpointWrites)
-        }
-    }
-
-    @Test
-    fun invalidCanonicalMetadataCannotCreateIntentOrJoin() = runTest {
+    fun invalidCanonicalMetadataCannotJoin() = runTest {
         val invalid = listOf(
             RESPONSE.copy(id = QualifiedID("other", "example.com")),
             RESPONSE.copy(id = QualifiedID("conversation", "other.example")),
@@ -114,187 +90,91 @@ class MLSReceiveRecoveryTest {
             RESPONSE.copy(members = RESPONSE.members.copy(self = ConversationMemberDTO.Self(UserId("other", "example.com"), "wire_member"))),
             RESPONSE.copy(epoch = null),
         )
-        for (response in invalid) withFixture { f ->
+        for (response in invalid) {
+            val f = Fixture()
             f.api.response = response
             assertFailsWith<IllegalStateException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
-            assertTrue(f.metadata.values.isEmpty())
             assertEquals(0, f.joins)
             assertEquals(0, f.api.groupInfoReads)
         }
     }
 
     @Test
-    fun pendingRecoveryRejectsChangedGroupWithoutJoinOrRetirement() = runTest {
-        withFixture { f ->
-            val operation = f.store.begin(EVENT.id, GROUP_ID, CIPHERTEXT)
-            f.api.response = RESPONSE.copy(groupId = "replacement-group")
-            assertFailsWith<IllegalStateException> { f.recovery.resume(f.native, EVENT) }
-            assertEquals(operation, f.store.find(EVENT.id) { CIPHERTEXT })
-            assertEquals(0, f.joins)
-        }
+    fun unavailableConversationDoesNotJoin() = runTest {
+        val f = Fixture()
+        f.api.detailsFailure = KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "Access denied", "access-denied"))
+        assertNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+        assertEquals(0, f.joins)
     }
 
     @Test
-    fun completedRecoveryStillRequiresCanonicalSelfMembership() = runTest {
-        withFixture { f ->
-            val first = assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
-            f.api.response = RESPONSE.copy(members = RESPONSE.members.copy(self = null))
-            assertFailsWith<IllegalStateException> { f.recovery.resume(f.native, EVENT) }
-            assertEquals(first.operation, f.store.find(EVENT.id) { CIPHERTEXT })
-            assertEquals(1, f.joins)
-        }
+    fun nativeEpochControlsRecoveryAndMissingNativeGroupCanRecover() = runTest {
+        val f = Fixture()
+        f.native.epoch = 12uL
+        assertNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+        f.native.exists = false
+        assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+        assertEquals(1, f.joins)
     }
 
     @Test
-    fun pendingRecoveryCannotJoinAGroupDifferentFromTheCallersExpectedGroup() = runTest {
-        withFixture { f ->
-            f.store.begin(EVENT.id, GROUP_ID, CIPHERTEXT)
-            assertFailsWith<IllegalStateException> { f.recovery.recover(f.native, EVENT, "different-group") }
-            assertEquals(0, f.api.detailReads)
-            assertEquals(0, f.joins)
-        }
+    fun cancelledJoinPropagatesAndTheNextAttemptJoinsAgain() = runTest {
+        val f = Fixture()
+        f.failure = CancellationException("cancelled")
+        assertFailsWith<CancellationException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
+        f.failure = null
+        assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+        assertEquals(2, f.joins)
     }
 
     @Test
-    fun unavailableConversationBeforeRecoveryCreatesNoIntentOrJoin() = runTest {
-        withFixture { f ->
-            f.api.detailsFailure = KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "Access denied", "access-denied"))
-            assertNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
-            assertNull(f.store.find(EVENT.id) { CIPHERTEXT })
-            assertEquals(0, f.joins)
-        }
+    fun emptyGroupInfoCannotJoin() = runTest {
+        val f = Fixture()
+        f.api.groupInfo = byteArrayOf()
+        assertFailsWith<IllegalStateException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
+        assertEquals(0, f.joins)
     }
 
     @Test
-    fun nativeEpochControlsNewRecoveryAndMissingNativeGroupCanRecover() = runTest {
-        withFixture { f ->
-            f.native.epoch = 12uL
-            assertNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
-            assertTrue(f.metadata.values.isEmpty())
-            f.native.exists = false
-            assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
-            assertEquals(1, f.joins)
-        }
-    }
-
-    @Test
-    fun unsupportedCheckpointFailsBeforeJoinButRetainsIntent() = runTest {
-        withFixture { f ->
-            f.native.checkpoint = "unsupported-format".encodeToByteArray()
-            assertFailsWith<Exception> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
-            assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
-            assertEquals(0, f.api.groupInfoReads)
-            assertEquals(0, f.joins)
-        }
-    }
-
-    @Test
-    fun failedJoinRetainsIntentAndCancellationPropagates() = runTest {
-        withFixture { f ->
-            f.failure = CancellationException("cancelled")
-            assertFailsWith<CancellationException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
-            assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
-            assertEquals(0, f.native.checkpointWrites)
-            f.failure = null
-            assertNotNull(f.recovery.resume(f.native, EVENT))
-            assertEquals(2, f.joins)
-        }
-    }
-
-    @Test
-    fun emptyGroupInfoCannotBecomeCompleted() = runTest {
-        withFixture { f ->
-            f.api.groupInfo = byteArrayOf()
-            assertFailsWith<IllegalStateException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
-            assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
-            assertEquals(0, f.joins)
-            assertEquals(0, f.native.checkpointWrites)
-        }
-    }
-
-    @Test
-    fun incorrectJoinEpochCannotWriteCompletion() = runTest {
-        withFixture { f ->
-            val recovery = MLSReceiveRecovery(f.store, f.api, SELF) { _, _, _ -> 999uL }
-            assertFailsWith<IllegalStateException> { recovery.recover(f.native, EVENT, GROUP_ID) }
-            assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
-            assertEquals(0, f.native.checkpointWrites)
-        }
+    fun incorrectJoinEpochFails() = runTest {
+        val f = Fixture()
+        val recovery = MLSReceiveRecovery(f.api, SELF) { _, _, _ -> 999uL }
+        assertFailsWith<IllegalStateException> { recovery.recover(f.native, EVENT, GROUP_ID) }
     }
 
     @Test
     fun missingGroupRetriesNetworkFailuresButSkipsAnyOtherRejoinFailure() = runTest {
-        withFixture { f ->
-            f.native.exists = false
-            f.api.groupInfoFailure = KaliumException.NoNetwork()
-            assertFailsWith<KaliumSyncException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
-            assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
-            f.api.groupInfoFailure = null
-            f.failure = KaliumSyncException("conflict", MLSFailure.FederatedBackendConflict(listOf("b.example.com")))
-            assertFailsWith<KaliumSyncException> { f.recovery.resume(f.native, EVENT) }
-            assertNotNull(f.store.find(EVENT.id) { CIPHERTEXT })
-            f.failure = IllegalStateException("External commit rejected")
-            assertEquals(MLSReceiveResume.Skipped, f.recovery.resume(f.native, EVENT))
-            assertNull(f.store.find(EVENT.id) { CIPHERTEXT })
-            f.store.recordProcessed(f.native, listOf(EVENT)) // The skipped event can still be acknowledged.
-        }
-    }
-
-    @Test
-    fun unreadableCheckpointKeepsTheRecoveryPendingWithoutJoining() = runTest {
-        withFixture { f ->
-            val operation = f.store.begin(EVENT.id, GROUP_ID, CIPHERTEXT)
-            f.native.exists = false
-            f.native.checkpoint = "not a checkpoint".encodeToByteArray()
-            assertFails { f.recovery.resume(f.native, EVENT) }
-            assertEquals(operation, f.store.find(EVENT.id) { CIPHERTEXT })
-            assertEquals(0, f.joins)
-        }
+        val f = Fixture()
+        f.native.exists = false
+        f.api.groupInfoFailure = KaliumException.NoNetwork()
+        assertFailsWith<KaliumSyncException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
+        f.api.groupInfoFailure = null
+        f.failure = KaliumSyncException("conflict", MLSFailure.FederatedBackendConflict(listOf("b.example.com")))
+        assertFailsWith<KaliumSyncException> { f.recovery.recover(f.native, EVENT, GROUP_ID) }
+        f.failure = IllegalStateException("External commit rejected")
+        assertNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+        assertEquals(2, f.joins)
     }
 
     @Test
     fun staleExternalCommitRetriesOnceWithFreshGroupInfo() = runTest {
-        withFixture { f ->
-            f.failOnce = KaliumSyncException("rejected", MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.StaleMessage))
-            assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
-            assertEquals(2, f.joins)
-            assertEquals(2, f.api.groupInfoReads)
-        }
+        val f = Fixture()
+        f.failOnce = KaliumSyncException("rejected", MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.StaleMessage))
+        assertNotNull(f.recovery.recover(f.native, EVENT, GROUP_ID))
+        assertEquals(2, f.joins)
+        assertEquals(2, f.api.groupInfoReads)
     }
 
-    @Test
-    fun deletionFromAnOlderVersionMovesToTheWipeQueueOnce() = runTest {
-        withFixture { f ->
-            val receipt = """{"eventId":"delete-event","payloadHash":"${"a".repeat(64)}"}"""
-            val prefix = "mls_receive_recovery_v2:${"client".encodeUtf8().sha256().hex()}:"
-            val key = prefix + "deletion:" + receipt.encodeUtf8().sha256().hex()
-            f.metadata.insertValue(receipt.dropLast(1) + ""","groupId":"$GROUP_ID"}""", key)
-            val queued = mutableListOf<String>()
-            repeat(2) { f.recovery.drainDeletions { queued += it } }
-            MLSReceiveRecoveryStore(f.metadata, f.events, "client").drainDeletions { queued += it }
-            assertEquals(listOf(GROUP_ID), queued)
-            assertTrue(f.metadata.values.isEmpty())
-        }
-    }
-
-    private suspend fun TestScope.withFixture(block: suspend (Fixture) -> Unit) {
-        withTestUserDatabase(UserIDEntity("recovery-test", "example.com")) { block(Fixture(it)) }
-    }
-
-    private class Fixture(database: TestUserDatabase) {
-        val metadata = FakeMetadata()
-        val events = database.builder.notificationEventStore
-        val store = MLSReceiveRecoveryStore(metadata, events, "client")
+    private class Fixture {
         val native = FakeMlsContext()
         val api = FakeApi()
         var joins = 0
         var failure: Exception? = null
         var failOnce: Exception? = null
-        val recovery = MLSReceiveRecovery(store, api, SELF) { context, groupId, groupInfo ->
+        val recovery = MLSReceiveRecovery(api, SELF) { context, groupId, groupInfo ->
             assertEquals(native, context)
             assertEquals(GROUP_ID, groupId)
             assertContentEquals(byteArrayOf(1, 2), groupInfo)
-            assertNotNull(store.find(EVENT.id) { CIPHERTEXT })
             joins++
             failure?.let { throw it }
             failOnce?.let { failOnce = null; throw it }

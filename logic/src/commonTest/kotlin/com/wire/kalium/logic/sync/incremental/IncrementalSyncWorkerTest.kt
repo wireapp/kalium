@@ -99,13 +99,13 @@ class IncrementalSyncWorkerTest {
         val key = "mls_receive_recovery_v2:${"client".encodeUtf8().sha256().hex()}:deletion:${receipt.encodeUtf8().sha256().hex()}"
         database.metadataDAO.insertValue(receipt.dropLast(1) + ""","groupId":"deleted"}""", key)
 
-        finishPendingConversationCleanup(database, "client", crypto.cryptoTransactionProvider) {}
+        finishPendingConversationCleanup(database, crypto.cryptoTransactionProvider) {}
 
         verifySuspend(VerifyMode.exactly(1)) { crypto.mlsContext.wipeConversation("orphan") }
         verifySuspend(VerifyMode.exactly(1)) { crypto.mlsContext.wipeConversation("deleted") }
         assertEquals(emptyList(), database.pendingActionDAO.getByActionType(PendingActionType.WIPE_MLS_GROUP))
         assertEquals(emptyList(), database.pendingActionDAO.getByActionType(PendingActionType.CLEAR_CONVERSATION_CONTENT))
-        assertEquals(null, database.metadataDAO.valueByKey(key))
+        assertEquals(emptyMap(), database.metadataDAO.valuesByKeyRange("mls_receive_recovery_v2:", "mls_receive_recovery_v2;"))
     }
 
     @Test

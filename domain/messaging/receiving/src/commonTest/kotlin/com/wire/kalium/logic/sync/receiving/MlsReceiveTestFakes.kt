@@ -20,17 +20,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlin.test.assertEquals
 
-/** In-memory metadata supporting the plain key reads and writes MLS receiving uses; counts range reads. */
 internal class FakeMetadata(private val failInsert: Boolean = false) : MetadataDAO {
     val values = mutableMapOf<String, String>()
-    var rangeReads = 0
     override suspend fun insertValue(value: String, key: String) {
         if (failInsert) error("Storage failed")
         values[key] = value
     }
     override suspend fun valueByKey(key: String): String? = values[key]
     override suspend fun valuesByKeyRange(fromInclusive: String, untilExclusive: String): Map<String, String> =
-        values.filterKeys { it >= fromInclusive && it < untilExclusive }.also { rangeReads++ }
+        values.filterKeys { it >= fromInclusive && it < untilExclusive }
     override suspend fun deleteValue(key: String) { values.remove(key) }
     override fun valueByKeyFlow(key: String): Flow<String?> = error("Unexpected observe")
     override suspend fun clear(keysToKeep: List<String>?) = error("Unexpected clear")
@@ -39,23 +37,15 @@ internal class FakeMetadata(private val failInsert: Boolean = false) : MetadataD
     override fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> = error("Unexpected observe")
 }
 
-/** One MLS group at [epoch] with a transaction checkpoint; counts native reads and checkpoint writes. */
 internal class FakeMlsContext(private val groupId: MLSGroupId = "group") : UnexpectedMlsContext() {
     var exists = true
     var epoch = 2uL
     var reads = 0
-    var checkpoint: ByteArray? = null
-    var checkpointWrites = 0
     override suspend fun joinByExternalCommit(publicGroupState: ByteArray): MLSGroupId = error("Use the explicit join callback")
     override suspend fun conversationEpoch(groupId: MLSGroupId): ULong {
         reads++
         assertEquals(this.groupId, groupId)
         return epoch
-    }
-    override suspend fun readTransactionCheckpoint(): ByteArray? { reads++; return checkpoint }
-    override suspend fun writeTransactionCheckpoint(checkpoint: ByteArray) {
-        checkpointWrites++
-        this.checkpoint = checkpoint
     }
     override suspend fun conversationExists(groupId: MLSGroupId): Boolean { reads++; return exists }
 }
@@ -64,8 +54,6 @@ internal class FakeMlsContext(private val groupId: MLSGroupId = "group") : Unexp
 internal open class UnexpectedMlsContext : MlsCoreCryptoContext {
     override suspend fun joinByExternalCommit(publicGroupState: ByteArray): MLSGroupId = error("Unexpected native call")
     override suspend fun conversationEpoch(groupId: MLSGroupId): ULong = error("Unexpected native call")
-    override suspend fun readTransactionCheckpoint(): ByteArray? = error("Unexpected native call")
-    override suspend fun writeTransactionCheckpoint(checkpoint: ByteArray): Unit = error("Unexpected native call")
     override fun getDefaultCipherSuite(): MLSCiphersuite = error("Unexpected native call")
     override suspend fun generateKeyPackages(amount: Int, credentialRef: CryptoCredentialRef?): List<ByteArray> =
         error("Unexpected native call")
