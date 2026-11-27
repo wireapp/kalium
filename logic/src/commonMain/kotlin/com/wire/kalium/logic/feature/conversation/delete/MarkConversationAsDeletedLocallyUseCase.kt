@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.conversation.delete
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LocalDeletionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
 /**
@@ -37,11 +37,11 @@ public sealed class MarkConversationAsDeletedResult {
 }
 
 internal class MarkConversationAsDeletedLocallyUseCaseImpl(
-    private val conversationRepository: ConversationRepository,
+    private val localDeletionRepository: LocalDeletionRepository,
 ) : MarkConversationAsDeletedLocallyUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): MarkConversationAsDeletedResult =
-        conversationRepository.setConversationDeletedLocally(conversationId, true).fold(
+        localDeletionRepository.markPending(conversationId).fold(
             { failure -> MarkConversationAsDeletedResult.Failure(failure) },
             {
                 MarkConversationAsDeletedResult.Success

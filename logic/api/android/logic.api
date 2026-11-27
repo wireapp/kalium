@@ -4046,6 +4046,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 	public final fun getGetConversationUnreadEventsCountUseCase ()Lcom/wire/kalium/logic/feature/conversation/GetConversationUnreadEventsCountUseCase;
 	public final fun getGetConversations ()Lcom/wire/kalium/logic/feature/conversation/GetConversationsUseCase;
 	public final fun getGetFavoriteFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/GetFavoriteFolderUseCase;
+	public final fun getGetLocallyDeletedConversationIdsUseCase ()Lcom/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsUseCase;
 	public final fun getGetMembersToMention ()Lcom/wire/kalium/logic/feature/conversation/MembersToMentionUseCase;
 	public final fun getGetOneToOneConversation ()Lcom/wire/kalium/logic/feature/conversation/GetOneToOneConversationDetailsUseCase;
 	public final fun getGetOrCreateOneToOneConversationUseCase ()Lcom/wire/kalium/logic/feature/conversation/GetOrCreateOneToOneConversationUseCase;
@@ -4889,6 +4890,35 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/creat
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/delete/DeleteConversationLocallyUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult {
+}
+
+public final class com/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult$Failure : com/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult$Success : com/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lcom/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult$Success;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationIds ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/delete/GetLocallyDeletedConversationIdsUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/delete/MarkConversationAsDeletedLocallyUseCase {

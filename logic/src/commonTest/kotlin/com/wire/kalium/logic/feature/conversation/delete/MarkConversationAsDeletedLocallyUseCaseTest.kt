@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.conversation.delete
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LocalDeletionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -47,7 +47,7 @@ class MarkConversationAsDeletedLocallyUseCaseTest {
         // then
         assertIs<MarkConversationAsDeletedResult.Success>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(CONVERSATION_ID, true)
+            arrangement.localDeletionRepository.markPending(CONVERSATION_ID)
         }
     }
 
@@ -64,25 +64,25 @@ class MarkConversationAsDeletedLocallyUseCaseTest {
         // then
         assertIs<MarkConversationAsDeletedResult.Failure>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(CONVERSATION_ID, true)
+            arrangement.localDeletionRepository.markPending(CONVERSATION_ID)
         }
     }
 
     private class Arrangement {
-        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val localDeletionRepository = mock<LocalDeletionRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, MarkConversationAsDeletedLocallyUseCase> = run {
-            val useCase = MarkConversationAsDeletedLocallyUseCaseImpl(conversationRepository = conversationRepository)
+            val useCase = MarkConversationAsDeletedLocallyUseCaseImpl(localDeletionRepository)
             block()
             this to useCase
         }
 
         suspend fun withSetConversationDeletedLocallySucceeding() {
-            everySuspend { conversationRepository.setConversationDeletedLocally(any(), any()) } returns Either.Right(Unit)
+            everySuspend { localDeletionRepository.markPending(any()) } returns Either.Right(Unit)
         }
 
         suspend fun withSetConversationDeletedLocallyFailing() {
-            everySuspend { conversationRepository.setConversationDeletedLocally(any(), any()) } returns Either.Left(CoreFailure.Unknown(null))
+            everySuspend { localDeletionRepository.markPending(any()) } returns Either.Left(CoreFailure.Unknown(null))
         }
     }
 
