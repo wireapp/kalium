@@ -20,6 +20,8 @@
 
 package com.wire.kalium.network.utils
 
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.http.Url
 import io.ktor.http.encodeURLParameter
@@ -68,11 +70,13 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
 
                     /**
                      * NOTE:
-                     * IDs are allowed to be logged in clear according to the agreed policy,
-                     * so we do NOT obfuscate them here anymore.
+                     * The log data policy (docs/adr/0018-log-data-policy.md) says IDs get a hint:
+                     * the first 7 characters, then "***". They are not logged in clear.
+                     * This code does not apply that hint to ID values yet, so treat it as a gap
+                     * in the code, not as permission to log IDs in clear.
                      *
-                     * If you ever need to change this policy, do it centrally (redactor),
-                     * not by sprinkling obfuscation across models.
+                     * If you ever need to change this policy, change the ADR and do it centrally
+                     * (redactor), not by sprinkling obfuscation across models.
                      */
 
                     /**
@@ -90,68 +94,102 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
         }
     }
 
+private const val MASKED_VALUE = "***"
+private const val MASKED_SEGMENT = "{}"
+
+/** Characters of a query value kept as a debugging hint. Shorter values are fully masked. */
+private const val QUERY_VALUE_HINT_LENGTH = 3
+
 /**
- * Request path can be logged in clear, but query parameter values must be obfuscated.
+ * Query keys whose value keeps a hint. Every other value, including codes, keys, signatures and tokens,
+ * is fully masked, because a credential must never appear in a log.
+ */
+private val hintedQueryKeys = setOf("client", "cursor", "since")
+
+/** Paging keys whose value stays in clear when it is only ASCII digits. */
+private val pagingQueryKeys = setOf("size", "page", "limit", "offset")
+
+/** Hosts that equal or end with one of these (on a dot boundary) are Wire-owned and stay in clear. */
+private val wireHostSuffixes = listOf("wire.com", "wire.link", "zinfra.io")
+
+/** The segment after `push/tokens` is the device push token, a credential, so it is fully masked. */
+private const val PUSH_TOKENS_SEGMENT = "tokens"
+
+/**
+ * Path segments that stay readable: API words made of lowercase letters and hyphens (`conversations`,
+ * `by-domain`) and version segments (`v9`). IDs, client IDs and asset keys contain digits, and domains contain dots,
+ * so they never match. No Kalium path carries a handle or another user-chosen word.
+ */
+private val readablePathSegment = Regex("[a-z-]+|v[0-9]+")
+
+/**
+ * Returns the URL in a form that is safe to log in every build: `host/path?query`.
+ * The host stays in clear when it is Wire-owned (`wire.com`, `wire.link`, `zinfra.io` and their subdomains).
+ * Any other host is a customer backend and keeps a 3-character hint (`ngi`, then asterisks), or `{}` when it is
+ * no longer than its hint. A URL without a host (Ktor reports `localhost` for it) starts at the path.
+ * Each path segment that is not an API word is obfuscated like the logger's IDs (7 characters) and domains
+ * (3 characters). Query values are masked, except paging numbers (`size`, `page`, `limit`, `offset`) made only of
+ * ASCII digits, which stay in clear, and `client`, `cursor` and `since`, which keep a 3-character hint.
+ * The scheme, user info, port and fragment are dropped.
  *
- * Example:
- *   host/path/segment?q=abc... -> host/path/segment?q=abc*** (etc.)
- */
-private const val KEEP_QUERY_PREFIX = 3
-
-/**
- * Allowlist for query keys which are safe to log in clear.
- * Everything else will have the VALUE obfuscated.
- */
-private val safeQueryKeys = setOf(
-    "size",
-    "page",
-    "limit",
-    "offset",
-    "cursor",
-    "sort",
-    "order",
-    "client"
-)
-
-/**
- * Obfuscate only the VALUE of query params. Keep the PATH in clear.
+ * Example: `https://nginz-https.acme-corp.com/v5/users/example.com/9a1d6c0e-...?client=5f2b9e&size=20` logs as the
+ * host hint `ngi***`, then `/v5/users/`, the domain hint `exa***`, `/`, the ID hint `9a1d6c0***`, and
+ * `?client=5f2***&size=20`.
  */
 fun obfuscatePath(url: Url): String {
-    val base = buildString {
-        append(url.host)
-        append(url.encodedPath)
-    }
+    val segments = url.segments
+    val path = segments.mapIndexed { index, segment ->
+        when {
+            segment.isEmpty() -> segment
+            segments.getOrNull(index - 1) == PUSH_TOKENS_SEGMENT -> MASKED_SEGMENT
+            readablePathSegment.matches(segment) -> segment
+            else -> segment.obfuscatePathSegment()
+        }
+    }.joinToString(separator = "/", prefix = "/")
+    val hostAndPath = url.host.obfuscateHost() + path
 
     val params = url.parameters.entries().filter { it.value.isNotEmpty() }
-    if (params.isEmpty()) return base
+    if (params.isEmpty()) return hostAndPath
 
     val query = params.joinToString("&") { (key, values) ->
-        val rawValue = values.first()
+        val value = values.first()
         val lowerKey = key.lowercase()
-
-        val valueToLog = if (lowerKey in safeQueryKeys) {
-            rawValue.encodeURLParameter()
-        } else {
-            rawValue.obfuscateQueryValue().encodeURLParameterKeepingAsterisks()
+        val loggedValue = when {
+            lowerKey in hintedQueryKeys -> value.queryValueHint()
+            lowerKey in pagingQueryKeys && value.isNotEmpty() && value.all { it in '0'..'9' } -> value
+            else -> MASKED_VALUE
         }
-
-        "$key=$valueToLog"
+        "$key=$loggedValue"
     }
 
-    return "$base?$query"
+    return "$hostAndPath?$query"
 }
 
-private fun String.encodeURLParameterKeepingAsterisks(): String =
-    encodeURLParameter()
-        .replace("%2A", "*")
-        .replace("%2a", "*")
-
-private fun String.obfuscateQueryValue(): String = when {
-    this.isBlank() -> "***"
-    this.endsWith("***") -> this
-    (this.length > KEEP_QUERY_PREFIX) -> this.take(KEEP_QUERY_PREFIX) + "***"
-    else -> "***"
+private fun String.obfuscateHost(): String {
+    // Ktor parses a relative URL as http://localhost/..., so "localhost" means there was no host to log.
+    if (isEmpty() || equals("localhost", ignoreCase = true)) return ""
+    val isWireOwned = wireHostSuffixes.any { equals(it, ignoreCase = true) || endsWith(".$it", ignoreCase = true) }
+    val encoded = encodeURLParameter()
+    return if (isWireOwned) encoded else encoded.hintOrMask(String::obfuscateDomain)
 }
+
+/**
+ * Applies the logger's rules for IDs and domains: a segment with a dot is treated as a domain, anything else as an ID.
+ * A segment no longer than its hint is replaced by `{}`, so it is never logged in full.
+ */
+private fun String.obfuscatePathSegment(): String {
+    val encoded = encodeURLParameter()
+    return encoded.hintOrMask(if ('.' in encoded) String::obfuscateDomain else String::obfuscateId)
+}
+
+/** Applies [hint], or returns `{}` when the hint would show the whole value. */
+private fun String.hintOrMask(hint: String.() -> String): String {
+    val obfuscated = hint()
+    return if (obfuscated.removeSuffix(MASKED_VALUE) == this) MASKED_SEGMENT else obfuscated
+}
+
+private fun String.queryValueHint(): String =
+    if (length > QUERY_VALUE_HINT_LENGTH) take(QUERY_VALUE_HINT_LENGTH).encodeURLParameter() + MASKED_VALUE else MASKED_VALUE
 
 fun deleteSensitiveItemsFromJson(text: String): String {
     var logMessage = ""
