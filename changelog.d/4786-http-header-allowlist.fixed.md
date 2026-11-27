@@ -1,0 +1,1 @@
+Log HTTP header values only for an approved list of headers. Any other header is logged by name with its value replaced by `***`, so credential headers such as `Asset-Token` no longer reach the logs. Request and response failure logs name the exception class only and no longer include its message, which can carry the full request URL.
