@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -50,6 +51,7 @@ import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.util.ConversationPersistenceApi
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any as mokkeryAny
 import dev.mokkery.mock
@@ -70,7 +72,7 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldFail()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.systemMessageInserter.insertLostCommitSystemMessage(mokkeryAny(), mokkeryAny())
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
         }
     }
 
@@ -143,7 +145,7 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldFail()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.systemMessageInserter.insertLostCommitSystemMessage(CONVERSATION_ID, mokkeryAny())
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(CONVERSATION_ID, mokkeryAny(), mokkeryAny(), mokkeryAny())
         }
     }
 
@@ -159,7 +161,7 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.systemMessageInserter.insertLostCommitSystemMessage(CONVERSATION_ID, mokkeryAny())
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(CONVERSATION_ID, mokkeryAny(), mokkeryAny(), mokkeryAny())
         }
     }
 
@@ -284,6 +286,94 @@ class StaleEpochVerifierTest {
         }
     }
 
+    @Test
+    fun givenMixedConversationWithStaleEpoch_whenVerifying_thenShouldRejoin() = runTest {
+        val (arrangement, staleEpochHandler) = arrange {
+            withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
+            withLocalProtocolInfo(MockConversation.MIXED_PROTOCOL_INFO.copy(epoch = REMOTE_EPOCH))
+            withLocalGroupEpoch(Either.Right(REMOTE_EPOCH - 1UL))
+            withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
+            withInsertLostCommitSystemMessage(Either.Right(Unit))
+        }
+
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), CONVERSATION_ID, mokkeryAny(), mokkeryAny())
+        }
+    }
+
+    @Test
+    fun givenLocalGroupIsMissing_whenVerifying_thenShouldRejoinAndWarnWithTheRejoinedEpoch() = runTest {
+        val groupId = MockConversation.MLS_PROTOCOL_INFO.groupId
+        val (arrangement, staleEpochHandler) = arrange {
+            withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
+            withLocalGroupExisting(false, true)
+            withLocalGroupEpoch(Either.Right(REMOTE_EPOCH + 1UL))
+            withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
+            withInsertLostCommitSystemMessage(Either.Right(Unit))
+        }
+
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), CONVERSATION_ID, mokkeryAny(), mokkeryAny())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(CONVERSATION_ID, groupId, REMOTE_EPOCH + 1UL, mokkeryAny())
+        }
+    }
+
+    @Test
+    fun givenRejoinResetsTheConversation_whenVerifying_thenShouldWarnForTheNewGroup() = runTest {
+        val newGroupId = GroupID("reset-group")
+        val (arrangement, staleEpochHandler) = arrange {
+            withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
+            withLocalGroupEpoch(Either.Right(REMOTE_EPOCH - 1UL))
+            withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
+            withInsertLostCommitSystemMessage(Either.Right(Unit))
+            everySuspend { conversationRepository.getConversationProtocolInfo(mokkeryAny()) } sequentiallyReturns listOf(
+                Either.Right(MockConversation.MLS_PROTOCOL_INFO.copy(epoch = REMOTE_EPOCH)),
+                Either.Right(MockConversation.MLS_PROTOCOL_INFO.copy(groupId = newGroupId, epoch = 1UL)),
+            )
+        }
+
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(CONVERSATION_ID, newGroupId, mokkeryAny(), mokkeryAny())
+        }
+    }
+
+    @Test
+    fun givenRejoinLeavesNoLocalGroup_whenVerifying_thenShouldNotWarn() = runTest {
+        val (arrangement, staleEpochHandler) = arrange {
+            withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
+            withLocalGroupExisting(false, false)
+            withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
+        }
+
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
+        }
+    }
+
+    @Test
+    fun givenSubconversationGroupIsMissing_whenVerifying_thenShouldFailWithoutJoining() = runTest {
+        val subConversationId = SubconversationId("subconversation-id")
+        val (arrangement, staleEpochHandler) = arrange {
+            withFetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId, Either.Right(TestSubConversationDetails))
+            withLocalGroupEpoch(Either.Left(MLSFailure.ConversationNotFound))
+        }
+
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID, subConversationId, null).shouldFail()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(mokkeryAny(), mokkeryAny(), mokkeryAny())
+        }
+    }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -317,6 +407,16 @@ class StaleEpochVerifierTest {
             } returns localProtocolInfo
         }
 
+        suspend fun withLocalProtocolInfo(protocolInfo: Conversation.ProtocolInfo) {
+            everySuspend { conversationRepository.getConversationProtocolInfo(mokkeryAny()) } returns Either.Right(protocolInfo)
+        }
+
+        suspend fun withLocalGroupExisting(vararg exists: Boolean) {
+            everySuspend {
+                mlsConversationRepository.hasEstablishedMLSGroup(mokkeryAny(), mokkeryAny())
+            } sequentiallyReturns exists.map { Either.Right(it) }
+        }
+
         suspend fun withLocalGroupEpoch(result: Either<CoreFailure, ULong>) {
             everySuspend { mlsConversationRepository.getLocalGroupEpoch(mokkeryAny(), mokkeryAny()) } returns result
         }
@@ -326,7 +426,7 @@ class StaleEpochVerifierTest {
         }
 
         suspend fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>) {
-            everySuspend { systemMessageInserter.insertLostCommitSystemMessage(mokkeryAny(), mokkeryAny()) } returns result
+            everySuspend { systemMessageInserter.insertLostCommitSystemMessage(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny()) } returns result
         }
 
         suspend fun withFetchRemoteSubConversationDetails(
@@ -356,6 +456,7 @@ class StaleEpochVerifierTest {
         }
 
         suspend fun arrange() = run {
+            everySuspend { mlsConversationRepository.hasEstablishedMLSGroup(mokkeryAny(), mokkeryAny()) } returns Either.Right(true)
             block()
             this@Arrangement to StaleEpochVerifierImpl(
                 systemMessageInserter = systemMessageInserter,
