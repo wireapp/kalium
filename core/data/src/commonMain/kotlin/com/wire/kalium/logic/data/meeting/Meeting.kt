@@ -59,6 +59,7 @@ data class Meeting(
     val type: Type = Type.SCHEDULED,
     val link: String? = null,
     val hasPassword: Boolean = false,
+    val invitedEmails: List<String> = emptyList(),
 ) {
     enum class Type { IMMEDIATE, SCHEDULED }
     data class Recurrence(
@@ -88,6 +89,7 @@ data class CreateMeeting(
     val tzid: String,
     val type: Meeting.Type = Meeting.Type.SCHEDULED,
     val password: String? = null,
+    val invitedEmails: List<String> = emptyList(),
 )
 
 data class UpdateMeeting(
@@ -98,6 +100,7 @@ data class UpdateMeeting(
     val recurrence: Meeting.Recurrence?,
     val otherParticipants: List<UserId>,
     val type: Meeting.Type,
+    val invitedEmails: List<String> = emptyList(),
 )
 
 data class MeetingReminder(

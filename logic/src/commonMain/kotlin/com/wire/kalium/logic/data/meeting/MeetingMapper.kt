@@ -68,6 +68,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
                 type = MeetingEntity.Type.valueOf(meeting.type.name),
                 link = meeting.link,
                 hasPassword = meeting.hasPassword,
+                invitedEmails = meeting.invitedEmails,
             )
         }
     }
@@ -89,6 +90,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         type = Meeting.Type.valueOf(meeting.type.name),
         link = meeting.link,
         hasPassword = meeting.hasPassword,
+        invitedEmails = meeting.invitedEmails,
     )
 
     override fun fromDaoToModel(meeting: MeetingOccurrenceDetailsEntity): MeetingOccurrence = MeetingOccurrence(
@@ -143,6 +145,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         type = MeetingTypeDTO.valueOf(meeting.type.name),
         password = meeting.password,
         recurrence = meeting.recurrence?.toApi(),
+        invitedEmails = meeting.invitedEmails,
     )
 
     override fun fromModelToUpdateApi(meeting: UpdateMeeting): UpdateMeetingRequest = UpdateMeetingRequest(
@@ -152,6 +155,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         tzid = meeting.tzid,
         type = MeetingTypeDTO.valueOf(meeting.type.name),
         recurrence = meeting.recurrence?.toApi(),
+        invitedEmails = meeting.invitedEmails,
     )
 
     private fun Meeting.Recurrence.toApi(): MeetingRecurrenceDTO = MeetingRecurrenceDTO(
