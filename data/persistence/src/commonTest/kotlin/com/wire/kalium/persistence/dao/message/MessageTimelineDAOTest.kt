@@ -26,6 +26,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlPreparedStatement
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
@@ -291,6 +292,19 @@ class MessageTimelineDAOTest : BaseDatabaseTest() {
             }
             assertTrue(timeline.invalidated.value)
         }
+    }
+
+    @Test
+    fun writesInOtherConversationsAndUnrelatedUserFieldsKeepTheTimelineValid() = runTest(dispatcher) {
+        val elsewhere = message(0).copy(id = "elsewhere", conversationId = otherConversation.id)
+        seed((0..40).map(::message) + elsewhere)
+        val timeline = open()
+        timeline.page()
+        db.messageDAO.insertOrIgnoreMessages(listOf(elsewhere.copy(id = "elsewhere-2")), withUnreadEvents = false)
+        db.database.reactionsQueries.insertReaction("elsewhere", otherConversation.id, self.id, "😀", "date")
+        db.receiptDAO.insertReceipts(other.id, otherConversation.id, Instant.fromEpochMilliseconds(5_000), ReceiptTypeEntity.READ, listOf("elsewhere"))
+        db.database.usersQueries.updateUserAvailabilityStatus(UserAvailabilityStatusEntity.BUSY, other.id)
+        assertFalse(timeline.invalidated.value)
     }
 
     @Test

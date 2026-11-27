@@ -34,6 +34,8 @@ ON CONFLICT(qualified_id) DO UPDATE SET
         ELSE excluded.last_notified_date END;
 
 importMessageTable:
+-- @NotifyCustomKey message_list
+-- @NotifyCustomKey Message
 INSERT OR IGNORE INTO Message SELECT * FROM backup_db.Message;
 
 -- this need to be called only if the client ID fron the backup and local match

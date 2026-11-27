@@ -49,7 +49,8 @@ the page limit, so a run of excluded rows does not produce a false end of histor
 ## Session lifetime and refresh
 
 Every `MessageTimeline` is one database generation. Observe its `invalidated` state while showing
-its pages. Relevant message, child-table, user, and client writes invalidate the generation. The
+its pages. Writes keyed to this conversation, sender profile changes, Drive files, and clients invalidate the
+generation; writes in other conversations do not. The
 session keeps dependencies for all pages and uses the existing batched database notifications.
 
 When invalidated:

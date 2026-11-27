@@ -141,6 +141,7 @@ markUserAsDeleted:
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
+-- @NotifyCustomKey message_sender_profile
 INSERT INTO User(qualified_id, user_type, deleted)
 VALUES (:qualified_id, :user_type, 1)
 ON CONFLICT (qualified_id) DO UPDATE SET
@@ -164,6 +165,7 @@ markUserAsDefederated:
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
+-- @NotifyCustomKey message_sender_profile
 UPDATE User
 SET team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, defederated = 1
 WHERE qualified_id = ?;
@@ -320,6 +322,7 @@ updateUserAccentColor:
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey User
+-- @NotifyCustomKey message_sender_profile
 UPDATE User SET accent_id = ? WHERE qualified_id = ?;
 
 selectUsersWithoutMetadata:
