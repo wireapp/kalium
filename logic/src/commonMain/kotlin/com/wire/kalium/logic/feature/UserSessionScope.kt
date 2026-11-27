@@ -1709,6 +1709,7 @@ public class UserSessionScope internal constructor(
                         kaliumFileSystem.delete(it.toPath(), mustExist = false)
                     }
                     cleanup.discardLegacyRequests()
+                    receiveRecovery()?.drainDeletions { cleanup.queueWipe(it) }
                     if (userStorage.database.pendingActionDAO.getByActionType(
                             PendingActionType.WIPE_MLS_GROUP
                         ).isNotEmpty()

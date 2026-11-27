@@ -2,7 +2,6 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
@@ -117,19 +116,10 @@ internal class AppMLSReceiveRecovery(
         val mls = context.mls
         val identity = envelope.payloadIdentity
         if (mls == null || identity == null) return false
-        val event = envelope.event
-        if (event is Event.Conversation.DeletedConversation) {
-            // A present conversation is handled by the ordinary deletion use case. Only
-            // restore a lost native wipe here; wiping twice would fail that normal handler.
-            when (val conversation = conversations.getConversationById(event.conversationId)) {
-                is Either.Right -> Unit
-                is Either.Left -> if (conversation.value == StorageFailure.DataNotFound) {
-                    recovery.resumeDeletion(mls, identity)
-                } else conversation.recoveryOrThrow()
-            }
-        }
         return recovery.wereEffectsProcessed(mls, identity)
     }
+
+    suspend fun drainDeletions(enqueueWipe: suspend (groupId: String) -> Unit) = recovery.drainDeletions(enqueueWipe)
 
     override suspend fun recordProcessed(context: CryptoTransactionContext, events: List<EventEnvelope>) {
         context.mls?.let {

@@ -4481,8 +4481,9 @@ class NotificationProcessorNativeTest {
                         assertNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(deleted.id)).isProcessed)
                         assertNull(runtime.database.messageDAO.getMessageById(first.id, DELETE_TARGET))
-                        val rolledBack = interruption in listOf(Interruption.BEFORE_COMMIT, Interruption.CANCEL_BEFORE_COMMIT)
-                        assertEquals(rolledBack, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
+                        val queued = interruption != Interruption.MARKER
+                        assertEquals(queued, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
+                        assertEquals(queued, runtime.database.pendingActionDAO.getByActionType(PendingActionType.WIPE_MLS_GROUP).isNotEmpty())
                     })
                     if (interruption == Interruption.MARKER) fixture.sql("DROP TRIGGER interrupt_receive")
                 }
