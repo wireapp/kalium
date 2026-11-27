@@ -274,7 +274,7 @@ class EventBatchProcessorTest {
     }
 
     @Test
-    fun failedProcessedMarkerDoesNotStopStandardReceiveBeforeTheNextBatch() = runTest(TestKaliumDispatcher.default) {
+    fun failedStandardAcknowledgementStopsBeforeTheNextBatch() = runTest(TestKaliumDispatcher.default) {
         val first = TestEvent.memberJoin().wrapInEnvelope()
         val later = TestEvent.memberLeave().wrapInEnvelope()
         val failure = StorageFailure.Generic(IllegalStateException("marker write failed"))
@@ -284,10 +284,11 @@ class EventBatchProcessorTest {
             .withSetEventsAsProcessedReturning(Either.Left(failure))
             .arrange()
 
-        processor.processBatches(arrangement.batches)
+        val thrown = assertFailsWith<KaliumSyncException> { processor.processBatches(arrangement.batches) }
 
-        verifySuspend(VerifyMode.exactly(2)) { arrangement.eventRepository.setEventsAsProcessed(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), later) }
+        assertEquals(failure, thrown.coreFailureCause)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventRepository.setEventsAsProcessed(listOf(first.event.id)) }
+        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.processEvent(any(), later) }
     }
 
     @Test

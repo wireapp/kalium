@@ -1694,23 +1694,13 @@ public class UserSessionScope internal constructor(
     internal fun createIncrementalSyncWorker(eventGatherer: EventGatherer = this.eventGatherer): IncrementalSyncWorker =
         IncrementalSyncWorkerImpl(
             eventGatherer,
-            batchProcessor = if (enableDurableMLSReceiveRecovery) {
-                EventBatchProcessor.durable(
-                    eventProcessor = eventProcessor,
-                    transactionProvider = cryptoTransactionProvider,
-                    databaseBuilder = userStorage.database,
-                    recovery = { checkNotNull(receiveRecovery()) },
-                    logger = userScopedLogger,
-                )
-            } else {
-                EventBatchProcessor.standard(
-                    eventProcessor = eventProcessor,
-                    transactionProvider = cryptoTransactionProvider,
-                    databaseBuilder = userStorage.database,
-                    eventRepository = eventRepository,
-                    logger = userScopedLogger,
-                )
-            },
+            batchProcessor = EventBatchProcessor.standard(
+                eventProcessor = eventProcessor,
+                transactionProvider = cryptoTransactionProvider,
+                databaseBuilder = userStorage.database,
+                eventRepository = eventRepository,
+                logger = userScopedLogger,
+            ),
             logger = userScopedLogger,
             consumePendingLegalHoldTransitions = { legalHoldHandler.recoverPendingTransitions() },
             consumePendingConversationCleanup = {
@@ -2150,9 +2140,6 @@ public class UserSessionScope internal constructor(
                 resetMLSConversation = resetMlsConversation,
             ),
             mlsRejoinQueue,
-            receiveRecovery = if (enableDurableMLSReceiveRecovery) {
-                { context, event, needsRejoin -> receiveRecovery()?.handle(context, event, needsRejoin) == true }
-            } else null,
         )
 
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
@@ -2309,6 +2296,7 @@ public class UserSessionScope internal constructor(
             channelAddPermissionUpdateEventHandler,
             conversationAccessUpdateEventHandler,
             mlsResetConversationEventHandler,
+            mlsRejoinQueue,
         )
     }
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(

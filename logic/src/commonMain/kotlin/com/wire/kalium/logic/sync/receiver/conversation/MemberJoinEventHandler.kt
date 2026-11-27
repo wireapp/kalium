@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.util.serialization.toJsonElement
 
 internal interface MemberJoinEventHandler {
@@ -134,6 +135,7 @@ internal class MemberJoinEventHandlerImpl(
             conversationTeamId = conversation.teamId?.value,
             isCellEnabled = conversationRepository.isCellEnabled(event.conversationId).getOrElse(false),
             instant = event.dateTime,
+            messageId = event.systemMessageId.ifEmpty { null }?.let { "$it:cell-access" } ?: LocalId.generate(),
         )
     }
 

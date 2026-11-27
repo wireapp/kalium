@@ -46,7 +46,7 @@ import kotlinx.coroutines.withContext
  * A failed batch keeps its native crypto changes and is retried without being acknowledged.
  * Receipt and recovery failures still throw to prevent a commit.
  * Queue acknowledgement starts only after both native transactions return successfully.
- * Standard and durable receiving retain their own traversal and acknowledgement failure policy.
+ * Standard and durable receiving retain their own traversal policy.
  */
 internal interface EventBatchProcessor {
     suspend fun processBatch(envelopes: List<EventEnvelope>)
@@ -151,9 +151,10 @@ private class StandardEventBatchReceiver(
     override suspend fun recordProcessed(context: CryptoTransactionContext, envelopes: List<EventEnvelope>) = Unit
 
     override suspend fun acknowledge(eventIds: List<String>) {
-        // Standard marker failure does not stop the next gathered batch.
+        // Throw to restart the sync: unacknowledged rows count as emitted, so receiving would otherwise stall on a full batch.
         eventRepository.setEventsAsProcessed(eventIds)
             .onSuccess { logger.i("${eventIds.size} events set as processed") }
+            .onFailure { throw KaliumSyncException("Marking processed events failed", it) }
     }
 }
 

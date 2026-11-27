@@ -41,11 +41,14 @@ import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandl
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.network.exceptions.isRetryableServerResponse
+import kotlin.time.Clock
 
 internal interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
     suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> = Either.Right(Unit)
@@ -73,6 +76,7 @@ internal class ConversationEventReceiverImpl(
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler,
     private val accessUpdateEventHandler: AccessUpdateEventHandler,
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler,
+    private val rejoinQueue: MLSRejoinQueue,
 ) : ConversationEventReceiver {
     override suspend fun onEvent(
         transactionContext: CryptoTransactionContext,
@@ -117,9 +121,10 @@ internal class ConversationEventReceiverImpl(
 
             is Event.Conversation.MLSWelcome -> {
                 val result = mlsWelcomeHandler.handle(transactionContext, event)
-                // Network failures must be retried, otherwise the welcome is lost and the conversation never appears.
-                val isNetworkFailure = (result as? Either.Left)?.value is NetworkFailure.NoNetworkConnection
-                if (transactionContext is DurableMLSReceiveContext || isNetworkFailure) result else Either.Right(Unit)
+                val failure = (result as? Either.Left)?.value
+                // Retryable failures keep the Welcome pending, otherwise it is lost and the conversation never appears.
+                val propagate = failure == null || transactionContext is DurableMLSReceiveContext || failure.isRetryable()
+                if (propagate) result else queueRejoin(event)
             }
 
             is Event.Conversation.RenamedConversation -> {
@@ -159,4 +164,10 @@ internal class ConversationEventReceiverImpl(
         newMessageHandler.flushPendingSideEffects()
         return Either.Right(Unit)
     }
+
+    private suspend fun queueRejoin(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> =
+        Either.Right(Unit).also { rejoinQueue.request(event.conversationId, Clock.System.now()) }
+
+    private fun CoreFailure?.isRetryable() = this is NetworkFailure.NoNetworkConnection || this is NetworkFailure.FederatedBackendFailure ||
+        (this is NetworkFailure.ServerMiscommunication && kaliumException.isRetryableServerResponse())
 }
