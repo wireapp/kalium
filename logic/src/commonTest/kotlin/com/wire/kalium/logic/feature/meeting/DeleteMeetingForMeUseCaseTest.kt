@@ -68,7 +68,7 @@ class DeleteMeetingForMeUseCaseTest {
 
         val result = useCase(MEETING_ID)
 
-        assertEquals(failure, assertIs<DeleteMeetingForMeUseCase.Result.Failure>(result).coreFailure)
+        assertEquals(failure, assertIs<DeleteMeetingForMeUseCase.Result.Failure.Other>(result).coreFailure)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.getMeeting(MEETING_ID)
             arrangement.leaveConversation(CONVERSATION_ID)
@@ -79,7 +79,7 @@ class DeleteMeetingForMeUseCaseTest {
     }
 
     @Test
-    fun givenLocalDeleteFails_whenInvoking_thenReturnsFailure() = runTest {
+    fun givenLocalDeleteFails_whenInvoking_thenReturnsCleanupWarning() = runTest {
         val failure = StorageFailure.DataNotFound
         val (arrangement, useCase) = Arrangement()
             .withLeaveConversationReturning(RemoveMemberFromConversationUseCase.Result.Success)
@@ -88,7 +88,7 @@ class DeleteMeetingForMeUseCaseTest {
 
         val result = useCase(MEETING_ID)
 
-        assertEquals(failure, assertIs<DeleteMeetingForMeUseCase.Result.Failure>(result).coreFailure)
+        assertEquals(failure, assertIs<DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed>(result).coreFailure)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.getMeeting(MEETING_ID)
             arrangement.leaveConversation(CONVERSATION_ID)
@@ -105,7 +105,7 @@ class DeleteMeetingForMeUseCaseTest {
 
         val result = useCase(MEETING_ID)
 
-        assertEquals(failure, assertIs<DeleteMeetingForMeUseCase.Result.Failure>(result).coreFailure)
+        assertEquals(failure, assertIs<DeleteMeetingForMeUseCase.Result.Failure.Other>(result).coreFailure)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.getMeeting(MEETING_ID)
         }

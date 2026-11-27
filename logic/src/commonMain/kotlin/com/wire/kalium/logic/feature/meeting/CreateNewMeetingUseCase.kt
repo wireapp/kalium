@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.meeting.CreateMeeting
+import com.wire.kalium.logic.data.meeting.MeetingDataSource.SavedMeetingFailure
 import com.wire.kalium.logic.data.meeting.MeetingDataSource.EstablishMLSFailure
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
@@ -38,11 +40,22 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 public interface CreateNewMeetingUseCase {
     public suspend operator fun invoke(createMeeting: CreateMeeting): Result
     public sealed interface Result {
-        public data class Success(
-            val conversationId: ConversationId,
-            val meetingId: MeetingId,
-        ) : Result
-        public data object Failure : Result // TODO: Add more specific error types in the future
+        public sealed interface Success : Result {
+            public val conversationId: ConversationId
+            public val meetingId: MeetingId
+
+            public data class Complete(
+                override val conversationId: ConversationId,
+                override val meetingId: MeetingId,
+            ) : Success
+
+            public data class Partial(
+                override val conversationId: ConversationId,
+                override val meetingId: MeetingId,
+                val warning: MeetingSaveWarning,
+            ) : Success
+        }
+        public data class Failure(val coreFailure: CoreFailure) : Result
     }
 }
 
@@ -60,7 +73,15 @@ internal class CreateNewMeetingUseCaseImpl(
             when (it) {
                 // don't propagate the MLS establishment error, meeting creation succeeded, and MLS establishment can be retried later
                 is EstablishMLSFailure -> Either.Right(
-                    CreateNewMeetingResult(it.conversationId, MLSAdditionResult.Empty, it.meetingId)
+                    CreateNewMeetingResult(
+                        conversationId = it.conversationId,
+                        mlsAdditionResult = MLSAdditionResult.Empty,
+                        meetingId = it.meetingId,
+                        warning = it.reason.toSetupWarning(createMeeting.otherParticipants)
+                    )
+                )
+                is SavedMeetingFailure -> Either.Right(
+                    CreateNewMeetingResult(it.conversationId, MLSAdditionResult.Empty, it.meetingId, it.warning)
                 )
                 else -> Either.Left(it)
             }
@@ -69,7 +90,13 @@ internal class CreateNewMeetingUseCaseImpl(
             refreshUsersWithoutMetadata()
         }
         .fold(
-            { CreateNewMeetingUseCase.Result.Failure },
-            { CreateNewMeetingUseCase.Result.Success(it.conversationId, it.meetingId) }
+            { CreateNewMeetingUseCase.Result.Failure(it) },
+            {
+                val warning = it.warning ?: it.mlsAdditionResult.toMeetingSaveWarning()
+                when (warning) {
+                    null -> CreateNewMeetingUseCase.Result.Success.Complete(it.conversationId, it.meetingId)
+                    else -> CreateNewMeetingUseCase.Result.Success.Partial(it.conversationId, it.meetingId, warning)
+                }
+            }
         )
 }

@@ -45,6 +45,8 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertEquals
 
 class UpdateMeetingUseCaseTest {
@@ -58,7 +60,7 @@ class UpdateMeetingUseCaseTest {
 
         val result = useCase(MEETING_ID, UPSERT_MEETING)
 
-        assertEquals(UpdateMeetingUseCase.Result.Success, result)
+        assertEquals(UpdateMeetingUseCase.Result.Success.Complete, result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.insertOrIgnoreIncompleteUsers(UPSERT_MEETING.otherParticipants)
             arrangement.meetingRepository.updateMeeting(
@@ -90,7 +92,7 @@ class UpdateMeetingUseCaseTest {
 
         val result = useCase(MEETING_ID, UPSERT_MEETING)
 
-        assertEquals(UpdateMeetingUseCase.Result.Success, result)
+        assertEquals(UpdateMeetingUseCase.Result.Success.Partial(MeetingSaveWarning.ConversationSetupFailed), result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.resetMLSConversation(conversationId = CONVERSATION_ID, transactionContext = arrangement.transactionContext)
             arrangement.refreshUsersWithoutMetadata()
@@ -123,6 +125,52 @@ class UpdateMeetingUseCaseTest {
         verifySuspend(VerifyMode.not) {
             arrangement.resetMLSConversation(any(), any())
             arrangement.refreshUsersWithoutMetadata()
+        }
+    }
+
+    @Test
+    fun givenPartialAdd_whenUpdating_thenReturnsParticipantWarning() = runTest {
+        val userId = UPSERT_MEETING.otherParticipants.single()
+        val (_, useCase) = Arrangement()
+            .withInsertIncompleteUsersSuccess(UPSERT_MEETING)
+            .withUpdateMeetingReturning(MEETING_ID, UPSERT_MEETING, Either.Right(MLSAdditionResult(emptySet(), emptySet(), setOf(userId))))
+            .arrange()
+
+        assertEquals(
+            UpdateMeetingUseCase.Result.Success.Partial(
+                MeetingSaveWarning.AddParticipantsFailed(
+                    mapOf(userId to NetworkFailure.FederatedBackendFailure.FailedDomains(listOf(userId.domain)))
+                )
+            ),
+            useCase(MEETING_ID, UPSERT_MEETING)
+        )
+    }
+
+    @Test
+    fun givenSavedMeetingRemovalFails_whenUpdating_thenReturnsRemovalWarning() = runTest {
+        val failure = MeetingDataSource.SavedMeetingFailure(
+            MEETING_ID, CONVERSATION_ID, CoreFailure.Unknown(null), MeetingSaveWarning.RemoveParticipantsFailed
+        )
+        val (_, useCase) = Arrangement()
+            .withInsertIncompleteUsersSuccess(UPSERT_MEETING)
+            .withUpdateMeetingReturning(MEETING_ID, UPSERT_MEETING, Either.Left(failure))
+            .arrange()
+
+        assertEquals(UpdateMeetingUseCase.Result.Success.Partial(MeetingSaveWarning.RemoveParticipantsFailed), useCase(MEETING_ID, UPSERT_MEETING))
+    }
+
+    @Test
+    fun givenNetworkOrUnexpectedUpdateFailure_whenInvoking_thenPreservesOriginalCause() = runTest {
+        val failures = listOf(NetworkFailure.NoNetworkConnection(null), CoreFailure.Unknown(IllegalStateException("update failed")))
+        failures.forEach { failure ->
+            val (_, useCase) = Arrangement()
+                .withInsertIncompleteUsersSuccess(UPSERT_MEETING)
+                .withUpdateMeetingReturning(MEETING_ID, UPSERT_MEETING, Either.Left(failure))
+                .arrange()
+
+            val result = assertIs<UpdateMeetingUseCase.Result.Failure.Other>(useCase(MEETING_ID, UPSERT_MEETING))
+
+            assertSame(failure, result.coreFailure)
         }
     }
 

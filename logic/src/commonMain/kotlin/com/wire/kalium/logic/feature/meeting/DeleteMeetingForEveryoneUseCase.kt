@@ -17,16 +17,21 @@
  */
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import io.ktor.http.HttpStatusCode
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 
 /**
@@ -37,7 +42,11 @@ public interface DeleteMeetingForEveryoneUseCase {
 
     public sealed interface Result {
         public data object Success : Result
-        public data class Failure(val coreFailure: CoreFailure) : Result
+        public sealed interface Failure : Result {
+            public data class CleanupFailed(val coreFailure: CoreFailure) : Failure
+            public data object NotAllowed : Failure
+            public data class Other(val coreFailure: CoreFailure) : Failure
+        }
     }
 }
 
@@ -51,15 +60,32 @@ internal class DeleteMeetingForEveryoneUseCaseImpl(
         meetingRepository.getMeeting(meetingId).flatMap { meeting ->
             meetingRepository.deleteMeeting(meeting.meetingId).map { meeting }
         }.fold({
-            DeleteMeetingForEveryoneUseCase.Result.Failure(it)
+            it.toDeleteResult()
         }, { meeting ->
-            conversationRepository.getConversationById(meeting.conversationId).onSuccess { conversation ->
+            conversationRepository.getConversationById(meeting.conversationId).flatMap { conversation ->
                 if (conversation.type == Conversation.Type.Group.Meeting) {
                     transactionProvider.transaction("DeleteMeetingForEveryone") { transactionContext ->
                         deleteConversation(transactionContext, meeting.conversationId)
                     }
+                } else {
+                    Either.Right(Unit)
                 }
-            }
-            DeleteMeetingForEveryoneUseCase.Result.Success
+            }.fold(
+                {
+                    if (it == StorageFailure.DataNotFound) DeleteMeetingForEveryoneUseCase.Result.Success
+                    else DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed(it)
+                },
+                { DeleteMeetingForEveryoneUseCase.Result.Success }
+            )
         })
+
+    private fun CoreFailure.toDeleteResult(): DeleteMeetingForEveryoneUseCase.Result.Failure = when {
+        this is MeetingDataSource.DeleteCleanupFailure -> DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed(reason)
+        this is NetworkFailure.ServerMiscommunication &&
+            (kaliumException as? KaliumException.InvalidRequestError)?.errorResponse?.code in listOf(
+                HttpStatusCode.Forbidden.value, HttpStatusCode.NotFound.value, HttpStatusCode.Gone.value
+            ) ->
+            DeleteMeetingForEveryoneUseCase.Result.Failure.NotAllowed
+        else -> DeleteMeetingForEveryoneUseCase.Result.Failure.Other(this)
+    }
 }

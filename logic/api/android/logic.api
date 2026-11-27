@@ -5883,21 +5883,45 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/CreateNewM
 }
 
 public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Failure;
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Failure;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
+public abstract interface class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
+	public abstract fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public abstract fun getMeetingId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success$Complete : com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success {
 	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success$Complete;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success$Complete;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success$Complete;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun getMeetingId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun getMeetingId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success$Partial : com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component3 ()Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success$Partial;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success$Partial;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success$Partial;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun getMeetingId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getWarning ()Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -5909,11 +5933,32 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeet
 public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result {
 }
 
-public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result {
+public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$CleanupFailed : com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure {
 	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
 	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$CleanupFailed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$CleanupFailed;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$CleanupFailed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$NotAllowed : com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$NotAllowed;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$Other : com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$Other;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$Other;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure$Other;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
 	public fun hashCode ()I
@@ -5934,11 +5979,25 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeet
 public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result {
 }
 
-public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result {
+public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure$CleanupFailed : com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure {
 	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
 	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure$CleanupFailed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure$CleanupFailed;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure$CleanupFailed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure$Other : com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure$Other;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure$Other;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure$Other;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
 	public fun hashCode ()I
@@ -6003,6 +6062,34 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/MeetingRem
 	public abstract fun changes ()Lkotlinx/coroutines/flow/Flow;
 	public abstract fun next (Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun within (Lkotlin/time/Instant;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/MeetingSaveWarning {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/MeetingSaveWarning$AddParticipantsFailed : com/wire/kalium/logic/feature/meeting/MeetingSaveWarning {
+	public fun <init> (Ljava/util/Map;)V
+	public final fun component1 ()Ljava/util/Map;
+	public final fun copy (Ljava/util/Map;)Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning$AddParticipantsFailed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning$AddParticipantsFailed;Ljava/util/Map;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning$AddParticipantsFailed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getParticipants ()Ljava/util/Map;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/MeetingSaveWarning$ConversationSetupFailed : com/wire/kalium/logic/feature/meeting/MeetingSaveWarning {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning$ConversationSetupFailed;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/MeetingSaveWarning$RemoveParticipantsFailed : com/wire/kalium/logic/feature/meeting/MeetingSaveWarning {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning$RemoveParticipantsFailed;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
@@ -6099,8 +6186,12 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeet
 }
 
 public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$Other : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$Other;
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$Other;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$Other;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$Other;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -6116,9 +6207,23 @@ public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Re
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success;
+public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success$Complete : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success$Complete;
 	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success$Partial : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success {
+	public fun <init> (Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;
+	public final fun copy (Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;)Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success$Partial;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success$Partial;Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success$Partial;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getWarning ()Lcom/wire/kalium/logic/feature/meeting/MeetingSaveWarning;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

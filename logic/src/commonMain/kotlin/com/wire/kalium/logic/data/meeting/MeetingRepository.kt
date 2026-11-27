@@ -52,6 +52,8 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.meeting.MeetingSaveWarning
+import com.wire.kalium.logic.feature.meeting.toParticipantWarning
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
@@ -249,7 +251,7 @@ internal class MeetingDataSource(
         wrapApiRequest {
             meetingApi.deleteMeeting(meetingId.toApi())
         }.flatMap {
-            deleteMeetingLocally(meetingId)
+            deleteMeetingLocally(meetingId).mapLeft { DeleteCleanupFailure(it) }
         }
     }
 
@@ -294,7 +296,17 @@ internal class MeetingDataSource(
                 otherParticipants = meeting.otherParticipants,
                 generateOccurrencesFrom = generateOccurrencesFrom,
                 generateOccurrencesUntil = generateOccurrencesUntil
-            ).map { result ->
+            ).mapLeft { failure ->
+                when (failure) {
+                    is EstablishMLSFailure -> failure
+                    else -> SavedMeetingFailure(
+                        meetingId = response.meetingId.toModel(),
+                        conversationId = response.conversation.id.toModel(),
+                        reason = failure,
+                        warning = MeetingSaveWarning.ConversationSetupFailed
+                    )
+                }
+            }.map { result ->
                 CreateNewMeetingResult(response.conversation.id.toModel(), result, response.meetingId.toModel())
             }
         }
@@ -312,47 +324,63 @@ internal class MeetingDataSource(
         }.flatMap { meetingEntity ->
             conversationRepository.getConversationById(conversationId = meetingEntity.conversationId.toModel())
         }.flatMap { conversation ->
-            updateMembers(
-                conversation = conversation,
-                upsertMeeting = meeting,
-                transactionContext = transactionContext
-            ).flatMap { mlsAdditionResult ->
+            currentMembersForUpdate(conversation).flatMap { currentMembers ->
                 wrapApiRequest {
                     meetingApi.updateMeeting(meetingId = meetingId.toApi(), request = meetingMapper.fromModelToUpdateApi(meeting))
                 }.flatMap { response ->
-                    response.updateConversationName(conversation = conversation, upsertMeeting = meeting) { response ->
-                        response.persist(
+                    response.updateConversationName(conversation = conversation, upsertMeeting = meeting) { updatedResponse ->
+                        updatedResponse.persist(
                             transactionContext = transactionContext,
                             otherParticipants = meeting.otherParticipants,
                             generateOccurrencesFrom = generateOccurrencesFrom,
                             generateOccurrencesUntil = generateOccurrencesUntil
-                        )
+                        ).flatMap { establishmentResult ->
+                            updateMembers(conversation, meeting, currentMembers, transactionContext).map { additionResult ->
+                                if (establishmentResult == MLSAdditionResult.Empty) additionResult else establishmentResult
+                            }
+                        }
+                    }.mapLeft { failure ->
+                        when (failure) {
+                            is EstablishMLSFailure, is UpdateConversationNameFailure -> failure
+                            is ParticipantUpdateFailure -> SavedMeetingFailure(
+                                meetingId = meetingId,
+                                conversationId = conversation.id,
+                                reason = failure.reason,
+                                warning = failure.warning
+                            )
+                            else -> SavedMeetingFailure(meetingId, conversation.id, failure, MeetingSaveWarning.ConversationSetupFailed)
+                        }
                     }
-                }.map { mlsEstablishmentResult ->
-                    if (mlsEstablishmentResult == MLSAdditionResult.Empty) mlsAdditionResult else mlsEstablishmentResult
                 }
             }
         }
 
+    // Capture membership before persistence invalidates it; apply changes only after the meeting is saved locally.
+    private suspend fun currentMembersForUpdate(conversation: Conversation): Either<CoreFailure, List<UserId>> {
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
+        return if (protocol?.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
+            conversationRepository.getConversationMembers(conversation.id).map { it.filterNot { member -> member == selfUserId } }
+        } else {
+            Either.Right(emptyList())
+        }
+    }
+
     private suspend fun updateMembers(
         conversation: Conversation,
         upsertMeeting: UpdateMeeting,
+        currentMembers: List<UserId>,
         transactionContext: CryptoTransactionContext,
     ): Either<CoreFailure, MLSAdditionResult> {
-        val mlsCapableProtocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
-        return if (mlsCapableProtocol?.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
-            conversationRepository.getConversationMembers(conversation.id)
-                .map { it.filterNot { it == selfUserId } } // exclude self user from current members
-                .flatMap { currentMembers ->
-                    updateMembers(
-                        mlsCapableProtocol = mlsCapableProtocol,
-                        membersToAdd = upsertMeeting.otherParticipants.filterNot { it in currentMembers },
-                        membersToRemove = currentMembers.filterNot { it in upsertMeeting.otherParticipants },
-                        transactionContext = transactionContext
-                    )
-                }
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
+        return if (protocol?.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
+            updateMembers(
+                mlsCapableProtocol = protocol,
+                membersToAdd = upsertMeeting.otherParticipants.filterNot { it in currentMembers },
+                membersToRemove = currentMembers.filterNot { it in upsertMeeting.otherParticipants },
+                transactionContext = transactionContext
+            )
         } else {
-            Either.Right(MLSAdditionResult.Empty) // no MLS-capable protocol or not established, so no need to update members
+            Either.Right(MLSAdditionResult.Empty)
         }
     }
 
@@ -369,7 +397,7 @@ internal class MeetingDataSource(
                         mlsContext = mlsContext,
                         groupID = mlsCapableProtocol.groupId,
                         userIdList = membersToRemove,
-                    )
+                    ).mapLeft { ParticipantUpdateFailure(it, MeetingSaveWarning.RemoveParticipantsFailed) }
 
                     else -> Either.Right(Unit)
                 }.flatMap {
@@ -380,7 +408,7 @@ internal class MeetingDataSource(
                             userIdList = membersToAdd,
                             cipherSuite = mlsCapableProtocol.cipherSuite,
                             allowPartialMemberList = true
-                        )
+                        ).mapLeft { ParticipantUpdateFailure(it, it.toParticipantWarning(membersToAdd)) }
 
                         else -> Either.Right(MLSAdditionResult.Empty)
                     }
@@ -487,6 +515,14 @@ internal class MeetingDataSource(
         else -> false
     }
 
+    data class SavedMeetingFailure(
+        val meetingId: MeetingId,
+        val conversationId: ConversationId,
+        val reason: CoreFailure,
+        val warning: MeetingSaveWarning,
+    ) : CoreFailure.FeatureFailure()
+    data class DeleteCleanupFailure(val reason: CoreFailure) : CoreFailure.FeatureFailure()
+    private data class ParticipantUpdateFailure(val reason: CoreFailure, val warning: MeetingSaveWarning) : CoreFailure.FeatureFailure()
     data class EstablishMLSFailure(
         val conversationId: ConversationId,
         val reason: CoreFailure,
@@ -500,4 +536,5 @@ internal data class CreateNewMeetingResult(
     val conversationId: ConversationId,
     val mlsAdditionResult: MLSAdditionResult,
     val meetingId: MeetingId,
+    val warning: MeetingSaveWarning? = null,
 )
