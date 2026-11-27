@@ -194,13 +194,14 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 }
                             }
                         } else {
-                            fetchConversation(transactionContext, conversation.id)
-                        }.flatMap {
+                            fetchConversation(transactionContext, conversation.id).map { null }
+                        }.flatMap { refreshedPublicKeys ->
                             conversationRepository.getNonDeletedConversationById(conversation.id).flatMap { conversation ->
                                 joinOrEstablishMLSGroup(
                                     transactionContext = transactionContext,
                                     conversation = conversation,
-                                    publicKeys = null,
+                                    // A 1:1 must keep the hosting backend's keys, not fall back to the self backend's.
+                                    publicKeys = refreshedPublicKeys,
                                     allowJoinByExternalCommit = allowJoinByExternalCommit
                                 )
                             }
@@ -300,6 +301,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                     }.map {}
             }
 
+            conversation.isHostedElsewhereWithoutItsKeys(publicKeys) -> {
+                logger.i("Skipping establishing ${conversation.id.toLogString()} hosted on another backend")
+                Either.Right(Unit)
+            }
+
             type == Conversation.Type.OneOnOne || type is Conversation.Type.Group -> {
                 logger.d("Establish Group/1:1 MLS Conversation ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
@@ -328,6 +334,13 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
         }
     }
+
+    // Establishing would use the self backend's removal key as external sender, and the hosting backend's proposals
+    // would then fail for every member. A client of the hosting domain establishes it and welcomes us.
+    // A 1:1 is still established with the hosting backend's keys when they are passed, as the 1:1 resolver does.
+    private fun Conversation.isHostedElsewhereWithoutItsKeys(publicKeys: MLSPublicKeys?): Boolean =
+        id.domain != selfUserId.domain &&
+            (type is Conversation.Type.Group || (type == Conversation.Type.OneOnOne && publicKeys == null))
 
     // One-on-one members include the self user, but the conversation must be fetched with the other user.
     private fun List<UserId>.otherThanSelf(): UserId = firstOrNull { it != selfUserId } ?: first()

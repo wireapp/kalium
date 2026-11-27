@@ -105,9 +105,21 @@ internal class MeetingDaoImpl(
                 meetings.forEach { meeting ->
                     meetingsQueries.upsertMeeting(meeting = meeting)
                 }
+                val (recurringMeetings, oneTimeMeetings) = meetings.partition { it.recurrence != null }
+
+                // Recurring meetings have occurrences generated only within the specified window, pagination generates more as needed.
                 meetingsQueries.insertGeneratedOccurrences(
-                    meetings = meetings,
+                    meetings = recurringMeetings,
                     limit = generateOccurrencesWindow,
+                )
+                // One-time meetings need a list entry even beyond the recurring occurrence cache window.
+                meetingsQueries.insertGeneratedOccurrences(
+                    meetings = oneTimeMeetings,
+                    limit = GenerationLimit.Count(
+                        totalCount = oneTimeMeetings.size,
+                        from = generateOccurrencesWindow.from,
+                        includeOngoing = true,
+                    ),
                 )
 
                 if (removeMeetingsAbsentFromUpsertList) {

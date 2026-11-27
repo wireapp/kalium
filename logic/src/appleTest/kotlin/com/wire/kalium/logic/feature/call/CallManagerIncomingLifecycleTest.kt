@@ -113,6 +113,8 @@ class CallManagerIncomingLifecycleTest {
                             federated, qualified, com.wire.kalium.logic.data.call.VideoStateCheckerImpl(), mock(MockMode.autoUnit), mock(MockMode.autoUnit), network, types, config, KaliumConfigs(),
                             mock(MockMode.autoUnit), mock(MockMode.autoUnit), mock(MockMode.autoUnit), self, avs = native)
                         val journal = mock<CallSignalStore>()
+                        everySuspend { journal.deferMissedCall(any()) } returns Unit
+                        everySuspend { journal.flushMissedCalls(any()) } returns Unit
                         val signals = mutableListOf<CallSignalRecord>()
                         everySuspend { journal.signals() } calls { signals.toList() }
                         everySuspend { journal.append(any()) } calls {
@@ -133,6 +135,8 @@ class CallManagerIncomingLifecycleTest {
                             incomingReferences.send(it.arg(0))
                             null
                         }
+                        everySuspend { journal.presentations() } returns emptyList()
+                        everySuspend { journal.persistMissedCall(any(), any()) } returns true
                         everySuspend { journal.closed(any(), any(), any(), any(), any()) } returns null
                         manager.attachSignalJournal(journal)
                         try {

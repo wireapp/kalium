@@ -9,9 +9,13 @@ import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.MessageEffectDAOs
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Account-owned consumer of NSE clear/remove requests. SQL deletion records the native
@@ -41,6 +45,27 @@ class PendingConversationCleanup(private val database: UserDatabaseBuilder, priv
             }
         }
     }
+
+    /** Legacy deletion records move to the wipe queue; the rest is dropped. */
+    suspend fun discardLegacyReceiveRecovery() {
+        val records = database.metadataDAO.valuesByKeyRange(LEGACY_RECOVERY_FROM, LEGACY_RECOVERY_UNTIL)
+        if (records.isEmpty()) return
+        for ((key, value) in records) {
+            if (!key.removePrefix(LEGACY_RECOVERY_FROM).substringAfter(':').startsWith(LEGACY_DELETION)) continue
+            val groupId = runCatching {
+                Json.parseToJsonElement(value).jsonObject["groupId"]?.jsonPrimitive?.contentOrNull
+            }.getOrNull()
+            if (groupId.isNullOrBlank()) kaliumLogger.w("Dropping an unreadable legacy MLS deletion record")
+            else queueWipe(groupId)
+        }
+        for (key in records.keys) database.metadataDAO.deleteValue(key)
+    }
+
+    suspend fun queueWipe(groupId: String) = database.pendingActionDAO.upsert(
+        PendingActionType.WIPE_MLS_GROUP,
+        QualifiedIDEntity(groupId, "mls"),
+        Clock.System.now().toEpochMilliseconds(),
+    )
 
     /** Caller serializes native mutations with its existing crypto transaction provider. */
     suspend fun wipePending(context: MlsCoreCryptoContext?): List<PendingActionEntity> {
@@ -118,3 +143,6 @@ internal fun clearReplayKey(carrier: QualifiedIDEntity, messageId: String, targe
     "nse-clear-v1:" + Json.encodeToString(listOf(carrier.value, carrier.domain, messageId, target.value, target.domain))
 
 private const val CLEANUP_PAGE_SIZE = 100L
+private const val LEGACY_RECOVERY_FROM = "mls_receive_recovery_v2:"
+private const val LEGACY_RECOVERY_UNTIL = "mls_receive_recovery_v2;"
+private const val LEGACY_DELETION = "deletion:"

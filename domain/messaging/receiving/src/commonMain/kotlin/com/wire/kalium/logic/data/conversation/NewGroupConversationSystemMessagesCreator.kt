@@ -74,6 +74,7 @@ interface NewGroupConversationSystemMessagesCreator {
         conversationTeamId: String?,
         isCellEnabled: Boolean,
         instant: Instant = Clock.System.now(),
+        messageId: String = LocalId.generate(),
     ): Either<CoreFailure, Unit>
 
     suspend fun conversationAppsAccessIfEnabled(
@@ -260,6 +261,7 @@ class NewGroupConversationSystemMessagesCreatorImpl(
         conversationTeamId: String?,
         isCellEnabled: Boolean,
         instant: Instant,
+        messageId: String,
     ): Either<CoreFailure, Unit> = run {
         if (!isCellEnabled) {
             return Either.Right(Unit)
@@ -269,7 +271,7 @@ class NewGroupConversationSystemMessagesCreatorImpl(
 
         persistMessage(
             Message.System(
-                LocalId.generate(),
+                messageId,
                 if (isViewer) MessageContent.CellViewerAccessMessage else MessageContent.CellEditorAccessMessage,
                 conversationId,
                 instant,

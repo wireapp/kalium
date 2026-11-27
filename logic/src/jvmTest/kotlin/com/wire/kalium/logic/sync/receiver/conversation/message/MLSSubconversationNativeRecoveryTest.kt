@@ -342,6 +342,8 @@ class MLSSubconversationNativeRecoveryTest {
             TestUser.SELF.id,
             staleEpochVerifier,
             mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit),
+            mock(),
+            mock<MLSRejoinQueue>(),
         )
 
         init {

@@ -181,6 +181,12 @@ internal class CellAttachmentsDataSource(
         }
     }
 
+    override suspend fun isAssetAvailableOffline(assetId: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            cellFileDao.getById(assetId)?.isOffline == true
+        }
+    }
+
 }
 
 // TODO: Where to host the mapper (currently part of logic module)?

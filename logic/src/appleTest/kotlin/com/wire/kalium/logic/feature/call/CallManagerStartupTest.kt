@@ -17,6 +17,17 @@
  */
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.sync.receiving.CallSignalJournal
+import com.wire.kalium.logic.sync.receiving.ReceivedCallEvent
+import com.wire.kalium.persistence.withTestUserDatabase
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
+import com.wire.kalium.logic.sync.receiving.missedCallSource
+import com.wire.kalium.logic.sync.receiving.CallSignalStore
+import com.wire.kalium.logic.sync.receiving.CallSignalRecord
+import com.wire.kalium.logic.sync.receiving.CallPresentationRecord
 import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import com.wire.kalium.logger.AppleCallTrace
@@ -223,6 +234,158 @@ class CallManagerStartupTest {
             }
         }
     }
+
+    @Test
+    fun missedCallbackPersistsTheStartWithoutAnIncomingCallOrPresentation() = runTest {
+        val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val journal = mock<CallSignalStore>()
+        val source = missedSource()
+        everySuspend { journal.signals() } returns listOf(source)
+        everySuspend { journal.deferMissedCall(any()) } returns Unit
+        everySuspend { journal.flushMissedCalls(any()) } returns Unit
+        val manager = fixture.manager()
+        manager.attachSignalJournal(journal)
+        try {
+            manager.waitUntilInitialized()
+            fixture.callbacks.onMissedCall("call@example.com", 1u, "caller@example.com", false)
+            runCurrent()
+            verifySuspend(VerifyMode.exactly(1)) { journal.deferMissedCall(source.missedCallSource()) }
+            verifySuspend(VerifyMode.not) { journal.flushMissedCalls(any()) }
+            manager.reportCallHistorySyncState(true)
+            runCurrent()
+            verifySuspend(VerifyMode.exactly(1)) { journal.flushMissedCalls(any()) }
+            verifySuspend(VerifyMode.not) { fixture.repository.persistMissedCall(any()) }
+        } finally {
+            manager.cancelJobs()
+        }
+    }
+
+    @Test
+    fun failedMissedWriteDoesNotClearSignalsAndSuccessfulRetryUsesTheSameStart() = runTest {
+        val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        fixture.metadata = TestCall.oneOnOneCallMetadata().copy(callStatus = CallStatus.INCOMING, establishedTime = null)
+        val journal = mock<CallSignalStore>()
+        val source = missedSource()
+        everySuspend { journal.signals() } returns listOf(source)
+        everySuspend { journal.presentations() } returns listOf(CallPresentationRecord(source.id, "call", "example.com", 1000, true, false))
+        var fail = true
+        everySuspend { journal.deferMissedCall(any()) } returns Unit
+        everySuspend { journal.flushMissedCalls(any()) } calls {
+            check(!fail) { "database unavailable" }
+        }
+        everySuspend { journal.closed(any(), any(), any(), any(), any()) } returns source.id
+        val manager = fixture.manager()
+        manager.reportCallHistorySyncState(true)
+        runCurrent()
+        manager.attachSignalJournal(journal)
+        try {
+            manager.waitUntilInitialized()
+            fixture.callbacks.onClosedCall(CallClosedReason.CANCELLED.avsValue, "call@example.com", 1u, "caller@example.com", "client")
+            runCurrent()
+            verifySuspend(VerifyMode.exactly(1)) { journal.closed("call", "example.com", CallClosedReason.CANCELLED.avsValue, null, any()) }
+            fail = false
+            fixture.callbacks.onClosedCall(CallClosedReason.CANCELLED.avsValue, "call@example.com", 1u, "caller@example.com", "client")
+            runCurrent()
+            verifySuspend(VerifyMode.exactly(2)) { journal.flushMissedCalls(any()) }
+            verifySuspend(VerifyMode.exactly(1)) { journal.closed(any(), any(), any(), any(), any()) }
+            verifySuspend(VerifyMode.not) { fixture.repository.persistMissedCall(any()) }
+        } finally {
+            manager.cancelJobs()
+        }
+    }
+
+    @Test
+    fun catchUpStartingWhileCallbackIsBeingStoredDefersHistoryAgain() = runTest {
+        val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val journal = mock<CallSignalStore>(MockMode.autoUnit)
+        val stored = kotlinx.coroutines.CompletableDeferred<Unit>()
+        everySuspend { journal.signals() } returns listOf(missedSource())
+        everySuspend { journal.deferMissedCall(any()) } calls { stored.await() }
+        val manager = fixture.manager()
+        manager.attachSignalJournal(journal)
+        try {
+            manager.waitUntilInitialized()
+            manager.reportCallHistorySyncState(true)
+            runCurrent()
+            fixture.callbacks.onMissedCall("call@example.com", 1u, "caller@example.com", false)
+            runCurrent()
+            manager.reportCallHistorySyncState(false)
+            stored.complete(Unit)
+            runCurrent()
+            verifySuspend(VerifyMode.exactly(1)) { journal.flushMissedCalls(any()) } // Only the first Live transition.
+            manager.reportCallHistorySyncState(true)
+            runCurrent()
+            verifySuspend(VerifyMode.exactly(1)) { journal.flushMissedCalls(any()) } // The first call was already verified.
+        } finally { manager.cancelJobs() }
+    }
+
+    @Test
+    fun missedCallbackWaitsForCatchUpIncludingLaterAnswerOrRejection() = runTest {
+        val self = QualifiedIDEntity("self", "example.com")
+        val conversation = QualifiedIDEntity("call", "example.com")
+        for ((response, closed) in listOf("SETUP", "REJECT", null).flatMap { response -> listOf(response to false, response to true) }) {
+            withTestUserDatabase(self) { database ->
+                database.builder.userDAO.insertOrIgnoreIncompleteUsers(listOf(self, conversation))
+                database.builder.conversationDAO.insertConversation(historyConversation())
+                val journal = CallSignalJournal(database.builder)
+                val start = ReceivedCallEvent(
+                    payload = """{"version":"3.0","type":"SETUP","resp":false,"sessid":"session","sdp":"v=0"}""",
+                    conversationId = conversation, senderId = conversation, senderClientId = "caller-client",
+                    time = Clock.System.now() - 90.seconds, isGroup = false, isMLS = false, messageId = "expired-start",
+                )
+                journal.append(start)
+                if (closed) journal.incoming(
+                    com.wire.kalium.logic.sync.receiving.IncomingCallReference(conversation, conversation, "caller-client", start.time.epochSeconds),
+                    true, false, "test",
+                )
+                val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+                fixture.metadata = TestCall.oneOnOneCallMetadata().copy(callStatus = CallStatus.INCOMING, establishedTime = null)
+                val manager = fixture.manager()
+                manager.attachSignalJournal(journal)
+                try {
+                    manager.waitUntilInitialized()
+                    if (closed) fixture.callbacks.onClosedCall(
+                        CallClosedReason.CANCELLED.avsValue, "call@example.com", start.time.epochSeconds.toUInt(), "caller@example.com", "caller-client",
+                    ) else fixture.callbacks.onMissedCall("call@example.com", start.time.epochSeconds.toUInt(), "caller@example.com", false)
+                    runCurrent()
+                    assertNull(database.builder.messageDAO.getMessageById("missed-call:expired-start", conversation))
+                    if (response != null) journal.append(start.copy(
+                        messageId = "other-device", senderId = self, senderClientId = "laptop", time = start.time + 5.seconds,
+                        payload = """{"version":"3.0","type":"$response","resp":${response == "SETUP"},"sessid":"laptop-session","sdp":"v=0"}""",
+                    ))
+                    // Interrupted or failed catch-up must not finalize the pending callback.
+                    manager.reportCallHistorySyncState(false)
+                    runCurrent()
+                    assertNull(database.builder.messageDAO.getMessageById("missed-call:expired-start", conversation))
+                    manager.reportCallHistorySyncState(true)
+                    runCurrent()
+                    val message = database.builder.messageDAO.getMessageById("missed-call:expired-start", conversation)
+                    assertEquals(response == null, message != null)
+                    manager.reportCallHistorySyncState(true)
+                    runCurrent()
+                    assertEquals(message, database.builder.messageDAO.getMessageById("missed-call:expired-start", conversation))
+                } finally { manager.cancelJobs() }
+            }
+        }
+    }
+
+    private fun historyConversation() = ConversationEntity(
+        id = QualifiedIDEntity("call", "example.com"), name = "Conversation", type = ConversationEntity.Type.ONE_ON_ONE,
+        teamId = null, protocolInfo = ConversationEntity.ProtocolInfo.Proteus, creatorId = "call",
+        lastNotificationDate = null, lastModifiedDate = Instant.DISTANT_PAST, lastReadDate = Instant.DISTANT_PAST,
+        access = emptyList(), accessRole = emptyList(), receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        messageTimer = null, userMessageTimer = null, archived = false, archivedInstant = null,
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED, channelAccess = null, channelAddPermission = null,
+        wireCell = null, historySharingRetentionSeconds = 0,
+    )
+
+    // The mapper fixture maps both native IDs to CONVERSATION.
+    private fun missedSource() = CallSignalRecord(
+        "journal-id", "start-message", "call", "example.com", "call", "example.com", "client",
+        """{"type":"SETUP","resp":false,"sessid":"call"}""", 1000, false, false, 1000, ready = true,
+    )
 
     private fun verifyClose(reason: CallClosedReason, expectedStatus: CallStatus) = runTest {
         val cases = listOf(

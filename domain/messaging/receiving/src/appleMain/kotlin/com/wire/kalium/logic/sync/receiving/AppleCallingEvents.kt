@@ -3,6 +3,7 @@
 package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.calling.notifications.AvsCallNotification
+import com.wire.kalium.calling.notifications.AvsCallNotificationClosedReason
 import com.wire.kalium.calling.notifications.AvsCallNotificationCallbacks
 import com.wire.kalium.calling.notifications.AvsCallNotificationConversationType
 import com.wire.kalium.calling.notifications.AvsCallNotificationProcessingResult
@@ -37,7 +38,7 @@ internal suspend fun evaluateCallingEvents(
     if (events.isEmpty()) return emptyList()
     currentCoroutineContext().ensureActive()
     val signalJournal = CallSignalJournal(database)
-    val journal = signalJournal.signals()
+    val journal = signalJournal.historySignals()
     val messageIds = events.map { it.messageId }.toSet()
     journal.filter { it.messageId in messageIds }.forEach {
         AppleCallTrace.record(CallTraceEvent.DURABLE_READY, CallTraceContext(signal = it.id))
@@ -107,7 +108,30 @@ internal suspend fun evaluateCallingEvents(
     val availability = database.userDAO.getUserDetailsByQualifiedID(self.toDao())?.availabilityStatus
     // Android timestamps the missed-call message when the outcome is handled, not when ringing started.
     val notificationTime = Clock.System.now()
-    return results.map { result ->
+    val reconciled = reconcileCallSignals(journal, messageIds, self.toDao(), notificationTime.toEpochMilliseconds())
+    reconciled.forEach { outcome ->
+        platform.Foundation.NSLog("CALL_FLOW call=${outcome.source.id} stage=nse_reconciled missed=${outcome.missed}")
+    }
+    val reconciledIds = reconciled.map { it.source.id }.toSet()
+    val completed = reconciled.filter { it.complete }.map { it.source }.toMutableList()
+    val canonicalResults = results.filterNot { result ->
+        callSignalSource(journal, messageIds, result)?.id in reconciledIds
+    } + reconciled.filter { it.missed }.map { outcome ->
+        val source = outcome.source
+        ReceivedCallResult(
+            type = ReceivedCallType.MISSED,
+            conversationValue = source.conversationValue,
+            conversationDomain = source.conversationDomain,
+            callerValue = source.senderValue,
+            callerDomain = source.senderDomain,
+            callerClientId = source.senderClientId,
+            messageTimeSeconds = source.timeMillis / MILLISECONDS_PER_SECOND,
+            shouldRing = false,
+            isVideoCall = false,
+            handoffId = source.id,
+        )
+    }
+    val mappedResults = canonicalResults.map { result ->
         val conversation = database.conversationDAO.getConversationById(
             QualifiedIDEntity(result.conversationValue, result.conversationDomain)
         )
@@ -127,16 +151,18 @@ internal suspend fun evaluateCallingEvents(
         }
         // Missed callbacks do not include a client or signaling message ID. Pin them to the
         // first matching row in the full journal, so pending-batch narrowing cannot move identity.
-        val source = if (result.type == ReceivedCallType.INCOMING) signalJournal.incomingSource(
-            IncomingCallReference(
-                QualifiedIDEntity(result.conversationValue, result.conversationDomain),
-                QualifiedIDEntity(result.callerValue, result.callerDomain),
-                result.callerClientId,
-                result.messageTimeSeconds,
-            )
-        ) else callSignalSource(journal, messageIds, result)
-        val missedClaimed = result.type == ReceivedCallType.MISSED && source != null &&
-            CallSignalJournal(database).claimMissedNotification(source.id)
+        val source = callSignalSource(journal, messageIds, result)
+        // Persist history independently of mute/availability and before claiming an alert.
+        val missed = result.type == ReceivedCallType.MISSED && source != null &&
+            signalJournal.persistMissedCall(source.missedCallSource(), self.toDao())
+        val missedClaimed = missed && signalJournal.claimMissedNotification(checkNotNull(source).id)
+        val callContinues = result.closeReason == AvsCallNotificationClosedReason.StillOngoing.value ||
+            source?.isGroup == true && result.closeReason == AvsCallNotificationClosedReason.AnsweredElsewhere.value
+        if (source != null && result.type == ReceivedCallType.MISSED) {
+            completed += source
+        } else if (source != null && result.type == ReceivedCallType.CLOSED && !callContinues) {
+            completed += source
+        }
         val shouldNotify = missedClaimed && missedCallShouldNotify(
             conversation = conversation,
             self = self,
@@ -180,6 +206,10 @@ internal suspend fun evaluateCallingEvents(
             isGroupConversation = result.type == ReceivedCallType.MISSED && conversation?.type?.isGroup == true,
         )
     }
+    // Finish the complete batch first: a close and missed callback may refer to the same start.
+    val evaluatedIds = journal.map { it.id }.toSet()
+    completed.forEach { source -> signalJournal.completeNotification(source, evaluatedIds) }
+    return mappedResults
 }
 
 internal fun callSignalSource(
@@ -187,13 +217,21 @@ internal fun callSignalSource(
     pendingMessageIds: Set<String>,
     result: ReceivedCallResult,
 ): CallSignalRecord? {
+    result.handoffId?.let { id -> return journal.firstOrNull { it.id == id } }
     val matchesIdentity: (CallSignalRecord) -> Boolean = {
         it.conversationValue == result.conversationValue && it.conversationDomain == result.conversationDomain &&
             it.senderValue == result.callerValue && it.senderDomain == result.callerDomain &&
             it.timeMillis / MILLISECONDS_PER_SECOND == result.messageTimeSeconds
     }
-    return if (result.type == ReceivedCallType.MISSED) {
-        journal.firstOrNull(matchesIdentity)
+    return if (result.type != ReceivedCallType.CLOSED) {
+        journal.incomingCallSource(
+            IncomingCallReference(
+                QualifiedIDEntity(result.conversationValue, result.conversationDomain),
+                QualifiedIDEntity(result.callerValue, result.callerDomain),
+                result.callerClientId.takeIf { result.type == ReceivedCallType.INCOMING },
+                result.messageTimeSeconds,
+            )
+        )
     } else {
         journal.lastOrNull {
             it.messageId in pendingMessageIds &&

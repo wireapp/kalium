@@ -28,38 +28,31 @@ import kotlin.test.assertNull
 
 class NotificationEventStoreTest : BaseDatabaseTest() {
     @Test
-    fun operationRetirementAndProcessedMarkerRollBackTogether() = runTest(dispatcher) {
+    fun processedMarkersAndRetryHintsRollBackTogether() = runTest(dispatcher) {
         val database = createDatabase(UserIDEntity("operation-ack", "wire.test"), encryptedDBSecret, true)
         try {
             val store = database.notificationEventStore
             store.storePage(null, listOf(NewEventEntity("one", "[]", false, false), NewEventEntity("two", "[]", false, false)))
-            database.metadataDAO.insertValue("pending", "recovery-one")
             database.metadataDAO.insertValue("unrelated", "keep")
             store.defer("one", 1_000L)
             store.defer("two", 2_000L)
-            val records = mapOf("one" to listOf("recovery-one"))
             val failures = listOf(
                 "UPDATE ON Events WHEN NEW.event_id = 'two'",
                 "DELETE ON Metadata WHEN OLD.key = 'nse-deferred-v1:two'",
-                "DELETE ON Metadata WHEN OLD.key = 'recovery-one'",
             )
             for (failure in failures) {
                 database.sqlDriver.execute(null, "CREATE TRIGGER fail_ack BEFORE $failure BEGIN SELECT RAISE(ABORT, 'failed'); END", 0).await()
-                assertFails { store.markProcessed(listOf("one", "two"), records) }
+                assertFails { store.markProcessed(listOf("one", "two")) }
                 assertEquals(false, database.eventDAO.getEventById("one")?.isProcessed)
                 assertEquals(false, database.eventDAO.getEventById("two")?.isProcessed)
-                assertEquals("pending", database.metadataDAO.valueByKey("recovery-one"))
                 assertEquals(1_000L, store.deferredUntil("one"))
                 assertEquals(2_000L, store.deferredUntil("two"))
                 assertEquals("two", store.cursor())
                 database.sqlDriver.execute(null, "DROP TRIGGER fail_ack", 0).await()
             }
-            assertFails { store.markProcessed(listOf("missing"), mapOf("missing" to listOf("recovery-one"))) }
-            assertEquals("pending", database.metadataDAO.valueByKey("recovery-one"))
-            store.markProcessed(listOf("one", "two"), records)
+            store.markProcessed(listOf("one", "two"))
             assertEquals(true, database.eventDAO.getEventById("one")?.isProcessed)
             assertEquals(true, database.eventDAO.getEventById("two")?.isProcessed)
-            assertNull(database.metadataDAO.valueByKey("recovery-one"))
             assertNull(store.deferredUntil("one"))
             assertNull(store.deferredUntil("two"))
             assertEquals("two", store.cursor())
@@ -91,7 +84,7 @@ class NotificationEventStoreTest : BaseDatabaseTest() {
             assertEquals("m-last", store.cursor())
 
             store.defer(later.eventId, 2_000L)
-            store.markProcessed(listOf(later.eventId), emptyMap())
+            store.markProcessed(listOf(later.eventId))
             assertNull(store.deferredUntil(later.eventId))
             assertEquals(last, store.nextPendingAfter(deferred.id))
             database.eventDAO.deleteProcessedEventsBefore(last.id)
@@ -99,7 +92,7 @@ class NotificationEventStoreTest : BaseDatabaseTest() {
             assertEquals(deferred, store.nextPending())
             assertEquals(1_000L, store.deferredUntil(deferred.eventId))
 
-            store.markProcessed(listOf(last.eventId), emptyMap())
+            store.markProcessed(listOf(last.eventId))
             database.eventDAO.deleteAllProcessedEvents()
             assertEquals(deferred, store.nextPending())
             assertNull(store.nextPendingAfter(deferred.id))
@@ -134,7 +127,7 @@ class NotificationEventStoreTest : BaseDatabaseTest() {
             assertEquals(2_000L, store.deferredUntil("deferred"))
             assertEquals(original, store.nextPending())
             assertEquals("deferred", store.cursor())
-            store.markProcessed(listOf("deferred"), emptyMap())
+            store.markProcessed(listOf("deferred"))
             assertNull(store.deferredUntil("deferred"))
             assertNull(store.nextPending())
             assertEquals("deferred", store.cursor())

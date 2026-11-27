@@ -384,6 +384,95 @@ class MeetingDaoTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun oneTimeMeetingsBeyondGenerationWindowAreStoredAndListedAfterCreateSyncAndReschedule() = runTest(dispatcher) {
+        val now = Instant.parse("2026-11-24T00:00:00Z")
+        val window = GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days)
+        val today = newMeeting(startTime = now + 1.hours)
+        val future = newMeeting(
+            startTime = now + 400.days,
+            meetingId = QualifiedIDEntity("future", "wire.com"),
+        )
+        listOf(today, future).forEach { insertMeetingDependencies(it) }
+        meetingDao.upsertMeetings(listOf(today), window)
+        meetingDao.upsertMeetings(listOf(future), window)
+
+        val originalOccurrence = occurrencesFor(future).single()
+        assertEquals(future.startTime, originalOccurrence.occurrence_start)
+        assertEquals(future.endTime, originalOccurrence.occurrence_end)
+        assertContentEquals(listOf(today.meetingId, future.meetingId), firstLocalPage(now).data.map { it.meeting.meetingId })
+
+        // A full sync keeps the occurrence ID stable and does not duplicate it.
+        meetingDao.upsertMeetings(listOf(today, future), window, removeMeetingsAbsentFromUpsertList = true)
+        assertEquals(listOf(originalOccurrence), occurrencesFor(future))
+
+        val rescheduled = future.copy(startTime = now + 800.days, endTime = now + 800.days + 1.hours)
+        meetingDao.upsertMeetings(listOf(rescheduled), window)
+        val occurrence = occurrencesFor(rescheduled).single()
+        assertEquals(rescheduled.startTime, occurrence.occurrence_start)
+        assertEquals(rescheduled.endTime, occurrence.occurrence_end)
+        assertContentEquals(listOf(today.startTime, rescheduled.startTime), firstLocalPage(now).data.map { it.occurrence.occurrenceStart })
+    }
+
+    @Test
+    fun creatingRecurringMeetingSixMonthsAheadInvalidatesAnAlreadyLoadedEmptyList() = runTest(dispatcher) {
+        val now = Instant.parse("2026-11-24T00:00:00Z")
+        val meeting = newMeeting(
+            startTime = Instant.parse("2027-05-24T10:00:00Z"),
+            tzid = "UTC",
+            recurrence = MeetingEntity.RecurrenceEntity(Frequency.WEEKLY, 1, until = null),
+        )
+        insertMeetingDependencies(meeting)
+        val source = meetingDao.getPaginatedMeetingOccurrenceDetails(PagingConfig(3), 0, now).pagingSource
+        val emptyPage = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            source.load(PagingSource.LoadParams.Refresh(null, 3, false))
+        )
+        assertTrue(emptyPage.data.isEmpty())
+        assertEquals(null, emptyPage.nextKey)
+        assertTrue(!source.invalid)
+
+        meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days))
+
+        // The Meeting table change must refresh the list even though no occurrence was inserted yet.
+        assertTrue(occurrencesFor(meeting).isEmpty())
+        assertTrue(source.invalid)
+        val refreshedPage = firstLocalPage(now)
+        assertContentEquals(
+            listOf(meeting.startTime, meeting.startTime + 7.days, meeting.startTime + 14.days),
+            refreshedPage.data.map { it.occurrence.occurrenceStart },
+        )
+    }
+
+    @Test
+    fun recurringMeetingsStartingBeyondOneYearAreGeneratedWhenLoadingTheList() = runTest(dispatcher) {
+        val now = Instant.parse("2026-11-24T00:00:00Z")
+        val start = now + 400.days
+        val window = GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days)
+        val recurrences = listOf(Frequency.DAILY to 1L, Frequency.WEEKLY to 1L, Frequency.WEEKLY to 2L, Frequency.WEEKLY to 4L)
+        for ((frequency, interval) in recurrences) {
+            val meeting = newMeeting(
+                startTime = start,
+                tzid = "UTC",
+                recurrence = MeetingEntity.RecurrenceEntity(frequency, interval, until = null),
+            )
+            insertMeetingDependencies(meeting)
+            meetingDao.upsertMeetings(listOf(meeting), window)
+            assertTrue(occurrencesFor(meeting).isEmpty())
+
+            val periodDays = if (frequency == Frequency.DAILY) interval else interval * 7
+            val expectedStarts = (0L..2L).map { start + (it * periodDays).days }
+            val page = firstLocalPage(now)
+            assertContentEquals(expectedStarts, page.data.map { it.occurrence.occurrenceStart })
+            assertTrue(page.data.all { it.meeting.meetingId == meeting.meetingId })
+            assertEquals(3, page.nextKey)
+
+            val cached = occurrencesFor(meeting)
+            meetingDao.upsertMeetings(listOf(meeting), window)
+            assertContentEquals(expectedStarts, firstLocalPage(now).data.map { it.occurrence.occurrenceStart })
+            assertEquals(cached, occurrencesFor(meeting))
+        }
+    }
+
+    @Test
     fun givenRecurringMeetingStartedBeforeWindow_whenUpserted_thenOccurrencesAreGeneratedFromWindow() =
         runTest(dispatcher) {
             val now = Clock.System.now()

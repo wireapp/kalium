@@ -1,6 +1,11 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import kotlinx.coroutines.flow.first
+import kotlin.test.assertFails
+import kotlin.test.assertNotNull
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -19,6 +24,126 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class CallSignalJournalTest {
+
+    @Test
+    fun missedCallSurvivesProcessRestartAndJournalCleanupWithoutChangingMessageOrOrdering() = runTest {
+        withJournal { journal, database ->
+            database.builder.conversationDAO.insertConversation(conversation())
+            val source = journal.append(start("missed"))
+            assertTrue(journal.persistMissedCall(source.missedCallSource(), SELF))
+            val message = assertNotNull(database.builder.messageDAO.getMessageById("missed-call:missed", CONVERSATION))
+            assertEquals(MessageEntityContent.MissedCall, message.content)
+            assertEquals(SENDER, message.senderUserId)
+            val modified = database.builder.conversationDAO.getConversationById(CONVERSATION)?.lastModifiedDate
+            // A crash before cleanup replays the same source through the other process.
+            val app = CallSignalJournal(database.builder)
+            assertTrue(app.persistMissedCall(source.missedCallSource(), SELF))
+            app.completeNotification(source, setOf(source.id))
+            // Even recreating the journal row must retain the original message identity.
+            val replayed = app.append(start("missed"))
+            assertTrue(app.persistMissedCall(replayed.missedCallSource(), SELF))
+            assertEquals(listOf(message), database.builder.messageDAO.getMessagesByConversationAndVisibility(CONVERSATION, 10, 0).first())
+            assertEquals(modified, database.builder.conversationDAO.getConversationById(CONVERSATION)?.lastModifiedDate)
+        }
+    }
+
+    @Test
+    fun missedCallIsStoredForMutedConversationButNotForMeetingOrSelfCall() = runTest {
+        withJournal { journal, database ->
+            database.builder.conversationDAO.insertConversation(conversation().copy(mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED))
+            val source = journal.append(start("muted"))
+            assertTrue(journal.persistMissedCall(source.missedCallSource(), SELF))
+            assertNotNull(database.builder.messageDAO.getMessageById("missed-call:muted", CONVERSATION))
+            assertFalse(journal.persistMissedCall(source.copy(messageId = "self").missedCallSource(), SENDER))
+            database.builder.conversationDAO.insertConversation(conversation().copy(type = ConversationEntity.Type.MEETING))
+            assertFalse(journal.persistMissedCall(source.copy(messageId = "meeting").missedCallSource(), SELF))
+            assertNull(database.builder.messageDAO.getMessageById("missed-call:self", CONVERSATION))
+            assertNull(database.builder.messageDAO.getMessageById("missed-call:meeting", CONVERSATION))
+        }
+    }
+
+    @Test
+    fun presentationRetainsMissedCallIdentityAfterSignalingExpires() = runTest {
+        withJournal { journal, database ->
+            database.builder.conversationDAO.insertConversation(conversation())
+            val source = journal.append(start("long-call"))
+            val presentation = assertNotNull(journal.incoming(reference(), true, false, "engine"))
+            val expired = source.copy(storedAtMillis = Clock.System.now().toEpochMilliseconds() - CallSignalJournal.SIGNAL_RETENTION_MS - 1)
+            database.builder.metadataDAO.putSerializable(
+                CallSignalJournal.KEY,
+                CallSignalJournalState(listOf(expired), listOf(presentation)),
+                CallSignalJournalState.serializer(),
+            )
+            val reopened = CallSignalJournal(database.builder)
+            assertTrue(reopened.signals().isEmpty())
+            val identity = assertNotNull(reopened.presentations().single().missedCallSource)
+            assertTrue(reopened.persistMissedCall(identity, SELF))
+            assertNotNull(database.builder.messageDAO.getMessageById("missed-call:long-call", CONVERSATION))
+        }
+    }
+
+    @Test
+    fun failedMissedCallWriteKeepsJournalAvailableForRetry() = runTest {
+        withJournal { journal, database ->
+            database.builder.conversationDAO.insertConversation(conversation())
+            val source = journal.append(start("failed").copy(senderId = QualifiedIDEntity("unknown", "example.com")))
+            assertFails { journal.persistMissedCall(source.missedCallSource(), SELF) }
+            assertEquals(listOf(source), journal.signals())
+            assertNull(database.builder.messageDAO.getMessageById("missed-call:failed", CONVERSATION))
+            database.builder.userDAO.insertOrIgnoreIncompleteUsers(listOf(QualifiedIDEntity("unknown", "example.com")))
+            assertTrue(journal.persistMissedCall(source.missedCallSource(), SELF))
+        }
+    }
+
+    @Test
+    fun deferredMissedCallSurvivesRestartAndWaitsForLaterOwnDeviceResponse() = runTest {
+        withJournal { journal, database ->
+            database.builder.conversationDAO.insertConversation(conversation())
+            val source = journal.append(start("deferred", payload = """{"version":"3.0","type":"SETUP","resp":false,"sessid":"deferred","sdp":"v=0"}"""))
+            journal.deferMissedCall(source.missedCallSource())
+            val reopened = CallSignalJournal(database.builder)
+            reopened.submitted(source.id, "engine")
+            reopened.closed(CONVERSATION.value, CONVERSATION.domain, 4, "engine")
+            assertEquals(listOf(source.id), reopened.signals().map { it.id })
+            reopened.append(start("answer").copy(
+                senderId = SELF, senderClientId = "laptop", time = CALL_TIME + 1.seconds,
+                payload = """{"version":"3.0","type":"SETUP","resp":true,"sessid":"laptop","sdp":"v=0"}""",
+            ))
+            reopened.flushMissedCalls(SELF)
+            assertNull(database.builder.messageDAO.getMessageById("missed-call:deferred", CONVERSATION))
+        }
+    }
+
+    @Test
+    fun failedDeferredWriteRetainsOutcomeForRetryAfterReopening() = runTest {
+        withJournal { journal, database ->
+            database.builder.conversationDAO.insertConversation(conversation())
+            val unknown = QualifiedIDEntity("unknown", "example.com")
+            val source = journal.append(start("retry-deferred").copy(senderId = unknown))
+            journal.deferMissedCall(source.missedCallSource())
+            assertFails { journal.flushMissedCalls(SELF) }
+            assertNull(database.builder.messageDAO.getMessageById("missed-call:retry-deferred", CONVERSATION))
+            database.builder.userDAO.insertOrIgnoreIncompleteUsers(listOf(unknown))
+            CallSignalJournal(database.builder).flushMissedCalls(SELF)
+            val stored = assertNotNull(database.builder.messageDAO.getMessageById("missed-call:retry-deferred", CONVERSATION))
+            CallSignalJournal(database.builder).flushMissedCalls(SELF)
+            assertEquals(stored, database.builder.messageDAO.getMessageById("missed-call:retry-deferred", CONVERSATION))
+        }
+    }
+
+    @Test
+    fun extensionCleanupOnlyRemovesEvaluatedSignalsOfTheCompletedSession() = runTest {
+        withJournal { journal, _ ->
+            val source = journal.append(start("old"))
+            val presentation = journal.incoming(reference(), true, false, "engine")
+            val cancel = journal.append(cancellation("old"))
+            val next = journal.append(start("new").copy(time = CALL_TIME + 2.seconds))
+            val unprocessed = journal.append(cancellation("old").copy(messageId = "not-evaluated"))
+            journal.completeNotification(cancel, setOf(source.id, cancel.id, next.id))
+            assertEquals(setOf(next.id, unprocessed.id), journal.signals().map { it.id }.toSet())
+            assertEquals(listOf(presentation), journal.presentations()) // Only the app owns CallKit presentation.
+        }
+    }
 
     @Test
     fun tiedStartsKeepOneIdentityAcrossAdaptersAndEngineGenerations() = runTest {
@@ -409,10 +534,26 @@ class CallSignalJournalTest {
     private fun reference(client: String? = "client") = IncomingCallReference(CONVERSATION, SENDER, client, CALL_TIME.epochSeconds)
 
     private suspend fun TestScope.withJournal(block: suspend (CallSignalJournal, TestUserDatabase) -> Unit) {
-        withTestUserDatabase(UserIDEntity("call-identity", "example.com")) { block(CallSignalJournal(it.builder), it) }
+        withTestUserDatabase(UserIDEntity("call-identity", "example.com")) {
+            it.builder.userDAO.insertOrIgnoreIncompleteUsers(listOf(SENDER, SELF))
+            block(CallSignalJournal(it.builder), it)
+        }
     }
 
+    private fun conversation() = ConversationEntity(
+        id = CONVERSATION, name = "Conversation", type = ConversationEntity.Type.ONE_ON_ONE,
+        teamId = null, protocolInfo = ConversationEntity.ProtocolInfo.Proteus, creatorId = SENDER.value,
+        lastNotificationDate = null, lastModifiedDate = Instant.DISTANT_PAST, lastReadDate = Instant.DISTANT_PAST,
+        access = emptyList(), accessRole = emptyList(), receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        messageTimer = null, userMessageTimer = null, archived = false, archivedInstant = null,
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED, channelAccess = null, channelAddPermission = null,
+        wireCell = null, historySharingRetentionSeconds = 0,
+    )
+
     private companion object {
+        val SELF = QualifiedIDEntity("self", "example.com")
         val CALL_TIME = Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds() / 1000 * 1000)
         val CONVERSATION = QualifiedIDEntity("conversation", "example.com")
         val SENDER = QualifiedIDEntity("sender", "example.com")

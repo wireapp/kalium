@@ -41,6 +41,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.everySuspend
@@ -48,6 +49,10 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Clock
 import kotlin.test.Test
@@ -122,7 +127,7 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            verifySuspend(VerifyMode.exactly(1)) {
+            verifySuspend(VerifyMode.order) {
                 arrangement.conversationApi.deleteSubconversation(
                     Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.parentId,
                     Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.id,
@@ -131,6 +136,7 @@ class JoinSubconversationUseCaseTest {
                             Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId
                         )
                 )
+                arrangement.cryptoTransactionProvider.mlsTransaction<Unit>(any(), any())
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -176,6 +182,37 @@ class JoinSubconversationUseCaseTest {
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
     }
 
+    @Test
+    fun givenGroupInfoRequestFails_whenInvokingUseCase_ThenNoTransactionIsOpened() = runTest {
+        val (arrangement, joinSubconversationUseCase) = Arrangement()
+            .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH)
+            .withFetchingSubconversationGroupInfoFailing()
+            .arrange()
+
+        joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>(any(), any())
+        }
+    }
+
+    @Test
+    fun givenGroupInfoRequestPending_whenCancelled_ThenJoinEndsWithoutTransaction() = runTest {
+        val groupInfoRequested = CompletableDeferred<Unit>()
+        val (arrangement, joinSubconversationUseCase) = Arrangement()
+            .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH)
+            .withFetchingSubconversationGroupInfoPending(groupInfoRequested)
+            .arrange()
+
+        val join = launch { joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID) }
+        groupInfoRequested.await()
+        join.cancelAndJoin()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>(any(), any())
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationApi = mock<ConversationApi>(mode = MockMode.autoUnit)
         val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
@@ -212,6 +249,21 @@ class JoinSubconversationUseCaseTest {
             everySuspend {
                 conversationApi.fetchSubconversationGroupInfo(any(), any())
             } returns NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200)
+        }
+
+        suspend fun withFetchingSubconversationGroupInfoFailing() = apply {
+            everySuspend {
+                conversationApi.fetchSubconversationGroupInfo(any(), any())
+            } returns NetworkResponse.Error(KaliumException.NoNetwork())
+        }
+
+        suspend fun withFetchingSubconversationGroupInfoPending(requested: CompletableDeferred<Unit>) = apply {
+            everySuspend {
+                conversationApi.fetchSubconversationGroupInfo(any(), any())
+            } calls {
+                requested.complete(Unit)
+                awaitCancellation()
+            }
         }
 
         suspend fun withFetchingSubconversationDetails(response: SubconversationResponse) = apply {

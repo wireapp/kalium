@@ -24,8 +24,6 @@ import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
@@ -40,6 +38,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.HandleWrongExternalSenderUseCase
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -62,109 +61,11 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class NewMessageEventHandlerTest {
-
-    @Test
-    fun committedEffectsStillDecryptProteusWithoutRepeatingApplicationEffects() = runTest {
-        val (arrangement, handler) = Arrangement().withProteusUnpackerReturning(Either.Right(applicationMessage))
-            .withHandleLegalHoldSuccess().arrange()
-        val event = TestEvent.newMessageEvent("encrypted")
-
-        handler.handleNewProteusMessage(
-            DurableMLSReceiveContext(arrangement.transactionContext, effectsAlreadyPersisted = true),
-            event, TestEvent.liveDeliveryInfo,
-        )
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), event, any())
-        }
-        verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any()) }
-        verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun proteusReceiptReplayRequeuesLegalHoldContinuation() = runTest {
-        val message = applicationMessage.copy(content = applicationMessage.content.copy(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED))
-        val (arrangement, handler) = Arrangement().withProteusUnpackerReturning(Either.Right(message))
-            .withHandleLegalHoldSuccess().arrange()
-
-        handler.handleNewProteusMessage(
-            DurableMLSReceiveContext(arrangement.transactionContext, effectsAlreadyPersisted = true),
-            TestEvent.newMessageEvent("encrypted"), EventDeliveryInfo(EventSource.PENDING),
-        )
-
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.legalHoldHandler.handleNewMessage(message, false) }
-        verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun committedMLSReceiptSkipsUnpackerAndEffects() = runTest {
-        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
-        val calls = mutableListOf<Boolean>()
-        val (arrangement, handler) = Arrangement { _, received, wrongEpoch ->
-            assertEquals(event, received)
-            calls += wrongEpoch
-            true
-        }.arrange()
-
-        handler.handleNewMLSMessage(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo).shouldSucceed()
-
-        assertEquals(listOf(false), calls)
-        verifySuspend(VerifyMode.not) { arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), any()) }
-        verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any()) }
-        verifySuspend(VerifyMode.not) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun wrongEpochRunsRecoveryAfterPreflightAndDoesNotRunLegacyVerifier() = runTest {
-        val calls = mutableListOf<Boolean>()
-        val (arrangement, handler) = Arrangement { _, _, wrongEpoch ->
-            calls += wrongEpoch
-            wrongEpoch
-        }.withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch)).arrange()
-
-        handler.handleNewMLSMessage(
-            DurableMLSReceiveContext(arrangement.transactionContext),
-            TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant()),
-            TestEvent.liveDeliveryInfo
-        ).shouldSucceed()
-
-        assertEquals(listOf(false, true), calls)
-        verifySuspend(VerifyMode.not) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun recoveryFailureEscapesInsteadOfBeingIgnoredAsADecryptionFailure() = runTest {
-        val (arrangement, handler) = Arrangement { _, _, _ -> error("recovery persistence failed") }.arrange()
-
-        assertFailsWith<IllegalStateException> {
-            handler.handleNewMLSMessage(
-                DurableMLSReceiveContext(arrangement.transactionContext),
-                TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant()),
-                TestEvent.liveDeliveryInfo
-            )
-        }
-        verifySuspend(VerifyMode.not) { arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), any()) }
-    }
-
-    @Test
-    fun nonQueueReceiveDoesNotUseDurableRecoveryEvenWithPendingDeliverySource() = runTest {
-        val (arrangement, handler) = Arrangement { _, _, _ -> error("Local events must not create recovery intents") }
-            .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
-            .withVerifyEpoch(Either.Right(Unit))
-            .arrange()
-        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
-
-        handler.handleNewMLSMessage(arrangement.transactionContext, event, EventDeliveryInfo(EventSource.PENDING)).shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), event) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
-    }
 
     @Test
     fun givenPendingSideEffects_whenFlushing_thenDelegateToApplicationMessageHandler() = runTest {
@@ -726,7 +627,7 @@ class NewMessageEventHandlerTest {
         listOf(firstTimestamp, firstTimestamp + 61.seconds, firstTimestamp + 62.seconds).forEach { timestamp ->
             newMessageEventHandler.handleNewMLSMessage(
                 arrangement.transactionContext,
-                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.newMLSMessageEvent(timestamp, SubconversationId("subconversation-id")),
                 TestEvent.liveDeliveryInfo
             )
         }
@@ -747,7 +648,7 @@ class NewMessageEventHandlerTest {
         listOf(firstTimestamp, firstTimestamp + 61.seconds, firstTimestamp + 62.seconds).forEach { timestamp ->
             newMessageEventHandler.handleNewMLSMessage(
                 arrangement.transactionContext,
-                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.newMLSMessageEvent(timestamp, SubconversationId("subconversation-id")),
                 TestEvent.liveDeliveryInfo
             )
         }
@@ -755,6 +656,25 @@ class NewMessageEventHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
         }
+    }
+
+    @Test
+    fun givenMainConversationBufferedPastThreshold_whenHandling_thenQueuesTheRejoinWithoutJoiningInline() = runTest {
+        val firstTimestamp = Instant.parse("2026-07-21T10:00:00Z")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.BufferedFutureMessage))
+            .arrange()
+
+        listOf(firstTimestamp, firstTimestamp + 61.seconds).forEach { timestamp ->
+            newMessageEventHandler.handleNewMLSMessage(
+                arrangement.transactionContext,
+                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.liveDeliveryInfo
+            )
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
     }
 
     @Test
@@ -813,40 +733,37 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
-    fun givenMLSEventFailsWithWrongEpoch_whenHandling_shouldCallWrongEpochHandler() = runTest {
-        val (arrangement, newMessageEventHandler) = Arrangement()
-            .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
-            .withVerifyEpoch(Either.Right(Unit))
-            .arrange()
+    fun givenMainConversationNeedsRejoin_whenHandling_thenQueuesItAndIgnoresTheMessageWithoutJoiningInline() = runTest {
+        for (failure in listOf(MLSFailure.WrongEpoch, MLSFailure.ConversationNotFound)) {
+            val (arrangement, handler) = Arrangement()
+                .withMLSUnpackerReturning(Either.Left(failure))
+                .arrange()
+            val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+            handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
-        val result = newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
-
-        result.shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.staleEpochVerifier.verifyEpoch(
-                any(),
-                newMessageEvent.conversationId,
-                any(),
-                newMessageEvent.messageInstant
-            )
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(event.conversationId, event.messageInstant) }
+            verifySuspend(VerifyMode.not) { arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any()) }
+            verifySuspend(VerifyMode.not) {
+                arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+            }
         }
     }
 
     @Test
-    fun givenEpochVerifierFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
-        val failure = StorageFailure.DataNotFound
-        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+    fun givenSubconversationNeedsRejoin_whenHandling_thenItIsStillVerifiedInline() = runTest {
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), subConversationId = SubconversationId("sub"))
         val (arrangement, handler) = Arrangement()
             .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
-            .withVerifyEpoch(Either.Left(failure))
+            .withVerifyEpoch(Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
         handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
-        handler.handleNewMLSMessage(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
-            .shouldFail { assertEquals(failure, it) }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.staleEpochVerifier.verifyEpoch(any(), event.conversationId, event.subconversationId, event.messageInstant)
+        }
+        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any(), any()) }
     }
 
     @Test
@@ -854,7 +771,6 @@ class NewMessageEventHandlerTest {
         runTest {
             val (arrangement, newMessageEventHandler) = Arrangement()
                 .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
-                .withVerifyEpoch(Either.Right(Unit))
                 .arrange()
 
             val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
@@ -875,7 +791,6 @@ class NewMessageEventHandlerTest {
                 Either.Left(MLSFailure.WrongEpoch),
                 Either.Left(MLSFailure.BufferedFutureMessage)
             )
-            .withVerifyEpoch(Either.Right(Unit))
             .arrange()
 
         listOf(firstTimestamp, firstTimestamp + 2.minutes, firstTimestamp + 4.minutes).forEach { timestamp ->
@@ -886,7 +801,8 @@ class NewMessageEventHandlerTest {
             )
         }
 
-        verifySuspend(VerifyMode.exactly(1)) {
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.rejoinQueue.request(any(), any()) }
+        verifySuspend(VerifyMode.not) {
             arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
         }
     }
@@ -937,7 +853,7 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
-    fun givenResetConversationFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
+    fun givenResetConversationFails_thenTheMessageIsConsumed() = runTest {
         val failure = StorageFailure.DataNotFound
         val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
         val (arrangement, handler) = Arrangement()
@@ -946,19 +862,18 @@ class NewMessageEventHandlerTest {
             .arrange()
 
         handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
-        handler.handleNewMLSMessage(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
-            .shouldFail { assertEquals(failure, it) }
     }
 
     @Test
-    fun givenIgnoredMLSError_whenHandling_thenMessageIsConsumed() = runTest {
-        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+    fun givenSubconversationGroupIsMissing_whenHandling_thenMessageIsConsumed() = runTest {
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), subConversationId = SubconversationId("sub"))
         val (arrangement, handler) = Arrangement()
             .withMLSUnpackerReturning(Either.Left(MLSFailure.ConversationNotFound))
             .arrange()
 
         handler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             .shouldSucceed()
+        verifySuspend(VerifyMode.not) { arrangement.rejoinQueue.request(any(), any()) }
     }
 
     @Test
@@ -1013,7 +928,67 @@ class NewMessageEventHandlerTest {
         }
     }
 
-    private class Arrangement(private val recovery: MLSReceiveRecoveryHandler? = null): CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+    @Test
+    fun givenInvalidSignatureFromWrongExternalSender_whenHandling_thenShouldNotPersistDecryptionError() = runTest {
+        val event = TestEvent.newMLSMessageEvent(dateTime = DateTimeUtil.currentInstant())
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other(INVALID_SIGNATURE_MESSAGE)))
+            .withHandleWrongExternalSenderReturning(true)
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.handleWrongExternalSender(arrangement.transactionContext, event.conversationId)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenInvalidSignatureWithRightExternalSender_whenHandling_thenShouldPersistDecryptionError() = runTest {
+        val event = TestEvent.newMLSMessageEvent(dateTime = DateTimeUtil.currentInstant())
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other(INVALID_SIGNATURE_MESSAGE)))
+            .withHandleWrongExternalSenderReturning(false)
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenOtherFailure_whenHandling_thenShouldNotCheckExternalSender() = runTest {
+        val event = TestEvent.newMLSMessageEvent(dateTime = DateTimeUtil.currentInstant())
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other("Some other failure")))
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.handleWrongExternalSender(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenInvalidSignatureInSubconversation_whenHandling_thenShouldNotCheckExternalSender() = runTest {
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), SubconversationId("subconversation-id"))
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.Other(INVALID_SIGNATURE_MESSAGE)))
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.handleWrongExternalSender(any(), any()) }
+    }
+
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val proteusMessageUnpacker = mock<ProteusMessageUnpacker>()
         val mlsMessageUnpacker = mock<MLSMessageUnpacker>()
         val applicationMessageHandler = mock<ApplicationMessageHandler>(mode = MockMode.autoUnit)
@@ -1022,6 +997,8 @@ class NewMessageEventHandlerTest {
         val confirmationDeliveryHandler = mock<ConfirmationDeliveryHandler>(mode = MockMode.autoUnit)
         val legalHoldHandler = mock<LegalHoldHandler>()
         val resetMlsConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val handleWrongExternalSender = mock<HandleWrongExternalSenderUseCase>()
+        val rejoinQueue = mock<MLSRejoinQueue>(mode = MockMode.autoUnit)
 
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
             proteusMessageUnpacker,
@@ -1040,7 +1017,8 @@ class NewMessageEventHandlerTest {
             SELF_USER_ID,
             staleEpochVerifier,
             resetMlsConversation,
-            recovery,
+            handleWrongExternalSender,
+            rejoinQueue,
         )
 
         suspend fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult.ApplicationMessage>) = apply {
@@ -1086,6 +1064,10 @@ class NewMessageEventHandlerTest {
             }.returns(result)
         }
 
+        suspend fun withHandleWrongExternalSenderReturning(result: Boolean) = apply {
+            everySuspend { handleWrongExternalSender(any(), any()) } returns result
+        }
+
         suspend fun withResetConversationReturning(result: ResetMLSConversationResult) = apply {
             everySuspend {
                 resetMlsConversation(any(), any())
@@ -1100,6 +1082,7 @@ class NewMessageEventHandlerTest {
 
     private companion object {
         val SELF_USER_ID = UserId("selfUserId", "selfDomain")
+        const val INVALID_SIGNATURE_MESSAGE = "The message's signature is invalid."
         val signalingMessage = MessageUnpackResult.ApplicationMessage(
             conversationId = ConversationId("conversationID", "domain"),
             instant = Instant.DISTANT_PAST,
