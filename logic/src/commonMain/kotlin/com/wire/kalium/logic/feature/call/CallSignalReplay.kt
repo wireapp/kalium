@@ -26,6 +26,7 @@ internal class CallSignalReplay(
     private val accepted = mutableSetOf<String>()
 
     suspend fun replay() {
+        journal.markAllSignalsReady()
         while (mutex.withLock { replayNext() }) Unit
     }
 

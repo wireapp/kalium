@@ -239,6 +239,7 @@ class CallManagerStartupTest {
     fun missedCallbackPersistsTheStartWithoutAnIncomingCallOrPresentation() = runTest {
         val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
         val journal = mock<CallSignalStore>()
+        everySuspend { journal.markAllSignalsReady() } returns Unit
         val source = missedSource()
         everySuspend { journal.signals() } returns listOf(source)
         everySuspend { journal.deferMissedCall(any()) } returns Unit
@@ -265,6 +266,7 @@ class CallManagerStartupTest {
         val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
         fixture.metadata = TestCall.oneOnOneCallMetadata().copy(callStatus = CallStatus.INCOMING, establishedTime = null)
         val journal = mock<CallSignalStore>()
+        everySuspend { journal.markAllSignalsReady() } returns Unit
         val source = missedSource()
         everySuspend { journal.signals() } returns listOf(source)
         everySuspend { journal.presentations() } returns listOf(CallPresentationRecord(source.id, "call", "example.com", 1000, true, false))

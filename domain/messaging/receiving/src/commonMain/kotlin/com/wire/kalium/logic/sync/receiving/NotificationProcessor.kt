@@ -153,7 +153,7 @@ class NotificationProcessor(
             val next = events.nextPendingAfter(scannedId)
             if (next == null) {
                 // Every event committed; one retried after its native commit decrypted a duplicate and left its signal unready.
-                if (deferred.isEmpty()) CallSignalJournal(database).committedAll()
+                if (deferred.isEmpty()) CallSignalJournal(database).markAllSignalsReady()
                 return queueEnd.result("QUEUE_END", deferred.isEmpty())
             }
             if (queueEnd.shouldStop()) return queueEnd.result("BUDGET", deferred.isEmpty())

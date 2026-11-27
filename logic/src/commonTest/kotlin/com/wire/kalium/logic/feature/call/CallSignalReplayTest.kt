@@ -227,6 +227,14 @@ class CallSignalReplayTest {
         assertEquals(listOf("incoming", "later"), submitted)
     }
 
+    @Test
+    fun replaySubmitsASignalLeftUnreadyByAnInterruptedExtension() = runTest {
+        val store = Store(listOf(signal("interrupted", "current", 1).copy(ready = false)))
+        val submitted = mutableListOf<String>()
+        CallSignalReplay(store, "handle", { submitted += it.id }, {}).replay()
+        assertEquals(listOf("interrupted"), submitted)
+    }
+
     private fun signal(id: String, conversation: String, time: Long, type: String = "SETUP") = CallSignalRecord(
         id, id, conversation, "wire.test", "caller", "wire.test", "client",
         """{"type":"$type","resp":false,"sessid":"call","timestamp":"1","seqno":"1","secret":"YWJjZA==","sft_url":"https://sft.invalid"}""",
@@ -251,6 +259,9 @@ class CallSignalReplayTest {
 
         override suspend fun deferMissedCall(source: com.wire.kalium.logic.sync.receiving.MissedCallSource) = Unit
         override suspend fun flushMissedCalls(self: com.wire.kalium.persistence.dao.QualifiedIDEntity) = Unit
+        override suspend fun markAllSignalsReady() {
+            records = records.map { it.copy(ready = true) }
+        }
 
         override suspend fun closed(
             conversationValue: String,

@@ -95,6 +95,9 @@ interface CallSignalStore {
     suspend fun deferMissedCall(source: MissedCallSource)
     suspend fun flushMissedCalls(self: QualifiedIDEntity)
 
+    /** For the account's owner only: a signal it finds unready was left by an attempt stopped after its crypto commit. */
+    suspend fun markAllSignalsReady()
+
     /** [atMillis] is taken before native enqueue, so a close callback raised by that enqueue covers the signal. */
     suspend fun submitted(id: String, generation: String, atMillis: Long = Clock.System.now().toEpochMilliseconds())
 
@@ -169,7 +172,7 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         }
     }
 
-    suspend fun committedAll() = database.writeMessageEffects {
+    override suspend fun markAllSignalsReady() = database.writeMessageEffects {
         val state = read(metadata)
         if (state.signals.any { !it.ready }) write(metadata, state.copy(signals = state.signals.map { it.copy(ready = true) }))
     }
