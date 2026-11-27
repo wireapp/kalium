@@ -131,10 +131,10 @@ public data class KaliumNSEResult(
      */
     public val alerts: List<KaliumNSEAlert> = emptyList(),
     /**
-     * Receiving ran out of time, failed to catch up, deferred the request's notification or, while nobody else
-     * presents, stopped at an ordering barrier or for legal-hold work before reaching it, and has no alert to show.
-     * The host shows a generic alert instead of empty content. Also set on [KaliumNSEStatus.FAILED] timeouts and,
-     * while nobody else presents, a busy, unprepared or unreadable account.
+     * Receiving ran out of time, failed to catch up, deferred the request's notification outside a muted
+     * conversation or, while nobody else presents, stopped at an ordering barrier or for legal-hold work before
+     * reaching it, and has no alert to show. The host shows a generic alert instead of empty content. Also set on
+     * [KaliumNSEStatus.FAILED] timeouts and, while nobody else presents, a busy, unprepared or unreadable account.
      */
     public val presentGenericAlert: Boolean = false,
     /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */

@@ -346,6 +346,22 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun deferredTargetInAMutedConversationIsReportedAsMuted() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val missing = QualifiedIDEntity("unavailable", "federated.example")
+                fixture.seedUnjoinedMLSConversation(missing)
+                fixture.sql("UPDATE Conversation SET muted_status = 'ALL_MUTED'")
+                fixture.releasePrepared()
+                val blocked = fixture.event("blocked", byteArrayOf(1), conversationId = missing)
+                val result = fixture.receive(listOf(blocked), "blocked", recoveryFactory = { fixture.unavailableRecovery(it) })
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
+                assertEquals("DEFERRED_MUTED_CONVERSATION", fixture.receivedPresentation)
+            }
+        }
+    }
+
+    @Test
     fun isolatedNSEDefersFederationAndDrainsIndependentMessagesAcrossRestart() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
@@ -11203,6 +11219,7 @@ class NotificationProcessorNativeTest {
         var receivedCalls: List<ReceivedCallResult> = emptyList()
         var receivedAppWork: NotificationAppWork? = null
         var receivedStop: String? = null
+        var receivedPresentation: String? = null
         var receivedMeetings: List<LocalNotification.Meeting> = emptyList()
         var receivedCallEvents: List<ReceivedCallEvent> = emptyList()
         private val config = ApplePersistenceConfig(keychainService, keychainAccessibility = null)
@@ -12759,6 +12776,7 @@ class NotificationProcessorNativeTest {
                 processor.processToLive(target, toLive)
             }.also {
                 receivedCalls = it.calls; receivedAppWork = it.appWorkPending; receivedStop = it.stoppedReason
+                receivedPresentation = it.presentationReason
                 receivedMeetings = it.meetings
             }.message
         }
