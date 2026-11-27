@@ -499,8 +499,15 @@ style:
         comments: [ 'TODO:', 'FIXME:', 'STOPSHIP:' ]
         allowedPatterns: ''
     ForbiddenImport:
-        active: false
-        imports: [ ]
+        active: true
+        excludes: [ '**/core/logger/src/*/kotlin/com/wire/kalium/logger/**', '**/sample/cli/src/*Main/kotlin/com/wire/kalium/cli/**' ]
+        imports:
+            - value: 'android.util.Log'
+              reason: 'Log through KaliumLogger, which owns the log data policy. See docs/adr/0018-log-data-policy.md.'
+            - value: 'android.util.Log.*'
+              reason: 'Log through KaliumLogger, which owns the log data policy. See docs/adr/0018-log-data-policy.md.'
+            - value: 'co.touchlab.kermit.*'
+              reason: 'Log through KaliumLogger, which owns the log data policy. See docs/adr/0018-log-data-policy.md.'
         forbiddenPatterns: ''
     ForbiddenMethodCall:
         active: false
