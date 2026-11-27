@@ -986,7 +986,10 @@ class MeetingRepositoryTest {
             transactionContext = arrangement.transactionContext,
         )
 
-        assertEquals(failure, assertIs<Either.Left<MeetingDataSource.SavedMeetingFailure>>(result).value.reason)
+        val savedFailure = assertIs<Either.Left<MeetingDataSource.SavedMeetingFailure>>(result).value
+        assertEquals(failure, savedFailure.reason)
+        assertEquals(MeetingDataSource.SavedMeetingFailure.Stage.ADD_PARTICIPANTS, savedFailure.stage)
+        assertEquals(listOf(participantToAdd), savedFailure.participants)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.changeConversationName(any(), any())
             arrangement.meetingDao.upsertMeetings(any(), any())
@@ -1031,7 +1034,7 @@ class MeetingRepositoryTest {
         val result = repository.updateMeeting(meetingId, UPDATE_MEETING.copy(otherParticipants = emptyList()), transactionContext = arrangement.transactionContext)
 
         val savedFailure = assertIs<Either.Left<MeetingDataSource.SavedMeetingFailure>>(result).value
-        assertEquals(com.wire.kalium.logic.feature.meeting.MeetingSaveWarning.RemoveParticipantsFailed, savedFailure.warning)
+        assertEquals(MeetingDataSource.SavedMeetingFailure.Stage.REMOVE_PARTICIPANTS, savedFailure.stage)
         verifySuspend(VerifyMode.order) {
             arrangement.conversationRepository.getConversationMembers(conversationId)
             arrangement.meetingApi.updateMeeting(any(), any())

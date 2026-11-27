@@ -23,6 +23,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
@@ -116,19 +118,23 @@ internal class UpdateMeetingUseCaseImpl(
                         }
                     }
             }
-            .fold({ it.toResult(updateMeeting.otherParticipants) }, {
+            .map {
                 it.toMeetingSaveWarning()?.let { warning -> UpdateMeetingUseCase.Result.Success.Partial(warning) }
                     ?: UpdateMeetingUseCase.Result.Success.Complete
-            }).also {
-                if (it is UpdateMeetingUseCase.Result.Success) refreshUsersWithoutMetadata()
             }
+            .flatMapLeft { it.recoverSavedMeeting(updateMeeting.otherParticipants) }
+            .onSuccess { refreshUsersWithoutMetadata() }
+            .fold({ it }, { it })
 
-    private fun CoreFailure.toResult(participants: List<UserId>) = when (this) {
-        is EstablishMLSFailure -> UpdateMeetingUseCase.Result.Success.Partial(reason.toSetupWarning(participants))
-        is MeetingDataSource.SavedMeetingFailure -> UpdateMeetingUseCase.Result.Success.Partial(warning)
-        is MeetingDataSource.UpdateConversationNameFailure ->
+    private fun CoreFailure.recoverSavedMeeting(
+        participants: List<UserId>
+    ): Either<UpdateMeetingUseCase.Result.Failure, UpdateMeetingUseCase.Result.Success> = when (this) {
+        is EstablishMLSFailure -> Either.Right(UpdateMeetingUseCase.Result.Success.Partial(reason.toSetupWarning(participants)))
+        is MeetingDataSource.SavedMeetingFailure -> Either.Right(UpdateMeetingUseCase.Result.Success.Partial(toMeetingSaveWarning()))
+        is MeetingDataSource.UpdateConversationNameFailure -> Either.Left(
             UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure(conversationId)
-        else -> UpdateMeetingUseCase.Result.Failure.Other(this)
+        )
+        else -> Either.Left(UpdateMeetingUseCase.Result.Failure.Other(this))
     }
 
     private fun logData(meetingId: MeetingId, conversationId: ConversationId, failure: CoreFailure? = null): Map<String, Any> = buildMap {

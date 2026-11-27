@@ -22,12 +22,11 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.logic.data.meeting.CreateNewMeetingResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.meeting.CreateMeeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource.SavedMeetingFailure
 import com.wire.kalium.logic.data.meeting.MeetingDataSource.EstablishMLSFailure
@@ -69,34 +68,32 @@ internal class CreateNewMeetingUseCaseImpl(
         .transaction("CreateNewMeeting") { transactionContext ->
             meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = transactionContext)
         }
-        .flatMapLeft {
-            when (it) {
-                // don't propagate the MLS establishment error, meeting creation succeeded, and MLS establishment can be retried later
+        .map {
+            when (val warning = it.mlsAdditionResult.toMeetingSaveWarning()) {
+                null -> CreateNewMeetingUseCase.Result.Success.Complete(it.conversationId, it.meetingId)
+                else -> CreateNewMeetingUseCase.Result.Success.Partial(it.conversationId, it.meetingId, warning)
+            }
+        }
+        .flatMapLeft { failure ->
+            when (failure) {
+                // The meeting was created; report partial success because MLS establishment can be retried later.
                 is EstablishMLSFailure -> Either.Right(
-                    CreateNewMeetingResult(
-                        conversationId = it.conversationId,
-                        mlsAdditionResult = MLSAdditionResult.Empty,
-                        meetingId = it.meetingId,
-                        warning = it.reason.toSetupWarning(createMeeting.otherParticipants)
+                    CreateNewMeetingUseCase.Result.Success.Partial(
+                        conversationId = failure.conversationId,
+                        meetingId = failure.meetingId,
+                        warning = failure.reason.toSetupWarning(createMeeting.otherParticipants)
                     )
                 )
                 is SavedMeetingFailure -> Either.Right(
-                    CreateNewMeetingResult(it.conversationId, MLSAdditionResult.Empty, it.meetingId, it.warning)
+                    CreateNewMeetingUseCase.Result.Success.Partial(
+                        conversationId = failure.conversationId,
+                        meetingId = failure.meetingId,
+                        warning = failure.toMeetingSaveWarning()
+                    )
                 )
-                else -> Either.Left(it)
+                else -> Either.Left(CreateNewMeetingUseCase.Result.Failure(failure))
             }
         }
-        .onSuccess {
-            refreshUsersWithoutMetadata()
-        }
-        .fold(
-            { CreateNewMeetingUseCase.Result.Failure(it) },
-            {
-                val warning = it.warning ?: it.mlsAdditionResult.toMeetingSaveWarning()
-                when (warning) {
-                    null -> CreateNewMeetingUseCase.Result.Success.Complete(it.conversationId, it.meetingId)
-                    else -> CreateNewMeetingUseCase.Result.Success.Partial(it.conversationId, it.meetingId, warning)
-                }
-            }
-        )
+        .onSuccess { refreshUsersWithoutMetadata() }
+        .fold({ it }, { it })
 }

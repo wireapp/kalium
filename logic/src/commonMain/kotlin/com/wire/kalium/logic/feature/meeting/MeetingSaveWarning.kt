@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.meeting
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
+import com.wire.kalium.logic.data.meeting.MeetingDataSource.SavedMeetingFailure
 import com.wire.kalium.logic.data.user.UserId
 
 /** A meeting was saved remotely, but a subsequent setup step did not fully succeed. */
@@ -52,4 +53,10 @@ internal fun CoreFailure.toSetupWarning(users: List<UserId>): MeetingSaveWarning
     is CoreFailure.MissingKeyPackages, is NetworkFailure.FederatedBackendFailure ->
         toParticipantWarning(users).takeIf { it.participants.isNotEmpty() } ?: MeetingSaveWarning.ConversationSetupFailed
     else -> MeetingSaveWarning.ConversationSetupFailed
+}
+
+internal fun SavedMeetingFailure.toMeetingSaveWarning(): MeetingSaveWarning = when (stage) {
+    SavedMeetingFailure.Stage.CONVERSATION_SETUP -> MeetingSaveWarning.ConversationSetupFailed
+    SavedMeetingFailure.Stage.ADD_PARTICIPANTS -> reason.toParticipantWarning(participants)
+    SavedMeetingFailure.Stage.REMOVE_PARTICIPANTS -> MeetingSaveWarning.RemoveParticipantsFailed
 }

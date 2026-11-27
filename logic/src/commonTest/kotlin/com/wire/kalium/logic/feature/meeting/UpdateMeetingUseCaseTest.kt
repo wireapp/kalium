@@ -149,7 +149,7 @@ class UpdateMeetingUseCaseTest {
     @Test
     fun givenSavedMeetingRemovalFails_whenUpdating_thenReturnsRemovalWarning() = runTest {
         val failure = MeetingDataSource.SavedMeetingFailure(
-            MEETING_ID, CONVERSATION_ID, CoreFailure.Unknown(null), MeetingSaveWarning.RemoveParticipantsFailed
+            MEETING_ID, CONVERSATION_ID, CoreFailure.Unknown(null), MeetingDataSource.SavedMeetingFailure.Stage.REMOVE_PARTICIPANTS
         )
         val (_, useCase) = Arrangement()
             .withInsertIncompleteUsersSuccess(UPSERT_MEETING)
@@ -157,6 +157,30 @@ class UpdateMeetingUseCaseTest {
             .arrange()
 
         assertEquals(UpdateMeetingUseCase.Result.Success.Partial(MeetingSaveWarning.RemoveParticipantsFailed), useCase(MEETING_ID, UPSERT_MEETING))
+    }
+
+    @Test
+    fun givenSavedMeetingAdditionFails_whenUpdating_thenMapsAffectedParticipantsAndPreservesCause() = runTest {
+        val failedUser = UPSERT_MEETING.otherParticipants.single()
+        val meeting = UPSERT_MEETING.copy(otherParticipants = listOf(failedUser, UserId("added", failedUser.domain)))
+        val cause = CoreFailure.MissingKeyPackages(setOf(failedUser))
+        val failure = MeetingDataSource.SavedMeetingFailure(
+            meetingId = MEETING_ID,
+            conversationId = CONVERSATION_ID,
+            reason = cause,
+            stage = MeetingDataSource.SavedMeetingFailure.Stage.ADD_PARTICIPANTS,
+            participants = meeting.otherParticipants
+        )
+        val (_, useCase) = Arrangement()
+            .withInsertIncompleteUsersSuccess(meeting)
+            .withUpdateMeetingReturning(MEETING_ID, meeting, Either.Left(failure))
+            .arrange()
+
+        val result = assertIs<UpdateMeetingUseCase.Result.Success.Partial>(useCase(MEETING_ID, meeting))
+        val warning = assertIs<MeetingSaveWarning.AddParticipantsFailed>(result.warning)
+
+        assertEquals(setOf(failedUser), warning.participants.keys)
+        assertSame(cause, warning.participants[failedUser])
     }
 
     @Test

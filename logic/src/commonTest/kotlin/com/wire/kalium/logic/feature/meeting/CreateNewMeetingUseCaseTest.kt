@@ -156,7 +156,7 @@ class CreateNewMeetingUseCaseTest {
     @Test
     fun givenSavedMeetingSetupFails_whenCreating_thenReturnsWarningWithExistingMeetingId() = runTest {
         val failure = MeetingDataSource.SavedMeetingFailure(
-            MEETING_ID, ConversationId("conversation", "domain"), CoreFailure.Unknown(null), MeetingSaveWarning.ConversationSetupFailed
+            MEETING_ID, ConversationId("conversation", "domain"), CoreFailure.Unknown(null), MeetingDataSource.SavedMeetingFailure.Stage.CONVERSATION_SETUP
         )
         val createResult = Either.Left(failure)
         val (_, useCase) = Arrangement()

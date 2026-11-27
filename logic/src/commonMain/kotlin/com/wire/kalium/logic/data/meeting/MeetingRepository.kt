@@ -52,8 +52,6 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.meeting.MeetingSaveWarning
-import com.wire.kalium.logic.feature.meeting.toParticipantWarning
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
@@ -303,7 +301,7 @@ internal class MeetingDataSource(
                         meetingId = response.meetingId.toModel(),
                         conversationId = response.conversation.id.toModel(),
                         reason = failure,
-                        warning = MeetingSaveWarning.ConversationSetupFailed
+                        stage = SavedMeetingFailure.Stage.CONVERSATION_SETUP
                     )
                 }
             }.map { result ->
@@ -346,9 +344,15 @@ internal class MeetingDataSource(
                                 meetingId = meetingId,
                                 conversationId = conversation.id,
                                 reason = failure.reason,
-                                warning = failure.warning
+                                stage = failure.stage,
+                                participants = failure.participants
                             )
-                            else -> SavedMeetingFailure(meetingId, conversation.id, failure, MeetingSaveWarning.ConversationSetupFailed)
+                            else -> SavedMeetingFailure(
+                                meetingId = meetingId,
+                                conversationId = conversation.id,
+                                reason = failure,
+                                stage = SavedMeetingFailure.Stage.CONVERSATION_SETUP
+                            )
                         }
                     }
                 }
@@ -397,7 +401,7 @@ internal class MeetingDataSource(
                         mlsContext = mlsContext,
                         groupID = mlsCapableProtocol.groupId,
                         userIdList = membersToRemove,
-                    ).mapLeft { ParticipantUpdateFailure(it, MeetingSaveWarning.RemoveParticipantsFailed) }
+                    ).mapLeft { ParticipantUpdateFailure(it, SavedMeetingFailure.Stage.REMOVE_PARTICIPANTS) }
 
                     else -> Either.Right(Unit)
                 }.flatMap {
@@ -408,7 +412,7 @@ internal class MeetingDataSource(
                             userIdList = membersToAdd,
                             cipherSuite = mlsCapableProtocol.cipherSuite,
                             allowPartialMemberList = true
-                        ).mapLeft { ParticipantUpdateFailure(it, it.toParticipantWarning(membersToAdd)) }
+                        ).mapLeft { ParticipantUpdateFailure(it, SavedMeetingFailure.Stage.ADD_PARTICIPANTS, membersToAdd) }
 
                         else -> Either.Right(MLSAdditionResult.Empty)
                     }
@@ -519,10 +523,17 @@ internal class MeetingDataSource(
         val meetingId: MeetingId,
         val conversationId: ConversationId,
         val reason: CoreFailure,
-        val warning: MeetingSaveWarning,
-    ) : CoreFailure.FeatureFailure()
+        val stage: Stage,
+        val participants: List<UserId> = emptyList(),
+    ) : CoreFailure.FeatureFailure() {
+        enum class Stage { CONVERSATION_SETUP, ADD_PARTICIPANTS, REMOVE_PARTICIPANTS }
+    }
     data class DeleteCleanupFailure(val reason: CoreFailure) : CoreFailure.FeatureFailure()
-    private data class ParticipantUpdateFailure(val reason: CoreFailure, val warning: MeetingSaveWarning) : CoreFailure.FeatureFailure()
+    private data class ParticipantUpdateFailure(
+        val reason: CoreFailure,
+        val stage: SavedMeetingFailure.Stage,
+        val participants: List<UserId> = emptyList(),
+    ) : CoreFailure.FeatureFailure()
     data class EstablishMLSFailure(
         val conversationId: ConversationId,
         val reason: CoreFailure,
@@ -536,5 +547,4 @@ internal data class CreateNewMeetingResult(
     val conversationId: ConversationId,
     val mlsAdditionResult: MLSAdditionResult,
     val meetingId: MeetingId,
-    val warning: MeetingSaveWarning? = null,
 )
