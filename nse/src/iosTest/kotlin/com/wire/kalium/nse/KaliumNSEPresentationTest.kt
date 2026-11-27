@@ -250,6 +250,19 @@ class KaliumNSEPresentationTest {
         })
     }
 
+    @Test
+    fun targetLeftPendingByADeferralOrABarrierAsksForAGenericAlert() = runTest {
+        val deferred = ReceivedNotificationResult(null, presentationReason = "DEFERRED_CONVERSATION", stoppedReason = "QUEUE_END")
+        val barrier = ReceivedNotificationResult(null, stoppedReason = "DEFERRED_ORDERING_BARRIER")
+        for (received in listOf(deferred, barrier)) for (targetProcessed in listOf(false, true)) {
+            assertEquals(
+                !targetProcessed,
+                receiver.mayLeaveUnseenEvents(CatchUpOutcome.LIVE, received) { targetProcessed },
+                "${received.stoppedReason} $targetProcessed"
+            )
+        }
+    }
+
     private fun unnotified(id: String) = message(ReceivedNotificationType.MESSAGE).copy(messageId = id)
 
     private fun storedMessage(id: String, content: MessageEntityContent.Regular) = MessageEntity.Regular(
