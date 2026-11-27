@@ -131,10 +131,10 @@ public data class KaliumNSEResult(
      */
     public val alerts: List<KaliumNSEAlert> = emptyList(),
     /**
-     * Receiving ran out of time, failed to catch up or, while nobody else presents, stopped for legal-hold work
-     * left for the app before reaching the request's notification, and has no alert to show. The host shows a
-     * generic alert instead of empty content. Also set on [KaliumNSEStatus.FAILED] timeouts and, while nobody
-     * else presents, a busy, unprepared or unreadable account.
+     * Receiving ran out of time, failed to catch up, deferred the request's notification or, while nobody else
+     * presents, stopped at an ordering barrier or for legal-hold work before reaching it, and has no alert to show.
+     * The host shows a generic alert instead of empty content. Also set on [KaliumNSEStatus.FAILED] timeouts and,
+     * while nobody else presents, a busy, unprepared or unreadable account.
      */
     public val presentGenericAlert: Boolean = false,
     /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */
@@ -323,7 +323,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
      * An unfinished catch-up may leave events the socket received, which get no push; missed notifications
      * mean the backend dropped events until the app's slow sync. A failed catch-up, like processing that ran
      * out of time, may not have reached the push's own event. Nor may legal-hold or call work left for the app,
-     * which stops every later attempt at the same event until the app runs.
+     * which stops every later attempt at the same event until the app runs. Nor may a deferral or an ordering
+     * barrier, and nothing retries that event before the next push or the app.
      */
     internal suspend fun mayLeaveUnseenEvents(
         caughtUp: CatchUpOutcome,
@@ -332,6 +333,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     ): Boolean = caughtUp == CatchUpOutcome.BUDGET || caughtUp == CatchUpOutcome.NEEDS_SLOW_SYNC || (
         (
             received.stoppedReason == BUDGET || caughtUp == CatchUpOutcome.FAILED ||
+                received.stoppedReason == ORDERING_BARRIER || received.presentationReason == TARGET_DEFERRED ||
                 received.appWorkPending in QUEUE_STOPPING_WORK
             ) && !targetProcessed()
         )
@@ -520,6 +522,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         private const val PROCESS_SHARE = 0.85
         private const val QUEUE_END = "QUEUE_END"
         private const val BUDGET = "BUDGET"
+        private const val ORDERING_BARRIER = "DEFERRED_ORDERING_BARRIER"
+        private const val TARGET_DEFERRED = "DEFERRED_CONVERSATION"
         private val QUEUE_STOPPING_WORK = setOf(
             NotificationAppWork.LEGAL_HOLD,
             NotificationAppWork.MLS_SUBCONVERSATION,

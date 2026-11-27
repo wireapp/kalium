@@ -200,8 +200,8 @@ After a deferral, a later notification can be processed only when every decoded
 payload can cross the gap: Text, Knock, Location, Asset, Composite, Poll, Multipart,
 Ignored and Unknown content, or Creation, System, Profiles, DecryptionFailure,
 Proposal and ClearProposalTimer payloads. Any other payload, or a non-isolatable
-notification, is an ordering barrier and stops the scan. Results stay `SUCCESS`
-and silent:
+notification, is an ordering barrier and stops the scan. Results stay `SUCCESS`,
+with a generic alert while the target is left pending:
 
 - `DEFERRED_CONVERSATION`: the target was deferred or skipped.
 - `DEFERRED_ORDERING_BARRIER`: the scan stopped at a barrier, or the target was
