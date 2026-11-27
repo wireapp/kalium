@@ -40,7 +40,6 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
@@ -93,10 +92,7 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.NewMLSMessage -> {
-                val result = newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
-                if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
-            }
+            is Event.Conversation.NewMLSMessage -> newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
 
             is Event.Conversation.NewConversation -> {
                 newConversationHandler.handle(transactionContext, event)
@@ -123,7 +119,7 @@ internal class ConversationEventReceiverImpl(
                 val result = mlsWelcomeHandler.handle(transactionContext, event)
                 val failure = (result as? Either.Left)?.value
                 // Retryable failures keep the Welcome pending, otherwise it is lost and the conversation never appears.
-                val propagate = failure == null || transactionContext is DurableMLSReceiveContext || failure.isRetryable()
+                val propagate = failure == null || failure.isRetryable()
                 if (propagate) result else queueRejoin(event)
             }
 
