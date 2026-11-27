@@ -503,6 +503,22 @@ class MeetingRepositoryTest {
     }
 
     @Test
+    fun givenRemoteDeletionSucceedsButLocalDeletionFails_whenDeleting_thenReturnsCleanupFailure() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val exception = RuntimeException("local cleanup failed")
+        val (arrangement, repository) = Arrangement()
+            .withDeleteMeetingSuccess(meetingId)
+            .withDeleteMeetingLocallyFailure(meetingId, exception)
+            .arrange()
+
+        val result = repository.deleteMeeting(meetingId)
+
+        val failure = assertIs<Either.Left<MeetingDataSource.DeleteCleanupFailure>>(result).value
+        assertSame(exception, assertIs<StorageFailure.Generic>(failure.reason).rootCause)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingApi.deleteMeeting(meetingId.toApi()) }
+    }
+
+    @Test
     fun whenDeleteMeetingLocally_thenMeetingIsDeletedLocallyWithoutApiCall() = runTest {
         val meetingId = MeetingId("meeting1", "domain")
         val (arrangement, repository) = Arrangement().arrange()
@@ -660,7 +676,7 @@ class MeetingRepositoryTest {
             transactionContext = arrangement.transactionContext,
         )
 
-        assertIs<Either.Left<NetworkFailure.NoNetworkConnection>>(result)
+        assertEquals(failure, assertIs<Either.Left<MeetingDataSource.SavedMeetingFailure>>(result).value.reason)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToCreateApi(createMeeting))
             arrangement.persistConversations(
@@ -693,7 +709,7 @@ class MeetingRepositoryTest {
             transactionContext = arrangement.transactionContext,
         )
 
-        assertIs<Either.Left<StorageFailure.Generic>>(result)
+        assertIs<Either.Left<MeetingDataSource.SavedMeetingFailure>>(result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToCreateApi(createMeeting))
             arrangement.persistConversations(
@@ -866,7 +882,6 @@ class MeetingRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingDao.getMeeting(meetingId.toDao())
             arrangement.conversationRepository.getConversationById(conversationId)
-            arrangement.conversationRepository.getConversationMembers(conversationId = conversationId)
             arrangement.meetingApi.updateMeeting(
                 meetingId = meetingId.toApi(),
                 request = arrangement.meetingMapper.fromModelToUpdateApi(meeting)
@@ -911,9 +926,10 @@ class MeetingRepositoryTest {
             transactionContext = arrangement.transactionContext,
         )
 
-        assertIs<Either.Left<StorageFailure.Generic>>(result).also {
-            assertSame(persistenceException, it.value.rootCause)
-        }
+        assertSame(
+            persistenceException,
+            assertIs<StorageFailure.Generic>(assertIs<Either.Left<MeetingDataSource.SavedMeetingFailure>>(result).value.reason).rootCause
+        )
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingDao.getMeeting(meetingId.toDao())
             arrangement.conversationRepository.getConversationById(conversationId)
@@ -940,7 +956,7 @@ class MeetingRepositoryTest {
     }
 
     @Test
-    fun givenUpdatingMlsMembersFails_whenUpdateMeeting_thenMeetingApiIsNotCalledAndFailureIsReturned() = runTest {
+    fun givenUpdatingMlsMembersFails_whenUpdateMeeting_thenSavedMeetingAndParticipantFailureAreReturned() = runTest {
         val participantToAdd = UserId("participant-add", "domain")
         val meetingId = MeetingId("meeting1", "domain")
         val meeting = UPDATE_MEETING.copy(otherParticipants = listOf(participantToAdd))
@@ -959,6 +975,9 @@ class MeetingRepositoryTest {
             .withConversationMembers(conversationId, listOf(TestUser.SELF.id))
             .withMlsContext()
             .withAddMembersToMlsGroupFailure(groupId, listOf(participantToAdd), failure)
+            .withUpdateMeetingSuccess(meetingId, meeting, upsertMeetingResponse(epoch = 1UL))
+            .withChangeConversationNameSuccess(conversationId, meeting.title)
+            .withPersistConversationsSuccess()
             .arrange()
 
         val result = repository.updateMeeting(
@@ -967,8 +986,15 @@ class MeetingRepositoryTest {
             transactionContext = arrangement.transactionContext,
         )
 
-        assertEquals(Either.Left(failure), result)
+        val savedFailure = assertIs<Either.Left<MeetingDataSource.SavedMeetingFailure>>(result).value
+        assertEquals(failure, savedFailure.reason)
+        assertEquals(MeetingDataSource.SavedMeetingFailure.Stage.ADD_PARTICIPANTS, savedFailure.stage)
+        assertEquals(listOf(participantToAdd), savedFailure.participants)
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.changeConversationName(any(), any())
+            arrangement.meetingDao.upsertMeetings(any(), any())
+            arrangement.persistConversations(any(), any(), any(), any())
+            arrangement.meetingApi.updateMeeting(any(), any())
             arrangement.meetingDao.getMeeting(meetingId.toDao())
             arrangement.conversationRepository.getConversationById(conversationId)
             arrangement.conversationRepository.getConversationMembers(conversationId = conversationId)
@@ -981,13 +1007,41 @@ class MeetingRepositoryTest {
             )
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.meetingApi.updateMeeting(any(), any())
-            arrangement.persistConversations(any(), any(), any(), any())
-            arrangement.meetingDao.upsertMeetings(any(), any())
-            arrangement.conversationRepository.changeConversationName(any(), any())
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any())
         }
+    }
+
+    @Test
+    fun givenParticipantRemovalFails_whenUpdating_thenMeetingIsPersistedAndRemovalWarningIsReturned() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val groupId = GroupID("group-id")
+        val response = upsertMeetingResponse(epoch = 1UL)
+        val conversationId = response.conversationId.toModel()
+        val conversation = meetingConversation(conversationId = conversationId, groupId = groupId)
+        val failure = CoreFailure.Unknown(null)
+        val (arrangement, repository) = Arrangement()
+            .withStoredMeeting(MEETING_ENTITY.copy(meetingId = meetingId.toDao(), conversationId = conversationId.toDao()))
+            .withConversation(conversation)
+            .withConversationMembers(conversationId, listOf(TestUser.SELF.id, TestUser.OTHER.id))
+            .withMlsContext()
+            .withRemoveMembersFromMlsGroupFailure(groupId, listOf(TestUser.OTHER.id), failure)
+            .withUpdateMeetingSuccess(meetingId, UPDATE_MEETING.copy(otherParticipants = emptyList()), response)
+            .withChangeConversationNameSuccess(conversationId, UPDATE_MEETING.title)
+            .withPersistConversationsSuccess()
+            .arrange()
+
+        val result = repository.updateMeeting(meetingId, UPDATE_MEETING.copy(otherParticipants = emptyList()), transactionContext = arrangement.transactionContext)
+
+        val savedFailure = assertIs<Either.Left<MeetingDataSource.SavedMeetingFailure>>(result).value
+        assertEquals(MeetingDataSource.SavedMeetingFailure.Stage.REMOVE_PARTICIPANTS, savedFailure.stage)
+        verifySuspend(VerifyMode.order) {
+            arrangement.conversationRepository.getConversationMembers(conversationId)
+            arrangement.meetingApi.updateMeeting(any(), any())
+            arrangement.meetingDao.upsertMeetings(any(), any())
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), groupId, listOf(TestUser.OTHER.id))
+        }
+        verifySuspend(VerifyMode.not) { arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1475,6 +1529,10 @@ class MeetingRepositoryTest {
 
         internal fun withChangeConversationNameFailure(conversationId: ConversationId, name: String, failure: CoreFailure) = apply {
             everySuspend { conversationRepository.changeConversationName(conversationId, name) } returns Either.Left(failure)
+        }
+
+        internal fun withRemoveMembersFromMlsGroupFailure(groupId: GroupID, members: List<UserId>, failure: CoreFailure) = apply {
+            everySuspend { mlsConversationRepository.removeMembersFromMLSGroup(any(), groupId, members) } returns Either.Left(failure)
         }
 
         internal fun withRemoveMembersFromMlsGroupSuccess(groupId: GroupID, members: List<UserId>) = apply {

@@ -23,19 +23,20 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
-import com.wire.kalium.logic.data.meeting.UpdateMeeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource.EstablishMLSFailure
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.meeting.UpdateMeeting
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
@@ -47,10 +48,13 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailur
 public interface UpdateMeetingUseCase {
     public suspend operator fun invoke(meetingId: MeetingId, updateMeeting: UpdateMeeting): Result
     public sealed interface Result {
-        public data object Success : Result
-        public sealed interface Failure : Result { // TODO: Add more specific error types in the future
+        public sealed interface Success : Result {
+            public data object Complete : Success
+            public data class Partial(val warning: MeetingSaveWarning) : Success
+        }
+        public sealed interface Failure : Result {
             public data class UpdateConversationNameFailure(val conversationId: ConversationId) : Failure
-            public data object Other : Failure
+            public data class Other(val coreFailure: CoreFailure) : Failure
         }
     }
 }
@@ -105,8 +109,8 @@ internal class UpdateMeetingUseCaseImpl(
                                             )
                                         }
                                     }
-                                    // don't propagate the MLS establishment error, edit succeeded, MLS establishment can be retried later
-                                    Either.Right(MLSAdditionResult.Empty)
+                                    // Preserve the saved outcome and report the incomplete setup as a warning.
+                                    Either.Left(failure)
                                 }
 
                                 else -> Either.Left(failure)
@@ -114,13 +118,23 @@ internal class UpdateMeetingUseCaseImpl(
                         }
                     }
             }
+            .map {
+                it.toMeetingSaveWarning()?.let { warning -> UpdateMeetingUseCase.Result.Success.Partial(warning) }
+                    ?: UpdateMeetingUseCase.Result.Success.Complete
+            }
+            .flatMapLeft { it.recoverSavedMeeting(updateMeeting.otherParticipants) }
             .onSuccess { refreshUsersWithoutMetadata() }
-            .fold({ it.toResult() }, { UpdateMeetingUseCase.Result.Success })
+            .fold({ it }, { it })
 
-    private fun CoreFailure.toResult() = when (this) {
-        is MeetingDataSource.UpdateConversationNameFailure ->
+    private fun CoreFailure.recoverSavedMeeting(
+        participants: List<UserId>
+    ): Either<UpdateMeetingUseCase.Result.Failure, UpdateMeetingUseCase.Result.Success> = when (this) {
+        is EstablishMLSFailure -> Either.Right(UpdateMeetingUseCase.Result.Success.Partial(reason.toSetupWarning(participants)))
+        is MeetingDataSource.SavedMeetingFailure -> Either.Right(UpdateMeetingUseCase.Result.Success.Partial(toMeetingSaveWarning()))
+        is MeetingDataSource.UpdateConversationNameFailure -> Either.Left(
             UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure(conversationId)
-        else -> UpdateMeetingUseCase.Result.Failure.Other
+        )
+        else -> Either.Left(UpdateMeetingUseCase.Result.Failure.Other(this))
     }
 
     private fun logData(meetingId: MeetingId, conversationId: ConversationId, failure: CoreFailure? = null): Map<String, Any> = buildMap {

@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -73,7 +76,7 @@ class DeleteMeetingForEveryoneUseCaseTest {
 
         val result = useCase(MEETING_ID)
 
-        assertEquals(failure, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure>(result).coreFailure)
+        assertEquals(failure, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure.Other>(result).coreFailure)
         verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
             arrangement.deleteConversation(any(), any())
@@ -89,7 +92,7 @@ class DeleteMeetingForEveryoneUseCaseTest {
 
         val result = useCase(MEETING_ID)
 
-        assertEquals(failure, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure>(result).coreFailure)
+        assertEquals(failure, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure.Other>(result).coreFailure)
         verifySuspend(VerifyMode.not) {
             arrangement.meetingRepository.deleteMeeting(any())
             arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
@@ -98,7 +101,7 @@ class DeleteMeetingForEveryoneUseCaseTest {
     }
 
     @Test
-    fun givenConversationDeleteFails_whenInvoking_thenReturnsSuccess() = runTest {
+    fun givenConversationDeleteFails_whenInvoking_thenReturnsCleanupWarning() = runTest {
         val failure = CoreFailure.Unknown(RuntimeException("conversation delete failed"))
         val (arrangement, useCase) = Arrangement()
             .withDeleteConversationReturning(Either.Left(failure))
@@ -106,7 +109,7 @@ class DeleteMeetingForEveryoneUseCaseTest {
 
         val result = useCase(MEETING_ID)
 
-        assertEquals(DeleteMeetingForEveryoneUseCase.Result.Success, result)
+        assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed>(result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.deleteMeeting(MEETING_ID)
             arrangement.deleteConversation(arrangement.transactionContext, CONVERSATION_ID)
@@ -141,7 +144,7 @@ class DeleteMeetingForEveryoneUseCaseTest {
     }
 
     @Test
-    fun givenConversationLookupFails_whenInvoking_thenReturnsSuccessAndDoesNotDeleteConversation() = runTest {
+    fun givenConversationAlreadyDeleted_whenInvoking_thenReturnsSuccessAndDoesNotDeleteConversation() = runTest {
         val failure = StorageFailure.DataNotFound
         val (arrangement, useCase) = Arrangement()
             .withGetConversationReturning(Either.Left(failure))
@@ -157,7 +160,7 @@ class DeleteMeetingForEveryoneUseCaseTest {
     }
 
     @Test
-    fun givenCryptoTransactionFails_whenInvoking_thenReturnsSuccessAfterDeletingMeeting() = runTest {
+    fun givenCryptoTransactionFails_whenInvoking_thenReturnsCleanupWarningAfterDeletingMeeting() = runTest {
         val (arrangement, useCase) = Arrangement().arrange()
         everySuspend {
             arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
@@ -165,7 +168,7 @@ class DeleteMeetingForEveryoneUseCaseTest {
 
         val result = useCase(MEETING_ID)
 
-        assertEquals(DeleteMeetingForEveryoneUseCase.Result.Success, result)
+        assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed>(result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.getMeeting(MEETING_ID)
             arrangement.meetingRepository.deleteMeeting(MEETING_ID)
@@ -201,6 +204,17 @@ class DeleteMeetingForEveryoneUseCaseTest {
             arrangement.meetingRepository.deleteMeeting(MEETING_ID)
             arrangement.deleteConversation(arrangement.transactionContext, CONVERSATION_ID)
         }
+    }
+
+    @Test
+    fun givenForbiddenDeletion_whenInvoking_thenReturnsNotAllowed() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(
+            KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "Cannot delete", "operation-denied"))
+        )
+        val (arrangement, useCase) = Arrangement().withDeleteMeetingReturning(Either.Left(failure)).arrange()
+
+        assertEquals(DeleteMeetingForEveryoneUseCase.Result.Failure.NotAllowed, useCase(MEETING_ID))
+        verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {

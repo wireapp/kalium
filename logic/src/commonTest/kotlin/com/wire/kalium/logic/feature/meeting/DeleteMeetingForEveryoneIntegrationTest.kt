@@ -151,7 +151,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
         backgroundScope.launch(fixture.dispatcher) { fixture.callObserver() }
         runCurrent()
 
-        assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure>(fixture.scope.deleteMeetingForEveryone(MEETING_ID))
+        assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure.Other>(fixture.scope.deleteMeetingForEveryone(MEETING_ID))
         runCurrent()
 
         assertNotNull(fixture.database.builder.meetingDao.getMeeting(MEETING_ENTITY.meetingId))
@@ -167,7 +167,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
         backgroundScope.launch(fixture.dispatcher) { fixture.callObserver() }
         runCurrent()
 
-        assertEquals(DeleteMeetingForEveryoneUseCase.Result.Success, fixture.scope.deleteMeetingForEveryone(MEETING_ID))
+        assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed>(fixture.scope.deleteMeetingForEveryone(MEETING_ID))
         runCurrent()
 
         assertNull(fixture.database.builder.meetingDao.getMeeting(MEETING_ENTITY.meetingId))
@@ -184,7 +184,7 @@ class DeleteMeetingForEveryoneIntegrationTest {
 
         val result = fixture.scope.deleteMeetingForEveryone(MEETING_ID)
 
-        assertEquals(StorageFailure.DataNotFound, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure>(result).coreFailure)
+        assertEquals(StorageFailure.DataNotFound, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure.Other>(result).coreFailure)
         fixture.conversations.getConversationById(CONVERSATION_ID).shouldSucceed()
         assertTrue(fixture.events.isEmpty())
     }

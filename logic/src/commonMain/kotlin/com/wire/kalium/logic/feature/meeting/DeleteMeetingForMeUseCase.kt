@@ -34,7 +34,10 @@ public interface DeleteMeetingForMeUseCase {
 
     public sealed interface Result {
         public data object Success : Result
-        public data class Failure(val coreFailure: CoreFailure) : Result
+        public sealed interface Failure : Result {
+            public data class CleanupFailed(val coreFailure: CoreFailure) : Failure
+            public data class Other(val coreFailure: CoreFailure) : Failure
+        }
     }
 }
 
@@ -45,13 +48,13 @@ internal class DeleteMeetingForMeUseCaseImpl(
     override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingForMeUseCase.Result = withContext(NonCancellable) {
         meetingRepository.getMeeting(meetingId).fold(
             {
-                DeleteMeetingForMeUseCase.Result.Failure(it)
+                DeleteMeetingForMeUseCase.Result.Failure.Other(it)
             },
             { meeting ->
                 when (val result = leaveConversation(meeting.conversationId)) {
-                    is RemoveMemberFromConversationUseCase.Result.Failure -> DeleteMeetingForMeUseCase.Result.Failure(result.cause)
+                    is RemoveMemberFromConversationUseCase.Result.Failure -> DeleteMeetingForMeUseCase.Result.Failure.Other(result.cause)
                     is RemoveMemberFromConversationUseCase.Result.Success -> meetingRepository.deleteMeetingLocally(meetingId)
-                        .fold({ DeleteMeetingForMeUseCase.Result.Failure(it) }, { DeleteMeetingForMeUseCase.Result.Success })
+                        .fold({ DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed(it) }, { DeleteMeetingForMeUseCase.Result.Success })
                 }
             }
         )

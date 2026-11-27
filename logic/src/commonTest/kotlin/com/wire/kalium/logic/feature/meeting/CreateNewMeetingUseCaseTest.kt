@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.meeting
 
 import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -42,6 +43,8 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertEquals
 
 class CreateNewMeetingUseCaseTest {
@@ -59,7 +62,7 @@ class CreateNewMeetingUseCaseTest {
 
         val result = useCase(createMeeting)
 
-        assertEquals(CreateNewMeetingUseCase.Result.Success(ConversationId("conversation", "domain"), meetingId = MEETING_ID), result)
+        assertEquals(CreateNewMeetingUseCase.Result.Success.Complete(ConversationId("conversation", "domain"), meetingId = MEETING_ID), result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cryptoTransactionProvider.transaction<CreateNewMeetingResult>("CreateNewMeeting", any())
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
@@ -94,7 +97,7 @@ class CreateNewMeetingUseCaseTest {
 
         val result = useCase(createMeeting)
 
-        assertEquals(CreateNewMeetingUseCase.Result.Failure, result)
+        assertEquals(CreateNewMeetingUseCase.Result.Failure(CoreFailure.MissingClientRegistration), result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
         }
@@ -119,12 +122,52 @@ class CreateNewMeetingUseCaseTest {
 
         val result = useCase(createMeeting)
 
-        assertEquals(CreateNewMeetingUseCase.Result.Success(establishMLSFailure.conversationId, meetingId = MEETING_ID), result)
+        assertEquals(CreateNewMeetingUseCase.Result.Success.Partial(
+            establishMLSFailure.conversationId, meetingId = MEETING_ID, warning = MeetingSaveWarning.ConversationSetupFailed
+        ), result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cryptoTransactionProvider.transaction<CreateNewMeetingResult>("CreateNewMeeting", any())
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
             arrangement.refreshUsersWithoutMetadata()
         }
+    }
+
+    @Test
+    fun givenPartialParticipantAddition_whenCreating_thenReturnsSavedMeetingWithDetails() = runTest {
+        val failedUser = CREATE_MEETING.otherParticipants.single()
+        val addition = MLSAdditionResult(emptySet(), setOf(failedUser), emptySet())
+        val createResult = Either.Right(CreateNewMeetingResult(ConversationId("conversation", "domain"), addition, MEETING_ID))
+        val (_, useCase) = Arrangement()
+            .withCreateNewMeetingReturning(CREATE_MEETING, createResult)
+            .withTransactionReturning(createResult)
+            .arrange()
+
+        val result = useCase(CREATE_MEETING)
+
+        assertEquals(
+            CreateNewMeetingUseCase.Result.Success.Partial(
+                ConversationId("conversation", "domain"), MEETING_ID,
+                MeetingSaveWarning.AddParticipantsFailed(mapOf(failedUser to CoreFailure.MissingKeyPackages(setOf(failedUser))))
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun givenSavedMeetingSetupFails_whenCreating_thenReturnsWarningWithExistingMeetingId() = runTest {
+        val failure = MeetingDataSource.SavedMeetingFailure(
+            MEETING_ID, ConversationId("conversation", "domain"), CoreFailure.Unknown(null), MeetingDataSource.SavedMeetingFailure.Stage.CONVERSATION_SETUP
+        )
+        val createResult = Either.Left(failure)
+        val (_, useCase) = Arrangement()
+            .withCreateNewMeetingReturning(CREATE_MEETING, createResult)
+            .withTransactionReturning(createResult)
+            .arrange()
+
+        assertEquals(
+            CreateNewMeetingUseCase.Result.Success.Partial(failure.conversationId, MEETING_ID, MeetingSaveWarning.ConversationSetupFailed),
+            useCase(CREATE_MEETING)
+        )
     }
 
     @Test
@@ -135,12 +178,28 @@ class CreateNewMeetingUseCaseTest {
 
         val result = useCase(CREATE_MEETING)
 
-        assertEquals(CreateNewMeetingUseCase.Result.Failure, result)
+        assertEquals(CreateNewMeetingUseCase.Result.Failure(CoreFailure.MissingClientRegistration), result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cryptoTransactionProvider.transaction<CreateNewMeetingResult>("CreateNewMeeting", any())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.meetingRepository.createNewMeeting(meeting = any(), transactionContext = any())
+        }
+    }
+
+    @Test
+    fun givenNetworkOrUnexpectedCreationFailure_whenInvoking_thenPreservesOriginalCause() = runTest {
+        val failures = listOf(NetworkFailure.NoNetworkConnection(null), CoreFailure.Unknown(IllegalStateException("create failed")))
+        failures.forEach { failure ->
+            val repositoryResult = Either.Left(failure)
+            val (_, useCase) = Arrangement()
+                .withCreateNewMeetingReturning(CREATE_MEETING, repositoryResult)
+                .withTransactionReturning(repositoryResult)
+                .arrange()
+
+            val result = assertIs<CreateNewMeetingUseCase.Result.Failure>(useCase(CREATE_MEETING))
+
+            assertSame(failure, result.coreFailure)
         }
     }
 

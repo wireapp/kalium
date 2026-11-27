@@ -1475,23 +1475,56 @@ abstract interface com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase
     abstract suspend fun invoke(com.wire.kalium.logic.data.meeting/CreateMeeting): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.meeting.CreateMeeting){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result|null[0]
-        final class Success : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success|null[0]
-            constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID){}[0]
+        sealed interface Success : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success|null[0]
+            abstract val conversationId // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.conversationId|{}conversationId[0]
+                abstract fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+            abstract val meetingId // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.meetingId|{}meetingId[0]
+                abstract fun <get-meetingId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.meetingId.<get-meetingId>|<get-meetingId>(){}[0]
 
-            final val conversationId // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.conversationId|{}conversationId[0]
-                final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
-            final val meetingId // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.meetingId|{}meetingId[0]
-                final fun <get-meetingId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.meetingId.<get-meetingId>|<get-meetingId>(){}[0]
+            final class Complete : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete|null[0]
+                constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID){}[0]
 
-            final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.component1|component1(){}[0]
-            final fun component2(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.component2|component2(){}[0]
-            final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID){}[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.toString|toString(){}[0]
+                final val conversationId // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.conversationId|{}conversationId[0]
+                    final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+                final val meetingId // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.meetingId|{}meetingId[0]
+                    final fun <get-meetingId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.meetingId.<get-meetingId>|<get-meetingId>(){}[0]
+
+                final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.component1|component1(){}[0]
+                final fun component2(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.component2|component2(){}[0]
+                final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID){}[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Complete.toString|toString(){}[0]
+            }
+
+            final class Partial : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial|null[0]
+                constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.feature.meeting/MeetingSaveWarning) // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.feature.meeting.MeetingSaveWarning){}[0]
+
+                final val conversationId // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.conversationId|{}conversationId[0]
+                    final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+                final val meetingId // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.meetingId|{}meetingId[0]
+                    final fun <get-meetingId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.meetingId.<get-meetingId>|<get-meetingId>(){}[0]
+                final val warning // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.warning|{}warning[0]
+                    final fun <get-warning>(): com.wire.kalium.logic.feature.meeting/MeetingSaveWarning // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.warning.<get-warning>|<get-warning>(){}[0]
+
+                final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.component1|component1(){}[0]
+                final fun component2(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.component2|component2(){}[0]
+                final fun component3(): com.wire.kalium.logic.feature.meeting/MeetingSaveWarning // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.component3|component3(){}[0]
+                final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.feature.meeting/MeetingSaveWarning = ...): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.feature.meeting.MeetingSaveWarning){}[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.Partial.toString|toString(){}[0]
+            }
         }
 
-        final object Failure : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure|null[0]
+        final class Failure : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
             final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
             final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.hashCode|hashCode(){}[0]
             final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.toString|toString(){}[0]
@@ -1503,17 +1536,38 @@ abstract interface com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryon
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result|null[0]
-        final class Failure : com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure|null[0]
-            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+        sealed interface Failure : com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure|null[0]
+            final class CleanupFailed : com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed|null[0]
+                constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
 
-            final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.coreFailure|{}coreFailure[0]
-                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+                final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed.coreFailure|{}coreFailure[0]
+                    final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
 
-            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.component1|component1(){}[0]
-            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.toString|toString(){}[0]
+                final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed.component1|component1(){}[0]
+                final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.CleanupFailed.toString|toString(){}[0]
+            }
+
+            final class Other : com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other|null[0]
+                constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+                final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other.coreFailure|{}coreFailure[0]
+                    final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+                final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other.component1|component1(){}[0]
+                final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.Other.toString|toString(){}[0]
+            }
+
+            final object NotAllowed : com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.NotAllowed|null[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.NotAllowed.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.NotAllowed.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.NotAllowed.toString|toString(){}[0]
+            }
         }
 
         final object Success : com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Success|null[0]
@@ -1528,17 +1582,32 @@ abstract interface com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCa
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result|null[0]
-        final class Failure : com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure|null[0]
-            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+        sealed interface Failure : com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure|null[0]
+            final class CleanupFailed : com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed|null[0]
+                constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
 
-            final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.coreFailure|{}coreFailure[0]
-                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+                final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed.coreFailure|{}coreFailure[0]
+                    final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
 
-            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.component1|component1(){}[0]
-            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.toString|toString(){}[0]
+                final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed.component1|component1(){}[0]
+                final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.CleanupFailed.toString|toString(){}[0]
+            }
+
+            final class Other : com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other|null[0]
+                constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+                final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other.coreFailure|{}coreFailure[0]
+                    final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+                final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other.component1|component1(){}[0]
+                final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.Other.toString|toString(){}[0]
+            }
         }
 
         final object Success : com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Success|null[0]
@@ -1663,6 +1732,19 @@ abstract interface com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase { 
 
     sealed interface Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result|null[0]
         sealed interface Failure : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure|null[0]
+            final class Other : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other|null[0]
+                constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+                final val coreFailure // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.coreFailure|{}coreFailure[0]
+                    final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+                final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.component1|component1(){}[0]
+                final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.toString|toString(){}[0]
+            }
+
             final class UpdateConversationNameFailure : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure|null[0]
                 constructor <init>(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 
@@ -1675,18 +1757,27 @@ abstract interface com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase { 
                 final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.hashCode|hashCode(){}[0]
                 final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.toString|toString(){}[0]
             }
-
-            final object Other : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other|null[0]
-                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.equals|equals(kotlin.Any?){}[0]
-                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.hashCode|hashCode(){}[0]
-                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.toString|toString(){}[0]
-            }
         }
 
-        final object Success : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success|null[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.toString|toString(){}[0]
+        sealed interface Success : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success|null[0]
+            final class Partial : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial|null[0]
+                constructor <init>(com.wire.kalium.logic.feature.meeting/MeetingSaveWarning) // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial.<init>|<init>(com.wire.kalium.logic.feature.meeting.MeetingSaveWarning){}[0]
+
+                final val warning // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial.warning|{}warning[0]
+                    final fun <get-warning>(): com.wire.kalium.logic.feature.meeting/MeetingSaveWarning // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial.warning.<get-warning>|<get-warning>(){}[0]
+
+                final fun component1(): com.wire.kalium.logic.feature.meeting/MeetingSaveWarning // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial.component1|component1(){}[0]
+                final fun copy(com.wire.kalium.logic.feature.meeting/MeetingSaveWarning = ...): com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial.copy|copy(com.wire.kalium.logic.feature.meeting.MeetingSaveWarning){}[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Partial.toString|toString(){}[0]
+            }
+
+            final object Complete : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Complete|null[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Complete.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Complete.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.Complete.toString|toString(){}[0]
+            }
         }
     }
 }
@@ -3274,6 +3365,33 @@ sealed interface com.wire.kalium.logic.feature.giphy/SendGifMessageResult { // c
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.giphy/SendGifMessageResult.Success.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.logic.feature.meeting/MeetingSaveWarning { // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning|null[0]
+    final class AddParticipantsFailed : com.wire.kalium.logic.feature.meeting/MeetingSaveWarning { // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed|null[0]
+        constructor <init>(kotlin.collections/Map<com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.common.error/CoreFailure>) // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed.<init>|<init>(kotlin.collections.Map<com.wire.kalium.logic.data.id.QualifiedID,com.wire.kalium.common.error.CoreFailure>){}[0]
+
+        final val participants // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed.participants|{}participants[0]
+            final fun <get-participants>(): kotlin.collections/Map<com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.common.error/CoreFailure> // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed.participants.<get-participants>|<get-participants>(){}[0]
+
+        final fun component1(): kotlin.collections/Map<com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.common.error/CoreFailure> // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed.component1|component1(){}[0]
+        final fun copy(kotlin.collections/Map<com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.common.error/CoreFailure> = ...): com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed.copy|copy(kotlin.collections.Map<com.wire.kalium.logic.data.id.QualifiedID,com.wire.kalium.common.error.CoreFailure>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.AddParticipantsFailed.toString|toString(){}[0]
+    }
+
+    final object ConversationSetupFailed : com.wire.kalium.logic.feature.meeting/MeetingSaveWarning { // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.ConversationSetupFailed|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.ConversationSetupFailed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.ConversationSetupFailed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.ConversationSetupFailed.toString|toString(){}[0]
+    }
+
+    final object RemoveParticipantsFailed : com.wire.kalium.logic.feature.meeting/MeetingSaveWarning { // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.RemoveParticipantsFailed|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.RemoveParticipantsFailed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.RemoveParticipantsFailed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/MeetingSaveWarning.RemoveParticipantsFailed.toString|toString(){}[0]
     }
 }
 
