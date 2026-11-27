@@ -66,6 +66,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
 import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -269,6 +270,32 @@ class TeamRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serviceDAO.insertMultiple(any())
         }
+    }
+
+    @Test
+    fun givenRemoteWhitelist_whenCheckingAvailability_thenUseFreshResponseWithoutCachedServices() = runTest {
+        val (arrangement, teamRepository) = Arrangement().arrange()
+        listOf(true, false).forEach { available ->
+            val response = Arrangement.SERVICE_DETAILS_RESPONSE.let {
+                if (available) it else it.copy(services = emptyList())
+            }
+            everySuspend { arrangement.teamsApi.whiteListedServices(any(), any()) } returns
+                NetworkResponse.Success(value = response, headers = mapOf(), httpCode = 200)
+
+            teamRepository.hasWhitelistedServices(TeamId("teamId")).shouldSucceed { assertEquals(available, it) }
+        }
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.teamsApi.whiteListedServices("teamId", any()) }
+        verifySuspend(VerifyMode.not) { arrangement.serviceDAO.insertMultiple(any()) }
+        verify(VerifyMode.not) { arrangement.serviceDAO.getAllServices() }
+    }
+
+    @Test
+    fun givenRemoteWhitelistFailure_whenCheckingAvailability_thenReturnFailure() = runTest {
+        val (arrangement, teamRepository) = Arrangement().arrange()
+        everySuspend { arrangement.teamsApi.whiteListedServices(any(), any()) } returns
+            NetworkResponse.Error(KaliumException.GenericError(RuntimeException("Network failed")))
+
+        teamRepository.hasWhitelistedServices(TeamId("teamId")).shouldFail()
     }
 
     @Test

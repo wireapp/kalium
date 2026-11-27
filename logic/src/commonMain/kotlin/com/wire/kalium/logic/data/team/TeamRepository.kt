@@ -68,6 +68,7 @@ internal interface TeamRepository {
     suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun syncTeam(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
+    suspend fun hasWhitelistedServices(teamId: TeamId): Either<CoreFailure, Boolean>
     suspend fun fetchAppsByTeamId(teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun fetchCollaboratorsByTeamId(teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
@@ -194,6 +195,10 @@ internal class TeamDataSource(
             serviceDAO.insertMultiple(it)
         }
     }
+
+    override suspend fun hasWhitelistedServices(teamId: TeamId): Either<CoreFailure, Boolean> = wrapApiRequest {
+        teamsApi.whiteListedServices(teamId = teamId.value)
+    }.map { it.services.isNotEmpty() }
 
     override suspend fun fetchAppsByTeamId(teamId: TeamId): Either<CoreFailure, Unit> = wrapApiRequest {
         teamsApi.getTeamApps(teamId = teamId.value)

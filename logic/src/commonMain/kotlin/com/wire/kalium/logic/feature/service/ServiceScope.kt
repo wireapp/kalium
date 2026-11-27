@@ -46,6 +46,9 @@ public class ServiceScope internal constructor(
             serviceRepository = serviceRepository
         )
 
+    public val hasWhitelistedServices: HasWhitelistedServicesUseCase
+        get() = HasWhitelistedServicesUseCaseImpl(teamRepository, selfTeamIdProvider)
+
     public val syncServices: SyncServicesUseCase
         get() = SyncServicesUseCaseImpl(
             teamRepository = teamRepository,
