@@ -40,9 +40,8 @@ moment, to read the conversation, the file rules and where the files go, so the 
 it while files upload. A token refresh takes it for that moment. Uploads end when they finish, fail or
 the host cancels, and with `OPEN_APP` when the host calls `yieldAccount` (`ACCOUNT_WANTED`), because the
 app needs the account. The host then hands the share to the app. `yieldAccount` also stops the live hold
-while it catches up; a send that stored a message finishes within its budget. Nothing is stored until
-every upload succeeded, so a failed or stopped upload leaves nothing behind in Wire but the uploaded
-files on the backend.
+while it catches up; a send that stored a message finishes within its budget
+([ADR 12](../docs/adr/0012-sending-from-extensions.md)).
 
 ## Sending
 
@@ -91,12 +90,6 @@ App Group:
    it, and the host rings the app again. From here the share is the app's, and nothing comes back to the
    host. `appTookHandOff` says whether the app claimed the entry, which a running app does as it is rung.
 
-The app runs `serveShareExtension` while it owns an account, live or not. It answers requests for conversations,
-claims handed-off shares and stores them with its composer's use cases, files first, then the text. Each
-item keeps the message ID the extension gave it, so an import interrupted by a background handoff never
-stores a message twice. Once the account caught up, the app checks the conversation and file rules again before it
-stores anything. Requests for conversations are answered meanwhile, on their own, and shares handed off meanwhile
-are claimed at once. A Cells share whose upload fails stays claimed, and the app uploads it again while it
-serves the outbox, less and less often, until the share is a day old. A share the app could not store
-completely goes to `refused`, for the app to tell the user. When serving starts, it deletes a request for
-conversations, or an answer, that is more than a minute old.
+The app runs `serveShareExtension` while it owns an account, live or not. It answers requests for
+conversations and imports handed-off shares as ADR 13 describes; a share it could not store completely
+goes to `refused`, for the app to tell the user.
