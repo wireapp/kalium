@@ -169,6 +169,11 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         }
     }
 
+    suspend fun committedAll() = database.writeMessageEffects {
+        val state = read(metadata)
+        if (state.signals.any { !it.ready }) write(metadata, state.copy(signals = state.signals.map { it.copy(ready = true) }))
+    }
+
     override suspend fun submitted(id: String, generation: String, atMillis: Long) = database.writeMessageEffects {
         val state = read(metadata)
         val acknowledged = state.copy(

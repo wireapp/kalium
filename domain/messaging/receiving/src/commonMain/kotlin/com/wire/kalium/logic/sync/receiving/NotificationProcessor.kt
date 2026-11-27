@@ -151,7 +151,11 @@ class NotificationProcessor(
         while (true) {
             currentCoroutineContext().ensureActive()
             val next = events.nextPendingAfter(scannedId)
-            if (next == null) return queueEnd.result("QUEUE_END", deferred.isEmpty())
+            if (next == null) {
+                // Every event committed; one retried after its native commit decrypted a duplicate and left its signal unready.
+                if (deferred.isEmpty()) CallSignalJournal(database).committedAll()
+                return queueEnd.result("QUEUE_END", deferred.isEmpty())
+            }
             if (queueEnd.shouldStop()) return queueEnd.result("BUDGET", deferred.isEmpty())
             if (database.metadataDAO.hasPendingLegalHoldTransitions()) {
                 return queueEnd.stopped("LEGAL_HOLD_REQUIRES_APP", NotificationAppWork.LEGAL_HOLD)

@@ -3324,14 +3324,15 @@ class NotificationProcessorNativeTest {
 
     @Test
     fun callJournalSurvivesMarkerFailureAndRollsBackWithReceiveEffects() = runTest {
-        for (mls in listOf(false, true)) for (stage in listOf(Interruption.BEFORE_COMMIT, Interruption.MARKER)) {
+        val stages = listOf(Interruption.BEFORE_COMMIT, Interruption.AFTER_COMMIT, Interruption.MARKER)
+        for (mls in listOf(false, true)) for (stage in stages) {
             withContext(Dispatchers.Default) {
                 withFixture(mls) { fixture ->
                     val event = fixture.event("call", fixture.encrypt("call", fixture.callContent()), time = Clock.System.now())
                     fixture.releasePrepared()
                     assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, interruption = stage))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
-                        assertEquals(if (stage == Interruption.BEFORE_COMMIT) 0 else 1, CallSignalJournal(runtime.database).signals().size)
+                        assertEquals(if (stage == Interruption.MARKER) 1 else 0, CallSignalJournal(runtime.database).signals().size)
                     })
                     if (stage == Interruption.MARKER) fixture.sql("DROP TRIGGER interrupt_receive")
                     assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id))
