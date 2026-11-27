@@ -20,6 +20,7 @@ struct ReceiveFixture {
                 allowedFileExtensions: account["allowedFileExtensions"] as? [String]
             )
             let receiver = KaliumNSEReceiver(configuration: configuration)
+            let delivery = AcceptingDelivery()
             let showContent = !(account["callingEvents"] as? Bool == true && account["mls"] as? Bool == true)
             let request = KaliumNSERequest(
                 userValue: account["userValue"] as! String,
@@ -29,7 +30,7 @@ struct ReceiveFixture {
                 budgetMilliseconds: 20_000,
                 deliveredNotifications: []
             )
-            let result = try await receiver.process(request: request)
+            let result = try await receiver.processAndDeliver(request: request, delivery: delivery)
             precondition(result.status == .success, "Receive failed for \(account["route"]!)")
             if account["callingEvents"] as? Bool == true {
                 precondition(result.calls.count == 1 && result.calls[0].type == .incoming, "Missing incoming call")
@@ -81,7 +82,7 @@ struct ReceiveFixture {
                     precondition(result.text == expectedText, "Missing body preview for \(account["route"]!)")
                 }
             }
-            let replay = try await receiver.process(request: request)
+            let replay = try await receiver.processAndDeliver(request: request, delivery: delivery)
             precondition(replay.status == .success && !replay.shouldNotify && replay.text == nil,
                          "Processed target alerted twice")
             if !result.calls.isEmpty {
@@ -91,5 +92,11 @@ struct ReceiveFixture {
             }
             print("SWIFT_RECEIVE_PASSED \(account["mls"] as! Bool ? "MLS" : "Proteus")")
         }
+    }
+}
+
+final class AcceptingDelivery: NSObject, KaliumNSEMessageDelivery {
+    func __deliver(alert: KaliumNSEAlert, completionHandler: @escaping (KotlinBoolean?, (any Error)?) -> Void) {
+        completionHandler(KotlinBoolean(value: true), nil)
     }
 }

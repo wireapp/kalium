@@ -36,7 +36,7 @@ For each push, create `KaliumNSERequest` with the qualified user identity, targe
 notification ID, an additional host `showMessageContent` restriction and a budget
 between 1 and 25,000 milliseconds. Optionally pass this account's currently delivered
 message alerts in `deliveredNotifications`.
-Call `process` from Swift async code. Like
+Call `processAndDeliver` from Swift async code. Like
 the app, the NSE first catches up over the WebSocket: it opens it, stores the REST pages
 fetched once it is open and closes it at live, then processes the stored queue to its
 end. Without a live socket nothing is fetched, and a push whose event was not processed
@@ -181,8 +181,7 @@ callback so runtime cleanup can release the account. A late completion cannot
 access the account database; an unacknowledged or failed enqueue stays pending
 for identity-based reconciliation on the next attempt. Only an acknowledgement
 already in progress is drained before release. Pending replay is oldest-first,
-including records written by earlier versions. The legacy
-`process` entry point only returns presentation data and does not acknowledge it.
+including records written by earlier versions.
 
 A committed result is a claim to present, **not acknowledgement of OS delivery**.
 The host must use a stable system request identity and reconcile delivered/pending
