@@ -57,35 +57,29 @@ cannot override another restriction. When preview is not allowed, `contentType`
 is `MESSAGE`. Cancellation still cancels the attempt. Message preference failures
 do not suppress or alter call presentation. `presentationReason`, `failureReason`
 and `stoppedReason` are content-free diagnostic codes. `appWorkPending` names work
-left in Events for the app (`LEGAL_HOLD` or `ACCOUNT_INVALIDATION`).
+left in Events for the app (see [below](#what-the-nse-receives)).
 
 The NSE registers each alerted message. After successful receiving it returns
 `notificationIdentifiersToRemove`: the delivered identifiers whose message, or a
 later edit of it, is now read or deleted. Self-deleting messages are never reported
 as deleted, even when their sender deletes them. The host removes those alerts.
-Updating the content of delivered alerts is not supported.
+`notificationUpdates` quietly replaces delivered alerts whose message was edited.
 
-When every event through the target was processed without deferral or app handoff,
-the result also returns `alerts`: up to ten other unread messages stored without an
-alert, oldest first, filtered by the same preview rules. A request with no alert of
-its own shows the newest of them instead. Kalium marks them notified before
-returning, so post them as local notifications after reporting calls and before
-completing the request. While running, the app must mark conversations notified as
-the Android app does, or the NSE alerts unread messages the app received.
-[ADR 11](../docs/adr/0011-nse-account-runtime-ownership.md#app-handoffs-and-presentation)
-explains their selection.
+The result also returns `alerts`: unread messages stored without an alert, oldest
+first, filtered by the same preview rules
+([selection](../docs/adr/0011-nse-account-runtime-ownership.md#app-handoffs-and-presentation)).
+A request with no alert of its own shows the newest of them instead. While running,
+the app must mark conversations notified as the Android app does, or the NSE alerts
+unread messages the app received.
 
 ## What the NSE receives
 
-The NSE resumes the app's `Events` queue and applies each notification's required
-effects in one SQL transaction inside the owned Proteus/MLS transactions. A
-message-only notification that fails on network or recoverable MLS state can be
-deferred while later independent notifications are processed
-([conversation isolation](../docs/adr/0011-nse-account-runtime-ownership.md#conversation-isolation-and-deferral)).
-Any other failure fails the attempt and keeps the notification and the later queue
-pending. Existing app consumers handle pending delivery confirmations, proposal
-commits, expiration timers, asset/Cells downloads and configuration notifications;
-the NSE adds no worker or replacement queue.
+The NSE resumes the app's `Events` queue
+([ADR 11](../docs/adr/0011-nse-account-runtime-ownership.md#queue-and-transactions)).
+A failure that cannot be [deferred](../docs/adr/0011-nse-account-runtime-ownership.md#conversation-isolation-and-deferral)
+fails the attempt and keeps the notification and the later queue pending. Existing app
+consumers handle pending delivery confirmations, proposal commits, expiration timers,
+MLS one-to-one resolution, asset/Cells downloads and configuration notifications.
 
 Supported, with the app's authorization, mapping and replay rules:
 
@@ -105,8 +99,8 @@ Supported, with the app's authorization, mapping and replay rules:
   legal-hold request.
 - Feature configuration, E2EI and MLS settings, MLS migration settings and
   noninteractive X.509 credential checks.
-- MLS proposals, buffered future messages and wrong-epoch recovery by external join
-  when the remote epoch is ahead.
+- MLS proposals, buffered future messages, and rejoining by external commit a group
+  CoreCrypto lacks or whose remote epoch is ahead.
 - Federation domain deletion and connection removal, meeting create/update/delete,
   and calling signals (see below).
 
@@ -124,24 +118,25 @@ the app's incremental sync:
 
 - `LEGAL_HOLD` when a user's legal hold is enabled or disabled, when app legal-hold
   transitions are pending, or when a membership change or fetched profile disagrees
-  with the stored legal-hold status. Every later attempt stops at the same event until
-  the app runs, so a push whose event waits behind it sets `presentGenericAlert`.
+  with the stored legal-hold status.
+- `MLS_SUBCONVERSATION` for MLS subconversation (call) messages.
+- `MLS_GROUP_MISMATCH` when CoreCrypto lacks the stored group and the message belongs
+  to another group, which a Welcome established before the conversation names it.
 - `ACCOUNT_INVALIDATION` when any stored pending row removes this client or deletes
-  the account. The NSE processes no row, writes a per-client invalidation marker and
-  revokes readiness, without deleting stores. Later NSE opens are `NOT_PREPARED`;
-  the app logs out instead of processing the queue.
+  the account. Later NSE opens are `NOT_PREPARED`.
+
+The first three stop every later attempt at the same event until the app runs, so a
+push whose event waits behind them sets `presentGenericAlert`.
 
 Not supported; the attempt fails and the notification stays pending:
 
-- MLS subconversation payloads.
 - Sequences whose replay would lose its inputs: old-group ciphertext followed in the
   same notification by a reset, a wipe or metadata naming a replacement group; and
   a conversation deletion, connection cancellation or federation deletion after
   earlier effects that need its metadata, or before its recreation in the same
   notification.
 - Work that needs a backend response the NSE cannot replay: establishment commits
-  other than wrong-epoch recovery, one-to-one creation that needs MLS establishment,
-  legacy teammate one-to-one creation, a changed self MLS advertisement that needs a
+  other than rejoining a group, legacy teammate one-to-one creation, a changed self MLS advertisement that needs a
   missing target, and receive-triggered remote MLS reset.
 - Native limits: invalid group IDs, unmerged external groups, and malformed MLS input
   that CoreCrypto reports as `Other`.
@@ -221,12 +216,10 @@ record. The host reports this UUID to CallKit and resumes the existing account's
 full AVS engine. CallKit termination comes from that engine's callbacks, preserving
 its close reason. The NSE never starts media or the full engine.
 
-Committed signals are kept in the account's call signal journal, which keeps at
-most 4096 signals and drops the oldest when full. The full app engine replays them
-and resolves AVS callbacks to the same `handoffId`, so repeated callbacks and new
-engine generations reuse one identity and an ended presentation stays ended. This
-is retryable delivery, not exactly-once native processing: recovery needs another
-push or host launch if the process dies before the platform reporting effect.
+Committed signals are kept in the account's call signal journal
+([ADR 11](../docs/adr/0011-nse-account-runtime-ownership.md#incoming-calls)), which keeps
+at most 4096 signals. The full app engine resolves AVS callbacks to the same `handoffId`,
+so repeated callbacks and new engine generations reuse one identity.
 
 The host must also link and embed AVS. The NSE module applies the
 [Apple AVS runtime plugin](../plugins/apple-avs-runtime/README.md): generate its
@@ -242,9 +235,8 @@ the Kotlin budget bounds receiving, so leave time for CallKit reporting as well.
 Call presentation follows sync and is best effort. Expired or invalid native call
 payloads do not prevent later call signals from being evaluated. Invalid outer
 calling JSON or required conversation/crypto failures still roll back the current
-notification. An interruption after processed markers, or native duplicate replay,
-can lose call presentation. There is no call-history persistence or exactly-once
-CallKit guarantee. MLS subconversations remain outside this path.
+notification. There is no exactly-once CallKit guarantee. MLS subconversations remain
+outside this path.
 
 ## Verification
 

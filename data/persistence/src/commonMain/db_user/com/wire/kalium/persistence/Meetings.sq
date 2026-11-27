@@ -2,6 +2,8 @@ import com.wire.kalium.persistence.dao.meeting.MeetingEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.time.Instant;
 import kotlin.Boolean;
+import kotlin.String;
+import kotlin.collections.List;
 
 CREATE TABLE Meeting (
     meeting_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -19,6 +21,7 @@ CREATE TABLE Meeting (
     type TEXT AS MeetingEntity.Type NOT NULL DEFAULT 'SCHEDULED',
     link TEXT,
     has_password INTEGER AS Boolean NOT NULL DEFAULT 0,
+    invited_emails TEXT AS List<String> NOT NULL DEFAULT '[]',
 
     FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
     FOREIGN KEY (creator_id) REFERENCES User(qualified_id)
@@ -40,8 +43,8 @@ CREATE INDEX IF NOT EXISTS idx_occurrences_meeting ON MeetingOccurrence(meeting_
 CREATE INDEX IF NOT EXISTS idx_occurrences_start ON MeetingOccurrence(occurrence_start);
 
 upsertMeeting:
-INSERT INTO Meeting(meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, tzid, recurrence_frequency, recurrence_interval, recurrence_end_date, type, link, has_password)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Meeting(meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, tzid, recurrence_frequency, recurrence_interval, recurrence_end_date, type, link, has_password, invited_emails)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(meeting_id) DO UPDATE SET
     conversation_id = excluded.conversation_id,
     creator_id = excluded.creator_id,
@@ -56,7 +59,8 @@ ON CONFLICT(meeting_id) DO UPDATE SET
     recurrence_end_date = excluded.recurrence_end_date,
     type = excluded.type,
     link = excluded.link,
-    has_password = excluded.has_password;
+    has_password = excluded.has_password,
+    invited_emails = excluded.invited_emails;
 
 insertMeetingOccurrence:
 INSERT INTO MeetingOccurrence(occurrence_id, meeting_id, occurrence_start, occurrence_end) VALUES (?, ?, ?, ?);
@@ -150,6 +154,7 @@ SELECT
     Meeting.type AS meetingType,
     Meeting.link AS meetingLink,
     Meeting.has_password AS meetingHasPassword,
+    Meeting.invited_emails AS meetingInvitedEmails,
     CASE Conversation.type
         WHEN 'ONE_ON_ONE' THEN otherUser.name
         ELSE Conversation.name
@@ -191,6 +196,7 @@ SELECT
     Meeting.type AS meetingType,
     Meeting.link AS meetingLink,
     Meeting.has_password AS meetingHasPassword,
+    Meeting.invited_emails AS meetingInvitedEmails,
     CASE Conversation.type
         WHEN 'ONE_ON_ONE' THEN otherUser.name
         ELSE Conversation.name

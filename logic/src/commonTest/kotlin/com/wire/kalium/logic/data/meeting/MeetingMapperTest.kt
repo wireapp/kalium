@@ -42,12 +42,14 @@ class MeetingMapperTest {
             val dto = MeetingDTO(
                 meetingId = MeetingId("meeting", "wire.com"), conversationId = ConversationId("conversation", "wire.com"),
                 creatorId = UserId("creator", "wire.com"), createdAt = start, updatedAt = null,
-                title = "Meeting", startTime = start, endTime = start, recurrence = null, tzid = tzid
+                title = "Meeting", startTime = start, endTime = start, recurrence = null, tzid = tzid,
+                invitedEmails = listOf("invitee@example.com")
             )
             val entity = assertNotNull(dto.toMeetingEntity())
             assertEquals(entity, mapper.fromApiToDao(dto))
             assertEquals(tzid, entity.tzid)
             assertEquals(tzid, mapper.fromDaoToModel(entity).tzid)
+            assertEquals(dto.invitedEmails, mapper.fromDaoToModel(entity).invitedEmails)
         }
     }
 
@@ -57,6 +59,16 @@ class MeetingMapperTest {
         val created = CreateMeeting("Meeting", start, start, null, emptyList(), TimeZone.currentSystemDefault().id)
         assertEquals(TimeZone.currentSystemDefault().id, mapper.fromModelToCreateApi(created).tzid)
         assertEquals("Australia/Sydney", mapper.fromModelToCreateApi(created.copy(tzid = "Australia/Sydney")).tzid)
+    }
+
+    @Test
+    fun emailInviteesReachCreateAndUpdateRequestPayloads() {
+        val start = Instant.parse("2026-10-24T08:00:00Z")
+        val emails = listOf("invitee@example.com")
+        val created = CreateMeeting("Meeting", start, start, null, emptyList(), "Europe/Berlin", invitedEmails = emails)
+        assertEquals(emails, mapper.fromModelToCreateApi(created).invitedEmails)
+        val updated = UpdateMeeting("Meeting", start, start, "Europe/Berlin", null, emptyList(), Meeting.Type.SCHEDULED, emails)
+        assertEquals(emails, mapper.fromModelToUpdateApi(updated).invitedEmails)
     }
 
     @Test

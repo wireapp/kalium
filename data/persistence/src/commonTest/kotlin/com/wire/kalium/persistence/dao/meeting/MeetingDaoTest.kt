@@ -88,6 +88,28 @@ class MeetingDaoTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun emailInviteesSurviveUpdatesAndDatabaseReopen() = runTest(dispatcher) {
+        val meeting = newMeeting().copy(invitedEmails = listOf("first@example.com", "second@example.com"))
+        insertMeetingDependencies(meeting)
+        meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(meeting.startTime, meeting.endTime))
+        assertEquals(meeting.invitedEmails, meetingDao.getMeeting(meeting.meetingId)?.invitedEmails)
+
+        val edited = meeting.copy(invitedEmails = listOf("second@example.com"))
+        meetingDao.upsertMeetings(listOf(edited), GenerationLimit.Window(edited.startTime, edited.endTime))
+        databaseBuilder.close()
+        databaseBuilder = createDatabase(SELF_USER_ID, encryptedDBSecret, enableWAL = true)
+        meetingDao = databaseBuilder.meetingDao
+        meetingsQueries = databaseBuilder.database.meetingsQueries
+        assertEquals(edited.invitedEmails, meetingDao.getMeeting(meeting.meetingId)?.invitedEmails)
+
+        meetingDao.upsertMeetings(
+            listOf(edited.copy(invitedEmails = emptyList())),
+            GenerationLimit.Window(edited.startTime, edited.endTime),
+        )
+        assertEquals(emptyList(), meetingDao.getMeeting(meeting.meetingId)?.invitedEmails)
+    }
+
+    @Test
     fun changingOnlyTzidRegeneratesOccurrencesAndSurvivesReopen() = runTest(dispatcher) {
         val meeting = newMeeting(
             startTime = Instant.parse("2026-10-24T08:00:00Z"),
@@ -1138,6 +1160,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
             type = meeting.type,
             link = meeting.link,
             has_password = meeting.hasPassword,
+            invited_emails = meeting.invitedEmails,
         )
     }
 

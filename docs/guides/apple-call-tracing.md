@@ -1,13 +1,13 @@
 # Apple calling diagnostics
 
-Reviewed 2026-10-06. The Apple trace contract covers engine events and native host lifecycle events.
+The Apple trace contract covers engine events and native host lifecycle events.
 The host supplies native instrumentation. Tracing does not change calling policy or recover failed calls.
 
 ## Configuration and record contract
 
 The Apple host calls `AppleCallTrace.configure` with its existing `KaliumLogger.Config` and process role
-`APP` or `NSE`. No additional writer is installed. Configuration and opt-in still determine which sinks
-receive the record. Each host, app and NSE, configures this alongside `CoreLogger`.
+`APP` or `NSE`, alongside `CoreLogger`. No additional writer is installed; configuration and opt-in
+determine which sinks receive the record.
 
 Structured records start with `CALL_TRACE v=1`. Fields are space-separated, with no quoted/free-form
 values. The allowlist is defined by `CallTraceEvent`, `CallTraceResult` and `CallTraceContext` in

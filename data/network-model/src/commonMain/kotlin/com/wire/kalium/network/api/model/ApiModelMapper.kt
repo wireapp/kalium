@@ -74,6 +74,7 @@ class ApiModelMapperImpl : ApiModelMapper {
         tzid = request.tzid,
         title = request.title,
         recurrence = request.recurrence,
+        invitedEmails = request.invitedEmails,
     )
 
     override fun toApiV17(request: UpdateMeetingRequest): UpdateMeetingRequestV17 = UpdateMeetingRequestV17(
@@ -82,6 +83,7 @@ class ApiModelMapperImpl : ApiModelMapper {
         tzid = request.tzid,
         title = request.title,
         recurrence = request.recurrence,
+        invitedEmails = request.invitedEmails,
     )
 
     override fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3 =

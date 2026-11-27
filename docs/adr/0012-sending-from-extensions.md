@@ -4,7 +4,7 @@ Date: 2026-10-13
 
 ## Status
 
-Accepted. Amended 2026-10-25 and 2026-11-12: uploads run without holding the account and stop when the app needs it.
+Accepted
 
 ## Context
 
@@ -15,9 +15,8 @@ rejects the message (Proteus 412, MLS 409 stale message).
 
 [ADR 11](0011-nse-account-runtime-ownership.md) gives extensions an exclusive per-account lease and a
 slim runtime without CoreLogic, and the NSE can catch up to live over the WebSocket (bounded
-incremental sync). Message sending, however,
-lives in `:logic` (`MessageSenderImpl` and its envelope, session, MLS, failure and legal-hold
-collaborators), coupled to `:logic` repositories and `SyncManager`.
+incremental sync). Message sending, however, lived in `:logic`, coupled to its repositories and
+`SyncManager`.
 
 An extension cannot launch its containing app, has no reliable background time after it is dismissed,
 and runs under tight memory limits. The backend sends no push for events it delivers over an open
@@ -51,16 +50,12 @@ The extension processes stored events before it sends. The sender recovers from 
 crypto transaction, and processing events there would deadlock, so the extension declines that recovery
 instead of waiting for live.
 
-The first share extension sends text, including links as text, to one conversation chosen from the
-app's conversation list components.
-
-Files follow in the same extension. Uploads can outlive a dismissed extension, so the share sheet
-stays open while they run: the extension encrypts and uploads every file before it holds the account
-live, reports progress, and stops when the user cancels. Uploading needs the account's token, and
-neither its database nor CoreCrypto, so the extension does not hold the account while it uploads. It
-holds it for a moment to read the conversation, the file rules and where the files go, uploads with the
-stored token, then holds it again to send. The app and the NSE can take the account meanwhile, so a push
-during a long upload is read and a call rings. A token refresh takes the account for that moment.
+Uploads can outlive a dismissed extension, so the share sheet stays open while they run: the extension
+encrypts and uploads every file before it holds the account live, reports progress, and stops when the
+user cancels. Uploading needs the account's token, and neither its database nor CoreCrypto, so the
+extension holds the account only for a moment to read the conversation, the file rules and where the
+files go, and again to send. The app and the NSE can take the account meanwhile, so a push during a long
+upload is read and a call rings. A token refresh takes the account for that moment.
 
 Whenever the extension takes the account, it waits for another app extension that holds it, in practice
 the NSE, which gives the account up within its own budget: up to 20 seconds, and never longer than the
@@ -81,16 +76,6 @@ Before storage, cancellation or rejection cancels those draft versions. After st
 publication and retry; a failed publish keeps the message retryable. Publication checks server state so
 retrying a sent-but-unacknowledged publish does not publish the same version again.
 This path takes explicit files and never reads or consumes the conversation's composer draft.
-
-## Implementation
-
-The app's sending was extracted step by step, keeping its behaviour unchanged and its tests covering
-the moved code through the app's adapters: Proteus envelope creation (`MessageEnvelopeCreator`),
-session establishment (`SessionEstablisher`), MLS message creation (`MLSMessageCreator`), send-failure
-handling (`MessageSendFailureHandler`) and the sending orchestration (`MessageSenderImpl`), each with
-narrow ports. Extension adapters over the slim runtime provide a bounded hold that keeps the socket
-open, processes incoming events and posts unnotified message alerts through the host. The share
-extension sends text and files.
 
 ## Consequences
 

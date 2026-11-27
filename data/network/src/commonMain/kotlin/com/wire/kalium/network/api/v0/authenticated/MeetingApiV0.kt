@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.v0.authenticated
 
+import com.wire.kalium.network.api.authenticated.meeting.MeetingInvitationsRequest
 import com.wire.kalium.network.api.authenticated.meeting.RotateMeetingLinkRequest
 import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.UpdateMeetingRequest
@@ -25,6 +26,7 @@ import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi.Companion.MIN_API_VERSION_MEETINGS
+import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi.Companion.MIN_API_VERSION_MEETINGS_GUESTS_LINKS
 import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.utils.NetworkResponse
 
@@ -50,4 +52,10 @@ internal open class MeetingApiV0 internal constructor() : MeetingApi {
         request: RotateMeetingLinkRequest
     ): NetworkResponse<UpsertMeetingResponse> =
         getApiNotSupportedError("rotateMeetingLink", MeetingApi.MIN_API_VERSION_MEETINGS_GUESTS_LINKS)
+
+    override suspend fun addInvitations(meetingId: MeetingId, request: MeetingInvitationsRequest): NetworkResponse<Unit> =
+        getApiNotSupportedError("addInvitations", MIN_API_VERSION_MEETINGS_GUESTS_LINKS)
+
+    override suspend fun deleteInvitations(meetingId: MeetingId, request: MeetingInvitationsRequest): NetworkResponse<Unit> =
+        getApiNotSupportedError("deleteInvitations", MIN_API_VERSION_MEETINGS_GUESTS_LINKS)
 }

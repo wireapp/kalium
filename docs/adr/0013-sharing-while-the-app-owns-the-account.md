@@ -13,9 +13,7 @@ otherwise the NSE or the share extension, briefly. [ADR 12](0012-sending-from-ex
 owning the account and keeping it live.
 
 When the app owns the account, the share extension cannot. This is a normal situation: the user shares
-from inside Wire to Wire, shares from another app during a Wire call, or uses iPad split view with Wire
-in the foreground. Today the sheet says "Wire is busy" before the user can pick a conversation, because
-listing conversations also opens the account.
+from inside Wire to Wire, shares during a Wire call, or uses iPad split view with Wire in the foreground.
 
 The extension must not act as a second owner. It may not write the account database, use CoreCrypto,
 refresh tokens or open a WebSocket while the app owns the account. A pending message written
@@ -82,12 +80,8 @@ the share off.
 
 ## Implementation
 
-Kalium's share module holds the outbox (entries, claims and snapshots), which the extension and
-the app both use, and the app's importer and snapshot writer, which take the app's sending as ports.
-The app runs them with `serveShareExtension`, which stores each item through the composer's text and
-asset use cases under the item's message ID. The iOS app posts and observes the Darwin
-notifications and runs the importer in each account's foreground and call work; the share extension
-shows the snapshot picker and hands the share to the app as described above.
+Kalium's share module holds the outbox, the app's importer and its snapshot writer. The app runs them
+with `serveShareExtension`; the iOS app posts and observes the Darwin notifications.
 
 ## Consequences
 
