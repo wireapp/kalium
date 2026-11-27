@@ -25,8 +25,12 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import okio.FileSystem
+import okio.Path.Companion.toPath
 
 /**
  * What the picker lists for an account. The extension reads it from the account, and the app writes it for the
@@ -49,6 +53,14 @@ internal data class SharePicker(
         @SerialName("isGroup") val isGroup: Boolean,
         /** Whether the current destination supports files. */
         @SerialName("acceptsFiles") val acceptsFiles: Boolean,
+        @SerialName("avatar") val avatar: Avatar? = null,
+    )
+
+    @Serializable
+    data class Avatar(
+        @SerialName("value") val value: String,
+        @SerialName("domain") val domain: String,
+        @SerialName("cachedPath") val cachedPath: String? = null,
     )
 }
 
@@ -59,13 +71,23 @@ internal suspend fun UserDatabaseBuilder.sharePicker(selfUserId: UserId, restric
         selfName = selfName,
         appLock = false,
         files = sharePolicy(selfUserId, restriction),
-        conversations = shareableConversations().map {
+        conversations = shareableConversations().map { conversation ->
+            val participant = conversation.otherUserId
+                ?.takeIf { conversation.type == ConversationEntity.Type.ONE_ON_ONE }
+                ?.let { userDAO.getUserDetailsByQualifiedID(it) }
+            val avatarAssets = listOfNotNull(participant?.previewAssetId, participant?.completeAssetId).distinct()
+            val avatar = avatarAssets.firstNotNullOfOrNull { asset ->
+                assetDAO.getAssetByKey(asset.value).first()?.dataPath
+                    ?.takeIf { path -> FileSystem.SYSTEM.exists(path.toPath()) }
+                    ?.let { path -> SharePicker.Avatar(asset.value, asset.domain, path) }
+            } ?: avatarAssets.firstOrNull()?.let { asset -> SharePicker.Avatar(asset.value, asset.domain) }
             SharePicker.Conversation(
-                it.id.value,
-                it.id.domain,
-                it.name,
-                it.type.isGroup,
-                acceptsFiles = it.wireCell == null || cellsConfigured(),
+                conversation.id.value,
+                conversation.id.domain,
+                conversation.name,
+                conversation.type.isGroup,
+                acceptsFiles = conversation.wireCell == null || cellsConfigured(),
+                avatar = avatar,
             )
         },
     )
