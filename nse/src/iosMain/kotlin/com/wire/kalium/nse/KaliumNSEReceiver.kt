@@ -127,7 +127,7 @@ public data class KaliumNSEResult(
     public val isGroupConversation: Boolean = false,
     /**
      * Further unnotified message alerts, oldest first. [KaliumNSEReceiver.processAndDeliver] posts each through the
-     * host and acknowledges the ones it accepted; the rest stay pending for the account's next owner.
+     * host, acknowledges and lists only the ones it accepted; the rest stay pending for the account's next owner.
      */
     public val alerts: List<KaliumNSEAlert> = emptyList(),
     /**
@@ -303,10 +303,14 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         val unnotified = claims.pending.read(request.showMessageContent)
         val result = reconcileNotifications(runtime, received, unnotified, request)
         // Without delivery the host posts the alerts after this returns, so nothing proves they were presented.
+        val accepted = mutableListOf<KaliumNSEAlert>()
         val presented = delivery != null && deliverMessageAlerts(result.alerts, delivery::deliver) { alert ->
             claims.pending.acknowledge(listOf(alert.messageKey()))
+            accepted += alert
         }
         return result.copy(
+            // The host shows the push's own content unless its alert is listed, so list only accepted ones.
+            alerts = if (delivery == null) result.alerts else accepted,
             stoppedReason = received.stoppedReason,
             meetingAlerts = received.meetings,
             meetingReminders = runtime.database.upcomingMeetingReminders(),
