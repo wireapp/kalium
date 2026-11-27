@@ -134,6 +134,14 @@ internal interface MeetingRepository {
     suspend fun getNextMeetingReminder(from: Instant): MeetingReminder?
     suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminder>
     suspend fun rotateMeetingLink(meetingId: MeetingId, password: String?): Either<CoreFailure, Meeting>
+
+    suspend fun joinViaCode(
+        domain: String,
+        key: String,
+        code: String,
+        password: String?,
+        transactionContext: CryptoTransactionContext,
+    ): Either<CoreFailure, Meeting>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -494,6 +502,33 @@ internal class MeetingDataSource(
     ) : CoreFailure.FeatureFailure()
     data class UpdateConversationNameFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
     data object MeetingNotSupportedFailure : CoreFailure.FeatureFailure()
+
+    override suspend fun joinViaCode(
+        domain: String,
+        key: String,
+        code: String,
+        password: String?,
+        transactionContext: CryptoTransactionContext,
+    ): Either<CoreFailure, Meeting> = wrapApiRequest {
+        meetingApi.joinViaCode(domain, key, code, password)
+    }.flatMap { meetingDTO ->
+        val entity = meetingMapper.fromApiToDao(meetingDTO)
+            ?: return@flatMap Either.Left(MeetingNotSupportedFailure)
+        val creatorId = entity.creatorId.toModel()
+        userRepository.insertOrIgnoreIncompleteUsers(listOf(creatorId))
+        userRepository.fetchUsersIfUnknownByIds(setOf(creatorId))
+        conversationRepository.fetchConversationListDetails(listOf(meetingDTO.conversationId.toModel())).flatMap {
+            persistConversations(transactionContext, it.conversationsFound, true)
+        }.flatMap {
+            wrapStorageRequest {
+                meetingDAO.upsertMeetings(
+                    meetings = listOf(entity),
+                    generateOccurrencesWindow = GenerationLimit.Window(occurrenceOutdatedThreshold(), occurrenceGenerationUntil())
+                )
+                meetingMapper.fromDaoToModel(entity)
+            }
+        }
+    }
 }
 
 internal data class CreateNewMeetingResult(

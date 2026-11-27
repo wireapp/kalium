@@ -108,4 +108,7 @@ public class MeetingScope internal constructor(
 
     public val rotateMeetingLink: RotateMeetingLinkUseCase
         get() = RotateMeetingLinkUseCaseImpl(meetingRepository)
+
+    public val joinMeetingViaCode: JoinMeetingViaCodeUseCase
+        get() = JoinMeetingViaCodeUseCaseImpl(meetingRepository, transactionProvider)
 }

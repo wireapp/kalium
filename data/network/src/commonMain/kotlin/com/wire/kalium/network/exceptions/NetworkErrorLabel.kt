@@ -50,6 +50,8 @@ internal object NetworkErrorLabel {
     const val NO_CRYPTO_STATE = "no_crypto_state"
     const val MLS_STALE_MESSAGE = "mls-stale-message"
     const val MEETING_NOT_FOUND = "meeting-not-found"
+    const val WRONG_MEETING_PASSWORD = "invalid-meeting-password"
+    const val INVITATION_LINK_FEATURE_UNAVAILABLE = "id-feature-error"
 
     // connection
     const val BAD_CONNECTION_UPDATE = "bad-conn-update"

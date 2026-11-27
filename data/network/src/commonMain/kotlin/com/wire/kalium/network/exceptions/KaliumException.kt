@@ -43,9 +43,9 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_HANDLE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MEETING_NOT_FOUND
-import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_LEGALHOLD_CONSENT
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_FOUND
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_TEAM_MEMBER
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_CONVERSATION
@@ -242,3 +242,12 @@ fun KaliumException.InvalidRequestError.isMeetingNotFound(): Boolean =
     errorResponse.code == HttpStatusCode.NotFound.value && errorResponse.label == MEETING_NOT_FOUND
 
 private const val HTTP_STATUS_NGINZ_TOO_MANY_REQUESTS = 420
+
+fun KaliumException.InvalidRequestError.isWrongMeetingPassword(): Boolean = when (errorResponse.code) {
+    HttpStatusCode.Forbidden.value -> errorResponse.label == NetworkErrorLabel.WRONG_MEETING_PASSWORD
+    HttpStatusCode.BadRequest.value -> errorResponse.message.contains("Invalid password")
+    else -> false
+}
+
+fun KaliumException.InvalidRequestError.isInvitationLinkFeatureUnavailable(): Boolean =
+    errorResponse.code == HttpStatusCode.Forbidden.value && errorResponse.label == NetworkErrorLabel.INVITATION_LINK_FEATURE_UNAVAILABLE
