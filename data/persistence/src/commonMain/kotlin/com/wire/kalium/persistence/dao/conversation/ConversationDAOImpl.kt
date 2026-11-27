@@ -31,9 +31,11 @@ import com.wire.kalium.persistence.ConversationDetailsWithMembersQueries
 import com.wire.kalium.persistence.ConversationListQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
+import com.wire.kalium.persistence.PendingActionsQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
@@ -65,6 +67,7 @@ internal class ConversationDAOImpl internal constructor(
     private val conversationListQueries: ConversationListQueries,
     private val memberQueries: MembersQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
+    private val pendingActionsQueries: PendingActionsQueries,
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : ConversationDAO {
@@ -481,6 +484,17 @@ internal class ConversationDAOImpl internal constructor(
         withContext(writeDispatcher.value) {
             conversationQueries.setDeletedLocally(deletedLocally = deletedLocally, qualifiedId = qualifiedID)
         }
+
+    override suspend fun markConversationDeletedLocallyPending(
+        qualifiedID: QualifiedIDEntity,
+        actionType: PendingActionType,
+        createdAt: Long,
+    ): Unit = withContext(writeDispatcher.value) {
+        conversationQueries.transaction {
+            conversationQueries.setDeletedLocally(deletedLocally = true, qualifiedId = qualifiedID)
+            pendingActionsQueries.upsert(actionType, qualifiedID, createdAt)
+        }
+    }
 
     override suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,

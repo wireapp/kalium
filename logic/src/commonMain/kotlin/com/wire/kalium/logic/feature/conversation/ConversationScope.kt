@@ -28,8 +28,9 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.PersistentLocalDeletionRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.LocalDeletionRepository
+import com.wire.kalium.logic.data.conversation.LocalDeletionRepositoryImpl
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
@@ -370,13 +371,16 @@ public class ConversationScope internal constructor(
         )
 
     public val markConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
-        get() = MarkConversationAsDeletedLocallyUseCaseImpl(PersistentLocalDeletionRepository(userStorage.database))
+        get() = MarkConversationAsDeletedLocallyUseCaseImpl(localDeletionRepository)
 
     public val getLocallyDeletedConversationIdsUseCase: GetLocallyDeletedConversationIdsUseCase
-        get() = GetLocallyDeletedConversationIdsUseCaseImpl(PersistentLocalDeletionRepository(userStorage.database))
+        get() = GetLocallyDeletedConversationIdsUseCaseImpl(localDeletionRepository)
 
     public val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
-        get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent, PersistentLocalDeletionRepository(userStorage.database))
+        get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent, localDeletionRepository)
+
+    private val localDeletionRepository: LocalDeletionRepository
+        get() = LocalDeletionRepositoryImpl(userStorage.database.conversationDAO, userStorage.database.pendingActionDAO)
 
     public val joinConversationViaCode: JoinConversationViaCodeUseCase
         get() = JoinConversationViaCodeUseCase(

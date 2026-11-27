@@ -22,6 +22,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Instant
 import kotlin.time.Duration
@@ -113,6 +114,11 @@ interface ConversationDAO {
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Boolean
     suspend fun insertAdminlessGroupDelete(conversationId: QualifiedIDEntity, deletionTimestamp: Instant)
     suspend fun setConversationDeletedLocally(qualifiedID: QualifiedIDEntity, deletedLocally: Boolean)
+    suspend fun markConversationDeletedLocallyPending(
+        qualifiedID: QualifiedIDEntity,
+        actionType: PendingActionType,
+        createdAt: Long,
+    )
 
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,

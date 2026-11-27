@@ -46,6 +46,9 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
@@ -85,6 +88,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var memberDAO: MemberDAO
     private lateinit var assertDAO: AssetDAO
     private lateinit var callDAO: CallDAO
+    private lateinit var pendingActionDAO: PendingActionDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -101,6 +105,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO = db.memberDAO
         assertDAO = db.assetDAO
         callDAO = db.callDAO
+        pendingActionDAO = db.pendingActionDAO
     }
 
     @Test
@@ -2782,6 +2787,28 @@ class ConversationDAOTest : BaseDatabaseTest() {
             null
         }
         assertNull(getResult)
+    }
+
+    @Test
+    fun givenExistingConversation_whenLocalDeletionIsPending_thenMarkAndEnqueueTogether() = runTest(dispatcher) {
+        conversationDAO.insertConversation(conversationEntity1)
+
+        conversationDAO.markConversationDeletedLocallyPending(
+            conversationEntity1.id,
+            PendingActionType.PENDING_LOCAL_DELETION,
+            100L,
+        )
+
+        val details = try {
+            conversationDAO.getConversationDetailsById(conversationEntity1.id)
+        } catch (npe: NullPointerException) {
+            null
+        }
+        assertNull(details)
+        assertEquals(
+            listOf(PendingActionEntity(conversationEntity1.id, 100L)),
+            pendingActionDAO.getByActionType(PendingActionType.PENDING_LOCAL_DELETION),
+        )
     }
 
     @Test

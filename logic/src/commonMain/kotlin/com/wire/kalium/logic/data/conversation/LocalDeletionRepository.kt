@@ -16,8 +16,9 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlin.time.Clock
 
 internal interface LocalDeletionRepository {
@@ -26,22 +27,24 @@ internal interface LocalDeletionRepository {
     suspend fun acknowledge(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
-internal class PersistentLocalDeletionRepository(
-    private val database: UserDatabaseBuilder,
+internal class LocalDeletionRepositoryImpl(
+    private val conversationDAO: ConversationDAO,
+    private val pendingActionDAO: PendingActionDAO,
 ) : LocalDeletionRepository {
     override suspend fun markPending(conversationId: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
-        database.writeMessageEffects {
-            conversations.setConversationDeletedLocally(conversationId.toDao(), true)
-            pendingActions.upsert(TYPE, conversationId.toDao(), Clock.System.now().toEpochMilliseconds())
-        }
+        conversationDAO.markConversationDeletedLocallyPending(
+            conversationId.toDao(),
+            TYPE,
+            Clock.System.now().toEpochMilliseconds(),
+        )
     }
 
     override suspend fun getPending(): Either<CoreFailure, List<ConversationId>> = wrapStorageRequest {
-        database.pendingActionDAO.getByActionType(TYPE)
+        pendingActionDAO.getByActionType(TYPE)
     }.map { actions -> actions.map { it.qualifiedId.toModel() } }
 
     override suspend fun acknowledge(conversationId: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
-        database.pendingActionDAO.deleteByActionTypeAndIds(TYPE, listOf(conversationId.toDao()))
+        pendingActionDAO.deleteByActionTypeAndIds(TYPE, listOf(conversationId.toDao()))
     }
 
     private companion object {
