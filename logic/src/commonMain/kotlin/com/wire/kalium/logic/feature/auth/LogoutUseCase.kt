@@ -88,6 +88,10 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private suspend fun prepareLogout(reason: LogoutReason) {
+        // On Apple the account's scope is already unavailable here. Mark the stored session invalid before the network calls,
+        // so observers of the current session do not see a valid account without a scope.
+        sessionRepository.logout(userId = userId, reason)
+
         getEstablishedCallsUseCase().firstOrNull()?.forEach {
             endCallUseCase(it.conversationId)
         }
@@ -97,7 +101,6 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
             logoutRepository.logout()
         }
 
-        sessionRepository.logout(userId = userId, reason)
         logoutRepository.onLogout(reason)
         userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
         userConfigRepository.clearE2EISettings()
