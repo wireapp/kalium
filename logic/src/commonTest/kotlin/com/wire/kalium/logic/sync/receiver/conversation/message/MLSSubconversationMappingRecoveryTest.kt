@@ -270,6 +270,7 @@ class MLSSubconversationMappingRecoveryTest {
             staleEpochVerifier,
             resetMLSConversation,
             mock(),
+            mock<MLSRejoinQueue>(),
         )
 
         init {

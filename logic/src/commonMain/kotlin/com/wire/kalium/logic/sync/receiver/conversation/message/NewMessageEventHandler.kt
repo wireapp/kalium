@@ -81,6 +81,7 @@ internal class NewMessageEventHandlerImpl(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val resetMLSConversation: ResetMLSConversationUseCase,
     private val handleWrongExternalSender: HandleWrongExternalSenderUseCase,
+    private val rejoinQueue: MLSRejoinQueue,
     private val receiveRecovery: MLSReceiveRecoveryHandler? = null,
     private val bufferedMLSMessageRecoveryTracker: BufferedMLSMessageRecoveryTracker = BufferedMLSMessageRecoveryTracker(),
 ) : NewMessageEventHandler {
@@ -169,9 +170,10 @@ internal class NewMessageEventHandlerImpl(
             is Either.Left -> {
                 val failure = unpackResult.value
                 val needsRejoin = failure is MLSFailure.WrongEpoch || failure is MLSFailure.ConversationNotFound
-                if (needsRejoin && event.subconversationId == null &&
-                    recovery?.invoke(transactionContext, event, true) == true
-                ) return Either.Right(Unit)
+                if (needsRejoin && event.subconversationId == null) {
+                    if (transactionContext !is DurableMLSReceiveContext) return queueRejoin(event, failure, eventLogger)
+                    if (recovery?.invoke(transactionContext, event, true) == true) return Either.Right(Unit)
+                }
                 when (MLSMessageFailureHandler.handleFailure(failure)) {
                     is MLSMessageFailureResolution.Ignore -> {
                         eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
@@ -238,6 +240,17 @@ internal class NewMessageEventHandlerImpl(
 
     private fun CoreFailure.isInvalidSignature() = this is MLSFailure.Other && message.startsWith(INVALID_SIGNATURE)
 
+    private suspend fun queueRejoin(
+        event: Event.Conversation.NewMLSMessage,
+        failure: CoreFailure,
+        eventLogger: EventProcessingLogger
+    ): Either<CoreFailure, Unit> {
+        bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
+        rejoinQueue.request(event.conversationId, event.messageInstant)
+        eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "REJOIN_QUEUED")
+        return Either.Right(Unit)
+    }
+
     private suspend fun persistMLSDecryptionFailure(event: Event.Conversation.NewMLSMessage) {
         // Messages from subconversations should not send a system message.
         if (event.subconversationId == null) {
@@ -266,7 +279,12 @@ internal class NewMessageEventHandlerImpl(
             event.subconversationId,
             event.messageInstant
         )
-        if (shouldRecover) {
+        if (shouldRecover && event.subconversationId == null && transactionContext !is DurableMLSReceiveContext) {
+            // Like WrongEpoch: a main conversation rejoins after the batch, never inside its transaction.
+            bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
+            rejoinQueue.request(event.conversationId, event.messageInstant)
+            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED_REJOIN_QUEUED")
+        } else if (shouldRecover) {
             eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED_RECOVERY")
             staleEpochVerifier.verifyEpoch(
                 transactionContext,

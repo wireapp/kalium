@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSRejoinQueue
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -34,6 +35,7 @@ internal interface IncrementalSyncWorker {
     suspend fun processEventsFlow(): Flow<EventSource>
 }
 
+@Suppress("LongParameterList") // Each sync step is a separate injected owner.
 internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
     private val batchProcessor: EventBatchProcessor,
@@ -41,6 +43,7 @@ internal class IncrementalSyncWorkerImpl(
     private val consumePendingAccountInvalidation: suspend () -> Boolean = { false },
     private val consumePendingLegalHoldTransitions: suspend () -> Unit = {},
     private val consumePendingConversationCleanup: suspend () -> Unit = {},
+    private val rejoinQueue: MLSRejoinQueue? = null,
 ) : IncrementalSyncWorker {
     private val logger = logger.withFeatureId(SYNC)
 
@@ -58,6 +61,7 @@ internal class IncrementalSyncWorkerImpl(
             .collect { streamData ->
                 logger.d("$TAG Received ${streamData.eventList.size} events to process")
                 batchProcessor.processBatch(streamData.eventList)
+                rejoinQueue?.rejoinQueued()
             }
         logger.i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()

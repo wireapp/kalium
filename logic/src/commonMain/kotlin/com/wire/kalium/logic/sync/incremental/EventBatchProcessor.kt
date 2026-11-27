@@ -145,6 +145,8 @@ private class StandardEventBatchReceiver(
                     eventIds
                 }
             }.map { ProcessedBatch(it) }
+            // A failed batch still commits CoreCrypto, so its decrypted messages cannot be decrypted again on replay.
+            .onFailure { eventProcessor.flushPendingSideEffects() }
 
     override suspend fun recordProcessed(context: CryptoTransactionContext, envelopes: List<EventEnvelope>) = Unit
 
