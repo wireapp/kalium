@@ -212,13 +212,7 @@ public interface KaliumNSEMessageDelivery {
 @Suppress("TooManyFunctions") // Keep the diagnostic boundary separate from the receiving workflow.
 public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration) {
     @Throws(CancellationException::class)
-    public suspend fun process(request: KaliumNSERequest): KaliumNSEResult = processOwned(request, null)
-
-    @Throws(CancellationException::class)
-    public suspend fun processAndDeliver(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery): KaliumNSEResult =
-        processOwned(request, delivery)
-
-    private suspend fun processOwned(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
+    public suspend fun processAndDeliver(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery): KaliumNSEResult {
         // An extension has a bounded host budget; this flag controls diagnostic verbosity only.
         AppleSuspensionDiagnostics.setBackgrounded(true)
         AppleSuspensionDiagnostics.snapshot("NSE_BEGIN")
@@ -229,7 +223,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         }
     }
 
-    private suspend fun processObserved(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
+    private suspend fun processObserved(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery): KaliumNSEResult {
         val diagnostics = ReceivingDiagnostics()
         if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) {
             return failure("INVALID_REQUEST").also { diagnostics.record("FAILED", it.failureReason, false) }
@@ -269,7 +263,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         request: KaliumNSERequest,
         diagnostics: ReceivingDiagnostics,
         started: TimeSource.Monotonic.ValueTimeMark,
-        delivery: KaliumNSEMessageDelivery?,
+        delivery: KaliumNSEMessageDelivery,
     ): KaliumNSEResult {
         runtime.database.messageDAO.rememberNotificationMessages(request.deliveredNotifications.map { it.messageKey() })
         val processor = runtime.notificationProcessor(
@@ -302,8 +296,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         if (received.prefixComplete) claims.take()
         val unnotified = claims.pending.read(request.showMessageContent)
         val result = reconcileNotifications(runtime, received, unnotified, request)
-        // Without delivery the host posts the alerts after this returns, so nothing proves they were presented.
-        val presented = delivery != null && deliverMessageAlerts(result.alerts, delivery::deliver) { alert ->
+        val presented = deliverMessageAlerts(result.alerts, delivery::deliver) { alert ->
             claims.pending.acknowledge(listOf(alert.messageKey()))
         }
         return result.copy(
