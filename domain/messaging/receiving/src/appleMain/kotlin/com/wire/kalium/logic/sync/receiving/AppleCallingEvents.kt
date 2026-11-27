@@ -208,7 +208,10 @@ internal suspend fun evaluateCallingEvents(
     }
     // Finish the complete batch first: a close and missed callback may refer to the same start.
     val evaluatedIds = journal.map { it.id }.toSet()
-    completed.forEach { source -> signalJournal.completeNotification(source, evaluatedIds) }
+    completed.forEach { source ->
+        val handled = reconciled.any { it.source.id == source.id && !it.missed }
+        signalJournal.completeNotification(source, evaluatedIds, handled = handled)
+    }
     return mappedResults
 }
 

@@ -209,6 +209,41 @@ class AppleMissedCallPersistenceTest {
         }
     }
 
+    @Test
+    fun answeredConferenceDoesNotBecomeMissedWhenAppTimesOutAfterExtensionCleanup() = runTest {
+        withTestUserDatabase(SELF) { database ->
+            val db = database.builder
+            db.userDAO.insertOrIgnoreIncompleteUsers(listOf(SELF, SENDER))
+            db.conversationDAO.insertConversation(conversation())
+            val start = event("answered-before-timeout", "CONFSTART").copy(isGroup = false)
+            val answer = start.copy(
+                messageId = "other-device-answer", senderId = SELF, senderClientId = "laptop", time = start.time + 1.seconds,
+                payload = """{"version":"3.0","type":"CONFSTART","sessid":"call","resp":true}""",
+            )
+            val end = start.copy(
+                messageId = "conference-ended", time = start.time + 60.seconds,
+                payload = """{"version":"3.0","type":"CONFEND","sessid":"call","resp":false}""",
+            )
+            val journal = CallSignalJournal(db)
+            val source = journal.append(start).missedCallSource()
+            journal.append(answer)
+            evaluateCallingEvents(listOf(start, answer), UserId(SELF.value, SELF.domain), "abc123", db)
+            journal.append(end)
+            evaluateCallingEvents(listOf(end), UserId(SELF.value, SELF.domain), "abc123", db)
+            assertTrue(journal.historySignals().isEmpty())
+            // The suspended app resumes after the NSE has removed the answered call's signaling.
+            // Its delayed close callback still holds the original presentation identity.
+            val resumed = CallSignalJournal(db)
+            resumed.deferMissedCall(source)
+            resumed.flushMissedCalls(SELF)
+            assertNull(db.messageDAO.getMessageById("missed-call:answered-before-timeout", CONVERSATION))
+            assertFalse(resumed.persistMissedCall(source, SELF))
+            // The outcome belongs to this call, not every later call in the conversation.
+            val next = resumed.append(oneToOneStart("later-missed-call"))
+            assertTrue(resumed.persistMissedCall(next.missedCallSource(), SELF))
+        }
+    }
+
     private fun oneToOneStart(id: String) = event(id, "SETUP").copy(
         payload = """{"version":"3.0","type":"SETUP","sessid":"late-call","resp":false,"sdp":"v=0","props":{"videosend":"false"}}""",
         time = Clock.System.now() - 90.seconds,
